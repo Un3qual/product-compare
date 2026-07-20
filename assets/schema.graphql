@@ -161,6 +161,18 @@ type RootMutationType {
   "Submits an authenticated answer to a published question."
   answerProductQuestion(input: AnswerProductQuestionInput!): ProductAnswerPayload!
 
+  "Updates one review owned by the current user and resubmits it for moderation."
+  updateProductReview(input: UpdateProductReviewInput!): ProductReviewPayload!
+
+  "Updates one question owned by the current user and resubmits it for moderation."
+  updateProductQuestion(input: UpdateProductQuestionInput!): ProductQuestionPayload!
+
+  "Updates one answer owned by the current user and resubmits it for moderation."
+  updateProductAnswer(input: UpdateProductAnswerInput!): ProductAnswerPayload!
+
+  "Soft-removes review or Q&A content owned by the current user."
+  removeCommunityContent(input: RemoveCommunityContentInput!): RemoveCommunityContentPayload!
+
   "Marks one published answer as accepted by the question owner."
   acceptProductAnswer(questionId: ID!, answerId: ID!): ProductQuestionPayload!
 
@@ -444,6 +456,7 @@ input PublishComparisonSnapshotInput {
 
 input SubmitProductReviewInput {
   productId: ID!
+  idempotencyKey: String
   rating: Int!
   title: String
   body: String
@@ -452,13 +465,38 @@ input SubmitProductReviewInput {
 
 input AskProductQuestionInput {
   productId: ID!
+  idempotencyKey: String
   title: String!
   body: String
 }
 
 input AnswerProductQuestionInput {
   questionId: ID!
+  idempotencyKey: String
   body: String!
+}
+
+input UpdateProductReviewInput {
+  id: ID!
+  rating: Int
+  title: String
+  body: String
+}
+
+input UpdateProductQuestionInput {
+  id: ID!
+  title: String
+  body: String
+}
+
+input UpdateProductAnswerInput {
+  id: ID!
+  body: String
+}
+
+input RemoveCommunityContentInput {
+  contentType: CommunityContentType!
+  contentId: ID!
 }
 
 enum CommunityContentType {
@@ -472,6 +510,7 @@ enum CommunityModerationStatus {
   PUBLISHED
   HIDDEN
   REJECTED
+  REMOVED
 }
 
 input ReportCommunityContentInput {
@@ -525,6 +564,11 @@ type RevokeComparisonSnapshotPayload {
 
 type ProductReviewPayload {
   review: ProductReview
+  errors: [MutationError!]!
+}
+
+type RemoveCommunityContentPayload {
+  removedContentId: ID
   errors: [MutationError!]!
 }
 
@@ -956,12 +1000,19 @@ type Product implements Node {
   reviewSummary: ProductReviewSummary!
   reviews(first: Int, after: String): ProductReviewConnection!
   questions(first: Int, after: String): ProductQuestionConnection!
+  viewerCommunitySubmissions: ViewerCommunitySubmissions!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
 }
 
 type ProductReviewSummary {
   count: Int!
   averageRating: Decimal
+}
+
+type ViewerCommunitySubmissions {
+  reviews: [ProductReview!]!
+  questions: [ProductQuestion!]!
+  answers: [ProductAnswer!]!
 }
 
 type ProductReview {
@@ -972,6 +1023,8 @@ type ProductReview {
   verifiedPurchase: Boolean!
   moderationStatus: CommunityModerationStatus!
   authorLabel: String!
+  viewerCanEdit: Boolean!
+  viewerCanRemove: Boolean!
   createdAt: DateTime!
 }
 
@@ -991,6 +1044,8 @@ type ProductQuestion {
   body: String
   moderationStatus: CommunityModerationStatus!
   authorLabel: String!
+  viewerCanEdit: Boolean!
+  viewerCanRemove: Boolean!
   acceptedAnswerId: ID
   answers(first: Int, after: String): ProductAnswerConnection!
   createdAt: DateTime!
@@ -1011,6 +1066,8 @@ type ProductAnswer {
   body: String!
   moderationStatus: CommunityModerationStatus!
   authorLabel: String!
+  viewerCanEdit: Boolean!
+  viewerCanRemove: Boolean!
   createdAt: DateTime!
 }
 

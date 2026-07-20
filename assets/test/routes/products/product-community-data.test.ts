@@ -7,9 +7,13 @@ import {
   nextCommunityPageCursor,
   publishedReviewRowDisplayData,
   publishedReviewSummary,
+  resolveCommunityContentRemovalMessage,
   resolveProductAnswerMutationMessage,
+  resolveProductAnswerUpdateMessage,
   resolveProductQuestionMutationMessage,
-  resolveProductReviewMutationMessage
+  resolveProductQuestionUpdateMessage,
+  resolveProductReviewMutationMessage,
+  resolveProductReviewUpdateMessage
 } from "../../../src/routes/products/product-community-data";
 
 const mutationError = {
@@ -24,12 +28,14 @@ test("community inputs trim required and optional authored text", () => {
   expect(
     buildProductReviewInput({
       body: "  Useful in rain.  ",
+      idempotencyKey: "review-attempt-1",
       productId: "product-1",
       rating: "4",
       title: "  Field notes  "
     })
   ).toEqual({
     body: "Useful in rain.",
+    idempotencyKey: "review-attempt-1",
     productId: "product-1",
     rating: 4,
     title: "Field notes"
@@ -38,38 +44,59 @@ test("community inputs trim required and optional authored text", () => {
   expect(
     buildProductReviewInput({
       body: " ",
+      idempotencyKey: "review-attempt-2",
       productId: "product-1",
       rating: 1,
       title: " "
     })
-  ).toEqual({ productId: "product-1", rating: 1 });
+  ).toEqual({ idempotencyKey: "review-attempt-2", productId: "product-1", rating: 1 });
 
   expect(
     buildProductQuestionInput({
       body: "  Can it handle rain?  ",
+      idempotencyKey: "question-attempt-1",
       productId: "product-1",
       title: "  Weather sealed?  "
     })
   ).toEqual({
     body: "Can it handle rain?",
+    idempotencyKey: "question-attempt-1",
     productId: "product-1",
     title: "Weather sealed?"
   });
   expect(
-    buildProductAnswerInput({ body: "  Yes.  ", questionId: "question-1" })
-  ).toEqual({ body: "Yes.", questionId: "question-1" });
+    buildProductAnswerInput({
+      body: "  Yes.  ",
+      idempotencyKey: "answer-attempt-1",
+      questionId: "question-1"
+    })
+  ).toEqual({
+    body: "Yes.",
+    idempotencyKey: "answer-attempt-1",
+    questionId: "question-1"
+  });
 });
 
 test("community inputs omit blank optional bodies without hiding required fields", () => {
   expect(
     buildProductQuestionInput({
       body: " ",
+      idempotencyKey: "question-attempt-2",
       productId: "product-1",
       title: "  Battery life?  "
     })
-  ).toEqual({ productId: "product-1", title: "Battery life?" });
-  expect(buildProductAnswerInput({ body: " ", questionId: "question-1" })).toEqual({
+  ).toEqual({
+    idempotencyKey: "question-attempt-2",
+    productId: "product-1",
+    title: "Battery life?"
+  });
+  expect(buildProductAnswerInput({
+    body: " ",
+    idempotencyKey: "answer-attempt-2",
+    questionId: "question-1"
+  })).toEqual({
     body: "",
+    idempotencyKey: "answer-attempt-2",
     questionId: "question-1"
   });
 });
@@ -162,6 +189,59 @@ test.each([
   }
 );
 
+test.each([
+  [
+    "review",
+    resolveProductReviewUpdateMessage,
+    { review: { id: "review-1" } },
+    "Review updated and submitted for moderation."
+  ],
+  [
+    "question",
+    resolveProductQuestionUpdateMessage,
+    { question: { id: "question-1" } },
+    "Question updated and submitted for moderation."
+  ],
+  [
+    "answer",
+    resolveProductAnswerUpdateMessage,
+    { answer: { id: "answer-1" } },
+    "Answer updated and submitted for moderation."
+  ]
+] as const)(
+  "%s owner update distinguishes terminal success from typed payload failure",
+  (_kind, resolveMessage, completion, successMessage) => {
+    expect(resolveMessage({ ...completion, errors: [] }, [])).toBe(successMessage);
+    expect(
+      resolveMessage(
+        {
+          ...Object.fromEntries(Object.keys(completion).map((key) => [key, null])),
+          errors: [{ code: "RATE_LIMITED", message: "Community write limit reached; try again later." }]
+        },
+        []
+      )
+    ).toBe("Community write limit reached; try again later.");
+  }
+);
+
+test("community removal reports retained removal and typed lifecycle errors", () => {
+  expect(
+    resolveCommunityContentRemovalMessage(
+      { removedContentId: "review-1", errors: [] },
+      []
+    )
+  ).toBe("Community content removed.");
+  expect(
+    resolveCommunityContentRemovalMessage(
+      {
+        removedContentId: null,
+        errors: [{ code: "INVALID_LIFECYCLE", message: "Removed community content cannot be changed." }]
+      },
+      []
+    )
+  ).toBe("Removed community content cannot be changed.");
+});
+
 test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
   expect(acceptedAnswerAuthorLabel("answer-1", "answer-1", "Community member")).toBe(
     "Accepted answer · Community member"
@@ -174,12 +254,19 @@ test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
   );
 });
 
-test("nextCommunityPageCursor requires both another page and a cursor", () => {
+test("nextCommunityPageCursor requires a nonblank advancing cursor", () => {
   expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: true })).toBe(
     "cursor-1"
   );
   expect(nextCommunityPageCursor({ endCursor: null, hasNextPage: true })).toBeNull();
+  expect(nextCommunityPageCursor({ endCursor: " ", hasNextPage: true })).toBeNull();
   expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: false })).toBeNull();
+  expect(
+    nextCommunityPageCursor(
+      { endCursor: "cursor-1", hasNextPage: true },
+      "cursor-1"
+    )
+  ).toBeNull();
 });
 
 test("appendUniqueCommunityItems keeps first occurrences and stable references", () => {

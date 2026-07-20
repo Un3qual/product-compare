@@ -393,6 +393,22 @@ test("API token route renders first and next page links while preserving status"
   );
 });
 
+test("API token route suppresses a repeated next-page cursor", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
+    tokens: [ACTIVE_TOKEN],
+    tokenStatus: "active",
+    after: "same-cursor",
+    hasNextPage: true,
+    endCursor: "same-cursor"
+  } satisfies ApiTokensRouteLoaderData);
+
+  renderApiTokensRoute();
+  expect(screen.getByRole("link", { name: "First page" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Next page" })).not.toBeInTheDocument();
+});
+
 test("API token route hides rotation controls for expired tokens", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",

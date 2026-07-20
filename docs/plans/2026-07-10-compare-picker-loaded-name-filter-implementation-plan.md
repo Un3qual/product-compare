@@ -1,6 +1,6 @@
 # Compare Picker Loaded-Name Filter Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Help shoppers find a product by name among the products already
 loaded in the compare picker.

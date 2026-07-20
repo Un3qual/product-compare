@@ -27,8 +27,8 @@ defmodule ProductCompare.Alerts.Jobs.AlertEvaluationWorker do
       {:error, :price_point_not_found} ->
         {:cancel, "price_point_not_found"}
 
-      {:error, {:watch_evaluation_failed, _watch_id, _reason}} ->
-        {:error, "watch_evaluation_failed"}
+      {:error, {:watch_evaluations_failed, _watch_ids, _summary}} ->
+        {:error, "watch_evaluations_failed"}
     end
   end
 

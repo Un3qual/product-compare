@@ -106,7 +106,10 @@ export function buildMerchantChoices(
   });
 }
 
-export function getMerchantChoiceById(merchantChoices: MerchantChoice[], merchantId: string) {
+export function getMerchantChoiceById(
+  merchantChoices: readonly MerchantChoice[],
+  merchantId: string
+) {
   return merchantChoices.find((merchant) => merchant.id === merchantId);
 }
 
@@ -116,6 +119,21 @@ export function getMerchantSummary(merchantChoice?: MerchantChoice) {
   }
 
   return `${merchantChoice.name} (${merchantChoice.domain})`;
+}
+
+export function getAffiliateMerchantContext(
+  merchantChoices: readonly MerchantChoice[],
+  selectedMerchantId: string
+) {
+  const selectedMerchant =
+    getMerchantChoiceById(merchantChoices, selectedMerchantId) ?? merchantChoices[0];
+  const summary = getMerchantSummary(selectedMerchant);
+
+  return {
+    currentMerchantCopy: summary ? `Current merchant: ${summary}` : null,
+    selectedMerchantCopy: summary ? `Selected merchant: ${summary}` : null,
+    selectedMerchantValue: selectedMerchant?.id ?? ""
+  };
 }
 
 export function buildNetworkVariables(formValues: AffiliateSetupFormValues) {

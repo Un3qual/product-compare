@@ -10,6 +10,7 @@ defmodule ProductCompare.Ingestion.Jobs.CJProductImportWorker do
     :keywords,
     :limit,
     :pages,
+    :schedule_window,
     :serviceable_areas
   ]
 

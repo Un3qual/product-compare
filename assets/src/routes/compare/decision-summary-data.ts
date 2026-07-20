@@ -1,4 +1,5 @@
 import { compareDecimalStrings } from "../decimal-values";
+import { graphQLDateTimeLabel } from "../graphql-datetime";
 
 export type DecisionSummaryMetricKey =
   | "relative-loaded-price"
@@ -229,11 +230,5 @@ function priceRecencyLabel(context: DecisionSummaryOfferContext) {
 }
 
 function dateLabel(value: string | null | undefined) {
-  if (!value) {
-    return null;
-  }
-
-  const date = new Date(value);
-
-  return Number.isNaN(date.getTime()) ? null : value.slice(0, 10);
+  return graphQLDateTimeLabel(value);
 }

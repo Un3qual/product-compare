@@ -3,7 +3,7 @@ defmodule ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker do
   Runs one bounded CJ feed-discovery pass as a durable, retryable job.
   """
 
-  @unique_args [:advertiser_country, :cursor, :limit, :pages]
+  @unique_args [:advertiser_country, :cursor, :limit, :pages, :schedule_window]
 
   use Oban.Worker,
     queue: :ingestion,

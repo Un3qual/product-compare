@@ -104,9 +104,13 @@ test("buildDecisionSummaryMetricRows compares safe prices around malformed and m
   ]);
 });
 
-test("buildDecisionSummaryMetricRows preserves empty available-context labels", () => {
+test.each([
+  ["an impossible date", "2026-02-30T10:15:00Z"],
+  ["a timestamp without an offset", "2026-06-29T10:15:00"],
+  ["a malformed timestamp", "not-a-date"]
+])("buildDecisionSummaryMetricRows rejects %s as price recency", (_caseName, observedAt) => {
   const rows = buildDecisionSummaryMetricRows([{ id: "first" }], {
-    first: availableContext("first", { latestPriceObservedAt: "not-a-date" })
+    first: availableContext("first", { latestPriceObservedAt: observedAt })
   });
   const valuesByKey = Object.fromEntries(
     rows.map((row) => [row.key, row.cells[0]?.value])
@@ -119,6 +123,18 @@ test("buildDecisionSummaryMetricRows preserves empty available-context labels", 
     "coupon-signal": "No coupons loaded",
     "price-recency": "No price observations loaded"
   });
+});
+
+test("buildDecisionSummaryMetricRows preserves valid explicit-offset date labels", () => {
+  const rows = buildDecisionSummaryMetricRows([{ id: "first" }], {
+    first: availableContext("first", {
+      latestPriceObservedAt: "2026-06-29T20:30:00-04:00"
+    })
+  });
+
+  expect(rows.find((row) => row.key === "price-recency")?.cells).toEqual([
+    { productId: "first", value: "2026-06-29" }
+  ]);
 });
 
 function relativeLoadedPriceCells(

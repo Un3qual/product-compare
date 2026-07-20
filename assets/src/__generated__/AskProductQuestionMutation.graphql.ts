@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a695075319618dcc3d2f730de33b53b7>>
+ * @generated SignedSource<<8e0e53a1048f5e1845eca8fb24f6f9fc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,9 +9,10 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "%future added value";
+export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type AskProductQuestionInput = {
   body?: string | null | undefined;
+  idempotencyKey?: string | null | undefined;
   productId: string;
   title: string;
 };

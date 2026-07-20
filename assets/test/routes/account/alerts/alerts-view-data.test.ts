@@ -88,7 +88,12 @@ test("priceWatchToggleControl does not change the input watch", () => {
   expect(watch).toEqual(watches[0]);
 });
 
-test("observationDateLabel formats valid timestamps and leaves invalid source values visible", () => {
-  expect(observationDateLabel("2026-07-13T20:00:00Z")).toBe("2026-07-13");
-  expect(observationDateLabel("not-a-date")).toBe("not-a-date");
+test.each([
+  ["2026-07-13T20:00:00Z", "2026-07-13"],
+  ["2026-07-13T00:30:00+02:00", "2026-07-13"],
+  ["2026-02-30T20:00:00Z", "2026-02-30T20:00:00Z"],
+  ["2026-07-13T20:00:00", "2026-07-13T20:00:00"],
+  ["not-a-date", "not-a-date"]
+])("observationDateLabel presents %s truthfully", (value, expected) => {
+  expect(observationDateLabel(value)).toBe(expected);
 });

@@ -334,6 +334,22 @@ test("merchant directory renders next-page navigation when available", () => {
   );
 });
 
+test("merchant directory suppresses repeated and blank next cursors", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ first: 35, after: "same-cursor" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({ endCursor: "same-cursor", hasNextPage: true })
+  );
+
+  renderMerchantDirectoryRoute();
+  expect(screen.queryByRole("link", { name: "Next merchants" })).not.toBeInTheDocument();
+
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildMerchantDirectoryData({ endCursor: "  ", hasNextPage: true })
+  );
+  renderMerchantDirectoryRoute();
+  expect(screen.queryAllByRole("link", { name: "Next merchants" })).toHaveLength(0);
+});
+
 test("merchant filtering is stable when the browser locale has special casing rules", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({

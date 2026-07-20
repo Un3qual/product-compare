@@ -1,28 +1,37 @@
-import { Suspense, type FormEvent, useEffect, useId, useMemo, useState } from "react";
-import { create, props } from "@stylexjs/stylex";
+import {
+  Suspense,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState
+} from "react";
+import { props } from "@stylexjs/stylex";
 import { useLazyLoadQuery, useMutation } from "react-relay";
+import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
+import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
 import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
 import type { SubmitProductReviewMutation } from "../../__generated__/SubmitProductReviewMutation.graphql";
-import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
-import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
+import { productCommunityStyles as styles } from "./product-community-styles";
 import answerProductQuestionMutation from "./queries/AnswerProductQuestionMutation";
 import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
 import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
 import submitProductReviewMutation from "./queries/SubmitProductReviewMutation";
 import {
-  acceptedAnswerAuthorLabel,
   appendUniqueCommunityItems,
   buildProductAnswerInput,
   buildProductQuestionInput,
   buildProductReviewInput,
   nextCommunityPageCursor,
-  publishedReviewRowDisplayData,
   publishedReviewSummary,
   resolveProductAnswerMutationMessage,
   resolveProductQuestionMutationMessage,
@@ -36,18 +45,7 @@ type CommunityProduct = NonNullable<ProductCommunityQuery["response"]["product"]
 type Review = CommunityProduct["reviews"]["edges"][number]["node"];
 type Question = CommunityProduct["questions"]["edges"][number]["node"];
 type Answer = Question["answers"]["edges"][number]["node"];
-
-const styles = create({
-  answer: { borderInlineStart: "2px solid var(--pc-border-quiet)", display: "grid", gap: "0.35rem", paddingInlineStart: "0.8rem" },
-  content: { display: "grid", gap: "1.25rem" },
-  field: { display: "grid", gap: "0.35rem" },
-  form: { display: "grid", gap: "0.75rem", maxWidth: "38rem" },
-  input: { backgroundColor: "var(--pc-surface)", border: "1px solid var(--pc-border-emphasized)", borderRadius: "0.4rem", color: "var(--pc-text)", minHeight: "2.6rem", padding: "0.65rem" },
-  item: { display: "grid", gap: "0.5rem" },
-  list: { display: "grid", gap: "1.2rem", listStyle: "none", margin: 0, padding: 0 },
-  metadata: { color: "var(--pc-text-secondary)", margin: 0 },
-  title: { fontSize: "1.25rem", margin: 0 }
-});
+type ViewerCommunitySubmissions = CommunityProduct["viewerCommunitySubmissions"];
 
 export function ProductCommunityPanel({
   productId,
@@ -59,10 +57,13 @@ export function ProductCommunityPanel({
   const {
     product,
     questions,
+    questionsAfter,
     reviews,
+    reviewsAfter,
     setQuestionsAfter,
     setReviewsAfter
-  } = useCommunityPages(productSlug);
+  } =
+    useCommunityPages(productSlug);
 
   if (!product) {
     return <p role="alert">Reviews and Q&amp;A unavailable.</p>;
@@ -70,14 +71,15 @@ export function ProductCommunityPanel({
 
   return (
     <section aria-label="Reviews and product questions" {...props(styles.content)}>
+      <OwnerSubmissionsSection submissions={product.viewerCommunitySubmissions} />
       <ReviewSection
-        onShowMore={nextCursor(product.reviews.pageInfo, setReviewsAfter)}
+        onShowMore={nextCursor(product.reviews.pageInfo, reviewsAfter, setReviewsAfter)}
         productId={productId}
         reviews={reviews}
         summary={product.reviewSummary}
       />
       <QuestionSection
-        onShowMore={nextCursor(product.questions.pageInfo, setQuestionsAfter)}
+        onShowMore={nextCursor(product.questions.pageInfo, questionsAfter, setQuestionsAfter)}
         productId={productId}
         questions={questions}
       />
@@ -115,7 +117,6 @@ function useCommunityPages(productSlug: string) {
   useEffect(() => {
     setLoadedReviews((current) => appendUniqueCommunityItems(current, pageReviews));
   }, [pageReviews]);
-
   useEffect(() => {
     setLoadedQuestions((current) => appendUniqueCommunityItems(current, pageQuestions));
   }, [pageQuestions]);
@@ -123,10 +124,61 @@ function useCommunityPages(productSlug: string) {
   return {
     product,
     questions: appendUniqueCommunityItems(loadedQuestions, pageQuestions),
+    questionsAfter,
     reviews: appendUniqueCommunityItems(loadedReviews, pageReviews),
+    reviewsAfter,
     setQuestionsAfter,
     setReviewsAfter
   };
+}
+
+function OwnerSubmissionsSection({
+  submissions
+}: {
+  submissions: ViewerCommunitySubmissions;
+}) {
+  const submissionCount =
+    submissions.reviews.length + submissions.questions.length + submissions.answers.length;
+
+  if (submissionCount === 0) return null;
+
+  return <section aria-label="Your non-public community submissions" {...props(styles.content)}>
+    <h2 {...props(styles.title)}>Your submissions</h2>
+    <p {...props(styles.metadata)}>Pending, hidden, and rejected content remains available to edit or remove.</p>
+    <OwnerReviewSubmissions reviews={submissions.reviews} />
+    <OwnerQuestionSubmissions questions={submissions.questions} />
+    <OwnerAnswerSubmissions answers={submissions.answers} />
+  </section>;
+}
+
+function OwnerReviewSubmissions({
+  reviews
+}: {
+  reviews: ViewerCommunitySubmissions["reviews"];
+}) {
+  return <ul aria-label="Your non-public reviews" {...props(styles.list)}>
+    {reviews.map((review) => <ReviewItem key={review.id} ownerView review={review} />)}
+  </ul>;
+}
+
+function OwnerQuestionSubmissions({
+  questions
+}: {
+  questions: ViewerCommunitySubmissions["questions"];
+}) {
+  return <ul aria-label="Your non-public questions" {...props(styles.list)}>
+    {questions.map((question) => <QuestionItem key={question.id} ownerView question={question} />)}
+  </ul>;
+}
+
+function OwnerAnswerSubmissions({
+  answers
+}: {
+  answers: ViewerCommunitySubmissions["answers"];
+}) {
+  return <ul aria-label="Your non-public answers" {...props(styles.list)}>
+    {answers.map((answer) => <li key={answer.id}><AnswerView answer={answer} ownerView /></li>)}
+  </ul>;
 }
 
 function ReviewSection({
@@ -143,6 +195,7 @@ function ReviewSection({
   const [commitReview, pending] = useMutation<SubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
   const ratingId = useId();
+  const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -150,29 +203,32 @@ function ReviewSection({
       const form = new FormData(event.currentTarget);
       const input = buildProductReviewInput({
         body: form.get("body"),
+        idempotencyKey: submissionKey.current(),
         productId,
         rating: form.get("rating"),
         title: form.get("title")
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input } });
-      const payload = response.submitProductReview;
-      setMessage(resolveProductReviewMutationMessage(payload, graphQLErrors));
-    } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
+      submissionKey.clear();
+      setMessage(resolveProductReviewMutationMessage(response.submitProductReview, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
   }
 
   return <section aria-labelledby="reviews-heading" {...props(styles.content)}>
     <h2 id="reviews-heading" {...props(styles.title)}>Reviews</h2>
     <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
-    <ul aria-label="Published product reviews" {...props(styles.list)}>{reviews.map((review) => {
-      const display = publishedReviewRowDisplayData(review);
-      return <li key={review.id} {...props(styles.item)}><strong>{display.title}</strong><span>{display.ratingStars}</span>{review.body ? <p>{review.body}</p> : null}<p {...props(styles.metadata)}>{display.authorCopy}</p></li>;
-    })}</ul>
+    <ul aria-label="Published product reviews" {...props(styles.list)}>
+      {reviews.map((review) => <ReviewItem key={review.id} review={review} />)}
+    </ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
       <label htmlFor={ratingId} {...props(styles.field)}>Rating<select id={ratingId} name="rating" defaultValue="5" {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
       <label {...props(styles.field)}>Title<input name="title" maxLength={120} {...props(styles.input)} /></label>
       <label {...props(styles.field)}>Review<textarea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
-      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>{message ? <p role="status">{message}</p> : null}
+      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>
+      {message ? <p role="status">{message}</p> : null}
     </form></details>
   </section>;
 }
@@ -188,6 +244,7 @@ function QuestionSection({
 }) {
   const [commitQuestion, pending] = useMutation<AskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -195,28 +252,39 @@ function QuestionSection({
       const form = new FormData(event.currentTarget);
       const input = buildProductQuestionInput({
         body: form.get("body"),
+        idempotencyKey: submissionKey.current(),
         productId,
         title: form.get("title")
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input } });
-      const payload = response.askProductQuestion;
-      setMessage(resolveProductQuestionMutationMessage(payload, graphQLErrors));
-    } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
+      submissionKey.clear();
+      setMessage(resolveProductQuestionMutationMessage(response.askProductQuestion, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
   }
 
   return <section aria-labelledby="questions-heading" {...props(styles.content)}>
     <h2 id="questions-heading" {...props(styles.title)}>Product Q&amp;A</h2>
-    {questions.length ? <ul aria-label="Published product questions" {...props(styles.list)}>{questions.map((question) => <li key={question.id} {...props(styles.item)}><strong>{question.title}</strong>{question.body ? <p>{question.body}</p> : null}<p {...props(styles.metadata)}>{question.authorLabel}</p><QuestionAnswers question={question} /><AnswerForm questionId={question.id} /></li>)}</ul> : <p>No published questions yet.</p>}
+    {questions.length ? <ul aria-label="Published product questions" {...props(styles.list)}>
+      {questions.map((question) => <QuestionItem key={question.id} question={question}>
+        <QuestionAnswers question={question} />
+        <AnswerForm questionId={question.id} />
+      </QuestionItem>)}
+    </ul> : <p>No published questions yet.</p>}
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more questions</Button> : null}
-    <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label><label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>
+    <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}>
+      <label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
+      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>
+      {message ? <p role="status">{message}</p> : null}
+    </form></details>
   </section>;
 }
 
 function QuestionAnswers({ question }: { question: Question }) {
   const answers = question.answers.edges.map(({ node }) => node);
-  const next = question.answers.pageInfo.hasNextPage
-    ? question.answers.pageInfo.endCursor
-    : null;
+  const next = nextCommunityPageCursor(question.answers.pageInfo);
   const [showMore, setShowMore] = useState(false);
 
   return <>
@@ -258,35 +326,61 @@ function AdditionalAnswers({
     setLoadedAnswers((current) => appendUniqueCommunityItems(current, pageAnswers));
   }, [pageAnswers]);
 
-  const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
-
+  const next = nextCommunityPageCursor(connection?.pageInfo, after);
   return <>
     {answers.map((answer) => <AnswerView acceptedAnswerId={acceptedAnswerId} answer={answer} key={answer.id} />)}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more answers</Button> : null}
   </>;
 }
 
-function AnswerView({
-  acceptedAnswerId,
-  answer
-}: {
-  acceptedAnswerId: string | null | undefined;
-  answer: Answer;
-}) {
-  return <div {...props(styles.answer)}><p>{answer.body}</p><p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p></div>;
-}
-
 function AnswerForm({ questionId }: { questionId: string }) {
   const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: buildProductAnswerInput({ questionId, body: form.get("body") }) } }); const payload = response.answerProductQuestion; setMessage(resolveProductAnswerMutationMessage(payload, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
-  return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>;
+  const submissionKey = useSubmissionKey();
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, {
+        variables: { input: buildProductAnswerInput({
+          questionId,
+          body: form.get("body"),
+          idempotencyKey: submissionKey.current()
+        }) }
+      });
+      submissionKey.clear();
+      setMessage(resolveProductAnswerMutationMessage(response.answerProductQuestion, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}>
+    <label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>
+    {message ? <p role="status">{message}</p> : null}
+  </form></details>;
+}
+
+function useSubmissionKey() {
+  const key = useRef<string | null>(null);
+  const current = useCallback(() => {
+    key.current ??= crypto.randomUUID();
+    return key.current;
+  }, []);
+  const clear = useCallback(() => {
+    key.current = null;
+  }, []);
+
+  return useMemo(() => ({ clear, current }), [clear, current]);
 }
 
 function nextCursor(
   pageInfo: { readonly endCursor: string | null | undefined; readonly hasNextPage: boolean },
+  currentAfter: string | null,
   setAfter: (cursor: string) => void
 ) {
-  const cursor = nextCommunityPageCursor(pageInfo);
+  const cursor = nextCommunityPageCursor(pageInfo, currentAfter);
   return cursor ? () => setAfter(cursor) : null;
 }

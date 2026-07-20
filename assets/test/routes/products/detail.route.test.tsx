@@ -713,7 +713,8 @@ test("loads bounded community data only when the Reviews & Q&A tab is opened", (
       id: DETAIL_PRODUCT.id,
       reviewSummary: { count: 0, averageRating: null },
       reviews: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
-      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } }
+      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
 
@@ -1289,6 +1290,28 @@ test("does not render offer pagination links when no additional offers page exis
   );
 
   expect(screen.queryByRole("link", { name: "First offers" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
+});
+
+test("does not render a repeated next-offers cursor as a self-link", () => {
+  const offersDescriptorWithAfter = makeOffersQueryDescriptor("same-cursor");
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+    offers: { status: "ready", query: offersDescriptorWithAfter }
+  });
+  mockRouteQueryRefs(offersDescriptorWithAfter);
+  mockProductAndOffersQueries(
+    buildOffersData([], { hasNextPage: true, endCursor: "same-cursor" })
+  );
+
+  render(
+    <MemoryRouter initialEntries={["/products/detail-product?offersAfter=same-cursor"]}>
+      <ProductDetailRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("link", { name: "First offers" })).toBeVisible();
   expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
 });
 

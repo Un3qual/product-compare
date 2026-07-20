@@ -2,17 +2,19 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: grouped into the cursor forward-progress batch
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
 - Last verified: 2026-07-17 after current source inspection and 23 passing
   product-community data and panel tests.
-- Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
+- Plan: `docs/superpowers/plans/2026-07-18-coherent-frontend-correctness-batches.md`
 
 ## Product Community Answer Pagination Cursor Data Contract
 
-- Status: ready on 2026-07-17.
+- Status: retained as an internal slice of
+  `docs/work/frontend-cursor-forward-progress.md`; it is not a standalone queue
+  row.
 - Next action: project initial and advancing answer-page cursors from page
   information and the cursor that produced the current page.
 - Candidate evidence: `ProductCommunityPanel` derives answer cursors in two

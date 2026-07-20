@@ -11,7 +11,7 @@ defmodule ProductCompareSchemas.Discussions.ProductReview do
     field :verified_purchase, :boolean
 
     field :moderation_status, Ecto.Enum,
-      values: [:pending, :published, :hidden, :rejected],
+      values: [:pending, :published, :hidden, :rejected, :removed],
       default: :pending
 
     field :moderation_note, :string

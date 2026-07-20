@@ -1,4 +1,5 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
+import { nextRelayPageCursor } from "../../relay-pagination";
 import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
@@ -102,6 +103,32 @@ export function buildApiTokenDisplayData(token: ApiTokenRecord) {
   };
 }
 
+export function buildApiTokenActionPolicy(
+  token: ApiTokenRecord,
+  {
+    revokePending,
+    rotatePending
+  }: {
+    readonly revokePending: boolean;
+    readonly rotatePending: boolean;
+  }
+) {
+  const disabled = revokePending || rotatePending;
+
+  return {
+    revoke: {
+      copy: revokePending ? "Revoking token..." : "Revoke token",
+      disabled,
+      visible: token.revokedAt === null
+    },
+    rotate: {
+      copy: rotatePending ? "Rotating token..." : "Rotate token",
+      disabled,
+      visible: apiTokenIsActive(token)
+    }
+  };
+}
+
 export function apiTokensRouteLocationIdentity(loaderData: ApiTokensRouteIdentityData) {
   const searchParams = new URLSearchParams({ status: loaderData.tokenStatus });
 
@@ -151,11 +178,13 @@ export function buildApiTokenPaginationData({
   readonly hasNextPage: boolean;
   readonly tokenStatus: ApiTokenStatus;
 }) {
+  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, after);
+
   return {
     firstHref: after ? apiTokenPagePath(tokenStatus, null) : null,
     nextHref:
-      hasNextPage && endCursor
-        ? apiTokenPagePath(tokenStatus, endCursor)
+      nextCursor
+        ? apiTokenPagePath(tokenStatus, nextCursor)
         : null
   };
 }

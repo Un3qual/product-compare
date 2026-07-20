@@ -9,6 +9,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-05-frontend-fullstack-design.md`
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
+- `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 
 ## Active Plan Catalog
 
@@ -33,9 +34,8 @@ The 2026-07-13 Product Trust and Discovery program is complete. It expanded the
 data-product boundary with canonical specification-rich ingestion, complete
 and fresh offers, durable ingestion, watches and in-app alerts, public
 comparison snapshots, source-backed recommendations, provenance/corrections,
-reviews and Q&A, merchant pages, and SEO/acquisition surfaces. The live queue
-now carries bounded frontend maintainability follow-ups over those completed
-truth contracts.
+reviews and Q&A, merchant pages, and SEO/acquisition surfaces. The 2026-07-20
+cross-stack correctness program over those contracts is also complete.
 
 The user-selected 2026-07-11 bounded-filter, route-foundation, and route-
 decomposition batch is complete with full frontend verification. The requested
@@ -88,10 +88,27 @@ Discovery Scope Badge are also complete. Product Review Row Display is also
 complete. API Token Status Badge and Price Watch Amount Field are also
 complete. Route Metadata Tag Policy is also complete. Affiliate Merchant
 Context Copy, API Token Lifecycle Action Policy, and Product Community Answer
-Pagination Cursor are the current ready successors in the live queue.
+Pagination Cursor were regrouped before execution on 2026-07-18 because they
+were implementation slices rather than independently shippable batches. Those
+frontend slices were curated with live backend findings and completed inside
+seven domain-oriented outcomes on 2026-07-20. Strict temporal and row-scoped
+action work remains recorded in the alert and comparison lane docs rather than
+being promoted again.
+
+A fresh post-completion resolver audit found three coherent backend outcomes:
+bounded product evidence/SEO reads, bounded public community connections, and
+bounded product-offer/coupon/history connections. These replace the completed
+seven rows in the live queue. Specification-correction lists were not promoted
+because their claim trees are already preloaded. The formerly optional loaded-
+price copy, loaded-product picker filter, visible-page merchant filter, wildcard
+404, and route metadata work were also verified as already implemented and are
+not candidate work.
 
 Active implementation plans:
 
+- `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -102,7 +119,9 @@ Active implementation plans:
 
 These plans are dispatched only from `docs/work/index.md`. Three is the live
 queue floor, not a catalog cap; the catalog may retain every additional useful
-validated candidate.
+validated candidate. Internal slices, per-route steps, and milestone commits do
+not count as separate candidates or ready rows; batch coherence takes priority
+over requested counts and replenishment depth.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -119,12 +138,22 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Product comparison: disclose that relative price uses already-loaded offers,
-  then add a local name filter over already-loaded picker products. These plans
-  share test and lane paths and execute serially.
-- Merchant discovery: add a local merchant-name filter explicitly scoped to the
-  visible Relay page.
-- Route foundations: add a real wildcard 404 and shared route document metadata.
+- Current backend read-budget program: product evidence/SEO, public community
+  connections, and product-offer/coupon/history connections execute through the
+  three active 2026-07-20 plans above. They are reviewer-sized domain outcomes;
+  their set-based context, Dataloader, and query-budget steps remain internal
+  slices rather than separate queue rows.
+- Completed cross-stack program: the seven domain-oriented outcomes completed
+  through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
+  frontend plan is retained as superseded grouping evidence, not an active
+  dispatch source. Affiliate merchant-copy, API-token lifecycle-action, strict
+  temporal, row-scoped action, and community answer-cursor docs remain slice
+  evidence and must not be promoted again as standalone rows.
+- Completed optional shopper polish: loaded-price scope copy, the loaded-product
+  compare-picker filter, and the visible-page merchant-name filter are present
+  in current source and tests. Their dated plans are complete, not candidates.
+- Completed route foundations: wildcard 404 and shared route document metadata
+  are present and must not be promoted again without fresh scope.
 - Completed reserve: API-token item presentation, product-detail offer-list
   presentation, root destinations, and the compare picker view are complete
   through `docs/superpowers/plans/2026-07-12-next-presentation-boundaries.md`;
@@ -196,6 +225,13 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
+  lifecycle reliability, community content lifecycle, Relay cursor forward
+  progress, bounded merchant GraphQL reads, account/setup interaction contracts,
+  and comparison interaction correctness. Their implementation plans and lane
+  evidence remain dated 2026-07-20 and must not be promoted again without fresh
+  source validation.
 
 - Frontend comparison-snapshot, product-community, price-alert, and API-token
   route data contracts:

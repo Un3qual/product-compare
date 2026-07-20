@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../relay-pagination";
+
 export type CategorySpecificationHighlight = {
   attributeId: string;
   displayName: string;
@@ -26,7 +28,10 @@ export type CategoryViewDataInput = {
   };
 };
 
-export function getCategoryViewData(category: CategoryViewDataInput) {
+export function getCategoryViewData(
+  category: CategoryViewDataInput,
+  currentAfter: string | null = null
+) {
   return {
     title: `Compare ${category.name}`,
     qualificationCopy: `${category.qualifiedProductCount} products currently meet this category’s specification, content, and offer-quality threshold.`,
@@ -38,14 +43,14 @@ export function getCategoryViewData(category: CategoryViewDataInput) {
       brandName: node.brand?.name ?? "Unknown brand",
       specificationHighlights: node.currentAttributes.slice(0, 3)
     })),
-    nextPagePath: categoryNextPagePath(category)
+    nextPagePath: categoryNextPagePath(category, currentAfter)
   };
 }
 
-function categoryNextPagePath(category: CategoryViewDataInput) {
-  const { endCursor, hasNextPage } = category.products.pageInfo;
+function categoryNextPagePath(category: CategoryViewDataInput, currentAfter: string | null) {
+  const nextCursor = nextRelayPageCursor(category.products.pageInfo, currentAfter);
 
-  return hasNextPage && endCursor
-    ? `/categories/${encodeURIComponent(category.slug)}?after=${encodeURIComponent(endCursor)}`
+  return nextCursor
+    ? `/categories/${encodeURIComponent(category.slug)}?after=${encodeURIComponent(nextCursor)}`
     : null;
 }

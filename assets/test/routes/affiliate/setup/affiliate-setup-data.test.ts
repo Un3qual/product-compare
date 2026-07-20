@@ -5,6 +5,7 @@ import {
   buildNetworkVariables,
   buildProgramVariables,
   couponDiscountText,
+  getAffiliateMerchantContext,
   getMerchantChoiceById,
   getMerchantSummary,
   resolveAffiliateCouponMutationOutcome,
@@ -116,6 +117,26 @@ test("merchant selection and summaries return the matched choice or no summary",
   expect(getMerchantChoiceById(merchantChoices, "missing")).toBeUndefined();
   expect(getMerchantSummary(FIRST_MERCHANT)).toBe("Acme Market (acme.example)");
   expect(getMerchantSummary()).toBeNull();
+});
+
+test("affiliate merchant context owns the selected and current merchant copy", () => {
+  const merchantChoices = [FIRST_MERCHANT];
+
+  expect(getAffiliateMerchantContext(merchantChoices, FIRST_MERCHANT.id)).toEqual({
+    currentMerchantCopy: "Current merchant: Acme Market (acme.example)",
+    selectedMerchantCopy: "Selected merchant: Acme Market (acme.example)",
+    selectedMerchantValue: FIRST_MERCHANT.id
+  });
+  expect(getAffiliateMerchantContext(merchantChoices, "missing")).toEqual({
+    currentMerchantCopy: "Current merchant: Acme Market (acme.example)",
+    selectedMerchantCopy: "Selected merchant: Acme Market (acme.example)",
+    selectedMerchantValue: FIRST_MERCHANT.id
+  });
+  expect(getAffiliateMerchantContext([], "missing")).toEqual({
+    currentMerchantCopy: null,
+    selectedMerchantCopy: null,
+    selectedMerchantValue: ""
+  });
 });
 
 test("buildNetworkVariables trims the required network name", () => {

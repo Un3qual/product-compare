@@ -1057,6 +1057,84 @@ test("compare loader does not paginate offer context past the first page", async
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
 
+test("compare loader excludes invalid observations and compares explicit offsets chronologically", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.com/compare?slug=detail-product");
+  const connection = buildOfferContextConnection({
+    offers: [
+      {
+        id: "merchant-product-first-valid",
+        currency: "USD",
+        merchant: { id: "merchant-first", name: "First Merchant" },
+        latestPrice: {
+          id: "price-first-valid",
+          price: "200",
+          observedAt: "2026-06-30T01:00:00+02:00"
+        },
+        priceHistory: {
+          edges: [
+            {
+              node: {
+                id: "history-impossible",
+                price: "201",
+                observedAt: "2026-02-30T10:15:00Z"
+              }
+            },
+            {
+              node: {
+                id: "history-missing-offset",
+                price: "202",
+                observedAt: "2999-06-29T10:15:00"
+              }
+            }
+          ],
+          pageInfo: { hasNextPage: false }
+        }
+      },
+      {
+        id: "merchant-product-latest-valid",
+        currency: "USD",
+        merchant: { id: "merchant-latest", name: "Latest Merchant" },
+        latestPrice: {
+          id: "price-latest-valid",
+          price: "199",
+          observedAt: "2026-06-29T20:30:00-04:00"
+        },
+        priceHistory: {
+          edges: [
+            {
+              node: {
+                id: "history-malformed",
+                price: "203",
+                observedAt: "not-a-timestamp"
+              }
+            }
+          ],
+          pageInfo: { hasNextPage: false }
+        }
+      }
+    ]
+  });
+
+  mockedFetchRouteQuery.mockResolvedValueOnce(
+    buildFetchedCompareRouteQuery({
+      products: [DETAIL_PRODUCT],
+      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]])
+    })
+  );
+
+  await expect(
+    compareLoader(buildCompareLoaderArgs({ environment, request }))
+  ).resolves.toMatchObject({
+    status: "ready",
+    offerContexts: {
+      [DETAIL_PRODUCT.id]: {
+        latestPriceObservedAt: "2026-06-29T20:30:00-04:00"
+      }
+    }
+  });
+});
+
 test("compare loader does not choose a best current price across mixed currencies", async () => {
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare?slug=detail-product");
@@ -1575,6 +1653,26 @@ test("product picker can advance beyond the first picker page", () => {
     "href",
     "/compare?slug=monitor-c"
   );
+});
+
+test("product picker stops when the next page repeats the current cursor", async () => {
+  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
+  mockedUseLazyLoadQuery.mockImplementation(() => ({
+    products: {
+      edges: [],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "next-products"
+      }
+    }
+  }));
+
+  renderCompareRoute();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+
+  await waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Show more products" })).not.toBeInTheDocument();
+  });
 });
 
 test("product picker keeps previous products visible when loading another page", () => {

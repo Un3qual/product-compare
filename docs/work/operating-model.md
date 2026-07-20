@@ -39,6 +39,46 @@ Every live queue row must answer these questions:
   lane?
 
 If any answer is missing, the row is not `ready`.
+`mix work_queue.validate` enforces the complete handoff, including a non-empty
+`Batch outcome` and at least one `Internal slices` item.
+
+## Batch And Slice Granularity
+
+A queue row is the smallest independently shippable outcome that deserves its
+own reviewer decision. It is not the smallest edit an agent can make.
+
+- Group changes when they enforce the same invariant, share one acceptance
+  boundary, and would normally be approved or rejected together.
+- Frontend and backend are implementation layers, not separate queues. Group
+  cross-stack slices when they close one lifecycle invariant—for example,
+  fault-isolated alert evaluation plus truthful alert presentation—but keep
+  unrelated backend ingestion and frontend account policy as separate rows.
+- Put per-surface, per-file, or path-disjoint work under `Internal slices` in
+  the batch plan and lane doc. Use focused test cycles and milestone commits
+  for those slices without promoting each slice as a separate queue row.
+- Parallel-safe ownership makes internal slices eligible for concurrent
+  execution; it does not by itself make them separate product or engineering
+  batches.
+- Split a candidate only when its parts have materially different outcomes,
+  prerequisites, failure modes, rollback boundaries, or reviewer decisions.
+- Do not distinguish queue rows only by helper, component, route, file, or test
+  suite when one cross-surface invariant explains all of them.
+- When a user requests a numeric batch count, return fewer batches if only a
+  smaller coherent set is source-backed. Never manufacture micro-batches to
+  satisfy the number.
+- The ready-work floor never overrides batch coherence. If the catalog cannot
+  supply three coherent batches, record the coordinator or product decision
+  needed to replenish it instead of subdividing implementation steps.
+
+Before promotion, the coordinator should be able to answer both questions:
+
+1. What independently shippable outcome does this row deliver?
+2. Could a reviewer reasonably approve this row while rejecting its nearest
+   candidate? If not, group them.
+
+The same test applies across lanes. A frontend-only queue is valid only when a
+live source/contract audit finds no ready backend outcome; lane labels alone are
+never evidence that the backend has no work.
 
 ## Continuously Replenished Ready Work
 
@@ -60,6 +100,8 @@ If any answer is missing, the row is not `ready`.
   plans; and validate them before dispatch resumes.
 - Do not create filler work or promote deferred, rejected, blocked, dependent,
   speculative, stale, or unverified candidates.
+- Do not count internal plan slices, per-file steps, or milestone commits as
+  separate ready rows.
 - Rows may execute in parallel only when their owned paths and lane work docs do
   not overlap.
 
@@ -94,6 +136,7 @@ A useful plan includes:
 - constraints and non-goals
 - owned paths
 - 1 to 5 batches
+- internal slices for focused test cycles, ownership, and milestone commits
 - verification commands
 - blocker and fallback rules
 
@@ -103,6 +146,8 @@ A plan should not include:
 - repeated source code that an implementer should derive from the codebase
 - checkbox status that must be kept in sync with the live queue
 - broad "scan everything" instructions
+- one nominal batch per helper, component, route, file, or test suite when the
+  work shares one invariant and acceptance boundary
 - coordinator-owned docs as worker-owned files unless the row is explicitly a
   coordinator row
 
@@ -114,8 +159,10 @@ Ready row handoff:
 Status: ready
 Lane:
 Plan:
+Batch outcome:
 Next action:
 Owned paths:
+Internal slices:
 Prerequisites:
 Verification:
 Exit condition:
@@ -168,5 +215,8 @@ Next row promoted:
   preserve at least three complete `ready` implementation rows.
 - When the catalog cannot preserve the floor, validate new candidates from
   current product and code evidence before another worker claims work.
+- Apply the batch-and-slice test before promotion. A replenishment update that
+  turns one shared invariant into several route- or file-sized rows is invalid
+  curation even if every row is otherwise executable.
 - If a selected row requires files outside its owned paths, stop and record a
   blocker instead of widening scope silently.

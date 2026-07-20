@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
@@ -135,6 +135,106 @@ test("ShareComparisonControl manages snapshots discovered after a reload", async
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { snapshotId: "snapshot-existing" } })));
   await act(async () => revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({ revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-existing", errors: [] } }, []));
   expect(screen.queryByRole("link", { name: "Existing shortlist" })).not.toBeInTheDocument();
+});
+
+test("ShareComparisonControl scopes revoke pending and failure state to one snapshot row", async () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    viewer: {
+      comparisonSnapshots: {
+        edges: [
+          {
+            node: {
+              id: "snapshot-first",
+              sharePath: "/compare/shared/first-token",
+              title: "First shortlist"
+            }
+          },
+          {
+            node: {
+              id: "snapshot-second",
+              sharePath: "/compare/shared/second-token",
+              title: "Second shortlist"
+            }
+          }
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false }
+      }
+    }
+  } as never);
+
+  render(<MemoryRouter><ShareComparisonControl products={[
+    { id: "product-1", name: "First", slug: "first", description: null, brandName: null, currentAttributes: [] },
+    { id: "product-2", name: "Second", slug: "second", description: null, brandName: null, currentAttributes: [] }
+  ]} /></MemoryRouter>);
+
+  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+
+  const firstLink = await screen.findByRole("link", { name: "First shortlist" });
+  const secondLink = screen.getByRole("link", { name: "Second shortlist" });
+  const firstRow = firstLink.closest("li");
+  const secondRow = secondLink.closest("li");
+
+  expect(firstRow).not.toBeNull();
+  expect(secondRow).not.toBeNull();
+
+  if (!firstRow || !secondRow) {
+    throw new Error("Expected both saved snapshot rows to be rendered");
+  }
+
+  const firstButton = within(firstRow).getByRole("button", {
+    name: "Revoke public link: First shortlist"
+  });
+  const secondButton = within(secondRow).getByRole("button", {
+    name: "Revoke public link: Second shortlist"
+  });
+
+  fireEvent.click(firstButton);
+
+  await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(1));
+  expect(firstButton).toBeDisabled();
+  expect(firstButton).toHaveTextContent("Revoking…");
+  expect(secondButton).not.toBeDisabled();
+  expect(secondButton).toHaveTextContent("Revoke public link");
+
+  fireEvent.click(firstButton);
+  expect(revokeMutationMock).toHaveBeenCalledTimes(1);
+
+  await act(() => {
+    revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({
+      revokeComparisonSnapshot: {
+        revokedSnapshotId: null,
+        errors: [{
+          code: "INVALID_ARGUMENT",
+          field: "snapshotId",
+          message: "First snapshot cannot be revoked."
+        }]
+      }
+    }, []);
+  });
+
+  expect(within(firstRow).getByRole("alert")).toHaveTextContent(
+    "First snapshot cannot be revoked."
+  );
+  expect(firstButton).not.toBeDisabled();
+  expect(firstButton).toHaveTextContent("Revoke public link");
+  expect(within(secondRow).queryByRole("alert")).not.toBeInTheDocument();
+  expect(secondButton).not.toBeDisabled();
+
+  fireEvent.click(firstButton);
+  await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(2));
+
+  await act(() => {
+    revokeMutationMock.mock.calls[1]?.[0]?.onCompleted({
+      revokeComparisonSnapshot: {
+        revokedSnapshotId: "snapshot-first",
+        errors: []
+      }
+    }, []);
+  });
+
+  expect(screen.queryByRole("link", { name: "First shortlist" })).not.toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Second shortlist" })).toBeInTheDocument();
+  expect(secondButton).not.toBeDisabled();
 });
 
 test("ShareComparisonControl reaches snapshots beyond the first page", async () => {

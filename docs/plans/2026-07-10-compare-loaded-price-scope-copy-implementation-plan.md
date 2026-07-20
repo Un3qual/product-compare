@@ -1,6 +1,6 @@
 # Compare Loaded-Price Scope Copy Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Make the relative-price signal explicit that it compares only the
 offers already loaded for the selected products.

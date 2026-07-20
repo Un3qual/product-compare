@@ -190,6 +190,26 @@ test("affiliate setup route hides merchant-choice pagination without valid desti
   expect(screen.queryByRole("navigation", { name: "Merchant choice pages" })).not.toBeInTheDocument();
 });
 
+test("affiliate setup route suppresses repeated and blank merchant cursors", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData(AFFILIATE_SETUP_QUERY_DESCRIPTOR, {
+      first: 35,
+      after: "same-cursor"
+    })
+  );
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildAffiliateSetupData({
+      hasNextPage: true,
+      hasPreviousPage: true,
+      endCursor: "same-cursor"
+    }) as never
+  );
+
+  renderAffiliateSetupRoute();
+  expect(screen.getByRole("link", { name: "First merchants" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Next merchants" })).not.toBeInTheDocument();
+});
+
 test("affiliate setup forms preserve submission callbacks and controlled merchant selections", () => {
   const onNetworkSubmit = vi.fn();
   const onProgramSubmit = vi.fn();
@@ -219,7 +239,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onProgramSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
       <AffiliateLinkForm
@@ -227,7 +247,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onLinkSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
       />
       <AffiliateCouponForm
         error={null}
@@ -236,7 +256,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onCouponSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
     </>

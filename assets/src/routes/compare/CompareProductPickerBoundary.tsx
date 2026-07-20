@@ -77,7 +77,7 @@ function CompareProductPicker({
   );
   const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
-  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo);
+  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo, after);
   const options = buildComparePickerOptions(
     availableProducts,
     selectedSlugs,

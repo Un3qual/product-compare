@@ -21,10 +21,35 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert Enum.any?(errors, &String.contains?(&1, "missing Prerequisites:"))
   end
 
+  test "requires a shippable batch outcome and at least one internal slice" do
+    without_outcome =
+      String.replace(
+        queue_with_rows(3),
+        "Batch outcome: Candidate 1 ships a reviewer-sized outcome.\n",
+        "",
+        global: false
+      )
+
+    assert {:error, outcome_errors} = Validator.validate(without_outcome)
+    assert "ready row 1 is missing Batch outcome:" in outcome_errors
+
+    without_slices =
+      String.replace(
+        queue_with_rows(3),
+        "Internal slices:\n- Slice 1.\n",
+        "Internal slices:\n",
+        global: false
+      )
+
+    assert {:error, slice_errors} = Validator.validate(without_slices)
+    assert "ready row 1 has no items under Internal slices:" in slice_errors
+  end
+
   test "rejects required scalar fields with empty values" do
     for {field, populated_line} <- [
           {"Lane:", "Lane: Lane 1"},
           {"Plan:", "Plan: `docs/plans/candidate-1.md`"},
+          {"Batch outcome:", "Batch outcome: Candidate 1 ships a reviewer-sized outcome."},
           {"Next action:", "Next action: Implement candidate 1."},
           {"Exit condition:", "Exit condition: Candidate 1 passes verification."}
         ] do
@@ -38,6 +63,7 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
   test "rejects required list fields without a non-empty item" do
     for {field, populated_section} <- [
           {"Owned paths:", "Owned paths:\n- `path/1`\n"},
+          {"Internal slices:", "Internal slices:\n- Slice 1.\n"},
           {"Prerequisites:", "Prerequisites:\n- None.\n"},
           {"Verification:", "Verification:\n- `mix test`\n"}
         ] do
@@ -74,9 +100,12 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
         Status: ready
         Lane: Lane #{index}
         Plan: `docs/plans/candidate-#{index}.md`
+        Batch outcome: Candidate #{index} ships a reviewer-sized outcome.
         Next action: Implement candidate #{index}.
         Owned paths:
         - `path/#{index}`
+        Internal slices:
+        - Slice #{index}.
         Prerequisites:
         - None.
         Verification:

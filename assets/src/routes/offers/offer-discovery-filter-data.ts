@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../relay-pagination";
+
 export const DEFAULT_OFFERS_PAGE_SIZE = 6;
 
 export const OFFER_DISCOVERY_SORT_OPTIONS = [
@@ -118,14 +120,19 @@ export function buildOfferDiscoveryPaginationData({
   readonly hasNextPage: boolean;
   readonly hasPreviousPage: boolean;
 }) {
+  const nextCursor = nextRelayPageCursor(
+    { endCursor, hasNextPage },
+    filters.after
+  );
+
   return {
     firstHref:
       hasPreviousPage && filters.after
         ? offerDiscoveryPath(filters, null)
         : null,
     nextHref:
-      hasNextPage && endCursor
-        ? offerDiscoveryPath(filters, endCursor)
+      nextCursor
+        ? offerDiscoveryPath(filters, nextCursor)
         : null
   };
 }

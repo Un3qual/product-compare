@@ -2,6 +2,7 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
+import { nextRelayPageCursor, type RelayPageInfo } from "../relay-pagination";
 
 type CommunityMutationPayload = {
   readonly errors?: unknown;
@@ -64,13 +65,63 @@ export function resolveProductAnswerMutationMessage(
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
 
+export function resolveProductReviewUpdateMessage(
+  payload: (CommunityMutationPayload & { readonly review?: unknown }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveCommunityMutationMessage(
+    payload?.review,
+    payload?.errors,
+    graphQLErrors,
+    "Review updated and submitted for moderation."
+  );
+}
+
+export function resolveProductQuestionUpdateMessage(
+  payload: (CommunityMutationPayload & { readonly question?: unknown }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveCommunityMutationMessage(
+    payload?.question,
+    payload?.errors,
+    graphQLErrors,
+    "Question updated and submitted for moderation."
+  );
+}
+
+export function resolveProductAnswerUpdateMessage(
+  payload: (CommunityMutationPayload & { readonly answer?: unknown }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveCommunityMutationMessage(
+    payload?.answer,
+    payload?.errors,
+    graphQLErrors,
+    "Answer updated and submitted for moderation."
+  );
+}
+
+export function resolveCommunityContentRemovalMessage(
+  payload: (CommunityMutationPayload & { readonly removedContentId?: unknown }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null
+) {
+  return resolveCommunityMutationMessage(
+    payload?.removedContentId,
+    payload?.errors,
+    graphQLErrors,
+    "Community content removed."
+  );
+}
+
 export function buildProductReviewInput({
   body: rawBody,
+  idempotencyKey,
   productId,
   rating,
   title: rawTitle
 }: {
   body: unknown;
+  idempotencyKey: string;
   productId: string;
   rating: unknown;
   title: unknown;
@@ -79,6 +130,7 @@ export function buildProductReviewInput({
   const title = normalizedCommunityText(rawTitle);
 
   return {
+    idempotencyKey,
     productId,
     rating: Number(rating),
     ...(title ? { title } : {}),
@@ -88,16 +140,19 @@ export function buildProductReviewInput({
 
 export function buildProductQuestionInput({
   body: rawBody,
+  idempotencyKey,
   productId,
   title
 }: {
   body: unknown;
+  idempotencyKey: string;
   productId: string;
   title: unknown;
 }) {
   const body = normalizedCommunityText(rawBody);
 
   return {
+    idempotencyKey,
     productId,
     title: normalizedCommunityText(title),
     ...(body ? { body } : {})
@@ -106,14 +161,17 @@ export function buildProductQuestionInput({
 
 export function buildProductAnswerInput({
   body,
+  idempotencyKey,
   questionId
 }: {
   body: unknown;
+  idempotencyKey: string;
   questionId: string;
 }) {
   return {
-    questionId,
-    body: normalizedCommunityText(body)
+    body: normalizedCommunityText(body),
+    idempotencyKey,
+    questionId
   };
 }
 
@@ -139,14 +197,11 @@ export function acceptedAnswerAuthorLabel(
     : authorLabel;
 }
 
-export function nextCommunityPageCursor({
-  endCursor,
-  hasNextPage
-}: {
-  readonly endCursor: string | null | undefined;
-  readonly hasNextPage: boolean;
-}) {
-  return hasNextPage && endCursor ? endCursor : null;
+export function nextCommunityPageCursor(
+  pageInfo: RelayPageInfo | null | undefined,
+  currentAfter: string | null = null
+) {
+  return nextRelayPageCursor(pageInfo, currentAfter);
 }
 
 export function appendUniqueCommunityItems<T extends { readonly id: string }>(
@@ -172,4 +227,15 @@ export function appendUniqueCommunityItems<T extends { readonly id: string }>(
 
 function normalizedCommunityText(value: unknown) {
   return String(value ?? "").trim();
+}
+
+function resolveCommunityMutationMessage(
+  completion: unknown,
+  errors: unknown,
+  graphQLErrors: readonly unknown[] | null | undefined,
+  successMessage: string
+) {
+  return completion && !hasRouteGraphQLErrors(graphQLErrors)
+    ? successMessage
+    : routeMutationErrorMessage(errors, graphQLErrors);
 }

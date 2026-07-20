@@ -90,7 +90,7 @@ export function AffiliateProgramForm({
   onSubmit,
   pending,
   result,
-  selectedMerchantSummary,
+  selectedMerchantCopy,
   selectedMerchantValue
 }: {
   affiliateNetworkId: string;
@@ -101,13 +101,13 @@ export function AffiliateProgramForm({
   onSubmit: FormEventHandler<HTMLFormElement>;
   pending: boolean;
   result: ProgramResult | null;
-  selectedMerchantSummary: string | null;
+  selectedMerchantCopy: string | null;
   selectedMerchantValue: string;
 }): ReactElement {
   return (
     <form aria-label="Save affiliate program" method="post" onSubmit={onSubmit} {...props(styles.form)}>
       <h2>Program</h2>
-      {selectedMerchantSummary ? <p>{`Selected merchant: ${selectedMerchantSummary}`}</p> : null}
+      {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <label>
         Affiliate network ID
         <TextField
@@ -151,18 +151,18 @@ export function AffiliateLinkForm({
   onSubmit,
   pending,
   result,
-  selectedMerchantSummary
+  selectedMerchantCopy
 }: {
   error: string | null;
   onSubmit: FormEventHandler<HTMLFormElement>;
   pending: boolean;
   result: LinkResult | null;
-  selectedMerchantSummary: string | null;
+  selectedMerchantCopy: string | null;
 }): ReactElement {
   return (
     <form aria-label="Save affiliate link" method="post" onSubmit={onSubmit} {...props(styles.form)}>
       <h2>Link</h2>
-      {selectedMerchantSummary ? <p>{`Selected merchant: ${selectedMerchantSummary}`}</p> : null}
+      {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <label>
         Merchant product ID
         <TextField autoComplete="off" name="merchantProductId" type="text" />
@@ -204,7 +204,7 @@ export function AffiliateCouponForm({
   onSubmit,
   pending,
   result,
-  selectedMerchantSummary,
+  selectedMerchantCopy,
   selectedMerchantValue
 }: {
   error: string | null;
@@ -213,13 +213,13 @@ export function AffiliateCouponForm({
   onSubmit: FormEventHandler<HTMLFormElement>;
   pending: boolean;
   result: CouponResult | null;
-  selectedMerchantSummary: string | null;
+  selectedMerchantCopy: string | null;
   selectedMerchantValue: string;
 }): ReactElement {
   return (
     <form aria-label="Create affiliate coupon" method="post" onSubmit={onSubmit} {...props(styles.form)}>
       <h2>Coupon</h2>
-      {selectedMerchantSummary ? <p>{`Selected merchant: ${selectedMerchantSummary}`}</p> : null}
+      {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <MerchantSelect
         label="Coupon merchant"
         merchantChoices={merchantChoices}

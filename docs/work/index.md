@@ -13,6 +13,14 @@ For the operating rules, prompt templates, and handoff format, read
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
+- A queue row is one independently shippable and reviewable outcome. Per-file,
+  per-route, path-disjoint, or test-sized implementation steps belong under
+  internal slices in the linked plan and lane doc.
+- Group candidates that enforce the same invariant and share one acceptance
+  boundary. Parallel safety alone does not justify separate queue rows.
+- Numeric batch requests and the ready-row floor never justify micro-batches or
+  filler. Return fewer coherent batches and record the missing decision when
+  the repository does not support the requested count.
 - Before a claim would leave fewer than three other ready rows, the coordinator
   validates and promotes more work in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
@@ -32,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-17
+Updated: 2026-07-20
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1117,20 +1125,490 @@ cursor again instead of requiring forward progress. The pure and panel suites
 pass 23 tests. The successor is path-disjoint from route metadata tag policy,
 affiliate merchant context copy, and API-token lifecycle action policy data.
 
+On 2026-07-18, coordinator review found that the rolling reserve had confused
+parallel-safe implementation slices with independently shippable batches. The
+three unclaimed micro-rows and their validated follow-up evidence were regrouped
+into four reviewer-sized outcomes: account/setup presentation contracts,
+cross-surface cursor forward-progress hardening, strict temporal presentation,
+and row-scoped asynchronous action state. The former rows remain lane evidence
+only. `AGENTS.md`, the operating model, plan guidance, and coordinator prompt
+now require internal slices to stay inside their parent batch and prohibit
+subdivision merely to satisfy a numeric request or the ready-row floor. The
+queue validator enforces the batch outcome and internal-slice fields.
+
+On 2026-07-20, a live source/contract audit found three immediately executable
+backend correctness outcomes and one policy-gated community lifecycle outcome.
+The community policy was approved, and all backend plus existing frontend work
+was regrouped into seven domain-oriented rows. Those seven outcomes are now
+complete. A fresh resolver/query audit replenished the shared queue with three
+backend read-budget outcomes: product evidence/SEO, public community
+connections, and product-offer/coupon/history connections. Already-implemented
+frontend polish and preloaded specification corrections were not re-promoted.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Affiliate Merchant Context Copy Data Contract
+### 1. Bounded Product Evidence GraphQL Reads
 
 Status: ready
-Lane: Frontend affiliate merchant context copy data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project selected-merchant and current-merchant copy from the
-canonical merchant choice in the existing framework-free affiliate setup data
-owner.
+Lane: Bounded product evidence GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
+Batch outcome: product evidence and SEO fields requested through a GraphQL
+product connection keep a fixed database-query budget as product parent count
+increases, without changing offer, review, specification, or metadata truth.
+Next action: add set-based product evidence APIs, route product evidence and SEO
+through request-scoped Dataloader sources, and lock the result with growing-
+parent query-budget tests.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare/specs.ex`
+- `lib/product_compare/seo.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/seo_resolver.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `docs/work/bounded-product-evidence-graphql-reads.md`
+
+Internal slices:
+
+- Set-based offer-truth, review-summary, and current-specification evidence.
+- Request-scoped product evidence and SEO Dataloader integration.
+- Semantic parity plus fixed query budgets as product parents grow.
+
+Prerequisites:
+
+- Existing OfferTruth, accepted-current-claim, published-review, and SEO
+  qualification policies remain the semantic source of truth.
+- Existing `Product.offerTruth`, `Product.reviewSummary`, and `Product.seo`
+  GraphQL shapes remain unchanged.
+- Current single-product product-detail behavior remains covered.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/seo_test.exs`
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: one- and multi-product evidence and metadata stay semantically
+identical to the current contract, and relevant SELECT counts remain fixed
+when the same GraphQL request grows its product parent count.
+
+### 2. Bounded Community GraphQL Connections
+
+Status: ready
+Lane: Bounded community GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
+Batch outcome: published review, question, and nested answer Relay connections
+use bounded set-based reads whose query count does not grow with product or
+question parent count.
+Next action: add parent-partitioned community connection batches, delegate the
+three resolvers through Dataloader, and prove pagination and visibility parity
+under growing parent counts.
+Owned paths:
+
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-community-graphql-connections.md`
+
+Internal slices:
+
+- Parent-partitioned published review and question pages.
+- Parent-partitioned published answer pages with accepted-answer preload parity.
+- Dataloader integration and constant query-budget regression coverage.
+
+Prerequisites:
+
+- Public reads remain published-only and author identity remains private.
+- Existing Relay cursor, page-size, order, and `pageInfo` behavior remains the
+  contract.
+- Community owner lifecycle and moderation behavior remain unchanged.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: community connection edges, ordering, visibility, accepted-
+answer data, and page info match current behavior while review/question/answer
+SELECT counts stay fixed as parent counts grow.
+
+### 3. Bounded Product Offer GraphQL Connections
+
+Status: ready
+Lane: Bounded product offer GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
+Batch outcome: product offer, active-coupon, and price-history Relay connections
+use bounded set-based reads whose query count does not grow with product or
+merchant-product parent count.
+Next action: implement parent-partitioned offer/coupon/history batches, route
+the nested fields through Dataloader, and add growing-parent query-budget tests
+for the product-detail and compare-shaped graph.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare/affiliate.ex`
+- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-product-offer-graphql-connections.md`
+
+Internal slices:
+
+- Parent-partitioned product merchant-product connection pages.
+- Merchant-keyed active-coupon pages for merchant-product parents.
+- Parent-partitioned price-history pages and fixed nested query budgets.
+
+Prerequisites:
+
+- Existing active-only, merchant filter, coupon-validity, time-range, and
+  price-history ordering semantics remain unchanged.
+- Existing Relay cursor, page-size, and `pageInfo` behavior remains the
+  contract.
+- Latest-price Dataloader behavior remains intact.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: product-offer, coupon, and history edges, filters, ordering,
+validity, and page info match current behavior while relevant SELECT counts
+stay fixed as product and offer parent counts grow.
+
+## Completed 2026-07-20 Cross-Stack Work
+
+### 1. Durable Ingestion Recurrence
+
+Status: complete
+Lane: Durable ingestion recurrence
+Plan: `docs/superpowers/plans/2026-07-20-durable-ingestion-recurrence-implementation-plan.md`
+Batch outcome: scheduled CJ imports and feed discovery deduplicate within one
+explicit schedule window while the same normalized scope remains runnable in
+later windows.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
+- `lib/product_compare/ingestion/jobs/cj_feed_discovery_worker.ex`
+- `lib/product_compare/ingestion/scheduler_support.ex`
+- `lib/product_compare/ingestion/cj_product_import_scheduler.ex`
+- `lib/product_compare/ingestion/cj_feed_discovery_scheduler.ex`
+- `test/product_compare/ingestion/jobs/durable_jobs_test.exs`
+- `test/product_compare/ingestion/cj_product_import_scheduler_test.exs`
+- `test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- `docs/work/durable-ingestion-recurrence.md`
+
+Internal slices:
+
+- Same-window conflict and later-window insertion identity for both workers.
+- Stable scheduler windows with an injectable clock.
+- Recurrence, cursor, retry, normalization, and redaction regression evidence.
+
+Prerequisites:
+
+- Existing Oban migration, ingestion queue, and normalized argument contract.
+- Accepted 2026-07-13 durable-ingestion design and 2026-07-20 cross-stack design.
+- Deferred ingestion dashboard/operator and eBay work remain excluded.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/jobs/durable_jobs_test.exs test/product_compare/ingestion/cj_product_import_scheduler_test.exs test/product_compare/ingestion/cj_feed_discovery_scheduler_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: same-window duplicates resolve to one Oban job, a later window
+creates a distinct job for the same scope, both schedulers pass stable windows,
+and focused plus repository gates pass.
+
+### 2. Alert Lifecycle Reliability
+
+Status: complete
+Lane: Alert lifecycle reliability
+Plan: `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
+Batch outcome: every persisted price observation evaluates every applicable
+watch asynchronously, and the alert interface presents truthful timestamps plus
+row-local pending and failure state.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `lib/product_compare/alerts.ex`
+- `lib/product_compare/alerts/jobs/alert_evaluation_worker.ex`
+- `test/product_compare/alerts/alerts_test.exs`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `assets/src/routes/account/alerts/alerts-view-data.ts`
+- `assets/src/routes/account/alerts/AlertsRoute.tsx`
+- `assets/test/routes/account/alerts/alerts-view-data.test.ts`
+- `assets/test/routes/account/alerts/alerts.route.test.tsx`
+- `docs/work/alert-lifecycle-reliability.md`
+
+Internal slices:
+
+- Full watch evaluation with deterministic failure aggregation.
+- Strict alert observation labels.
+- Row-scoped alert/watch mutation feedback.
+
+Prerequisites:
+
+- Price-point persistence and Oban enqueue remain atomic.
+- Existing watch locks, event uniqueness, cooldown, and delivery-attempt models.
+- Existing strict GraphQL DateTime helpers remain the sole frontend date policy.
+
+Verification:
+
+- `mix test test/product_compare/alerts/alerts_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `cd assets && bun x vitest run test/routes/account/alerts/alerts-view-data.test.ts test/routes/account/alerts/alerts.route.test.tsx`
+- `cd assets && bun run check`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: one failed watch cannot prevent later watches from evaluating,
+retries cannot duplicate successful events, invalid timestamps cannot produce
+false labels, and frontend action state stays on the affected row.
+
+### 3. Community Content Lifecycle
+
+Status: complete
+Lane: Community content lifecycle
+Plan: `docs/superpowers/plans/2026-07-20-community-content-lifecycle-implementation-plan.md`
+Batch outcome: authenticated reviews, questions, and answers have a complete
+owner-controlled, abuse-resistant lifecycle through durable backend policy,
+typed GraphQL, and accessible Relay controls.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `priv/repo/migrations/20260720120000_add_community_write_controls.exs`
+- `lib/product_compare_schemas/discussions/community_write_receipt.ex`
+- `lib/product_compare_schemas/discussions/community_write_window.ex`
+- `lib/product_compare_schemas/discussions/product_review.ex`
+- `lib/product_compare_schemas/discussions/product_thread.ex`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare_web/schema.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/graphql/errors.ex`
+- `config/config.exs`
+- `config/test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/discussions/product_review_immutability_test.exs`
+- `test/product_compare/discussions/thread_crud_test.exs`
+- `test/product_compare/discussions/thread_post_validation_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `assets/schema.graphql`
+- `assets/src/routes/products/queries/SubmitProductReviewMutation.ts`
+- `assets/src/routes/products/queries/AskProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/AnswerProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductReviewMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductQuestionMutation.ts`
+- `assets/src/routes/products/queries/UpdateProductAnswerMutation.ts`
+- `assets/src/routes/products/queries/RemoveCommunityContentMutation.ts`
+- `assets/src/routes/products/queries/ProductCommunityQuery.ts`
+- `assets/src/routes/products/queries/ProductQuestionAnswersQuery.ts`
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `assets/src/__generated__/SubmitProductReviewMutation.graphql.ts`
+- `assets/src/__generated__/AskProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/AnswerProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductReviewMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductQuestionMutation.graphql.ts`
+- `assets/src/__generated__/UpdateProductAnswerMutation.graphql.ts`
+- `assets/src/__generated__/RemoveCommunityContentMutation.graphql.ts`
+- `assets/src/__generated__/ProductCommunityQuery.graphql.ts`
+- `assets/src/__generated__/ProductQuestionAnswersQuery.graphql.ts`
+- `docs/work/community-content-lifecycle.md`
+
+Internal slices:
+
+- Durable write receipts, UTC-hour counters, and retained removal state.
+- Owner update/remove, idempotency, limits, and accepted-answer cleanup.
+- Typed GraphQL mutations, errors, viewer capabilities, and schema snapshot.
+- Relay idempotency plus owner edit/remove controls.
+
+Prerequisites:
+
+- Approved community limits and lifecycle policy in the 2026-07-20 design.
+- Existing published-only public reads and operator moderation remain intact.
+- Browser community writes remain GraphQL-only over `/api/graphql`.
+
+Verification:
+
+- `mix test test/product_compare/discussions test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `cd assets && bun run relay`
+- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun run check`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: owner lifecycle, audit retention, idempotent replay/conflict,
+exact rate boundaries, typed errors, accepted-answer cleanup, schema/Relay
+artifacts, and accessible owner controls all pass behavior coverage.
+
+### 4. Relay Cursor Forward Progress
+
+Status: complete
+Lane: Frontend cursor forward progress
+Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
+Batch outcome: every in-scope frontend Relay pagination surface suppresses
+blank or repeated cursors, preventing self-links and repeated stateful fetches.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `assets/src/routes/relay-pagination.ts`
+- `assets/test/routes/relay-pagination.test.ts`
+- `assets/src/routes/products/product-community-data.ts`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- `assets/test/routes/products/product-community-data.test.ts`
+- `assets/test/routes/products/product-community-panel.test.tsx`
+- `assets/src/routes/compare/compare-picker-data.ts`
+- `assets/src/routes/compare/CompareProductPickerBoundary.tsx`
+- `assets/test/routes/compare/compare-picker-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `assets/src/routes/products/product-offer-panel-data.ts`
+- `assets/src/routes/products/ProductOfferPanel.tsx`
+- `assets/test/routes/products/product-offer-panel-data.test.ts`
+- `assets/test/routes/products/detail.route.test.tsx`
+- `assets/src/routes/catalog/paths.ts`
+- `assets/test/routes/catalog/browse.route.test.tsx`
+- `assets/src/routes/offers/offer-discovery-filter-data.ts`
+- `assets/test/routes/offers/offer-discovery-filter-data.test.ts`
+- `assets/test/routes/offers/offer-discovery.route.test.tsx`
+- `assets/src/routes/categories/category-view-data.ts`
+- `assets/src/routes/categories/CategoryRoute.tsx`
+- `assets/src/routes/categories/loader.ts`
+- `assets/test/routes/categories/category-view-data.test.ts`
+- `assets/test/routes/categories/category.route.test.tsx`
+- `assets/src/routes/merchants/pagination.ts`
+- `assets/src/routes/merchants/MerchantDirectoryRoute.tsx`
+- `assets/test/routes/merchants/merchant-directory-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-directory.route.test.tsx`
+- `assets/src/routes/merchants/detail/merchant-detail-view-data.ts`
+- `assets/src/routes/merchants/detail/MerchantDetailRoute.tsx`
+- `assets/src/routes/merchants/detail/loader.ts`
+- `assets/test/routes/merchants/merchant-detail-view-data.test.ts`
+- `assets/test/routes/merchants/merchant-detail.route.test.tsx`
+- `assets/src/routes/account/api-tokens/api-token-route-data.ts`
+- `assets/src/routes/account/api-tokens/ApiTokensRoute.tsx`
+- `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
+- `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+- `assets/src/routes/affiliate/setup/pagination.ts`
+- `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
+- `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
+- `docs/work/frontend-cursor-forward-progress.md`
+
+Internal slices:
+
+- Shared invariant plus community review/question/answer pagination.
+- Stateful compare-picker and product-offer pagination.
+- Public URL pagination for catalog, offers, categories, and merchants.
+- Account/setup URL pagination for API tokens and affiliate merchants.
+
+Prerequisites:
+
+- Saved-comparison and snapshot-history cursor contracts remain reference behavior.
+- Cursor values remain exact; whitespace is only a validity check.
+- Deferred feed-candidate operator surfaces stay out of scope.
+
+Verification:
+
+- All focused suites named in the linked plan.
+- `cd assets && bun run typecheck`
+- shared-helper dependency scan
+- `cd assets && bun run check`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every in-scope surface rejects blank and non-advancing cursors
+while preserving normal pagination, URL state, Relay timing, and presentation.
+
+### 5. Bounded Merchant GraphQL Reads
+
+Status: complete
+Lane: Bounded merchant GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-graphql-reads-implementation-plan.md`
+Batch outcome: merchant detail summaries requested through a GraphQL connection
+use set-based reads whose query count remains constant as merchant parent count
+increases.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/pricing/merchant_detail_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `docs/work/bounded-merchant-graphql-reads.md`
+
+Internal slices:
+
+- Set-based active-offer and latest-price merchant detail read model.
+- Dataloader delegation and constant query-budget regression.
+
+Prerequisites:
+
+- Existing OfferTruth freshness and eligibility semantics.
+- Existing Merchant `detailSummary` GraphQL shape remains unchanged.
+- Active offers must be complete independent of Relay page size.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/pricing/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/merchant_detail_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: single- and multi-merchant summaries remain semantically equal
+to the current contract and relevant SELECT counts stay fixed as parent count
+grows.
+
+### 6. Account And Setup Interaction Contracts
+
+Status: complete
+Lane: Frontend account and setup interaction contracts
+Plan: `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`
+Batch outcome: authenticated setup and account surfaces derive deterministic
+merchant-context copy and API-token lifecycle actions from framework-free
+owners without changing forms, mutations, accessibility, or presentation.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
@@ -1138,100 +1616,77 @@ Owned paths:
 - `assets/src/routes/affiliate/setup/AffiliateSetupRoute.tsx`
 - `assets/test/routes/affiliate/setup/affiliate-setup-data.test.ts`
 - `assets/test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `docs/work/frontend-affiliate-merchant-context-copy-data.md`
-
-Prerequisites:
-
-- Program, link, and coupon forms retain `Selected merchant: <name> (<domain>)`.
-- The setup context rail retains `Current merchant: <name> (<domain>)`.
-- Missing selections retain no merchant context copy.
-- Existing merchant selection, pagination, forms, mutations, results, markup,
-  and presentation remain green.
-
-Verification:
-
-- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
-- `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the
-  affiliate setup data module
-- `git diff --check`
-
-Exit condition: the framework-free owner projects stable merchant context copy
-without changing selection, pagination, forms, mutations, results, markup, or
-presentation.
-
-### 2. API Token Lifecycle Action Policy Data Contract
-
-Status: ready
-Lane: Frontend API token lifecycle action policy data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: project lifecycle action availability, disabled state, and button
-copy from token status and row-scoped mutation state in the existing
-framework-free API-token route-data owner.
-Owned paths:
-
 - `assets/src/routes/account/api-tokens/api-token-route-data.ts`
 - `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
 - `assets/test/routes/account/api-tokens/api-token-route-data.test.ts`
 - `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
-- `docs/work/frontend-api-token-lifecycle-action-policy-data.md`
+- `docs/work/frontend-account-setup-presentation-contracts.md`
+
+Internal slices:
+
+- Affiliate selected/current merchant-context copy.
+- API-token lifecycle action visibility, disabled state, and pending copy.
 
 Prerequisites:
 
-- Revoked tokens retain no lifecycle actions.
-- Expired, unrevoked tokens retain revoke but not rotate.
-- Active tokens retain rotate and revoke.
-- A pending rotate or revoke keeps all available actions for that row disabled,
-  with exact pending button copy.
-- Existing variables, one-time-token handling, forms, accessibility labels,
-  mutation orchestration, markup, and presentation remain green.
+- Existing affiliate and API-token characterization suites remain the baseline.
+- Normal-path copy and row-scoped API-token mutual exclusion stay stable.
+- React retains Relay, forms, refs, callbacks, markup, and styling.
 
 Verification:
 
+- `cd assets && bun x vitest run test/routes/affiliate/setup/affiliate-setup-data.test.ts test/routes/affiliate/setup/affiliate-setup.route.test.tsx`
 - `cd assets && bun x vitest run test/routes/account/api-tokens/api-token-route-data.test.ts test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the API-
-  token route-data module
+- pure-module dependency scans
+- `cd assets && bun run check`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: the framework-free owner projects stable lifecycle action
-policy without changing variables, one-time-token handling, forms,
-accessibility labels, mutation orchestration, markup, or presentation.
+Exit condition: both policy slices pass focused and combined frontend gates as
+one independently reviewable account/setup outcome.
 
-### 3. Product Community Answer Pagination Cursor Data Contract
+### 7. Comparison Interaction Correctness
 
-Status: ready
-Lane: Frontend product-community answer pagination data
-Plan: `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
-Next action: make the existing framework-free community cursor owner project
-initial and advancing answer-page cursors for the product-community panel.
+Status: complete
+Lane: Comparison interaction correctness
+Plan: `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
+Batch outcome: comparison observations use strict temporal truth and snapshot
+revocation pending/failure state applies only to the affected snapshot row.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
-- `assets/src/routes/products/product-community-data.ts`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- `assets/test/routes/products/product-community-data.test.ts`
-- `assets/test/routes/products/product-community-panel.test.tsx`
-- `docs/work/frontend-product-community-answer-pagination-data.md`
+- `assets/src/routes/compare/decision-summary-data.ts`
+- `assets/src/routes/compare/loader.ts`
+- `assets/test/routes/compare/decision-summary-data.test.ts`
+- `assets/src/routes/compare/share-comparison-data.ts`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/test/routes/compare/share-comparison-data.test.ts`
+- `assets/test/routes/compare/compare.route.test.tsx`
+- `docs/work/comparison-interaction-correctness.md`
+
+Internal slices:
+
+- Strict comparison recency labels and most-recent observation selection.
+- Row-scoped snapshot revocation pending, duplicate, and failure state.
 
 Prerequisites:
 
-- Initial answer pagination retains a cursor only when another page exists and
-  the server supplied a non-empty end cursor.
-- Additional answer pagination requires a non-empty cursor different from the
-  cursor that produced the current page.
-- Existing answer ordering, deduplication, accepted-answer labels, suspense,
-  error handling, queries, mutations, markup, and presentation remain green.
+- Existing strict GraphQL DateTime helpers remain the sole date policy.
+- Valid observation ordering and labels remain unchanged.
+- Successful snapshot mutation handling and accessibility remain stable.
 
 Verification:
 
-- `cd assets && bun x vitest run test/routes/products/product-community-data.test.ts test/routes/products/product-community-panel.test.tsx`
+- `cd assets && bun x vitest run test/routes/compare/decision-summary-data.test.ts test/routes/compare/share-comparison-data.test.ts test/routes/compare/compare.route.test.tsx`
 - `cd assets && bun run typecheck`
-- consumer and transitive framework/transport dependency scans of the product-
-  community data module
+- `cd assets && bun run check`
+- `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: the framework-free owner projects safe answer-page cursor
-progression without changing question or answer behavior outside pagination.
+Exit condition: invalid timestamps cannot win recency selection or produce false
+labels, and one snapshot action cannot disable, relabel, or leak errors to
+another row.
 
 ## Needs Decision Work
 
@@ -1242,6 +1697,18 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The seven-batch 2026-07-20 cross-stack correctness program is complete. Durable
+ingestion now recurs across stable schedule windows; alert evaluation is fault-
+isolated with strict dates and row-local actions; community content has durable
+owner lifecycle, idempotency, rate limits, and Relay controls; every in-scope
+frontend pagination surface requires forward cursor progress; merchant summary
+GraphQL reads are set-based; account/setup policy lives in framework-free data
+owners; and comparison timestamps plus snapshot actions are row-correct. The
+fresh full gate passed 790 backend tests, 1,505 frontend tests, type/format/
+static-analysis checks, Relay generation, client and SSR builds, and the bundle
+budget. Detailed evidence remains in the seven lane docs retained under
+`Completed 2026-07-20 Cross-Stack Work` above.
 
 Route-metadata tag policy data completed on 2026-07-17. The framework-free
 route-metadata data owner now projects exact robots and Twitter-card values
@@ -1571,6 +2038,9 @@ Process the highest-ranked non-ready row when a decision or blocker exists.
 Otherwise curate source-backed candidates from docs/plans/INDEX.md and the directly affected lane docs.
 Before a stable boundary would leave fewer than three ready rows, validate new implementation candidates from current product, code, test, architecture, and lane evidence.
 Three is the floor, not a cap; promote every additional useful validated row found in the same pass.
+Treat a row as one independently shippable reviewer outcome. Group candidates that enforce the same invariant and share one acceptance boundary.
+Keep per-surface, per-file, path-disjoint, or test-sized work as internal slices with focused milestone commits; do not count slices as ready rows.
+If a numeric request or the ready floor exceeds the coherent source-backed batch set, return the smaller truthful set and record the decision needed for more work instead of creating micro-batches.
 Validate every promoted row's owned paths, verification, prerequisites, and exit condition.
 Update only the live queue plus the directly affected lane or plan docs.
 End with at least three complete ready implementation rows and keep every additional useful validated row.
@@ -1586,6 +2056,7 @@ Read docs/work/operating-model.md.
 Claim the highest-ranked compatible ready row only when three other ready rows will remain.
 Leave other ready rows unchanged.
 Open only that row's Work Doc, linked active plan if any, Owned paths, and immediate tests.
+Treat the row's internal slices as one batch status. Use slice-level tests and milestone commits without promoting or closing slices as standalone queue rows.
 Update the lane work doc as the batch changes.
 Do not edit coordinator-owned docs unless the ready row names them under Owned paths.
 Stop if the row is blocked, stale, or needs a decision.

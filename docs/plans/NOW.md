@@ -21,6 +21,9 @@ instead.
   coordinator rules in `docs/work/operating-model.md` to validate and promote
   more implementation work first.
 - Three is a floor, not a cap. Keep every additional useful validated row.
+- Count only independently shippable reviewer outcomes as rows. Keep route-,
+  file-, and test-sized work as internal slices in the linked batch plan; never
+  subdivide work merely to satisfy a numeric request or the queue floor.
 - An empty or shortage-only `Ready Work` section is invalid; run
   `mix work_queue.validate` before committing a dispatch update.
 - Update this file only if the queue entry point changes.

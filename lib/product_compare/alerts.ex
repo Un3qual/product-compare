@@ -123,7 +123,13 @@ defmodule ProductCompare.Alerts do
 
   @spec evaluate_price_point(pos_integer(), keyword()) ::
           {:ok, %{evaluated: non_neg_integer(), events_created: non_neg_integer()}}
-          | {:error, :price_point_not_found | {:watch_evaluation_failed, pos_integer(), term()}}
+          | {:error,
+             :price_point_not_found
+             | {:watch_evaluations_failed, [pos_integer()],
+                %{
+                  evaluated: non_neg_integer(),
+                  events_created: non_neg_integer()
+                }}}
   def evaluate_price_point(price_point_id, opts \\ [])
 
   def evaluate_price_point(price_point_id, opts) when valid_id(price_point_id) do
@@ -147,28 +153,44 @@ defmodule ProductCompare.Alerts do
               order_by: [asc: watch.id]
           )
 
-        Enum.reduce_while(
-          watches,
-          {:ok, %{evaluated: 0, events_created: 0}},
-          fn watch, {:ok, summary} ->
-            case watch_evaluator.(watch.id, price_point, now) do
-              {:ok, created?} ->
-                updated_summary =
-                  summary
-                  |> Map.update!(:evaluated, &(&1 + 1))
-                  |> Map.update!(:events_created, &(&1 + if(created?, do: 1, else: 0)))
+        {summary, failed_watch_ids} =
+          Enum.reduce(
+            watches,
+            {%{evaluated: 0, events_created: 0}, []},
+            fn watch, {summary, failed_watch_ids} ->
+              case run_watch_evaluator(watch_evaluator, watch.id, price_point, now) do
+                {:ok, created?} ->
+                  updated_summary =
+                    summary
+                    |> Map.update!(:evaluated, &(&1 + 1))
+                    |> Map.update!(:events_created, &(&1 + if(created?, do: 1, else: 0)))
 
-                {:cont, {:ok, updated_summary}}
+                  {updated_summary, failed_watch_ids}
 
-              {:error, reason} ->
-                {:halt, {:error, {:watch_evaluation_failed, watch.id, reason}}}
+                {:error, _reason} ->
+                  {summary, [watch.id | failed_watch_ids]}
+              end
             end
-          end
-        )
+          )
+
+        case Enum.reverse(failed_watch_ids) do
+          [] -> {:ok, summary}
+          ids -> {:error, {:watch_evaluations_failed, ids, summary}}
+        end
     end
   end
 
   def evaluate_price_point(_price_point_id, _opts), do: {:error, :price_point_not_found}
+
+  defp run_watch_evaluator(evaluator, watch_id, price_point, now)
+       when is_function(evaluator, 4) do
+    evaluator.(watch_id, price_point, now, &evaluate_watch/3)
+  end
+
+  defp run_watch_evaluator(evaluator, watch_id, price_point, now)
+       when is_function(evaluator, 3) do
+    evaluator.(watch_id, price_point, now)
+  end
 
   defp evaluate_watch(watch_id, triggering_price_point, now) do
     Repo.transaction(fn ->

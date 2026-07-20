@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../../relay-pagination";
+
 export type MerchantDetailViewDataInput = {
   slug: string;
   detailSummary: {
@@ -30,7 +32,10 @@ export type MerchantDetailViewDataInput = {
   };
 };
 
-export function getMerchantDetailViewData(merchant: MerchantDetailViewDataInput) {
+export function getMerchantDetailViewData(
+  merchant: MerchantDetailViewDataInput,
+  currentAfter: string | null = null
+) {
   const { detailSummary } = merchant;
 
   return {
@@ -54,7 +59,7 @@ export function getMerchantDetailViewData(merchant: MerchantDetailViewDataInput)
         : null,
       priceCopy: offerPriceCopy(node.currency, node.latestPrice)
     })),
-    nextPagePath: merchantNextPagePath(merchant)
+    nextPagePath: merchantNextPagePath(merchant, currentAfter)
   };
 }
 
@@ -80,10 +85,13 @@ function merchantProductPath(slug: string) {
   return `/products/${encodeURIComponent(slug)}`;
 }
 
-function merchantNextPagePath(merchant: MerchantDetailViewDataInput) {
-  const { endCursor, hasNextPage } = merchant.merchantProducts.pageInfo;
+function merchantNextPagePath(
+  merchant: MerchantDetailViewDataInput,
+  currentAfter: string | null
+) {
+  const nextCursor = nextRelayPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
 
-  return hasNextPage && endCursor
-    ? `/merchants/${encodeURIComponent(merchant.slug)}?after=${encodeURIComponent(endCursor)}`
+  return nextCursor
+    ? `/merchants/${encodeURIComponent(merchant.slug)}?after=${encodeURIComponent(nextCursor)}`
     : null;
 }

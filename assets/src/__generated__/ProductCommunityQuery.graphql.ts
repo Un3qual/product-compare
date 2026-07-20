@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cd37cc3c08ba8546a9eb9f0f39f1f81f>>
+ * @generated SignedSource<<c06de89db333c2798a302ab31b0ed050>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,6 +9,7 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
+export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type ProductCommunityQuery$variables = {
   answerFirst: number;
   questionFirst: number;
@@ -30,6 +31,9 @@ export type ProductCommunityQuery$data = {
                 readonly authorLabel: string;
                 readonly body: string;
                 readonly id: string;
+                readonly moderationStatus: CommunityModerationStatus;
+                readonly viewerCanEdit: boolean;
+                readonly viewerCanRemove: boolean;
               };
             }>;
             readonly pageInfo: {
@@ -40,7 +44,10 @@ export type ProductCommunityQuery$data = {
           readonly authorLabel: string;
           readonly body: string | null | undefined;
           readonly id: string;
+          readonly moderationStatus: CommunityModerationStatus;
           readonly title: string;
+          readonly viewerCanEdit: boolean;
+          readonly viewerCanRemove: boolean;
         };
       }>;
       readonly pageInfo: {
@@ -58,15 +65,48 @@ export type ProductCommunityQuery$data = {
           readonly authorLabel: string;
           readonly body: string | null | undefined;
           readonly id: string;
+          readonly moderationStatus: CommunityModerationStatus;
           readonly rating: number;
           readonly title: string | null | undefined;
           readonly verifiedPurchase: boolean;
+          readonly viewerCanEdit: boolean;
+          readonly viewerCanRemove: boolean;
         };
       }>;
       readonly pageInfo: {
         readonly endCursor: string | null | undefined;
         readonly hasNextPage: boolean;
       };
+    };
+    readonly viewerCommunitySubmissions: {
+      readonly answers: ReadonlyArray<{
+        readonly authorLabel: string;
+        readonly body: string;
+        readonly id: string;
+        readonly moderationStatus: CommunityModerationStatus;
+        readonly viewerCanEdit: boolean;
+        readonly viewerCanRemove: boolean;
+      }>;
+      readonly questions: ReadonlyArray<{
+        readonly authorLabel: string;
+        readonly body: string | null | undefined;
+        readonly id: string;
+        readonly moderationStatus: CommunityModerationStatus;
+        readonly title: string;
+        readonly viewerCanEdit: boolean;
+        readonly viewerCanRemove: boolean;
+      }>;
+      readonly reviews: ReadonlyArray<{
+        readonly authorLabel: string;
+        readonly body: string | null | undefined;
+        readonly id: string;
+        readonly moderationStatus: CommunityModerationStatus;
+        readonly rating: number;
+        readonly title: string | null | undefined;
+        readonly verifiedPurchase: boolean;
+        readonly viewerCanEdit: boolean;
+        readonly viewerCanRemove: boolean;
+      }>;
     };
   } | null | undefined;
 };
@@ -137,6 +177,50 @@ v9 = {
 v10 = {
   "alias": null,
   "args": null,
+  "kind": "ScalarField",
+  "name": "moderationStatus",
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanEdit",
+  "storageKey": null
+},
+v12 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanRemove",
+  "storageKey": null
+},
+v13 = [
+  (v6/*: any*/),
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "rating",
+    "storageKey": null
+  },
+  (v7/*: any*/),
+  (v8/*: any*/),
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "verifiedPurchase",
+    "storageKey": null
+  },
+  (v9/*: any*/),
+  (v10/*: any*/),
+  (v11/*: any*/),
+  (v12/*: any*/)
+],
+v14 = {
+  "alias": null,
+  "args": null,
   "concreteType": "PageInfo",
   "kind": "LinkedField",
   "name": "pageInfo",
@@ -159,7 +243,15 @@ v10 = {
   ],
   "storageKey": null
 },
-v11 = [
+v15 = [
+  (v6/*: any*/),
+  (v8/*: any*/),
+  (v9/*: any*/),
+  (v10/*: any*/),
+  (v11/*: any*/),
+  (v12/*: any*/)
+],
+v16 = [
   {
     "alias": null,
     "args": [
@@ -234,32 +326,13 @@ v11 = [
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
-                "selections": [
-                  (v6/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "rating",
-                    "storageKey": null
-                  },
-                  (v7/*: any*/),
-                  (v8/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "verifiedPurchase",
-                    "storageKey": null
-                  },
-                  (v9/*: any*/)
-                ],
+                "selections": (v13/*: any*/),
                 "storageKey": null
               }
             ],
             "storageKey": null
           },
-          (v10/*: any*/)
+          (v14/*: any*/)
         ],
         "storageKey": null
       },
@@ -302,6 +375,9 @@ v11 = [
                   (v7/*: any*/),
                   (v8/*: any*/),
                   (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/),
+                  (v12/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -338,17 +414,13 @@ v11 = [
                             "kind": "LinkedField",
                             "name": "node",
                             "plural": false,
-                            "selections": [
-                              (v6/*: any*/),
-                              (v8/*: any*/),
-                              (v9/*: any*/)
-                            ],
+                            "selections": (v15/*: any*/),
                             "storageKey": null
                           }
                         ],
                         "storageKey": null
                       },
-                      (v10/*: any*/)
+                      (v14/*: any*/)
                     ],
                     "storageKey": null
                   }
@@ -358,7 +430,56 @@ v11 = [
             ],
             "storageKey": null
           },
-          (v10/*: any*/)
+          (v14/*: any*/)
+        ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ViewerCommunitySubmissions",
+        "kind": "LinkedField",
+        "name": "viewerCommunitySubmissions",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "ProductReview",
+            "kind": "LinkedField",
+            "name": "reviews",
+            "plural": true,
+            "selections": (v13/*: any*/),
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "ProductQuestion",
+            "kind": "LinkedField",
+            "name": "questions",
+            "plural": true,
+            "selections": [
+              (v6/*: any*/),
+              (v7/*: any*/),
+              (v8/*: any*/),
+              (v9/*: any*/),
+              (v10/*: any*/),
+              (v11/*: any*/),
+              (v12/*: any*/)
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "ProductAnswer",
+            "kind": "LinkedField",
+            "name": "answers",
+            "plural": true,
+            "selections": (v15/*: any*/),
+            "storageKey": null
+          }
         ],
         "storageKey": null
       }
@@ -379,7 +500,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityQuery",
-    "selections": (v11/*: any*/),
+    "selections": (v16/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -395,19 +516,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ProductCommunityQuery",
-    "selections": (v11/*: any*/)
+    "selections": (v16/*: any*/)
   },
   "params": {
-    "cacheID": "f5862a49a374db21a1a39d3b24076791",
+    "cacheID": "ee5cf31b6877e6ce5b7869c5651d8111",
     "id": null,
     "metadata": {},
     "name": "ProductCommunityQuery",
     "operationKind": "query",
-    "text": "query ProductCommunityQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: $reviewFirst, after: $reviewsAfter) {\n      edges {\n        node {\n          id\n          rating\n          title\n          body\n          verifiedPurchase\n          authorLabel\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    questions(first: $questionFirst, after: $questionsAfter) {\n      edges {\n        node {\n          id\n          title\n          body\n          authorLabel\n          acceptedAnswerId\n          answers(first: $answerFirst) {\n            edges {\n              node {\n                id\n                body\n                authorLabel\n              }\n            }\n            pageInfo {\n              endCursor\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query ProductCommunityQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: $reviewFirst, after: $reviewsAfter) {\n      edges {\n        node {\n          id\n          rating\n          title\n          body\n          verifiedPurchase\n          authorLabel\n          moderationStatus\n          viewerCanEdit\n          viewerCanRemove\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    questions(first: $questionFirst, after: $questionsAfter) {\n      edges {\n        node {\n          id\n          title\n          body\n          authorLabel\n          moderationStatus\n          viewerCanEdit\n          viewerCanRemove\n          acceptedAnswerId\n          answers(first: $answerFirst) {\n            edges {\n              node {\n                id\n                body\n                authorLabel\n                moderationStatus\n                viewerCanEdit\n                viewerCanRemove\n              }\n            }\n            pageInfo {\n              endCursor\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    viewerCommunitySubmissions {\n      reviews {\n        id\n        rating\n        title\n        body\n        verifiedPurchase\n        authorLabel\n        moderationStatus\n        viewerCanEdit\n        viewerCanRemove\n      }\n      questions {\n        id\n        title\n        body\n        authorLabel\n        moderationStatus\n        viewerCanEdit\n        viewerCanRemove\n      }\n      answers {\n        id\n        body\n        authorLabel\n        moderationStatus\n        viewerCanEdit\n        viewerCanRemove\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8ccd32799705ce7d52950f3cbcc66cd6";
+(node as any).hash = "a3c354146c27f2af409789e145856fd3";
 
 export default node;

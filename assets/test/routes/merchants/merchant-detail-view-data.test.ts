@@ -129,6 +129,12 @@ test("returns an encoded advancing offers path only when pagination is complete"
   expect(getMerchantDetailViewData(buildMerchant({
     merchantProducts: buildProducts([], { hasNextPage: true, endCursor: null })
   })).nextPagePath).toBeNull();
+  expect(getMerchantDetailViewData(buildMerchant({
+    merchantProducts: buildProducts([], { hasNextPage: true, endCursor: "same" })
+  }), "same").nextPagePath).toBeNull();
+  expect(getMerchantDetailViewData(buildMerchant({
+    merchantProducts: buildProducts([], { hasNextPage: true, endCursor: "  " })
+  })).nextPagePath).toBeNull();
 });
 
 test("does not mutate merchant summaries, offer rows, or pagination", () => {

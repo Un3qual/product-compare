@@ -4,6 +4,7 @@ import {
   selectedCompareSlugsAfterAdding,
   type CompareSpecMode
 } from "./paths";
+import { nextRelayPageCursor } from "../relay-pagination";
 
 export type ComparePickerProduct = {
   readonly brand?: { readonly name: string | null } | null;
@@ -78,9 +79,10 @@ export function buildComparePickerOptions(
 }
 
 export function nextComparePickerPageCursor(
-  pageInfo: ComparePickerPageInfo | null | undefined
+  pageInfo: ComparePickerPageInfo | null | undefined,
+  currentAfter: string | null = null
 ) {
-  return pageInfo?.hasNextPage ? pageInfo.endCursor ?? null : null;
+  return nextRelayPageCursor(pageInfo, currentAfter);
 }
 
 export function isComparePickerEmpty(

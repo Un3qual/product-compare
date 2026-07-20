@@ -23,6 +23,12 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
+  def viewer_community_submissions(product, _args, %{context: %{current_user: user}}),
+    do: {:ok, Discussions.viewer_community_submissions(user.id, product.id)}
+
+  def viewer_community_submissions(_product, _args, _resolution),
+    do: {:ok, %{reviews: [], questions: [], answers: []}}
+
   def answers(question, args, _resolution) do
     question.id
     |> Discussions.public_answers_query()
@@ -42,12 +48,17 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
          {:ok, merchant_product_id} <-
            decode_optional_id(input, :merchant_product_id, :merchant_product, "merchantProductId"),
          {:ok, review} <-
-           Discussions.submit_review(user.id, product_id, %{
-             rating: Input.fetch_value(input, :rating),
-             title: Input.fetch_value(input, :title),
-             body: Input.fetch_value(input, :body),
-             merchant_product_id: merchant_product_id
-           }) do
+           Discussions.submit_review(
+             user.id,
+             product_id,
+             %{
+               rating: Input.fetch_value(input, :rating),
+               title: Input.fetch_value(input, :title),
+               body: Input.fetch_value(input, :body),
+               merchant_product_id: merchant_product_id
+             },
+             Input.fetch_value(input, :idempotency_key)
+           ) do
       {:ok, %{review: review, errors: []}}
     else
       error -> {:ok, review_error(error)}
@@ -59,10 +70,15 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   def ask_question(_parent, %{input: input}, %{context: %{current_user: user}}) do
     with {:ok, product_id} <- decode_id(input, :product_id, :product, "productId"),
          {:ok, question} <-
-           Discussions.ask_question(user.id, product_id, %{
-             title: Input.fetch_value(input, :title),
-             body: Input.fetch_value(input, :body)
-           }) do
+           Discussions.ask_question(
+             user.id,
+             product_id,
+             %{
+               title: Input.fetch_value(input, :title),
+               body: Input.fetch_value(input, :body)
+             },
+             Input.fetch_value(input, :idempotency_key)
+           ) do
       {:ok, %{question: question, errors: []}}
     else
       error -> {:ok, question_error(error)}
@@ -74,7 +90,12 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   def answer_question(_parent, %{input: input}, %{context: %{current_user: user}}) do
     with {:ok, question_id} <- decode_uuid(input, :question_id, :product_question, "questionId"),
          {:ok, answer} <-
-           Discussions.answer_question(user.id, question_id, Input.fetch_value(input, :body)) do
+           Discussions.answer_question(
+             user.id,
+             question_id,
+             Input.fetch_value(input, :body),
+             Input.fetch_value(input, :idempotency_key)
+           ) do
       {:ok, %{answer: answer, errors: []}}
     else
       error -> {:ok, answer_error(error)}
@@ -82,6 +103,17 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   end
 
   def answer_question(_parent, _args, _resolution), do: {:ok, answer_error(:unauthenticated)}
+
+  def update_review(_parent, args, resolution),
+    do: update_owned_content(:review, :product_review, [:rating, :title, :body], args, resolution)
+
+  def update_question(_parent, args, resolution),
+    do: update_owned_content(:question, :product_question, [:title, :body], args, resolution)
+
+  def update_answer(_parent, args, resolution),
+    do: update_owned_content(:answer, :product_answer, [:body], args, resolution)
+
+  def remove(_parent, args, resolution), do: content_action(:remove, args, resolution)
 
   def accept_answer(_parent, %{question_id: question_id, answer_id: answer_id}, %{
         context: %{current_user: user}
@@ -98,23 +130,7 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
 
   def accept_answer(_parent, _args, _resolution), do: {:ok, question_error(:unauthenticated)}
 
-  def report(_parent, %{input: input}, %{context: %{current_user: user}}) do
-    type = Input.fetch_value(input, :content_type)
-
-    with {:ok, entropy_id} <- decode_content_id(Input.fetch_value(input, :content_id), type),
-         {:ok, report} <-
-           Discussions.report(user.id, type, entropy_id, Input.fetch_value(input, :reason)) do
-      {:ok,
-       %{
-         report_id: GlobalId.encode(:community_report, report.id),
-         errors: []
-       }}
-    else
-      error -> {:ok, action_error(error)}
-    end
-  end
-
-  def report(_parent, _args, _resolution), do: {:ok, action_error(:unauthenticated)}
+  def report(_parent, args, resolution), do: content_action(:report, args, resolution)
 
   def moderate(_parent, %{input: input}, %{context: %{current_user: user}}) do
     type = Input.fetch_value(input, :content_type)
@@ -144,6 +160,12 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   def body(content, _args, _resolution), do: {:ok, content.body_md}
   def author_label(_content, _args, _resolution), do: {:ok, "Community member"}
 
+  def viewer_can_edit(content, _args, resolution),
+    do: {:ok, viewer_can_manage?(content, resolution)}
+
+  def viewer_can_remove(content, _args, resolution),
+    do: {:ok, viewer_can_manage?(content, resolution)}
+
   defp decode_id(input, field, type, label) do
     Input.decode_required_integer_id(Input.fetch_value(input, field), type, label)
   end
@@ -165,6 +187,7 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   defp question_error(error), do: %{question: nil, errors: errors(error)}
   defp answer_error(error), do: %{answer: nil, errors: errors(error)}
   defp action_error(error), do: %{report_id: nil, errors: errors(error)}
+  defp removal_error(error), do: %{removed_content_id: nil, errors: errors(error)}
 
   defp moderation_error(error),
     do: %{content_id: nil, moderation_status: nil, errors: errors(error)}
@@ -188,5 +211,90 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   defp errors({:error, :not_found}),
     do: [GraphQLErrors.mutation_error("NOT_FOUND", "community content not found")]
 
+  defp errors({:error, :idempotency_conflict}),
+    do: [GraphQLErrors.community_write_error(:idempotency_conflict)]
+
+  defp errors({:error, :rate_limited}),
+    do: [GraphQLErrors.community_write_error(:rate_limited)]
+
+  defp errors({:error, :invalid_lifecycle}),
+    do: [GraphQLErrors.community_write_error(:invalid_lifecycle)]
+
+  defp errors({:error, :invalid_argument}),
+    do: [GraphQLErrors.mutation_error("INVALID_ARGUMENT", "invalid community content input")]
+
   defp errors(:error), do: [GraphQLErrors.mutation_error("INVALID_ID", "invalid content id")]
+
+  defp viewer_can_manage?(content, %{context: %{current_user: %{id: user_id}}}) do
+    content.moderation_status != :removed and content_owner_id(content) == user_id
+  end
+
+  defp viewer_can_manage?(_content, _resolution), do: false
+
+  defp content_owner_id(%{user_id: user_id}) when is_integer(user_id), do: user_id
+  defp content_owner_id(%{created_by: user_id}) when is_integer(user_id), do: user_id
+  defp content_owner_id(_content), do: nil
+
+  defp update_attrs(input, fields) do
+    Enum.reduce(fields, %{}, fn field, attrs ->
+      if Map.has_key?(input, field) or Map.has_key?(input, Atom.to_string(field)),
+        do: Map.put(attrs, field, Input.fetch_value(input, field)),
+        else: attrs
+    end)
+  end
+
+  defp update_owned_content(
+         content_type,
+         id_type,
+         fields,
+         %{input: input},
+         %{context: %{current_user: user}}
+       ) do
+    with {:ok, entropy_id} <- decode_uuid(input, :id, id_type, "id"),
+         {:ok, content} <-
+           Discussions.update_owned(
+             user.id,
+             content_type,
+             entropy_id,
+             update_attrs(input, fields)
+           ) do
+      {:ok, Map.merge(%{errors: []}, %{content_type => content})}
+    else
+      error -> {:ok, content_error(content_type, error)}
+    end
+  end
+
+  defp update_owned_content(content_type, _id_type, _fields, _args, _resolution),
+    do: {:ok, content_error(content_type, :unauthenticated)}
+
+  defp content_error(content_type, error), do: %{content_type => nil, errors: errors(error)}
+
+  defp content_action(action, %{input: input}, %{context: %{current_user: user}}) do
+    type = Input.fetch_value(input, :content_type)
+
+    with {:ok, entropy_id} <- decode_content_id(Input.fetch_value(input, :content_id), type),
+         {:ok, result} <- perform_content_action(action, user.id, type, entropy_id, input) do
+      {:ok, content_action_success(action, type, entropy_id, result)}
+    else
+      error -> {:ok, content_action_error(action, error)}
+    end
+  end
+
+  defp content_action(action, _args, _resolution),
+    do: {:ok, content_action_error(action, :unauthenticated)}
+
+  defp perform_content_action(:remove, user_id, type, entropy_id, _input),
+    do: Discussions.remove_owned(user_id, type, entropy_id)
+
+  defp perform_content_action(:report, user_id, type, entropy_id, input),
+    do: Discussions.report(user_id, type, entropy_id, Input.fetch_value(input, :reason))
+
+  defp content_action_success(:remove, type, entropy_id, _content),
+    do: %{removed_content_id: GlobalId.encode(content_id_type(type), entropy_id), errors: []}
+
+  defp content_action_success(:report, _type, _entropy_id, report),
+    do: %{report_id: GlobalId.encode(:community_report, report.id), errors: []}
+
+  defp content_action_error(:remove, error), do: removal_error(error)
+  defp content_action_error(:report, error), do: action_error(error)
 end

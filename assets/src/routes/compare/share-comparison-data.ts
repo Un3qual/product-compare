@@ -200,6 +200,27 @@ export function removeComparisonSnapshotId(ids: ReadonlySet<string>, id: string)
   return next;
 }
 
+export function snapshotRevocationCanStart(
+  pendingSnapshotIds: ReadonlySet<string>,
+  snapshotId: string
+) {
+  return !pendingSnapshotIds.has(snapshotId);
+}
+
+export function snapshotRevocationRowState(
+  snapshotId: string,
+  pendingSnapshotIds: ReadonlySet<string>,
+  errorsBySnapshotId: ReadonlyMap<string, string>
+) {
+  const pending = pendingSnapshotIds.has(snapshotId);
+
+  return {
+    buttonCopy: pending ? "Revoking…" : "Revoke public link",
+    disabled: pending,
+    error: errorsBySnapshotId.get(snapshotId) ?? null
+  };
+}
+
 export function comparisonSnapshotLabel(snapshot: PublishedComparisonSnapshot) {
   return snapshot.title || "Open public snapshot";
 }

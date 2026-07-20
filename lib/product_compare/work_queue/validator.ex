@@ -6,20 +6,24 @@ defmodule ProductCompare.WorkQueue.Validator do
     "Status:",
     "Lane:",
     "Plan:",
+    "Batch outcome:",
     "Next action:",
     "Owned paths:",
+    "Internal slices:",
     "Prerequisites:",
     "Verification:",
     "Exit condition:"
   ]
-  @scalar_fields ["Lane", "Plan", "Next action", "Exit condition"]
-  @list_fields ["Owned paths", "Prerequisites", "Verification"]
+  @scalar_fields ["Lane", "Plan", "Batch outcome", "Next action", "Exit condition"]
+  @list_fields ["Owned paths", "Internal slices", "Prerequisites", "Verification"]
   @field_names [
     "Status",
     "Lane",
     "Plan",
+    "Batch outcome",
     "Next action",
     "Owned paths",
+    "Internal slices",
     "Prerequisites",
     "Verification",
     "Exit condition"

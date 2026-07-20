@@ -56,6 +56,55 @@ defmodule ProductCompare.Pricing.MerchantDetailTest do
     assert Pricing.merchant_detail("missing-merchant") == nil
   end
 
+  test "merchant details batch preserves single-merchant truth across mixed offer states" do
+    {:ok, first_merchant} =
+      Pricing.upsert_merchant(%{name: "Batch first", domain: "batch-first.example"})
+
+    {:ok, second_merchant} =
+      Pricing.upsert_merchant(%{name: "Batch second", domain: "batch-second.example"})
+
+    {:ok, empty_merchant} =
+      Pricing.upsert_merchant(%{name: "Batch empty", domain: "batch-empty.example"})
+
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    third_product = SpecsFixtures.product_fixture()
+    fresh_offer = offer(first_merchant, first_product, true)
+    _unobserved_offer = offer(first_merchant, second_product, true)
+    inactive_offer = offer(first_merchant, third_product, false)
+    stale_offer = offer(second_merchant, first_product, true)
+
+    {:ok, _} = price(fresh_offer, "100", "5", true, @now)
+    {:ok, _} = price(inactive_offer, "10", "0", true, @now)
+    {:ok, _} = price(stale_offer, "90", "5", true, DateTime.add(@now, -345_600, :second))
+
+    details =
+      Pricing.merchant_details(
+        [first_merchant, second_merchant, empty_merchant],
+        now: @now
+      )
+
+    assert details[first_merchant] == Pricing.merchant_detail(first_merchant, now: @now)
+    assert details[second_merchant] == Pricing.merchant_detail(second_merchant, now: @now)
+    assert details[empty_merchant] == Pricing.merchant_detail(empty_merchant, now: @now)
+
+    assert details[first_merchant].summary.active_offer_count == 2
+    assert details[first_merchant].summary.unobserved_offer_count == 1
+    assert details[second_merchant].summary.stale_offer_count == 1
+
+    assert details[empty_merchant].summary == %{
+             active_offer_count: 0,
+             distinct_product_count: 0,
+             observed_offer_count: 0,
+             eligible_offer_count: 0,
+             fresh_offer_count: 0,
+             aging_offer_count: 0,
+             stale_offer_count: 0,
+             unobserved_offer_count: 0,
+             last_observed_at: nil
+           }
+  end
+
   defp offer(merchant, product, active) do
     {:ok, offer} =
       Pricing.upsert_merchant_product(%{

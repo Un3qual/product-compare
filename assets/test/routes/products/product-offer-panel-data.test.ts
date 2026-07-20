@@ -278,4 +278,22 @@ describe("product offer panel data", () => {
         "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value&slug=first+product&slug=second%26product#offers"
     });
   });
+
+  test("does not build a next-offers self-link for a blank or repeated cursor", () => {
+    expect(
+      productOfferPaginationPaths({
+        connection: { pageInfo: { endCursor: "current", hasNextPage: true } },
+        offersAfter: "current",
+        productSlug: "field-camera"
+      })
+    ).toEqual({ firstPath: "/products/field-camera#offers", nextPath: null });
+
+    expect(
+      productOfferPaginationPaths({
+        connection: { pageInfo: { endCursor: "   ", hasNextPage: true } },
+        offersAfter: null,
+        productSlug: "field-camera"
+      })
+    ).toEqual({ firstPath: null, nextPath: null });
+  });
 });

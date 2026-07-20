@@ -85,6 +85,8 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   end
 
   defp merchant_detail_batch(:summary, merchants) do
-    Map.new(merchants, fn merchant -> {merchant, Pricing.merchant_detail(merchant)} end)
+    merchants
+    |> Enum.to_list()
+    |> Pricing.merchant_details(now: DateTime.utc_now())
   end
 end

@@ -10,6 +10,8 @@ import {
   resolvePublishComparisonSnapshotMutationOutcome,
   resolveRevokeComparisonSnapshotMutationOutcome,
   revokeComparisonSnapshotState,
+  snapshotRevocationCanStart,
+  snapshotRevocationRowState,
   snapshotFromNode,
   type PublishedComparisonSnapshot
 } from "../../../src/routes/compare/share-comparison-data";
@@ -131,6 +133,30 @@ test("comparison snapshot state helpers preserve fallback labels and immutable i
 
   expect([...next]).toEqual(["keep"]);
   expect([...ids]).toEqual(["keep", "remove"]);
+});
+
+test("snapshot revocation row state isolates pending copy, disabled state, errors, and duplicate guards", () => {
+  const pendingSnapshotIds = new Set(["snapshot-1"]);
+  const errorsBySnapshotId = new Map([
+    ["snapshot-2", "Second snapshot cannot be revoked."]
+  ]);
+
+  expect(
+    snapshotRevocationRowState("snapshot-1", pendingSnapshotIds, errorsBySnapshotId)
+  ).toEqual({
+    buttonCopy: "Revoking…",
+    disabled: true,
+    error: null
+  });
+  expect(
+    snapshotRevocationRowState("snapshot-2", pendingSnapshotIds, errorsBySnapshotId)
+  ).toEqual({
+    buttonCopy: "Revoke public link",
+    disabled: false,
+    error: "Second snapshot cannot be revoked."
+  });
+  expect(snapshotRevocationCanStart(pendingSnapshotIds, "snapshot-1")).toBe(false);
+  expect(snapshotRevocationCanStart(pendingSnapshotIds, "snapshot-2")).toBe(true);
 });
 
 test("publishedSnapshotFromPayload projects only a complete publish payload", () => {

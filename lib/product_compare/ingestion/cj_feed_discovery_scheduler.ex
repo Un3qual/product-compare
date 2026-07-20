@@ -25,6 +25,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   def init(opts) do
     state = %{
       advertiser_country: string_option(opts, :advertiser_country, @default_advertiser_country),
+      clock: SchedulerSupport.clock(opts),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
       cursor_resolver: Keyword.get(opts, :cursor_resolver, &ScheduledCursor.feed/1),
       initial_delay_ms:
@@ -49,7 +50,11 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
   @impl GenServer
   def handle_info(:run_discovery, state) do
     opts =
-      SchedulerSupport.resolve_cursor(discovery_opts(state), state.cursor_resolver, state.cursor)
+      state
+      |> discovery_opts()
+      |> SchedulerSupport.resolve_cursor(state.cursor_resolver, state.cursor)
+
+    opts = opts ++ [schedule_window: SchedulerSupport.schedule_window(state.clock.())]
 
     result = SchedulerSupport.run(state.enqueuer, opts)
 

@@ -41,6 +41,24 @@ defmodule ProductCompareWeb.GraphQL.Errors do
   @spec forbidden_mutation_error() :: mutation_error()
   def forbidden_mutation_error, do: mutation_error(@forbidden_code, @forbidden_message)
 
+  @spec community_write_error(:idempotency_conflict | :rate_limited | :invalid_lifecycle) ::
+          mutation_error()
+  def community_write_error(:idempotency_conflict) do
+    camelized_mutation_error(
+      "IDEMPOTENCY_CONFLICT",
+      "idempotency key was already used with different content",
+      :idempotency_key
+    )
+  end
+
+  def community_write_error(:rate_limited) do
+    mutation_error("RATE_LIMITED", "community write limit reached; try again later")
+  end
+
+  def community_write_error(:invalid_lifecycle) do
+    mutation_error("INVALID_LIFECYCLE", "removed community content cannot be changed")
+  end
+
   @spec authorization_error(:unauthenticated | :forbidden) :: top_level_error()
   def authorization_error(:unauthenticated), do: unauthenticated()
   def authorization_error(:forbidden), do: forbidden()

@@ -1,4 +1,4 @@
-import { Suspense, type FormEvent, useEffect, useId, useMemo, useState } from "react";
+import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
 import { useLazyLoadQuery, useMutation } from "react-relay";
@@ -27,6 +27,8 @@ import {
   revokeComparisonSnapshotState,
   resolvePublishComparisonSnapshotMutationOutcome,
   resolveRevokeComparisonSnapshotMutationOutcome,
+  snapshotRevocationCanStart,
+  snapshotRevocationRowState,
   snapshotFromNode,
   type ComparisonSnapshotState,
   type PublishedComparisonSnapshot
@@ -79,7 +81,11 @@ export function ShareComparisonControl({
     recordPublished,
     recordMessage
   );
-  const [handleRevoke, revoking] = useSnapshotRevoker(recordRevoked, recordMessage);
+  const {
+    errorsBySnapshotId,
+    handleRevoke,
+    pendingSnapshotIds
+  } = useSnapshotRevoker(recordRevoked);
 
   return <SnapshotControlView
     handlePublish={handlePublish}
@@ -91,7 +97,8 @@ export function ShareComparisonControl({
     published={snapshotState.published}
     publishing={publishing}
     revokedSnapshotIds={snapshotState.revokedSnapshotIds}
-    revoking={revoking}
+    revocationErrorsBySnapshotId={errorsBySnapshotId}
+    revokingSnapshotIds={pendingSnapshotIds}
   />;
 }
 
@@ -105,7 +112,8 @@ interface SnapshotControlViewProps {
   published: readonly PublishedComparisonSnapshot[];
   publishing: boolean;
   revokedSnapshotIds: ReadonlySet<string>;
-  revoking: boolean;
+  revocationErrorsBySnapshotId: ReadonlyMap<string, string>;
+  revokingSnapshotIds: ReadonlySet<string>;
 }
 
 function SnapshotControlView({
@@ -118,7 +126,8 @@ function SnapshotControlView({
   published,
   publishing,
   revokedSnapshotIds,
-  revoking
+  revocationErrorsBySnapshotId,
+  revokingSnapshotIds
 }: SnapshotControlViewProps) {
   const titleId = useId();
   const searchIndexableId = useId();
@@ -145,7 +154,8 @@ function SnapshotControlView({
           open={open}
           resetToken={products.map(({ id }) => id).join("|")}
           revokedSnapshotIds={revokedSnapshotIds}
-          revoking={revoking}
+          revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
+          revokingSnapshotIds={revokingSnapshotIds}
         />
         {message ? <p role="status" {...props(styles.message)}>{message}</p> : null}
       </form>
@@ -159,14 +169,16 @@ function SnapshotHistory({
   open,
   resetToken,
   revokedSnapshotIds,
-  revoking
+  revocationErrorsBySnapshotId,
+  revokingSnapshotIds
 }: {
   localSnapshots: readonly PublishedComparisonSnapshot[];
   onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
   open: boolean;
   resetToken: string;
   revokedSnapshotIds: ReadonlySet<string>;
-  revoking: boolean;
+  revocationErrorsBySnapshotId: ReadonlyMap<string, string>;
+  revokingSnapshotIds: ReadonlySet<string>;
 }) {
   if (!open) return null;
 
@@ -179,7 +191,8 @@ function SnapshotHistory({
         localSnapshots={localSnapshots}
         onRevoke={onRevoke}
         revokedSnapshotIds={revokedSnapshotIds}
-        revoking={revoking}
+        revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
+        revokingSnapshotIds={revokingSnapshotIds}
       />
     </Suspense>
   </ResettableErrorBoundary>;
@@ -226,12 +239,27 @@ function useSnapshotPublisher(
 }
 
 function useSnapshotRevoker(
-  onRevoked: (snapshot: PublishedComparisonSnapshot) => void,
-  onMessage: (message: string) => void
+  onRevoked: (snapshot: PublishedComparisonSnapshot) => void
 ) {
-  const [commitRevoke, revoking] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+  const [commitRevoke] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+  const pendingSnapshotIdsRef = useRef<ReadonlySet<string>>(new Set());
+  const [pendingSnapshotIds, setPendingSnapshotIds] = useState<ReadonlySet<string>>(
+    pendingSnapshotIdsRef.current
+  );
+  const [errorsBySnapshotId, setErrorsBySnapshotId] = useState<ReadonlyMap<string, string>>(
+    new Map()
+  );
 
   async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
+    if (!snapshotRevocationCanStart(pendingSnapshotIdsRef.current, snapshot.id)) {
+      return;
+    }
+
+    const pending = new Set(pendingSnapshotIdsRef.current).add(snapshot.id);
+    pendingSnapshotIdsRef.current = pending;
+    setPendingSnapshotIds(pending);
+    setErrorsBySnapshotId((current) => withoutSnapshotError(current, snapshot.id));
+
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, {
         variables: { snapshotId: snapshot.id }
@@ -243,26 +271,44 @@ function useSnapshotRevoker(
         graphQLErrors
       );
 
-      if (outcome.error === null) onRevoked(outcome.snapshot);
-      else onMessage(outcome.error);
+      if (outcome.error === null) {
+        onRevoked(outcome.snapshot);
+      } else {
+        setErrorsBySnapshotId((current) => withSnapshotError(
+          current,
+          snapshot.id,
+          outcome.error
+        ));
+      }
     } catch {
-      onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setErrorsBySnapshotId((current) => withSnapshotError(
+        current,
+        snapshot.id,
+        DEFAULT_ROUTE_ERROR_MESSAGE
+      ));
+    } finally {
+      const remaining = new Set(pendingSnapshotIdsRef.current);
+      remaining.delete(snapshot.id);
+      pendingSnapshotIdsRef.current = remaining;
+      setPendingSnapshotIds(remaining);
     }
   }
 
-  return [handleRevoke, revoking] as const;
+  return { errorsBySnapshotId, handleRevoke, pendingSnapshotIds };
 }
 
 function PublishedSnapshots({
   localSnapshots,
   onRevoke,
   revokedSnapshotIds,
-  revoking
+  revocationErrorsBySnapshotId,
+  revokingSnapshotIds
 }: {
   localSnapshots: readonly PublishedComparisonSnapshot[];
   onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
   revokedSnapshotIds: ReadonlySet<string>;
-  revoking: boolean;
+  revocationErrorsBySnapshotId: ReadonlyMap<string, string>;
+  revokingSnapshotIds: ReadonlySet<string>;
 }) {
   const [after, setAfter] = useState<string | null>(null);
   const [loadedSnapshots, setLoadedSnapshots] = useState<PublishedComparisonSnapshot[]>([]);
@@ -293,14 +339,46 @@ function PublishedSnapshots({
   return <>
     {snapshots.length > 0 ? (
       <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
-        {snapshots.map((snapshot) => (
-          <li key={snapshot.id} {...props(styles.listItem)}>
-            <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
-            <Button aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`} disabled={revoking} onClick={() => onRevoke(snapshot)} tone="danger" type="button" variant="soft">{revoking ? "Revoking…" : "Revoke public link"}</Button>
-          </li>
-        ))}
+        {snapshots.map((snapshot) => {
+          const revocation = snapshotRevocationRowState(
+            snapshot.id,
+            revokingSnapshotIds,
+            revocationErrorsBySnapshotId
+          );
+
+          return (
+            <li key={snapshot.id} {...props(styles.listItem)}>
+              <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
+              <Button aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`} disabled={revocation.disabled} onClick={() => onRevoke(snapshot)} tone="danger" type="button" variant="soft">{revocation.buttonCopy}</Button>
+              {revocation.error ? <p role="alert">{revocation.error}</p> : null}
+            </li>
+          );
+        })}
       </ul>
     ) : null}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more snapshots</Button> : null}
   </>;
+}
+
+function withoutSnapshotError(
+  errorsBySnapshotId: ReadonlyMap<string, string>,
+  snapshotId: string
+) {
+  if (!errorsBySnapshotId.has(snapshotId)) {
+    return errorsBySnapshotId;
+  }
+
+  const next = new Map(errorsBySnapshotId);
+  next.delete(snapshotId);
+  return next;
+}
+
+function withSnapshotError(
+  errorsBySnapshotId: ReadonlyMap<string, string>,
+  snapshotId: string,
+  error: string
+) {
+  const next = new Map(errorsBySnapshotId);
+  next.set(snapshotId, error);
+  return next;
 }

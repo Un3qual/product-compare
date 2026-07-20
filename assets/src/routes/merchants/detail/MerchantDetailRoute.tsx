@@ -31,7 +31,10 @@ function ReadyMerchantDetail({ query }: { query: Extract<MerchantDetailLoaderDat
   const merchant = data.merchant;
   if (!merchant) return null;
   const websiteHref = externalWebsiteHref(merchant.domain);
-  const viewData = getMerchantDetailViewData(merchant);
+  const viewData = getMerchantDetailViewData(
+    merchant,
+    query.__relayQuery.variables.after ?? null
+  );
 
   return <PageShell eyebrow="Seller detail" title={merchant.name} description={<>Current catalog and offer evidence for {merchant.domain}. {websiteHref ? <a href={websiteHref} target="_blank" rel="noopener noreferrer">Visit merchant website</a> : null}</>}>
     <SummaryStrip label="Merchant coverage" items={viewData.summaryItems} />

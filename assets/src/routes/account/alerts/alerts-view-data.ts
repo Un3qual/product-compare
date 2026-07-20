@@ -1,3 +1,5 @@
+import { graphQLDateTimeLabel } from "../../graphql-datetime";
+
 export type PriceAlertViewSource = {
   ruleType: string;
   observedAt: string;
@@ -54,6 +56,5 @@ export function priceWatchToggleControl(watch: PriceWatchViewSource) {
 }
 
 export function observationDateLabel(value: string) {
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? value : date.toISOString().slice(0, 10);
+  return graphQLDateTimeLabel(value) ?? value;
 }
