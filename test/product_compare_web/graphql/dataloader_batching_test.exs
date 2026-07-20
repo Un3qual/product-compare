@@ -119,6 +119,74 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                price_points: 1
              }
     end
+
+    test "merchant detail summaries keep a fixed offer and price query budget as parents grow", %{
+      conn: conn
+    } do
+      product = SpecsFixtures.product_fixture(%{name: "Summary batch product"})
+
+      initial_merchants =
+        for index <- 1..2 do
+          merchant = merchant_fixture(%{name: unique_name("Summary Merchant #{index}")})
+          merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+          {:ok, _point} =
+            Pricing.add_price_point(%{
+              merchant_product_id: merchant_product.id,
+              observed_at: DateTime.utc_now(),
+              price: Decimal.new("#{100 + index}.00"),
+              shipping: Decimal.new("5.00"),
+              in_stock: true
+            })
+
+          merchant
+        end
+
+      empty_merchant = merchant_fixture(%{name: unique_name("Summary Empty")})
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_summary_batch_query(), %{"first" => 3})
+        end)
+
+      initial_edges = get_in(initial_response, ["data", "merchants", "edges"])
+      assert length(initial_edges) == 3
+      assert summary_for(initial_edges, empty_merchant.name)["activeOfferCount"] == 0
+
+      Enum.each(initial_merchants, fn merchant ->
+        assert summary_for(initial_edges, merchant.name) == %{
+                 "activeOfferCount" => 1,
+                 "distinctProductCount" => 1,
+                 "eligibleOfferCount" => 1,
+                 "unobservedOfferCount" => 0
+               }
+      end)
+
+      initial_budget = merchant_summary_query_budget(initial_queries)
+
+      for index <- 3..5 do
+        merchant = merchant_fixture(%{name: unique_name("Summary Merchant #{index}")})
+        merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+        {:ok, _point} =
+          Pricing.add_price_point(%{
+            merchant_product_id: merchant_product.id,
+            observed_at: DateTime.utc_now(),
+            price: Decimal.new("#{100 + index}.00"),
+            shipping: Decimal.new("5.00"),
+            in_stock: true
+          })
+      end
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_summary_batch_query(), %{"first" => 6})
+        end)
+
+      assert grown_response |> get_in(["data", "merchants", "edges"]) |> length() == 6
+      assert initial_budget == %{merchant_products: 1, price_points: 1}
+      assert merchant_summary_query_budget(grown_queries) == initial_budget
+    end
   end
 
   defp batching_query do
@@ -165,6 +233,26 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp merchant_summary_batch_query do
+    """
+    query MerchantSummaryBatch($first: Int!) {
+      merchants(first: $first) {
+        edges {
+          node {
+            name
+            detailSummary {
+              activeOfferCount
+              distinctProductCount
+              eligibleOfferCount
+              unobservedOfferCount
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -175,6 +263,19 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.into(@tracked_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
     end)
+  end
+
+  defp merchant_summary_query_budget(queries) do
+    %{
+      merchant_products: Enum.count(queries, &query_targets_table?(&1, :merchant_products)),
+      price_points: Enum.count(queries, &query_targets_table?(&1, :price_points))
+    }
+  end
+
+  defp summary_for(edges, merchant_name) do
+    edges
+    |> Enum.find(fn edge -> edge["node"]["name"] == merchant_name end)
+    |> get_in(["node", "detailSummary"])
   end
 
   defp relevant_query?(query) when is_binary(query) do

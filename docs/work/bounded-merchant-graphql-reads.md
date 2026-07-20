@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented; awaiting coordinator closeout
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
@@ -44,3 +44,19 @@ increases.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Implementation Evidence
+
+- Pricing RED: the focused merchant-detail test failed because
+  `Pricing.merchant_details/2` did not exist. The set-based API now matches the
+  single-merchant contract across fresh, stale, unobserved, inactive, and empty
+  merchants, and 14 focused pricing tests pass.
+- GraphQL RED: requesting three merchant summaries produced 3
+  `merchant_products` SELECTs and 2 `price_points` SELECTs. The request now uses
+  exactly 1 SELECT for each table; growing the same request to six merchant
+  parents preserves the 1-and-1 budget.
+- The Dataloader source normalizes its request-scoped enumerable once and
+  delegates the whole parent set to Pricing. Existing single-merchant GraphQL
+  detail shape, counts, freshness, eligibility, and complete active-offer
+  semantics remain unchanged.
+- The combined pricing and GraphQL regression gate passes 18 tests.
