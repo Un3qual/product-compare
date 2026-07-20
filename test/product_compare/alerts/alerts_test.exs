@@ -184,29 +184,101 @@ defmodule ProductCompare.AlertsTest do
     assert :ok = AlertEvaluationWorker.perform(struct!(Oban.Job, args: first_job.args))
   end
 
-  test "a failed watch evaluation makes the price-point evaluation retryable", %{now: now} do
-    user = AccountsFixtures.user_fixture()
+  test "a failed watch does not starve later watch evaluations", %{now: now} do
     %{product: product, merchant_product: offer} = offer_fixture("USD")
 
-    assert {:ok, watch} =
-             Alerts.create_watch(user.id, %{
-               product_id: product.id,
-               rule_type: :target_price,
-               currency: "USD",
-               target_amount: "50"
-             })
+    watches =
+      Enum.map(1..3, fn _index ->
+        user = AccountsFixtures.user_fixture()
+
+        assert {:ok, watch} =
+                 Alerts.create_watch(user.id, %{
+                   product_id: product.id,
+                   rule_type: :target_price,
+                   currency: "USD",
+                   target_amount: "50"
+                 })
+
+        watch
+      end)
+
+    [failed_watch | successful_watches] = watches
 
     point = price_fixture(offer, "40", "0", true, now)
+    parent = self()
 
-    assert {:error, {:watch_evaluation_failed, watch_id, :forced_failure}} =
+    assert {:error,
+            {:watch_evaluations_failed, failed_watch_ids, %{evaluated: 2, events_created: 2}}} =
              Alerts.evaluate_price_point(point.id,
                now: now,
-               watch_evaluator: fn _watch_id, _price_point, _now ->
-                 {:error, :forced_failure}
+               watch_evaluator: fn watch_id, _price_point, _now ->
+                 send(parent, {:evaluated, watch_id})
+
+                 if watch_id == failed_watch.id,
+                   do: {:error, :forced_failure},
+                   else: {:ok, true}
                end
              )
 
-    assert watch_id == watch.id
+    assert failed_watch_ids == [failed_watch.id]
+    assert_receive {:evaluated, watch_id}
+    assert watch_id == failed_watch.id
+
+    Enum.each(successful_watches, fn watch ->
+      assert_receive {:evaluated, watch_id}
+      assert watch_id == watch.id
+    end)
+  end
+
+  test "retrying a partial evaluation does not duplicate successful events", %{now: now} do
+    %{product: product, merchant_product: offer} = offer_fixture("USD")
+
+    watches =
+      Enum.map(1..3, fn _index ->
+        user = AccountsFixtures.user_fixture()
+
+        assert {:ok, watch} =
+                 Alerts.create_watch(user.id, %{
+                   product_id: product.id,
+                   rule_type: :target_price,
+                   currency: "USD",
+                   target_amount: "50"
+                 })
+
+        watch
+      end)
+
+    [failed_watch | _later_watches] = watches
+    point = price_fixture(offer, "40", "0", true, now)
+    failure_key = {__MODULE__, make_ref()}
+
+    evaluator = fn watch_id, price_point, evaluated_at, evaluate_watch ->
+      if watch_id == failed_watch.id and Process.get(failure_key) == nil do
+        Process.put(failure_key, :failed)
+        {:error, :forced_failure}
+      else
+        evaluate_watch.(watch_id, price_point, evaluated_at)
+      end
+    end
+
+    assert {:error,
+            {:watch_evaluations_failed, [failed_watch_id], %{evaluated: 2, events_created: 2}}} =
+             Alerts.evaluate_price_point(point.id,
+               now: now,
+               watch_evaluator: evaluator
+             )
+
+    assert failed_watch_id == failed_watch.id
+    assert Repo.aggregate(AlertEvent, :count, :id) == 2
+
+    assert {:ok, %{evaluated: 3, events_created: 1}} =
+             Alerts.evaluate_price_point(point.id,
+               now: now,
+               watch_evaluator: evaluator
+             )
+
+    assert Repo.aggregate(AlertEvent, :count, :id) == 3
+    assert Repo.aggregate(AlertDeliveryAttempt, :count, :id) == 3
   end
 
   defp offer_fixture(currency) do
