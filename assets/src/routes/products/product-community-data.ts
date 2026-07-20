@@ -2,6 +2,7 @@ import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
 } from "../route-errors";
+import { nextRelayPageCursor, type RelayPageInfo } from "../relay-pagination";
 
 type CommunityMutationPayload = {
   readonly errors?: unknown;
@@ -196,14 +197,11 @@ export function acceptedAnswerAuthorLabel(
     : authorLabel;
 }
 
-export function nextCommunityPageCursor({
-  endCursor,
-  hasNextPage
-}: {
-  readonly endCursor: string | null | undefined;
-  readonly hasNextPage: boolean;
-}) {
-  return hasNextPage && endCursor ? endCursor : null;
+export function nextCommunityPageCursor(
+  pageInfo: RelayPageInfo | null | undefined,
+  currentAfter: string | null = null
+) {
+  return nextRelayPageCursor(pageInfo, currentAfter);
 }
 
 export function appendUniqueCommunityItems<T extends { readonly id: string }>(

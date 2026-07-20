@@ -81,7 +81,15 @@ export function ProductCommunityPanel({
   productId: string;
   productSlug: string;
 }) {
-  const { product, questions, reviews, setQuestionsAfter, setReviewsAfter } =
+  const {
+    product,
+    questions,
+    questionsAfter,
+    reviews,
+    reviewsAfter,
+    setQuestionsAfter,
+    setReviewsAfter
+  } =
     useCommunityPages(productSlug);
 
   if (!product) {
@@ -91,13 +99,13 @@ export function ProductCommunityPanel({
   return (
     <section aria-label="Reviews and product questions" {...props(styles.content)}>
       <ReviewSection
-        onShowMore={nextCursor(product.reviews.pageInfo, setReviewsAfter)}
+        onShowMore={nextCursor(product.reviews.pageInfo, reviewsAfter, setReviewsAfter)}
         productId={productId}
         reviews={reviews}
         summary={product.reviewSummary}
       />
       <QuestionSection
-        onShowMore={nextCursor(product.questions.pageInfo, setQuestionsAfter)}
+        onShowMore={nextCursor(product.questions.pageInfo, questionsAfter, setQuestionsAfter)}
         productId={productId}
         questions={questions}
       />
@@ -142,7 +150,9 @@ function useCommunityPages(productSlug: string) {
   return {
     product,
     questions: appendUniqueCommunityItems(loadedQuestions, pageQuestions),
+    questionsAfter,
     reviews: appendUniqueCommunityItems(loadedReviews, pageReviews),
+    reviewsAfter,
     setQuestionsAfter,
     setReviewsAfter
   };
@@ -341,7 +351,7 @@ function QuestionItem({ question }: { question: Question }) {
 
 function QuestionAnswers({ question }: { question: Question }) {
   const answers = question.answers.edges.map(({ node }) => node);
-  const next = question.answers.pageInfo.hasNextPage ? question.answers.pageInfo.endCursor : null;
+  const next = nextCommunityPageCursor(question.answers.pageInfo);
   const [showMore, setShowMore] = useState(false);
 
   return <>
@@ -383,7 +393,7 @@ function AdditionalAnswers({
     setLoadedAnswers((current) => appendUniqueCommunityItems(current, pageAnswers));
   }, [pageAnswers]);
 
-  const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
+  const next = nextCommunityPageCursor(connection?.pageInfo, after);
   return <>
     {answers.map((answer) => <AnswerView acceptedAnswerId={acceptedAnswerId} answer={answer} key={answer.id} />)}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more answers</Button> : null}
@@ -525,8 +535,9 @@ function normalizedFormText(value: FormDataEntryValue | null) {
 
 function nextCursor(
   pageInfo: { readonly endCursor: string | null | undefined; readonly hasNextPage: boolean },
+  currentAfter: string | null,
   setAfter: (cursor: string) => void
 ) {
-  const cursor = nextCommunityPageCursor(pageInfo);
+  const cursor = nextCommunityPageCursor(pageInfo, currentAfter);
   return cursor ? () => setAfter(cursor) : null;
 }

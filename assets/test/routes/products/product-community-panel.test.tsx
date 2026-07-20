@@ -208,3 +208,53 @@ test("ProductCommunityPanel keeps lifecycle failures scoped to their content row
   expect(within(questionRow).queryByText("Community write limit reached; try again later.")).toBeNull();
   expect(within(questionRow).getByRole("button", { name: "Edit question" })).toBeEnabled();
 });
+
+test("ProductCommunityPanel removes review and question controls when a page repeats its cursor", async () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: "product-1",
+      reviewSummary: { count: 1, averageRating: "4.00" },
+      reviews: {
+        edges: [{ node: productReview }],
+        pageInfo: { endCursor: "review-cursor-1", hasNextPage: true }
+      },
+      questions: {
+        edges: [{ node: productQuestion }],
+        pageInfo: { endCursor: "question-cursor-1", hasNextPage: true }
+      }
+    }
+  } as never);
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Show more reviews" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Show more reviews" })).toBeNull());
+  expect(screen.getByRole("button", { name: "Show more questions" })).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Show more questions" }));
+  await waitFor(() => expect(screen.queryByRole("button", { name: "Show more questions" })).toBeNull());
+});
+
+test("ProductCommunityPanel suppresses a blank initial answer cursor", () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: "product-1",
+      reviewSummary: { count: 1, averageRating: "4.00" },
+      reviews: { edges: [{ node: productReview }], pageInfo: { endCursor: null, hasNextPage: false } },
+      questions: {
+        edges: [{
+          node: {
+            ...productQuestion,
+            answers: {
+              ...productQuestion.answers,
+              pageInfo: { endCursor: "   ", hasNextPage: true }
+            }
+          }
+        }],
+        pageInfo: { endCursor: null, hasNextPage: false }
+      }
+    }
+  } as never);
+
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+  expect(screen.queryByRole("button", { name: "Show more answers" })).toBeNull();
+});

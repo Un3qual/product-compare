@@ -254,12 +254,19 @@ test("acceptedAnswerAuthorLabel marks only the accepted answer", () => {
   );
 });
 
-test("nextCommunityPageCursor requires both another page and a cursor", () => {
+test("nextCommunityPageCursor requires a nonblank advancing cursor", () => {
   expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: true })).toBe(
     "cursor-1"
   );
   expect(nextCommunityPageCursor({ endCursor: null, hasNextPage: true })).toBeNull();
+  expect(nextCommunityPageCursor({ endCursor: " ", hasNextPage: true })).toBeNull();
   expect(nextCommunityPageCursor({ endCursor: "cursor-1", hasNextPage: false })).toBeNull();
+  expect(
+    nextCommunityPageCursor(
+      { endCursor: "cursor-1", hasNextPage: true },
+      "cursor-1"
+    )
+  ).toBeNull();
 });
 
 test("appendUniqueCommunityItems keeps first occurrences and stable references", () => {
