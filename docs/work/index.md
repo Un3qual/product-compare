@@ -1144,16 +1144,19 @@ complete. A fresh resolver/query audit replenished the shared queue with three
 backend read-budget outcomes: product evidence/SEO, public community
 connections, and product-offer/coupon/history connections. Already-implemented
 frontend polish and preloaded specification corrections were not re-promoted.
+Before product evidence was claimed, the coordinator verified and promoted two
+additional, independently reviewable read-budget outcomes: merchant-parent
+active-offer connections and owner-private community submission lists. They are
+serial with overlapping resolver/context rows but have distinct contracts and
+acceptance boundaries. Product evidence is active, and four complete rows
+remain ready.
 
 ## Active Work
 
-None.
+### Bounded Product Evidence GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Product Evidence GraphQL Reads
-
-Status: ready
+Status: active
+Owner: `codex/bounded-product-evidence-reads`
 Lane: Bounded product evidence GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
 Batch outcome: product evidence and SEO fields requested through a GraphQL
@@ -1206,7 +1209,9 @@ Exit condition: one- and multi-product evidence and metadata stay semantically
 identical to the current contract, and relevant SELECT counts remain fixed
 when the same GraphQL request grows its product parent count.
 
-### 2. Bounded Community GraphQL Connections
+## Ready Work
+
+### 1. Bounded Community GraphQL Connections
 
 Status: ready
 Lane: Bounded community GraphQL connections
@@ -1253,7 +1258,7 @@ Exit condition: community connection edges, ordering, visibility, accepted-
 answer data, and page info match current behavior while review/question/answer
 SELECT counts stay fixed as parent counts grow.
 
-### 3. Bounded Product Offer GraphQL Connections
+### 2. Bounded Product Offer GraphQL Connections
 
 Status: ready
 Lane: Bounded product offer GraphQL connections
@@ -1304,6 +1309,101 @@ Verification:
 Exit condition: product-offer, coupon, and history edges, filters, ordering,
 validity, and page info match current behavior while relevant SELECT counts
 stay fixed as product and offer parent counts grow.
+
+### 3. Bounded Merchant Offer GraphQL Connections
+
+Status: ready
+Lane: Bounded merchant offer GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
+Batch outcome: `Merchant.merchantProducts` keeps a fixed SELECT budget as a
+GraphQL merchant connection grows, without changing active-offer, Relay,
+association, or latest-price behavior.
+Next action: add parent-partitioned active merchant-offer pages, route the field
+through a request-scoped Dataloader source, and prove fixed query budgets under
+growing merchant parent counts.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-merchant-offer-graphql-connections.md`
+
+Internal slices:
+
+- Parent-partitioned active merchant-offer pages.
+- Request-scoped merchant-offer Dataloader integration.
+- Relay parity plus fixed query budgets as merchant parents grow.
+
+Prerequisites:
+
+- Existing active-only and ascending offer-ID behavior remains authoritative.
+- Existing Relay cursor, page-size, edge, and `pageInfo` behavior remains the
+  contract.
+- This row executes serially with shared Pricing/Connection/Loader rows; it is
+  not blocked by their product-parent contracts.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: merchant-offer edges, active filtering, order, cursors, page
+info, associations, and latest prices match current behavior while relevant
+SELECT counts stay fixed as merchant parent count grows.
+
+### 4. Bounded Viewer Community Submission Reads
+
+Status: ready
+Lane: Bounded viewer community submission reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
+Batch outcome: authenticated `Product.viewerCommunitySubmissions` keeps fixed
+owner-private review, question, and answer read budgets as product parent count
+grows.
+Next action: add parent-partitioned owner submission reads, delegate the
+authenticated resolver through Dataloader, and prove lifecycle/privacy parity
+under growing product parent counts.
+Owned paths:
+
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-viewer-community-submission-reads.md`
+
+Internal slices:
+
+- Parent-partitioned owner review, question, and answer reads.
+- Authenticated request-scoped Dataloader integration.
+- Privacy, lifecycle parity, and fixed query-budget coverage.
+
+Prerequisites:
+
+- Existing owner-only, anonymous-empty, order, status, and per-kind limit
+  behavior remains authoritative.
+- Published answers under non-public parents remain owner-manageable.
+- This row executes serially with shared Discussions/Loader rows; it is not
+  dependent on the public community connection contract.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: owner submission lists, privacy, lifecycle visibility, order,
+and per-kind limits match current behavior while review, thread, and post
+SELECT counts stay fixed as product parent count grows.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: `codex/bounded-product-evidence-reads`
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
@@ -51,4 +52,3 @@ changing offer, review, specification, or metadata truth.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
-
