@@ -660,14 +660,60 @@ defmodule ProductCompare.Specs do
     end
   end
 
+  @spec list_current_attributes_for_products([pos_integer()]) :: %{
+          optional(pos_integer()) => [map()]
+        }
+  def list_current_attributes_for_products(product_ids) when is_list(product_ids) do
+    product_ids = normalize_ids(product_ids)
+
+    if product_ids == [] do
+      %{}
+    else
+      products_by_id =
+        Product
+        |> where([product], product.id in ^product_ids)
+        |> select([product], {product.id, product.primary_type_taxon_id})
+        |> Repo.all()
+        |> Map.new()
+
+      current_attributes_by_product =
+        product_ids
+        |> current_attributes_query()
+        |> Repo.all()
+        |> Enum.group_by(& &1.product_id)
+
+      taxon_attributes_by_taxon_id =
+        current_attributes_by_product
+        |> Map.values()
+        |> List.flatten()
+        |> Enum.map(& &1.attribute_id)
+        |> taxon_attributes_by_taxon_and_attribute_ids(
+          products_by_id
+          |> Map.values()
+          |> Enum.filter(&valid_id?/1)
+        )
+
+      Map.new(product_ids, fn product_id ->
+        current_attributes = Map.get(current_attributes_by_product, product_id, [])
+        taxon_id = Map.get(products_by_id, product_id)
+
+        taxon_attributes =
+          taxon_attributes_by_taxon_id
+          |> Map.get(taxon_id, [])
+
+        {product_id,
+         with_current_attribute_metadata_from_taxon_attributes(
+           current_attributes,
+           taxon_attributes
+         )}
+      end)
+    end
+  end
+
   @spec list_current_attributes_for_product(term()) :: [map()]
   def list_current_attributes_for_product(product_id) when valid_id_guard(product_id) do
-    product = Repo.get(Product, product_id)
-
-    product_id
-    |> current_attributes_query()
-    |> Repo.all()
-    |> with_current_attribute_metadata(product && product.primary_type_taxon_id)
+    list_current_attributes_for_products([product_id])
+    |> Map.fetch!(product_id)
   end
 
   def list_current_attributes_for_product(_product_id), do: []
@@ -887,15 +933,31 @@ defmodule ProductCompare.Specs do
     end
   end
 
-  defp current_attributes_query(product_id) do
+  defp current_attributes_query(product_ids) do
     ProductAttributeCurrent
-    |> where([current], current.product_id == ^product_id)
+    |> where([current], current.product_id in ^product_ids)
     |> join(:inner, [current], attribute in assoc(current, :attribute))
-    |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
+    |> order_by([current, attribute],
+      asc: current.product_id,
+      asc: attribute.display_name,
+      asc: attribute.code
+    )
     |> preload([_current, attribute],
       attribute: attribute,
       claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
     )
+  end
+
+  defp taxon_attributes_by_taxon_and_attribute_ids(_attribute_ids, []), do: %{}
+
+  defp taxon_attributes_by_taxon_and_attribute_ids([], _taxon_ids), do: %{}
+
+  defp taxon_attributes_by_taxon_and_attribute_ids(attribute_ids, taxon_ids) do
+    TaxonAttribute
+    |> where([taxon_attribute], taxon_attribute.taxon_id in ^taxon_ids)
+    |> where([taxon_attribute], taxon_attribute.attribute_id in ^attribute_ids)
+    |> Repo.all()
+    |> Enum.group_by(& &1.taxon_id)
   end
 
   defp taxon_attribute_metadata_by_attribute_id(_attribute_ids, nil), do: %{}

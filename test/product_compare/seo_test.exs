@@ -34,6 +34,26 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
+  test "set-based attribute reads preserve accepted claims for requested products" do
+    operator = AccountsFixtures.operator_fixture()
+    product = qualified_product("batched-evidence-product", operator)
+    empty_product = SpecsFixtures.product_fixture(%{slug: "batched-evidence-empty"})
+    missing_product_id = empty_product.id + 1_000_000
+
+    attributes =
+      Specs.list_current_attributes_for_products([
+        product.id,
+        empty_product.id,
+        missing_product_id
+      ])
+
+    assert Enum.map(attributes[product.id], & &1.claim.status) == [:accepted, :accepted]
+    assert attributes[empty_product.id] == []
+    assert attributes[missing_product_id] == []
+    assert attributes[product.id] == Specs.list_current_attributes_for_product(product.id)
+    assert Specs.list_current_attributes_for_products([]) == %{}
+  end
+
   test "curated categories qualify only after three qualifying products" do
     operator = AccountsFixtures.operator_fixture()
     type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")

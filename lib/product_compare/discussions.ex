@@ -198,19 +198,44 @@ defmodule ProductCompare.Discussions do
       order_by: [desc: review.inserted_at, desc: review.id]
   end
 
+  @spec review_summaries([pos_integer()]) :: %{
+          optional(pos_integer()) => %{
+            count: non_neg_integer(),
+            average_rating: Decimal.t() | nil
+          }
+        }
+  def review_summaries(product_ids) when is_list(product_ids) do
+    product_ids = product_ids |> Enum.filter(&valid_product_id?/1) |> Enum.uniq()
+
+    summaries = Map.new(product_ids, &{&1, zero_review_summary()})
+
+    if product_ids == [] do
+      summaries
+    else
+      ProductReview
+      |> where(
+        [review],
+        review.product_id in ^product_ids and review.moderation_status == :published
+      )
+      |> group_by([review], review.product_id)
+      |> select([review], {review.product_id, count(review.id), avg(review.rating)})
+      |> Repo.all()
+      |> Enum.reduce(summaries, fn {product_id, count, average}, summaries ->
+        Map.put(summaries, product_id, %{
+          count: count,
+          average_rating: average && Decimal.round(average, 2)
+        })
+      end)
+    end
+  end
+
   @spec review_summary(pos_integer()) :: %{
           count: non_neg_integer(),
           average_rating: Decimal.t() | nil
         }
   def review_summary(product_id) do
-    {count, average} =
-      Repo.one(
-        from review in ProductReview,
-          where: review.product_id == ^product_id and review.moderation_status == :published,
-          select: {count(review.id), avg(review.rating)}
-      )
-
-    %{count: count, average_rating: average && Decimal.round(average, 2)}
+    review_summaries([product_id])
+    |> Map.get(product_id, zero_review_summary())
   end
 
   @spec ask_question(pos_integer(), pos_integer(), map()) ::
@@ -845,6 +870,10 @@ defmodule ProductCompare.Discussions do
   end
 
   defp transaction_result(callback), do: Repo.transaction(callback)
+
+  defp zero_review_summary, do: %{count: 0, average_rating: nil}
+
+  defp valid_product_id?(product_id), do: is_integer(product_id) and product_id > 0
 
   defp normalize_pagination(opts) do
     limit =

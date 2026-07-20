@@ -1,6 +1,8 @@
 defmodule ProductCompare.PricingTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Pricing.OfferTruth
@@ -278,6 +280,51 @@ defmodule ProductCompare.PricingTest do
   end
 
   describe "complete current offer truth" do
+    test "batches requested products with one offer and latest-price read", %{test: test_name} do
+      now = ~U[2026-07-13 18:00:00Z]
+      observed_product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-observed"})
+      empty_product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-empty"})
+      missing_product_id = empty_product.id + 1_000_000
+
+      observed =
+        offer_fixture(observed_product, "USD", "#{test_name}-observed", true, %{
+          price: "100",
+          shipping: "5",
+          in_stock: true,
+          observed_at: now
+        })
+
+      _unobserved = offer_fixture(observed_product, "USD", "#{test_name}-unobserved", true, nil)
+
+      {truths, queries} =
+        capture_select_queries(fn ->
+          Pricing.current_offer_truths(
+            [observed_product.id, missing_product_id, empty_product.id, observed_product.id],
+            now: now
+          )
+        end)
+
+      assert Map.keys(truths) |> Enum.sort() ==
+               Enum.sort([observed_product.id, missing_product_id, empty_product.id])
+
+      assert %{offer_count: 2, observed_offer_count: 1, eligible_offer_count: 1} =
+               truths[observed_product.id]
+
+      assert [%{best_offer: %{merchant_product_id: observed_id}}] =
+               truths[observed_product.id].currency_summaries
+
+      assert observed_id == observed.id
+      assert truths[empty_product.id] == Pricing.current_offer_truth(empty_product.id, now: now)
+
+      assert truths[missing_product_id] ==
+               Pricing.current_offer_truth(missing_product_id, now: now)
+
+      assert Pricing.current_offer_truths([], now: now) == %{}
+
+      assert Enum.count(queries, &String.contains?(&1, ~s(FROM "merchant_products"))) == 1
+      assert Enum.count(queries, &String.contains?(&1, ~s(FROM "price_points"))) == 1
+    end
+
     test "classifies completeness, stock, freshness, and eligibility" do
       now = ~U[2026-07-13 18:00:00Z]
 

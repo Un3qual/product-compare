@@ -130,6 +130,54 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert "has already been taken" in errors_on(changeset).product_id
   end
 
+  test "review_summaries batches published ratings and preserves zero summaries" do
+    operator = AccountsFixtures.operator_fixture()
+    published_product = SpecsFixtures.product_fixture()
+    hidden_product = SpecsFixtures.product_fixture()
+    zero_review_product = SpecsFixtures.product_fixture()
+    missing_product_id = zero_review_product.id + 1_000_000
+
+    assert {:ok, published_review} =
+             Discussions.submit_review(
+               AccountsFixtures.user_fixture().id,
+               published_product.id,
+               %{
+                 rating: 4,
+                 title: "Published review",
+                 body: "This review is public."
+               }
+             )
+
+    assert {:ok, _} =
+             Discussions.moderate(operator.id, :review, published_review.entropy_id, :published)
+
+    assert {:ok, hidden_review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, hidden_product.id, %{
+               rating: 5,
+               title: "Hidden review",
+               body: "This review is not public."
+             })
+
+    assert {:ok, _} =
+             Discussions.moderate(operator.id, :review, hidden_review.entropy_id, :hidden)
+
+    summaries =
+      Discussions.review_summaries([
+        published_product.id,
+        hidden_product.id,
+        zero_review_product.id,
+        missing_product_id,
+        published_product.id
+      ])
+
+    assert summaries[published_product.id] == %{count: 1, average_rating: Decimal.new("4.00")}
+    assert summaries[hidden_product.id] == %{count: 0, average_rating: nil}
+    assert summaries[zero_review_product.id] == %{count: 0, average_rating: nil}
+    assert summaries[missing_product_id] == %{count: 0, average_rating: nil}
+    assert summaries[published_product.id] == Discussions.review_summary(published_product.id)
+    assert Discussions.review_summaries([]) == %{}
+  end
+
   test "published questions accept only a published answer from the same thread" do
     asker = AccountsFixtures.user_fixture()
     answerer = AccountsFixtures.user_fixture()
