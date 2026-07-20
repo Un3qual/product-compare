@@ -239,7 +239,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onProgramSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
       <AffiliateLinkForm
@@ -247,7 +247,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onLinkSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
       />
       <AffiliateCouponForm
         error={null}
@@ -256,7 +256,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         onSubmit={onCouponSubmit}
         pending={false}
         result={null}
-        selectedMerchantSummary="Acme Market (acme.example)"
+        selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
     </>

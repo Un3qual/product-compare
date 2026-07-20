@@ -42,8 +42,7 @@ import {
   buildMerchantChoices,
   buildNetworkVariables,
   buildProgramVariables,
-  getMerchantChoiceById,
-  getMerchantSummary,
+  getAffiliateMerchantContext,
   resolveAffiliateCouponMutationOutcome,
   resolveAffiliateLinkMutationOutcome,
   resolveAffiliateNetworkMutationOutcome,
@@ -124,17 +123,14 @@ function AffiliateSetupPanel({
     () => buildMerchantChoices(data.merchants),
     [data.merchants]
   );
-  const selectedMerchant = useMemo(
-    () => getMerchantChoiceById(merchantChoices, selectedMerchantId) ?? merchantChoices[0],
+  const merchantContext = useMemo(
+    () => getAffiliateMerchantContext(merchantChoices, selectedMerchantId),
     [merchantChoices, selectedMerchantId]
   );
 
   if (!data.merchants) {
     return <AffiliateSetupUnavailableFallback />;
   }
-
-  const selectedMerchantSummary = getMerchantSummary(selectedMerchant);
-  const selectedMerchantValue = selectedMerchant?.id ?? "";
 
   async function handleNetworkSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -297,7 +293,9 @@ function AffiliateSetupPanel({
             <li>Register a tracked link.</li>
             <li>Add an eligible coupon.</li>
           </ol>
-          {selectedMerchantSummary ? <p>{`Current merchant: ${selectedMerchantSummary}`}</p> : null}
+          {merchantContext.currentMerchantCopy ? (
+            <p>{merchantContext.currentMerchantCopy}</p>
+          ) : null}
         </ContextRail>
       }
       label="Affiliate configuration workflow"
@@ -321,8 +319,8 @@ function AffiliateSetupPanel({
           onSubmit={handleProgramSubmit}
           pending={programPending}
           result={programResult}
-          selectedMerchantSummary={selectedMerchantSummary}
-          selectedMerchantValue={selectedMerchantValue}
+          selectedMerchantCopy={merchantContext.selectedMerchantCopy}
+          selectedMerchantValue={merchantContext.selectedMerchantValue}
         />
       )}
 
@@ -331,7 +329,7 @@ function AffiliateSetupPanel({
         onSubmit={handleLinkSubmit}
         pending={linkPending}
         result={linkResult}
-        selectedMerchantSummary={selectedMerchantSummary}
+        selectedMerchantCopy={merchantContext.selectedMerchantCopy}
       />
 
       {merchantChoices.length === 0 ? null : (
@@ -342,8 +340,8 @@ function AffiliateSetupPanel({
           onSubmit={handleCouponSubmit}
           pending={couponPending}
           result={couponResult}
-          selectedMerchantSummary={selectedMerchantSummary}
-          selectedMerchantValue={selectedMerchantValue}
+          selectedMerchantCopy={merchantContext.selectedMerchantCopy}
+          selectedMerchantValue={merchantContext.selectedMerchantValue}
         />
       )}
 
