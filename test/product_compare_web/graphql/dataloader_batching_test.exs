@@ -150,7 +150,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         end)
 
       initial_edges = get_in(initial_response, ["data", "merchants", "edges"])
-      assert length(initial_edges) == 3
+      assert [_, _, _] = initial_edges
       assert summary_for(initial_edges, empty_merchant.name)["activeOfferCount"] == 0
 
       Enum.each(initial_merchants, fn merchant ->
