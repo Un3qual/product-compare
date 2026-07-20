@@ -17,6 +17,8 @@ defmodule ProductCompare.Discussions do
 
   @default_page_limit 50
   @max_page_limit 200
+  @owner_submission_limit 50
+  @non_public_owner_statuses [:pending, :hidden, :rejected]
   @default_write_limits [review: 5, question: 10, answer: 30, report: 30]
 
   @spec list_threads_for_product(pos_integer(), keyword() | map()) :: [ProductThread.t()]
@@ -248,7 +250,7 @@ defmodule ProductCompare.Discussions do
   def answer_question(user_id, question_entropy_id, body, idempotency_key)
       when is_integer(user_id) and user_id > 0 and is_binary(question_entropy_id) and
              is_binary(idempotency_key) do
-    with %ProductThread{} = question <- public_question_by_entropy(question_entropy_id),
+    with %ProductThread{} = question <- question_by_entropy(question_entropy_id),
          changeset <-
            ThreadPost.changeset(%ThreadPost{}, %{
              thread_id: question.id,
@@ -257,7 +259,12 @@ defmodule ProductCompare.Discussions do
            }),
          {:ok, digest} <-
            submission_digest(changeset, :answer, [:thread_id, :body_md], question.entropy_id) do
-      idempotent_insert(user_id, :answer, idempotency_key, digest, changeset)
+      idempotent_insert(user_id, :answer, idempotency_key, digest, changeset, fn ->
+        case locked_record_by_entropy(ProductThread, question.entropy_id) do
+          %ProductThread{kind: :question, moderation_status: :published} -> :ok
+          _not_public -> Repo.rollback(:not_found)
+        end
+      end)
     else
       nil -> {:error, :not_found}
       error -> error
@@ -314,6 +321,46 @@ defmodule ProductCompare.Discussions do
         offset: ^offset,
         preload: [posts: ^published_posts]
     )
+  end
+
+  @spec viewer_community_submissions(pos_integer(), pos_integer()) :: %{
+          reviews: [ProductReview.t()],
+          questions: [ProductThread.t()],
+          answers: [ThreadPost.t()]
+        }
+  def viewer_community_submissions(user_id, product_id)
+      when is_integer(user_id) and user_id > 0 and is_integer(product_id) and product_id > 0 do
+    %{
+      reviews:
+        Repo.all(
+          from review in ProductReview,
+            where: review.user_id == ^user_id and review.product_id == ^product_id,
+            where: review.moderation_status in ^@non_public_owner_statuses,
+            order_by: [desc: review.inserted_at, desc: review.id],
+            limit: @owner_submission_limit
+        ),
+      questions:
+        Repo.all(
+          from question in ProductThread,
+            where:
+              question.created_by == ^user_id and question.product_id == ^product_id and
+                question.kind == :question,
+            where: question.moderation_status in ^@non_public_owner_statuses,
+            order_by: [desc: question.inserted_at, desc: question.id],
+            limit: @owner_submission_limit
+        ),
+      answers:
+        Repo.all(
+          from answer in ThreadPost,
+            join: question in ProductThread,
+            on: question.id == answer.thread_id,
+            where: answer.user_id == ^user_id and question.product_id == ^product_id,
+            where: answer.moderation_status in ^@non_public_owner_statuses,
+            order_by: [desc: answer.inserted_at, desc: answer.id],
+            limit: @owner_submission_limit,
+            select: answer
+        )
+    }
   end
 
   @spec public_questions_query(pos_integer()) :: Ecto.Query.t()
@@ -446,7 +493,14 @@ defmodule ProductCompare.Discussions do
     end
   end
 
-  defp idempotent_insert(user_id, mutation_kind, idempotency_key, digest, changeset) do
+  defp idempotent_insert(
+         user_id,
+         mutation_kind,
+         idempotency_key,
+         digest,
+         changeset,
+         before_insert \\ fn -> :ok end
+       ) do
     with :ok <- validate_idempotency_key(user_id, mutation_kind, idempotency_key, digest) do
       transaction_result(fn ->
         lock_idempotency_key!(user_id, mutation_kind, idempotency_key)
@@ -462,6 +516,7 @@ defmodule ProductCompare.Discussions do
             Repo.rollback(:idempotency_conflict)
 
           nil ->
+            :ok = before_insert.()
             increment_write_window!(user_id, mutation_kind)
             inserted_content = insert_or_rollback(changeset)
             content = Repo.get!(inserted_content.__struct__, inserted_content.id)

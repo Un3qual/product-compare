@@ -23,6 +23,12 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
+  def viewer_community_submissions(product, _args, %{context: %{current_user: user}}),
+    do: {:ok, Discussions.viewer_community_submissions(user.id, product.id)}
+
+  def viewer_community_submissions(_product, _args, _resolution),
+    do: {:ok, %{reviews: [], questions: [], answers: []}}
+
   def answers(question, args, _resolution) do
     question.id
     |> Discussions.public_answers_query()

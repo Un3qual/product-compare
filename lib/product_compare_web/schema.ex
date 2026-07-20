@@ -1521,6 +1521,9 @@ defmodule ProductCompareWeb.Schema do
       resolve(&DiscussionsResolver.questions/3)
     end
 
+    field :viewer_community_submissions, non_null(:viewer_community_submissions),
+      resolve: &DiscussionsResolver.viewer_community_submissions/3
+
     field :merchant_products, :merchant_product_connection do
       arg(:first, :integer)
       arg(:after, :string)
@@ -1534,6 +1537,12 @@ defmodule ProductCompareWeb.Schema do
   object :product_review_summary do
     field :count, non_null(:integer)
     field :average_rating, :decimal
+  end
+
+  object :viewer_community_submissions do
+    field :reviews, non_null(list_of(non_null(:product_review)))
+    field :questions, non_null(list_of(non_null(:product_question)))
+    field :answers, non_null(list_of(non_null(:product_answer)))
   end
 
   object :product_review do

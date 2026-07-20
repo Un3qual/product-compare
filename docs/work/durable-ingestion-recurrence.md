@@ -51,5 +51,8 @@ windows.
   0 failures. Two ticks in the same UTC hour pass the same window, while the
   next-hour tick passes a different window without changing bounded runner,
   cursor, retry, or redaction behavior.
+- PR review follow-through canonicalized explicit and default schedule windows
+  at worker-argument construction, so microsecond and timezone-offset variants
+  of the same UTC hour share one Oban uniqueness identity.
 - Batch gates: `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.

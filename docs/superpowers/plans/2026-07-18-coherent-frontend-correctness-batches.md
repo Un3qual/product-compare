@@ -3,7 +3,7 @@
 > **Dispatch note (2026-07-20):** Superseded by the approved cross-stack design
 > and seven 2026-07-20 implementation plans. This file remains historical
 > grouping evidence; workers must use `docs/work/index.md` for live dispatch.
-
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use

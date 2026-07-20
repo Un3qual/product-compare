@@ -55,6 +55,16 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
     refute Map.has_key?(first_job.args, "company_id")
   end
 
+  test "worker args canonicalize equivalent UTC schedule windows" do
+    assert CJProductImportWorker.args(schedule_window: "2026-07-20T19:00:00.000000Z")[
+             "schedule_window"
+           ] == "2026-07-20T19:00:00Z"
+
+    assert CJFeedDiscoveryWorker.args(schedule_window: "2026-07-20T12:00:00-07:00")[
+             "schedule_window"
+           ] == "2026-07-20T19:00:00Z"
+  end
+
   test "product import jobs call the existing runner with safe normalized options" do
     parent = self()
 

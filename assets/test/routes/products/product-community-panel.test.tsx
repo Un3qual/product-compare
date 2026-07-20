@@ -68,7 +68,8 @@ beforeEach(() => {
       questions: {
         edges: [{ node: productQuestion }],
         pageInfo: { endCursor: null, hasNextPage: false }
-      }
+      },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
   mockedUseMutation.mockImplementation((mutation) => {
@@ -166,9 +167,12 @@ test("ProductCommunityPanel exposes owner-only edit and confirmed removal contro
   })));
   await act(async () => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({ updateProductReview: { review: { id: "review-1", moderationStatus: "PENDING" }, errors: [] } }, []));
   expect(await screen.findByText("Review updated and submitted for moderation.")).toBeVisible();
+  expect(screen.queryByText("<img src=x onerror=alert(1)> held up in rain.")).toBeNull();
+  expect(screen.queryByRole("button", { name: "Edit review" })).toBeNull();
 
   fireEvent.click(screen.getByRole("button", { name: "Remove question" }));
   expect(screen.getByText("Remove this question?")).toBeVisible();
+  expect(screen.getByRole("group", { name: "Confirm removal of question" }).tagName).toBe("FIELDSET");
   fireEvent.click(screen.getByRole("button", { name: "Confirm remove question" }));
   await waitFor(() => expect(removeMock).toHaveBeenCalledWith(expect.objectContaining({
     variables: { input: { contentId: "question-1", contentType: "QUESTION" } }
@@ -181,13 +185,39 @@ test("ProductCommunityPanel hides owner controls without capabilities", () => {
       id: "product-1",
       reviewSummary: { count: 1, averageRating: "4.00" },
       reviews: { edges: [{ node: { ...productReview, viewerCanEdit: false, viewerCanRemove: false } }], pageInfo: { endCursor: null, hasNextPage: false } },
-      questions: { edges: [{ node: { ...productQuestion, viewerCanEdit: false, viewerCanRemove: false, answers: { ...productQuestion.answers, edges: [{ node: { ...productQuestion.answers.edges[0].node, viewerCanEdit: false, viewerCanRemove: false } }] } } }], pageInfo: { endCursor: null, hasNextPage: false } }
+      questions: { edges: [{ node: { ...productQuestion, viewerCanEdit: false, viewerCanRemove: false, answers: { ...productQuestion.answers, edges: [{ node: { ...productQuestion.answers.edges[0].node, viewerCanEdit: false, viewerCanRemove: false } }] } } }], pageInfo: { endCursor: null, hasNextPage: false } },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
 
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
   expect(screen.queryByRole("button", { name: /^Edit (review|question|answer)$/ })).toBeNull();
   expect(screen.queryByRole("button", { name: /^Remove (review|question|answer)$/ })).toBeNull();
+});
+
+test("ProductCommunityPanel gives owners a path to edit hidden and rejected submissions", () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: "product-1",
+      reviewSummary: { count: 0, averageRating: null },
+      reviews: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+      viewerCommunitySubmissions: {
+        reviews: [{ ...productReview, moderationStatus: "HIDDEN" }],
+        questions: [{ ...productQuestion, moderationStatus: "REJECTED" }],
+        answers: [{ ...productQuestion.answers.edges[0].node, moderationStatus: "REJECTED" }]
+      }
+    }
+  } as never);
+
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  const ownerSection = screen.getByRole("region", { name: "Your non-public community submissions" });
+  expect(within(ownerSection).getByRole("button", { name: "Edit review" })).toBeVisible();
+  expect(within(ownerSection).getByRole("button", { name: "Edit question" })).toBeVisible();
+  expect(within(ownerSection).getByRole("button", { name: "Edit answer" })).toBeVisible();
+  expect(within(ownerSection).getByText("Hidden")).toBeVisible();
+  expect(within(ownerSection).getAllByText("Rejected")).toHaveLength(2);
 });
 
 test("ProductCommunityPanel keeps lifecycle failures scoped to their content row", async () => {
@@ -221,7 +251,8 @@ test("ProductCommunityPanel removes review and question controls when a page rep
       questions: {
         edges: [{ node: productQuestion }],
         pageInfo: { endCursor: "question-cursor-1", hasNextPage: true }
-      }
+      },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
@@ -251,7 +282,8 @@ test("ProductCommunityPanel suppresses a blank initial answer cursor", () => {
           }
         }],
         pageInfo: { endCursor: null, hasNextPage: false }
-      }
+      },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
 

@@ -713,7 +713,8 @@ test("loads bounded community data only when the Reviews & Q&A tab is opened", (
       id: DETAIL_PRODUCT.id,
       reviewSummary: { count: 0, averageRating: null },
       reviews: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
-      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } }
+      questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
     }
   } as never);
 

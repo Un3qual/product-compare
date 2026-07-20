@@ -1000,12 +1000,19 @@ type Product implements Node {
   reviewSummary: ProductReviewSummary!
   reviews(first: Int, after: String): ProductReviewConnection!
   questions(first: Int, after: String): ProductQuestionConnection!
+  viewerCommunitySubmissions: ViewerCommunitySubmissions!
   merchantProducts(first: Int, after: String, merchantId: ID, activeOnly: Boolean): MerchantProductConnection
 }
 
 type ProductReviewSummary {
   count: Int!
   averageRating: Decimal
+}
+
+type ViewerCommunitySubmissions {
+  reviews: [ProductReview!]!
+  questions: [ProductQuestion!]!
+  answers: [ProductAnswer!]!
 }
 
 type ProductReview {

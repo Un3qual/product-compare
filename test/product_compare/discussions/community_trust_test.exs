@@ -274,6 +274,24 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
              )
 
     assert replayed_answer.id == answer.id
+
+    assert {:ok, _hidden_question} =
+             Discussions.moderate(
+               operator.id,
+               :question,
+               published_question.entropy_id,
+               :hidden
+             )
+
+    assert {:ok, replayed_after_moderation} =
+             Discussions.answer_question(
+               answerer.id,
+               published_question.entropy_id,
+               "Yes, it works.",
+               "answer-key-00001"
+             )
+
+    assert replayed_after_moderation.id == answer.id
     assert Repo.aggregate(CommunityWriteReceipt, :count, :id) == 3
     assert Repo.aggregate(CommunityWriteWindow, :sum, :count) == 3
   end

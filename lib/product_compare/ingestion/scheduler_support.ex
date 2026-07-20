@@ -15,7 +15,7 @@ defmodule ProductCompare.Ingestion.SchedulerSupport do
   @spec schedule(atom(), non_neg_integer()) :: reference()
   def schedule(message, delay_ms), do: Process.send_after(self(), message, delay_ms)
 
-  @spec schedule_window(DateTime.t()) :: String.t()
+  @spec schedule_window(DateTime.t() | String.t()) :: String.t()
   def schedule_window(%DateTime{} = datetime) do
     datetime
     |> DateTime.to_unix(:second)
@@ -23,6 +23,15 @@ defmodule ProductCompare.Ingestion.SchedulerSupport do
     |> Kernel.*(3600)
     |> DateTime.from_unix!(:second)
     |> DateTime.to_iso8601()
+  end
+
+  def schedule_window(value) when is_binary(value) do
+    trimmed = String.trim(value)
+
+    case DateTime.from_iso8601(trimmed) do
+      {:ok, datetime, _offset} -> schedule_window(datetime)
+      {:error, _reason} -> trimmed
+    end
   end
 
   @spec run((keyword() -> term()), keyword()) :: term() | {:error, :runner_exception}

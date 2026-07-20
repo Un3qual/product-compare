@@ -38,7 +38,9 @@ accessible Relay controls.
 
 ## Boundaries
 
-- Public reads remain published-only and author identity stays private.
+- Public review/question/answer connections remain published-only and author
+  identity stays private. A bounded viewer-scoped product field may return the
+  current owner's non-public submissions for lifecycle management.
 - Removal retains audit/moderation state and is never rate-limited.
 - Browser writes remain GraphQL over `/api/graphql`.
 - Keep moderation operations operator-only and keep raw receipt/counter data
@@ -79,3 +81,8 @@ accessible Relay controls.
 - The full `mix ci` gate passes queue validation with 7 ready rows, formatting,
   compilation, Credo, the 6/6 clone budget, strict smell analysis, Dialyzer,
   788 backend tests at 83.43% coverage, and the complete frontend gate.
+- PR review follow-through added the missing owner path for pending, hidden,
+  and rejected submissions while keeping anonymous and public connections
+  published-only. Public rows now disappear immediately after edit-to-pending,
+  and answer idempotency replays before parent-visibility checks while new
+  answers still lock and require a published question.

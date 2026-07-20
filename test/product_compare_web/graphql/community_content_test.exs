@@ -431,6 +431,53 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
            }
   end
 
+  test "owners can query non-public submissions without exposing them publicly", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    {:ok, review} = Discussions.submit_review(owner.id, product.id, %{rating: 4})
+    {:ok, question} = Discussions.ask_question(owner.id, product.id, %{title: "Private draft"})
+
+    {:ok, published_question} =
+      Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    {:ok, answer} =
+      Discussions.answer_question(owner.id, published_question.entropy_id, "Owner answer")
+
+    {:ok, _hidden_review} =
+      Discussions.moderate(operator.id, :review, review.entropy_id, :hidden)
+
+    {:ok, _rejected_question} =
+      Discussions.moderate(operator.id, :question, question.entropy_id, :rejected)
+
+    {:ok, _rejected_answer} =
+      Discussions.moderate(operator.id, :answer, answer.entropy_id, :rejected)
+
+    owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+
+    assert %{
+             "reviews" => [%{"id" => review_id, "moderationStatus" => "HIDDEN"}],
+             "questions" => [%{"id" => question_id, "moderationStatus" => "REJECTED"}],
+             "answers" => [%{"id" => answer_id, "moderationStatus" => "REJECTED"}]
+           } =
+             get_in(graphql(owner_conn, owner_submissions_query(), %{"slug" => product.slug}), [
+               "data",
+               "product",
+               "viewerCommunitySubmissions"
+             ])
+
+    assert review_id == relay_id(:product_review, review.entropy_id)
+    assert question_id == relay_id(:product_question, question.entropy_id)
+    assert answer_id == relay_id(:product_answer, answer.entropy_id)
+
+    assert get_in(graphql(conn, owner_submissions_query(), %{"slug" => product.slug}), [
+             "data",
+             "product",
+             "viewerCommunitySubmissions"
+           ]) == %{"reviews" => [], "questions" => [], "answers" => []}
+  end
+
   test "rate limits surface typed payload errors", %{conn: conn} do
     Application.put_env(:product_compare, ProductCompare.Discussions,
       community_write_limits: [review: 1, question: 10, answer: 30, report: 30]
@@ -502,6 +549,20 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
         reviews(first: $first, after: $after) {
           edges { cursor node { id rating } }
           pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp owner_submissions_query do
+    """
+    query OwnerSubmissions($slug: String!) {
+      product(slug: $slug) {
+        viewerCommunitySubmissions {
+          reviews { id moderationStatus viewerCanEdit viewerCanRemove }
+          questions { id moderationStatus viewerCanEdit viewerCanRemove }
+          answers { id moderationStatus viewerCanEdit viewerCanRemove }
         }
       }
     }

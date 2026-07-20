@@ -1,4 +1,5 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
+import { nextRelayPageCursor } from "../../relay-pagination";
 import {
   hasRouteGraphQLErrors,
   routeMutationErrorMessage
@@ -470,4 +471,3 @@ function apiTokenStatusLabel(token: ApiTokenRecord, isActive: boolean) {
 
   return isActive ? "Active token" : "Expired token";
 }
-import { nextRelayPageCursor } from "../../relay-pagination";

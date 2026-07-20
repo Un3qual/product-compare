@@ -113,8 +113,10 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
           <h2 id="alert-events-title" {...props(styles.sectionTitle)}>Recent changes</h2>
           {viewData.alerts.length === 0 ? <p {...props(styles.aside)}>No qualifying price or availability changes yet.</p> : (
             <ol aria-label="Price alert events" {...props(styles.list)}>
-              {viewData.alerts.map((alert) => (
-                <li key={alert.id} {...props(styles.item, alert.readAt ? null : styles.unread)}>
+              {viewData.alerts.map((alert) => {
+                const alertError = errorsById.get(alert.id);
+
+                return <li key={alert.id} {...props(styles.item, alert.readAt ? null : styles.unread)}>
                   <strong><Link to={productDetailPath(alert.productSlug)}>{alert.productName}</Link></strong>
                   <p {...props(styles.meta)}>
                     <span>{alertRuleLabel(alert.ruleType)}</span>
@@ -122,7 +124,7 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                     <span>{alert.merchantName}</span>
                     <time dateTime={alert.observedAt}>{observationDateLabel(alert.observedAt)}</time>
                   </p>
-                  {errorsById.get(alert.id) ? <FeedbackState kind="error" title={errorsById.get(alert.id)!} /> : null}
+                  {alertError ? <FeedbackState kind="error" title={alertError} /> : null}
                   {!alert.readAt ? (
                     <div {...props(styles.actions)}>
                       <Button disabled={pendingIds.has(alert.id)} variant="soft" onClick={() => { run(alert.id, async () => {
@@ -133,8 +135,8 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
                       }); }}>Mark read</Button>
                     </div>
                   ) : null}
-                </li>
-              ))}
+                </li>;
+              })}
             </ol>
           )}
           {hasMoreAlerts ? <p {...props(styles.aside)}>Showing the 50 most recent events.</p> : null}

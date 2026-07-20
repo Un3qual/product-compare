@@ -2,6 +2,7 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
   @moduledoc false
 
   alias ProductCompare.Ingestion.OptionNormalization
+  alias ProductCompare.Ingestion.SchedulerSupport
 
   @default_currency "USD"
   @default_keywords ["shoe"]
@@ -69,7 +70,7 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
       value when is_binary(value) ->
         case String.trim(value) do
           "" -> current_hour()
-          trimmed -> trimmed
+          trimmed -> SchedulerSupport.schedule_window(trimmed)
         end
 
       _other ->
@@ -77,15 +78,7 @@ defmodule ProductCompare.Ingestion.Jobs.Arguments do
     end
   end
 
-  defp current_hour do
-    now = DateTime.utc_now()
-
-    now
-    |> Map.put(:minute, 0)
-    |> Map.put(:second, 0)
-    |> Map.put(:microsecond, {0, 6})
-    |> DateTime.to_iso8601()
-  end
+  defp current_hour, do: SchedulerSupport.schedule_window(DateTime.utc_now())
 
   defp uppercase_option(opts, key, default) do
     case OptionNormalization.option(opts, key, default) do

@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../relay-pagination";
+
 export type CategorySpecificationHighlight = {
   attributeId: string;
   displayName: string;
@@ -52,4 +54,3 @@ function categoryNextPagePath(category: CategoryViewDataInput, currentAfter: str
     ? `/categories/${encodeURIComponent(category.slug)}?after=${encodeURIComponent(nextCursor)}`
     : null;
 }
-import { nextRelayPageCursor } from "../relay-pagination";

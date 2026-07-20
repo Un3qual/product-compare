@@ -24,6 +24,7 @@ export const productCommunityQuery = graphql`
             body
             verifiedPurchase
             authorLabel
+            moderationStatus
             viewerCanEdit
             viewerCanRemove
           }
@@ -40,6 +41,7 @@ export const productCommunityQuery = graphql`
             title
             body
             authorLabel
+            moderationStatus
             viewerCanEdit
             viewerCanRemove
             acceptedAnswerId
@@ -49,6 +51,7 @@ export const productCommunityQuery = graphql`
                   id
                   body
                   authorLabel
+                  moderationStatus
                   viewerCanEdit
                   viewerCanRemove
                 }
@@ -63,6 +66,36 @@ export const productCommunityQuery = graphql`
         pageInfo {
           endCursor
           hasNextPage
+        }
+      }
+      viewerCommunitySubmissions {
+        reviews {
+          id
+          rating
+          title
+          body
+          verifiedPurchase
+          authorLabel
+          moderationStatus
+          viewerCanEdit
+          viewerCanRemove
+        }
+        questions {
+          id
+          title
+          body
+          authorLabel
+          moderationStatus
+          viewerCanEdit
+          viewerCanRemove
+        }
+        answers {
+          id
+          body
+          authorLabel
+          moderationStatus
+          viewerCanEdit
+          viewerCanRemove
         }
       }
     }
