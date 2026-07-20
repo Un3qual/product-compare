@@ -10,6 +10,8 @@ export const productQuestionAnswersQuery = graphql`
             id
             body
             authorLabel
+            viewerCanEdit
+            viewerCanRemove
           }
         }
         pageInfo {

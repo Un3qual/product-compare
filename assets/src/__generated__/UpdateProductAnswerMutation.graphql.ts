@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c18a17ef0847854191bb4cc2ec270bfc>>
+ * @generated SignedSource<<f7939b22933948ae066971bb350ee466>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,16 +10,15 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type AnswerProductQuestionInput = {
-  body: string;
-  idempotencyKey: string;
-  questionId: string;
+export type UpdateProductAnswerInput = {
+  body?: string | null | undefined;
+  id: string;
 };
-export type AnswerProductQuestionMutation$variables = {
-  input: AnswerProductQuestionInput;
+export type UpdateProductAnswerMutation$variables = {
+  input: UpdateProductAnswerInput;
 };
-export type AnswerProductQuestionMutation$data = {
-  readonly answerProductQuestion: {
+export type UpdateProductAnswerMutation$data = {
+  readonly updateProductAnswer: {
     readonly answer: {
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
@@ -31,9 +30,9 @@ export type AnswerProductQuestionMutation$data = {
     }>;
   };
 };
-export type AnswerProductQuestionMutation = {
-  response: AnswerProductQuestionMutation$data;
-  variables: AnswerProductQuestionMutation$variables;
+export type UpdateProductAnswerMutation = {
+  response: UpdateProductAnswerMutation$data;
+  variables: UpdateProductAnswerMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -56,7 +55,7 @@ v1 = [
     ],
     "concreteType": "ProductAnswerPayload",
     "kind": "LinkedField",
-    "name": "answerProductQuestion",
+    "name": "updateProductAnswer",
     "plural": false,
     "selections": [
       {
@@ -125,7 +124,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AnswerProductQuestionMutation",
+    "name": "UpdateProductAnswerMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -134,20 +133,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AnswerProductQuestionMutation",
+    "name": "UpdateProductAnswerMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "1d95fa9fc3dd736c29d8d0c6386f24e6",
+    "cacheID": "41488686fb324056d5854806d194d96f",
     "id": null,
     "metadata": {},
-    "name": "AnswerProductQuestionMutation",
+    "name": "UpdateProductAnswerMutation",
     "operationKind": "mutation",
-    "text": "mutation AnswerProductQuestionMutation(\n  $input: AnswerProductQuestionInput!\n) {\n  answerProductQuestion(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation UpdateProductAnswerMutation(\n  $input: UpdateProductAnswerInput!\n) {\n  updateProductAnswer(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "29f6a0ba3b7c1d70c1327a4b60d29f1d";
+(node as any).hash = "0d9331677b37fb2e060c8feda02aaf83";
 
 export default node;

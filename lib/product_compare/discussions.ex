@@ -599,7 +599,6 @@ defmodule ProductCompare.Discussions do
 
   defp content_schema(:review), do: ProductReview
   defp content_schema(:question), do: ProductThread
-  defp content_schema(:answer), do: ThreadPost
 
   defp ensure_owner_and_editable!(record, user_id) do
     cond do
@@ -762,12 +761,7 @@ defmodule ProductCompare.Discussions do
     end
   end
 
-  defp transaction_result(callback) do
-    case Repo.transaction(callback) do
-      {:ok, result} -> {:ok, result}
-      {:error, reason} -> {:error, reason}
-    end
-  end
+  defp transaction_result(callback), do: Repo.transaction(callback)
 
   defp normalize_pagination(opts) do
     limit =
@@ -974,6 +968,4 @@ defmodule ProductCompare.Discussions do
 
   defp get_attr_value(attrs, key) when is_map(attrs),
     do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
-
-  defp get_attr_value(_attrs, _key), do: nil
 end

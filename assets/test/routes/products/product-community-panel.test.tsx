@@ -1,14 +1,36 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
+import answerProductQuestionMutation from "../../../src/routes/products/queries/AnswerProductQuestionMutation";
+import askProductQuestionMutation from "../../../src/routes/products/queries/AskProductQuestionMutation";
+import removeCommunityContentMutation from "../../../src/routes/products/queries/RemoveCommunityContentMutation";
 import submitProductReviewMutation from "../../../src/routes/products/queries/SubmitProductReviewMutation";
+import updateProductAnswerMutation from "../../../src/routes/products/queries/UpdateProductAnswerMutation";
+import updateProductQuestionMutation from "../../../src/routes/products/queries/UpdateProductQuestionMutation";
+import updateProductReviewMutation from "../../../src/routes/products/queries/UpdateProductReviewMutation";
 
-const { answerMock, askMock, reviewMock, useLazyLoadQueryMock, useMutationMock } = vi.hoisted(() => ({
+const {
+  answerMock,
+  askMock,
+  removeMock,
+  reviewMock,
+  updateAnswerMock,
+  updateQuestionMock,
+  updateReviewMock,
+  useLazyLoadQueryMock,
+  useMutationMock,
+  uuidMock
+} = vi.hoisted(() => ({
   answerMock: vi.fn(),
   askMock: vi.fn(),
+  removeMock: vi.fn(),
   reviewMock: vi.fn(),
+  updateAnswerMock: vi.fn(),
+  updateQuestionMock: vi.fn(),
+  updateReviewMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
-  useMutationMock: vi.fn()
+  useMutationMock: vi.fn(),
+  uuidMock: vi.fn()
 }));
 
 vi.mock("react-relay", async () => {
@@ -22,7 +44,17 @@ const mockedUseMutation = vi.mocked(useMutation);
 beforeEach(() => {
   answerMock.mockReset();
   askMock.mockReset();
+  removeMock.mockReset();
   reviewMock.mockReset();
+  updateAnswerMock.mockReset();
+  updateQuestionMock.mockReset();
+  updateReviewMock.mockReset();
+  uuidMock.mockReset();
+  uuidMock
+    .mockReturnValueOnce("018f0f45-31f3-7af0-8bb9-2e606355f101")
+    .mockReturnValueOnce("018f0f45-31f3-7af0-8bb9-2e606355f102")
+    .mockReturnValue("018f0f45-31f3-7af0-8bb9-2e606355f103");
+  vi.spyOn(globalThis.crypto, "randomUUID").mockImplementation(uuidMock);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
@@ -39,13 +71,16 @@ beforeEach(() => {
       }
     }
   } as never);
-  mockedUseMutation.mockImplementation((mutation) =>
-    (mutation === submitProductReviewMutation
-      ? [reviewMock, false]
-      : useMutationMock.mock.calls.length === 2
-        ? [askMock, false]
-        : [answerMock, false]) as never
-  );
+  mockedUseMutation.mockImplementation((mutation) => {
+    if (mutation === submitProductReviewMutation) return [reviewMock, false] as never;
+    if (mutation === askProductQuestionMutation) return [askMock, false] as never;
+    if (mutation === answerProductQuestionMutation) return [answerMock, false] as never;
+    if (mutation === updateProductReviewMutation) return [updateReviewMock, false] as never;
+    if (mutation === updateProductQuestionMutation) return [updateQuestionMock, false] as never;
+    if (mutation === updateProductAnswerMutation) return [updateAnswerMock, false] as never;
+    if (mutation === removeCommunityContentMutation) return [removeMock, false] as never;
+    throw new Error("Unexpected community mutation");
+  });
 });
 
 const productReview = {
@@ -54,7 +89,9 @@ const productReview = {
   title: "Useful outdoors",
   body: "<img src=x onerror=alert(1)> held up in rain.",
   verifiedPurchase: false,
-  authorLabel: "Community member"
+  authorLabel: "Community member",
+  viewerCanEdit: true,
+  viewerCanRemove: true
 };
 
 const productQuestion = {
@@ -68,11 +105,15 @@ const productQuestion = {
       node: {
         id: "answer-1",
         body: "Yes, with the port cover closed.",
-        authorLabel: "Community member"
+        authorLabel: "Community member",
+        viewerCanEdit: true,
+        viewerCanRemove: true
       }
     }],
     pageInfo: { endCursor: null, hasNextPage: false }
-  }
+  },
+  viewerCanEdit: true,
+  viewerCanRemove: true
 };
 
 test("ProductCommunityPanel shows published trust signals and renders authored text without HTML injection", () => {
@@ -86,14 +127,84 @@ test("ProductCommunityPanel shows published trust signals and renders authored t
   expect(screen.getByText("Accepted answer", { exact: false })).toBeVisible();
 });
 
-test("ProductCommunityPanel submits an authenticated review into moderation", async () => {
+test("ProductCommunityPanel reuses a create key after transport failure and replaces it after a terminal payload", async () => {
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
   fireEvent.click(screen.getByText("Write a review"));
   fireEvent.change(screen.getByLabelText("Rating"), { target: { value: "3" } });
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Balanced" } });
   fireEvent.change(screen.getByLabelText("Review"), { target: { value: "Good, with caveats." } });
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
-  await waitFor(() => expect(reviewMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { input: { productId: "product-1", rating: 3, title: "Balanced", body: "Good, with caveats." } } })));
-  await act(async () => reviewMock.mock.calls[0]?.[0]?.onCompleted({ submitProductReview: { review: { id: "review-2", moderationStatus: "PENDING" }, errors: [] } }, []));
+  const firstInput = {
+    body: "Good, with caveats.",
+    idempotencyKey: "018f0f45-31f3-7af0-8bb9-2e606355f101",
+    productId: "product-1",
+    rating: 3,
+    title: "Balanced"
+  };
+  await waitFor(() => expect(reviewMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { input: firstInput } })));
+  await act(async () => reviewMock.mock.calls[0]?.[0]?.onError(new Error("connection dropped")));
+  fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
+  await waitFor(() => expect(reviewMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ variables: { input: firstInput } })));
+  await act(async () => reviewMock.mock.calls[1]?.[0]?.onCompleted({ submitProductReview: { review: { id: "review-2", moderationStatus: "PENDING" }, errors: [] } }, []));
   expect(await screen.findByRole("status")).toHaveTextContent("submitted for moderation");
+  fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
+  await waitFor(() => expect(reviewMock).toHaveBeenNthCalledWith(3, expect.objectContaining({ variables: { input: { ...firstInput, idempotencyKey: "018f0f45-31f3-7af0-8bb9-2e606355f102" } } })));
+});
+
+test("ProductCommunityPanel exposes owner-only edit and confirmed removal controls", async () => {
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  expect(screen.getByRole("button", { name: "Edit review" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Edit question" })).toBeVisible();
+  expect(screen.getByRole("button", { name: "Edit answer" })).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit review" }));
+  fireEvent.change(screen.getByLabelText("Edit review title"), { target: { value: "Revised field notes" } });
+  fireEvent.click(screen.getByRole("button", { name: "Save review" }));
+  await waitFor(() => expect(updateReviewMock).toHaveBeenCalledWith(expect.objectContaining({
+    variables: { input: { id: "review-1", rating: 4, title: "Revised field notes", body: "<img src=x onerror=alert(1)> held up in rain." } }
+  })));
+  await act(async () => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({ updateProductReview: { review: { id: "review-1", moderationStatus: "PENDING" }, errors: [] } }, []));
+  expect(await screen.findByText("Review updated and submitted for moderation.")).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Remove question" }));
+  expect(screen.getByText("Remove this question?")).toBeVisible();
+  fireEvent.click(screen.getByRole("button", { name: "Confirm remove question" }));
+  await waitFor(() => expect(removeMock).toHaveBeenCalledWith(expect.objectContaining({
+    variables: { input: { contentId: "question-1", contentType: "QUESTION" } }
+  })));
+});
+
+test("ProductCommunityPanel hides owner controls without capabilities", () => {
+  mockedUseLazyLoadQuery.mockReturnValue({
+    product: {
+      id: "product-1",
+      reviewSummary: { count: 1, averageRating: "4.00" },
+      reviews: { edges: [{ node: { ...productReview, viewerCanEdit: false, viewerCanRemove: false } }], pageInfo: { endCursor: null, hasNextPage: false } },
+      questions: { edges: [{ node: { ...productQuestion, viewerCanEdit: false, viewerCanRemove: false, answers: { ...productQuestion.answers, edges: [{ node: { ...productQuestion.answers.edges[0].node, viewerCanEdit: false, viewerCanRemove: false } }] } } }], pageInfo: { endCursor: null, hasNextPage: false } }
+    }
+  } as never);
+
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+  expect(screen.queryByRole("button", { name: /^Edit (review|question|answer)$/ })).toBeNull();
+  expect(screen.queryByRole("button", { name: /^Remove (review|question|answer)$/ })).toBeNull();
+});
+
+test("ProductCommunityPanel keeps lifecycle failures scoped to their content row", async () => {
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+  const reviewRow = screen.getByRole("article", { name: "Review: Useful outdoors" });
+  const questionRow = screen.getByRole("article", { name: "Question: Weather sealed?" });
+
+  fireEvent.click(within(reviewRow).getByRole("button", { name: "Edit review" }));
+  fireEvent.click(within(reviewRow).getByRole("button", { name: "Save review" }));
+  await act(async () => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({
+    updateProductReview: {
+      review: null,
+      errors: [{ code: "RATE_LIMITED", message: "Community write limit reached; try again later." }]
+    }
+  }, []));
+
+  expect(within(reviewRow).getByText("Community write limit reached; try again later.")).toBeVisible();
+  expect(within(questionRow).queryByText("Community write limit reached; try again later.")).toBeNull();
+  expect(within(questionRow).getByRole("button", { name: "Edit question" })).toBeEnabled();
 });

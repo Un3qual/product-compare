@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<cd37cc3c08ba8546a9eb9f0f39f1f81f>>
+ * @generated SignedSource<<2d260087042ed2b0b0a4baa973c88732>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -30,6 +30,8 @@ export type ProductCommunityQuery$data = {
                 readonly authorLabel: string;
                 readonly body: string;
                 readonly id: string;
+                readonly viewerCanEdit: boolean;
+                readonly viewerCanRemove: boolean;
               };
             }>;
             readonly pageInfo: {
@@ -41,6 +43,8 @@ export type ProductCommunityQuery$data = {
           readonly body: string | null | undefined;
           readonly id: string;
           readonly title: string;
+          readonly viewerCanEdit: boolean;
+          readonly viewerCanRemove: boolean;
         };
       }>;
       readonly pageInfo: {
@@ -61,6 +65,8 @@ export type ProductCommunityQuery$data = {
           readonly rating: number;
           readonly title: string | null | undefined;
           readonly verifiedPurchase: boolean;
+          readonly viewerCanEdit: boolean;
+          readonly viewerCanRemove: boolean;
         };
       }>;
       readonly pageInfo: {
@@ -137,6 +143,20 @@ v9 = {
 v10 = {
   "alias": null,
   "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanEdit",
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "viewerCanRemove",
+  "storageKey": null
+},
+v12 = {
+  "alias": null,
+  "args": null,
   "concreteType": "PageInfo",
   "kind": "LinkedField",
   "name": "pageInfo",
@@ -159,7 +179,7 @@ v10 = {
   ],
   "storageKey": null
 },
-v11 = [
+v13 = [
   {
     "alias": null,
     "args": [
@@ -252,14 +272,16 @@ v11 = [
                     "name": "verifiedPurchase",
                     "storageKey": null
                   },
-                  (v9/*: any*/)
+                  (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/)
                 ],
                 "storageKey": null
               }
             ],
             "storageKey": null
           },
-          (v10/*: any*/)
+          (v12/*: any*/)
         ],
         "storageKey": null
       },
@@ -302,6 +324,8 @@ v11 = [
                   (v7/*: any*/),
                   (v8/*: any*/),
                   (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -341,14 +365,16 @@ v11 = [
                             "selections": [
                               (v6/*: any*/),
                               (v8/*: any*/),
-                              (v9/*: any*/)
+                              (v9/*: any*/),
+                              (v10/*: any*/),
+                              (v11/*: any*/)
                             ],
                             "storageKey": null
                           }
                         ],
                         "storageKey": null
                       },
-                      (v10/*: any*/)
+                      (v12/*: any*/)
                     ],
                     "storageKey": null
                   }
@@ -358,7 +384,7 @@ v11 = [
             ],
             "storageKey": null
           },
-          (v10/*: any*/)
+          (v12/*: any*/)
         ],
         "storageKey": null
       }
@@ -379,7 +405,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityQuery",
-    "selections": (v11/*: any*/),
+    "selections": (v13/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -395,19 +421,19 @@ return {
     ],
     "kind": "Operation",
     "name": "ProductCommunityQuery",
-    "selections": (v11/*: any*/)
+    "selections": (v13/*: any*/)
   },
   "params": {
-    "cacheID": "f5862a49a374db21a1a39d3b24076791",
+    "cacheID": "f1ee9095bda8d41c7a996366ec7a9807",
     "id": null,
     "metadata": {},
     "name": "ProductCommunityQuery",
     "operationKind": "query",
-    "text": "query ProductCommunityQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: $reviewFirst, after: $reviewsAfter) {\n      edges {\n        node {\n          id\n          rating\n          title\n          body\n          verifiedPurchase\n          authorLabel\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    questions(first: $questionFirst, after: $questionsAfter) {\n      edges {\n        node {\n          id\n          title\n          body\n          authorLabel\n          acceptedAnswerId\n          answers(first: $answerFirst) {\n            edges {\n              node {\n                id\n                body\n                authorLabel\n              }\n            }\n            pageInfo {\n              endCursor\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query ProductCommunityQuery(\n  $slug: String!\n  $reviewFirst: Int!\n  $reviewsAfter: String\n  $questionFirst: Int!\n  $questionsAfter: String\n  $answerFirst: Int!\n) {\n  product(slug: $slug) {\n    id\n    reviewSummary {\n      count\n      averageRating\n    }\n    reviews(first: $reviewFirst, after: $reviewsAfter) {\n      edges {\n        node {\n          id\n          rating\n          title\n          body\n          verifiedPurchase\n          authorLabel\n          viewerCanEdit\n          viewerCanRemove\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    questions(first: $questionFirst, after: $questionsAfter) {\n      edges {\n        node {\n          id\n          title\n          body\n          authorLabel\n          viewerCanEdit\n          viewerCanRemove\n          acceptedAnswerId\n          answers(first: $answerFirst) {\n            edges {\n              node {\n                id\n                body\n                authorLabel\n                viewerCanEdit\n                viewerCanRemove\n              }\n            }\n            pageInfo {\n              endCursor\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8ccd32799705ce7d52950f3cbcc66cd6";
+(node as any).hash = "acc80a45f6dff0e759cf58038b595069";
 
 export default node;

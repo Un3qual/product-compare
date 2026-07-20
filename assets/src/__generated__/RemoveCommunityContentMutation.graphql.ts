@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c18a17ef0847854191bb4cc2ec270bfc>>
+ * @generated SignedSource<<ac24f18b7a06b7a09b7830601752ea08>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,31 +9,27 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type AnswerProductQuestionInput = {
-  body: string;
-  idempotencyKey: string;
-  questionId: string;
+export type CommunityContentType = "ANSWER" | "QUESTION" | "REVIEW" | "%future added value";
+export type RemoveCommunityContentInput = {
+  contentId: string;
+  contentType: CommunityContentType;
 };
-export type AnswerProductQuestionMutation$variables = {
-  input: AnswerProductQuestionInput;
+export type RemoveCommunityContentMutation$variables = {
+  input: RemoveCommunityContentInput;
 };
-export type AnswerProductQuestionMutation$data = {
-  readonly answerProductQuestion: {
-    readonly answer: {
-      readonly id: string;
-      readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+export type RemoveCommunityContentMutation$data = {
+  readonly removeCommunityContent: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
+    readonly removedContentId: string | null | undefined;
   };
 };
-export type AnswerProductQuestionMutation = {
-  response: AnswerProductQuestionMutation$data;
-  variables: AnswerProductQuestionMutation$variables;
+export type RemoveCommunityContentMutation = {
+  response: RemoveCommunityContentMutation$data;
+  variables: RemoveCommunityContentMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -54,34 +50,16 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ProductAnswerPayload",
+    "concreteType": "RemoveCommunityContentPayload",
     "kind": "LinkedField",
-    "name": "answerProductQuestion",
+    "name": "removeCommunityContent",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductAnswer",
-        "kind": "LinkedField",
-        "name": "answer",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "id",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "moderationStatus",
-            "storageKey": null
-          }
-        ],
+        "kind": "ScalarField",
+        "name": "removedContentId",
         "storageKey": null
       },
       {
@@ -125,7 +103,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AnswerProductQuestionMutation",
+    "name": "RemoveCommunityContentMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -134,20 +112,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AnswerProductQuestionMutation",
+    "name": "RemoveCommunityContentMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "1d95fa9fc3dd736c29d8d0c6386f24e6",
+    "cacheID": "40ea4b88a9e57a730002d61569d29fbd",
     "id": null,
     "metadata": {},
-    "name": "AnswerProductQuestionMutation",
+    "name": "RemoveCommunityContentMutation",
     "operationKind": "mutation",
-    "text": "mutation AnswerProductQuestionMutation(\n  $input: AnswerProductQuestionInput!\n) {\n  answerProductQuestion(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation RemoveCommunityContentMutation(\n  $input: RemoveCommunityContentInput!\n) {\n  removeCommunityContent(input: $input) {\n    removedContentId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "29f6a0ba3b7c1d70c1327a4b60d29f1d";
+(node as any).hash = "1322a7d84966b17106cff2157945b82e";
 
 export default node;

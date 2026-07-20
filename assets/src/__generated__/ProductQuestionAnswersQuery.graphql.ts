@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<85ed81bd326aabc252ece13b2cc7dd77>>
+ * @generated SignedSource<<cfff333d3bd94f02c990c28238aa2de4>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -22,6 +22,8 @@ export type ProductQuestionAnswersQuery$data = {
           readonly authorLabel: string;
           readonly body: string;
           readonly id: string;
+          readonly viewerCanEdit: boolean;
+          readonly viewerCanRemove: boolean;
         };
       }>;
       readonly pageInfo: {
@@ -125,6 +127,20 @@ v4 = [
                     "kind": "ScalarField",
                     "name": "authorLabel",
                     "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "viewerCanEdit",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "viewerCanRemove",
+                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -190,16 +206,16 @@ return {
     "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "8563b4ae3f6f9b3fdafe0a464a90726e",
+    "cacheID": "828da506d85c938826d5487c21e0a180",
     "id": null,
     "metadata": {},
     "name": "ProductQuestionAnswersQuery",
     "operationKind": "query",
-    "text": "query ProductQuestionAnswersQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  productQuestion(id: $id) {\n    id\n    answers(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          body\n          authorLabel\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
+    "text": "query ProductQuestionAnswersQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  productQuestion(id: $id) {\n    id\n    answers(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          body\n          authorLabel\n          viewerCanEdit\n          viewerCanRemove\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "76830fc6f2f36dc238b257549f3d4ff5";
+(node as any).hash = "25377d27bc36fa263372a958840bb049";
 
 export default node;

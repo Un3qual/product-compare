@@ -1,20 +1,37 @@
-import { Suspense, type FormEvent, useEffect, useId, useMemo, useState } from "react";
+import {
+  Suspense,
+  type FormEvent,
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useLazyLoadQuery, useMutation } from "react-relay";
+import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
+import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
 import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
+import type { RemoveCommunityContentMutation } from "../../__generated__/RemoveCommunityContentMutation.graphql";
 import type { SubmitProductReviewMutation } from "../../__generated__/SubmitProductReviewMutation.graphql";
-import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
-import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
+import type { UpdateProductAnswerMutation } from "../../__generated__/UpdateProductAnswerMutation.graphql";
+import type { UpdateProductQuestionMutation } from "../../__generated__/UpdateProductQuestionMutation.graphql";
+import type { UpdateProductReviewMutation } from "../../__generated__/UpdateProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../route-errors";
 import answerProductQuestionMutation from "./queries/AnswerProductQuestionMutation";
 import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
 import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
+import removeCommunityContentMutation from "./queries/RemoveCommunityContentMutation";
 import submitProductReviewMutation from "./queries/SubmitProductReviewMutation";
+import updateProductAnswerMutation from "./queries/UpdateProductAnswerMutation";
+import updateProductQuestionMutation from "./queries/UpdateProductQuestionMutation";
+import updateProductReviewMutation from "./queries/UpdateProductReviewMutation";
 import {
   acceptedAnswerAuthorLabel,
   appendUniqueCommunityItems,
@@ -24,9 +41,13 @@ import {
   nextCommunityPageCursor,
   publishedReviewRowDisplayData,
   publishedReviewSummary,
+  resolveCommunityContentRemovalMessage,
   resolveProductAnswerMutationMessage,
+  resolveProductAnswerUpdateMessage,
   resolveProductQuestionMutationMessage,
-  resolveProductReviewMutationMessage
+  resolveProductQuestionUpdateMessage,
+  resolveProductReviewMutationMessage,
+  resolveProductReviewUpdateMessage
 } from "./product-community-data";
 
 const COMMUNITY_PAGE_SIZE = 10;
@@ -36,9 +57,13 @@ type CommunityProduct = NonNullable<ProductCommunityQuery["response"]["product"]
 type Review = CommunityProduct["reviews"]["edges"][number]["node"];
 type Question = CommunityProduct["questions"]["edges"][number]["node"];
 type Answer = Question["answers"]["edges"][number]["node"];
+type CommunityContentType = "REVIEW" | "QUESTION" | "ANSWER";
+type CommunityContentLabel = "review" | "question" | "answer";
 
 const styles = create({
+  actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
   answer: { borderInlineStart: "2px solid var(--pc-border-quiet)", display: "grid", gap: "0.35rem", paddingInlineStart: "0.8rem" },
+  confirmation: { border: "1px solid var(--pc-border-emphasized)", borderRadius: "0.4rem", display: "grid", gap: "0.5rem", padding: "0.75rem" },
   content: { display: "grid", gap: "1.25rem" },
   field: { display: "grid", gap: "0.35rem" },
   form: { display: "grid", gap: "0.75rem", maxWidth: "38rem" },
@@ -56,13 +81,8 @@ export function ProductCommunityPanel({
   productId: string;
   productSlug: string;
 }) {
-  const {
-    product,
-    questions,
-    reviews,
-    setQuestionsAfter,
-    setReviewsAfter
-  } = useCommunityPages(productSlug);
+  const { product, questions, reviews, setQuestionsAfter, setReviewsAfter } =
+    useCommunityPages(productSlug);
 
   if (!product) {
     return <p role="alert">Reviews and Q&amp;A unavailable.</p>;
@@ -115,7 +135,6 @@ function useCommunityPages(productSlug: string) {
   useEffect(() => {
     setLoadedReviews((current) => appendUniqueCommunityItems(current, pageReviews));
   }, [pageReviews]);
-
   useEffect(() => {
     setLoadedQuestions((current) => appendUniqueCommunityItems(current, pageQuestions));
   }, [pageQuestions]);
@@ -143,6 +162,7 @@ function ReviewSection({
   const [commitReview, pending] = useMutation<SubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
   const ratingId = useId();
+  const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -150,31 +170,81 @@ function ReviewSection({
       const form = new FormData(event.currentTarget);
       const input = buildProductReviewInput({
         body: form.get("body"),
+        idempotencyKey: submissionKey.current(),
         productId,
         rating: form.get("rating"),
         title: form.get("title")
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitReview, { variables: { input } });
-      const payload = response.submitProductReview;
-      setMessage(resolveProductReviewMutationMessage(payload, graphQLErrors));
-    } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
+      submissionKey.clear();
+      setMessage(resolveProductReviewMutationMessage(response.submitProductReview, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
   }
 
   return <section aria-labelledby="reviews-heading" {...props(styles.content)}>
     <h2 id="reviews-heading" {...props(styles.title)}>Reviews</h2>
     <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
-    <ul aria-label="Published product reviews" {...props(styles.list)}>{reviews.map((review) => {
-      const display = publishedReviewRowDisplayData(review);
-      return <li key={review.id} {...props(styles.item)}><strong>{display.title}</strong><span>{display.ratingStars}</span>{review.body ? <p>{review.body}</p> : null}<p {...props(styles.metadata)}>{display.authorCopy}</p></li>;
-    })}</ul>
+    <ul aria-label="Published product reviews" {...props(styles.list)}>
+      {reviews.map((review) => <ReviewItem key={review.id} review={review} />)}
+    </ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
       <label htmlFor={ratingId} {...props(styles.field)}>Rating<select id={ratingId} name="rating" defaultValue="5" {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
       <label {...props(styles.field)}>Title<input name="title" maxLength={120} {...props(styles.input)} /></label>
       <label {...props(styles.field)}>Review<textarea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
-      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>{message ? <p role="status">{message}</p> : null}
+      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>
+      {message ? <p role="status">{message}</p> : null}
     </form></details>
   </section>;
+}
+
+function ReviewItem({ review }: { review: Review }) {
+  const [commitUpdate, pending] = useMutation<UpdateProductReviewMutation>(updateProductReviewMutation);
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+  const display = publishedReviewRowDisplayData(review);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: {
+          id: review.id,
+          rating: Number(form.get("rating")),
+          title: normalizedFormText(form.get("title")),
+          body: normalizedFormText(form.get("body"))
+        } }
+      });
+      const payload = response.updateProductReview;
+      setMessage(resolveProductReviewUpdateMessage(payload, graphQLErrors));
+      if (payload.review && !hasRouteGraphQLErrors(graphQLErrors)) setEditing(false);
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return <li><article aria-label={`Review: ${display.title}`} {...props(styles.item)}>
+    {removed ? <p role="status">Community content removed.</p> : <>
+      <strong>{display.title}</strong><span>{display.ratingStars}</span>
+      {review.body ? <p>{review.body}</p> : null}
+      <p {...props(styles.metadata)}>{display.authorCopy}</p>
+      {editing ? <form onSubmit={submit} {...props(styles.form)}>
+        <label {...props(styles.field)}>Edit review rating<select name="rating" defaultValue={review.rating} {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
+        <label {...props(styles.field)}>Edit review title<input name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></label>
+        <label {...props(styles.field)}>Edit review body<textarea name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></label>
+        <div {...props(styles.actions)}><Button disabled={pending} type="submit">{pending ? "Saving…" : "Save review"}</Button><Button onClick={() => setEditing(false)} type="button">Cancel edit</Button></div>
+      </form> : null}
+      <div {...props(styles.actions)}>
+        {review.viewerCanEdit && !editing ? <Button onClick={() => setEditing(true)} type="button">Edit review</Button> : null}
+        {review.viewerCanRemove ? <RemoveCommunityControl contentId={review.id} contentType="REVIEW" label="review" onRemoved={() => setRemoved(true)} /> : null}
+      </div>
+      {message ? <p role="status">{message}</p> : null}
+    </>}
+  </article></li>;
 }
 
 function QuestionSection({
@@ -188,6 +258,7 @@ function QuestionSection({
 }) {
   const [commitQuestion, pending] = useMutation<AskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -195,28 +266,82 @@ function QuestionSection({
       const form = new FormData(event.currentTarget);
       const input = buildProductQuestionInput({
         body: form.get("body"),
+        idempotencyKey: submissionKey.current(),
         productId,
         title: form.get("title")
       });
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitQuestion, { variables: { input } });
-      const payload = response.askProductQuestion;
-      setMessage(resolveProductQuestionMutationMessage(payload, graphQLErrors));
-    } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); }
+      submissionKey.clear();
+      setMessage(resolveProductQuestionMutationMessage(response.askProductQuestion, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
   }
 
   return <section aria-labelledby="questions-heading" {...props(styles.content)}>
     <h2 id="questions-heading" {...props(styles.title)}>Product Q&amp;A</h2>
-    {questions.length ? <ul aria-label="Published product questions" {...props(styles.list)}>{questions.map((question) => <li key={question.id} {...props(styles.item)}><strong>{question.title}</strong>{question.body ? <p>{question.body}</p> : null}<p {...props(styles.metadata)}>{question.authorLabel}</p><QuestionAnswers question={question} /><AnswerForm questionId={question.id} /></li>)}</ul> : <p>No published questions yet.</p>}
+    {questions.length ? <ul aria-label="Published product questions" {...props(styles.list)}>
+      {questions.map((question) => <QuestionItem key={question.id} question={question} />)}
+    </ul> : <p>No published questions yet.</p>}
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more questions</Button> : null}
-    <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label><label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>
+    <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}>
+      <label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
+      <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>
+      {message ? <p role="status">{message}</p> : null}
+    </form></details>
   </section>;
+}
+
+function QuestionItem({ question }: { question: Question }) {
+  const [commitUpdate, pending] = useMutation<UpdateProductQuestionMutation>(updateProductQuestionMutation);
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: {
+          id: question.id,
+          title: normalizedFormText(form.get("title")),
+          body: normalizedFormText(form.get("body"))
+        } }
+      });
+      const payload = response.updateProductQuestion;
+      setMessage(resolveProductQuestionUpdateMessage(payload, graphQLErrors));
+      if (payload.question && !hasRouteGraphQLErrors(graphQLErrors)) setEditing(false);
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return <li><article aria-label={`Question: ${question.title}`} {...props(styles.item)}>
+    {removed ? <p role="status">Community content removed.</p> : <>
+      <strong>{question.title}</strong>
+      {question.body ? <p>{question.body}</p> : null}
+      <p {...props(styles.metadata)}>{question.authorLabel}</p>
+      {editing ? <form onSubmit={submit} {...props(styles.form)}>
+        <label {...props(styles.field)}>Edit question title<input name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></label>
+        <label {...props(styles.field)}>Edit question body<textarea name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></label>
+        <div {...props(styles.actions)}><Button disabled={pending} type="submit">{pending ? "Saving…" : "Save question"}</Button><Button onClick={() => setEditing(false)} type="button">Cancel edit</Button></div>
+      </form> : null}
+      <div {...props(styles.actions)}>
+        {question.viewerCanEdit && !editing ? <Button onClick={() => setEditing(true)} type="button">Edit question</Button> : null}
+        {question.viewerCanRemove ? <RemoveCommunityControl contentId={question.id} contentType="QUESTION" label="question" onRemoved={() => setRemoved(true)} /> : null}
+      </div>
+      {message ? <p role="status">{message}</p> : null}
+      <QuestionAnswers question={question} />
+      <AnswerForm questionId={question.id} />
+    </>}
+  </article></li>;
 }
 
 function QuestionAnswers({ question }: { question: Question }) {
   const answers = question.answers.edges.map(({ node }) => node);
-  const next = question.answers.pageInfo.hasNextPage
-    ? question.answers.pageInfo.endCursor
-    : null;
+  const next = question.answers.pageInfo.hasNextPage ? question.answers.pageInfo.endCursor : null;
   const [showMore, setShowMore] = useState(false);
 
   return <>
@@ -259,7 +384,6 @@ function AdditionalAnswers({
   }, [pageAnswers]);
 
   const next = connection?.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null;
-
   return <>
     {answers.map((answer) => <AnswerView acceptedAnswerId={acceptedAnswerId} answer={answer} key={answer.id} />)}
     {next ? <Button onClick={() => setAfter(next)} type="button">Show more answers</Button> : null}
@@ -273,14 +397,130 @@ function AnswerView({
   acceptedAnswerId: string | null | undefined;
   answer: Answer;
 }) {
-  return <div {...props(styles.answer)}><p>{answer.body}</p><p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p></div>;
+  const [commitUpdate, pending] = useMutation<UpdateProductAnswerMutation>(updateProductAnswerMutation);
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: { id: answer.id, body: normalizedFormText(form.get("body")) } }
+      });
+      const payload = response.updateProductAnswer;
+      setMessage(resolveProductAnswerUpdateMessage(payload, graphQLErrors));
+      if (payload.answer && !hasRouteGraphQLErrors(graphQLErrors)) setEditing(false);
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return <article aria-label={`Answer by ${answer.authorLabel}`} {...props(styles.answer)}>
+    {removed ? <p role="status">Community content removed.</p> : <>
+      <p>{answer.body}</p>
+      <p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p>
+      {editing ? <form onSubmit={submit} {...props(styles.form)}>
+        <label {...props(styles.field)}>Edit answer body<textarea name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+        <div {...props(styles.actions)}><Button disabled={pending} type="submit">{pending ? "Saving…" : "Save answer"}</Button><Button onClick={() => setEditing(false)} type="button">Cancel edit</Button></div>
+      </form> : null}
+      <div {...props(styles.actions)}>
+        {answer.viewerCanEdit && !editing ? <Button onClick={() => setEditing(true)} type="button">Edit answer</Button> : null}
+        {answer.viewerCanRemove ? <RemoveCommunityControl contentId={answer.id} contentType="ANSWER" label="answer" onRemoved={() => setRemoved(true)} /> : null}
+      </div>
+      {message ? <p role="status">{message}</p> : null}
+    </>}
+  </article>;
 }
 
 function AnswerForm({ questionId }: { questionId: string }) {
   const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
-  async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const form = new FormData(event.currentTarget); try { const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, { variables: { input: buildProductAnswerInput({ questionId, body: form.get("body") }) } }); const payload = response.answerProductQuestion; setMessage(resolveProductAnswerMutationMessage(payload, graphQLErrors)); } catch { setMessage(DEFAULT_ROUTE_ERROR_MESSAGE); } }
-  return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}><label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label><Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>{message ? <p role="status">{message}</p> : null}</form></details>;
+  const submissionKey = useSubmissionKey();
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitAnswer, {
+        variables: { input: buildProductAnswerInput({
+          questionId,
+          body: form.get("body"),
+          idempotencyKey: submissionKey.current()
+        }) }
+      });
+      submissionKey.clear();
+      setMessage(resolveProductAnswerMutationMessage(response.answerProductQuestion, graphQLErrors));
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}>
+    <label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>
+    {message ? <p role="status">{message}</p> : null}
+  </form></details>;
+}
+
+function RemoveCommunityControl({
+  contentId,
+  contentType,
+  label,
+  onRemoved
+}: {
+  contentId: string;
+  contentType: CommunityContentType;
+  label: CommunityContentLabel;
+  onRemoved: () => void;
+}) {
+  const [commitRemove, pending] = useMutation<RemoveCommunityContentMutation>(removeCommunityContentMutation);
+  const [confirming, setConfirming] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  async function remove() {
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitRemove, {
+        variables: { input: { contentId, contentType } }
+      });
+      const payload = response.removeCommunityContent;
+      setMessage(resolveCommunityContentRemovalMessage(payload, graphQLErrors));
+      if (payload.removedContentId && !hasRouteGraphQLErrors(graphQLErrors)) onRemoved();
+    } catch {
+      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  if (!confirming) {
+    return <><Button onClick={() => setConfirming(true)} type="button">Remove {label}</Button>{message ? <p role="status">{message}</p> : null}</>;
+  }
+
+  return <div role="group" aria-label={`Confirm removal of ${label}`} {...props(styles.confirmation)}>
+    <span>Remove this {label}?</span>
+    <div {...props(styles.actions)}>
+      <Button disabled={pending} onClick={remove} type="button">{pending ? "Removing…" : `Confirm remove ${label}`}</Button>
+      <Button disabled={pending} onClick={() => setConfirming(false)} type="button">Cancel removal</Button>
+    </div>
+    {message ? <p role="status">{message}</p> : null}
+  </div>;
+}
+
+function useSubmissionKey() {
+  const key = useRef<string | null>(null);
+  const current = useCallback(() => {
+    key.current ??= crypto.randomUUID();
+    return key.current;
+  }, []);
+  const clear = useCallback(() => {
+    key.current = null;
+  }, []);
+
+  return useMemo(() => ({ clear, current }), [clear, current]);
+}
+
+function normalizedFormText(value: FormDataEntryValue | null) {
+  return String(value ?? "").trim();
 }
 
 function nextCursor(

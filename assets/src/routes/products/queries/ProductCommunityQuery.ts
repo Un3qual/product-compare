@@ -24,6 +24,8 @@ export const productCommunityQuery = graphql`
             body
             verifiedPurchase
             authorLabel
+            viewerCanEdit
+            viewerCanRemove
           }
         }
         pageInfo {
@@ -38,6 +40,8 @@ export const productCommunityQuery = graphql`
             title
             body
             authorLabel
+            viewerCanEdit
+            viewerCanRemove
             acceptedAnswerId
             answers(first: $answerFirst) {
               edges {
@@ -45,6 +49,8 @@ export const productCommunityQuery = graphql`
                   id
                   body
                   authorLabel
+                  viewerCanEdit
+                  viewerCanRemove
                 }
               }
               pageInfo {
