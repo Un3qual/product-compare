@@ -33,11 +33,33 @@ defmodule ProductCompare.Seo do
 
   @spec product_metadata(Product.t(), keyword()) :: metadata()
   def product_metadata(%Product{} = product, opts \\ []) do
+    product_metadata_batch([product], opts)
+    |> Map.fetch!(product)
+  end
+
+  @spec product_metadata_batch([Product.t()], keyword()) :: %{Product.t() => metadata()}
+  def product_metadata_batch(products, opts \\ []) when is_list(products) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    product = Repo.preload(product, [:brand, :media])
-    attributes = Specs.list_current_attributes_for_product(product.id)
-    offer_truth = Pricing.current_offer_truth(product.id, now: now)
-    rating = Discussions.review_summary(product.id)
+    products_by_id = products |> Repo.preload([:brand, :media]) |> Map.new(&{&1.id, &1})
+    product_ids = Map.keys(products_by_id)
+    attributes_by_product = Specs.list_current_attributes_for_products(product_ids)
+    offer_truths_by_product = Pricing.current_offer_truths(product_ids, now: now)
+    ratings_by_product = Discussions.review_summaries(product_ids)
+
+    Map.new(products, fn original_product ->
+      product = Map.fetch!(products_by_id, original_product.id)
+
+      {original_product,
+       product_metadata_from_evidence(
+         product,
+         Map.fetch!(attributes_by_product, product.id),
+         Map.fetch!(offer_truths_by_product, product.id),
+         Map.fetch!(ratings_by_product, product.id)
+       )}
+    end)
+  end
+
+  defp product_metadata_from_evidence(product, attributes, offer_truth, rating) do
     image_url = primary_image_url(product.media)
 
     indexable =
