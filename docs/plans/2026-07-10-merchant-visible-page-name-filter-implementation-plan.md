@@ -1,6 +1,6 @@
 # Merchant Visible-Page Name Filter Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 **Goal:** Help shoppers narrow the currently visible merchant page by merchant
 name without implying server-wide directory search.

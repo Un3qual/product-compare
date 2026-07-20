@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: implemented; awaiting coordinator closeout
+- Status: complete
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`

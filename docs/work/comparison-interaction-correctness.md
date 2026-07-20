@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: implemented
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`

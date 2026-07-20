@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: implemented
+- Status: complete
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`

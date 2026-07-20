@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: implemented; awaiting queue closeout
+- Status: complete
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`

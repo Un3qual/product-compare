@@ -1139,10 +1139,11 @@ queue validator enforces the batch outcome and internal-slice fields.
 On 2026-07-20, a live source/contract audit found three immediately executable
 backend correctness outcomes and one policy-gated community lifecycle outcome.
 The community policy was approved, and all backend plus existing frontend work
-was regrouped into seven domain-oriented rows. Alert correctness is now one
-cross-stack lifecycle batch; comparison temporal/action work is one product
-batch; the shared cursor invariant remains cross-surface. This is one shared
-queue, not separate frontend and backend ledgers.
+was regrouped into seven domain-oriented rows. Those seven outcomes are now
+complete. A fresh resolver/query audit replenished the shared queue with three
+backend read-budget outcomes: product evidence/SEO, public community
+connections, and product-offer/coupon/history connections. Already-implemented
+frontend polish and preloaded specification corrections were not re-promoted.
 
 ## Active Work
 
@@ -1150,16 +1151,171 @@ None.
 
 ## Ready Work
 
-### 1. Durable Ingestion Recurrence
+### 1. Bounded Product Evidence GraphQL Reads
 
 Status: ready
+Lane: Bounded product evidence GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
+Batch outcome: product evidence and SEO fields requested through a GraphQL
+product connection keep a fixed database-query budget as product parent count
+increases, without changing offer, review, specification, or metadata truth.
+Next action: add set-based product evidence APIs, route product evidence and SEO
+through request-scoped Dataloader sources, and lock the result with growing-
+parent query-budget tests.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare/specs.ex`
+- `lib/product_compare/seo.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/seo_resolver.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `docs/work/bounded-product-evidence-graphql-reads.md`
+
+Internal slices:
+
+- Set-based offer-truth, review-summary, and current-specification evidence.
+- Request-scoped product evidence and SEO Dataloader integration.
+- Semantic parity plus fixed query budgets as product parents grow.
+
+Prerequisites:
+
+- Existing OfferTruth, accepted-current-claim, published-review, and SEO
+  qualification policies remain the semantic source of truth.
+- Existing `Product.offerTruth`, `Product.reviewSummary`, and `Product.seo`
+  GraphQL shapes remain unchanged.
+- Current single-product product-detail behavior remains covered.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/seo_test.exs`
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: one- and multi-product evidence and metadata stay semantically
+identical to the current contract, and relevant SELECT counts remain fixed
+when the same GraphQL request grows its product parent count.
+
+### 2. Bounded Community GraphQL Connections
+
+Status: ready
+Lane: Bounded community GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
+Batch outcome: published review, question, and nested answer Relay connections
+use bounded set-based reads whose query count does not grow with product or
+question parent count.
+Next action: add parent-partitioned community connection batches, delegate the
+three resolvers through Dataloader, and prove pagination and visibility parity
+under growing parent counts.
+Owned paths:
+
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-community-graphql-connections.md`
+
+Internal slices:
+
+- Parent-partitioned published review and question pages.
+- Parent-partitioned published answer pages with accepted-answer preload parity.
+- Dataloader integration and constant query-budget regression coverage.
+
+Prerequisites:
+
+- Public reads remain published-only and author identity remains private.
+- Existing Relay cursor, page-size, order, and `pageInfo` behavior remains the
+  contract.
+- Community owner lifecycle and moderation behavior remain unchanged.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: community connection edges, ordering, visibility, accepted-
+answer data, and page info match current behavior while review/question/answer
+SELECT counts stay fixed as parent counts grow.
+
+### 3. Bounded Product Offer GraphQL Connections
+
+Status: ready
+Lane: Bounded product offer GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
+Batch outcome: product offer, active-coupon, and price-history Relay connections
+use bounded set-based reads whose query count does not grow with product or
+merchant-product parent count.
+Next action: implement parent-partitioned offer/coupon/history batches, route
+the nested fields through Dataloader, and add growing-parent query-budget tests
+for the product-detail and compare-shaped graph.
+Owned paths:
+
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare/affiliate.ex`
+- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-product-offer-graphql-connections.md`
+
+Internal slices:
+
+- Parent-partitioned product merchant-product connection pages.
+- Merchant-keyed active-coupon pages for merchant-product parents.
+- Parent-partitioned price-history pages and fixed nested query budgets.
+
+Prerequisites:
+
+- Existing active-only, merchant filter, coupon-validity, time-range, and
+  price-history ordering semantics remain unchanged.
+- Existing Relay cursor, page-size, and `pageInfo` behavior remains the
+  contract.
+- Latest-price Dataloader behavior remains intact.
+
+Verification:
+
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: product-offer, coupon, and history edges, filters, ordering,
+validity, and page info match current behavior while relevant SELECT counts
+stay fixed as product and offer parent counts grow.
+
+## Completed 2026-07-20 Cross-Stack Work
+
+### 1. Durable Ingestion Recurrence
+
+Status: complete
 Lane: Durable ingestion recurrence
 Plan: `docs/superpowers/plans/2026-07-20-durable-ingestion-recurrence-implementation-plan.md`
 Batch outcome: scheduled CJ imports and feed discovery deduplicate within one
 explicit schedule window while the same normalized scope remains runnable in
 later windows.
-Next action: correct both worker uniqueness projections, then pass stable
-explicit windows from both schedulers with focused recurrence tests.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
@@ -1198,14 +1354,13 @@ and focused plus repository gates pass.
 
 ### 2. Alert Lifecycle Reliability
 
-Status: ready
+Status: complete
 Lane: Alert lifecycle reliability
 Plan: `docs/superpowers/plans/2026-07-20-alert-lifecycle-reliability-implementation-plan.md`
 Batch outcome: every persisted price observation evaluates every applicable
 watch asynchronously, and the alert interface presents truthful timestamps plus
 row-local pending and failure state.
-Next action: make watch evaluation fault-isolated and replay-safe, then complete
-the strict-date and row-local frontend slices.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `lib/product_compare/alerts.ex`
@@ -1246,14 +1401,13 @@ false labels, and frontend action state stays on the affected row.
 
 ### 3. Community Content Lifecycle
 
-Status: ready
+Status: complete
 Lane: Community content lifecycle
 Plan: `docs/superpowers/plans/2026-07-20-community-content-lifecycle-implementation-plan.md`
 Batch outcome: authenticated reviews, questions, and answers have a complete
 owner-controlled, abuse-resistant lifecycle through durable backend policy,
 typed GraphQL, and accessible Relay controls.
-Next action: land durable receipt/window storage, then implement owner lifecycle,
-GraphQL contracts, and frontend controls as separate milestones.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `priv/repo/migrations/20260720120000_add_community_write_controls.exs`
@@ -1329,14 +1483,12 @@ artifacts, and accessible owner controls all pass behavior coverage.
 
 ### 4. Relay Cursor Forward Progress
 
-Status: ready
+Status: complete
 Lane: Frontend cursor forward progress
 Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
 Batch outcome: every in-scope frontend Relay pagination surface suppresses
 blank or repeated cursors, preventing self-links and repeated stateful fetches.
-Next action: introduce the shared framework-free advancing-cursor invariant,
-then migrate community, product/compare, public, and account/setup consumers as
-internal milestones.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `assets/src/routes/relay-pagination.ts`
@@ -1408,14 +1560,13 @@ while preserving normal pagination, URL state, Relay timing, and presentation.
 
 ### 5. Bounded Merchant GraphQL Reads
 
-Status: ready
+Status: complete
 Lane: Bounded merchant GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-graphql-reads-implementation-plan.md`
 Batch outcome: merchant detail summaries requested through a GraphQL connection
 use set-based reads whose query count remains constant as merchant parent count
 increases.
-Next action: add the set-based Pricing batch, delegate the KV Dataloader source,
-and extend query-budget regression coverage.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `lib/product_compare/pricing.ex`
@@ -1451,14 +1602,13 @@ grows.
 
 ### 6. Account And Setup Interaction Contracts
 
-Status: ready
+Status: complete
 Lane: Frontend account and setup interaction contracts
 Plan: `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`
 Batch outcome: authenticated setup and account surfaces derive deterministic
 merchant-context copy and API-token lifecycle actions from framework-free
 owners without changing forms, mutations, accessibility, or presentation.
-Next action: execute affiliate merchant-context and API-token lifecycle policy
-as separate test/commit milestones inside one reviewer batch.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `assets/src/routes/affiliate/setup/affiliate-setup-data.ts`
@@ -1498,13 +1648,12 @@ one independently reviewable account/setup outcome.
 
 ### 7. Comparison Interaction Correctness
 
-Status: ready
+Status: complete
 Lane: Comparison interaction correctness
 Plan: `docs/superpowers/plans/2026-07-20-comparison-interaction-correctness-implementation-plan.md`
 Batch outcome: comparison observations use strict temporal truth and snapshot
 revocation pending/failure state applies only to the affected snapshot row.
-Next action: complete strict comparison timestamp selection, then row-key
-snapshot revocation state as separate milestones.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `assets/src/routes/compare/decision-summary-data.ts`
@@ -1548,6 +1697,18 @@ None. Shopper decision confidence was selected on 2026-07-09.
 None.
 
 ## Just Completed
+
+The seven-batch 2026-07-20 cross-stack correctness program is complete. Durable
+ingestion now recurs across stable schedule windows; alert evaluation is fault-
+isolated with strict dates and row-local actions; community content has durable
+owner lifecycle, idempotency, rate limits, and Relay controls; every in-scope
+frontend pagination surface requires forward cursor progress; merchant summary
+GraphQL reads are set-based; account/setup policy lives in framework-free data
+owners; and comparison timestamps plus snapshot actions are row-correct. The
+fresh full gate passed 790 backend tests, 1,505 frontend tests, type/format/
+static-analysis checks, Relay generation, client and SSR builds, and the bundle
+budget. Detailed evidence remains in the seven lane docs retained under
+`Completed 2026-07-20 Cross-Stack Work` above.
 
 Route-metadata tag policy data completed on 2026-07-17. The framework-free
 route-metadata data owner now projects exact robots and Twitter-card values

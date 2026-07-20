@@ -29,6 +29,13 @@
 - `/ingestion/feed-candidates` now ships a Relay-backed CJ feed-candidate review route with cursor pagination plus controls for pending, shortlisted, and dismissed review status.
 - Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, `/offers`, and `/ingestion/feed-candidates` now use Relay query or mutation APIs with SSR store hydration.
 - Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
+- In-scope Relay pagination now rejects blank and repeated cursors across public,
+  comparison, community, account, and setup surfaces.
+- Alert and comparison timestamps use strict GraphQL DateTime parsing, while
+  alert/watch and snapshot actions keep pending and failure state on the
+  affected row.
+- Affiliate merchant context and API-token action policy now come from
+  framework-free data owners rather than being re-derived in React.
 
 ## Current Delivered Backend Baseline
 
@@ -38,6 +45,15 @@
 - GraphQL global ID local-value normalization, encoding, and integer/UUID decoding are centralized in `ProductCompareWeb.GraphQL.GlobalId`.
 - GraphQL `Product.currentAttributes` exposes selected current product claims in a display-ready shape for product-detail and comparison UI surfaces.
 - GraphQL `sourceArtifact(id:)` and generic `node(id:)` expose public-safe source-artifact metadata without raw payload fields.
+- Merchant `detailSummary` now uses set-based active-offer and latest-price reads
+  with a fixed query budget as merchant parent counts grow.
+- Durable CJ scheduler jobs now deduplicate within an explicit schedule window
+  while remaining runnable in later windows.
+- Alert evaluation is asynchronous, replay-safe, and fault-isolated across
+  watches for the same price observation.
+- Community reviews, questions, and answers now support durable idempotency,
+  exact hourly write limits, retained owner removal, owner edits, accepted-
+  answer cleanup, typed GraphQL errors, and accessible Relay controls.
 - Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, a query-backed revenue summary contract, read-only GraphQL `revenueSummary` exposure, and a GraphQL `trackCommerceClick(input:)` mutation for server-resolved merchant-product click tracking.
 - Shared Relay connection pagination rejects invalid `first` values with a deterministic `invalid first` GraphQL error while preserving default, clamp, `first: 0`, and malformed cursor behavior.
 
@@ -75,9 +91,9 @@
 - Email delivery, live conversion-provider ingestion, production privacy and
   attribution controls, and production-readiness proof are outside the current
   feature-complete milestone by product decision.
-- The next optional shopper enhancements are loaded-price scope copy, a local
-  loaded-product compare-picker filter, and a visible-page merchant-name
-  filter. They are queue follow-ups, not feature-completeness blockers.
+- Loaded-price scope copy, the local loaded-product compare-picker filter, the
+  visible-page merchant-name filter, wildcard 404, and shared route metadata
+  are implemented; their old plans are completion evidence, not queue work.
 - The revenue readiness, shopper UX polish, and backend quality parallel batch
   is complete: first-party tracked commerce clicks, `/offers` visible merchant
   quick filters, and Relay connection invalid-page-size hardening are recorded
@@ -91,3 +107,8 @@
 - Account-manager automation, Tier-3 direct scraping, credential persistence,
   application submission, and CSV export remain out of scope until a later
   explicit product/backend decision.
+- The live queue now targets three source-backed backend read-budget outcomes:
+  set-based product evidence/SEO fields, public community Relay connections,
+  and product-offer/coupon/history Relay connections. Each keeps its domain
+  semantics and public schema stable while database-query counts remain fixed
+  as GraphQL parent counts grow.
