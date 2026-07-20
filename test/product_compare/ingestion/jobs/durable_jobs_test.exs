@@ -48,8 +48,8 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
                Keyword.put(opts, :schedule_window, "2026-07-13T19:00:00Z")
              )
 
-    assert later_window_job.conflict?
-    assert later_window_job.id == first_job.id
+    refute later_window_job.conflict?
+    refute later_window_job.id == first_job.id
 
     refute Map.has_key?(first_job.args, "api_token")
     refute Map.has_key?(first_job.args, "company_id")
@@ -150,7 +150,7 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
            }
   end
 
-  test "feed discovery uniqueness spans scheduling windows for the same scope" do
+  test "feed discovery uniqueness is scoped to one scheduling window" do
     opts = [
       advertiser_country: "US",
       cursor: 40,
@@ -161,13 +161,17 @@ defmodule ProductCompare.Ingestion.Jobs.DurableJobsTest do
 
     assert {:ok, first_job} = CJFeedDiscoveryWorker.enqueue(opts)
 
+    assert {:ok, duplicate_job} = CJFeedDiscoveryWorker.enqueue(opts)
+    assert duplicate_job.conflict?
+    assert duplicate_job.id == first_job.id
+
     assert {:ok, later_window_job} =
              CJFeedDiscoveryWorker.enqueue(
                Keyword.put(opts, :schedule_window, "2026-07-13T19:00:00Z")
              )
 
-    assert later_window_job.conflict?
-    assert later_window_job.id == first_job.id
+    refute later_window_job.conflict?
+    refute later_window_job.id == first_job.id
   end
 
   defp restore_env(key) do
