@@ -112,6 +112,27 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
   expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
 });
 
+test("AlertsRoute keeps malformed observation sources visible instead of normalizing them", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    alerts: [
+      { id: "event-impossible", productName: "Impossible", productSlug: "impossible", merchantName: "Shop", ruleType: "TARGET_PRICE", currency: "USD", landedPrice: "90", observedAt: "2026-02-30T20:00:00Z", readAt: "2026-07-13T20:00:00Z" },
+      { id: "event-offset-free", productName: "Offset free", productSlug: "offset-free", merchantName: "Shop", ruleType: "TARGET_PRICE", currency: "USD", landedPrice: "91", observedAt: "2026-07-13T20:00:00", readAt: "2026-07-13T20:00:00Z" },
+      { id: "event-offset", productName: "Offset", productSlug: "offset", merchantName: "Shop", ruleType: "TARGET_PRICE", currency: "USD", landedPrice: "92", observedAt: "2026-07-13T00:30:00+02:00", readAt: "2026-07-13T20:00:00Z" }
+    ],
+    watches: [],
+    hasMoreAlerts: false,
+    hasMoreWatches: false
+  } satisfies AlertsRouteLoaderData);
+
+  render(<MemoryRouter><AlertsRoute /></MemoryRouter>);
+
+  const list = screen.getByRole("list", { name: "Price alert events" });
+  expect(list).toHaveTextContent("2026-02-30T20:00:00Z");
+  expect(list).toHaveTextContent("2026-07-13T20:00:00");
+  expect(list).toHaveTextContent("2026-07-13");
+});
+
 test("AlertsRoute encodes alert and watch product slugs in detail links", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
