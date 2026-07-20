@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented; awaiting coordinator closeout
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-relay-cursor-forward-progress-implementation-plan.md`
@@ -44,3 +44,26 @@ correctness invariant and one queue status.
 - `cd assets && bun run check`
 - dependency scan for the shared pure helper
 - `git diff --check`
+
+## Implementation Evidence
+
+- Shared/community RED: the focused run failed because the shared helper did
+  not exist and community accepted a whitespace cursor. The three suites now
+  pass 46 tests, including repeated review/question state and blank initial
+  answer behavior.
+- Stateful RED: compare-picker and product-offer coverage exposed 2 accepted
+  self-transitions across 176 tests. The four focused suites now pass 178
+  tests, including UI suppression after a repeated stateful fetch.
+- Public URL RED: catalog, offers, category, merchant directory, and merchant
+  detail each produced a self-link, for 5 failures across 189 tests. The same
+  route and pure-data surfaces now reject blank/repeated cursors while retaining
+  encoded filters, page sizes, slugs, and first-page links.
+- Account/setup RED: API-token and affiliate pagination produced 4 failures
+  across 114 tests for whitespace or repeated cursors. All 114 tests now pass
+  with token status and merchant page-size state preserved.
+- The combined focused batch gate passes 530 tests across 19 files. The shared
+  helper has no imports from React, Relay, router, StyleX, or generated
+  operations.
+- The full frontend gate passes Relay validation, TypeScript, 1,493 tests,
+  client/SSR builds, and the 182,153-byte gzip bundle contract. Queue
+  validation continues to report 7 ready rows.

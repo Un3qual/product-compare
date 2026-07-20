@@ -235,7 +235,9 @@ test("buildApiTokenPaginationData hides the first path without a current cursor"
 
 test.each([
   [false, "next-cursor"],
-  [true, null]
+  [true, null],
+  [true, "  "],
+  [true, "current-cursor"]
 ] as const)(
   "buildApiTokenPaginationData hides incomplete next-page facts",
   (hasNextPage, endCursor) => {

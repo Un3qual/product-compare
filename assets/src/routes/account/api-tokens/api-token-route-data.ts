@@ -151,11 +151,13 @@ export function buildApiTokenPaginationData({
   readonly hasNextPage: boolean;
   readonly tokenStatus: ApiTokenStatus;
 }) {
+  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, after);
+
   return {
     firstHref: after ? apiTokenPagePath(tokenStatus, null) : null,
     nextHref:
-      hasNextPage && endCursor
-        ? apiTokenPagePath(tokenStatus, endCursor)
+      nextCursor
+        ? apiTokenPagePath(tokenStatus, nextCursor)
         : null
   };
 }
@@ -442,3 +444,4 @@ function apiTokenStatusLabel(token: ApiTokenRecord, isActive: boolean) {
 
   return isActive ? "Active token" : "Expired token";
 }
+import { nextRelayPageCursor } from "../../relay-pagination";
