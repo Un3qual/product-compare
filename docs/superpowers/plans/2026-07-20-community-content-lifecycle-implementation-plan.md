@@ -95,7 +95,8 @@ Discussions.report(reporter_id, type, entropy_id, reason)
 
 Existing three-argument create calls remain internal convenience wrappers that
 generate a fresh UUID and delegate to the four-argument contract. Public
-GraphQL resolvers always use the client key. Create calls return the original content for a matching replay and
+GraphQL resolvers use the client key when supplied and the same server-generated
+fallback when an older caller omits it. Create calls return the original content for a matching replay and
 `{:error, :idempotency_conflict}` for a reused key with a different digest.
 Rate rejection returns `{:error, :rate_limited}`. Owner update/remove return
 `:forbidden`, `:not_found`, or `:invalid_lifecycle` as applicable.
@@ -108,7 +109,7 @@ with keys `:review`, `:question`, `:answer`, and `:report`.
   overrides.
 - [ ] Add failing owner tests for each content type, non-owner rejection,
   published/hidden/rejected edit-to-pending, removed edit rejection, audit
-  retention, and accepted-answer cleanup on answer edit/removal.
+  retention, and accepted-answer cleanup on question or answer edit/removal.
 - [ ] Run the focused context file and confirm the lifecycle and durable-control
   APIs are missing.
 - [ ] Implement transaction-scoped receipt lookup/insert, `FOR UPDATE` window
@@ -129,7 +130,8 @@ with keys `:review`, `:question`, `:answer`, and `:report`.
 - Modify: `test/product_compare_web/graphql/schema_snapshot_test.exs`
 - Modify: `assets/schema.graphql`
 
-**Interfaces:** Add required `idempotencyKey` to the three create inputs; add
+**Interfaces:** Add optional `idempotencyKey` to the three create inputs so
+current clients can opt into durable replay without breaking older callers; add
 typed owner update inputs and `updateProductReview`, `updateProductQuestion`,
 `updateProductAnswer`, and `removeCommunityContent` mutations. Review,
 question, and answer objects expose non-null `viewerCanEdit` and

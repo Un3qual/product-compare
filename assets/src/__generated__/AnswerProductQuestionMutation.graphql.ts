@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c18a17ef0847854191bb4cc2ec270bfc>>
+ * @generated SignedSource<<8530a8c346271a52b86d79acad8c8ee0>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,7 +12,7 @@ import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type AnswerProductQuestionInput = {
   body: string;
-  idempotencyKey: string;
+  idempotencyKey?: string | null | undefined;
   questionId: string;
 };
 export type AnswerProductQuestionMutation$variables = {

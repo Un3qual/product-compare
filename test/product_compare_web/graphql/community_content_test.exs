@@ -79,6 +79,49 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     refute inspect(public) =~ user.email
   end
 
+  test "create mutations accept omitted idempotency keys for existing clients", %{conn: conn} do
+    user = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+    member_conn = conn |> log_in_user(user) |> put_req_header_same_origin()
+
+    review_response =
+      graphql(member_conn, submit_review_mutation(), %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "rating" => 4,
+          "title" => "Compatible review"
+        }
+      })
+
+    assert get_in(review_response, ["data", "submitProductReview", "errors"]) == []
+
+    question_response =
+      graphql(member_conn, ask_question_mutation(), %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "title" => "Compatible question"
+        }
+      })
+
+    assert get_in(question_response, ["data", "askProductQuestion", "errors"]) == []
+    question_id = get_in(question_response, ["data", "askProductQuestion", "question", "id"])
+    {:ok, {_type, question_entropy_id}} = ProductCompareWeb.GraphQL.GlobalId.decode(question_id)
+
+    assert {:ok, _published_question} =
+             Discussions.moderate(operator.id, :question, question_entropy_id, :published)
+
+    answer_response =
+      graphql(member_conn, answer_question_mutation(), %{
+        "input" => %{
+          "questionId" => question_id,
+          "body" => "Compatible answer"
+        }
+      })
+
+    assert get_in(answer_response, ["data", "answerProductQuestion", "errors"]) == []
+  end
+
   test "published questions receive moderated answers and an owner-selected accepted answer", %{
     conn: conn
   } do
@@ -448,18 +491,18 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     {:ok, _hidden_review} =
       Discussions.moderate(operator.id, :review, review.entropy_id, :hidden)
 
+    {:ok, _published_answer} =
+      Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
     {:ok, _rejected_question} =
       Discussions.moderate(operator.id, :question, question.entropy_id, :rejected)
-
-    {:ok, _rejected_answer} =
-      Discussions.moderate(operator.id, :answer, answer.entropy_id, :rejected)
 
     owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
 
     assert %{
              "reviews" => [%{"id" => review_id, "moderationStatus" => "HIDDEN"}],
              "questions" => [%{"id" => question_id, "moderationStatus" => "REJECTED"}],
-             "answers" => [%{"id" => answer_id, "moderationStatus" => "REJECTED"}]
+             "answers" => [%{"id" => answer_id, "moderationStatus" => "PUBLISHED"}]
            } =
              get_in(graphql(owner_conn, owner_submissions_query(), %{"slug" => product.slug}), [
                "data",

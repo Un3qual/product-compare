@@ -116,6 +116,24 @@ export function AnswerView({
     return <UnavailableArticle label={`Answer by ${answer.authorLabel}`} message={state.unavailableMessage} />;
   }
 
+  return <AnswerArticle
+    acceptedAnswerId={acceptedAnswerId}
+    answer={answer}
+    ownerView={ownerView}
+    pending={pending}
+    state={state}
+    submit={submit}
+  />;
+}
+
+function AnswerArticle({ acceptedAnswerId, answer, ownerView, pending, state, submit }: {
+  acceptedAnswerId?: string | null;
+  answer: Answer;
+  ownerView: boolean;
+  pending: boolean;
+  state: CommunityItemState;
+  submit: (event: FormEvent<HTMLFormElement>) => void;
+}) {
   return <article aria-label={`Answer by ${answer.authorLabel}`} {...props(styles.answer)}>
     <ModerationStatus ownerView={ownerView} status={answer.moderationStatus} />
     <p>{answer.body}</p>
@@ -177,11 +195,7 @@ function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityIte
       });
       const payload = response.updateProductReview;
       const nextMessage = resolveProductReviewUpdateMessage(payload, graphQLErrors);
-      if (payload.review && !hasRouteGraphQLErrors(graphQLErrors)) {
-        state.completeUpdate(nextMessage, ownerView);
-      } else {
-        state.setMessage(nextMessage);
-      }
+      applyCommunityUpdate(payload.review, nextMessage, graphQLErrors, ownerView, state);
     } catch {
       state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }
@@ -207,11 +221,7 @@ function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: Com
       });
       const payload = response.updateProductQuestion;
       const nextMessage = resolveProductQuestionUpdateMessage(payload, graphQLErrors);
-      if (payload.question && !hasRouteGraphQLErrors(graphQLErrors)) {
-        state.completeUpdate(nextMessage, ownerView);
-      } else {
-        state.setMessage(nextMessage);
-      }
+      applyCommunityUpdate(payload.question, nextMessage, graphQLErrors, ownerView, state);
     } catch {
       state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }
@@ -233,17 +243,28 @@ function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityIte
       });
       const payload = response.updateProductAnswer;
       const nextMessage = resolveProductAnswerUpdateMessage(payload, graphQLErrors);
-      if (payload.answer && !hasRouteGraphQLErrors(graphQLErrors)) {
-        state.completeUpdate(nextMessage, ownerView);
-      } else {
-        state.setMessage(nextMessage);
-      }
+      applyCommunityUpdate(payload.answer, nextMessage, graphQLErrors, ownerView, state);
     } catch {
       state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }
   }
 
   return { pending, submit };
+}
+
+function applyCommunityUpdate(
+  content: object | null | undefined,
+  nextMessage: string,
+  graphQLErrors: readonly unknown[] | null | undefined,
+  ownerView: boolean,
+  state: CommunityItemState
+) {
+  if (!content || hasRouteGraphQLErrors(graphQLErrors)) {
+    state.setMessage(nextMessage);
+    return;
+  }
+
+  state.completeUpdate(nextMessage, ownerView);
 }
 
 function ReviewEditForm({ editing, pending, review, onCancel, onSubmit }: {

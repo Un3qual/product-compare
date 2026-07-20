@@ -203,6 +203,39 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert is_nil(public_question.accepted_post)
   end
 
+  test "editing an accepted-answer question clears the stale acceptance" do
+    asker = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, question} =
+             Discussions.ask_question(asker.id, product.id, %{title: "Original question"})
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} =
+             Discussions.answer_question(answerer.id, question.entropy_id, "Original answer")
+
+    assert {:ok, answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+    assert {:ok, accepted_question} =
+             Discussions.accept_answer(asker.id, question.entropy_id, answer.entropy_id)
+
+    assert accepted_question.accepted_post_id == answer.id
+
+    assert {:ok, edited_question} =
+             Discussions.update_owned(asker.id, :question, question.entropy_id, %{
+               title: "Revised question"
+             })
+
+    assert edited_question.moderation_status == :pending
+    assert edited_question.accepted_post_id == nil
+    assert Repo.get!(ProductThread, question.id).accepted_post_id == nil
+  end
+
   test "reports are attributable, duplicate-safe, and moderation requires an operator" do
     author = AccountsFixtures.user_fixture()
     reporter = AccountsFixtures.user_fixture()

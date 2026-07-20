@@ -777,7 +777,7 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :submit_product_review_input do
     field :product_id, non_null(:id)
-    field :idempotency_key, non_null(:string)
+    field :idempotency_key, :string
     field :rating, non_null(:integer)
     field :title, :string
     field :body, :string
@@ -786,14 +786,14 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :ask_product_question_input do
     field :product_id, non_null(:id)
-    field :idempotency_key, non_null(:string)
+    field :idempotency_key, :string
     field :title, non_null(:string)
     field :body, :string
   end
 
   input_object :answer_product_question_input do
     field :question_id, non_null(:id)
-    field :idempotency_key, non_null(:string)
+    field :idempotency_key, :string
     field :body, non_null(:string)
   end
 

@@ -40,7 +40,12 @@ accessible Relay controls.
 
 - Public review/question/answer connections remain published-only and author
   identity stays private. A bounded viewer-scoped product field may return the
-  current owner's non-public submissions for lifecycle management.
+  current owner's non-public submissions for lifecycle management, including a
+  published answer made inaccessible because its parent question is no longer
+  public.
+- Relay clients supply idempotency keys so transport retries replay safely, but
+  the public GraphQL create inputs keep the key optional for backward
+  compatibility and generate a one-use server key when an older caller omits it.
 - Removal retains audit/moderation state and is never rate-limited.
 - Browser writes remain GraphQL over `/api/graphql`.
 - Keep moderation operations operator-only and keep raw receipt/counter data
@@ -86,3 +91,7 @@ accessible Relay controls.
   published-only. Public rows now disappear immediately after edit-to-pending,
   and answer idempotency replays before parent-visibility checks while new
   answers still lock and require a published question.
+- Follow-up review coverage keeps published answers manageable when their parent
+  question becomes non-public, clears an accepted answer when the question is
+  edited for resubmission, and preserves pre-idempotency GraphQL client
+  compatibility without weakening explicit-key replay guarantees.

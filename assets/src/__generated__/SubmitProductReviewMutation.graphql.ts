@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ff21407736c6e89010c711b1c067d8dc>>
+ * @generated SignedSource<<c0f82e00174197c65e02071dbe0f2acc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,7 +12,7 @@ import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type SubmitProductReviewInput = {
   body?: string | null | undefined;
-  idempotencyKey: string;
+  idempotencyKey?: string | null | undefined;
   merchantProductId?: string | null | undefined;
   productId: string;
   rating: number;

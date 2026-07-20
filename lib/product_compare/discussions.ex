@@ -143,8 +143,11 @@ defmodule ProductCompare.Discussions do
     submit_review(user_id, product_id, attrs, Ecto.UUID.generate())
   end
 
-  @spec submit_review(pos_integer(), pos_integer(), map(), String.t()) ::
+  @spec submit_review(pos_integer(), pos_integer(), map(), String.t() | nil) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t() | atom()}
+  def submit_review(user_id, product_id, attrs, nil),
+    do: submit_review(user_id, product_id, attrs)
+
   def submit_review(user_id, product_id, attrs, idempotency_key)
       when is_integer(user_id) and user_id > 0 and is_integer(product_id) and product_id > 0 and
              is_map(attrs) and is_binary(idempotency_key) do
@@ -216,8 +219,11 @@ defmodule ProductCompare.Discussions do
     ask_question(user_id, product_id, attrs, Ecto.UUID.generate())
   end
 
-  @spec ask_question(pos_integer(), pos_integer(), map(), String.t()) ::
+  @spec ask_question(pos_integer(), pos_integer(), map(), String.t() | nil) ::
           {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t() | atom()}
+  def ask_question(user_id, product_id, attrs, nil),
+    do: ask_question(user_id, product_id, attrs)
+
   def ask_question(user_id, product_id, attrs, idempotency_key)
       when is_integer(user_id) and user_id > 0 and is_integer(product_id) and product_id > 0 and
              is_map(attrs) and is_binary(idempotency_key) do
@@ -245,8 +251,11 @@ defmodule ProductCompare.Discussions do
     answer_question(user_id, question_entropy_id, body, Ecto.UUID.generate())
   end
 
-  @spec answer_question(pos_integer(), Ecto.UUID.t(), String.t(), String.t()) ::
+  @spec answer_question(pos_integer(), Ecto.UUID.t(), String.t(), String.t() | nil) ::
           {:ok, ThreadPost.t()} | {:error, :not_found | Ecto.Changeset.t() | atom()}
+  def answer_question(user_id, question_entropy_id, body, nil),
+    do: answer_question(user_id, question_entropy_id, body)
+
   def answer_question(user_id, question_entropy_id, body, idempotency_key)
       when is_integer(user_id) and user_id > 0 and is_binary(question_entropy_id) and
              is_binary(idempotency_key) do
@@ -355,7 +364,10 @@ defmodule ProductCompare.Discussions do
             join: question in ProductThread,
             on: question.id == answer.thread_id,
             where: answer.user_id == ^user_id and question.product_id == ^product_id,
-            where: answer.moderation_status in ^@non_public_owner_statuses,
+            where:
+              answer.moderation_status in ^@non_public_owner_statuses or
+                (answer.moderation_status == :published and
+                   question.moderation_status != :published),
             order_by: [desc: answer.inserted_at, desc: answer.id],
             limit: @owner_submission_limit,
             select: answer
@@ -585,15 +597,27 @@ defmodule ProductCompare.Discussions do
     end)
   end
 
-  defp update_owned_transaction(user_id, type, entropy_id, attrs)
-       when type in [:review, :question] do
-    record = locked_content_or_rollback!(type, entropy_id)
-    ensure_owner_and_editable!(record, user_id)
+  defp update_owned_transaction(user_id, :review, entropy_id, attrs) do
+    review = locked_content_or_rollback!(:review, entropy_id)
+    ensure_owner_and_editable!(review, user_id)
 
-    changeset = owned_update_changeset(type, record, attrs)
+    changeset = owned_update_changeset(:review, review, attrs)
     ensure_valid!(changeset)
-    increment_write_window!(user_id, type)
+    increment_write_window!(user_id, :review)
     update_or_rollback(changeset)
+  end
+
+  defp update_owned_transaction(user_id, :question, entropy_id, attrs) do
+    question = locked_content_or_rollback!(:question, entropy_id)
+    ensure_owner_and_editable!(question, user_id)
+
+    changeset = owned_update_changeset(:question, question, attrs)
+    ensure_valid!(changeset)
+    increment_write_window!(user_id, :question)
+
+    changeset
+    |> Ecto.Changeset.change(accepted_post_id: nil)
+    |> update_or_rollback()
   end
 
   defp remove_owned_transaction(user_id, :answer, entropy_id) do

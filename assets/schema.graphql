@@ -456,7 +456,7 @@ input PublishComparisonSnapshotInput {
 
 input SubmitProductReviewInput {
   productId: ID!
-  idempotencyKey: String!
+  idempotencyKey: String
   rating: Int!
   title: String
   body: String
@@ -465,14 +465,14 @@ input SubmitProductReviewInput {
 
 input AskProductQuestionInput {
   productId: ID!
-  idempotencyKey: String!
+  idempotencyKey: String
   title: String!
   body: String
 }
 
 input AnswerProductQuestionInput {
   questionId: ID!
-  idempotencyKey: String!
+  idempotencyKey: String
   body: String!
 }
 
