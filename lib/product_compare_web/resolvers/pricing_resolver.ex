@@ -102,10 +102,17 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   def source_artifact(_price_point, _args, _resolution), do: {:ok, nil}
 
-  @spec product_offer_truth(map(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
-  def product_offer_truth(%{id: product_id}, _args, _resolution)
+  @spec product_offer_truth(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, map()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product_offer_truth(%{id: product_id} = product, _args, %{context: %{loader: loader}})
       when is_integer(product_id) do
-    {:ok, Pricing.current_offer_truth(product_id)}
+    source = Loader.product_evidence_source()
+
+    loader
+    |> Dataloader.load(source, :offer_truth, product)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, :offer_truth, product)}
+    end)
   end
 
   def product_offer_truth(_product, _args, _resolution) do

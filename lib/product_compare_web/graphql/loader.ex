@@ -5,8 +5,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   import Ecto.Query
 
-  alias ProductCompare.Catalog
-  alias ProductCompare.Pricing
+  alias ProductCompare.{Catalog, Discussions, Pricing, Seo}
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
@@ -15,6 +14,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @merchant_detail_source {__MODULE__, :merchant_detail}
+  @product_evidence_source {__MODULE__, :product_evidence}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -25,10 +25,17 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @merchant_detail_source,
       Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @product_evidence_source,
+      Dataloader.KV.new(&product_evidence_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
   def merchant_detail_source, do: @merchant_detail_source
+
+  @spec product_evidence_source() :: {module(), :product_evidence}
+  def product_evidence_source, do: @product_evidence_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -88,5 +95,30 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     merchants
     |> Enum.to_list()
     |> Pricing.merchant_details(now: DateTime.utc_now())
+  end
+
+  defp product_evidence_batch(batch_key, products) do
+    products = Enum.to_list(products)
+    now = DateTime.utc_now()
+
+    case batch_key do
+      :offer_truth ->
+        offer_truths = Pricing.current_offer_truths(Enum.map(products, & &1.id), now: now)
+        empty_offer_truth = Pricing.current_offer_truth(nil, now: now)
+
+        Map.new(products, fn product ->
+          {product, Map.get(offer_truths, product.id, empty_offer_truth)}
+        end)
+
+      :review_summary ->
+        summaries = Discussions.review_summaries(Enum.map(products, & &1.id))
+
+        Map.new(products, fn product ->
+          {product, Map.fetch!(summaries, product.id)}
+        end)
+
+      :seo ->
+        Seo.product_metadata_batch(products, now: now)
+    end
   end
 end

@@ -1,12 +1,26 @@
 defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Discussions
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
+
+  def review_summary(%{id: product_id} = product, _args, %{context: %{loader: loader}})
+      when is_integer(product_id) do
+    source = Loader.product_evidence_source()
+
+    loader
+    |> Dataloader.load(source, :review_summary, product)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, :review_summary, product)}
+    end)
+  end
 
   def review_summary(product, _args, _resolution),
     do: {:ok, Discussions.review_summary(product.id)}

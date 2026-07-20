@@ -19,6 +19,18 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
+  def product_metadata(%{id: product_id} = product, _args, %{context: %{loader: loader}})
+      when is_integer(product_id) do
+    source = Loader.product_evidence_source()
+
+    loader
+    |> Dataloader.load(source, :seo, product)
+    |> on_load(fn loader ->
+      metadata = Dataloader.get(loader, source, :seo, product)
+      {:ok, serialized_metadata(metadata)}
+    end)
+  end
+
   def product_metadata(product, _args, _resolution),
     do: {:ok, serialized_metadata(Seo.product_metadata(product))}
 

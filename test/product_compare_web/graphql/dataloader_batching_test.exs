@@ -3,10 +3,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.Fixtures.SpecsFixtures
-  alias ProductCompare.Pricing
+  alias ProductCompare.{Catalog, Discussions, Pricing, Specs}
+  alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
 
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
+  @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
+  @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
     test "single request keeps dataloader-backed field batches bounded", %{
@@ -187,6 +189,46 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert initial_budget == %{merchant_products: 1, price_points: 1}
       assert merchant_summary_query_budget(grown_queries) == initial_budget
     end
+
+    test "product evidence fields keep semantic values and SELECT budgets fixed as parents grow",
+         %{conn: conn} do
+      operator = AccountsFixtures.operator_fixture()
+      prefix = "product-evidence-#{System.unique_integer([:positive])}"
+      initial_products = product_evidence_set("#{prefix}-initial", operator)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, product_evidence_batch_query(), %{"first" => 3})
+        end)
+
+      initial_nodes = product_evidence_nodes(initial_response)
+      assert length(initial_nodes) == 3
+      assert_product_evidence_values(initial_nodes, initial_products)
+
+      initial_budget = product_evidence_query_budget(initial_queries)
+
+      assert initial_budget == %{
+               product_media: 1,
+               product_attribute_current: 1,
+               product_reviews: 2,
+               merchant_products: 2,
+               price_points: 2
+             }
+
+      grown_products = initial_products ++ product_evidence_set("#{prefix}-grown", operator)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, product_evidence_batch_query(), %{"first" => 6})
+        end)
+
+      grown_nodes = product_evidence_nodes(grown_response)
+      assert length(grown_nodes) == 6
+      assert_product_evidence_values(grown_nodes, grown_products)
+      assert product_evidence_query_budget(grown_queries) == initial_budget
+      assert_offer_as_of_is_shared(initial_nodes)
+      assert_offer_as_of_is_shared(grown_nodes)
+    end
   end
 
   defp batching_query do
@@ -253,6 +295,46 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp product_evidence_batch_query do
+    """
+    query ProductEvidenceBatch($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            offerTruth {
+              asOf
+              freshForSeconds
+              staleAfterSeconds
+              offerCount
+              observedOfferCount
+              eligibleOfferCount
+              currencySummaries {
+                currency
+                offerCount
+                observedOfferCount
+                eligibleOfferCount
+                bestOffer {
+                  currency
+                  itemPrice
+                  shipping
+                  landedPrice
+                  landedPriceComplete
+                  stockStatus
+                  freshness
+                  eligible
+                }
+              }
+            }
+            reviewSummary { count averageRating }
+            seo { title description canonicalPath indexable imageUrl structuredData }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -272,10 +354,221 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     }
   end
 
+  defp product_evidence_query_budget(queries) do
+    Enum.into(@product_evidence_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
   defp summary_for(edges, merchant_name) do
     edges
     |> Enum.find(fn edge -> edge["node"]["name"] == merchant_name end)
     |> get_in(["node", "detailSummary"])
+  end
+
+  defp product_evidence_nodes(response) do
+    response
+    |> get_in(["data", "products", "edges"])
+    |> Enum.map(& &1["node"])
+  end
+
+  defp assert_product_evidence_values(nodes, products) do
+    Enum.each(Enum.chunk_every(products, 3), &assert_product_evidence_group(nodes, &1))
+  end
+
+  defp assert_product_evidence_group(nodes, [reviewed, unreviewed, missing]) do
+    reviewed_node = node_for(nodes, reviewed.slug)
+    reviewed_structured_data = get_in(reviewed_node, ["seo", "structuredData"])
+
+    assert is_binary(reviewed_node["offerTruth"]["asOf"])
+
+    assert Map.delete(reviewed_node["offerTruth"], "asOf") == %{
+             "freshForSeconds" => 86_400,
+             "staleAfterSeconds" => 259_200,
+             "offerCount" => 1,
+             "observedOfferCount" => 1,
+             "eligibleOfferCount" => 1,
+             "currencySummaries" => [
+               %{
+                 "currency" => "USD",
+                 "offerCount" => 1,
+                 "observedOfferCount" => 1,
+                 "eligibleOfferCount" => 1,
+                 "bestOffer" => %{
+                   "currency" => "USD",
+                   "itemPrice" => "100",
+                   "shipping" => "5",
+                   "landedPrice" => "105",
+                   "landedPriceComplete" => true,
+                   "stockStatus" => "IN_STOCK",
+                   "freshness" => "FRESH",
+                   "eligible" => true
+                 }
+               }
+             ]
+           }
+
+    assert reviewed_node["reviewSummary"] == %{"count" => 1, "averageRating" => "4.00"}
+
+    assert reviewed_node["seo"] == %{
+             "title" => "#{reviewed.name} specifications and prices | Product Compare",
+             "description" => @evidence_description,
+             "canonicalPath" => "/products/#{reviewed.slug}",
+             "indexable" => true,
+             "imageUrl" => nil,
+             "structuredData" => reviewed_structured_data
+           }
+
+    assert Jason.decode!(reviewed_structured_data) == %{
+             "@context" => "https://schema.org",
+             "@type" => "Product",
+             "name" => reviewed.name,
+             "description" => @evidence_description,
+             "url" => "/products/#{reviewed.slug}",
+             "brand" => %{"@type" => "Brand", "name" => "#{reviewed.slug} Brand"},
+             "offers" => %{
+               "@type" => "AggregateOffer",
+               "availability" => "https://schema.org/InStock",
+               "lowPrice" => "105",
+               "offerCount" => 1,
+               "priceCurrency" => "USD"
+             },
+             "aggregateRating" => %{
+               "@type" => "AggregateRating",
+               "ratingValue" => "4.00",
+               "reviewCount" => 1
+             }
+           }
+
+    assert node_for(nodes, unreviewed.slug)["reviewSummary"] == %{
+             "count" => 0,
+             "averageRating" => nil
+           }
+
+    assert node_for(nodes, unreviewed.slug)["seo"]["indexable"]
+
+    assert is_binary(node_for(nodes, missing.slug)["offerTruth"]["asOf"])
+
+    assert Map.delete(node_for(nodes, missing.slug)["offerTruth"], "asOf") == %{
+             "freshForSeconds" => 86_400,
+             "staleAfterSeconds" => 259_200,
+             "offerCount" => 0,
+             "observedOfferCount" => 0,
+             "eligibleOfferCount" => 0,
+             "currencySummaries" => []
+           }
+
+    assert node_for(nodes, missing.slug)["reviewSummary"] == %{
+             "count" => 0,
+             "averageRating" => nil
+           }
+
+    assert node_for(nodes, missing.slug)["seo"] == %{
+             "title" => "#{missing.name} specifications and prices | Product Compare",
+             "description" =>
+               "Compare accepted specifications and current offer evidence for #{missing.name}.",
+             "canonicalPath" => "/products/#{missing.slug}",
+             "indexable" => false,
+             "imageUrl" => nil,
+             "structuredData" => nil
+           }
+  end
+
+  defp assert_offer_as_of_is_shared(nodes) do
+    assert nodes
+           |> Enum.map(&get_in(&1, ["offerTruth", "asOf"]))
+           |> Enum.uniq()
+           |> length() == 1
+  end
+
+  defp node_for(nodes, slug), do: Enum.find(nodes, &(&1["slug"] == slug))
+
+  defp product_evidence_set(prefix, operator) do
+    [
+      qualified_evidence_product("#{prefix}-reviewed", operator, true),
+      qualified_evidence_product("#{prefix}-unreviewed", operator, false),
+      product_without_evidence("#{prefix}-missing")
+    ]
+  end
+
+  defp qualified_evidence_product(slug, operator, publish_review?) do
+    canonical_slug = canonical_slug(slug)
+    {:ok, brand} = Catalog.upsert_brand(%{name: "#{canonical_slug} Brand"})
+
+    product =
+      SpecsFixtures.product_fixture(%{
+        slug: slug,
+        brand_id: brand.id,
+        description: @evidence_description
+      })
+
+    Enum.each(["Resolution", "Weight"], fn label ->
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "#{slug}-#{String.downcase(label)}",
+          data_type: :text,
+          display_name: label
+        })
+
+      {:ok, claim} =
+        Specs.propose_claim(product.id, attribute.id, %{value_text: "Known #{label}"}, %{
+          source_type: :user,
+          created_by: operator.id
+        })
+
+      {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
+
+      {:ok, _current} =
+        Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
+    end)
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "#{slug} Merchant", domain: "#{slug}.example"})
+
+    {:ok, offer} =
+      Pricing.upsert_merchant_product(%{
+        merchant_id: merchant.id,
+        product_id: product.id,
+        url: "https://#{slug}.example/product",
+        currency: "USD",
+        is_active: true
+      })
+
+    {:ok, _point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.utc_now(),
+        price: "100",
+        shipping: "5",
+        in_stock: true
+      })
+
+    if publish_review? do
+      {:ok, review} =
+        Discussions.submit_review(AccountsFixtures.user_fixture().id, product.id, %{
+          rating: 4,
+          title: "Published review",
+          body: "This review is public."
+        })
+
+      {:ok, _published} =
+        Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+    end
+
+    product
+  end
+
+  defp product_without_evidence(slug) do
+    canonical_slug = canonical_slug(slug)
+    {:ok, brand} = Catalog.upsert_brand(%{name: "#{canonical_slug} Brand"})
+    SpecsFixtures.product_fixture(%{slug: slug, brand_id: brand.id})
+  end
+
+  defp canonical_slug(value) do
+    value
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/u, "-")
+    |> String.trim("-")
   end
 
   defp relevant_query?(query) when is_binary(query) do
