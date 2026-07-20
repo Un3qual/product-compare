@@ -33,7 +33,7 @@ function ReadyCategory({ query }: { query: Extract<CategoryLoaderData, { status:
   const data = usePreloadedQuery<CategoryRouteQueryType>(categoryRouteQuery, queryRef);
   const category = data.category;
   if (!category) return null;
-  const viewData = getCategoryViewData(category);
+  const viewData = getCategoryViewData(category, query.__relayQuery.variables.after ?? null);
 
   return (
     <PageShell eyebrow="Product category" title={viewData.title} description={category.description}>

@@ -60,3 +60,19 @@ test("MerchantDetailRoute renders complete summary, safe destination, and produc
     "2026-07-14T01:00:00Z"
   );
 });
+
+test("MerchantDetailRoute suppresses a repeated next-page cursor", () => {
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query: { __relayQuery: {
+    operationName: "MerchantDetailRouteQuery", text: "query MerchantDetailRouteQuery { merchant(slug: \"shop\") { id } }",
+    variables: { slug: "shop", first: 20, after: "same-cursor" }
+  } } } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({ merchant: {
+    id: "merchant-1", name: "Trusted Shop", slug: "trusted-shop-12345678", domain: "trusted.example",
+    detailSummary: { activeOfferCount: 0, distinctProductCount: 0, eligibleOfferCount: 0, freshOfferCount: 0, agingOfferCount: 0, staleOfferCount: 0, unobservedOfferCount: 0, lastObservedAt: null },
+    merchantProducts: { edges: [], pageInfo: { hasNextPage: true, endCursor: "same-cursor" } }
+  } } as never);
+
+  render(<MemoryRouter><MerchantDetailRoute /></MemoryRouter>);
+  expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
+});

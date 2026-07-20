@@ -37,6 +37,17 @@ test("returns an encoded next-page path only when a next page and cursor are bot
       buildCategory({ products: buildProducts([], { hasNextPage: true, endCursor: null }) })
     ).nextPagePath
   ).toBeNull();
+  expect(
+    getCategoryViewData(
+      buildCategory({ products: buildProducts([], { hasNextPage: true, endCursor: "same" }) }),
+      "same"
+    ).nextPagePath
+  ).toBeNull();
+  expect(
+    getCategoryViewData(
+      buildCategory({ products: buildProducts([], { hasNextPage: true, endCursor: "  " }) })
+    ).nextPagePath
+  ).toBeNull();
 });
 
 test("uses an unknown-brand fallback only for nullish brand names", () => {

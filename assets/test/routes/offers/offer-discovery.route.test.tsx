@@ -1152,6 +1152,21 @@ test("offer discovery pagination preserves active-only and page-size filters", (
   );
 });
 
+test("offer discovery suppresses a repeated next-page cursor", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ after: "same-cursor" }));
+  mockedUsePreloadedQuery.mockReturnValue(
+    buildOfferDiscoveryData({
+      endCursor: "same-cursor",
+      hasNextPage: true,
+      hasPreviousPage: true
+    })
+  );
+
+  renderOfferDiscoveryRoute();
+  expect(screen.getByRole("link", { name: "First offers" })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "Next offers" })).not.toBeInTheDocument();
+});
+
 test("offer discovery renders an empty state", () => {
   mockedUsePreloadedQuery.mockReturnValue(buildOfferDiscoveryData({ offers: [] }));
 

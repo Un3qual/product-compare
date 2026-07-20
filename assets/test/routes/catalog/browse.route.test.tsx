@@ -20,7 +20,10 @@ import {
   BrowseProductList,
   type BrowseProductNode
 } from "../../../src/routes/catalog/BrowseProductList";
-import { catalogBrowseNextPagePath } from "../../../src/routes/catalog/paths";
+import {
+  buildCatalogBrowsePaginationData,
+  catalogBrowseNextPagePath
+} from "../../../src/routes/catalog/paths";
 
 const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
   vi.hoisted(() => ({
@@ -72,6 +75,19 @@ const emptyCatalogFilters = {
   booleans: [],
   enums: []
 };
+
+test("catalog pagination rejects blank and repeated next cursors", () => {
+  const base = {
+    currentAfter: "same-cursor",
+    filters: emptyCatalogFilters,
+    first: 12,
+    hasNextPage: true,
+    selectedCompareSlugs: []
+  };
+
+  expect(buildCatalogBrowsePaginationData({ ...base, endCursor: "same-cursor" }).nextHref).toBeNull();
+  expect(buildCatalogBrowsePaginationData({ ...base, endCursor: "  " }).nextHref).toBeNull();
+});
 type MockRouteQueryRef = { dispose: () => void; variables: Variables };
 type BrowseProductAttributeFixture = {
   code: string;

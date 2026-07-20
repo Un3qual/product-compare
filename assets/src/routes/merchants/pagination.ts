@@ -32,14 +32,19 @@ export function buildMerchantDirectoryPaginationData({
   readonly hasPreviousPage: boolean;
   readonly pagination: Readonly<MerchantPagination>;
 }) {
+  const nextCursor = nextRelayPageCursor(
+    { endCursor, hasNextPage },
+    pagination.after
+  );
+
   return {
     firstHref:
       hasPreviousPage && pagination.after
         ? merchantDirectoryPagePath(pagination)
         : null,
     nextHref:
-      hasNextPage && endCursor
-        ? merchantDirectoryPagePath(pagination, endCursor)
+      nextCursor
+        ? merchantDirectoryPagePath(pagination, nextCursor)
         : null
   };
 }
@@ -70,3 +75,4 @@ function normalizeMerchantCursor(value: string | null) {
 
   return normalized ? normalized : null;
 }
+import { nextRelayPageCursor } from "../relay-pagination";

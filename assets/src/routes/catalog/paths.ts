@@ -1,4 +1,5 @@
 import { uniqueCatalogEnumFilters, type CatalogFilters } from "./filters";
+import { nextRelayPageCursor } from "../relay-pagination";
 
 export function catalogBrowsePath(
   filters: CatalogFilters,
@@ -52,13 +53,18 @@ export function buildCatalogBrowsePaginationData({
   readonly hasNextPage: boolean;
   readonly selectedCompareSlugs: readonly string[];
 }) {
+  const nextCursor = nextRelayPageCursor(
+    { endCursor, hasNextPage },
+    currentAfter
+  );
+
   return {
     firstHref: currentAfter
       ? catalogBrowseFirstPagePath(filters, first, selectedCompareSlugs)
       : null,
     nextHref:
-      hasNextPage && endCursor
-        ? catalogBrowseNextPagePath(filters, first, endCursor, selectedCompareSlugs)
+      nextCursor
+        ? catalogBrowseNextPagePath(filters, first, nextCursor, selectedCompareSlugs)
         : null
   };
 }

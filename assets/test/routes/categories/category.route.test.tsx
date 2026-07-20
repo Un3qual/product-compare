@@ -39,7 +39,13 @@ test("category loader returns 404 for invalid slugs and canonical metadata for c
 });
 
 test("CategoryRoute renders curated copy, trusted inventory, and browse links", () => {
-  mockedUseLoaderData.mockReturnValue({ status: "ready", query: {} } as never);
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query: {
+    __relayQuery: {
+      operationName: "CategoryRouteQuery",
+      text: "query CategoryRouteQuery { category(slug: \"cameras\") { id } }",
+      variables: { slug: "cameras", first: 12, after: null }
+    }
+  } } as never);
   mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
   mockedUsePreloadedQuery.mockReturnValue({ category: {
     id: "taxon-1", name: "Cameras", slug: "cameras", description: "Compare curated camera specifications with current complete offer evidence.", qualifiedProductCount: 3, indexable: true,
@@ -51,4 +57,24 @@ test("CategoryRoute renders curated copy, trusted inventory, and browse links", 
   expect(screen.getByText(/3 products currently meet/)).toBeVisible();
   expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute("href", "/products/field%20%2F%20camera%3F");
   expect(screen.getByRole("link", { name: "Explore every product and filter" })).toHaveAttribute("href", "/products?typeTaxonId=taxon-1&includeTypeDescendants=1");
+});
+
+test("CategoryRoute suppresses a repeated next-page cursor", () => {
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query: {
+    __relayQuery: {
+      operationName: "CategoryRouteQuery",
+      text: "query CategoryRouteQuery { category(slug: \"cameras\") { id } }",
+      variables: { slug: "cameras", first: 12, after: "same-cursor" }
+    }
+  } } as never);
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUsePreloadedQuery.mockReturnValue({ category: {
+    id: "taxon-1", name: "Cameras", slug: "cameras", description: null,
+    qualifiedProductCount: 0, indexable: true, products: {
+      edges: [], pageInfo: { hasNextPage: true, endCursor: "same-cursor" }
+    }
+  } } as never);
+
+  render(<MemoryRouter><CategoryRoute /></MemoryRouter>);
+  expect(screen.queryByRole("link", { name: "Next products" })).not.toBeInTheDocument();
 });

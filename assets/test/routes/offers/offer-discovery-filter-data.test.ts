@@ -102,6 +102,13 @@ test("buildOfferDiscoveryPaginationData preserves every filter in first and next
   });
 });
 
+test("buildOfferDiscoveryPaginationData rejects blank and repeated next cursors", () => {
+  const filters = { ...DEFAULT_FILTERS, after: "same-cursor" };
+
+  expect(buildOfferDiscoveryPaginationData({ endCursor: "same-cursor", filters, hasNextPage: true, hasPreviousPage: true }).nextHref).toBeNull();
+  expect(buildOfferDiscoveryPaginationData({ endCursor: "  ", filters, hasNextPage: true, hasPreviousPage: true }).nextHref).toBeNull();
+});
+
 test.each([
   [false, "current-cursor"],
   [true, null],
