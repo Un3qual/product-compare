@@ -344,7 +344,7 @@ function watchSummary(id: string, productName: string) {
 }
 
 async function completeMutationAt(index: number, payload: object) {
-  await act(async () => {
+  await act(() => {
     commitMutationMock.mock.calls[index]?.[0]?.onCompleted(payload, []);
   });
 }

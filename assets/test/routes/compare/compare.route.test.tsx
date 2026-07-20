@@ -1657,7 +1657,7 @@ test("product picker can advance beyond the first picker page", () => {
 
 test("product picker stops when the next page repeats the current cursor", async () => {
   mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
-  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => ({
+  mockedUseLazyLoadQuery.mockImplementation(() => ({
     products: {
       edges: [],
       pageInfo: {

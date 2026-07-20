@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../relay-pagination";
+
 export const DEFAULT_OFFERS_PAGE_SIZE = 6;
 
 export const OFFER_DISCOVERY_SORT_OPTIONS = [
@@ -270,4 +272,3 @@ function hasNonDefaultOfferFilters(filters: OfferDiscoveryFilters) {
       filters.first !== DEFAULT_OFFERS_PAGE_SIZE
   );
 }
-import { nextRelayPageCursor } from "../relay-pagination";

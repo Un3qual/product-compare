@@ -35,57 +35,31 @@ type CommunityContentType = "REVIEW" | "QUESTION" | "ANSWER";
 type CommunityContentLabel = "review" | "question" | "answer";
 
 export function ReviewItem({ ownerView = false, review }: { ownerView?: boolean; review: Review }) {
-  const [commitUpdate, pending] = useMutation<UpdateProductReviewMutation>(updateProductReviewMutation);
-  const [editing, setEditing] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [removed, setRemoved] = useState(false);
-  const [resubmittedMessage, setResubmittedMessage] = useState<string | null>(null);
+  const state = useCommunityItemState();
+  const { pending, submit } = useReviewUpdate(review, ownerView, state);
   const display = publishedReviewRowDisplayData(review);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
-        variables: { input: {
-          id: review.id,
-          rating: Number(form.get("rating")),
-          title: normalizedFormText(form.get("title")),
-          body: normalizedFormText(form.get("body"))
-        } }
-      });
-      const payload = response.updateProductReview;
-      const nextMessage = resolveProductReviewUpdateMessage(payload, graphQLErrors);
-      setMessage(nextMessage);
-      if (payload.review && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setEditing(false);
-        if (!ownerView) setResubmittedMessage(nextMessage);
-      }
-    } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-    }
+  if (state.unavailableMessage) {
+    return <UnavailableListItem label={`Review: ${display.title}`} message={state.unavailableMessage} />;
   }
-
-  const unavailableMessage = resubmittedMessage ?? (removed ? "Community content removed." : null);
-  if (unavailableMessage) return <UnavailableListItem label={`Review: ${display.title}`} message={unavailableMessage} />;
 
   return <li><article aria-label={`Review: ${display.title}`} {...props(styles.item)}>
     <ModerationStatus ownerView={ownerView} status={review.moderationStatus} />
     <strong>{display.title}</strong><span>{display.ratingStars}</span>
     <OptionalParagraph value={review.body} />
     <p {...props(styles.metadata)}>{display.authorCopy}</p>
-    <ReviewEditForm editing={editing} pending={pending} review={review} onCancel={() => setEditing(false)} onSubmit={submit} />
+    <ReviewEditForm editing={state.editing} pending={pending} review={review} onCancel={state.cancelEditing} onSubmit={submit} />
     <CommunityOwnerActions
       canEdit={review.viewerCanEdit}
       canRemove={review.viewerCanRemove}
       contentId={review.id}
       contentType="REVIEW"
-      editing={editing}
+      editing={state.editing}
       label="review"
-      onEdit={() => setEditing(true)}
-      onRemoved={() => setRemoved(true)}
+      onEdit={state.startEditing}
+      onRemoved={state.markRemoved}
     />
-    <RowMessage message={message} />
+    <RowMessage message={state.message} />
   </article></li>;
 }
 
@@ -98,55 +72,30 @@ export function QuestionItem({
   ownerView?: boolean;
   question: QuestionRow;
 }) {
-  const [commitUpdate, pending] = useMutation<UpdateProductQuestionMutation>(updateProductQuestionMutation);
-  const [editing, setEditing] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [removed, setRemoved] = useState(false);
-  const [resubmittedMessage, setResubmittedMessage] = useState<string | null>(null);
+  const state = useCommunityItemState();
+  const { pending, submit } = useQuestionUpdate(question, ownerView, state);
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
-        variables: { input: {
-          id: question.id,
-          title: normalizedFormText(form.get("title")),
-          body: normalizedFormText(form.get("body"))
-        } }
-      });
-      const payload = response.updateProductQuestion;
-      const nextMessage = resolveProductQuestionUpdateMessage(payload, graphQLErrors);
-      setMessage(nextMessage);
-      if (payload.question && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setEditing(false);
-        if (!ownerView) setResubmittedMessage(nextMessage);
-      }
-    } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-    }
+  if (state.unavailableMessage) {
+    return <UnavailableListItem label={`Question: ${question.title}`} message={state.unavailableMessage} />;
   }
-
-  const unavailableMessage = resubmittedMessage ?? (removed ? "Community content removed." : null);
-  if (unavailableMessage) return <UnavailableListItem label={`Question: ${question.title}`} message={unavailableMessage} />;
 
   return <li><article aria-label={`Question: ${question.title}`} {...props(styles.item)}>
     <ModerationStatus ownerView={ownerView} status={question.moderationStatus} />
     <strong>{question.title}</strong>
     <OptionalParagraph value={question.body} />
     <p {...props(styles.metadata)}>{question.authorLabel}</p>
-    <QuestionEditForm editing={editing} pending={pending} question={question} onCancel={() => setEditing(false)} onSubmit={submit} />
+    <QuestionEditForm editing={state.editing} pending={pending} question={question} onCancel={state.cancelEditing} onSubmit={submit} />
     <CommunityOwnerActions
       canEdit={question.viewerCanEdit}
       canRemove={question.viewerCanRemove}
       contentId={question.id}
       contentType="QUESTION"
-      editing={editing}
+      editing={state.editing}
       label="question"
-      onEdit={() => setEditing(true)}
-      onRemoved={() => setRemoved(true)}
+      onEdit={state.startEditing}
+      onRemoved={state.markRemoved}
     />
-    <RowMessage message={message} />
+    <RowMessage message={state.message} />
     {children}
   </article></li>;
 }
@@ -160,51 +109,141 @@ export function AnswerView({
   answer: Answer;
   ownerView?: boolean;
 }) {
-  const [commitUpdate, pending] = useMutation<UpdateProductAnswerMutation>(updateProductAnswerMutation);
+  const state = useCommunityItemState();
+  const { pending, submit } = useAnswerUpdate(answer, ownerView, state);
+
+  if (state.unavailableMessage) {
+    return <UnavailableArticle label={`Answer by ${answer.authorLabel}`} message={state.unavailableMessage} />;
+  }
+
+  return <article aria-label={`Answer by ${answer.authorLabel}`} {...props(styles.answer)}>
+    <ModerationStatus ownerView={ownerView} status={answer.moderationStatus} />
+    <p>{answer.body}</p>
+    <p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p>
+    <AnswerEditForm answer={answer} editing={state.editing} pending={pending} onCancel={state.cancelEditing} onSubmit={submit} />
+    <CommunityOwnerActions
+      canEdit={answer.viewerCanEdit}
+      canRemove={answer.viewerCanRemove}
+      contentId={answer.id}
+      contentType="ANSWER"
+      editing={state.editing}
+      label="answer"
+      onEdit={state.startEditing}
+      onRemoved={state.markRemoved}
+    />
+    <RowMessage message={state.message} />
+  </article>;
+}
+
+function useCommunityItemState() {
   const [editing, setEditing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [removed, setRemoved] = useState(false);
   const [resubmittedMessage, setResubmittedMessage] = useState<string | null>(null);
 
+  return {
+    cancelEditing: () => setEditing(false),
+    completeUpdate(nextMessage: string, ownerView: boolean) {
+      setMessage(nextMessage);
+      setEditing(false);
+      if (!ownerView) setResubmittedMessage(nextMessage);
+    },
+    editing,
+    markRemoved: () => setRemoved(true),
+    message,
+    setMessage,
+    startEditing: () => setEditing(true),
+    unavailableMessage: resubmittedMessage ?? (removed ? "Community content removed." : null)
+  };
+}
+
+type CommunityItemState = ReturnType<typeof useCommunityItemState>;
+
+function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityItemState) {
+  const [commitUpdate, pending] = useMutation<UpdateProductReviewMutation>(updateProductReviewMutation);
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: {
+          id: review.id,
+          rating: Number(form.get("rating")),
+          title: normalizedFormText(form.get("title")),
+          body: normalizedFormText(form.get("body"))
+        } }
+      });
+      const payload = response.updateProductReview;
+      const nextMessage = resolveProductReviewUpdateMessage(payload, graphQLErrors);
+      if (payload.review && !hasRouteGraphQLErrors(graphQLErrors)) {
+        state.completeUpdate(nextMessage, ownerView);
+      } else {
+        state.setMessage(nextMessage);
+      }
+    } catch {
+      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return { pending, submit };
+}
+
+function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: CommunityItemState) {
+  const [commitUpdate, pending] = useMutation<UpdateProductQuestionMutation>(updateProductQuestionMutation);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+
+    try {
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
+        variables: { input: {
+          id: question.id,
+          title: normalizedFormText(form.get("title")),
+          body: normalizedFormText(form.get("body"))
+        } }
+      });
+      const payload = response.updateProductQuestion;
+      const nextMessage = resolveProductQuestionUpdateMessage(payload, graphQLErrors);
+      if (payload.question && !hasRouteGraphQLErrors(graphQLErrors)) {
+        state.completeUpdate(nextMessage, ownerView);
+      } else {
+        state.setMessage(nextMessage);
+      }
+    } catch {
+      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+    }
+  }
+
+  return { pending, submit };
+}
+
+function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityItemState) {
+  const [commitUpdate, pending] = useMutation<UpdateProductAnswerMutation>(updateProductAnswerMutation);
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitUpdate, {
         variables: { input: { id: answer.id, body: normalizedFormText(form.get("body")) } }
       });
       const payload = response.updateProductAnswer;
       const nextMessage = resolveProductAnswerUpdateMessage(payload, graphQLErrors);
-      setMessage(nextMessage);
       if (payload.answer && !hasRouteGraphQLErrors(graphQLErrors)) {
-        setEditing(false);
-        if (!ownerView) setResubmittedMessage(nextMessage);
+        state.completeUpdate(nextMessage, ownerView);
+      } else {
+        state.setMessage(nextMessage);
       }
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
     }
   }
 
-  const unavailableMessage = resubmittedMessage ?? (removed ? "Community content removed." : null);
-  if (unavailableMessage) return <UnavailableArticle label={`Answer by ${answer.authorLabel}`} message={unavailableMessage} />;
-
-  return <article aria-label={`Answer by ${answer.authorLabel}`} {...props(styles.answer)}>
-    <ModerationStatus ownerView={ownerView} status={answer.moderationStatus} />
-    <p>{answer.body}</p>
-    <p {...props(styles.metadata)}>{acceptedAnswerAuthorLabel(answer.id, acceptedAnswerId, answer.authorLabel)}</p>
-    <AnswerEditForm answer={answer} editing={editing} pending={pending} onCancel={() => setEditing(false)} onSubmit={submit} />
-    <CommunityOwnerActions
-      canEdit={answer.viewerCanEdit}
-      canRemove={answer.viewerCanRemove}
-      contentId={answer.id}
-      contentType="ANSWER"
-      editing={editing}
-      label="answer"
-      onEdit={() => setEditing(true)}
-      onRemoved={() => setRemoved(true)}
-    />
-    <RowMessage message={message} />
-  </article>;
+  return { pending, submit };
 }
 
 function ReviewEditForm({ editing, pending, review, onCancel, onSubmit }: {

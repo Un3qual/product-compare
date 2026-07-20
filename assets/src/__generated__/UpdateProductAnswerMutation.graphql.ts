@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f7939b22933948ae066971bb350ee466>>
+ * @generated SignedSource<<8b8958adfac28d30e9544ea9067efec3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -20,6 +20,7 @@ export type UpdateProductAnswerMutation$variables = {
 export type UpdateProductAnswerMutation$data = {
   readonly updateProductAnswer: {
     readonly answer: {
+      readonly body: string;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
     } | null | undefined;
@@ -71,6 +72,13 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "body",
             "storageKey": null
           },
           {
@@ -137,16 +145,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "41488686fb324056d5854806d194d96f",
+    "cacheID": "1f431cf2e70ffd61b11ea271517de841",
     "id": null,
     "metadata": {},
     "name": "UpdateProductAnswerMutation",
     "operationKind": "mutation",
-    "text": "mutation UpdateProductAnswerMutation(\n  $input: UpdateProductAnswerInput!\n) {\n  updateProductAnswer(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation UpdateProductAnswerMutation(\n  $input: UpdateProductAnswerInput!\n) {\n  updateProductAnswer(input: $input) {\n    answer {\n      id\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "0d9331677b37fb2e060c8feda02aaf83";
+(node as any).hash = "6d9241f56047f037018c044abb0886fc";
 
 export default node;

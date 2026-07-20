@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../../relay-pagination";
+
 export type MerchantDetailViewDataInput = {
   slug: string;
   detailSummary: {
@@ -93,4 +95,3 @@ function merchantNextPagePath(
     ? `/merchants/${encodeURIComponent(merchant.slug)}?after=${encodeURIComponent(nextCursor)}`
     : null;
 }
-import { nextRelayPageCursor } from "../../relay-pagination";

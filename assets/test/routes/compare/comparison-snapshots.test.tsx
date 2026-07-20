@@ -177,10 +177,14 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
   expect(firstRow).not.toBeNull();
   expect(secondRow).not.toBeNull();
 
-  const firstButton = within(firstRow!).getByRole("button", {
+  if (!firstRow || !secondRow) {
+    throw new Error("Expected both saved snapshot rows to be rendered");
+  }
+
+  const firstButton = within(firstRow).getByRole("button", {
     name: "Revoke public link: First shortlist"
   });
-  const secondButton = within(secondRow!).getByRole("button", {
+  const secondButton = within(secondRow).getByRole("button", {
     name: "Revoke public link: Second shortlist"
   });
 
@@ -195,7 +199,7 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
   fireEvent.click(firstButton);
   expect(revokeMutationMock).toHaveBeenCalledTimes(1);
 
-  await act(async () => {
+  await act(() => {
     revokeMutationMock.mock.calls[0]?.[0]?.onCompleted({
       revokeComparisonSnapshot: {
         revokedSnapshotId: null,
@@ -208,18 +212,18 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
     }, []);
   });
 
-  expect(within(firstRow!).getByRole("alert")).toHaveTextContent(
+  expect(within(firstRow).getByRole("alert")).toHaveTextContent(
     "First snapshot cannot be revoked."
   );
   expect(firstButton).not.toBeDisabled();
   expect(firstButton).toHaveTextContent("Revoke public link");
-  expect(within(secondRow!).queryByRole("alert")).not.toBeInTheDocument();
+  expect(within(secondRow).queryByRole("alert")).not.toBeInTheDocument();
   expect(secondButton).not.toBeDisabled();
 
   fireEvent.click(firstButton);
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(2));
 
-  await act(async () => {
+  await act(() => {
     revokeMutationMock.mock.calls[1]?.[0]?.onCompleted({
       revokeComparisonSnapshot: {
         revokedSnapshotId: "snapshot-first",

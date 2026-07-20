@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<52985d19cb67466dfaaa7b326a48bd4e>>
+ * @generated SignedSource<<f36176763e0e5f92dd37b4ebb5115eff>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -27,8 +27,11 @@ export type UpdateProductReviewMutation$data = {
       readonly message: string;
     }>;
     readonly review: {
+      readonly body: string | null | undefined;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
+      readonly rating: number;
+      readonly title: string | null | undefined;
     } | null | undefined;
   };
 };
@@ -73,6 +76,27 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "rating",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "body",
             "storageKey": null
           },
           {
@@ -139,16 +163,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "0af0b2cac6c36b6393090e2437b5e809",
+    "cacheID": "8746f4bdf72aadc4a9666246b9e5bcb1",
     "id": null,
     "metadata": {},
     "name": "UpdateProductReviewMutation",
     "operationKind": "mutation",
-    "text": "mutation UpdateProductReviewMutation(\n  $input: UpdateProductReviewInput!\n) {\n  updateProductReview(input: $input) {\n    review {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation UpdateProductReviewMutation(\n  $input: UpdateProductReviewInput!\n) {\n  updateProductReview(input: $input) {\n    review {\n      id\n      rating\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "df82581ef1108c3a65892abe9a389db1";
+(node as any).hash = "1814cee04f99faeecbe6941bb2d83ee3";
 
 export default node;

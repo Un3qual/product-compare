@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f11814b3037c01fb49e900e8fe88d5ed>>
+ * @generated SignedSource<<a4bdc194724033e83f5d6d585b4fe748>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -26,8 +26,10 @@ export type UpdateProductQuestionMutation$data = {
       readonly message: string;
     }>;
     readonly question: {
+      readonly body: string | null | undefined;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
+      readonly title: string;
     } | null | undefined;
   };
 };
@@ -72,6 +74,20 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "body",
             "storageKey": null
           },
           {
@@ -138,16 +154,16 @@ return {
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "e8673cf7bde4b2144b5e5c42d42867da",
+    "cacheID": "c4377e2a92f4635ce669737b8d7193f9",
     "id": null,
     "metadata": {},
     "name": "UpdateProductQuestionMutation",
     "operationKind": "mutation",
-    "text": "mutation UpdateProductQuestionMutation(\n  $input: UpdateProductQuestionInput!\n) {\n  updateProductQuestion(input: $input) {\n    question {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation UpdateProductQuestionMutation(\n  $input: UpdateProductQuestionInput!\n) {\n  updateProductQuestion(input: $input) {\n    question {\n      id\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4b7498cdd60758e191c275745451eac5";
+(node as any).hash = "81001d29e0e787ea449d238d8e190cf3";
 
 export default node;

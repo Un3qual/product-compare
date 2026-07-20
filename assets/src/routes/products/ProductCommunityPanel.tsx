@@ -145,16 +145,40 @@ function OwnerSubmissionsSection({
   return <section aria-label="Your non-public community submissions" {...props(styles.content)}>
     <h2 {...props(styles.title)}>Your submissions</h2>
     <p {...props(styles.metadata)}>Pending, hidden, and rejected content remains available to edit or remove.</p>
-    <ul aria-label="Your non-public reviews" {...props(styles.list)}>
-      {submissions.reviews.map((review) => <ReviewItem key={review.id} ownerView review={review} />)}
-    </ul>
-    <ul aria-label="Your non-public questions" {...props(styles.list)}>
-      {submissions.questions.map((question) => <QuestionItem key={question.id} ownerView question={question} />)}
-    </ul>
-    <ul aria-label="Your non-public answers" {...props(styles.list)}>
-      {submissions.answers.map((answer) => <li key={answer.id}><AnswerView answer={answer} ownerView /></li>)}
-    </ul>
+    <OwnerReviewSubmissions reviews={submissions.reviews} />
+    <OwnerQuestionSubmissions questions={submissions.questions} />
+    <OwnerAnswerSubmissions answers={submissions.answers} />
   </section>;
+}
+
+function OwnerReviewSubmissions({
+  reviews
+}: {
+  reviews: ViewerCommunitySubmissions["reviews"];
+}) {
+  return <ul aria-label="Your non-public reviews" {...props(styles.list)}>
+    {reviews.map((review) => <ReviewItem key={review.id} ownerView review={review} />)}
+  </ul>;
+}
+
+function OwnerQuestionSubmissions({
+  questions
+}: {
+  questions: ViewerCommunitySubmissions["questions"];
+}) {
+  return <ul aria-label="Your non-public questions" {...props(styles.list)}>
+    {questions.map((question) => <QuestionItem key={question.id} ownerView question={question} />)}
+  </ul>;
+}
+
+function OwnerAnswerSubmissions({
+  answers
+}: {
+  answers: ViewerCommunitySubmissions["answers"];
+}) {
+  return <ul aria-label="Your non-public answers" {...props(styles.list)}>
+    {answers.map((answer) => <li key={answer.id}><AnswerView answer={answer} ownerView /></li>)}
+  </ul>;
 }
 
 function ReviewSection({

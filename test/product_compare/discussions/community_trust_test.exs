@@ -450,6 +450,79 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert Discussions.list_public_reviews(product.id) == []
   end
 
+  test "removed reviews no longer block a later replacement review" do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, original_review} =
+             Discussions.submit_review(owner.id, product.id, %{rating: 2, title: "Original"})
+
+    assert {:ok, removed_review} =
+             Discussions.remove_owned(owner.id, :review, original_review.entropy_id)
+
+    assert removed_review.moderation_status == :removed
+
+    assert {:ok, replacement_review} =
+             Discussions.submit_review(owner.id, product.id, %{
+               rating: 5,
+               title: "Replacement"
+             })
+
+    refute replacement_review.id == original_review.id
+    assert replacement_review.moderation_status == :pending
+    assert Repo.aggregate(ProductReview, :count, :id) == 2
+
+    assert {:ok, published_replacement} =
+             Discussions.moderate(
+               operator.id,
+               :review,
+               replacement_review.entropy_id,
+               :published
+             )
+
+    assert Enum.map(Discussions.list_public_reviews(product.id), & &1.id) == [
+             published_replacement.id
+           ]
+  end
+
+  test "operators cannot moderate owner-removed community content" do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, review} = Discussions.submit_review(owner.id, product.id, %{rating: 3})
+    assert {:ok, _removed_review} = Discussions.remove_owned(owner.id, :review, review.entropy_id)
+
+    assert {:ok, question} =
+             Discussions.ask_question(owner.id, product.id, %{title: "Question"})
+
+    assert {:ok, published_question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} =
+             Discussions.answer_question(owner.id, published_question.entropy_id, "Answer")
+
+    assert {:ok, _removed_answer} =
+             Discussions.remove_owned(owner.id, :answer, answer.entropy_id)
+
+    assert {:ok, _removed_question} =
+             Discussions.remove_owned(owner.id, :question, question.entropy_id)
+
+    for {type, entropy_id} <- [
+          review: review.entropy_id,
+          question: question.entropy_id,
+          answer: answer.entropy_id
+        ] do
+      assert {:error, :invalid_lifecycle} =
+               Discussions.moderate(operator.id, type, entropy_id, :published)
+    end
+
+    assert Repo.get!(ProductReview, review.id).moderation_status == :removed
+    assert Repo.get!(ProductThread, question.id).moderation_status == :removed
+    assert Repo.get!(ThreadPost, answer.id).moderation_status == :removed
+  end
+
   test "editing rejected content resubmits it and removals do not consume rate limits" do
     Application.put_env(:product_compare, ProductCompare.Discussions,
       community_write_limits: [review: 5, question: 10, answer: 2, report: 30]

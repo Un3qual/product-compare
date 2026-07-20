@@ -143,10 +143,10 @@ test("ProductCommunityPanel reuses a create key after transport failure and repl
     title: "Balanced"
   };
   await waitFor(() => expect(reviewMock).toHaveBeenCalledWith(expect.objectContaining({ variables: { input: firstInput } })));
-  await act(async () => reviewMock.mock.calls[0]?.[0]?.onError(new Error("connection dropped")));
+  await act(() => reviewMock.mock.calls[0]?.[0]?.onError(new Error("connection dropped")));
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
   await waitFor(() => expect(reviewMock).toHaveBeenNthCalledWith(2, expect.objectContaining({ variables: { input: firstInput } })));
-  await act(async () => reviewMock.mock.calls[1]?.[0]?.onCompleted({ submitProductReview: { review: { id: "review-2", moderationStatus: "PENDING" }, errors: [] } }, []));
+  await act(() => reviewMock.mock.calls[1]?.[0]?.onCompleted({ submitProductReview: { review: { id: "review-2", moderationStatus: "PENDING" }, errors: [] } }, []));
   expect(await screen.findByRole("status")).toHaveTextContent("submitted for moderation");
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
   await waitFor(() => expect(reviewMock).toHaveBeenNthCalledWith(3, expect.objectContaining({ variables: { input: { ...firstInput, idempotencyKey: "018f0f45-31f3-7af0-8bb9-2e606355f102" } } })));
@@ -165,7 +165,7 @@ test("ProductCommunityPanel exposes owner-only edit and confirmed removal contro
   await waitFor(() => expect(updateReviewMock).toHaveBeenCalledWith(expect.objectContaining({
     variables: { input: { id: "review-1", rating: 4, title: "Revised field notes", body: "<img src=x onerror=alert(1)> held up in rain." } }
   })));
-  await act(async () => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({ updateProductReview: { review: { id: "review-1", moderationStatus: "PENDING" }, errors: [] } }, []));
+  await act(() => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({ updateProductReview: { review: { id: "review-1", moderationStatus: "PENDING" }, errors: [] } }, []));
   expect(await screen.findByText("Review updated and submitted for moderation.")).toBeVisible();
   expect(screen.queryByText("<img src=x onerror=alert(1)> held up in rain.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Edit review" })).toBeNull();
@@ -227,7 +227,7 @@ test("ProductCommunityPanel keeps lifecycle failures scoped to their content row
 
   fireEvent.click(within(reviewRow).getByRole("button", { name: "Edit review" }));
   fireEvent.click(within(reviewRow).getByRole("button", { name: "Save review" }));
-  await act(async () => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({
+  await act(() => updateReviewMock.mock.calls[0]?.[0]?.onCompleted({
     updateProductReview: {
       review: null,
       errors: [{ code: "RATE_LIMITED", message: "Community write limit reached; try again later." }]

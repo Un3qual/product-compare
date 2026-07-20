@@ -1,3 +1,5 @@
+import { nextRelayPageCursor } from "../relay-pagination";
+
 const MERCHANT_DEFAULT_PAGE_SIZE = 20;
 const MERCHANT_MAX_PAGE_SIZE = 50;
 
@@ -75,4 +77,3 @@ function normalizeMerchantCursor(value: string | null) {
 
   return normalized ? normalized : null;
 }
-import { nextRelayPageCursor } from "../relay-pagination";
