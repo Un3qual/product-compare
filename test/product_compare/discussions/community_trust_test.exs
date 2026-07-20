@@ -1,5 +1,5 @@
 defmodule ProductCompare.Discussions.CommunityTrustTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -11,6 +11,18 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
+
+  setup do
+    previous = Application.get_env(:product_compare, ProductCompare.Discussions)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:product_compare, ProductCompare.Discussions, previous),
+        else: Application.delete_env(:product_compare, ProductCompare.Discussions)
+    end)
+
+    :ok
+  end
 
   test "community content schemas accept retained owner removal" do
     for schema <- [ProductReview, ProductThread, ThreadPost] do
@@ -205,6 +217,279 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
 
     assert {:error, :forbidden} =
              Discussions.moderate(reporter.id, :review, review.entropy_id, :published)
+  end
+
+  test "create idempotency replays matching content and rejects conflicting payloads" do
+    reviewer = AccountsFixtures.user_fixture()
+    asker = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    review_attrs = %{rating: "4", title: "Clear sound", body: "Useful."}
+
+    assert {:ok, review} =
+             Discussions.submit_review(reviewer.id, product.id, review_attrs, "review-key-00001")
+
+    assert {:ok, replayed_review} =
+             Discussions.submit_review(reviewer.id, product.id, review_attrs, "review-key-00001")
+
+    assert replayed_review.id == review.id
+
+    assert {:error, :idempotency_conflict} =
+             Discussions.submit_review(
+               reviewer.id,
+               product.id,
+               %{review_attrs | rating: 5},
+               "review-key-00001"
+             )
+
+    question_attrs = %{title: "Outdoor use?", body: "Below freezing?"}
+
+    assert {:ok, question} =
+             Discussions.ask_question(asker.id, product.id, question_attrs, "question-key-001")
+
+    assert {:ok, replayed_question} =
+             Discussions.ask_question(asker.id, product.id, question_attrs, "question-key-001")
+
+    assert replayed_question.id == question.id
+
+    assert {:ok, published_question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} =
+             Discussions.answer_question(
+               answerer.id,
+               published_question.entropy_id,
+               "Yes, it works.",
+               "answer-key-00001"
+             )
+
+    assert {:ok, replayed_answer} =
+             Discussions.answer_question(
+               answerer.id,
+               published_question.entropy_id,
+               "Yes, it works.",
+               "answer-key-00001"
+             )
+
+    assert replayed_answer.id == answer.id
+    assert Repo.aggregate(CommunityWriteReceipt, :count, :id) == 3
+    assert Repo.aggregate(CommunityWriteWindow, :sum, :count) == 3
+  end
+
+  test "configured UTC-hour limits reject limit plus one and keep actions independent" do
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 1, question: 2, answer: 1, report: 1]
+    )
+
+    asker = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, first_question} =
+             Discussions.ask_question(asker.id, product.id, %{title: "Question one"})
+
+    assert {:ok, _second_question} =
+             Discussions.ask_question(asker.id, product.id, %{title: "Question two"})
+
+    assert {:error, :rate_limited} =
+             Discussions.ask_question(asker.id, product.id, %{title: "Question three"})
+
+    assert {:ok, first_question} =
+             Discussions.moderate(operator.id, :question, first_question.entropy_id, :published)
+
+    assert {:ok, _answer} =
+             Discussions.answer_question(answerer.id, first_question.entropy_id, "First answer")
+
+    assert {:error, :rate_limited} =
+             Discussions.answer_question(answerer.id, first_question.entropy_id, "Second answer")
+
+    assert {:ok, review} = Discussions.submit_review(asker.id, product.id, %{rating: 4})
+
+    assert {:error, :rate_limited} =
+             Discussions.update_owned(asker.id, :review, review.entropy_id, %{rating: 5})
+
+    assert Repo.get_by!(CommunityWriteWindow, user_id: asker.id, action_kind: :question).count ==
+             2
+
+    assert Repo.get_by!(CommunityWriteWindow, user_id: asker.id, action_kind: :review).count == 1
+
+    assert Repo.get_by!(CommunityWriteWindow, user_id: answerer.id, action_kind: :answer).count ==
+             1
+  end
+
+  test "owners edit each content type back to pending and non-owners are rejected" do
+    owner = AccountsFixtures.user_fixture()
+    stranger = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, review} = Discussions.submit_review(owner.id, product.id, %{rating: 3})
+
+    assert {:ok, review} =
+             Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+
+    assert {:error, :forbidden} =
+             Discussions.update_owned(stranger.id, :review, review.entropy_id, %{rating: 4})
+
+    assert {:ok, edited_review} =
+             Discussions.update_owned(owner.id, :review, review.entropy_id, %{rating: 4})
+
+    assert edited_review.rating == 4
+    assert edited_review.moderation_status == :pending
+
+    assert {:ok, question} =
+             Discussions.ask_question(owner.id, product.id, %{title: "Original question"})
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :hidden)
+
+    assert {:error, :forbidden} =
+             Discussions.update_owned(stranger.id, :question, question.entropy_id, %{
+               title: "Forbidden"
+             })
+
+    assert {:ok, edited_question} =
+             Discussions.update_owned(owner.id, :question, question.entropy_id, %{
+               title: "Edited question"
+             })
+
+    assert edited_question.title == "Edited question"
+    assert edited_question.moderation_status == :pending
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} =
+             Discussions.answer_question(answerer.id, question.entropy_id, "Original")
+
+    assert {:ok, answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+    assert {:ok, accepted} =
+             Discussions.accept_answer(owner.id, question.entropy_id, answer.entropy_id)
+
+    assert accepted.accepted_post_id == answer.id
+
+    assert {:error, :forbidden} =
+             Discussions.update_owned(stranger.id, :answer, answer.entropy_id, %{
+               body: "Forbidden"
+             })
+
+    assert {:ok, edited_answer} =
+             Discussions.update_owned(answerer.id, :answer, answer.entropy_id, %{body: "Edited"})
+
+    assert edited_answer.body_md == "Edited"
+    assert edited_answer.moderation_status == :pending
+    assert Repo.get!(ProductThread, question.id).accepted_post_id == nil
+  end
+
+  test "removed content is retained, cannot be edited, and accepted answer removal cleans up" do
+    owner = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    stranger = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, review} = Discussions.submit_review(owner.id, product.id, %{rating: 3})
+    assert {:ok, removed_review} = Discussions.remove_owned(owner.id, :review, review.entropy_id)
+    assert removed_review.moderation_status == :removed
+    assert Repo.get!(ProductReview, review.id).moderation_status == :removed
+
+    assert {:error, :invalid_lifecycle} =
+             Discussions.update_owned(owner.id, :review, review.entropy_id, %{rating: 4})
+
+    assert {:error, :forbidden} =
+             Discussions.remove_owned(stranger.id, :review, review.entropy_id)
+
+    assert {:ok, question} =
+             Discussions.ask_question(owner.id, product.id, %{title: "Question"})
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} = Discussions.answer_question(answerer.id, question.entropy_id, "Answer")
+
+    assert {:ok, answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+    assert {:ok, _accepted} =
+             Discussions.accept_answer(owner.id, question.entropy_id, answer.entropy_id)
+
+    assert {:ok, removed_answer} =
+             Discussions.remove_owned(answerer.id, :answer, answer.entropy_id)
+
+    assert removed_answer.moderation_status == :removed
+    assert Repo.get!(ProductThread, question.id).accepted_post_id == nil
+    assert Repo.get!(ThreadPost, answer.id).moderation_status == :removed
+
+    assert {:error, :invalid_lifecycle} =
+             Discussions.update_owned(answerer.id, :answer, answer.entropy_id, %{body: "Again"})
+
+    assert Discussions.list_public_reviews(product.id) == []
+  end
+
+  test "editing rejected content resubmits it and removals do not consume rate limits" do
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 5, question: 10, answer: 2, report: 30]
+    )
+
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, question} =
+             Discussions.ask_question(owner.id, product.id, %{title: "Question"})
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    assert {:ok, answer} = Discussions.answer_question(owner.id, question.entropy_id, "Answer")
+
+    assert {:ok, answer} =
+             Discussions.moderate(operator.id, :answer, answer.entropy_id, :rejected)
+
+    assert {:error, invalid_changeset} =
+             Discussions.update_owned(owner.id, :answer, answer.entropy_id, %{body: nil})
+
+    assert "can't be blank" in errors_on(invalid_changeset).body_md
+
+    assert {:ok, edited_answer} =
+             Discussions.update_owned(owner.id, :answer, answer.entropy_id, %{body: "Resubmitted"})
+
+    assert edited_answer.moderation_status == :pending
+
+    assert {:ok, removed_answer} =
+             Discussions.remove_owned(owner.id, :answer, answer.entropy_id)
+
+    assert removed_answer.moderation_status == :removed
+    assert Repo.get_by!(CommunityWriteWindow, user_id: owner.id, action_kind: :answer).count == 2
+  end
+
+  test "report limits count only committed reports" do
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 5, question: 10, answer: 30, report: 1]
+    )
+
+    author = AccountsFixtures.user_fixture()
+    reporter = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, review} = Discussions.submit_review(author.id, product.id, %{rating: 2})
+
+    assert {:error, %Ecto.Changeset{}} =
+             Discussions.report(reporter.id, :review, review.entropy_id, "x")
+
+    assert {:ok, _report} = Discussions.report(reporter.id, :review, review.entropy_id, "spam")
+
+    assert {:error, :already_reported} =
+             Discussions.report(reporter.id, :review, review.entropy_id, "spam")
+
+    assert Repo.get_by!(CommunityWriteWindow, user_id: reporter.id, action_kind: :report).count ==
+             1
   end
 
   defp merchant_product_fixture(product) do

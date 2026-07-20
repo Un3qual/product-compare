@@ -20,6 +20,9 @@ config :product_compare, ProductCompare.Repo,
 
 config :product_compare, ProductCompare.Accounts, api_token_default_ttl_days: 90
 
+config :product_compare, ProductCompare.Discussions,
+  community_write_limits: [review: 5, question: 10, answer: 30, report: 30]
+
 config :product_compare, :public_site_url, "http://localhost:5173"
 
 config :product_compare, Oban,
