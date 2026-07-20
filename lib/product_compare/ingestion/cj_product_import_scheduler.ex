@@ -26,6 +26,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @impl GenServer
   def init(opts) do
     state = %{
+      clock: SchedulerSupport.clock(opts),
       complete_scope: Keyword.get(opts, :complete_scope, false) == true,
       currency: uppercase_string_option(opts, :currency, @default_currency),
       cursor: OptionNormalization.non_negative_integer_option(opts, :cursor, nil),
@@ -54,7 +55,11 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
   @impl GenServer
   def handle_info(:run_import, state) do
     opts =
-      SchedulerSupport.resolve_cursor(import_opts(state), state.cursor_resolver, state.cursor)
+      state
+      |> import_opts()
+      |> SchedulerSupport.resolve_cursor(state.cursor_resolver, state.cursor)
+
+    opts = opts ++ [schedule_window: SchedulerSupport.schedule_window(state.clock.())]
 
     result = SchedulerSupport.run(state.enqueuer, opts)
 

@@ -7,6 +7,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
 
   test "calls the runner once after the initial delay with normalized discovery options" do
     parent = self()
+    now = ~U[2026-07-20 19:42:17Z]
 
     runner = fn opts ->
       send(parent, {:run, opts})
@@ -18,6 +19,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
         {CJFeedDiscoveryScheduler,
          [
            advertiser_country: "CA",
+           clock: fn -> now end,
            cursor: 40,
            initial_delay_ms: 0,
            interval_ms: 1_000,
@@ -28,8 +30,58 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       )
 
     assert_receive {:run, opts}
-    assert opts == [advertiser_country: "CA", limit: 10, pages: 2, cursor: 40]
+
+    assert opts == [
+             advertiser_country: "CA",
+             limit: 10,
+             pages: 2,
+             cursor: 40,
+             schedule_window: "2026-07-20T19:00:00Z"
+           ]
+
     refute_receive {:run, _opts}, 50
+
+    GenServer.stop(pid)
+  end
+
+  test "uses one UTC-hour schedule window per recurring dispatch" do
+    parent = self()
+    clock_calls = :counters.new(1, [])
+
+    times = [
+      ~U[2026-07-20 19:05:00Z],
+      ~U[2026-07-20 19:55:00Z],
+      ~U[2026-07-20 20:01:00Z]
+    ]
+
+    clock = fn ->
+      :counters.add(clock_calls, 1, 1)
+      Enum.at(times, min(:counters.get(clock_calls, 1), length(times)) - 1)
+    end
+
+    enqueuer = fn opts ->
+      send(parent, {:enqueued, opts})
+      {:ok, %{id: 123}}
+    end
+
+    pid =
+      start_supervised!(
+        {CJFeedDiscoveryScheduler,
+         [
+           clock: clock,
+           enqueuer: enqueuer,
+           initial_delay_ms: 0,
+           interval_ms: 20
+         ]}
+      )
+
+    assert_receive {:enqueued, first_opts}, 250
+    assert_receive {:enqueued, second_opts}, 250
+    assert_receive {:enqueued, third_opts}, 250
+
+    assert first_opts[:schedule_window] == "2026-07-20T19:00:00Z"
+    assert second_opts[:schedule_window] == first_opts[:schedule_window]
+    assert third_opts[:schedule_window] == "2026-07-20T20:00:00Z"
 
     GenServer.stop(pid)
   end
@@ -306,6 +358,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
 
   test "passes only non-secret discovery fields to the runner" do
     parent = self()
+    now = ~U[2026-07-20 19:42:17Z]
 
     runner = fn opts ->
       send(parent, {:run, opts})
@@ -317,6 +370,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
         {CJFeedDiscoveryScheduler,
          [
            advertiser_country: "US",
+           clock: fn -> now end,
            cursor: nil,
            initial_delay_ms: 0,
            interval_ms: 1_000,
@@ -327,7 +381,14 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       )
 
     assert_receive {:run, opts}, 250
-    assert Keyword.keys(opts) == [:advertiser_country, :limit, :pages, :cursor]
+
+    assert Keyword.keys(opts) == [
+             :advertiser_country,
+             :limit,
+             :pages,
+             :cursor,
+             :schedule_window
+           ]
 
     GenServer.stop(pid)
   end

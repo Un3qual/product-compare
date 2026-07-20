@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented; awaiting queue closeout
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Design: `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
@@ -40,8 +40,16 @@ windows.
 
 ## Verification
 
-- Durable worker and both scheduler test files.
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
+- RED: the durable-worker suite reported 5 tests, 2 failures because later
+  product-import and feed-discovery windows still conflicted.
+- GREEN: after adding `schedule_window` to both worker uniqueness projections,
+  the same 5 tests passed. Same-scope duplicates in one window retain the
+  original job ID; changing only the window now inserts a distinct job.
+- RED: the two scheduler suites reported 21 tests, 6 failures because dispatch
+  options omitted the injected clock's UTC-hour window.
+- GREEN: the combined durable-worker and scheduler suites report 26 tests,
+  0 failures. Two ticks in the same UTC hour pass the same window, while the
+  next-hour tick passes a different window without changing bounded runner,
+  cursor, retry, or redaction behavior.
+- Batch gates: `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check`.

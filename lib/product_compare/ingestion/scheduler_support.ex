@@ -15,6 +15,16 @@ defmodule ProductCompare.Ingestion.SchedulerSupport do
   @spec schedule(atom(), non_neg_integer()) :: reference()
   def schedule(message, delay_ms), do: Process.send_after(self(), message, delay_ms)
 
+  @spec schedule_window(DateTime.t()) :: String.t()
+  def schedule_window(%DateTime{} = datetime) do
+    datetime
+    |> DateTime.to_unix(:second)
+    |> div(3600)
+    |> Kernel.*(3600)
+    |> DateTime.from_unix!(:second)
+    |> DateTime.to_iso8601()
+  end
+
   @spec run((keyword() -> term()), keyword()) :: term() | {:error, :runner_exception}
   def run(callback, opts) do
     callback.(opts)
@@ -35,5 +45,13 @@ defmodule ProductCompare.Ingestion.SchedulerSupport do
     _exception -> Keyword.replace!(opts, :cursor, fallback)
   catch
     _kind, _reason -> Keyword.replace!(opts, :cursor, fallback)
+  end
+
+  @spec clock(keyword()) :: (-> DateTime.t())
+  def clock(opts) do
+    case Keyword.get(opts, :clock) do
+      clock when is_function(clock, 0) -> clock
+      _invalid -> &DateTime.utc_now/0
+    end
   end
 end
