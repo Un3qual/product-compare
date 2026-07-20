@@ -1577,6 +1577,26 @@ test("product picker can advance beyond the first picker page", () => {
   );
 });
 
+test("product picker stops when the next page repeats the current cursor", async () => {
+  mockedUseLoaderData.mockReturnValue({ status: "empty", specMode: "shared", slugs: [] });
+  mockedUseLazyLoadQuery.mockImplementation((_query, variables) => ({
+    products: {
+      edges: [],
+      pageInfo: {
+        hasNextPage: true,
+        endCursor: "next-products"
+      }
+    }
+  }));
+
+  renderCompareRoute();
+  fireEvent.click(screen.getByRole("button", { name: "Show more products" }));
+
+  await waitFor(() => {
+    expect(screen.queryByRole("button", { name: "Show more products" })).not.toBeInTheDocument();
+  });
+});
+
 test("product picker keeps previous products visible when loading another page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",

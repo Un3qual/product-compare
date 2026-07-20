@@ -65,6 +65,13 @@ describe("compare picker data", () => {
     );
     expect(nextComparePickerPageCursor({ hasNextPage: false, endCursor: "cursor-2" })).toBeNull();
     expect(nextComparePickerPageCursor({ hasNextPage: true, endCursor: null })).toBeNull();
+    expect(nextComparePickerPageCursor({ hasNextPage: true, endCursor: " " })).toBeNull();
+    expect(
+      nextComparePickerPageCursor(
+        { hasNextPage: true, endCursor: "cursor-2" },
+        "cursor-2"
+      )
+    ).toBeNull();
   });
 
   test("uses the selected state to derive the empty picker copy", () => {

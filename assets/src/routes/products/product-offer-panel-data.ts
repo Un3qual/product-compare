@@ -14,6 +14,7 @@ import {
   type OfferSnapshotSelectors
 } from "../offer-snapshot";
 import { productDetailPath } from "./product-detail-route-data";
+import { nextRelayPageCursor } from "../relay-pagination";
 
 export type ProductOfferCouponRow = {
   code: string;
@@ -127,9 +128,7 @@ export function productOfferPaginationPaths({
   productSlug: string;
   selectedCompareSlugs?: readonly string[];
 }) {
-  const nextCursor = connection.pageInfo.hasNextPage
-    ? connection.pageInfo.endCursor
-    : null;
+  const nextCursor = nextRelayPageCursor(connection.pageInfo, offersAfter);
 
   return {
     firstPath: offersAfter ? productOffersPath(productSlug, null, selectedCompareSlugs) : null,
