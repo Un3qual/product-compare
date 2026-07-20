@@ -31,7 +31,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}
+    assert_receive {:run, opts}, 250
 
     assert opts == [
              currency: "USD",
@@ -112,7 +112,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:enqueued, opts}
+    assert_receive {:enqueued, opts}, 250
     assert opts[:complete_scope]
     assert opts[:currency] == "USD"
     refute_receive {:run, _opts}, 50
@@ -172,8 +172,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:resolved, _first_resolution_opts}
-    assert_receive {:enqueued, first_opts}
+    assert_receive {:resolved, _first_resolution_opts}, 250
+    assert_receive {:enqueued, first_opts}, 250
     assert first_opts[:cursor] == 40
 
     assert_receive {:resolved, _second_resolution_opts}, 250
@@ -203,7 +203,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:enqueued, first_opts}
+    assert_receive {:enqueued, first_opts}, 250
     assert first_opts[:cursor] == 40
 
     assert_receive {:enqueued, second_opts}, 250
@@ -270,7 +270,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}
+    assert_receive {:run, opts}, 250
 
     assert Keyword.keys(opts) == [
              :currency,

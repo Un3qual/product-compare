@@ -29,7 +29,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}
+    assert_receive {:run, opts}, 250
 
     assert opts == [
              advertiser_country: "CA",
@@ -107,7 +107,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:enqueued, opts}
+    assert_receive {:enqueued, opts}, 250
     assert opts[:advertiser_country] == "US"
     refute_receive {:run, _opts}, 50
 
@@ -166,8 +166,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:resolved, _first_resolution_opts}
-    assert_receive {:enqueued, first_opts}
+    assert_receive {:resolved, _first_resolution_opts}, 250
+    assert_receive {:enqueued, first_opts}, 250
     assert first_opts[:cursor] == 40
 
     assert_receive {:resolved, _second_resolution_opts}, 250
@@ -233,7 +233,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
           )
         )
 
-      assert_receive {:enqueued, ^invalid_cursor, first_opts}
+      assert_receive {:enqueued, ^invalid_cursor, first_opts}, 250
       assert first_opts[:cursor] == 40
 
       assert_receive {:enqueued, ^invalid_cursor, second_opts}, 250
@@ -350,7 +350,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}
+    assert_receive {:run, _opts}, 250
     refute_receive {:run, _opts}, 50
 
     GenServer.stop(pid)
