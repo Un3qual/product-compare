@@ -1,6 +1,7 @@
 import {
   apiTokenPagePath,
   apiTokensRouteLocationIdentity,
+  buildApiTokenActionPolicy,
   buildApiTokenDisplayData,
   buildApiTokenPaginationData,
   buildApiTokenStatusFilterNavigationData,
@@ -159,6 +160,66 @@ test("buildApiTokenDisplayData derives status label and tone from one lifecycle 
     dateNowSpy.mockRestore();
   }
 });
+
+test.each([
+  [
+    "active",
+    SERVER_TOKEN,
+    false,
+    false,
+    {
+      revoke: { copy: "Revoke token", disabled: false, visible: true },
+      rotate: { copy: "Rotate token", disabled: false, visible: true }
+    }
+  ],
+  [
+    "expired",
+    { ...SERVER_TOKEN, expiresAt: "2000-01-01T00:00:00Z" },
+    false,
+    false,
+    {
+      revoke: { copy: "Revoke token", disabled: false, visible: true },
+      rotate: { copy: "Rotate token", disabled: false, visible: false }
+    }
+  ],
+  [
+    "revoked",
+    { ...SERVER_TOKEN, revokedAt: "2026-07-01T00:00:00Z" },
+    false,
+    false,
+    {
+      revoke: { copy: "Revoke token", disabled: false, visible: false },
+      rotate: { copy: "Rotate token", disabled: false, visible: false }
+    }
+  ],
+  [
+    "rotate pending",
+    SERVER_TOKEN,
+    false,
+    true,
+    {
+      revoke: { copy: "Revoke token", disabled: true, visible: true },
+      rotate: { copy: "Rotating token...", disabled: true, visible: true }
+    }
+  ],
+  [
+    "revoke pending",
+    SERVER_TOKEN,
+    true,
+    false,
+    {
+      revoke: { copy: "Revoking token...", disabled: true, visible: true },
+      rotate: { copy: "Rotate token", disabled: true, visible: true }
+    }
+  ]
+] as const)(
+  "buildApiTokenActionPolicy projects %s row actions",
+  (_caseName, token, revokePending, rotatePending, expected) => {
+    expect(buildApiTokenActionPolicy(token, { revokePending, rotatePending })).toEqual(
+      expected
+    );
+  }
+);
 
 test("apiTokensRouteLocationIdentity separates authorization, status, and cursor state", () => {
   expect(apiTokensRouteLocationIdentity({

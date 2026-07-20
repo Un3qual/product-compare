@@ -4,12 +4,14 @@ import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
-import { apiTokenIsActive } from "./api-token-status";
 import {
   API_TOKEN_EXPIRES_AT_PRESETS,
   buildApiTokenExpiresAtInputValue
 } from "./date-presets";
-import { buildApiTokenDisplayData } from "./api-token-route-data";
+import {
+  buildApiTokenActionPolicy,
+  buildApiTokenDisplayData
+} from "./api-token-route-data";
 import type { ApiTokenSummary } from "./loader";
 
 const styles = create({
@@ -57,7 +59,10 @@ export function ApiTokenItem({
 }: ApiTokenItemProps) {
   const displayData = buildApiTokenDisplayData(token);
   const { displayLabel } = displayData;
-  const lifecyclePending = revokePending || rotatePending;
+  const actionPolicy = buildApiTokenActionPolicy(token, {
+    revokePending,
+    rotatePending
+  });
 
   function handleRotateSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -70,17 +75,13 @@ export function ApiTokenItem({
         <h2 {...props(styles.tokenTitle)}>{displayLabel}</h2>
         <ApiTokenDetails displayData={displayData} token={token} />
         <ApiTokenRowErrors revokeError={revokeError} rotateError={rotateError} />
-        {token.revokedAt ? null : (
-          <ApiTokenActions
-            displayLabel={displayLabel}
-            lifecyclePending={lifecyclePending}
-            onRevoke={onRevoke}
-            onRotateSubmit={handleRotateSubmit}
-            revokePending={revokePending}
-            rotatePending={rotatePending}
-            token={token}
-          />
-        )}
+        <ApiTokenActions
+          actionPolicy={actionPolicy}
+          displayLabel={displayLabel}
+          onRevoke={onRevoke}
+          onRotateSubmit={handleRotateSubmit}
+          token={token}
+        />
       </article>
     </li>
   );
@@ -139,31 +140,26 @@ function ApiTokenRowErrors({
 }
 
 function ApiTokenActions({
+  actionPolicy,
   displayLabel,
-  lifecyclePending,
   onRevoke,
   onRotateSubmit,
-  revokePending,
-  rotatePending,
   token
 }: {
+  actionPolicy: ReturnType<typeof buildApiTokenActionPolicy>;
   displayLabel: string;
-  lifecyclePending: boolean;
   onRevoke: (tokenId: string) => void;
   onRotateSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  revokePending: boolean;
-  rotatePending: boolean;
   token: ApiTokenSummary;
 }) {
   const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
   const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
   const rotateLabelInputId = useId();
   const rotateLabelId = `${rotateLabelInputId}-label`;
-  const tokenActive = apiTokenIsActive(token);
 
   return (
     <>
-      {tokenActive ? (
+      {actionPolicy.rotate.visible ? (
         <form
           aria-label={`Rotate ${displayLabel} API token`}
           onSubmit={onRotateSubmit}
@@ -216,19 +212,21 @@ function ApiTokenActions({
               </Button>
             ))}
           </div>
-          <Button disabled={lifecyclePending} type="submit">
-            {rotatePending ? "Rotating token..." : "Rotate token"}
+          <Button disabled={actionPolicy.rotate.disabled} type="submit">
+            {actionPolicy.rotate.copy}
           </Button>
         </form>
       ) : null}
-      <Button
-        disabled={lifecyclePending}
-        onClick={() => onRevoke(token.id)}
-        tone="danger"
-        type="button"
-      >
-        {revokePending ? "Revoking token..." : "Revoke token"}
-      </Button>
+      {actionPolicy.revoke.visible ? (
+        <Button
+          disabled={actionPolicy.revoke.disabled}
+          onClick={() => onRevoke(token.id)}
+          tone="danger"
+          type="button"
+        >
+          {actionPolicy.revoke.copy}
+        </Button>
+      ) : null}
     </>
   );
 }

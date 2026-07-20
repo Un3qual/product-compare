@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: implemented
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-account-setup-interaction-contracts-implementation-plan.md`
-- Last verified: 2026-07-18 from the existing affiliate and API-token source,
-  lane evidence, and focused characterization suites.
+- Last verified: 2026-07-20 from the implemented affiliate and API-token
+  policy owners, focused behavior suites, and the full frontend gate.
 
 ## Batch Outcome
 
@@ -32,9 +32,15 @@ one queue status. They must not be promoted as separate replacement rows.
 
 ## Verification
 
-- Focused affiliate setup data and route suites.
-- Focused API-token route-data and route suites.
-- `cd assets && bun run typecheck`
-- `cd assets && bun run check`
-- pure-module dependency scans
-- `git diff --check`
+- RED: affiliate data test failed because
+  `getAffiliateMerchantContext` was absent.
+- GREEN: affiliate setup data and route suites passed (52 tests).
+- RED: five API-token lifecycle cases failed because
+  `buildApiTokenActionPolicy` was absent.
+- GREEN: API-token route-data and route suites passed (96 tests).
+- `cd assets && bun run check` passed (104 files, 1499 tests, Relay,
+  TypeScript, client/SSR builds, and 182,154-byte gzip initial bundle).
+- Pure-module dependency scans passed: both route-data owners depend only on
+  framework-free local helpers.
+- `mix work_queue.validate` passed with 7 ready rows.
+- `git diff --check` passed.
