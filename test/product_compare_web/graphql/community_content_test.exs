@@ -5,6 +5,18 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
 
+  setup do
+    previous = Application.get_env(:product_compare, ProductCompare.Discussions)
+
+    on_exit(fn ->
+      if previous,
+        do: Application.put_env(:product_compare, ProductCompare.Discussions, previous),
+        else: Application.delete_env(:product_compare, ProductCompare.Discussions)
+    end)
+
+    :ok
+  end
+
   test "pending reviews stay out of public ratings until operator publication", %{conn: conn} do
     user = AccountsFixtures.user_fixture()
     operator = AccountsFixtures.operator_fixture()
@@ -15,6 +27,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
       graphql(member_conn, submit_review_mutation(), %{
         "input" => %{
           "productId" => relay_id(:product, product.id),
+          "idempotencyKey" => "review-graphql-key-001",
           "rating" => 5,
           "title" => "Excellent",
           "body" => "Simple and reliable."
@@ -79,6 +92,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
       graphql(asker_conn, ask_question_mutation(), %{
         "input" => %{
           "productId" => relay_id(:product, product.id),
+          "idempotencyKey" => "question-graphql-key-01",
           "title" => "Does it support travel?",
           "body" => "Looking for a compact setup."
         }
@@ -94,7 +108,11 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
 
     answer_response =
       graphql(answerer_conn, answer_question_mutation(), %{
-        "input" => %{"questionId" => question_id, "body" => "Yes, it fits in a small case."}
+        "input" => %{
+          "questionId" => question_id,
+          "idempotencyKey" => "answer-graphql-key-001",
+          "body" => "Yes, it fits in a small case."
+        }
       })
 
     answer_id = get_in(answer_response, ["data", "answerProductQuestion", "answer", "id"])
@@ -131,7 +149,9 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
                "node" => %{
                  "id" => answer_id,
                  "body" => "Yes, it fits in a small case.",
-                 "authorLabel" => "Community member"
+                 "authorLabel" => "Community member",
+                 "viewerCanEdit" => false,
+                 "viewerCanRemove" => false
                }
              }
            ]
@@ -179,10 +199,270 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
 
     assert get_in(
              graphql(conn, submit_review_mutation(), %{
-               "input" => %{"productId" => relay_id(:product, product.id), "rating" => 4}
+               "input" => %{
+                 "productId" => relay_id(:product, product.id),
+                 "idempotencyKey" => "unauth-review-key-001",
+                 "rating" => 4
+               }
              }),
              ["data", "submitProductReview", "errors", Access.at(0), "code"]
            ) == "UNAUTHENTICATED"
+
+    review_id = relay_id(:product_review, Ecto.UUID.generate())
+
+    assert get_in(
+             graphql(conn, update_review_mutation(), %{
+               "input" => %{"id" => review_id, "rating" => 4}
+             }),
+             ["data", "updateProductReview", "errors", Access.at(0), "code"]
+           ) == "UNAUTHENTICATED"
+
+    assert get_in(
+             graphql(conn, remove_content_mutation(), %{
+               "input" => %{"contentType" => "REVIEW", "contentId" => review_id}
+             }),
+             ["data", "removeCommunityContent", "errors", Access.at(0), "code"]
+           ) == "UNAUTHENTICATED"
+  end
+
+  test "create mutations replay matching idempotency keys and reject conflicting payloads", %{
+    conn: conn
+  } do
+    user = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    member_conn = conn |> log_in_user(user) |> put_req_header_same_origin()
+
+    variables = %{
+      "input" => %{
+        "productId" => relay_id(:product, product.id),
+        "idempotencyKey" => "review-replay-key-001",
+        "rating" => 4,
+        "title" => "Original"
+      }
+    }
+
+    first = graphql(member_conn, submit_review_mutation(), variables)
+    replay = graphql(member_conn, submit_review_mutation(), variables)
+
+    first_id = get_in(first, ["data", "submitProductReview", "review", "id"])
+    assert get_in(replay, ["data", "submitProductReview", "review", "id"]) == first_id
+
+    conflict =
+      graphql(member_conn, submit_review_mutation(), %{
+        "input" => %{variables["input"] | "rating" => 5}
+      })
+
+    assert get_in(conflict, [
+             "data",
+             "submitProductReview",
+             "errors",
+             Access.at(0),
+             "code"
+           ]) == "IDEMPOTENCY_CONFLICT"
+  end
+
+  test "owner update and removal mutations cover reviews, questions, and answers", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    answerer = AccountsFixtures.user_fixture()
+    stranger = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+    owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+    answerer_conn = conn |> log_in_user(answerer) |> put_req_header_same_origin()
+    stranger_conn = conn |> log_in_user(stranger) |> put_req_header_same_origin()
+
+    review_response =
+      graphql(owner_conn, submit_review_mutation(), %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "idempotencyKey" => "owner-review-key-0001",
+          "rating" => 3
+        }
+      })
+
+    review_id = get_in(review_response, ["data", "submitProductReview", "review", "id"])
+
+    assert get_in(
+             graphql(stranger_conn, update_review_mutation(), %{
+               "input" => %{"id" => review_id, "rating" => 5}
+             }),
+             ["data", "updateProductReview", "errors", Access.at(0), "code"]
+           ) == "FORBIDDEN"
+
+    assert %{
+             "rating" => 4,
+             "moderationStatus" => "PENDING",
+             "viewerCanEdit" => true,
+             "viewerCanRemove" => true
+           } =
+             get_in(
+               graphql(owner_conn, update_review_mutation(), %{
+                 "input" => %{"id" => review_id, "rating" => 4}
+               }),
+               ["data", "updateProductReview", "review"]
+             )
+
+    question_response =
+      graphql(owner_conn, ask_question_mutation(), %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "idempotencyKey" => "owner-question-key-01",
+          "title" => "Original question"
+        }
+      })
+
+    question_id = get_in(question_response, ["data", "askProductQuestion", "question", "id"])
+
+    assert %{"title" => "Edited question", "moderationStatus" => "PENDING"} =
+             get_in(
+               graphql(owner_conn, update_question_mutation(), %{
+                 "input" => %{"id" => question_id, "title" => "Edited question"}
+               }),
+               ["data", "updateProductQuestion", "question"]
+             )
+
+    {:ok, {_type, question_entropy_id}} = ProductCompareWeb.GraphQL.GlobalId.decode(question_id)
+
+    {:ok, _published_question} =
+      Discussions.moderate(operator.id, :question, question_entropy_id, :published)
+
+    answer_response =
+      graphql(answerer_conn, answer_question_mutation(), %{
+        "input" => %{
+          "questionId" => question_id,
+          "idempotencyKey" => "owner-answer-key-0001",
+          "body" => "Original answer"
+        }
+      })
+
+    answer_id = get_in(answer_response, ["data", "answerProductQuestion", "answer", "id"])
+
+    assert %{"body" => "Edited answer", "moderationStatus" => "PENDING"} =
+             get_in(
+               graphql(answerer_conn, update_answer_mutation(), %{
+                 "input" => %{"id" => answer_id, "body" => "Edited answer"}
+               }),
+               ["data", "updateProductAnswer", "answer"]
+             )
+
+    {:ok, {_type, answer_entropy_id}} = ProductCompareWeb.GraphQL.GlobalId.decode(answer_id)
+
+    {:ok, _published_answer} =
+      Discussions.moderate(operator.id, :answer, answer_entropy_id, :published)
+
+    assert [] ==
+             get_in(
+               graphql(owner_conn, accept_answer_mutation(), %{
+                 "questionId" => question_id,
+                 "answerId" => answer_id
+               }),
+               ["data", "acceptProductAnswer", "errors"]
+             )
+
+    assert %{"moderationStatus" => "PENDING"} =
+             get_in(
+               graphql(answerer_conn, update_answer_mutation(), %{
+                 "input" => %{"id" => answer_id, "body" => "Resubmitted answer"}
+               }),
+               ["data", "updateProductAnswer", "answer"]
+             )
+
+    assert Discussions.get_public_question(question_entropy_id).accepted_post_id == nil
+
+    assert %{"removedContentId" => ^review_id, "errors" => []} =
+             get_in(
+               graphql(owner_conn, remove_content_mutation(), %{
+                 "input" => %{"contentType" => "REVIEW", "contentId" => review_id}
+               }),
+               ["data", "removeCommunityContent"]
+             )
+
+    assert get_in(
+             graphql(owner_conn, update_review_mutation(), %{
+               "input" => %{"id" => review_id, "rating" => 5}
+             }),
+             ["data", "updateProductReview", "errors", Access.at(0), "code"]
+           ) == "INVALID_LIFECYCLE"
+  end
+
+  test "viewer capabilities are owner-specific and false for anonymous readers", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    stranger = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    {:ok, review} = Discussions.submit_review(owner.id, product.id, %{rating: 5})
+    {:ok, _published} = Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+
+    anonymous = graphql(conn, product_community_query(), %{"slug" => product.slug})
+    owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+    stranger_conn = conn |> log_in_user(stranger) |> put_req_header_same_origin()
+
+    assert get_in(anonymous, ["data", "product", "reviews", "edges", Access.at(0), "node"])
+           |> Map.take(["viewerCanEdit", "viewerCanRemove"]) == %{
+             "viewerCanEdit" => false,
+             "viewerCanRemove" => false
+           }
+
+    assert get_in(graphql(owner_conn, product_community_query(), %{"slug" => product.slug}), [
+             "data",
+             "product",
+             "reviews",
+             "edges",
+             Access.at(0),
+             "node"
+           ])
+           |> Map.take(["viewerCanEdit", "viewerCanRemove"]) == %{
+             "viewerCanEdit" => true,
+             "viewerCanRemove" => true
+           }
+
+    assert get_in(graphql(stranger_conn, product_community_query(), %{"slug" => product.slug}), [
+             "data",
+             "product",
+             "reviews",
+             "edges",
+             Access.at(0),
+             "node"
+           ])
+           |> Map.take(["viewerCanEdit", "viewerCanRemove"]) == %{
+             "viewerCanEdit" => false,
+             "viewerCanRemove" => false
+           }
+  end
+
+  test "rate limits surface typed payload errors", %{conn: conn} do
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 1, question: 10, answer: 30, report: 30]
+    )
+
+    user = AccountsFixtures.user_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    member_conn = conn |> log_in_user(user) |> put_req_header_same_origin()
+
+    assert [] ==
+             get_in(
+               graphql(member_conn, submit_review_mutation(), %{
+                 "input" => %{
+                   "productId" => relay_id(:product, first_product.id),
+                   "idempotencyKey" => "rate-review-key-0001",
+                   "rating" => 4
+                 }
+               }),
+               ["data", "submitProductReview", "errors"]
+             )
+
+    assert get_in(
+             graphql(member_conn, submit_review_mutation(), %{
+               "input" => %{
+                 "productId" => relay_id(:product, second_product.id),
+                 "idempotencyKey" => "rate-review-key-0002",
+                 "rating" => 4
+               }
+             }),
+             ["data", "submitProductReview", "errors", Access.at(0), "code"]
+           ) == "RATE_LIMITED"
   end
 
   defp graphql(conn, query, variables) do
@@ -195,15 +475,15 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
       product(slug: $slug) {
         reviewSummary { count averageRating }
         reviews(first: 10) {
-          edges { node { id rating title body verifiedPurchase authorLabel } }
+          edges { node { id rating title body verifiedPurchase authorLabel viewerCanEdit viewerCanRemove } }
           pageInfo { hasNextPage endCursor }
         }
         questions(first: 10) {
           edges {
             node {
-              id title body authorLabel acceptedAnswerId
+              id title body authorLabel acceptedAnswerId viewerCanEdit viewerCanRemove
               answers(first: 5) {
-                edges { node { id body authorLabel } }
+                edges { node { id body authorLabel viewerCanEdit viewerCanRemove } }
                 pageInfo { hasNextPage endCursor }
               }
             }
@@ -232,7 +512,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     """
     mutation Review($input: SubmitProductReviewInput!) {
       submitProductReview(input: $input) {
-        review { id moderationStatus verifiedPurchase }
+        review { id rating moderationStatus verifiedPurchase viewerCanEdit viewerCanRemove }
         errors { code field message }
       }
     }
@@ -242,7 +522,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
   defp ask_question_mutation do
     """
     mutation Ask($input: AskProductQuestionInput!) {
-      askProductQuestion(input: $input) { question { id moderationStatus } errors { code message } }
+      askProductQuestion(input: $input) { question { id title moderationStatus viewerCanEdit viewerCanRemove } errors { code field message } }
     }
     """
   end
@@ -250,7 +530,51 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
   defp answer_question_mutation do
     """
     mutation Answer($input: AnswerProductQuestionInput!) {
-      answerProductQuestion(input: $input) { answer { id moderationStatus } errors { code message } }
+      answerProductQuestion(input: $input) { answer { id body moderationStatus viewerCanEdit viewerCanRemove } errors { code field message } }
+    }
+    """
+  end
+
+  defp update_review_mutation do
+    """
+    mutation UpdateReview($input: UpdateProductReviewInput!) {
+      updateProductReview(input: $input) {
+        review { id rating title body moderationStatus viewerCanEdit viewerCanRemove }
+        errors { code field message }
+      }
+    }
+    """
+  end
+
+  defp update_question_mutation do
+    """
+    mutation UpdateQuestion($input: UpdateProductQuestionInput!) {
+      updateProductQuestion(input: $input) {
+        question { id title body moderationStatus viewerCanEdit viewerCanRemove }
+        errors { code field message }
+      }
+    }
+    """
+  end
+
+  defp update_answer_mutation do
+    """
+    mutation UpdateAnswer($input: UpdateProductAnswerInput!) {
+      updateProductAnswer(input: $input) {
+        answer { id body moderationStatus viewerCanEdit viewerCanRemove }
+        errors { code field message }
+      }
+    }
+    """
+  end
+
+  defp remove_content_mutation do
+    """
+    mutation RemoveContent($input: RemoveCommunityContentInput!) {
+      removeCommunityContent(input: $input) {
+        removedContentId
+        errors { code field message }
+      }
     }
     """
   end

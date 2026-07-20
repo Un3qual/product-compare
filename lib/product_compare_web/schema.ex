@@ -418,6 +418,30 @@ defmodule ProductCompareWeb.Schema do
       resolve(&DiscussionsResolver.answer_question/3)
     end
 
+    @desc "Updates one review owned by the current user and resubmits it for moderation."
+    field :update_product_review, non_null(:product_review_payload) do
+      arg(:input, non_null(:update_product_review_input))
+      resolve(&DiscussionsResolver.update_review/3)
+    end
+
+    @desc "Updates one question owned by the current user and resubmits it for moderation."
+    field :update_product_question, non_null(:product_question_payload) do
+      arg(:input, non_null(:update_product_question_input))
+      resolve(&DiscussionsResolver.update_question/3)
+    end
+
+    @desc "Updates one answer owned by the current user and resubmits it for moderation."
+    field :update_product_answer, non_null(:product_answer_payload) do
+      arg(:input, non_null(:update_product_answer_input))
+      resolve(&DiscussionsResolver.update_answer/3)
+    end
+
+    @desc "Soft-removes review or Q&A content owned by the current user."
+    field :remove_community_content, non_null(:remove_community_content_payload) do
+      arg(:input, non_null(:remove_community_content_input))
+      resolve(&DiscussionsResolver.remove/3)
+    end
+
     @desc "Marks one published answer as accepted by the question owner."
     field :accept_product_answer, non_null(:product_question_payload) do
       arg(:question_id, non_null(:id))
@@ -753,6 +777,7 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :submit_product_review_input do
     field :product_id, non_null(:id)
+    field :idempotency_key, non_null(:string)
     field :rating, non_null(:integer)
     field :title, :string
     field :body, :string
@@ -761,13 +786,38 @@ defmodule ProductCompareWeb.Schema do
 
   input_object :ask_product_question_input do
     field :product_id, non_null(:id)
+    field :idempotency_key, non_null(:string)
     field :title, non_null(:string)
     field :body, :string
   end
 
   input_object :answer_product_question_input do
     field :question_id, non_null(:id)
+    field :idempotency_key, non_null(:string)
     field :body, non_null(:string)
+  end
+
+  input_object :update_product_review_input do
+    field :id, non_null(:id)
+    field :rating, :integer
+    field :title, :string
+    field :body, :string
+  end
+
+  input_object :update_product_question_input do
+    field :id, non_null(:id)
+    field :title, :string
+    field :body, :string
+  end
+
+  input_object :update_product_answer_input do
+    field :id, non_null(:id)
+    field :body, :string
+  end
+
+  input_object :remove_community_content_input do
+    field :content_type, non_null(:community_content_type)
+    field :content_id, non_null(:id)
   end
 
   enum :community_content_type do
@@ -781,6 +831,7 @@ defmodule ProductCompareWeb.Schema do
     value(:published)
     value(:hidden)
     value(:rejected)
+    value(:removed)
   end
 
   input_object :report_community_content_input do
@@ -834,6 +885,11 @@ defmodule ProductCompareWeb.Schema do
 
   object :product_review_payload do
     field :review, :product_review
+    field :errors, non_null(list_of(non_null(:mutation_error)))
+  end
+
+  object :remove_community_content_payload do
+    field :removed_content_id, :id
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -1491,6 +1547,10 @@ defmodule ProductCompareWeb.Schema do
     field :verified_purchase, non_null(:boolean)
     field :moderation_status, non_null(:community_moderation_status)
     field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+
+    field :viewer_can_remove, non_null(:boolean),
+      resolve: &DiscussionsResolver.viewer_can_remove/3
 
     field :created_at, non_null(:datetime),
       resolve: fn review, _, _ -> {:ok, review.inserted_at} end
@@ -1517,6 +1577,10 @@ defmodule ProductCompareWeb.Schema do
     field :body, :string, resolve: &DiscussionsResolver.body/3
     field :moderation_status, non_null(:community_moderation_status)
     field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+
+    field :viewer_can_remove, non_null(:boolean),
+      resolve: &DiscussionsResolver.viewer_can_remove/3
 
     field :accepted_answer_id, :id do
       resolve(fn question, _, _ ->
@@ -1567,6 +1631,10 @@ defmodule ProductCompareWeb.Schema do
     field :body, non_null(:string), resolve: &DiscussionsResolver.body/3
     field :moderation_status, non_null(:community_moderation_status)
     field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+
+    field :viewer_can_remove, non_null(:boolean),
+      resolve: &DiscussionsResolver.viewer_can_remove/3
 
     field :created_at, non_null(:datetime),
       resolve: fn answer, _, _ -> {:ok, answer.inserted_at} end
