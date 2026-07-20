@@ -71,12 +71,24 @@ defmodule ProductCompare.Pricing do
   end
 
   def merchant_detail(%Merchant{} = merchant, opts) do
+    merchant
+    |> then(&merchant_details([&1], opts))
+    |> Map.fetch!(merchant)
+  end
+
+  @spec merchant_details([Merchant.t()], keyword()) :: %{Merchant.t() => map()}
+  def merchant_details(merchants, opts \\ [])
+
+  def merchant_details([], _opts), do: %{}
+
+  def merchant_details(merchants, opts) when is_list(merchants) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
+    merchant_ids = Enum.map(merchants, & &1.id)
 
     merchant_products =
       MerchantProduct
-      |> where([offer], offer.merchant_id == ^merchant.id and offer.is_active == true)
-      |> order_by([offer], asc: offer.id)
+      |> where([offer], offer.merchant_id in ^merchant_ids and offer.is_active == true)
+      |> order_by([offer], asc: offer.merchant_id, asc: offer.id)
       |> Repo.all()
 
     latest_by_offer =
@@ -84,6 +96,15 @@ defmodule ProductCompare.Pricing do
       |> Enum.map(& &1.id)
       |> latest_offer_truth_prices()
 
+    products_by_merchant = Enum.group_by(merchant_products, & &1.merchant_id)
+
+    Map.new(merchants, fn merchant ->
+      products = Map.get(products_by_merchant, merchant.id, [])
+      {merchant, merchant_detail_from_products(merchant, products, latest_by_offer, now, opts)}
+    end)
+  end
+
+  defp merchant_detail_from_products(merchant, merchant_products, latest_by_offer, now, opts) do
     offers =
       Enum.map(merchant_products, fn offer ->
         OfferTruth.summarize(offer, Map.get(latest_by_offer, offer.id), now, opts)
