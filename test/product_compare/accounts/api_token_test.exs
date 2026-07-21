@@ -52,8 +52,8 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
                Enum.take(tokens, 2) |> Enum.map(& &1.id)
 
       assert Enum.map(entropy_ids, &Map.fetch!(four_results, &1).id) == Enum.map(tokens, & &1.id)
-      assert length(two_queries) == 1
-      assert length(four_queries) == 1
+      assert [_query] = two_queries
+      assert [_query] = four_queries
 
       assert Accounts.get_api_tokens_for_user(owner, [
                hd(entropy_ids),

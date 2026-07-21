@@ -358,40 +358,14 @@ defmodule ProductCompare.Catalog do
   end
 
   defp get_saved_comparison_sets_for_user_id(user_id, entropy_ids) do
-    requested_ids = Enum.uniq(entropy_ids)
-
-    validated_ids =
-      requested_ids
-      |> Enum.flat_map(fn requested_id ->
-        case Ecto.UUID.cast(requested_id) do
-          {:ok, validated_id} -> [{requested_id, validated_id}]
-          :error -> []
-        end
-      end)
-
-    records_by_entropy_id =
-      case validated_ids do
-        [] ->
-          %{}
-
-        validated_ids ->
-          validated_entropy_ids = validated_ids |> Enum.map(&elem(&1, 1)) |> Enum.uniq()
-
-          SavedComparisonSet
-          |> where(
-            [saved_comparison_set],
-            saved_comparison_set.user_id == ^user_id and
-              saved_comparison_set.entropy_id in ^validated_entropy_ids
-          )
-          |> Repo.all()
-          |> Map.new(&{&1.entropy_id, &1})
-      end
-
-    validated_by_requested_id = Map.new(validated_ids)
-
-    Map.new(requested_ids, fn requested_id ->
-      validated_id = Map.get(validated_by_requested_id, requested_id)
-      {requested_id, Map.get(records_by_entropy_id, validated_id)}
+    Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
+      SavedComparisonSet
+      |> where(
+        [saved_comparison_set],
+        saved_comparison_set.user_id == ^user_id and
+          saved_comparison_set.entropy_id in ^validated_entropy_ids
+      )
+      |> Repo.all()
     end)
   end
 

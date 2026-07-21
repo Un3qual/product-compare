@@ -191,8 +191,8 @@ batch and should not be recreated or promoted.
   active-offer connections are complete. Owner-private community submission
   reads, public Relay node aliases, and category lookup/qualified-product
   connections are complete. Public product/merchant slug and opaque-key
-  lookups and comparison evidence reads are also complete. Authorized Relay
-  node reads are active; bounded alert evaluation market reads and bounded
+  lookups, comparison evidence reads, and authorized Relay node reads are also
+  complete. Bounded alert evaluation market reads and bounded
   comparison root GraphQL reads remain ready through the active plans above. Bounded
   authorized management GraphQL connections is the grouped successor for the
   remaining owner and operator connection aliases. These are reviewer-sized

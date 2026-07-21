@@ -1253,63 +1253,21 @@ Authorized Management GraphQL Connections. The existing focused suites pass
 only bounds the already-shipped merchant-feed review query. Three independently
 shippable ready rows remain after the claim.
 
+Bounded authorized node GraphQL reads then completed on
+`codex/bounded-public-opaque-graphql-reads`: Affiliate, SavedComparisonSet, and
+ApiToken context lookups now accept set requests, and the six non-public Relay
+node types use one authorization-aware request source. Two and four authorized
+aliases now both hold at one entity SELECT per type; lazy saved-set items and
+products remain fixed at one, anonymous aliases issue zero tracked reads, and
+operator gates, ownership, missing/malformed behavior, nested values, and Relay
+identity remain unchanged. Shared UUID validation/projection prevents owner-
+context policy drift and keeps the clone budget unchanged. The focused gate
+passes 68 tests, its shared-input suite passes 20, and full CI passes 851
+backend plus 1,507 frontend tests.
+
 ## Active Work
 
-### 1. Bounded Authorized Node GraphQL Reads
-
-Status: active
-Owner: `codex/bounded-public-opaque-graphql-reads`
-Lane: Bounded authorized node GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
-Batch outcome: operator-only and owner-scoped Relay `node(id:)` aliases keep a
-fixed SELECT budget per node type as authorized alias count grows, without
-changing authorization, ownership, privacy, missing/error behavior, nested
-values, or Relay identity.
-Next action: add set-based affiliate and owner-filtered context reads, route the
-six non-public node types through an authorization-aware request-scoped
-Dataloader source, and prove semantic, privacy, and fixed-budget parity.
-Owned paths:
-
-- `lib/product_compare/affiliate.ex`
-- `lib/product_compare/accounts.ex`
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/node_resolver.ex`
-- `test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `test/product_compare/accounts/api_token_test.exs`
-- `test/product_compare/catalog/saved_comparison_set_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-authorized-node-graphql-reads.md`
-
-Internal slices:
-
-- Set-based operator-only affiliate node lookups.
-- Set-based owner-filtered saved-set and API-token lookups that preserve lazy
-  associations.
-- Authorization-aware request-scoped loading plus semantic, privacy, and
-  fixed-budget coverage.
-
-Prerequisites:
-
-- The completed public-node Dataloader pattern and current Relay type decoder
-  remain authoritative.
-- Operator checks happen before reads; anonymous and cross-owner scoped nodes
-  remain `nil`, and forbidden operator reads retain their current error.
-- This row executes serially with shared Accounts/Catalog/Loader work but is
-  independent of opaque-key entry points and comparison evidence collection.
-
-Verification:
-
-- `mix test test/product_compare/affiliate/affiliate_workflows_test.exs test/product_compare/accounts/api_token_test.exs test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: operator and owner-scoped node types preserve exact values,
-authorization, privacy, lazy nested loading, invalid-input, and missing behavior
-while per-type SELECT counts stay fixed as authorized aliases grow.
+None.
 
 ## Ready Work
 

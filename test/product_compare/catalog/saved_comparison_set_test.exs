@@ -157,8 +157,8 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
                Enum.map(saved_sets, & &1.id)
 
       assert Enum.all?(Map.values(four_results), &(not Ecto.assoc_loaded?(&1.items)))
-      assert length(two_queries) == 1
-      assert length(four_queries) == 1
+      assert [_query] = two_queries
+      assert [_query] = four_queries
 
       assert Catalog.get_saved_comparison_sets_for_user(owner, [
                hd(entropy_ids),

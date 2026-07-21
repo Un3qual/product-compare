@@ -523,36 +523,10 @@ defmodule ProductCompare.Accounts do
   end
 
   defp get_api_tokens_for_user_id(user_id, token_entropy_ids) do
-    requested_ids = Enum.uniq(token_entropy_ids)
-
-    validated_ids =
-      requested_ids
-      |> Enum.flat_map(fn requested_id ->
-        case Ecto.UUID.cast(requested_id) do
-          {:ok, validated_id} -> [{requested_id, validated_id}]
-          :error -> []
-        end
-      end)
-
-    records_by_entropy_id =
-      case validated_ids do
-        [] ->
-          %{}
-
-        validated_ids ->
-          entropy_ids = validated_ids |> Enum.map(&elem(&1, 1)) |> Enum.uniq()
-
-          ApiToken
-          |> where([token], token.user_id == ^user_id and token.entropy_id in ^entropy_ids)
-          |> Repo.all()
-          |> Map.new(&{&1.entropy_id, &1})
-      end
-
-    validated_by_requested_id = Map.new(validated_ids)
-
-    Map.new(requested_ids, fn requested_id ->
-      validated_id = Map.get(validated_by_requested_id, requested_id)
-      {requested_id, Map.get(records_by_entropy_id, validated_id)}
+    Input.uuid_lookup_results(token_entropy_ids, fn entropy_ids ->
+      ApiToken
+      |> where([token], token.user_id == ^user_id and token.entropy_id in ^entropy_ids)
+      |> Repo.all()
     end)
   end
 

@@ -3,7 +3,16 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.{Affiliate, Catalog, ComparisonSnapshots, Discussions, Pricing, Specs}
+  alias ProductCompare.{
+    Accounts,
+    Affiliate,
+    Catalog,
+    ComparisonSnapshots,
+    Discussions,
+    Pricing,
+    Specs
+  }
+
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
@@ -17,6 +26,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @category_tables ~w(taxons products)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
+  @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
@@ -163,6 +173,59 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                },
                initial_budget
              }
+    end
+
+    test "authorized node aliases keep values and SELECT budgets fixed per schema as aliases grow",
+         %{conn: conn, test: test_name} do
+      owner = AccountsFixtures.operator_fixture()
+      prefix = "#{test_name}-#{System.unique_integer([:positive])}"
+      records = authorized_node_records(owner, prefix, 1..4)
+
+      authorized_conn =
+        conn
+        |> log_in_user(owner)
+        |> put_req_header_same_origin()
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(authorized_conn, authorized_node_batch_query(Enum.take(records, 2)), %{})
+        end)
+
+      assert_authorized_node_values(initial_response, Enum.take(records, 2))
+      initial_budget = authorized_node_query_budget(initial_queries)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(authorized_conn, authorized_node_batch_query(records), %{})
+        end)
+
+      assert_authorized_node_values(grown_response, records)
+      grown_budget = authorized_node_query_budget(grown_queries)
+
+      assert {initial_budget, grown_budget} == {
+               %{
+                 affiliate_networks: 1,
+                 affiliate_programs: 1,
+                 affiliate_links: 1,
+                 coupons: 1,
+                 saved_comparison_sets: 1,
+                 api_tokens: 1,
+                 saved_comparison_items: 1,
+                 products: 1
+               },
+               initial_budget
+             }
+
+      {anonymous_response, anonymous_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, authorized_node_batch_query(Enum.take(records, 2)), %{})
+        end)
+
+      assert %{"data" => anonymous_data, "errors" => [_ | _]} = anonymous_response
+      assert Enum.all?(anonymous_data, fn {_alias, value} -> is_nil(value) end)
+
+      assert authorized_node_query_budget(anonymous_queries) ==
+               Map.new(@authorized_node_tables, &{&1, 0})
     end
 
     test "public product and merchant slug aliases keep values and SELECT budgets fixed as aliases grow",
@@ -682,6 +745,68 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp authorized_node_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          authorized_node_selection(
+            "affiliateNetwork#{index}",
+            :affiliate_network,
+            record.network.id
+          ),
+          authorized_node_selection(
+            "affiliateProgram#{index}",
+            :affiliate_program,
+            record.program.id
+          ),
+          authorized_node_selection("affiliateLink#{index}", :affiliate_link, record.link.id),
+          authorized_node_selection("coupon#{index}", :coupon, record.coupon.id),
+          authorized_node_selection(
+            "savedComparisonSet#{index}",
+            :saved_comparison_set,
+            record.saved_set.entropy_id
+          ),
+          authorized_node_selection("apiToken#{index}", :api_token, record.api_token.entropy_id)
+        ]
+      end)
+
+    missing = [
+      authorized_node_selection("missingAffiliateNetwork", :affiliate_network, 2_147_483_647),
+      authorized_node_selection(
+        "missingSavedComparisonSet",
+        :saved_comparison_set,
+        Ecto.UUID.generate()
+      ),
+      authorized_node_selection("missingApiToken", :api_token, Ecto.UUID.generate())
+    ]
+
+    """
+    query AuthorizedNodeBatch {
+      #{Enum.join(selections ++ missing, "\n")}
+    }
+    """
+  end
+
+  defp authorized_node_selection(alias_name, type, id) do
+    """
+    #{alias_name}: node(id: "#{relay_id(type, id)}") {
+      __typename
+      ... on AffiliateNetwork { id name }
+      ... on AffiliateProgram { id affiliateNetworkId merchantId programCode status }
+      ... on AffiliateLink { id merchantProductId affiliateNetworkId originalUrl affiliateUrl }
+      ... on Coupon { id merchantId affiliateNetworkId code discountType }
+      ... on SavedComparisonSet {
+        id
+        name
+        items { position product { id slug } }
+      }
+      ... on ApiToken { id label tokenPrefix revokedAt }
+    }
+    """
+  end
+
   defp public_opaque_batch_query(records) do
     selections =
       records
@@ -957,6 +1082,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     end)
   end
 
+  defp authorized_node_query_budget(queries) do
+    Enum.into(@authorized_node_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
   defp public_slug_query_budget(queries) do
     %{
       products: Enum.count(queries, &query_targets_table?(&1, :products)),
@@ -1097,6 +1228,73 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                "sourceDomain" => record.source.domain,
                "url" => record.artifact.url,
                "fetchedAt" => DateTime.to_iso8601(record.artifact.fetched_at)
+             }
+    end)
+  end
+
+  defp assert_authorized_node_values(response, records) do
+    assert %{"data" => data} = response
+    assert data["missingAffiliateNetwork"] == nil
+    assert data["missingSavedComparisonSet"] == nil
+    assert data["missingApiToken"] == nil
+
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["affiliateNetwork#{index}"] == %{
+               "__typename" => "AffiliateNetwork",
+               "id" => relay_id(:affiliate_network, record.network.id),
+               "name" => record.network.name
+             }
+
+      assert data["affiliateProgram#{index}"] == %{
+               "__typename" => "AffiliateProgram",
+               "id" => relay_id(:affiliate_program, record.program.id),
+               "affiliateNetworkId" => relay_id(:affiliate_network, record.network.id),
+               "merchantId" => relay_id(:merchant, record.merchant.id),
+               "programCode" => record.program.program_code,
+               "status" => record.program.status
+             }
+
+      assert data["affiliateLink#{index}"] == %{
+               "__typename" => "AffiliateLink",
+               "id" => relay_id(:affiliate_link, record.link.id),
+               "merchantProductId" => relay_id(:merchant_product, record.merchant_product.id),
+               "affiliateNetworkId" => relay_id(:affiliate_network, record.network.id),
+               "originalUrl" => record.link.original_url,
+               "affiliateUrl" => record.link.affiliate_url
+             }
+
+      assert data["coupon#{index}"] == %{
+               "__typename" => "Coupon",
+               "id" => relay_id(:coupon, record.coupon.id),
+               "merchantId" => relay_id(:merchant, record.merchant.id),
+               "affiliateNetworkId" => relay_id(:affiliate_network, record.network.id),
+               "code" => record.coupon.code,
+               "discountType" => "OTHER"
+             }
+
+      assert data["savedComparisonSet#{index}"] == %{
+               "__typename" => "SavedComparisonSet",
+               "id" => relay_id(:saved_comparison_set, record.saved_set.entropy_id),
+               "name" => record.saved_set.name,
+               "items" => [
+                 %{
+                   "position" => 1,
+                   "product" => %{
+                     "id" => relay_id(:product, record.product.id),
+                     "slug" => record.product.slug
+                   }
+                 }
+               ]
+             }
+
+      assert data["apiToken#{index}"] == %{
+               "__typename" => "ApiToken",
+               "id" => relay_id(:api_token, record.api_token.entropy_id),
+               "label" => record.api_token.label,
+               "tokenPrefix" => record.api_token.token_prefix,
+               "revokedAt" => nil
              }
     end)
   end
@@ -2178,6 +2376,72 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         price_point: price_point,
         source: source,
         artifact: artifact
+      }
+    end)
+  end
+
+  defp authorized_node_records(owner, prefix, indexes) do
+    Enum.map(indexes, fn index ->
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "#{prefix}-authorized-product-#{index}",
+          name: "#{prefix} Authorized Product #{index}"
+        })
+
+      merchant =
+        merchant_fixture(%{
+          name: "#{prefix} Authorized Merchant #{index}",
+          domain: unique_domain("#{prefix}-authorized-merchant-#{index}")
+        })
+
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+      {:ok, network} =
+        Affiliate.upsert_network(%{name: "#{prefix} Authorized Network #{index}"})
+
+      {:ok, program} =
+        Affiliate.upsert_program(%{
+          affiliate_network_id: network.id,
+          merchant_id: merchant.id,
+          program_code: "#{prefix}-program-#{index}",
+          status: "active"
+        })
+
+      {:ok, link} =
+        Affiliate.upsert_link(%{
+          merchant_product_id: merchant_product.id,
+          affiliate_network_id: network.id,
+          original_url: merchant_product.url,
+          affiliate_url: "https://affiliate.example.com/#{prefix}/#{index}"
+        })
+
+      {:ok, coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          affiliate_network_id: network.id,
+          code: "#{prefix}-coupon-#{index}",
+          discount_type: :other
+        })
+
+      {:ok, saved_set} =
+        Catalog.create_saved_comparison_set(owner.id, %{
+          name: "Authorized set #{index}",
+          product_ids: [product.id]
+        })
+
+      {:ok, %{api_token: api_token}} =
+        Accounts.create_api_token(owner.id, %{label: "Authorized token #{index}"})
+
+      %{
+        product: product,
+        merchant: merchant,
+        merchant_product: merchant_product,
+        network: network,
+        program: program,
+        link: link,
+        coupon: coupon,
+        saved_set: saved_set,
+        api_token: api_token
       }
     end)
   end

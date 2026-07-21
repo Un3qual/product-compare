@@ -124,4 +124,39 @@ defmodule ProductCompare.InputTest do
       assert Input.normalize_integer_id("1abc") == :error
     end
   end
+
+  describe "uuid_lookup_results/2" do
+    test "deduplicates valid lookups and projects missing or invalid requested ids to nil" do
+      first_id = Ecto.UUID.generate()
+      second_id = Ecto.UUID.generate()
+
+      results =
+        Input.uuid_lookup_results(
+          [first_id, first_id, "not-a-uuid", second_id],
+          fn validated_ids ->
+            send(self(), {:validated_ids, validated_ids})
+            [%{entropy_id: first_id, value: :first}]
+          end
+        )
+
+      assert_receive {:validated_ids, validated_ids}
+      assert Enum.sort(validated_ids) == Enum.sort([first_id, second_id])
+
+      assert results == %{
+               first_id => %{entropy_id: first_id, value: :first},
+               second_id => nil,
+               "not-a-uuid" => nil
+             }
+    end
+
+    test "does not invoke the loader when no valid UUID was requested" do
+      assert Input.uuid_lookup_results(["not-a-uuid"], fn _validated_ids ->
+               flunk("loader must not run without a valid UUID")
+             end) == %{"not-a-uuid" => nil}
+
+      assert Input.uuid_lookup_results([], fn _validated_ids ->
+               flunk("loader must not run for an empty request")
+             end) == %{}
+    end
+  end
 end

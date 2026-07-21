@@ -59,8 +59,10 @@ entries cannot cross principals.
 
 - Modify: `lib/product_compare/accounts.ex`
 - Modify: `lib/product_compare/catalog.ex`
+- Modify: `lib/product_compare/input.ex`
 - Modify: `test/product_compare/accounts/api_token_test.exs`
 - Modify: `test/product_compare/catalog/saved_comparison_set_test.exs`
+- Modify: `test/product_compare/input_test.exs`
 
 **Interfaces:**
 
@@ -92,13 +94,13 @@ entries cannot cross principals.
 - Authorize operator aliases before scheduling loads; return anonymous
   owner-scoped aliases without scheduling any query.
 
-- [ ] Add failing GraphQL alias-growth tests for every operator and owner type.
-- [ ] Assert exact values, missing behavior, nested saved-set items, forbidden
+- [x] Add failing GraphQL alias-growth tests for every operator and owner type.
+- [x] Assert exact values, missing behavior, nested saved-set items, forbidden
   errors, anonymous zero-query behavior, and cross-owner privacy before budgets.
-- [ ] Prove per-type SELECT budgets remain identical from two aliases to four.
-- [ ] Register the source and route non-public node types through `on_load/2`.
-- [ ] Re-run node and Dataloader suites.
-- [ ] Commit with message `perf: bound authorized graphql node reads`.
+- [x] Prove per-type SELECT budgets remain identical from two aliases to four.
+- [x] Register the source and route non-public node types through `on_load/2`.
+- [x] Re-run node and Dataloader suites.
+- [x] Commit with message `perf: bound authorized graphql node reads`.
 
 ### Task 4: Lane Evidence And Batch Gate
 
@@ -106,13 +108,13 @@ entries cannot cross principals.
 
 - Modify: `docs/work/bounded-authorized-node-graphql-reads.md`
 
-- [ ] Record before/after query counts, authorization, privacy, and semantic
+- [x] Record before/after query counts, authorization, privacy, and semantic
   parity coverage.
-- [ ] Run `mix test test/product_compare/affiliate/affiliate_workflows_test.exs
+- [x] Run `mix test test/product_compare/affiliate/affiliate_workflows_test.exs
   test/product_compare/accounts/api_token_test.exs
   test/product_compare/catalog/saved_comparison_set_test.exs
   test/product_compare_web/graphql/node_query_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.

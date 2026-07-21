@@ -36,8 +36,8 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
         assert Map.keys(two_results) |> Enum.sort() == Enum.take(ids, 2) |> Enum.sort()
         assert Enum.map(Enum.take(ids, 2), &Map.fetch!(two_results, &1).id) == Enum.take(ids, 2)
         assert Enum.map(ids, &Map.fetch!(four_results, &1).id) == ids
-        assert length(two_queries) == 1
-        assert length(four_queries) == 1
+        assert [_query] = two_queries
+        assert [_query] = four_queries
 
         assert Affiliate.get_affiliate_nodes(type, [hd(ids), hd(ids), missing_id]) == %{
                  hd(ids) => apply(Affiliate, singular_getter, [hd(ids)]),
