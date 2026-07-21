@@ -266,6 +266,70 @@ defmodule ProductCompare.Seo do
     |> order_by([product], asc: product.name, asc: product.id)
   end
 
+  @spec qualified_product_pages(
+          [pos_integer()],
+          DateTime.t(),
+          %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
+        ) :: %{optional(pos_integer()) => [Product.t()]}
+  def qualified_product_pages(taxon_ids, %DateTime{} = now, %{
+        offset: offset,
+        fetch_limit: fetch_limit
+      })
+      when is_list(taxon_ids) and is_integer(offset) and offset >= 0 and
+             is_integer(fetch_limit) and fetch_limit >= 0 do
+    taxon_ids =
+      taxon_ids
+      |> Enum.filter(&(is_integer(&1) and &1 > 0))
+      |> Enum.uniq()
+
+    if taxon_ids == [] do
+      %{}
+    else
+      qualifying_products = qualified_products_query(now)
+
+      ranked_products =
+        TaxonClosure
+        |> join(:inner, [closure], product in subquery(qualifying_products),
+          on: product.primary_type_taxon_id == closure.descendant_id
+        )
+        |> where([closure], closure.ancestor_id in ^taxon_ids)
+        |> windows(
+          [closure, product],
+          category_product_page: [
+            partition_by: closure.ancestor_id,
+            order_by: [asc: product.name, asc: product.id]
+          ]
+        )
+        |> select([closure, product], %{
+          category_id: closure.ancestor_id,
+          product_id: product.id,
+          row_number: over(row_number(), :category_product_page)
+        })
+
+      products_by_category =
+        Product
+        |> join(:inner, [product], ranked in subquery(ranked_products),
+          on: ranked.product_id == product.id
+        )
+        |> where(
+          [_product, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([product, ranked],
+          asc: ranked.category_id,
+          asc: product.name,
+          asc: product.id
+        )
+        |> select([product, ranked], {ranked.category_id, product})
+        |> Repo.all()
+        |> Enum.group_by(fn {category_id, _product} -> category_id end, fn {_category_id, product} ->
+          product
+        end)
+
+      Map.new(taxon_ids, &{&1, Map.get(products_by_category, &1, [])})
+    end
+  end
+
   defp qualified_product_counts([], _now), do: %{}
 
   defp qualified_product_counts(taxon_ids, now) do
