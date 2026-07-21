@@ -56,8 +56,31 @@ defmodule ProductCompare.Pricing do
       do: Repo.get(Merchant, merchant_id)
 
   @spec get_merchant_by_slug(String.t()) :: Merchant.t() | nil
-  def get_merchant_by_slug(slug) when is_binary(slug), do: Repo.get_by(Merchant, slug: slug)
+  def get_merchant_by_slug(slug) when is_binary(slug) do
+    [slug]
+    |> get_merchants_by_slugs()
+    |> Map.fetch!(slug)
+  end
+
   def get_merchant_by_slug(_slug), do: nil
+
+  @spec get_merchants_by_slugs([term()]) :: %{optional(String.t()) => Merchant.t() | nil}
+  def get_merchants_by_slugs(slugs) when is_list(slugs) do
+    requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
+    query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
+
+    merchants_by_slug =
+      if query_slugs == [] do
+        %{}
+      else
+        Merchant
+        |> where([merchant], merchant.slug in ^query_slugs)
+        |> Repo.all()
+        |> Map.new(&{&1.slug, &1})
+      end
+
+    Map.new(requested_slugs, &{&1, Map.get(merchants_by_slug, &1)})
+  end
 
   @spec merchant_detail(String.t() | Merchant.t(), keyword()) ::
           %{merchant: Merchant.t(), summary: map()} | nil

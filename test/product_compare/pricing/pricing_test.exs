@@ -78,6 +78,47 @@ defmodule ProductCompare.PricingTest do
              ]
     end
 
+    test "batch merchant slug lookup preserves singular results with a fixed query budget" do
+      merchants =
+        Enum.map(1..4, fn index ->
+          {:ok, merchant} =
+            Pricing.upsert_merchant(%{
+              name: "Batch Slug Merchant #{index}",
+              domain: "batch-slug-merchant-#{index}.example"
+            })
+
+          merchant
+        end)
+
+      slugs = Enum.map(merchants, & &1.slug)
+
+      {initial_results, initial_queries} =
+        capture_select_queries(fn -> Pricing.get_merchants_by_slugs(Enum.take(slugs, 2)) end)
+
+      {grown_results, grown_queries} =
+        capture_select_queries(fn ->
+          Pricing.get_merchants_by_slugs(slugs ++ ["missing-merchant", "", hd(slugs), nil, 42])
+        end)
+
+      assert [_] = initial_queries
+      assert [_] = grown_queries
+
+      Enum.each(slugs ++ ["missing-merchant", ""], fn slug ->
+        assert grown_results[slug] == Pricing.get_merchant_by_slug(slug)
+      end)
+
+      assert initial_results[hd(slugs)].id == hd(merchants).id
+      assert grown_results["missing-merchant"] == nil
+      assert grown_results[""] == nil
+      refute Map.has_key?(grown_results, nil)
+      refute Map.has_key?(grown_results, 42)
+
+      assert {empty_results, []} =
+               capture_select_queries(fn -> Pricing.get_merchants_by_slugs([]) end)
+
+      assert empty_results == %{}
+    end
+
     test "get_merchant/1 and get_merchant_product/1 only accept positive integer ids" do
       oversized_id = 9_223_372_036_854_775_808
 
