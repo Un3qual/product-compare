@@ -1,6 +1,6 @@
 # Bounded Community GraphQL Connections Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
@@ -46,13 +46,13 @@ ExUnit.
   start at the decoded offset and contain at most `first + 1` items; edge cursors
   use absolute indices and page info matches `from_query/3`.
 
-- [ ] Add failing equivalence tests for default, zero, clamped, after-cursor,
+- [x] Add failing equivalence tests for default, zero, clamped, after-cursor,
   final-page, invalid-first, and malformed-cursor cases.
-- [ ] Run the focused connection/community tests and confirm both APIs are absent.
-- [ ] Extract shared edge/page projection without changing `from_list/2` or
+- [x] Run the focused connection/community tests and confirm both APIs are absent.
+- [x] Extract shared edge/page projection without changing `from_list/2` or
   `from_query/3` behavior.
-- [ ] Re-run existing GraphQL connection hardening tests.
-- [ ] Commit with message `refactor: expose batched relay connection window`.
+- [x] Re-run existing GraphQL connection hardening tests.
+- [x] Commit with message `refactor: expose batched relay connection window`.
 
 ### Task 2: Parent-Partitioned Community Pages
 
@@ -70,15 +70,15 @@ or `thread_id`, applies the current published-only filter/order, and keeps rows
 whose number is between `offset + 1` and `offset + fetch_limit`. Question rows
 retain accepted-answer preload behavior.
 
-- [ ] Add failing context tests comparing batch rows with each current
+- [x] Add failing context tests comparing batch rows with each current
   single-parent query for multiple parents, empty parents, after offsets, hidden
   rows, exact ties, and accepted answers.
-- [ ] Run the focused discussion suite and confirm the batch API is absent.
-- [ ] Implement one query per connection kind, not one query per parent.
-- [ ] Keep every requested parent ID in the result map with an empty row list
+- [x] Run the focused discussion suite and confirm the batch API is absent.
+- [x] Implement one query per connection kind, not one query per parent.
+- [x] Keep every requested parent ID in the result map with an empty row list
   when it has no published content.
-- [ ] Re-run all discussion context tests.
-- [ ] Commit with message `perf: batch public community connection pages`.
+- [x] Re-run all discussion context tests.
+- [x] Commit with message `perf: batch public community connection pages`.
 
 ### Task 3: Community Connection Dataloader And Budgets
 
@@ -96,16 +96,16 @@ are `{kind, connection_args}`. Validate arguments with
 rows from Discussions and builds each parent result with
 `Connection.from_prefetched_page/2`.
 
-- [ ] Add failing GraphQL requests for multiple products with reviews/questions
+- [x] Add failing GraphQL requests for multiple products with reviews/questions
   and multiple questions with nested answers; capture current SELECT growth.
-- [ ] Assert published-only edges, exact order, accepted-answer IDs, cursors, and
+- [x] Assert published-only edges, exact order, accepted-answer IDs, cursors, and
   `hasNextPage` before asserting budgets.
-- [ ] Grow product and question fixtures while preserving the same field args;
+- [x] Grow product and question fixtures while preserving the same field args;
   assert review/question/answer SELECT counts remain fixed.
-- [ ] Route all three resolvers through the request-scoped source and preserve
+- [x] Route all three resolvers through the request-scoped source and preserve
   exact GraphQL error strings for invalid pagination input.
-- [ ] Re-run community GraphQL and Dataloader suites.
-- [ ] Commit with message `perf: bound community graphql connections`.
+- [x] Re-run community GraphQL and Dataloader suites.
+- [x] Commit with message `perf: bound community graphql connections`.
 
 ### Task 4: Lane Evidence And Batch Gate
 
@@ -113,8 +113,8 @@ rows from Discussions and builds each parent result with
 
 - Modify: `docs/work/bounded-community-graphql-connections.md`
 
-- [ ] Record before/after query counts and behavior coverage.
-- [ ] Run the focused tests named in `docs/work/index.md`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Record before/after query counts and behavior coverage.
+- [x] Run the focused tests named in `docs/work/index.md`.
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.

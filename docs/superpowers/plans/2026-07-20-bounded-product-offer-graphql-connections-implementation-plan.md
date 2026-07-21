@@ -1,6 +1,6 @@
 # Bounded Product Offer GraphQL Connections Implementation Plan
 
-**Status:** ready
+**Status:** complete
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
@@ -45,12 +45,12 @@ row is claimed first, implement those two interfaces exactly as specified in
 `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
 and preserve `from_list/2` plus `from_query/3` behavior.
 
-- [ ] Verify equivalence coverage exists for default, zero, clamped, after,
+- [x] Verify equivalence coverage exists for default, zero, clamped, after,
   final-page, invalid-first, and malformed-cursor behavior.
-- [ ] If absent, add the failing tests and implement the shared APIs before
+- [x] If absent, add the failing tests and implement the shared APIs before
   touching Pricing or Affiliate.
-- [ ] Run existing GraphQL connection hardening tests.
-- [ ] Commit only if shared Connection production behavior changed, using
+- [x] Run existing GraphQL connection hardening tests.
+- [x] Commit only if shared Connection production behavior changed, using
   `refactor: expose batched relay connection window`.
 
 ### Task 2: Parent-Partitioned Product Offer Pages
@@ -67,14 +67,14 @@ and preserve `from_list/2` plus `from_query/3` behavior.
 merchant and active-only filters, retain ascending merchant-product ID order,
 and select rows between `offset + 1` and `offset + fetch_limit`.
 
-- [ ] Add failing parity tests against `list_merchant_products_query/1` for
+- [x] Add failing parity tests against `list_merchant_products_query/1` for
   multiple products, empty parents, merchant filters, active-only values,
   offsets, and exact ID order.
-- [ ] Run the focused Pricing suite and confirm the batch API is absent.
-- [ ] Implement one bounded query for the entire product parent set and return
+- [x] Run the focused Pricing suite and confirm the batch API is absent.
+- [x] Implement one bounded query for the entire product parent set and return
   an empty row list for every requested product without offers.
-- [ ] Re-run Pricing tests.
-- [ ] Commit with message `perf: batch product offer connection pages`.
+- [x] Re-run Pricing tests.
+- [x] Commit with message `perf: batch product offer connection pages`.
 
 ### Task 3: Merchant-Keyed Coupon Pages
 
@@ -90,13 +90,13 @@ partitioned by `merchant_id`, the exact current active-window predicate and
 order, and the requested bounded row range. Fill missing merchant IDs with
 empty lists.
 
-- [ ] Add failing parity tests for current, future, expired, open-ended,
+- [x] Add failing parity tests for current, future, expired, open-ended,
   multiple-network, empty-merchant, and after-offset cases.
-- [ ] Run the focused Affiliate suite and confirm the batch API is absent.
-- [ ] Implement one query for unique merchant IDs and one caller-supplied batch
+- [x] Run the focused Affiliate suite and confirm the batch API is absent.
+- [x] Implement one query for unique merchant IDs and one caller-supplied batch
   timestamp.
-- [ ] Re-run Affiliate tests.
-- [ ] Commit with message `perf: batch active coupon connection pages`.
+- [x] Re-run Affiliate tests.
+- [x] Commit with message `perf: batch active coupon connection pages`.
 
 ### Task 4: Parent-Partitioned Price-History Pages
 
@@ -112,12 +112,12 @@ filters before `row_number()`, partition by `merchant_product_id`, preserve
 descending observation/ID order, and retain source-artifact loading behavior
 used by the GraphQL price-point fields.
 
-- [ ] Add failing parity tests for multiple offers, empty offers, range bounds,
+- [x] Add failing parity tests for multiple offers, empty offers, range bounds,
   equal timestamps, offsets, and artifact-backed observations.
-- [ ] Run the focused Pricing suite and confirm the batch API is absent.
-- [ ] Implement one bounded query for all MerchantProduct parents.
-- [ ] Re-run Pricing tests.
-- [ ] Commit with message `perf: batch price history connection pages`.
+- [x] Run the focused Pricing suite and confirm the batch API is absent.
+- [x] Implement one bounded query for all MerchantProduct parents.
+- [x] Re-run Pricing tests.
+- [x] Commit with message `perf: batch price history connection pages`.
 
 ### Task 5: Offer Connection Dataloader And Budgets
 
@@ -137,27 +137,37 @@ used by the GraphQL price-point fields.
 `Connection.batch_window/1`; callbacks delegate parent sets to the context page
 APIs and project each result with `Connection.from_prefetched_page/2`.
 
-- [ ] Add a failing compare-shaped GraphQL request with at least three products,
+- [x] Add a failing compare-shaped GraphQL request with at least three products,
   multiple offers per product, active coupons, and compact price history.
-- [ ] Assert exact filters, edge order, coupon validity, history range behavior,
+- [x] Assert exact filters, edge order, coupon validity, history range behavior,
   cursors, `hasNextPage`, and latest-price values.
-- [ ] Grow product and offer parent counts with unchanged field arguments and
+- [x] Grow product and offer parent counts with unchanged field arguments and
   record the current merchant-product/coupon/price-point SELECT growth.
-- [ ] Route the three resolvers through the request-scoped source. Collapse
+- [x] Route the three resolvers through the request-scoped source. Collapse
   coupon work to unique merchant IDs while returning a connection for each
   MerchantProduct parent.
-- [ ] Assert relevant SELECT counts remain fixed after parent growth.
-- [ ] Re-run pricing GraphQL, Dataloader, and product-detail contract suites.
-- [ ] Commit with message `perf: bound product offer graphql connections`.
+- [x] Assert relevant SELECT counts remain fixed after parent growth.
+- [x] Re-run pricing GraphQL, Dataloader, and product-detail contract suites.
+- [x] Commit with message `perf: bound product offer graphql connections`.
 
 ### Task 6: Lane Evidence And Batch Gate
 
 **Files:**
 
 - Modify: `docs/work/bounded-product-offer-graphql-connections.md`
+- Modify: `docs/work/index.md`
+- Modify: `docs/plans/INDEX.md`
+- Modify: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 
-- [ ] Record before/after query counts and semantic regression coverage.
-- [ ] Run all focused tests named in `docs/work/index.md`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Record before/after query counts and semantic regression coverage.
+- [x] Mark this plan complete and reconcile every completed task checkbox.
+- [x] Remove the completed active row from `docs/work/index.md`, preserve its
+  completion evidence in the lane doc, and leave the three successor rows
+  ready.
+- [x] Remove this completed plan from the active plan catalog without changing
+  the remaining ready plans.
+- [x] Run all focused tests named in `docs/work/index.md`.
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Commit the completion evidence and coordinator closeout as one docs
+  workflow milestone.

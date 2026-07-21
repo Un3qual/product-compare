@@ -10,92 +10,99 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @cursor_prefix "cursor:"
 
   @type error_reason :: :invalid_cursor | :invalid_first
+  @type batch_window :: %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
+
+  @spec batch_window(map()) :: {:ok, batch_window()} | {:error, error_reason()}
+  def batch_window(args) when is_map(args) do
+    with {:ok, first} <- normalize_first(args),
+         {:ok, offset} <- args |> Input.fetch_value(:after) |> decode_start_index() do
+      {:ok, %{offset: offset, fetch_limit: first + 1}}
+    end
+  end
+
+  @spec batch_window_result(map()) :: {:ok, batch_window()} | {:error, String.t()}
+  def batch_window_result(args) when is_map(args) do
+    args
+    |> batch_window()
+    |> to_resolver_result()
+  end
 
   @spec from_list([term()], map()) :: {:ok, map()} | {:error, error_reason()}
   def from_list(items, args) when is_list(items) and is_map(args) do
-    with {:ok, first} <- normalize_first(args),
-         {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
+    with {:ok, %{offset: offset, fetch_limit: fetch_limit}} <- batch_window(args) do
+      first = fetch_limit - 1
       total_count = length(items)
 
       page_items =
         items
-        |> Enum.drop(start_index)
+        |> Enum.drop(offset)
         |> Enum.take(first)
 
-      edges =
-        page_items
-        |> Enum.with_index(start_index)
-        |> Enum.map(fn {node, absolute_index} ->
-          %{
-            cursor: encode_cursor(absolute_index),
-            node: node
-          }
-        end)
-
-      {:ok,
-       %{
-         edges: edges,
-         page_info: %{
-           has_next_page: total_count > start_index + length(edges),
-           has_previous_page: start_index > 0,
-           start_cursor: edge_cursor(List.first(edges)),
-           end_cursor: edge_cursor(List.last(edges))
-         }
-       }}
+      {:ok, project_connection(page_items, offset, total_count > offset + length(page_items))}
     end
   end
 
   @spec from_query(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, error_reason()}
   def from_query(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    with {:ok, first} <- normalize_first(args),
-         {:ok, start_index} <- args |> Input.fetch_value(:after) |> decode_start_index() do
-      fetch_limit = first + 1
+    with {:ok, %{offset: offset, fetch_limit: fetch_limit}} <- batch_window(args) do
+      first = fetch_limit - 1
 
       query_rows =
         query
-        |> offset(^start_index)
+        |> offset(^offset)
         |> limit(^fetch_limit)
         |> repo.all()
 
-      has_next_page = length(query_rows) > first
-      page_items = Enum.take(query_rows, first)
+      {:ok, project_connection(Enum.take(query_rows, first), offset, length(query_rows) > first)}
+    end
+  end
 
-      edges =
-        page_items
-        |> Enum.with_index(start_index)
-        |> Enum.map(fn {node, absolute_index} ->
-          %{
-            cursor: encode_cursor(absolute_index),
-            node: node
-          }
-        end)
+  @spec from_prefetched_page([term()], map()) :: {:ok, map()} | {:error, error_reason()}
+  def from_prefetched_page(rows, args) when is_list(rows) and is_map(args) do
+    with {:ok, %{offset: offset, fetch_limit: fetch_limit}} <- batch_window(args) do
+      first = fetch_limit - 1
 
-      {:ok,
-       %{
-         edges: edges,
-         page_info: %{
-           has_next_page: has_next_page,
-           has_previous_page: start_index > 0,
-           start_cursor: edge_cursor(List.first(edges)),
-           end_cursor: edge_cursor(List.last(edges))
-         }
-       }}
+      {:ok, project_connection(Enum.take(rows, first), offset, length(rows) > first)}
     end
   end
 
   @spec from_query_result(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, String.t()}
   def from_query_result(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    case from_query(query, args, repo) do
-      {:ok, connection} -> {:ok, connection}
-      {:error, :invalid_first} -> {:error, "invalid first"}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-    end
+    query
+    |> from_query(args, repo)
+    |> to_resolver_result()
   end
+
+  defp to_resolver_result({:ok, result}), do: {:ok, result}
+  defp to_resolver_result({:error, :invalid_first}), do: {:error, "invalid first"}
+  defp to_resolver_result({:error, :invalid_cursor}), do: {:error, "invalid cursor"}
 
   defp edge_cursor(nil), do: nil
   defp edge_cursor(edge), do: edge.cursor
+
+  defp project_connection(page_items, offset, has_next_page) do
+    edges =
+      page_items
+      |> Enum.with_index(offset)
+      |> Enum.map(fn {node, absolute_index} ->
+        %{
+          cursor: encode_cursor(absolute_index),
+          node: node
+        }
+      end)
+
+    %{
+      edges: edges,
+      page_info: %{
+        has_next_page: has_next_page,
+        has_previous_page: offset > 0,
+        start_cursor: edge_cursor(List.first(edges)),
+        end_cursor: edge_cursor(List.last(edges))
+      }
+    }
+  end
 
   defp normalize_first(args) do
     args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size()

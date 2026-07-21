@@ -1144,6 +1144,21 @@ complete. A fresh resolver/query audit replenished the shared queue with three
 backend read-budget outcomes: product evidence/SEO, public community
 connections, and product-offer/coupon/history connections. Already-implemented
 frontend polish and preloaded specification corrections were not re-promoted.
+Before product evidence was claimed, the coordinator verified and promoted two
+additional, independently reviewable read-budget outcomes: merchant-parent
+active-offer connections and owner-private community submission lists. They are
+serial with overlapping resolver/context rows but have distinct contracts and
+acceptance boundaries. Product evidence completed on
+`codex/bounded-product-evidence-reads`; its growing-parent regression now holds
+the tracked evidence query budget fixed at three and six product parents.
+Bounded community GraphQL connections completed on
+`codex/bounded-community-connections`; reviews, questions, and nested answers
+now each hold at one SELECT as their parent graph grows. Bounded product-offer
+connections completed on `codex/bounded-product-offer-connections`: product
+offers, active coupons, and price history now hold at `{1, 1, 2}` SELECTs at
+both three and six product parents while preserving filters, order, validity,
+ranges, Relay pagination, latest prices, and invalid-input errors. The three
+successor rows remain ready.
 
 ## Active Work
 
@@ -1151,95 +1166,88 @@ None.
 
 ## Ready Work
 
-### 1. Bounded Product Evidence GraphQL Reads
+### 1. Bounded Merchant Offer GraphQL Connections
 
 Status: ready
-Lane: Bounded product evidence GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
-Batch outcome: product evidence and SEO fields requested through a GraphQL
-product connection keep a fixed database-query budget as product parent count
-increases, without changing offer, review, specification, or metadata truth.
-Next action: add set-based product evidence APIs, route product evidence and SEO
-through request-scoped Dataloader sources, and lock the result with growing-
-parent query-budget tests.
+Lane: Bounded merchant offer GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
+Batch outcome: `Merchant.merchantProducts` keeps a fixed SELECT budget as a
+GraphQL merchant connection grows, without changing active-offer, Relay,
+association, or latest-price behavior.
+Next action: add parent-partitioned active merchant-offer pages, route the field
+through a request-scoped Dataloader source, and prove fixed query budgets under
+growing merchant parent counts.
 Owned paths:
 
 - `lib/product_compare/pricing.ex`
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare/specs.ex`
-- `lib/product_compare/seo.ex`
+- `lib/product_compare_web/graphql/connection.ex`
 - `lib/product_compare_web/graphql/loader.ex`
 - `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `lib/product_compare_web/resolvers/seo_resolver.ex`
 - `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `docs/work/bounded-product-evidence-graphql-reads.md`
+- `docs/work/bounded-merchant-offer-graphql-connections.md`
 
 Internal slices:
 
-- Set-based offer-truth, review-summary, and current-specification evidence.
-- Request-scoped product evidence and SEO Dataloader integration.
-- Semantic parity plus fixed query budgets as product parents grow.
+- Parent-partitioned active merchant-offer pages.
+- Request-scoped merchant-offer Dataloader integration.
+- Relay parity plus fixed query budgets as merchant parents grow.
 
 Prerequisites:
 
-- Existing OfferTruth, accepted-current-claim, published-review, and SEO
-  qualification policies remain the semantic source of truth.
-- Existing `Product.offerTruth`, `Product.reviewSummary`, and `Product.seo`
-  GraphQL shapes remain unchanged.
-- Current single-product product-detail behavior remains covered.
+- Existing active-only and ascending offer-ID behavior remains authoritative.
+- Existing Relay cursor, page-size, edge, and `pageInfo` behavior remains the
+  contract.
+- This row executes serially with shared Pricing/Connection/Loader rows; it is
+  not blocked by their product-parent contracts.
 
 Verification:
 
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/seo_test.exs`
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: one- and multi-product evidence and metadata stay semantically
-identical to the current contract, and relevant SELECT counts remain fixed
-when the same GraphQL request grows its product parent count.
+Exit condition: merchant-offer edges, active filtering, order, cursors, page
+info, associations, and latest prices match current behavior while relevant
+SELECT counts stay fixed as merchant parent count grows.
 
-### 2. Bounded Community GraphQL Connections
+### 2. Bounded Viewer Community Submission Reads
 
 Status: ready
-Lane: Bounded community GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
-Batch outcome: published review, question, and nested answer Relay connections
-use bounded set-based reads whose query count does not grow with product or
-question parent count.
-Next action: add parent-partitioned community connection batches, delegate the
-three resolvers through Dataloader, and prove pagination and visibility parity
-under growing parent counts.
+Lane: Bounded viewer community submission reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
+Batch outcome: authenticated `Product.viewerCommunitySubmissions` keeps fixed
+owner-private review, question, and answer read budgets as product parent count
+grows.
+Next action: add parent-partitioned owner submission reads, delegate the
+authenticated resolver through Dataloader, and prove lifecycle/privacy parity
+under growing product parent counts.
 Owned paths:
 
 - `lib/product_compare/discussions.ex`
-- `lib/product_compare_web/graphql/connection.ex`
 - `lib/product_compare_web/graphql/loader.ex`
 - `lib/product_compare_web/resolvers/discussions_resolver.ex`
 - `test/product_compare/discussions/community_trust_test.exs`
 - `test/product_compare_web/graphql/community_content_test.exs`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-community-graphql-connections.md`
+- `docs/work/bounded-viewer-community-submission-reads.md`
 
 Internal slices:
 
-- Parent-partitioned published review and question pages.
-- Parent-partitioned published answer pages with accepted-answer preload parity.
-- Dataloader integration and constant query-budget regression coverage.
+- Parent-partitioned owner review, question, and answer reads.
+- Authenticated request-scoped Dataloader integration.
+- Privacy, lifecycle parity, and fixed query-budget coverage.
 
 Prerequisites:
 
-- Public reads remain published-only and author identity remains private.
-- Existing Relay cursor, page-size, order, and `pageInfo` behavior remains the
-  contract.
-- Community owner lifecycle and moderation behavior remain unchanged.
+- Existing owner-only, anonymous-empty, order, status, and per-kind limit
+  behavior remains authoritative.
+- Published answers under non-public parents remain owner-manageable.
+- This row executes serially with shared Discussions/Loader rows; it is not
+  dependent on the public community connection contract.
 
 Verification:
 
@@ -1249,61 +1257,55 @@ Verification:
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: community connection edges, ordering, visibility, accepted-
-answer data, and page info match current behavior while review/question/answer
-SELECT counts stay fixed as parent counts grow.
+Exit condition: owner submission lists, privacy, lifecycle visibility, order,
+and per-kind limits match current behavior while review, thread, and post
+SELECT counts stay fixed as product parent count grows.
 
-### 3. Bounded Product Offer GraphQL Connections
+### 3. Bounded Public Node GraphQL Reads
 
 Status: ready
-Lane: Bounded product offer GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
-Batch outcome: product offer, active-coupon, and price-history Relay connections
-use bounded set-based reads whose query count does not grow with product or
-merchant-product parent count.
-Next action: implement parent-partitioned offer/coupon/history batches, route
-the nested fields through Dataloader, and add growing-parent query-budget tests
-for the product-detail and compare-shaped graph.
+Lane: Bounded public node GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
+Batch outcome: public Relay `node(id:)` aliases batch by public schema so
+SELECT counts remain fixed per type as alias count grows, without changing
+identity, missing-node, field-value, source-preload, or authorization behavior.
+Next action: characterize growing mixed-type alias budgets, route the six
+public node types through request-scoped Dataloader sources, and prove semantic
+and query-count parity.
 Owned paths:
 
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/affiliate.ex`
-- `lib/product_compare_web/graphql/connection.ex`
+- `lib/product_compare_web/resolvers/node_resolver.ex`
 - `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-product-offer-graphql-connections.md`
+- `docs/work/bounded-public-node-graphql-reads.md`
 
 Internal slices:
 
-- Parent-partitioned product merchant-product connection pages.
-- Merchant-keyed active-coupon pages for merchant-product parents.
-- Parent-partitioned price-history pages and fixed nested query budgets.
+- Growing mixed-type public node alias query-budget characterization.
+- Public type-to-Dataloader mapping and asynchronous resolution.
+- Semantic, source-preload, and fixed per-schema budget parity.
 
 Prerequisites:
 
-- Existing active-only, merchant filter, coupon-validity, time-range, and
-  price-history ordering semantics remain unchanged.
-- Existing Relay cursor, page-size, and `pageInfo` behavior remains the
-  contract.
-- Latest-price Dataloader behavior remains intact.
+- The existing six-type public allowlist and global-ID error contract remain
+  authoritative.
+- Valid missing nodes remain `nil`; operator and owner-scoped node behavior is
+  unchanged.
+- This row executes serially with shared Loader work but is independent of
+  nested Relay connection pagination.
 
 Verification:
 
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: product-offer, coupon, and history edges, filters, ordering,
-validity, and page info match current behavior while relevant SELECT counts
-stay fixed as product and offer parent counts grow.
+Exit condition: all six public node types retain their current values and
+missing/error behavior while same-schema SELECT counts stay fixed as aliases
+grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

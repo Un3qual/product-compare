@@ -108,4 +108,16 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
                {:error, "invalid first"}
     end
   end
+
+  describe "batch_window_result/1" do
+    test "returns the batch window with resolver-friendly validation errors" do
+      assert Connection.batch_window_result(%{first: 2}) ==
+               {:ok, %{offset: 0, fetch_limit: 3}}
+
+      assert Connection.batch_window_result(%{first: -1}) == {:error, "invalid first"}
+
+      assert Connection.batch_window_result(%{after: "not-a-valid-cursor"}) ==
+               {:error, "invalid cursor"}
+    end
+  end
 end

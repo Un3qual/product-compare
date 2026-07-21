@@ -198,19 +198,44 @@ defmodule ProductCompare.Discussions do
       order_by: [desc: review.inserted_at, desc: review.id]
   end
 
+  @spec review_summaries([pos_integer()]) :: %{
+          optional(pos_integer()) => %{
+            count: non_neg_integer(),
+            average_rating: Decimal.t() | nil
+          }
+        }
+  def review_summaries(product_ids) when is_list(product_ids) do
+    product_ids = product_ids |> Enum.filter(&valid_product_id?/1) |> Enum.uniq()
+
+    summaries = Map.new(product_ids, &{&1, zero_review_summary()})
+
+    if product_ids == [] do
+      summaries
+    else
+      ProductReview
+      |> where(
+        [review],
+        review.product_id in ^product_ids and review.moderation_status == :published
+      )
+      |> group_by([review], review.product_id)
+      |> select([review], {review.product_id, count(review.id), avg(review.rating)})
+      |> Repo.all()
+      |> Enum.reduce(summaries, fn {product_id, count, average}, summaries ->
+        Map.put(summaries, product_id, %{
+          count: count,
+          average_rating: average && Decimal.round(average, 2)
+        })
+      end)
+    end
+  end
+
   @spec review_summary(pos_integer()) :: %{
           count: non_neg_integer(),
           average_rating: Decimal.t() | nil
         }
   def review_summary(product_id) do
-    {count, average} =
-      Repo.one(
-        from review in ProductReview,
-          where: review.product_id == ^product_id and review.moderation_status == :published,
-          select: {count(review.id), avg(review.rating)}
-      )
-
-    %{count: count, average_rating: average && Decimal.round(average, 2)}
+    review_summaries([product_id])
+    |> Map.get(product_id, zero_review_summary())
   end
 
   @spec ask_question(pos_integer(), pos_integer(), map()) ::
@@ -390,6 +415,32 @@ defmodule ProductCompare.Discussions do
     from post in ThreadPost,
       where: post.thread_id == ^question_id and post.moderation_status == :published,
       order_by: [asc: post.inserted_at, asc: post.id]
+  end
+
+  @spec public_connection_pages(
+          :reviews | :questions | :answers,
+          [pos_integer()],
+          %{offset: non_neg_integer(), fetch_limit: pos_integer()}
+        ) :: %{
+          optional(pos_integer()) => [ProductReview.t() | ProductThread.t() | ThreadPost.t()]
+        }
+  def public_connection_pages(kind, parent_ids, %{offset: offset, fetch_limit: fetch_limit})
+      when kind in [:reviews, :questions, :answers] and is_list(parent_ids) and
+             is_integer(offset) and offset >= 0 and is_integer(fetch_limit) and fetch_limit > 0 do
+    parent_ids = parent_ids |> Enum.filter(&valid_parent_id?/1) |> Enum.uniq()
+    pages = Map.new(parent_ids, &{&1, []})
+
+    case parent_ids do
+      [] ->
+        pages
+
+      _ ->
+        kind
+        |> public_connection_page_query(parent_ids, offset, fetch_limit)
+        |> Repo.all()
+        |> Enum.group_by(&public_connection_parent_id(kind, &1))
+        |> then(&Map.merge(pages, &1))
+    end
   end
 
   @spec get_public_question(Ecto.UUID.t()) :: ProductThread.t() | nil
@@ -846,6 +897,12 @@ defmodule ProductCompare.Discussions do
 
   defp transaction_result(callback), do: Repo.transaction(callback)
 
+  defp zero_review_summary, do: %{count: 0, average_rating: nil}
+
+  defp valid_product_id?(product_id), do: is_integer(product_id) and product_id > 0
+
+  defp valid_parent_id?(parent_id), do: is_integer(parent_id) and parent_id > 0
+
   defp normalize_pagination(opts) do
     limit =
       opts
@@ -969,6 +1026,84 @@ defmodule ProductCompare.Discussions do
       _ -> nil
     end
   end
+
+  defp public_connection_page_query(:reviews, parent_ids, offset, fetch_limit) do
+    ProductReview
+    |> published_connection_page_query(parent_ids, :product_id, :desc, offset, fetch_limit)
+  end
+
+  defp public_connection_page_query(:questions, parent_ids, offset, fetch_limit) do
+    ProductThread
+    |> where([question], question.kind == :question)
+    |> published_connection_page_query(
+      parent_ids,
+      :product_id,
+      :desc,
+      offset,
+      fetch_limit
+    )
+    |> join(:left, [question, _ranked], accepted_post in assoc(question, :accepted_post))
+    |> preload([_question, _ranked, accepted_post], accepted_post: accepted_post)
+  end
+
+  defp public_connection_page_query(:answers, parent_ids, offset, fetch_limit) do
+    ThreadPost
+    |> published_connection_page_query(parent_ids, :thread_id, :asc, offset, fetch_limit)
+  end
+
+  defp published_connection_page_query(
+         query,
+         parent_ids,
+         parent_field,
+         sort_direction,
+         offset,
+         fetch_limit
+       ) do
+    ranked_records =
+      query
+      |> where(
+        [record],
+        field(record, ^parent_field) in ^parent_ids and
+          record.moderation_status == :published
+      )
+      |> windows(
+        [record],
+        public_connection_page: [
+          partition_by: field(record, ^parent_field),
+          order_by: [
+            {^sort_direction, record.inserted_at},
+            {^sort_direction, record.id}
+          ]
+        ]
+      )
+      |> select([record], %{
+        id: record.id,
+        row_number: over(row_number(), :public_connection_page)
+      })
+
+    query
+    |> join(:inner, [record], ranked in subquery(ranked_records), on: ranked.id == record.id)
+    |> where(
+      [_record, ranked],
+      ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+    )
+    |> order_by(
+      [record, _ranked],
+      [
+        {:asc, field(record, ^parent_field)},
+        {^sort_direction, record.inserted_at},
+        {^sort_direction, record.id}
+      ]
+    )
+  end
+
+  defp public_connection_parent_id(:reviews, %ProductReview{product_id: product_id}),
+    do: product_id
+
+  defp public_connection_parent_id(:questions, %ProductThread{product_id: product_id}),
+    do: product_id
+
+  defp public_connection_parent_id(:answers, %ThreadPost{thread_id: thread_id}), do: thread_id
 
   defp question_by_entropy(entropy_id), do: record_by_entropy(ProductThread, entropy_id)
 

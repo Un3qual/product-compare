@@ -169,6 +169,51 @@ defmodule ProductCompare.Pricing do
     |> order_by([merchant_product], asc: merchant_product.id)
   end
 
+  @spec product_offer_pages([pos_integer()], map(), %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
+  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit})
+      when is_list(product_ids) and is_map(filters) do
+    product_ids = normalize_product_ids(product_ids)
+
+    if product_ids == [] do
+      %{}
+    else
+      merchant_id = get_filter_value(filters, :merchant_id)
+      active_only = get_filter_value(filters, :active_only)
+
+      ranked_offers =
+        MerchantProduct
+        |> where([offer], offer.product_id in ^product_ids)
+        |> maybe_where_merchant_id(merchant_id)
+        |> maybe_where_active_only(active_only)
+        |> windows(
+          [offer],
+          product_offer_page: [partition_by: offer.product_id, order_by: [asc: offer.id]]
+        )
+        |> select([offer], %{
+          id: offer.id,
+          row_number: over(row_number(), :product_offer_page)
+        })
+
+      offers_by_product =
+        MerchantProduct
+        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
+        |> where(
+          [_offer, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([offer, _ranked], asc: offer.product_id, asc: offer.id)
+        |> Repo.all()
+        |> Enum.group_by(& &1.product_id)
+
+      Map.new(product_ids, fn product_id ->
+        {product_id, Map.get(offers_by_product, product_id, [])}
+      end)
+    end
+  end
+
   @spec list_merchant_products(map()) :: [MerchantProduct.t()]
   def list_merchant_products(filters) do
     filters
@@ -254,38 +299,121 @@ defmodule ProductCompare.Pricing do
     |> Repo.all()
   end
 
+  @spec price_history_pages([pos_integer()], map(), %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [PricePoint.t()]}
+  def price_history_pages(
+        merchant_product_ids,
+        filters,
+        %{offset: offset, fetch_limit: fetch_limit}
+      )
+      when is_list(merchant_product_ids) and is_map(filters) do
+    merchant_product_ids = normalize_merchant_product_ids(merchant_product_ids)
+
+    if merchant_product_ids == [] do
+      %{}
+    else
+      from_dt = get_filter_value(filters, :from)
+      to_dt = get_filter_value(filters, :to)
+
+      ranked_price_points =
+        PricePoint
+        |> where([price_point], price_point.merchant_product_id in ^merchant_product_ids)
+        |> maybe_where_from(from_dt)
+        |> maybe_where_to(to_dt)
+        |> windows(
+          [price_point],
+          price_history_page: [
+            partition_by: price_point.merchant_product_id,
+            order_by: [desc: price_point.observed_at, desc: price_point.id]
+          ]
+        )
+        |> select([price_point], %{
+          id: price_point.id,
+          row_number: over(row_number(), :price_history_page)
+        })
+
+      price_points_by_merchant_product =
+        PricePoint
+        |> join(:inner, [price_point], ranked in subquery(ranked_price_points),
+          on: ranked.id == price_point.id
+        )
+        |> join(:left, [price_point, _ranked], artifact in assoc(price_point, :artifact))
+        |> join(:left, [_price_point, _ranked, artifact], source in assoc(artifact, :source))
+        |> where(
+          [_price_point, ranked, _artifact, _source],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([price_point, _ranked, _artifact, _source],
+          asc: price_point.merchant_product_id,
+          desc: price_point.observed_at,
+          desc: price_point.id
+        )
+        |> preload([_price_point, _ranked, artifact, source],
+          artifact: {artifact, source: source}
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.merchant_product_id)
+
+      Map.new(merchant_product_ids, fn merchant_product_id ->
+        {merchant_product_id, Map.get(price_points_by_merchant_product, merchant_product_id, [])}
+      end)
+    end
+  end
+
+  @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
+  def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    product_ids = normalize_product_ids(product_ids)
+
+    if product_ids == [] do
+      %{}
+    else
+      merchant_products =
+        MerchantProduct
+        |> where(
+          [merchant_product],
+          merchant_product.product_id in ^product_ids and merchant_product.is_active == true
+        )
+        |> order_by([merchant_product],
+          asc: merchant_product.product_id,
+          asc: merchant_product.id
+        )
+        |> Repo.all()
+
+      price_points_by_merchant_product =
+        merchant_products
+        |> Enum.map(& &1.id)
+        |> latest_offer_truth_prices()
+
+      merchant_products_by_product = Enum.group_by(merchant_products, & &1.product_id)
+
+      Map.new(product_ids, fn product_id ->
+        offers =
+          merchant_products_by_product
+          |> Map.get(product_id, [])
+          |> Enum.map(fn merchant_product ->
+            OfferTruth.summarize(
+              merchant_product,
+              Map.get(price_points_by_merchant_product, merchant_product.id),
+              now,
+              opts
+            )
+          end)
+
+        {product_id, OfferTruth.summarize_product(offers, now, opts)}
+      end)
+    end
+  end
+
   @spec current_offer_truth(term(), keyword()) :: map()
   def current_offer_truth(product_id, opts \\ [])
 
   def current_offer_truth(product_id, opts)
       when is_integer(product_id) and product_id > 0 and product_id <= @max_bigint_id do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-
-    merchant_products =
-      MerchantProduct
-      |> where(
-        [merchant_product],
-        merchant_product.product_id == ^product_id and merchant_product.is_active == true
-      )
-      |> order_by([merchant_product], asc: merchant_product.id)
-      |> Repo.all()
-
-    price_points_by_merchant_product =
-      merchant_products
-      |> Enum.map(& &1.id)
-      |> latest_offer_truth_prices()
-
-    offers =
-      Enum.map(merchant_products, fn merchant_product ->
-        OfferTruth.summarize(
-          merchant_product,
-          Map.get(price_points_by_merchant_product, merchant_product.id),
-          now,
-          opts
-        )
-      end)
-
-    OfferTruth.summarize_product(offers, now, opts)
+    current_offer_truths([product_id], opts)
+    |> Map.fetch!(product_id)
   end
 
   def current_offer_truth(_product_id, opts) do
@@ -300,6 +428,18 @@ defmodule ProductCompare.Pricing do
     |> preload([price_point], artifact: [:source])
     |> Repo.all()
     |> Map.new(&{&1.merchant_product_id, &1})
+  end
+
+  defp normalize_product_ids(product_ids) do
+    product_ids
+    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.uniq()
+  end
+
+  defp normalize_merchant_product_ids(merchant_product_ids) do
+    merchant_product_ids
+    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.uniq()
   end
 
   defp merchant_attrs_with_slug(attrs) do

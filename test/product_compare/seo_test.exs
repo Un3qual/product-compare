@@ -5,6 +5,7 @@ defmodule ProductCompare.SeoTest do
 
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Catalog
+  alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -32,6 +33,101 @@ defmodule ProductCompare.SeoTest do
     assert Enum.map(Seo.sitemap_entries(:products, now: @now), & &1.path) == [
              "/products/qualified-search-product"
            ]
+  end
+
+  test "set-based attribute reads preserve accepted claims for requested products" do
+    operator = AccountsFixtures.operator_fixture()
+    product = qualified_product("batched-evidence-product", operator)
+    empty_product = SpecsFixtures.product_fixture(%{slug: "batched-evidence-empty"})
+    missing_product_id = empty_product.id + 1_000_000
+
+    attributes =
+      Specs.list_current_attributes_for_products([
+        product.id,
+        empty_product.id,
+        missing_product_id
+      ])
+
+    assert Enum.map(attributes[product.id], & &1.claim.status) == [:accepted, :accepted]
+    assert attributes[empty_product.id] == []
+    assert attributes[missing_product_id] == []
+    assert attributes[product.id] == Specs.list_current_attributes_for_product(product.id)
+    assert Specs.list_current_attributes_for_products([]) == %{}
+  end
+
+  test "batch product metadata preserves product qualification and structured data without per-product reads" do
+    operator = AccountsFixtures.operator_fixture()
+    reviewed = qualified_product("batch-reviewed", operator)
+    zero_review = qualified_product("batch-zero-review", operator)
+
+    assert {:ok, review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, reviewed.id, %{
+               rating: 4,
+               title: "Published review",
+               body: "This review is public."
+             })
+
+    assert {:ok, _} = Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+
+    thin_copy =
+      qualified_product("batch-thin-copy", operator)
+      |> Catalog.update_product(%{description: "Too thin"})
+      |> then(fn {:ok, product} -> product end)
+
+    missing_offer = specified_product("batch-missing-offer", operator)
+    missing_specification = product_with_offer("batch-missing-specification")
+
+    image_qualified =
+      specified_product("batch-image-qualified", operator, nil, nil)
+      |> product_with_offer()
+      |> attach_primary_image()
+
+    products = [
+      reviewed,
+      zero_review,
+      thin_copy,
+      missing_offer,
+      missing_specification,
+      image_qualified
+    ]
+
+    {metadata_by_product, queries} =
+      capture_select_queries(fn -> Seo.product_metadata_batch(products, now: @now) end)
+
+    assert map_size(metadata_by_product) == length(products)
+
+    Enum.each(products, fn product ->
+      assert metadata_by_product[product] == Seo.product_metadata(product, now: @now)
+    end)
+
+    assert metadata_by_product[reviewed].indexable
+
+    assert metadata_by_product[reviewed].structured_data["offers"] == %{
+             "@type" => "AggregateOffer",
+             "availability" => "https://schema.org/InStock",
+             "lowPrice" => "105",
+             "offerCount" => 1,
+             "priceCurrency" => "USD"
+           }
+
+    assert metadata_by_product[reviewed].structured_data["aggregateRating"] == %{
+             "@type" => "AggregateRating",
+             "ratingValue" => "4.00",
+             "reviewCount" => 1
+           }
+
+    assert metadata_by_product[zero_review].indexable
+    refute Map.has_key?(metadata_by_product[zero_review].structured_data, "aggregateRating")
+    refute metadata_by_product[thin_copy].indexable
+    refute metadata_by_product[missing_offer].indexable
+    refute metadata_by_product[missing_specification].indexable
+
+    assert metadata_by_product[image_qualified].indexable
+
+    assert metadata_by_product[image_qualified].image_url ==
+             "https://cdn.example/batch-image-qualified.jpg"
+
+    assert [_, _, _, _, _, _, _, _, _, _] = queries
   end
 
   test "curated categories qualify only after three qualifying products" do
@@ -223,10 +319,16 @@ defmodule ProductCompare.SeoTest do
   end
 
   defp qualified_product(slug, operator, primary_type_taxon \\ nil) do
+    product = specified_product(slug, operator, primary_type_taxon)
+
+    product_with_offer(product)
+  end
+
+  defp specified_product(slug, operator, primary_type_taxon \\ nil, description \\ @description) do
     product =
       SpecsFixtures.product_fixture(%{
         slug: slug,
-        description: @description,
+        description: description,
         primary_type_taxon: primary_type_taxon
       })
 
@@ -250,6 +352,17 @@ defmodule ProductCompare.SeoTest do
         Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
     end)
 
+    product
+  end
+
+  defp product_with_offer(%{id: _id} = product), do: product_with_offer(product, product.slug)
+
+  defp product_with_offer(slug) do
+    SpecsFixtures.product_fixture(%{slug: slug, description: @description})
+    |> product_with_offer(slug)
+  end
+
+  defp product_with_offer(product, slug) do
     {:ok, merchant} =
       Pricing.upsert_merchant(%{
         name: "#{slug} merchant",
@@ -273,6 +386,24 @@ defmodule ProductCompare.SeoTest do
         shipping: "5",
         in_stock: true
       })
+
+    product
+  end
+
+  defp attach_primary_image(product) do
+    Catalog.upsert_product_media(
+      product,
+      nil,
+      [
+        %{
+          url: "https://cdn.example/#{product.slug}.jpg",
+          role: "primary",
+          position: 0,
+          alt_text: "#{product.name} primary image"
+        }
+      ],
+      @now
+    )
 
     product
   end

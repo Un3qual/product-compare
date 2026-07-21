@@ -95,20 +95,25 @@ seven domain-oriented outcomes on 2026-07-20. Strict temporal and row-scoped
 action work remains recorded in the alert and comparison lane docs rather than
 being promoted again.
 
-A fresh post-completion resolver audit found three coherent backend outcomes:
-bounded product evidence/SEO reads, bounded public community connections, and
-bounded product-offer/coupon/history connections. These replace the completed
-seven rows in the live queue. Specification-correction lists were not promoted
-because their claim trees are already preloaded. The formerly optional loaded-
-price copy, loaded-product picker filter, visible-page merchant filter, wildcard
-404, and route metadata work were also verified as already implemented and are
-not candidate work.
+A fresh post-completion resolver audit found five coherent backend outcomes:
+bounded product evidence/SEO reads, bounded public community connections,
+bounded product-offer/coupon/history connections, bounded merchant-parent
+active-offer connections, and bounded owner-private community submission
+reads. Product evidence, public community connections, and product-offer/coupon/history
+connections are complete; the other two remain ready.
+The claim-floor audit additionally promoted bounded public Relay node alias
+reads after verifying six direct per-alias public lookups and existing
+request-scoped Dataloader coverage; that outcome is also ready.
+Specification-correction lists were not promoted because their claim trees are
+already preloaded. The formerly optional loaded-price copy, loaded-product
+picker filter, visible-page merchant filter, wildcard 404, and route metadata
+work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -139,10 +144,12 @@ batch and should not be recreated or promoted.
 ## Planned Follow-Up Groups
 
 - Current backend read-budget program: product evidence/SEO, public community
-  connections, and product-offer/coupon/history connections execute through the
-  three active 2026-07-20 plans above. They are reviewer-sized domain outcomes;
-  their set-based context, Dataloader, and query-budget steps remain internal
-  slices rather than separate queue rows.
+  connections, and product-offer/coupon/history connections are complete.
+  Merchant-parent active-offer connections, owner-private community
+  submission reads, and public Relay node alias reads remain ready through the
+  active 2026-07-20 plans above. They are reviewer-sized domain outcomes; their
+  set-based context, Dataloader, and query-budget steps remain internal slices
+  rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

@@ -1,6 +1,8 @@
 defmodule ProductCompare.Discussions.CommunityTrustTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -128,6 +130,187 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
 
     assert {:error, changeset} = Discussions.submit_review(user.id, product.id, %{rating: 5})
     assert "has already been taken" in errors_on(changeset).product_id
+  end
+
+  test "review_summaries batches published ratings and preserves zero summaries" do
+    operator = AccountsFixtures.operator_fixture()
+    published_product = SpecsFixtures.product_fixture()
+    hidden_product = SpecsFixtures.product_fixture()
+    zero_review_product = SpecsFixtures.product_fixture()
+    missing_product_id = zero_review_product.id + 1_000_000
+
+    assert {:ok, published_review} =
+             Discussions.submit_review(
+               AccountsFixtures.user_fixture().id,
+               published_product.id,
+               %{
+                 rating: 4,
+                 title: "Published review",
+                 body: "This review is public."
+               }
+             )
+
+    assert {:ok, _} =
+             Discussions.moderate(operator.id, :review, published_review.entropy_id, :published)
+
+    assert {:ok, hidden_review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, hidden_product.id, %{
+               rating: 5,
+               title: "Hidden review",
+               body: "This review is not public."
+             })
+
+    assert {:ok, _} =
+             Discussions.moderate(operator.id, :review, hidden_review.entropy_id, :hidden)
+
+    summaries =
+      Discussions.review_summaries([
+        published_product.id,
+        hidden_product.id,
+        zero_review_product.id,
+        missing_product_id,
+        published_product.id
+      ])
+
+    assert summaries[published_product.id] == %{count: 1, average_rating: Decimal.new("4.00")}
+    assert summaries[hidden_product.id] == %{count: 0, average_rating: nil}
+    assert summaries[zero_review_product.id] == %{count: 0, average_rating: nil}
+    assert summaries[missing_product_id] == %{count: 0, average_rating: nil}
+    assert summaries[published_product.id] == Discussions.review_summary(published_product.id)
+    assert Discussions.review_summaries([]) == %{}
+  end
+
+  test "public connection pages preserve review pages across products, hidden rows, offsets, and ties" do
+    operator = AccountsFixtures.operator_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    empty_product = SpecsFixtures.product_fixture()
+    timestamp = ~U[2026-07-20 20:00:00.000000Z]
+    window = %{offset: 1, fetch_limit: 2}
+
+    [first, second, third, hidden] =
+      [
+        public_review_fixture(first_product, operator),
+        public_review_fixture(first_product, operator),
+        public_review_fixture(first_product, operator),
+        public_review_fixture(first_product, operator, :hidden)
+      ]
+      |> Enum.map(&set_inserted_at(&1, timestamp))
+
+    second_product_review = public_review_fixture(second_product, operator)
+    public_review_fixture(second_product, operator)
+    parent_ids = [first_product.id, second_product.id, empty_product.id]
+
+    expected = public_query_pages(&Discussions.public_reviews_query/1, parent_ids, window)
+
+    assert Discussions.public_connection_pages(:reviews, parent_ids, window) == expected
+    assert Enum.map(expected[first_product.id], & &1.id) == [second.id, first.id]
+    refute hidden.id in Enum.map(expected[first_product.id], & &1.id)
+    assert Enum.map(expected[second_product.id], & &1.id) == [second_product_review.id]
+    assert expected[empty_product.id] == []
+    assert third.id not in Enum.map(expected[first_product.id], & &1.id)
+  end
+
+  test "public connection pages preserve question pages and accepted-answer preloads across products" do
+    operator = AccountsFixtures.operator_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    empty_product = SpecsFixtures.product_fixture()
+    timestamp = ~U[2026-07-20 20:00:00.000000Z]
+    window = %{offset: 1, fetch_limit: 2}
+
+    oldest = public_question_fixture(first_product, operator)
+    accepted = public_question_fixture(first_product, operator)
+    newest = public_question_fixture(first_product, operator)
+    hidden = public_question_fixture(first_product, operator, :hidden)
+    accepted_answer = public_answer_fixture(accepted, operator)
+
+    assert {:ok, _question} =
+             Discussions.accept_answer(
+               accepted.created_by,
+               accepted.entropy_id,
+               accepted_answer.entropy_id
+             )
+
+    [oldest, accepted, newest, hidden] =
+      [oldest, accepted, newest, hidden]
+      |> Enum.map(&set_inserted_at(&1, timestamp))
+
+    second_product_question = public_question_fixture(second_product, operator)
+    public_question_fixture(second_product, operator)
+    parent_ids = [first_product.id, second_product.id, empty_product.id]
+
+    expected = public_query_pages(&Discussions.public_questions_query/1, parent_ids, window)
+    actual = Discussions.public_connection_pages(:questions, parent_ids, window)
+
+    assert actual == expected
+    assert Enum.map(actual[first_product.id], & &1.id) == [accepted.id, oldest.id]
+    refute hidden.id in Enum.map(actual[first_product.id], & &1.id)
+    assert [accepted_page] = Enum.filter(actual[first_product.id], &(&1.id == accepted.id))
+    assert Ecto.assoc_loaded?(accepted_page.accepted_post)
+    assert accepted_page.accepted_post.id == accepted_answer.id
+    assert Enum.map(actual[second_product.id], & &1.id) == [second_product_question.id]
+    assert actual[empty_product.id] == []
+    assert newest.id not in Enum.map(actual[first_product.id], & &1.id)
+  end
+
+  test "public connection pages preserve answer pages across questions, hidden rows, offsets, and ties" do
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+    first_question = public_question_fixture(product, operator)
+    second_question = public_question_fixture(product, operator)
+    empty_question = public_question_fixture(product, operator)
+    timestamp = ~U[2026-07-20 20:00:00.000000Z]
+    window = %{offset: 1, fetch_limit: 2}
+
+    [first, second, third, hidden] =
+      [
+        public_answer_fixture(first_question, operator),
+        public_answer_fixture(first_question, operator),
+        public_answer_fixture(first_question, operator),
+        public_answer_fixture(first_question, operator, :hidden)
+      ]
+      |> Enum.map(&set_inserted_at(&1, timestamp))
+
+    public_answer_fixture(second_question, operator)
+    second_question_answer = public_answer_fixture(second_question, operator)
+    parent_ids = [first_question.id, second_question.id, empty_question.id]
+
+    expected = public_query_pages(&Discussions.public_answers_query/1, parent_ids, window)
+
+    assert Discussions.public_connection_pages(:answers, parent_ids, window) == expected
+    assert Enum.map(expected[first_question.id], & &1.id) == [second.id, third.id]
+    refute hidden.id in Enum.map(expected[first_question.id], & &1.id)
+    assert Enum.map(expected[second_question.id], & &1.id) == [second_question_answer.id]
+    assert expected[empty_question.id] == []
+    assert first.id not in Enum.map(expected[first_question.id], & &1.id)
+  end
+
+  test "public connection pages issue one SELECT per connection kind across parents" do
+    operator = AccountsFixtures.operator_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    first_question = public_question_fixture(first_product, operator)
+    second_question = public_question_fixture(second_product, operator)
+
+    public_review_fixture(first_product, operator)
+    public_review_fixture(second_product, operator)
+    public_answer_fixture(first_question, operator)
+    public_answer_fixture(second_question, operator)
+
+    for {kind, parent_ids} <- [
+          reviews: [first_product.id, second_product.id],
+          questions: [first_product.id, second_product.id],
+          answers: [first_question.id, second_question.id]
+        ] do
+      {pages, queries} =
+        capture_select_queries(fn ->
+          Discussions.public_connection_pages(kind, parent_ids, %{offset: 0, fetch_limit: 2})
+        end)
+
+      assert Map.keys(pages) |> Enum.sort() == Enum.sort(parent_ids)
+      assert [_query] = queries
+    end
   end
 
   test "published questions accept only a published answer from the same thread" do
@@ -635,5 +818,78 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
       })
 
     offer
+  end
+
+  defp public_query_pages(query_fun, parent_ids, %{offset: offset, fetch_limit: fetch_limit}) do
+    Map.new(parent_ids, fn parent_id ->
+      rows =
+        parent_id
+        |> query_fun.()
+        |> offset(^offset)
+        |> limit(^fetch_limit)
+        |> Repo.all()
+
+      {parent_id, rows}
+    end)
+  end
+
+  defp public_review_fixture(product, operator, status \\ :published) do
+    suffix = System.unique_integer([:positive])
+
+    assert {:ok, review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, product.id, %{
+               rating: 4,
+               title: "Review #{suffix}",
+               body: "Review body #{suffix}"
+             })
+
+    assert {:ok, review} = Discussions.moderate(operator.id, :review, review.entropy_id, status)
+    review
+  end
+
+  defp public_question_fixture(product, operator, status \\ :published) do
+    suffix = System.unique_integer([:positive])
+
+    assert {:ok, question} =
+             Discussions.ask_question(AccountsFixtures.user_fixture().id, product.id, %{
+               title: "Question #{suffix}",
+               body: "Question body #{suffix}"
+             })
+
+    assert {:ok, question} =
+             Discussions.moderate(operator.id, :question, question.entropy_id, status)
+
+    question
+  end
+
+  defp public_answer_fixture(question, operator, status \\ :published) do
+    suffix = System.unique_integer([:positive])
+
+    assert {:ok, answer} =
+             Discussions.answer_question(
+               AccountsFixtures.user_fixture().id,
+               question.entropy_id,
+               "Answer #{suffix}"
+             )
+
+    assert {:ok, answer} = Discussions.moderate(operator.id, :answer, answer.entropy_id, status)
+    answer
+  end
+
+  defp set_inserted_at(%ProductReview{} = review, inserted_at),
+    do: update_inserted_at(ProductReview, review.id, inserted_at)
+
+  defp set_inserted_at(%ProductThread{} = question, inserted_at),
+    do: update_inserted_at(ProductThread, question.id, inserted_at)
+
+  defp set_inserted_at(%ThreadPost{} = answer, inserted_at),
+    do: update_inserted_at(ThreadPost, answer.id, inserted_at)
+
+  defp update_inserted_at(schema, id, inserted_at) do
+    schema
+    |> where([record], record.id == ^id)
+    |> Repo.update_all(set: [inserted_at: inserted_at])
+
+    Repo.get!(schema, id)
   end
 end

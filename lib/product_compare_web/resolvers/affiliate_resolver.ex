@@ -1,12 +1,15 @@
 defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Affiliate
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
 
   @spec upsert_affiliate_network(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -112,9 +115,24 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
 
   @spec merchant_product_active_coupons(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def merchant_product_active_coupons(%{merchant_id: merchant_id}, args, _resolution)
+  def merchant_product_active_coupons(
+        %{merchant_id: merchant_id} = merchant_product,
+        args,
+        %{context: %{loader: loader}}
+      )
       when is_integer(merchant_id) do
-    active_coupon_connection(merchant_id, args, allow_at?: false)
+    connection_args = Input.connection_args(args)
+
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.offer_connection_source()
+      batch_key = {:active_coupons, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, merchant_product)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, merchant_product)}
+      end)
+    end
   end
 
   def merchant_product_active_coupons(_parent, _args, _resolution),
