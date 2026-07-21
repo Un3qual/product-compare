@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active on `codex/bounded-graphql-read-budgets`
+- Status: complete on `codex/bounded-graphql-read-budgets`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
@@ -49,3 +49,31 @@ field-value, source-preload, and authorization boundaries.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+- Before batching, three aliases per public schema issued `%{products: 4,
+  brands: 3, merchants: 3, merchant_products: 3, price_points: 3,
+  source_artifacts: 3, sources: 3}` SELECTs; six aliases issued `%{products: 7,
+  brands: 6, merchants: 6, merchant_products: 6, price_points: 6,
+  source_artifacts: 6, sources: 6}`. The extra product query at both sizes is
+  the stable valid-missing-node assertion.
+- After batching, both request sizes issue exactly one SELECT for each public
+  schema and one source-preload SELECT.
+- The regression asserts exact Product, Brand, Merchant, MerchantProduct,
+  PricePoint, and SourceArtifact type/ID/value projections plus valid missing
+  Product `nil` behavior. The existing node suite preserves malformed and
+  out-of-range ID errors, operator authorization, owner scoping, all public
+  values, SourceArtifact safe metadata, and missing-node behavior.
+- Focused verification passed 32 tests across `node_query_test.exs` and
+  `dataloader_batching_test.exs`; typecheck, formatting, queue validation with
+  three ready rows, and diff hygiene passed.
+- `mix ci` passed 833 backend tests with 83.57% coverage, Credo with no issues,
+  the 6/6 ExDNA clone budget, cross-function smell detection, Dialyzer, Relay
+  validation, TypeScript, 1,507 frontend tests across 105 files, client and SSR
+  builds, and the 182,164-byte gzip client-bundle budget.
+
+## Remaining Work
+
+None. Category, public slug, and public opaque-key read-budget outcomes remain
+ready in the live queue.

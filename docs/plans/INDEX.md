@@ -104,7 +104,7 @@ connections are complete. Merchant-parent connections and owner-private
 community submission reads are also complete.
 The claim-floor audit additionally promoted bounded public Relay node alias
 reads after verifying six direct per-alias public lookups and existing
-request-scoped Dataloader coverage; that outcome is also ready.
+request-scoped Dataloader coverage; that outcome is complete.
 A second claim-floor audit promoted bounded category GraphQL reads after
 verifying that aliased category lookups each repeat taxon and qualification
 queries and that each nested qualified-product connection still runs per
@@ -161,7 +161,7 @@ batch and should not be recreated or promoted.
 - Current backend read-budget program: product evidence/SEO, public community
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
-  reads are also complete. Public Relay node aliases are active; category
+  reads and public Relay node aliases are complete. Category
   lookup/qualified-product connections, public product/merchant slug lookups,
   and the remaining public opaque-key lookups remain ready through the active
   plans above. They are reviewer-sized domain outcomes; their set-based

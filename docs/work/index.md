@@ -1183,54 +1183,16 @@ published product questions, and comparison snapshots—still perform direct
 per-alias reads. Those visibility and preload variants were grouped as one
 public-entry read-budget outcome, leaving three independently shippable ready
 rows after the claim.
+Bounded public-node GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: Product, Brand, Merchant,
+MerchantProduct, PricePoint, SourceArtifact, and source-preload SELECT counts
+now each hold at one for both three and six same-schema aliases while public
+values, valid-missing `nil`, invalid IDs, operator authorization, owner scope,
+and source metadata remain unchanged.
 
 ## Active Work
 
-### Bounded Public Node GraphQL Reads
-
-Status: active on `codex/bounded-graphql-read-budgets`
-Lane: Bounded public node GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
-Batch outcome: public Relay `node(id:)` aliases batch by public schema so
-SELECT counts remain fixed per type as alias count grows, without changing
-identity, missing-node, field-value, source-preload, or authorization behavior.
-Next action: characterize growing mixed-type alias budgets, route the six
-public node types through request-scoped Dataloader sources, and prove semantic
-and query-count parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/node_resolver.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-public-node-graphql-reads.md`
-
-Internal slices:
-
-- Growing mixed-type public node alias query-budget characterization.
-- Public type-to-Dataloader mapping and asynchronous resolution.
-- Semantic, source-preload, and fixed per-schema budget parity.
-
-Prerequisites:
-
-- The existing six-type public allowlist and global-ID error contract remain
-  authoritative.
-- Valid missing nodes remain `nil`; operator and owner-scoped node behavior is
-  unchanged.
-- This row executes serially with shared Loader work but is independent of
-  nested Relay connection pagination.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: all six public node types retain their current values and
-missing/error behavior while same-schema SELECT counts stay fixed as aliases
-grow.
+None.
 
 ## Ready Work
 
