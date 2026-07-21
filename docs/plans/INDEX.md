@@ -143,9 +143,9 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Current backend read-budget program: product evidence/SEO and public
-  community connections are complete. Product-offer/coupon/history connections
-  are active; merchant-parent active-offer connections, owner-private community
+- Current backend read-budget program: product evidence/SEO, public community
+  connections, and product-offer/coupon/history connections are complete.
+  Merchant-parent active-offer connections, owner-private community
   submission reads, and public Relay node alias reads remain ready through the
   active 2026-07-20 plans above. They are reviewer-sized domain outcomes; their
   set-based context, Dataloader, and query-budget steps remain internal slices

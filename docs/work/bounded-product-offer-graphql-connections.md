@@ -27,10 +27,12 @@ product parents.
   `{merchant_products: 6, coupons: 12, price_points: 13}`.
 - After batching, both parent counts hold at
   `{merchant_products: 1, coupons: 1, price_points: 2}`.
-- The Task 5 compare-shaped regression covers product and merchant filters,
+- The Task 5 compare-shaped regression covers product ordering, active-only
   merchant-product ordering, active-coupon validity, price-history range
-  bounds, Relay cursors and `pageInfo`, latest-price values, and invalid
-  connection-input errors.
+  bounds and descending order, Relay cursors and `pageInfo`, latest-price
+  values, and fixed nested SELECT budgets as parent count grows. Pricing
+  context parity tests separately cover product, merchant, and active-only
+  offer filtering.
 - Product-detail and compare-shaped queries request active coupons and compact
   price history beneath every loaded offer, while the request-scoped source
   preserves association and latest-price batching.
