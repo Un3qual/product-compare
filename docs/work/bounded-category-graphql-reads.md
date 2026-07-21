@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active on `codex/bounded-graphql-read-budgets`
+- Status: complete on `codex/bounded-graphql-read-budgets`
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
@@ -16,7 +16,7 @@ connections keep fixed SELECT budgets as category parent count grows, without
 changing category qualification, shared-time, ordering, Relay, SEO, or
 missing-category behavior.
 
-## Ready Evidence
+## Initial Evidence
 
 - `SeoResolver.category/3` calls `Seo.get_category/1` once per aliased category,
   and that context function performs one taxon lookup plus one qualified-product
@@ -51,3 +51,36 @@ missing-category behavior.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+- Before batching, two category aliases plus one valid missing-category lookup
+  issued `%{taxons: 3, products: 4}` SELECTs; four aliases plus the same
+  missing lookup issued `%{taxons: 5, products: 8}`.
+- After batching, both request sizes issue exactly `%{taxons: 1, products: 2}`:
+  one set-based indexable-taxon lookup, one grouped qualification-count read,
+  and one parent-partitioned qualified-product page read. The two product
+  queries remain fixed as aliases grow.
+- SEO context coverage proves empty, duplicate, missing, blank, non-indexable,
+  below-threshold, and qualified category parity. The set-based lookup remains
+  at two SELECTs for both two and four requested category slugs.
+- Parent-partitioned page coverage preserves descendant inclusion,
+  qualification filtering, name/ID order, missing-parent empty pages,
+  one-row lookahead, and first plus advanced Relay cursor parity with the
+  existing single-category query, all in one SELECT per window.
+- GraphQL coverage asserts category identity and values, qualification counts,
+  metadata and structured data, product edges and order, cursors, `pageInfo`,
+  and missing-category `nil` behavior. One request-scoped observation timestamp
+  flows from the lookup batch into every nested page batch key.
+- Focused verification passed 20 tests across `seo_test.exs`,
+  `seo_surfaces_test.exs`, and `dataloader_batching_test.exs`; typecheck,
+  formatting, queue validation with three ready rows, and diff hygiene passed.
+- `mix ci` passed 836 backend tests with 83.64% coverage, Credo with no issues,
+  the 6/6 ExDNA clone budget, cross-function smell detection, Dialyzer, Relay
+  validation, TypeScript, 1,507 frontend tests across 105 files, client and SSR
+  builds, and the 182,164-byte gzip client-bundle budget.
+
+## Remaining Work
+
+None. Public slug, public opaque-key, and comparison-evidence read-budget
+outcomes remain ready in the live queue.

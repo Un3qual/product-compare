@@ -1195,60 +1195,15 @@ offer, specification, and merchant evidence reads per selected product. Those
 surfaces share one two-or-three-product decision-evidence lifecycle, so they
 were promoted together as Bounded Comparison Evidence Reads, leaving three
 independently shippable ready rows after the claim.
+Bounded category GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: two and four category aliases now both
+hold at `%{taxons: 1, products: 2}` SELECTs while category qualification,
+shared-time semantics, metadata, descendant product order, Relay pagination,
+and missing-category behavior remain unchanged.
 
 ## Active Work
 
-### Bounded Category GraphQL Reads
-
-Status: active on `codex/bounded-graphql-read-budgets`
-Lane: Bounded category GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
-Batch outcome: aliased public `category(slug:)` reads and their nested qualified
-product connections keep fixed SELECT budgets as category parent count grows,
-without changing category qualification, shared-time, ordering, Relay, SEO, or
-missing-category behavior.
-Next action: add set-based category lookup and qualification counts, add
-parent-partitioned qualified-product pages, route both fields through a
-request-scoped Dataloader source, and prove fixed budgets under growing aliases.
-Owned paths:
-
-- `lib/product_compare/seo.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/seo_resolver.ex`
-- `test/product_compare/seo_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-category-graphql-reads.md`
-
-Internal slices:
-
-- Set-based indexable-category lookup and qualified-product counts at one
-  request-scoped timestamp.
-- Parent-partitioned qualified-product Relay pages.
-- Request-scoped lookup/connection loading plus semantic and fixed-budget
-  coverage.
-
-Prerequisites:
-
-- Existing `seo_indexable` gating, three-product category indexability
-  threshold, product qualification, and shared `now` behavior remain
-  authoritative.
-- Existing product order, Relay cursor/page-size behavior, SEO metadata, and
-  missing-category `nil` behavior remain unchanged.
-- This row executes serially with shared Loader work and is independent of
-  merchant-offer, owner-community, and public-node contracts.
-
-Verification:
-
-- `mix test test/product_compare/seo_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: category values, qualification counts, metadata, product
-edges, order, cursors, page info, and missing behavior match current semantics
-while taxon and qualified-product SELECT counts stay fixed as aliases grow.
+None.
 
 ## Ready Work
 

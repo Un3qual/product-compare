@@ -108,7 +108,7 @@ request-scoped Dataloader coverage; that outcome is complete.
 A second claim-floor audit promoted bounded category GraphQL reads after
 verifying that aliased category lookups each repeat taxon and qualification
 queries and that each nested qualified-product connection still runs per
-category parent. That reviewer-sized outcome is also ready.
+category parent. That reviewer-sized outcome is complete.
 A third claim-floor audit promoted bounded public slug GraphQL reads after
 verifying that aliased product and merchant entry-point fields still repeat
 direct slug lookups. Product canonical/history lookup and merchant identity
@@ -167,12 +167,12 @@ batch and should not be recreated or promoted.
 - Current backend read-budget program: product evidence/SEO, public community
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
-  reads and public Relay node aliases are complete. Category lookup/qualified-
-  product connections are active; public product/merchant slug lookups, the
-  remaining public opaque-key lookups, and comparison evidence reads remain
-  ready through the active plans above. They are reviewer-sized domain
-  outcomes; their set-based context, Dataloader, and query-budget steps remain
-  internal slices rather than separate queue rows.
+  reads, public Relay node aliases, and category lookup/qualified-product
+  connections are complete. Public product/merchant slug lookups, the remaining
+  public opaque-key lookups, and comparison evidence reads remain ready through
+  the active plans above. They are reviewer-sized domain outcomes; their
+  set-based context, Dataloader, and query-budget steps remain internal slices
+  rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

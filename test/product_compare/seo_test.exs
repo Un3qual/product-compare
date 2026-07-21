@@ -208,8 +208,8 @@ defmodule ProductCompare.SeoTest do
         Seo.get_categories(slugs ++ ["missing-category", "", nonindexable.seo_slug], now: @now)
       end)
 
-    assert length(two_queries) == 2
-    assert length(all_queries) == 2
+    assert [_, _] = two_queries
+    assert [_, _] = all_queries
 
     Enum.each(Enum.take(slugs, 2), fn slug ->
       assert two_categories[slug] == Seo.get_category(slug, now: @now)
