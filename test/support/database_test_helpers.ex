@@ -15,7 +15,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
         handler_id,
         [:product_compare, :repo, :query],
         fn _event, _measurements, metadata, {pid, message_ref} ->
-          if select_query?(metadata.query) do
+          if caller_process?(pid) and select_query?(metadata.query) do
             send(pid, {message_ref, metadata.query})
           end
         end,
@@ -48,6 +48,10 @@ defmodule ProductCompare.DatabaseTestHelpers do
     |> String.trim_leading()
     |> String.upcase()
     |> String.starts_with?("SELECT")
+  end
+
+  defp caller_process?(pid) do
+    self() == pid or pid in Process.get(:"$callers", [])
   end
 
   defp wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
