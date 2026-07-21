@@ -137,6 +137,47 @@ defmodule ProductCompare.Pricing do
     |> order_by([offer], asc: offer.id)
   end
 
+  @spec merchant_offer_pages([pos_integer()], %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
+  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit})
+      when is_list(merchant_ids) do
+    merchant_ids = normalize_merchant_ids(merchant_ids)
+
+    if merchant_ids == [] do
+      %{}
+    else
+      ranked_offers =
+        MerchantProduct
+        |> where([offer], offer.merchant_id in ^merchant_ids)
+        |> maybe_where_active_only(true)
+        |> windows(
+          [offer],
+          merchant_offer_page: [partition_by: offer.merchant_id, order_by: [asc: offer.id]]
+        )
+        |> select([offer], %{
+          id: offer.id,
+          row_number: over(row_number(), :merchant_offer_page)
+        })
+
+      offers_by_merchant =
+        MerchantProduct
+        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
+        |> where(
+          [_offer, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([offer, _ranked], asc: offer.merchant_id, asc: offer.id)
+        |> Repo.all()
+        |> Enum.group_by(& &1.merchant_id)
+
+      Map.new(merchant_ids, fn merchant_id ->
+        {merchant_id, Map.get(offers_by_merchant, merchant_id, [])}
+      end)
+    end
+  end
+
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant_product(attrs) do
@@ -432,6 +473,12 @@ defmodule ProductCompare.Pricing do
 
   defp normalize_product_ids(product_ids) do
     product_ids
+    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.uniq()
+  end
+
+  defp normalize_merchant_ids(merchant_ids) do
+    merchant_ids
     |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
     |> Enum.uniq()
   end

@@ -1158,17 +1158,18 @@ connections completed on `codex/bounded-product-offer-connections`: product
 offers, active coupons, and price history now hold at `{1, 1, 2}` SELECTs at
 both three and six product parents while preserving filters, order, validity,
 ranges, Relay pagination, latest prices, and invalid-input errors. The three
-successor rows remain ready.
+successor rows remain ready. Before claiming the merchant-offer successor on
+2026-07-21, the coordinator verified a fourth coherent read-budget outcome:
+aliased public category lookups and their nested qualified-product connections
+still execute per category. Bounded category GraphQL reads was promoted so the
+claim leaves three independently shippable ready rows.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Bounded Merchant Offer GraphQL Connections
 
-Status: ready
+Status: active
+Owner: `codex/bounded-merchant-offer-connections`
 Lane: Bounded merchant offer GraphQL connections
 Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
 Batch outcome: `Merchant.merchantProducts` keeps a fixed SELECT budget as a
@@ -1214,7 +1215,9 @@ Exit condition: merchant-offer edges, active filtering, order, cursors, page
 info, associations, and latest prices match current behavior while relevant
 SELECT counts stay fixed as merchant parent count grows.
 
-### 2. Bounded Viewer Community Submission Reads
+## Ready Work
+
+### 1. Bounded Viewer Community Submission Reads
 
 Status: ready
 Lane: Bounded viewer community submission reads
@@ -1261,7 +1264,7 @@ Exit condition: owner submission lists, privacy, lifecycle visibility, order,
 and per-kind limits match current behavior while review, thread, and post
 SELECT counts stay fixed as product parent count grows.
 
-### 3. Bounded Public Node GraphQL Reads
+### 2. Bounded Public Node GraphQL Reads
 
 Status: ready
 Lane: Bounded public node GraphQL reads
@@ -1306,6 +1309,58 @@ Verification:
 Exit condition: all six public node types retain their current values and
 missing/error behavior while same-schema SELECT counts stay fixed as aliases
 grow.
+
+### 3. Bounded Category GraphQL Reads
+
+Status: ready
+Lane: Bounded category GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
+Batch outcome: aliased public `category(slug:)` reads and their nested qualified
+product connections keep fixed SELECT budgets as category parent count grows,
+without changing category qualification, shared-time, ordering, Relay, SEO, or
+missing-category behavior.
+Next action: add set-based category lookup and qualification counts, add
+parent-partitioned qualified-product pages, route both fields through a
+request-scoped Dataloader source, and prove fixed budgets under growing aliases.
+Owned paths:
+
+- `lib/product_compare/seo.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/seo_resolver.ex`
+- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-category-graphql-reads.md`
+
+Internal slices:
+
+- Set-based indexable-category lookup and qualified-product counts at one
+  request-scoped timestamp.
+- Parent-partitioned qualified-product Relay pages.
+- Request-scoped lookup/connection loading plus semantic and fixed-budget
+  coverage.
+
+Prerequisites:
+
+- Existing `seo_indexable` gating, three-product category indexability
+  threshold, product qualification, and shared `now` behavior remain
+  authoritative.
+- Existing product order, Relay cursor/page-size behavior, SEO metadata, and
+  missing-category `nil` behavior remain unchanged.
+- This row executes serially with shared Loader work and is independent of
+  merchant-offer, owner-community, and public-node contracts.
+
+Verification:
+
+- `mix test test/product_compare/seo_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: category values, qualification counts, metadata, product
+edges, order, cursors, page info, and missing behavior match current semantics
+while taxon and qualified-product SELECT counts stay fixed as aliases grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

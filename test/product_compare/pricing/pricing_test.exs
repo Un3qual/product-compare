@@ -354,6 +354,81 @@ defmodule ProductCompare.PricingTest do
     end
   end
 
+  describe "merchant_offer_pages/2" do
+    test "matches active merchant-offer queries across offsets and empty parents", %{
+      test: test_name
+    } do
+      product_a = SpecsFixtures.product_fixture(%{slug: "#{test_name}-merchant-page-a"})
+      product_b = SpecsFixtures.product_fixture(%{slug: "#{test_name}-merchant-page-b"})
+
+      {:ok, merchant_a} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page A",
+          domain: "#{test_name}-merchant-page-a.example"
+        })
+
+      {:ok, merchant_b} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page B",
+          domain: "#{test_name}-merchant-page-b.example"
+        })
+
+      {:ok, empty_merchant} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page Empty",
+          domain: "#{test_name}-merchant-page-empty.example"
+        })
+
+      for {merchant, product, suffix, active?} <- [
+            {merchant_a, product_a, "a-1", true},
+            {merchant_b, product_a, "b-1", true},
+            {merchant_a, product_b, "a-2", false},
+            {merchant_b, product_b, "b-2", true},
+            {merchant_a, product_b, "a-3", true},
+            {merchant_a, product_a, "a-4", true}
+          ] do
+        {:ok, _offer} =
+          Pricing.upsert_merchant_product(%{
+            merchant_id: merchant.id,
+            product_id: product.id,
+            url: "https://#{merchant.domain}/#{suffix}",
+            currency: "USD",
+            is_active: active?
+          })
+      end
+
+      missing_merchant_id = empty_merchant.id + 1_000_000
+      merchant_ids = [merchant_b.id, empty_merchant.id, missing_merchant_id, merchant_a.id]
+
+      for window <- [
+            %{offset: 0, fetch_limit: 3},
+            %{offset: 1, fetch_limit: 2},
+            %{offset: 3, fetch_limit: 2}
+          ] do
+        expected = expected_merchant_offer_pages(merchant_ids, window)
+
+        {actual, queries} =
+          capture_select_queries(fn -> Pricing.merchant_offer_pages(merchant_ids, window) end)
+
+        assert offer_ids_by_merchant(actual) == offer_ids_by_merchant(expected)
+        assert Map.fetch!(actual, empty_merchant.id) == []
+        assert Map.fetch!(actual, missing_merchant_id) == []
+        assert [query] = queries
+        assert String.contains?(query, ~s(FROM "merchant_products"))
+      end
+    end
+
+    test "returns no pages and performs no query for an empty merchant list" do
+      {pages, queries} =
+        capture_select_queries(fn ->
+          Pricing.merchant_offer_pages([], %{offset: 0, fetch_limit: 2})
+        end)
+
+      assert pages == %{}
+      assert queries == []
+    end
+  end
+
   describe "price_history_pages/3" do
     test "matches descending per-offer history across range bounds, timestamp ties, and offsets",
          %{test: test_name} do
@@ -743,6 +818,25 @@ defmodule ProductCompare.PricingTest do
   defp offer_ids_by_product(pages) do
     Map.new(pages, fn {product_id, offers} ->
       {product_id, Enum.map(offers, & &1.id)}
+    end)
+  end
+
+  defp expected_merchant_offer_pages(merchant_ids, window) do
+    Map.new(merchant_ids, fn merchant_id ->
+      offers =
+        merchant_id
+        |> Pricing.list_merchant_offers_query(true)
+        |> Repo.all()
+        |> Enum.drop(window.offset)
+        |> Enum.take(window.fetch_limit)
+
+      {merchant_id, offers}
+    end)
+  end
+
+  defp offer_ids_by_merchant(pages) do
+    Map.new(pages, fn {merchant_id, offers} ->
+      {merchant_id, Enum.map(offers, & &1.id)}
     end)
   end
 
