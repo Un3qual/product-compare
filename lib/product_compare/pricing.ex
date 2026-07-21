@@ -169,6 +169,51 @@ defmodule ProductCompare.Pricing do
     |> order_by([merchant_product], asc: merchant_product.id)
   end
 
+  @spec product_offer_pages([pos_integer()], map(), %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
+  def product_offer_pages(product_ids, filters, %{offset: offset, fetch_limit: fetch_limit})
+      when is_list(product_ids) and is_map(filters) do
+    product_ids = normalize_product_ids(product_ids)
+
+    if product_ids == [] do
+      %{}
+    else
+      merchant_id = get_filter_value(filters, :merchant_id)
+      active_only = get_filter_value(filters, :active_only)
+
+      ranked_offers =
+        MerchantProduct
+        |> where([offer], offer.product_id in ^product_ids)
+        |> maybe_where_merchant_id(merchant_id)
+        |> maybe_where_active_only(active_only)
+        |> windows(
+          [offer],
+          product_offer_page: [partition_by: offer.product_id, order_by: [asc: offer.id]]
+        )
+        |> select([offer], %{
+          id: offer.id,
+          row_number: over(row_number(), :product_offer_page)
+        })
+
+      offers_by_product =
+        MerchantProduct
+        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
+        |> where(
+          [_offer, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([offer, _ranked], asc: offer.product_id, asc: offer.id)
+        |> Repo.all()
+        |> Enum.group_by(& &1.product_id)
+
+      Map.new(product_ids, fn product_id ->
+        {product_id, Map.get(offers_by_product, product_id, [])}
+      end)
+    end
+  end
+
   @spec list_merchant_products(map()) :: [MerchantProduct.t()]
   def list_merchant_products(filters) do
     filters
