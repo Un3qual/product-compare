@@ -1167,16 +1167,18 @@ connections then completed on `codex/bounded-merchant-offer-connections`:
 merchant-product and latest-price SELECT counts now hold at `{1, 1}` for both
 three and six merchant parents while active-only filtering, ordering, Relay,
 association, and invalid-input behavior remain unchanged.
+Before claiming the viewer-community successor, a third claim-floor audit
+verified that aliased public `product(slug:)` and `merchant(slug:)` entry-point
+fields still perform direct per-alias lookups. Bounded public slug GraphQL
+reads was promoted as one coherent lookup outcome, leaving three independently
+shippable ready rows after the claim.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Bounded Viewer Community Submission Reads
 
-Status: ready
+Status: active
+Owner: `codex/bounded-graphql-read-budgets`
 Lane: Bounded viewer community submission reads
 Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
 Batch outcome: authenticated `Product.viewerCommunitySubmissions` keeps fixed
@@ -1221,7 +1223,9 @@ Exit condition: owner submission lists, privacy, lifecycle visibility, order,
 and per-kind limits match current behavior while review, thread, and post
 SELECT counts stay fixed as product parent count grows.
 
-### 2. Bounded Public Node GraphQL Reads
+## Ready Work
+
+### 1. Bounded Public Node GraphQL Reads
 
 Status: ready
 Lane: Bounded public node GraphQL reads
@@ -1267,7 +1271,7 @@ Exit condition: all six public node types retain their current values and
 missing/error behavior while same-schema SELECT counts stay fixed as aliases
 grow.
 
-### 3. Bounded Category GraphQL Reads
+### 2. Bounded Category GraphQL Reads
 
 Status: ready
 Lane: Bounded category GraphQL reads
@@ -1318,6 +1322,60 @@ Verification:
 Exit condition: category values, qualification counts, metadata, product
 edges, order, cursors, page info, and missing behavior match current semantics
 while taxon and qualified-product SELECT counts stay fixed as aliases grow.
+
+### 3. Bounded Public Slug GraphQL Reads
+
+Status: ready
+Lane: Bounded public slug GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
+Batch outcome: aliased public `product(slug:)` and `merchant(slug:)` entry-point
+reads keep a fixed SELECT budget per entity type as alias count grows, without
+changing canonical or historical product-slug precedence, merchant identity,
+nested Dataloader fields, cache scope, or missing-entity behavior.
+Next action: add set-based product and merchant slug lookups, route both public
+entry-point fields through a request-scoped Dataloader source, and prove fixed
+budgets under growing aliases.
+Owned paths:
+
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare/pricing.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `test/product_compare/catalog/product_lookup_test.exs`
+- `test/product_compare/pricing/pricing_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-public-slug-graphql-reads.md`
+
+Internal slices:
+
+- Set-based canonical and historical product-slug lookup with canonical
+  precedence.
+- Set-based merchant-slug lookup.
+- Request-scoped public lookup loading plus semantic and fixed-budget coverage.
+
+Prerequisites:
+
+- Existing canonical product-slug precedence and historical-alias behavior
+  remain authoritative.
+- Existing merchant slug identity, missing-result, and nested Dataloader
+  behavior remain unchanged.
+- This row executes serially with shared Catalog/Pricing/Loader rows; it is
+  independent of public-node global-ID and category qualification contracts.
+
+Verification:
+
+- `mix test test/product_compare/catalog/product_lookup_test.exs test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: product and merchant IDs, slugs, canonical/history precedence,
+nested values, cache behavior, and missing results match current semantics
+while product and merchant SELECT counts stay fixed as aliases grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
