@@ -1153,18 +1153,16 @@ acceptance boundaries. Product evidence completed on
 the tracked evidence query budget fixed at three and six product parents.
 Bounded community GraphQL connections completed on
 `codex/bounded-community-connections`; reviews, questions, and nested answers
-now each hold at one SELECT as their parent graph grows. Three complete rows
-remain ready.
+now each hold at one SELECT as their parent graph grows. Before the next claim,
+the coordinator verified and promoted bounded public Relay node alias reads as
+a fourth substantive backend outcome. Product-offer connections are active on
+`codex/bounded-product-offer-connections`; three complete rows remain ready.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Bounded Product Offer GraphQL Connections
 
-Status: ready
+Status: active
 Lane: Bounded product offer GraphQL connections
 Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 Batch outcome: product offer, active-coupon, and price-history Relay connections
@@ -1214,7 +1212,9 @@ Exit condition: product-offer, coupon, and history edges, filters, ordering,
 validity, and page info match current behavior while relevant SELECT counts
 stay fixed as product and offer parent counts grow.
 
-### 2. Bounded Merchant Offer GraphQL Connections
+## Ready Work
+
+### 1. Bounded Merchant Offer GraphQL Connections
 
 Status: ready
 Lane: Bounded merchant offer GraphQL connections
@@ -1262,7 +1262,7 @@ Exit condition: merchant-offer edges, active filtering, order, cursors, page
 info, associations, and latest prices match current behavior while relevant
 SELECT counts stay fixed as merchant parent count grows.
 
-### 3. Bounded Viewer Community Submission Reads
+### 2. Bounded Viewer Community Submission Reads
 
 Status: ready
 Lane: Bounded viewer community submission reads
@@ -1308,6 +1308,52 @@ Verification:
 Exit condition: owner submission lists, privacy, lifecycle visibility, order,
 and per-kind limits match current behavior while review, thread, and post
 SELECT counts stay fixed as product parent count grows.
+
+### 3. Bounded Public Node GraphQL Reads
+
+Status: ready
+Lane: Bounded public node GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
+Batch outcome: public Relay `node(id:)` aliases batch by public schema so
+SELECT counts remain fixed per type as alias count grows, without changing
+identity, missing-node, field-value, source-preload, or authorization behavior.
+Next action: characterize growing mixed-type alias budgets, route the six
+public node types through request-scoped Dataloader sources, and prove semantic
+and query-count parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/node_resolver.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-public-node-graphql-reads.md`
+
+Internal slices:
+
+- Growing mixed-type public node alias query-budget characterization.
+- Public type-to-Dataloader mapping and asynchronous resolution.
+- Semantic, source-preload, and fixed per-schema budget parity.
+
+Prerequisites:
+
+- The existing six-type public allowlist and global-ID error contract remain
+  authoritative.
+- Valid missing nodes remain `nil`; operator and owner-scoped node behavior is
+  unchanged.
+- This row executes serially with shared Loader work but is independent of
+  nested Relay connection pagination.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all six public node types retain their current values and
+missing/error behavior while same-schema SELECT counts stay fixed as aliases
+grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

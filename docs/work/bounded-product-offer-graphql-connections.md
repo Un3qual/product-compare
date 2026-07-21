@@ -2,13 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 - Last verified: 2026-07-20 against Pricing and Affiliate context queries,
   Product and MerchantProduct GraphQL fields, product-detail/compare Relay
   queries, and current Dataloader coverage.
+- Active branch: `codex/bounded-product-offer-connections`
 
 ## Batch Outcome
 
@@ -50,4 +51,3 @@ parent count.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
-
