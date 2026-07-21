@@ -127,7 +127,7 @@ defmodule ProductCompare.SeoTest do
     assert metadata_by_product[image_qualified].image_url ==
              "https://cdn.example/batch-image-qualified.jpg"
 
-    assert length(queries) == 10
+    assert [_, _, _, _, _, _, _, _, _, _] = queries
   end
 
   test "curated categories qualify only after three qualifying products" do

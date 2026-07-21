@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- Status: active
-- Owner: `codex/bounded-product-evidence-reads`
+- Status: complete
+- Delivered on: `codex/bounded-product-evidence-reads`
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
@@ -17,7 +17,9 @@ Product evidence and SEO fields requested through a GraphQL product connection
 keep a fixed database-query budget as product parent count increases, without
 changing offer, review, specification, or metadata truth.
 
-## Ready Evidence
+## Initial Gap Evidence
+
+Before this batch:
 
 - `PricingResolver.product_offer_truth/3` calls
   `Pricing.current_offer_truth/2` once per product parent.
@@ -97,3 +99,8 @@ qualification behavior.
 - `mix format --check-formatted` — passed.
 - `mix work_queue.validate` — passed: `work queue valid: 4 ready rows`. The initial sandbox run was blocked only by `Mix.PubSub` TCP `:eperm`; the same command passed when rerun with the required local-socket permission.
 - `git diff --check` — passed after this evidence update, before the documentation-only commit.
+- Final `mix ci` closeout — passed with queue validation at 4 ready rows,
+  Credo clean, clone budget 6/6, no new cross-function smells, Dialyzer clean,
+  801 backend tests and 83.49% coverage, Relay validation, TypeScript, 1,507
+  frontend tests, client and SSR builds, and the 182,164-byte gzip client
+  bundle under its 200,000-byte budget.

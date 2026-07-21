@@ -688,9 +688,9 @@ defmodule ProductCompare.Specs do
         |> List.flatten()
         |> Enum.map(& &1.attribute_id)
         |> taxon_attributes_by_taxon_and_attribute_ids(
-          products_by_id
-          |> Map.values()
-          |> Enum.filter(&valid_id?/1)
+          for {_product_id, taxon_id} <- products_by_id,
+              valid_id?(taxon_id),
+              do: taxon_id
         )
 
       Map.new(product_ids, fn product_id ->

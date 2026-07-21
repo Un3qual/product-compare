@@ -1148,66 +1148,14 @@ Before product evidence was claimed, the coordinator verified and promoted two
 additional, independently reviewable read-budget outcomes: merchant-parent
 active-offer connections and owner-private community submission lists. They are
 serial with overlapping resolver/context rows but have distinct contracts and
-acceptance boundaries. Product evidence is active, and four complete rows
-remain ready.
+acceptance boundaries. Product evidence completed on
+`codex/bounded-product-evidence-reads`; its growing-parent regression now holds
+the tracked evidence query budget fixed at three and six product parents. Four
+complete rows remain ready.
 
 ## Active Work
 
-### Bounded Product Evidence GraphQL Reads
-
-Status: active
-Owner: `codex/bounded-product-evidence-reads`
-Lane: Bounded product evidence GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-product-evidence-graphql-reads-implementation-plan.md`
-Batch outcome: product evidence and SEO fields requested through a GraphQL
-product connection keep a fixed database-query budget as product parent count
-increases, without changing offer, review, specification, or metadata truth.
-Next action: add set-based product evidence APIs, route product evidence and SEO
-through request-scoped Dataloader sources, and lock the result with growing-
-parent query-budget tests.
-Owned paths:
-
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare/specs.ex`
-- `lib/product_compare/seo.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `lib/product_compare_web/resolvers/seo_resolver.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare/seo_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `docs/work/bounded-product-evidence-graphql-reads.md`
-
-Internal slices:
-
-- Set-based offer-truth, review-summary, and current-specification evidence.
-- Request-scoped product evidence and SEO Dataloader integration.
-- Semantic parity plus fixed query budgets as product parents grow.
-
-Prerequisites:
-
-- Existing OfferTruth, accepted-current-claim, published-review, and SEO
-  qualification policies remain the semantic source of truth.
-- Existing `Product.offerTruth`, `Product.reviewSummary`, and `Product.seo`
-  GraphQL shapes remain unchanged.
-- Current single-product product-detail behavior remains covered.
-
-Verification:
-
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/seo_test.exs`
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: one- and multi-product evidence and metadata stay semantically
-identical to the current contract, and relevant SELECT counts remain fixed
-when the same GraphQL request grows its product parent count.
+None.
 
 ## Ready Work
 

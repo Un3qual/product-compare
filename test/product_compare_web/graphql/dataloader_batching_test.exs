@@ -202,7 +202,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         end)
 
       initial_nodes = product_evidence_nodes(initial_response)
-      assert length(initial_nodes) == 3
+      assert [_, _, _] = initial_nodes
       assert_product_evidence_values(initial_nodes, initial_products)
 
       initial_budget = product_evidence_query_budget(initial_queries)
@@ -223,7 +223,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         end)
 
       grown_nodes = product_evidence_nodes(grown_response)
-      assert length(grown_nodes) == 6
+      assert [_, _, _, _, _, _] = grown_nodes
       assert_product_evidence_values(grown_nodes, grown_products)
       assert product_evidence_query_budget(grown_queries) == initial_budget
       assert_offer_as_of_is_shared(initial_nodes)
