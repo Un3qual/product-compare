@@ -3,6 +3,7 @@ defmodule ProductCompare.RecommendationsTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -113,6 +114,79 @@ defmodule ProductCompare.RecommendationsTest do
              evidence_query_counts(two_product_queries)
   end
 
+  test "comparison slug selections preserve duplicate and missing positions with one product query" do
+    first = SpecsFixtures.product_fixture(%{slug: "context-first"})
+    second = SpecsFixtures.product_fixture(%{slug: "context-second"})
+
+    selections = [
+      [first.slug, "missing-context-product", first.slug],
+      ["missing-context-product", second.slug]
+    ]
+
+    {products_by_selection, queries} =
+      capture_select_queries(fn -> Catalog.list_products_by_slug_selections(selections) end)
+
+    assert Enum.map(products_by_selection, &Enum.map(&1, fn product -> product && product.id end)) ==
+             [
+               [first.id, nil, first.id],
+               [nil, second.id]
+             ]
+
+    assert select_query_counts(queries) == %{products: 1}
+  end
+
+  test "batched recommendations preserve results while evidence SELECT budgets stay fixed as requests grow" do
+    {first, first_point} = product_with_price("Context first", "120")
+    {second, second_point} = product_with_price("Context second", "90")
+    {third, third_point} = product_with_price("Context third", "100")
+    {fourth, fourth_point} = product_with_price("Context fourth", "110")
+
+    two_requests = [
+      {[first.id, second.id], :lowest_current_cost},
+      {[third.id, fourth.id], :lowest_current_cost}
+    ]
+
+    four_requests =
+      two_requests ++
+        [
+          {[first.id, third.id], :lowest_current_cost},
+          {[second.id, fourth.id], :lowest_current_cost}
+        ]
+
+    expected_two = Enum.map(two_requests, &compare_request/1)
+    expected_four = Enum.map(four_requests, &compare_request/1)
+
+    {two_results, two_queries} =
+      capture_select_queries(fn -> Recommendations.compare_many(two_requests, now: @now) end)
+
+    {four_results, four_queries} =
+      capture_select_queries(fn -> Recommendations.compare_many(four_requests, now: @now) end)
+
+    assert two_results == expected_two
+    assert four_results == expected_four
+
+    assert Enum.map(two_results, &ranking_product_and_price_ids/1) == [
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             [{third.id, third_point.id}, {fourth.id, fourth_point.id}]
+           ]
+
+    assert Enum.map(four_results, &ranking_product_and_price_ids/1) == [
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             [{third.id, third_point.id}, {fourth.id, fourth_point.id}],
+             [{third.id, third_point.id}, {first.id, first_point.id}],
+             [{second.id, second_point.id}, {fourth.id, fourth_point.id}]
+           ]
+
+    assert evidence_query_counts(two_queries) == %{
+             merchant_products: 1,
+             price_points: 1,
+             product_attribute_current: 1,
+             products: 1
+           }
+
+    assert evidence_query_counts(four_queries) == evidence_query_counts(two_queries)
+  end
+
   defp product_with_price(name, price, currency \\ "USD") do
     product = SpecsFixtures.product_fixture(%{name: name})
 
@@ -164,6 +238,14 @@ defmodule ProductCompare.RecommendationsTest do
     claim
   end
 
+  defp compare_request({product_ids, profile}) do
+    Recommendations.compare(product_ids, profile, now: @now)
+  end
+
+  defp ranking_product_and_price_ids(result) do
+    Enum.map(result.rankings, &{&1.product_id, &1.price_point_id})
+  end
+
   defp evidence_query_counts(queries) do
     Map.new(
       [
@@ -174,5 +256,9 @@ defmodule ProductCompare.RecommendationsTest do
       ],
       fn {name, pattern} -> {name, Enum.count(queries, &Regex.match?(pattern, &1))} end
     )
+  end
+
+  defp select_query_counts(queries) do
+    %{products: Enum.count(queries, &Regex.match?(~r/FROM "products"/, &1))}
   end
 end
