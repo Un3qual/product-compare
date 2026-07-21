@@ -1207,62 +1207,16 @@ owner-filtered saved-set/API-token nodes share one authorization-aware Relay
 lookup boundary, so they were promoted together as Bounded Authorized Node
 GraphQL Reads, leaving three independently shippable ready rows after the
 claim.
+Bounded public slug GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: two and four product/merchant alias sets
+now both hold at two product lookups, one historical-alias join, and one
+merchant lookup while canonical precedence, historical redirects, nested
+Dataloader values, request-local cache clearing, and missing results remain
+unchanged.
 
 ## Active Work
 
-### Bounded Public Slug GraphQL Reads
-
-Status: active on `codex/bounded-graphql-read-budgets`
-Lane: Bounded public slug GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
-Batch outcome: aliased public `product(slug:)` and `merchant(slug:)` entry-point
-reads keep a fixed SELECT budget per entity type as alias count grows, without
-changing canonical or historical product-slug precedence, merchant identity,
-nested Dataloader fields, cache scope, or missing-entity behavior.
-Next action: add set-based product and merchant slug lookups, route both public
-entry-point fields through a request-scoped Dataloader source, and prove fixed
-budgets under growing aliases.
-Owned paths:
-
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `test/product_compare/catalog/product_lookup_test.exs`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-public-slug-graphql-reads.md`
-
-Internal slices:
-
-- Set-based canonical and historical product-slug lookup with canonical
-  precedence.
-- Set-based merchant-slug lookup.
-- Request-scoped public lookup loading plus semantic and fixed-budget coverage.
-
-Prerequisites:
-
-- Existing canonical product-slug precedence and historical-alias behavior
-  remain authoritative.
-- Existing merchant slug identity, missing-result, and nested Dataloader
-  behavior remain unchanged.
-- This row executes serially with shared Catalog/Pricing/Loader rows; it is
-  independent of public-node global-ID and category qualification contracts.
-
-Verification:
-
-- `mix test test/product_compare/catalog/product_lookup_test.exs test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: product and merchant IDs, slugs, canonical/history precedence,
-nested values, cache behavior, and missing results match current semantics
-while product and merchant SELECT counts stay fixed as aliases grow.
+None.
 
 ## Ready Work
 

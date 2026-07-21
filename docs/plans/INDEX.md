@@ -112,7 +112,7 @@ category parent. That reviewer-sized outcome is complete.
 A third claim-floor audit promoted bounded public slug GraphQL reads after
 verifying that aliased product and merchant entry-point fields still repeat
 direct slug lookups. Product canonical/history lookup and merchant identity
-share one public-entry acceptance boundary, so they remain one active outcome.
+share one public-entry acceptance boundary; that outcome is complete.
 A fourth claim-floor audit promoted the remaining nullable public opaque-key
 entry points after verifying that source-artifact IDs, published-question IDs,
 and comparison-snapshot tokens each still trigger direct per-alias reads. Their
@@ -173,12 +173,11 @@ batch and should not be recreated or promoted.
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
   reads, public Relay node aliases, and category lookup/qualified-product
-  connections are complete. Public product/merchant slug lookups are active;
-  the remaining public opaque-key lookups, comparison evidence reads, and
-  authorized Relay node reads remain ready through the active plans above.
+  connections are complete. Public product/merchant slug lookups are also
+  complete; the remaining public opaque-key lookups, comparison evidence reads,
+  and authorized Relay node reads remain ready through the active plans above.
   They are reviewer-sized domain outcomes; their set-based context, Dataloader,
-  and query-budget steps remain internal slices rather than separate queue
-  rows.
+  and query-budget steps remain internal slices rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
