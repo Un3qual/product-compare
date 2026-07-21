@@ -1200,16 +1200,19 @@ Bounded category GraphQL reads then completed on
 hold at `%{taxons: 1, products: 2}` SELECTs while category qualification,
 shared-time semantics, metadata, descendant product order, Relay pagination,
 and missing-category behavior remain unchanged.
+Before claiming the public-slug successor, a sixth claim-floor audit verified
+that the remaining operator-only and owner-scoped Relay node types still read
+once per authorized alias. Affiliate network/program/link/coupon nodes and
+owner-filtered saved-set/API-token nodes share one authorization-aware Relay
+lookup boundary, so they were promoted together as Bounded Authorized Node
+GraphQL Reads, leaving three independently shippable ready rows after the
+claim.
 
 ## Active Work
 
-None.
+### Bounded Public Slug GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Public Slug GraphQL Reads
-
-Status: ready
+Status: active on `codex/bounded-graphql-read-budgets`
 Lane: Bounded public slug GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
 Batch outcome: aliased public `product(slug:)` and `merchant(slug:)` entry-point
@@ -1261,7 +1264,9 @@ Exit condition: product and merchant IDs, slugs, canonical/history precedence,
 nested values, cache behavior, and missing results match current semantics
 while product and merchant SELECT counts stay fixed as aliases grow.
 
-### 2. Bounded Public Opaque-Key GraphQL Reads
+## Ready Work
+
+### 1. Bounded Public Opaque-Key GraphQL Reads
 
 Status: ready
 Lane: Bounded public opaque-key GraphQL reads
@@ -1319,7 +1324,7 @@ Exit condition: all three public entry points preserve their current values,
 visibility, privacy, preload, invalid-input, and missing-result behavior while
 per-kind SELECT counts stay fixed as aliases grow.
 
-### 3. Bounded Comparison Evidence Reads
+### 2. Bounded Comparison Evidence Reads
 
 Status: ready
 Lane: Bounded comparison evidence reads
@@ -1368,6 +1373,61 @@ Verification:
 Exit condition: two- and three-product live recommendations and immutable
 snapshots preserve exact facts and lifecycle behavior while comparison-evidence
 SELECT counts stay fixed as selection grows.
+
+### 3. Bounded Authorized Node GraphQL Reads
+
+Status: ready
+Lane: Bounded authorized node GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
+Batch outcome: operator-only and owner-scoped Relay `node(id:)` aliases keep a
+fixed SELECT budget per node type as authorized alias count grows, without
+changing authorization, ownership, privacy, missing/error behavior, nested
+values, or Relay identity.
+Next action: add set-based affiliate and owner-filtered context reads, route the
+six non-public node types through an authorization-aware request-scoped
+Dataloader source, and prove semantic, privacy, and fixed-budget parity.
+Owned paths:
+
+- `lib/product_compare/affiliate.ex`
+- `lib/product_compare/accounts.ex`
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/node_resolver.ex`
+- `test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `test/product_compare/accounts/api_token_test.exs`
+- `test/product_compare/catalog/saved_comparison_set_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-authorized-node-graphql-reads.md`
+
+Internal slices:
+
+- Set-based operator-only affiliate node lookups.
+- Set-based owner-filtered saved-set and API-token lookups that preserve lazy
+  associations.
+- Authorization-aware request-scoped loading plus semantic, privacy, and
+  fixed-budget coverage.
+
+Prerequisites:
+
+- The completed public-node Dataloader pattern and current Relay type decoder
+  remain authoritative.
+- Operator checks happen before reads; anonymous and cross-owner scoped nodes
+  remain `nil`, and forbidden operator reads retain their current error.
+- This row executes serially with shared Accounts/Catalog/Loader work but is
+  independent of opaque-key entry points and comparison evidence collection.
+
+Verification:
+
+- `mix test test/product_compare/affiliate/affiliate_workflows_test.exs test/product_compare/accounts/api_token_test.exs test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: operator and owner-scoped node types preserve exact values,
+authorization, privacy, lazy nested loading, invalid-input, and missing behavior
+while per-type SELECT counts stay fixed as authorized aliases grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

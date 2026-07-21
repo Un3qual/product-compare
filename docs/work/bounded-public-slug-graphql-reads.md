@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active on `codex/bounded-graphql-read-budgets`
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
