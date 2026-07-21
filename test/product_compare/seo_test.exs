@@ -157,6 +157,77 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
+  test "batch category lookup preserves singular qualification with a fixed query budget" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    categories =
+      Enum.map(1..4, fn index ->
+        category =
+          TaxonomyFixtures.taxon_fixture(%{
+            taxonomy_id: type_taxonomy.id,
+            code: "batched-category-#{index}",
+            name: "Batched Category #{index}",
+            seo_slug: "batched-category-#{index}",
+            seo_description:
+              String.duplicate("Compare trusted category evidence and current offers. ", 2),
+            seo_indexable: true
+          })
+
+        if index <= 2 do
+          Enum.each(1..(4 - index), fn product_index ->
+            qualified_product(
+              "batched-category-#{index}-product-#{product_index}",
+              operator,
+              category
+            )
+          end)
+        end
+
+        category
+      end)
+
+    nonindexable =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "batched-category-private",
+        name: "Private Category",
+        seo_slug: "batched-category-private",
+        seo_description: @description,
+        seo_indexable: false
+      })
+
+    slugs = Enum.map(categories, & &1.seo_slug)
+
+    {two_categories, two_queries} =
+      capture_select_queries(fn -> Seo.get_categories(Enum.take(slugs, 2), now: @now) end)
+
+    {all_categories, all_queries} =
+      capture_select_queries(fn ->
+        Seo.get_categories(slugs ++ ["missing-category", "", nonindexable.seo_slug], now: @now)
+      end)
+
+    assert length(two_queries) == 2
+    assert length(all_queries) == 2
+
+    Enum.each(Enum.take(slugs, 2), fn slug ->
+      assert two_categories[slug] == Seo.get_category(slug, now: @now)
+    end)
+
+    Enum.each(slugs, fn slug ->
+      assert all_categories[slug] == Seo.get_category(slug, now: @now)
+    end)
+
+    assert all_categories["batched-category-1"].qualified_product_count == 3
+    assert all_categories["batched-category-1"].indexable
+    assert all_categories["batched-category-2"].qualified_product_count == 2
+    refute all_categories["batched-category-2"].indexable
+    assert all_categories["missing-category"] == nil
+    assert all_categories[""] == nil
+    assert all_categories[nonindexable.seo_slug] == nil
+    assert Seo.get_categories([], now: @now) == %{}
+  end
+
   test "comparison snapshots are private to search by default and require explicit opt-in plus captured evidence" do
     operator = AccountsFixtures.operator_fixture()
     owner = AccountsFixtures.user_fixture()

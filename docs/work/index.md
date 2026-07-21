@@ -1189,16 +1189,18 @@ MerchantProduct, PricePoint, SourceArtifact, and source-preload SELECT counts
 now each hold at one for both three and six same-schema aliases while public
 values, valid-missing `nil`, invalid IDs, operator authorization, owner scope,
 and source metadata remain unchanged.
+Before claiming the category successor, a fifth claim-floor audit verified
+that live recommendations and immutable comparison snapshots still repeat
+offer, specification, and merchant evidence reads per selected product. Those
+surfaces share one two-or-three-product decision-evidence lifecycle, so they
+were promoted together as Bounded Comparison Evidence Reads, leaving three
+independently shippable ready rows after the claim.
 
 ## Active Work
 
-None.
+### Bounded Category GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Category GraphQL Reads
-
-Status: ready
+Status: active on `codex/bounded-graphql-read-budgets`
 Lane: Bounded category GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
 Batch outcome: aliased public `category(slug:)` reads and their nested qualified
@@ -1248,7 +1250,9 @@ Exit condition: category values, qualification counts, metadata, product
 edges, order, cursors, page info, and missing behavior match current semantics
 while taxon and qualified-product SELECT counts stay fixed as aliases grow.
 
-### 2. Bounded Public Slug GraphQL Reads
+## Ready Work
+
+### 1. Bounded Public Slug GraphQL Reads
 
 Status: ready
 Lane: Bounded public slug GraphQL reads
@@ -1302,7 +1306,7 @@ Exit condition: product and merchant IDs, slugs, canonical/history precedence,
 nested values, cache behavior, and missing results match current semantics
 while product and merchant SELECT counts stay fixed as aliases grow.
 
-### 3. Bounded Public Opaque-Key GraphQL Reads
+### 2. Bounded Public Opaque-Key GraphQL Reads
 
 Status: ready
 Lane: Bounded public opaque-key GraphQL reads
@@ -1359,6 +1363,56 @@ Verification:
 Exit condition: all three public entry points preserve their current values,
 visibility, privacy, preload, invalid-input, and missing-result behavior while
 per-kind SELECT counts stay fixed as aliases grow.
+
+### 3. Bounded Comparison Evidence Reads
+
+Status: ready
+Lane: Bounded comparison evidence reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
+Batch outcome: live recommendations and immutable snapshot publication collect
+comparison evidence with fixed SELECT budgets as selection grows from two
+products to three, without changing ranking, captured facts, order, shared-time
+semantics, qualification, privacy, token, or revocation behavior.
+Next action: route live recommendations through set-based current offer truth,
+gather snapshot attributes/offers/merchants in set-based phases, and prove
+semantic and fixed-budget parity on both surfaces.
+Owned paths:
+
+- `lib/product_compare/recommendations.ex`
+- `lib/product_compare/comparison_snapshots.ex`
+- `test/product_compare/recommendations_test.exs`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/recommendations_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `docs/work/bounded-comparison-evidence-reads.md`
+
+Internal slices:
+
+- Set-based live recommendation current-offer evidence.
+- Set-based immutable snapshot attributes, offers, and merchant evidence.
+- Semantic, privacy, shared-time, and fixed-budget parity.
+
+Prerequisites:
+
+- Existing two-or-three-product validation, recommendation algorithms,
+  snapshot payload, qualification, privacy, and revocation contracts remain
+  authoritative.
+- Existing `Specs.list_current_attributes_for_products/1` and
+  `Pricing.current_offer_truths/2` remain the shared evidence sources.
+- This row is independent of category, slug identity, and public opaque-key
+  entry-point batching.
+
+Verification:
+
+- `mix test test/product_compare/recommendations_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: two- and three-product live recommendations and immutable
+snapshots preserve exact facts and lifecycle behavior while comparison-evidence
+SELECT counts stay fixed as selection grows.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
