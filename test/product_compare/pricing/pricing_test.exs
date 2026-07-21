@@ -336,7 +336,8 @@ defmodule ProductCompare.PricingTest do
 
         assert offer_ids_by_product(actual) == offer_ids_by_product(expected)
         assert Map.fetch!(actual, empty_product.id) == []
-        assert Enum.count(queries, &String.contains?(&1, ~s(FROM "merchant_products"))) == 1
+        assert [query] = queries
+        assert String.contains?(query, ~s(FROM "merchant_products"))
       end
     end
 
