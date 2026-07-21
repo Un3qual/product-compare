@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-20
+Updated: 2026-07-21
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1162,58 +1162,15 @@ successor rows remain ready. Before claiming the merchant-offer successor on
 2026-07-21, the coordinator verified a fourth coherent read-budget outcome:
 aliased public category lookups and their nested qualified-product connections
 still execute per category. Bounded category GraphQL reads was promoted so the
-claim leaves three independently shippable ready rows.
+claim leaves three independently shippable ready rows. Bounded merchant-offer
+connections then completed on `codex/bounded-merchant-offer-connections`:
+merchant-product and latest-price SELECT counts now hold at `{1, 1}` for both
+three and six merchant parents while active-only filtering, ordering, Relay,
+association, and invalid-input behavior remain unchanged.
 
 ## Active Work
 
-### 1. Bounded Merchant Offer GraphQL Connections
-
-Status: active
-Owner: `codex/bounded-merchant-offer-connections`
-Lane: Bounded merchant offer GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
-Batch outcome: `Merchant.merchantProducts` keeps a fixed SELECT budget as a
-GraphQL merchant connection grows, without changing active-offer, Relay,
-association, or latest-price behavior.
-Next action: add parent-partitioned active merchant-offer pages, route the field
-through a request-scoped Dataloader source, and prove fixed query budgets under
-growing merchant parent counts.
-Owned paths:
-
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare_web/graphql/connection.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-merchant-offer-graphql-connections.md`
-
-Internal slices:
-
-- Parent-partitioned active merchant-offer pages.
-- Request-scoped merchant-offer Dataloader integration.
-- Relay parity plus fixed query budgets as merchant parents grow.
-
-Prerequisites:
-
-- Existing active-only and ascending offer-ID behavior remains authoritative.
-- Existing Relay cursor, page-size, edge, and `pageInfo` behavior remains the
-  contract.
-- This row executes serially with shared Pricing/Connection/Loader rows; it is
-  not blocked by their product-parent contracts.
-
-Verification:
-
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: merchant-offer edges, active filtering, order, cursors, page
-info, associations, and latest prices match current behavior while relevant
-SELECT counts stay fixed as merchant parent count grows.
+None.
 
 ## Ready Work
 

@@ -161,20 +161,13 @@ defmodule ProductCompare.Pricing do
           row_number: over(row_number(), :merchant_offer_page)
         })
 
-      offers_by_merchant =
-        MerchantProduct
-        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
-        |> where(
-          [_offer, ranked],
-          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
-        )
-        |> order_by([offer, _ranked], asc: offer.merchant_id, asc: offer.id)
-        |> Repo.all()
-        |> Enum.group_by(& &1.merchant_id)
-
-      Map.new(merchant_ids, fn merchant_id ->
-        {merchant_id, Map.get(offers_by_merchant, merchant_id, [])}
-      end)
+      partitioned_merchant_product_pages(
+        ranked_offers,
+        merchant_ids,
+        :merchant_id,
+        offset,
+        fetch_limit
+      )
     end
   end
 
@@ -238,20 +231,13 @@ defmodule ProductCompare.Pricing do
           row_number: over(row_number(), :product_offer_page)
         })
 
-      offers_by_product =
-        MerchantProduct
-        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
-        |> where(
-          [_offer, ranked],
-          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
-        )
-        |> order_by([offer, _ranked], asc: offer.product_id, asc: offer.id)
-        |> Repo.all()
-        |> Enum.group_by(& &1.product_id)
-
-      Map.new(product_ids, fn product_id ->
-        {product_id, Map.get(offers_by_product, product_id, [])}
-      end)
+      partitioned_merchant_product_pages(
+        ranked_offers,
+        product_ids,
+        :product_id,
+        offset,
+        fetch_limit
+      )
     end
   end
 
@@ -475,6 +461,32 @@ defmodule ProductCompare.Pricing do
     product_ids
     |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
     |> Enum.uniq()
+  end
+
+  defp partitioned_merchant_product_pages(
+         ranked_offers,
+         parent_ids,
+         parent_field,
+         offset,
+         fetch_limit
+       ) do
+    offers_by_parent =
+      MerchantProduct
+      |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
+      |> where(
+        [_offer, ranked],
+        ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+      )
+      |> order_by([offer, _ranked],
+        asc: field(offer, ^parent_field),
+        asc: offer.id
+      )
+      |> Repo.all()
+      |> Enum.group_by(&Map.fetch!(&1, parent_field))
+
+    Map.new(parent_ids, fn parent_id ->
+      {parent_id, Map.get(offers_by_parent, parent_id, [])}
+    end)
   end
 
   defp normalize_merchant_ids(merchant_ids) do
