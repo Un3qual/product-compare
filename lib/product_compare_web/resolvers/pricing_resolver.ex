@@ -62,7 +62,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
              "merchant"
            ),
          connection_args = Input.connection_args(args),
-         {:ok, _window} <- validate_connection_args(connection_args) do
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
       filters = %{
         merchant_id: merchant_id,
         active_only: Input.fetch_value(args || %{}, :active_only, false)
@@ -140,7 +140,7 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
       to: Input.fetch_value(args || %{}, :to)
     }
 
-    with {:ok, _window} <- validate_connection_args(connection_args) do
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
       load_offer_connection(
         loader,
         {:price_history, connection_args, range_filters},
@@ -160,14 +160,6 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     |> on_load(fn loader ->
       {:ok, Dataloader.get(loader, source, batch_key, parent)}
     end)
-  end
-
-  defp validate_connection_args(connection_args) do
-    case Connection.batch_window(connection_args) do
-      {:ok, window} -> {:ok, window}
-      {:error, :invalid_first} -> {:error, "invalid first"}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-    end
   end
 
   defp normalize_merchant_products_input(input) when is_map(input) do

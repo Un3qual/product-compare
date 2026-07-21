@@ -10,15 +10,21 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @cursor_prefix "cursor:"
 
   @type error_reason :: :invalid_cursor | :invalid_first
+  @type batch_window :: %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
 
-  @spec batch_window(map()) ::
-          {:ok, %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}}
-          | {:error, error_reason()}
+  @spec batch_window(map()) :: {:ok, batch_window()} | {:error, error_reason()}
   def batch_window(args) when is_map(args) do
     with {:ok, first} <- normalize_first(args),
          {:ok, offset} <- args |> Input.fetch_value(:after) |> decode_start_index() do
       {:ok, %{offset: offset, fetch_limit: first + 1}}
     end
+  end
+
+  @spec batch_window_result(map()) :: {:ok, batch_window()} | {:error, String.t()}
+  def batch_window_result(args) when is_map(args) do
+    args
+    |> batch_window()
+    |> to_resolver_result()
   end
 
   @spec from_list([term()], map()) :: {:ok, map()} | {:error, error_reason()}
@@ -64,12 +70,14 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   @spec from_query_result(Ecto.Query.t(), map(), module()) :: {:ok, map()} | {:error, String.t()}
   def from_query_result(%Ecto.Query{} = query, args, repo)
       when is_map(args) and is_atom(repo) do
-    case from_query(query, args, repo) do
-      {:ok, connection} -> {:ok, connection}
-      {:error, :invalid_first} -> {:error, "invalid first"}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-    end
+    query
+    |> from_query(args, repo)
+    |> to_resolver_result()
   end
+
+  defp to_resolver_result({:ok, result}), do: {:ok, result}
+  defp to_resolver_result({:error, :invalid_first}), do: {:error, "invalid first"}
+  defp to_resolver_result({:error, :invalid_cursor}), do: {:error, "invalid cursor"}
 
   defp edge_cursor(nil), do: nil
   defp edge_cursor(edge), do: edge.cursor

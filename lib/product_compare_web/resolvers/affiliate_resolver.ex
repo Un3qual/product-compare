@@ -123,7 +123,7 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
       when is_integer(merchant_id) do
     connection_args = Input.connection_args(args)
 
-    with {:ok, _window} <- validate_connection_args(connection_args) do
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
       source = Loader.offer_connection_source()
       batch_key = {:active_coupons, connection_args}
 
@@ -152,14 +152,6 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     merchant_id
     |> Affiliate.list_active_coupons_query(now)
     |> Connection.from_query_result(Input.connection_args(args), Repo)
-  end
-
-  defp validate_connection_args(connection_args) do
-    case Connection.batch_window(connection_args) do
-      {:ok, window} -> {:ok, window}
-      {:error, :invalid_first} -> {:error, "invalid first"}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-    end
   end
 
   defp normalize_attrs(attrs, id_fields, attr_fields) do
