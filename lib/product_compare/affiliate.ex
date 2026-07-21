@@ -95,6 +95,57 @@ defmodule ProductCompare.Affiliate do
     |> Repo.all()
   end
 
+  @spec active_coupon_pages([pos_integer()], DateTime.t(), %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [Coupon.t()]}
+  def active_coupon_pages(merchant_ids, now, %{offset: offset, fetch_limit: fetch_limit})
+      when is_list(merchant_ids) do
+    merchant_ids = Enum.uniq(merchant_ids)
+
+    if merchant_ids == [] do
+      %{}
+    else
+      ranked_coupons =
+        Coupon
+        |> where([coupon], coupon.merchant_id in ^merchant_ids)
+        |> where([coupon], is_nil(coupon.valid_from) or coupon.valid_from <= ^now)
+        |> where([coupon], is_nil(coupon.valid_to) or coupon.valid_to >= ^now)
+        |> windows(
+          [coupon],
+          coupon_page: [
+            partition_by: coupon.merchant_id,
+            order_by: [asc: coupon.valid_to, asc: coupon.code, asc: coupon.id]
+          ]
+        )
+        |> select([coupon], %{
+          id: coupon.id,
+          row_number: over(row_number(), :coupon_page)
+        })
+
+      coupons_by_merchant =
+        Coupon
+        |> join(:inner, [coupon], ranked in subquery(ranked_coupons), on: ranked.id == coupon.id)
+        |> where(
+          [_coupon, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by(
+          [coupon, _ranked],
+          asc: coupon.merchant_id,
+          asc: coupon.valid_to,
+          asc: coupon.code,
+          asc: coupon.id
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.merchant_id)
+
+      Map.new(merchant_ids, fn merchant_id ->
+        {merchant_id, Map.get(coupons_by_merchant, merchant_id, [])}
+      end)
+    end
+  end
+
   defp conflict_update_fields(attrs, changeset, fields) do
     Enum.flat_map(fields, fn field ->
       cond do

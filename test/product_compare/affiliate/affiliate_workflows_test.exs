@@ -2,6 +2,7 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
   use ProductCompare.DataCase, async: true
 
   import Ecto.Query
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -261,6 +262,101 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
     end
   end
 
+  describe "active_coupon_pages/3" do
+    test "returns merchant-keyed active coupon pages with one query" do
+      first_merchant = merchant_fixture()
+      second_merchant = merchant_fixture()
+      empty_merchant = merchant_fixture()
+      first_network = network_fixture()
+      second_network = network_fixture()
+      now = ~U[2026-01-15 12:00:00.000000Z]
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: first_network.id,
+        code: "EXPIRED",
+        valid_from: DateTime.add(now, -7200, :second),
+        valid_to: DateTime.add(now, -1, :second)
+      })
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: first_network.id,
+        code: "FUTURE",
+        valid_from: DateTime.add(now, 1, :second),
+        valid_to: DateTime.add(now, 7200, :second)
+      })
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: first_network.id,
+        code: "CURRENT",
+        valid_from: DateTime.add(now, -7200, :second),
+        valid_to: now
+      })
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: second_network.id,
+        code: "NETWORK-B",
+        valid_from: now,
+        valid_to: DateTime.add(now, 3600, :second)
+      })
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: first_network.id,
+        code: "NETWORK-A",
+        valid_from: DateTime.add(now, -60, :second),
+        valid_to: DateTime.add(now, 3600, :second)
+      })
+
+      create_coupon!(%{
+        merchant_id: first_merchant.id,
+        affiliate_network_id: second_network.id,
+        code: "OPEN-ENDED"
+      })
+
+      create_coupon!(%{
+        merchant_id: second_merchant.id,
+        affiliate_network_id: second_network.id,
+        code: "SECOND-MERCHANT",
+        valid_from: DateTime.add(now, -3600, :second),
+        valid_to: DateTime.add(now, 3600, :second)
+      })
+
+      merchant_ids = [first_merchant.id, empty_merchant.id, second_merchant.id, first_merchant.id]
+
+      for window <- [%{offset: 0, fetch_limit: 3}, %{offset: 1, fetch_limit: 2}] do
+        expected = expected_active_coupon_pages(merchant_ids, now, window)
+
+        {actual, queries} =
+          capture_select_queries(fn ->
+            Affiliate.active_coupon_pages(merchant_ids, now, window)
+          end)
+
+        assert coupon_ids_by_merchant(actual) == coupon_ids_by_merchant(expected)
+        assert Map.fetch!(actual, empty_merchant.id) == []
+        assert Map.keys(actual) |> Enum.sort() == Enum.uniq(merchant_ids) |> Enum.sort()
+        assert [_query] = queries
+      end
+    end
+
+    test "returns no pages and performs no query for an empty merchant list" do
+      {pages, queries} =
+        capture_select_queries(fn ->
+          Affiliate.active_coupon_pages(
+            [],
+            ~U[2026-01-15 12:00:00.000000Z],
+            %{offset: 0, fetch_limit: 2}
+          )
+        end)
+
+      assert pages == %{}
+      assert queries == []
+    end
+  end
+
   defp create_coupon!(attrs) do
     attrs =
       attrs
@@ -269,6 +365,26 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
 
     {:ok, coupon} = Affiliate.create_coupon(attrs)
     coupon
+  end
+
+  defp expected_active_coupon_pages(merchant_ids, now, window) do
+    merchant_ids
+    |> Enum.uniq()
+    |> Map.new(fn merchant_id ->
+      coupons =
+        merchant_id
+        |> Affiliate.list_active_coupons(now)
+        |> Enum.drop(window.offset)
+        |> Enum.take(window.fetch_limit)
+
+      {merchant_id, coupons}
+    end)
+  end
+
+  defp coupon_ids_by_merchant(pages) do
+    Map.new(pages, fn {merchant_id, coupons} ->
+      {merchant_id, Enum.map(coupons, & &1.id)}
+    end)
   end
 
   defp network_fixture(attrs \\ %{}) do
