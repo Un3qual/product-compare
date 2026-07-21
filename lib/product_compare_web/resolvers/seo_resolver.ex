@@ -9,8 +9,39 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.Loader
 
+  def category(_parent, args, %{context: %{loader: loader}}) do
+    slug = Input.fetch_value(args, :slug)
+    source = Loader.category_source()
+
+    loader
+    |> Dataloader.load(source, :lookup, slug)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, :lookup, slug)}
+    end)
+  end
+
   def category(_parent, args, _resolution) do
     {:ok, Seo.get_category(Input.fetch_value(args, :slug))}
+  end
+
+  def category_products(
+        %{id: category_id, now: %DateTime{} = now} = category,
+        args,
+        %{context: %{loader: loader}}
+      )
+      when is_integer(category_id) do
+    connection_args = Input.connection_args(args)
+
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.category_source()
+      batch_key = {:products, connection_args, now}
+
+      loader
+      |> Dataloader.load(source, batch_key, category)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, category)}
+      end)
+    end
   end
 
   def category_products(category, args, _resolution) do
