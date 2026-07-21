@@ -3,12 +3,13 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.{Catalog, Discussions, Pricing, Specs}
+  alias ProductCompare.{Affiliate, Catalog, Discussions, Pricing, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
 
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
   @community_connection_tables ~w(product_reviews product_threads thread_posts)a
+  @offer_connection_tables ~w(merchant_products coupons price_points)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
@@ -274,6 +275,65 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_public_community_connection_values(grown_nodes, grown_products)
       assert community_connection_query_budget(grown_queries) == initial_budget
     end
+
+    test "compare-shaped offer connections keep Relay values and SELECT budgets fixed as parents grow",
+         %{conn: conn, test: test_name} do
+      anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+      merchants =
+        for index <- 1..3 do
+          merchant_fixture(%{
+            name: unique_name("Compare Merchant #{index}"),
+            domain: unique_domain("compare-#{index}")
+          })
+        end
+
+      coupons = offer_connection_coupons(merchants, anchor)
+
+      initial_products =
+        offer_connection_products("#{test_name}-initial", merchants, anchor, 1..3)
+
+      variables = %{
+        "first" => 3,
+        "historyFrom" => anchor |> DateTime.add(-7_200, :second) |> DateTime.to_iso8601(),
+        "historyTo" => DateTime.to_iso8601(anchor)
+      }
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_connections_batch_query(), variables)
+        end)
+
+      assert %{"data" => %{"products" => %{"edges" => _edges}}} = initial_response
+      initial_nodes = offer_connection_nodes(initial_response)
+      assert [_, _, _] = initial_nodes
+
+      assert_offer_connection_values(
+        initial_nodes,
+        initial_products,
+        coupons
+      )
+
+      grown_products =
+        initial_products ++
+          offer_connection_products("#{test_name}-grown", merchants, anchor, 4..6)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_connections_batch_query(), %{variables | "first" => 6})
+        end)
+
+      grown_nodes = offer_connection_nodes(grown_response)
+      assert [_, _, _, _, _, _] = grown_nodes
+      assert_offer_connection_values(grown_nodes, grown_products, coupons)
+
+      fixed_budget = %{merchant_products: 1, coupons: 1, price_points: 2}
+
+      assert {
+               offer_connection_query_budget(initial_queries),
+               offer_connection_query_budget(grown_queries)
+             } == {fixed_budget, fixed_budget}
+    end
   end
 
   defp batching_query do
@@ -414,6 +474,43 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp offer_connections_batch_query do
+    """
+    query OfferConnectionsBatch(
+      $first: Int!
+      $historyFrom: DateTime!
+      $historyTo: DateTime!
+    ) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            merchantProducts(first: 2, activeOnly: true) {
+              edges {
+                cursor
+                node {
+                  id
+                  merchant { id name }
+                  activeCoupons(first: 1) {
+                    edges { cursor node { code validTo } }
+                    pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+                  }
+                  latestPrice { id observedAt price }
+                  priceHistory(first: 2, from: $historyFrom, to: $historyTo) {
+                    edges { cursor node { id observedAt price } }
+                    pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+                  }
+                }
+              }
+              pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -515,6 +612,207 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp community_connection_query_budget(queries) do
     Enum.into(@community_connection_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp offer_connection_nodes(response) do
+    response
+    |> get_in(["data", "products", "edges"])
+    |> Enum.map(& &1["node"])
+  end
+
+  defp assert_offer_connection_values(nodes, products, coupons) do
+    assert Enum.map(nodes, & &1["slug"]) == Enum.map(products, & &1.product.slug)
+
+    Enum.each(products, fn product_data ->
+      node = node_for(nodes, product_data.product.slug)
+
+      expected_edges =
+        product_data.visible_offers
+        |> Enum.with_index()
+        |> Enum.map(fn {offer_data, index} ->
+          coupon = Map.fetch!(coupons, offer_data.merchant.id)
+
+          %{
+            "cursor" => cursor_for(index),
+            "node" => %{
+              "id" => relay_id(:merchant_product, offer_data.offer.id),
+              "merchant" => %{
+                "id" => relay_id(:merchant, offer_data.merchant.id),
+                "name" => offer_data.merchant.name
+              },
+              "activeCoupons" => %{
+                "edges" => [
+                  %{
+                    "cursor" => cursor_for(0),
+                    "node" => %{
+                      "code" => coupon.first.code,
+                      "validTo" => DateTime.to_iso8601(coupon.first.valid_to)
+                    }
+                  }
+                ],
+                "pageInfo" => %{
+                  "hasNextPage" => true,
+                  "hasPreviousPage" => false,
+                  "startCursor" => cursor_for(0),
+                  "endCursor" => cursor_for(0)
+                }
+              },
+              "latestPrice" => %{
+                "id" => relay_id(:price_point, offer_data.latest.id),
+                "observedAt" => DateTime.to_iso8601(offer_data.latest.observed_at),
+                "price" => Decimal.to_string(offer_data.latest.price)
+              },
+              "priceHistory" => %{
+                "edges" =>
+                  [offer_data.history_newer, offer_data.history_older]
+                  |> Enum.with_index()
+                  |> Enum.map(fn {price_point, history_index} ->
+                    %{
+                      "cursor" => cursor_for(history_index),
+                      "node" => %{
+                        "id" => relay_id(:price_point, price_point.id),
+                        "observedAt" => DateTime.to_iso8601(price_point.observed_at),
+                        "price" => Decimal.to_string(price_point.price)
+                      }
+                    }
+                  end),
+                "pageInfo" => %{
+                  "hasNextPage" => false,
+                  "hasPreviousPage" => false,
+                  "startCursor" => cursor_for(0),
+                  "endCursor" => cursor_for(1)
+                }
+              }
+            }
+          }
+        end)
+
+      assert node["merchantProducts"] == %{
+               "edges" => expected_edges,
+               "pageInfo" => %{
+                 "hasNextPage" => true,
+                 "hasPreviousPage" => false,
+                 "startCursor" => cursor_for(0),
+                 "endCursor" => cursor_for(1)
+               }
+             }
+    end)
+  end
+
+  defp offer_connection_query_budget(queries) do
+    Enum.into(@offer_connection_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp offer_connection_coupons(merchants, anchor) do
+    Map.new(Enum.with_index(merchants, 1), fn {merchant, index} ->
+      {:ok, _expired} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "EXPIRED-#{index}",
+          discount_type: :other,
+          valid_to: DateTime.add(anchor, -60, :second)
+        })
+
+      {:ok, first} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "ACTIVE-#{index}-FIRST",
+          discount_type: :percent,
+          discount_value: Decimal.new("5"),
+          valid_to: DateTime.add(anchor, 3_600, :second)
+        })
+
+      {:ok, second} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "ACTIVE-#{index}-SECOND",
+          discount_type: :amount,
+          discount_value: Decimal.new("10"),
+          currency: "USD",
+          valid_to: DateTime.add(anchor, 7_200, :second)
+        })
+
+      {:ok, _future} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "FUTURE-#{index}",
+          discount_type: :other,
+          valid_from: DateTime.add(anchor, 3_600, :second)
+        })
+
+      {merchant.id, %{first: first, second: second}}
+    end)
+  end
+
+  defp offer_connection_products(prefix, merchants, anchor, indexes) do
+    Enum.map(indexes, fn product_index ->
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: "#{prefix}-#{product_index}",
+          name: "Compare Product #{product_index}"
+        })
+
+      _inactive_offer =
+        merchant_product_fixture(%{
+          merchant: hd(merchants),
+          product: product,
+          is_active: false
+        })
+
+      active_offers =
+        merchants
+        |> Enum.with_index(1)
+        |> Enum.map(fn {merchant, merchant_index} ->
+          offer =
+            merchant_product_fixture(%{
+              merchant: merchant,
+              product: product,
+              is_active: true
+            })
+
+          price_seed = product_index * 100 + merchant_index * 10
+
+          {:ok, _outside_older} =
+            Pricing.add_price_point(%{
+              merchant_product_id: offer.id,
+              observed_at: DateTime.add(anchor, -10_800, :second),
+              price: Decimal.new(price_seed - 3)
+            })
+
+          {:ok, history_older} =
+            Pricing.add_price_point(%{
+              merchant_product_id: offer.id,
+              observed_at: DateTime.add(anchor, -7_200, :second),
+              price: Decimal.new(price_seed - 2)
+            })
+
+          {:ok, history_newer} =
+            Pricing.add_price_point(%{
+              merchant_product_id: offer.id,
+              observed_at: DateTime.add(anchor, -3_600, :second),
+              price: Decimal.new(price_seed - 1)
+            })
+
+          {:ok, latest} =
+            Pricing.add_price_point(%{
+              merchant_product_id: offer.id,
+              observed_at: DateTime.add(anchor, 3_600, :second),
+              price: Decimal.new(price_seed)
+            })
+
+          %{
+            offer: offer,
+            merchant: merchant,
+            history_older: history_older,
+            history_newer: history_newer,
+            latest: latest
+          }
+        end)
+
+      %{product: product, visible_offers: Enum.take(active_offers, 2)}
     end)
   end
 

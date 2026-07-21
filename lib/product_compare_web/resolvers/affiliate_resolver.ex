@@ -1,12 +1,15 @@
 defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Affiliate
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
 
   @spec upsert_affiliate_network(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -112,9 +115,24 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
 
   @spec merchant_product_active_coupons(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def merchant_product_active_coupons(%{merchant_id: merchant_id}, args, _resolution)
+  def merchant_product_active_coupons(
+        %{merchant_id: merchant_id} = merchant_product,
+        args,
+        %{context: %{loader: loader}}
+      )
       when is_integer(merchant_id) do
-    active_coupon_connection(merchant_id, args, allow_at?: false)
+    connection_args = Input.connection_args(args)
+
+    with {:ok, _window} <- validate_connection_args(connection_args) do
+      source = Loader.offer_connection_source()
+      batch_key = {:active_coupons, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, merchant_product)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, merchant_product)}
+      end)
+    end
   end
 
   def merchant_product_active_coupons(_parent, _args, _resolution),
@@ -134,6 +152,14 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     merchant_id
     |> Affiliate.list_active_coupons_query(now)
     |> Connection.from_query_result(Input.connection_args(args), Repo)
+  end
+
+  defp validate_connection_args(connection_args) do
+    case Connection.batch_window(connection_args) do
+      {:ok, window} -> {:ok, window}
+      {:error, :invalid_first} -> {:error, "invalid first"}
+      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
+    end
   end
 
   defp normalize_attrs(attrs, id_fields, attr_fields) do

@@ -307,6 +307,39 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                })
 
       assert second_id == relay_id(:merchant_product, second_offer.id)
+
+      assert %{
+               "data" => %{"product" => %{"merchantProducts" => nil}},
+               "errors" => [
+                 %{
+                   "message" => "invalid cursor",
+                   "path" => ["product", "merchantProducts"]
+                 }
+                 | _
+               ]
+             } =
+               graphql(conn, product_merchant_products_query(), %{
+                 "slug" => product.slug,
+                 "first" => 1,
+                 "after" => "bad-cursor",
+                 "activeOnly" => true
+               })
+
+      assert %{
+               "data" => %{"product" => %{"merchantProducts" => nil}},
+               "errors" => [
+                 %{
+                   "message" => "invalid first",
+                   "path" => ["product", "merchantProducts"]
+                 }
+                 | _
+               ]
+             } =
+               graphql(conn, product_merchant_products_query(), %{
+                 "slug" => product.slug,
+                 "first" => -1,
+                 "activeOnly" => true
+               })
     end
 
     test "merchantProducts rejects raw integer IDs", %{conn: conn, test: test_name} do

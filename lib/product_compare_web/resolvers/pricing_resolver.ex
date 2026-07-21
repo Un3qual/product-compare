@@ -49,24 +49,30 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   @spec product_merchant_products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def product_merchant_products(%{id: product_id}, args, _resolution)
+  def product_merchant_products(
+        %{id: product_id} = product,
+        args,
+        %{context: %{loader: loader}}
+      )
       when is_integer(product_id) do
     with {:ok, merchant_id} <-
            Input.decode_optional_integer_id(
              Input.fetch_value(args || %{}, :merchant_id),
              :merchant,
              "merchant"
-           ) do
-      attrs = %{
-        product_id: product_id,
+           ),
+         connection_args = Input.connection_args(args),
+         {:ok, _window} <- validate_connection_args(connection_args) do
+      filters = %{
         merchant_id: merchant_id,
-        active_only: Input.fetch_value(args || %{}, :active_only, false),
-        first: Input.fetch_value(args || %{}, :first),
-        after: Input.fetch_value(args || %{}, :after)
+        active_only: Input.fetch_value(args || %{}, :active_only, false)
       }
 
-      query = Pricing.list_merchant_products_query(attrs)
-      Connection.from_query_result(query, Input.connection_args(attrs), Repo)
+      load_offer_connection(
+        loader,
+        {:product_offers, connection_args, filters},
+        product
+      )
     end
   end
 
@@ -121,20 +127,48 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
 
   @spec price_history(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def price_history(%{id: merchant_product_id}, args, _resolution)
+  def price_history(
+        %{id: merchant_product_id} = merchant_product,
+        args,
+        %{context: %{loader: loader}}
+      )
       when is_integer(merchant_product_id) do
-    query =
-      Pricing.price_history_query(merchant_product_id, %{
-        from: Input.fetch_value(args || %{}, :from),
-        to: Input.fetch_value(args || %{}, :to),
-        order: :desc
-      })
+    connection_args = Input.connection_args(args)
 
-    Connection.from_query_result(query, Input.connection_args(args), Repo)
+    range_filters = %{
+      from: Input.fetch_value(args || %{}, :from),
+      to: Input.fetch_value(args || %{}, :to)
+    }
+
+    with {:ok, _window} <- validate_connection_args(connection_args) do
+      load_offer_connection(
+        loader,
+        {:price_history, connection_args, range_filters},
+        merchant_product
+      )
+    end
   end
 
   def price_history(_merchant_product, _args, _resolution),
     do: {:error, "invalid merchant product id"}
+
+  defp load_offer_connection(loader, batch_key, parent) do
+    source = Loader.offer_connection_source()
+
+    loader
+    |> Dataloader.load(source, batch_key, parent)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, batch_key, parent)}
+    end)
+  end
+
+  defp validate_connection_args(connection_args) do
+    case Connection.batch_window(connection_args) do
+      {:ok, window} -> {:ok, window}
+      {:error, :invalid_first} -> {:error, "invalid first"}
+      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
+    end
+  end
 
   defp normalize_merchant_products_input(input) when is_map(input) do
     with {:ok, product_id} <-
