@@ -299,6 +299,69 @@ defmodule ProductCompare.Pricing do
     |> Repo.all()
   end
 
+  @spec price_history_pages([pos_integer()], map(), %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [PricePoint.t()]}
+  def price_history_pages(
+        merchant_product_ids,
+        filters,
+        %{offset: offset, fetch_limit: fetch_limit}
+      )
+      when is_list(merchant_product_ids) and is_map(filters) do
+    merchant_product_ids = normalize_merchant_product_ids(merchant_product_ids)
+
+    if merchant_product_ids == [] do
+      %{}
+    else
+      from_dt = get_filter_value(filters, :from)
+      to_dt = get_filter_value(filters, :to)
+
+      ranked_price_points =
+        PricePoint
+        |> where([price_point], price_point.merchant_product_id in ^merchant_product_ids)
+        |> maybe_where_from(from_dt)
+        |> maybe_where_to(to_dt)
+        |> windows(
+          [price_point],
+          price_history_page: [
+            partition_by: price_point.merchant_product_id,
+            order_by: [desc: price_point.observed_at, desc: price_point.id]
+          ]
+        )
+        |> select([price_point], %{
+          id: price_point.id,
+          row_number: over(row_number(), :price_history_page)
+        })
+
+      price_points_by_merchant_product =
+        PricePoint
+        |> join(:inner, [price_point], ranked in subquery(ranked_price_points),
+          on: ranked.id == price_point.id
+        )
+        |> join(:left, [price_point, _ranked], artifact in assoc(price_point, :artifact))
+        |> join(:left, [_price_point, _ranked, artifact], source in assoc(artifact, :source))
+        |> where(
+          [_price_point, ranked, _artifact, _source],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([price_point, _ranked, _artifact, _source],
+          asc: price_point.merchant_product_id,
+          desc: price_point.observed_at,
+          desc: price_point.id
+        )
+        |> preload([_price_point, _ranked, artifact, source],
+          artifact: {artifact, source: source}
+        )
+        |> Repo.all()
+        |> Enum.group_by(& &1.merchant_product_id)
+
+      Map.new(merchant_product_ids, fn merchant_product_id ->
+        {merchant_product_id, Map.get(price_points_by_merchant_product, merchant_product_id, [])}
+      end)
+    end
+  end
+
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
   def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
@@ -369,6 +432,12 @@ defmodule ProductCompare.Pricing do
 
   defp normalize_product_ids(product_ids) do
     product_ids
+    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.uniq()
+  end
+
+  defp normalize_merchant_product_ids(merchant_product_ids) do
+    merchant_product_ids
     |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
     |> Enum.uniq()
   end

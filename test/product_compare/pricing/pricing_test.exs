@@ -10,6 +10,8 @@ defmodule ProductCompare.PricingTest do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "upsert_merchant/1" do
     test "updates existing merchant when matching domain" do
@@ -352,6 +354,137 @@ defmodule ProductCompare.PricingTest do
     end
   end
 
+  describe "price_history_pages/3" do
+    test "matches descending per-offer history across range bounds, timestamp ties, and offsets",
+         %{test: test_name} do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-history-product"})
+
+      {:ok, merchant} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} History Merchant",
+          domain: "#{test_name}-history.example"
+        })
+
+      {:ok, offer_a} =
+        Pricing.upsert_merchant_product(%{
+          merchant_id: merchant.id,
+          product_id: product.id,
+          url: "https://#{merchant.domain}/a",
+          currency: "USD",
+          is_active: true
+        })
+
+      {:ok, offer_b} =
+        Pricing.upsert_merchant_product(%{
+          merchant_id: merchant.id,
+          product_id: product.id,
+          url: "https://#{merchant.domain}/b",
+          currency: "USD",
+          is_active: true
+        })
+
+      {:ok, empty_offer} =
+        Pricing.upsert_merchant_product(%{
+          merchant_id: merchant.id,
+          product_id: product.id,
+          url: "https://#{merchant.domain}/empty",
+          currency: "USD",
+          is_active: true
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate_feed",
+          name: "#{test_name} History Source",
+          domain: "#{test_name}-source.example"
+        })
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://#{source.domain}/history.json",
+          fetched_at: ~U[2026-07-20 12:00:00Z],
+          raw_json: %{"kind" => "price-history"}
+        })
+        |> Repo.insert!()
+
+      before_range = ~U[2026-07-20 09:59:59Z]
+      from_bound = ~U[2026-07-20 10:00:00Z]
+      tied_at = ~U[2026-07-20 11:00:00Z]
+      to_bound = ~U[2026-07-20 12:00:00Z]
+      after_range = ~U[2026-07-20 12:00:01Z]
+
+      for {offer, observed_at, price, artifact_id} <- [
+            {offer_a, before_range, "90", nil},
+            {offer_a, from_bound, "91", nil},
+            {offer_a, tied_at, "92", nil},
+            {offer_a, tied_at, "93", artifact.id},
+            {offer_a, to_bound, "94", nil},
+            {offer_a, after_range, "95", nil},
+            {offer_b, from_bound, "101", nil},
+            {offer_b, tied_at, "102", nil},
+            {offer_b, to_bound, "103", nil}
+          ] do
+        {:ok, _price_point} =
+          Pricing.add_price_point(%{
+            merchant_product_id: offer.id,
+            observed_at: observed_at,
+            price: Decimal.new(price),
+            artifact_id: artifact_id
+          })
+      end
+
+      offer_ids = [offer_b.id, empty_offer.id, offer_a.id]
+      filters = %{"from" => from_bound, "to" => to_bound}
+
+      for window <- [
+            %{offset: 0, fetch_limit: 2},
+            %{offset: 1, fetch_limit: 3},
+            %{offset: 3, fetch_limit: 2}
+          ] do
+        expected = expected_price_history_pages(offer_ids, filters, window)
+
+        {actual, queries} =
+          capture_select_queries(fn ->
+            Pricing.price_history_pages(offer_ids, filters, window)
+          end)
+
+        assert price_point_ids_by_offer(actual) == price_point_ids_by_offer(expected)
+        assert Map.fetch!(actual, empty_offer.id) == []
+        assert [query] = queries
+        assert String.contains?(query, ~s(FROM "price_points"))
+      end
+
+      artifact_backed =
+        offer_ids
+        |> Pricing.price_history_pages(filters, %{offset: 0, fetch_limit: 5})
+        |> Map.fetch!(offer_a.id)
+        |> Enum.find(&(&1.artifact_id == artifact.id))
+
+      assert Ecto.assoc_loaded?(artifact_backed.artifact)
+      assert artifact_backed.artifact.id == artifact.id
+      assert Ecto.assoc_loaded?(artifact_backed.artifact.source)
+      assert artifact_backed.artifact.source.id == source.id
+    end
+
+    test "returns no pages and performs no query for an empty offer list" do
+      {pages, queries} =
+        capture_select_queries(fn ->
+          Pricing.price_history_pages(
+            [],
+            %{from: ~U[2026-07-20 10:00:00Z], to: ~U[2026-07-20 12:00:00Z]},
+            %{offset: 0, fetch_limit: 2}
+          )
+        end)
+
+      assert pages == %{}
+      assert queries == []
+    end
+  end
+
   describe "complete current offer truth" do
     test "batches requested products with one offer and latest-price read", %{test: test_name} do
       now = ~U[2026-07-13 18:00:00Z]
@@ -610,6 +743,26 @@ defmodule ProductCompare.PricingTest do
   defp offer_ids_by_product(pages) do
     Map.new(pages, fn {product_id, offers} ->
       {product_id, Enum.map(offers, & &1.id)}
+    end)
+  end
+
+  defp expected_price_history_pages(merchant_product_ids, filters, window) do
+    Map.new(merchant_product_ids, fn merchant_product_id ->
+      price_points =
+        merchant_product_id
+        |> Pricing.price_history_query(Map.put(filters, :order, :desc))
+        |> Repo.all()
+        |> Repo.preload(artifact: [:source])
+        |> Enum.drop(window.offset)
+        |> Enum.take(window.fetch_limit)
+
+      {merchant_product_id, price_points}
+    end)
+  end
+
+  defp price_point_ids_by_offer(pages) do
+    Map.new(pages, fn {merchant_product_id, price_points} ->
+      {merchant_product_id, Enum.map(price_points, & &1.id)}
     end)
   end
 end
