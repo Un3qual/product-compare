@@ -158,7 +158,7 @@ pagination, offer filters, nested values, and growing-alias budgets remain
 internal slices of one discovery-entry acceptance boundary. Their three
 focused suites pass 51 tests.
 
-Active implementation plans:
+Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
@@ -173,10 +173,12 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 - `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
-These plans are dispatched only from `docs/work/index.md`. Three is the live
-queue floor, not a catalog cap; the catalog may retain every additional useful
-validated candidate. Internal slices, per-route steps, and milestone commits do
-not count as separate candidates or ready rows; batch coherence takes priority
+This reference list intentionally retains plans across ready and completed
+states. It is not a candidate pool and must never be used to infer status or
+redispatch work. Read `docs/work/index.md` for the only live status and the
+linked lane document for completion evidence. Three is the live queue floor,
+not a catalog cap; internal slices, per-route steps, and milestone commits do
+not count as separate candidates or ready rows. Batch coherence takes priority
 over requested counts and replenishment depth.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
@@ -297,9 +299,10 @@ Recent completed plan groups:
   merchant-offer connections, owner-private community submissions, public
   Relay nodes, category qualification and product pages, public
   product/merchant slug aliases, public opaque-key entry points, live
-  recommendations, and immutable
-  snapshot publication. Their implementation plans are explicitly complete,
-  and their lane docs retain the query-budget and semantic-parity evidence.
+  recommendations, immutable snapshot publication, authorized Relay nodes, and
+  alert evaluation market-fact reuse. Their implementation plans are explicitly
+  complete, and their lane docs retain the query-budget and semantic-parity
+  evidence.
 
 - 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
   lifecycle reliability, community content lifecycle, Relay cursor forward

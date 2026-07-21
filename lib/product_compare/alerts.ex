@@ -253,6 +253,9 @@ defmodule ProductCompare.Alerts do
     end)
   end
 
+  # One fact per scope is sufficient because the applicable-watch query above
+  # restricts every listing-scoped watch to this triggering merchant product.
+  # If that query admits other listings, this must compute one fact per listing.
   defp evaluation_facts(watches, merchant_product, triggering_price_point, now) do
     watches
     |> Enum.map(&watch_scope/1)

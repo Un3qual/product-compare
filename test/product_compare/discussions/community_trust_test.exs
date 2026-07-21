@@ -364,7 +364,8 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert grown[second_question.entropy_id].accepted_post == nil
     assert grown[hidden_question.entropy_id] == nil
     assert grown[missing_id] == nil
-    refute Map.has_key?(grown, "invalid")
+    assert Map.has_key?(grown, "invalid")
+    assert grown["invalid"] == nil
     assert Discussions.get_public_questions([]) == %{}
     assert length(grown_queries) == length(initial_queries)
   end

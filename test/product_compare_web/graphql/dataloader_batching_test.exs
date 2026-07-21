@@ -226,6 +226,38 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
       assert authorized_node_query_budget(anonymous_queries) ==
                Map.new(@authorized_node_tables, &{&1, 0})
+
+      member = AccountsFixtures.user_fixture()
+
+      member_conn =
+        conn
+        |> log_in_user(member)
+        |> put_req_header_same_origin()
+
+      {cross_owner_response, cross_owner_queries} =
+        capture_select_queries(fn ->
+          graphql(member_conn, owner_scoped_node_batch_query(records), %{})
+        end)
+
+      assert %{"data" => cross_owner_data} = cross_owner_response
+      assert Enum.all?(cross_owner_data, fn {_alias, value} -> is_nil(value) end)
+
+      assert authorized_node_query_budget(cross_owner_queries) ==
+               Map.new(@authorized_node_tables, fn
+                 table when table in [:saved_comparison_sets, :api_tokens] -> {table, 1}
+                 table -> {table, 0}
+               end)
+
+      {non_operator_response, non_operator_queries} =
+        capture_select_queries(fn ->
+          graphql(member_conn, operator_node_batch_query(records), %{})
+        end)
+
+      assert %{"data" => non_operator_data, "errors" => [_ | _]} = non_operator_response
+      assert Enum.all?(non_operator_data, fn {_alias, value} -> is_nil(value) end)
+
+      assert authorized_node_query_budget(non_operator_queries) ==
+               Map.new(@authorized_node_tables, &{&1, 0})
     end
 
     test "public product and merchant slug aliases keep values and SELECT budgets fixed as aliases grow",
@@ -785,6 +817,56 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
     query AuthorizedNodeBatch {
       #{Enum.join(selections ++ missing, "\n")}
+    }
+    """
+  end
+
+  defp owner_scoped_node_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          authorized_node_selection(
+            "savedComparisonSet#{index}",
+            :saved_comparison_set,
+            record.saved_set.entropy_id
+          ),
+          authorized_node_selection("apiToken#{index}", :api_token, record.api_token.entropy_id)
+        ]
+      end)
+
+    """
+    query OwnerScopedNodeBatch {
+      #{Enum.join(selections, "\n")}
+    }
+    """
+  end
+
+  defp operator_node_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          authorized_node_selection(
+            "affiliateNetwork#{index}",
+            :affiliate_network,
+            record.network.id
+          ),
+          authorized_node_selection(
+            "affiliateProgram#{index}",
+            :affiliate_program,
+            record.program.id
+          ),
+          authorized_node_selection("affiliateLink#{index}", :affiliate_link, record.link.id),
+          authorized_node_selection("coupon#{index}", :coupon, record.coupon.id)
+        ]
+      end)
+
+    """
+    query OperatorNodeBatch {
+      #{Enum.join(selections, "\n")}
     }
     """
   end

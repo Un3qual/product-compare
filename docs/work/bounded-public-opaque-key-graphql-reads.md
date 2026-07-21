@@ -84,5 +84,5 @@ values, snapshot hydration, or public privacy.
 
 ## Remaining Work
 
-None. Comparison-evidence, authorized-node, and bounded alert-evaluation
-market-read outcomes remain ready in the live queue.
+None. Authorized-management connections, catalog and offer-discovery root
+reads, and comparison-root reads remain ready in the live queue.

@@ -445,42 +445,24 @@ defmodule ProductCompare.Discussions do
 
   @spec get_public_question(Ecto.UUID.t()) :: ProductThread.t() | nil
   def get_public_question(entropy_id) do
-    case Ecto.UUID.cast(entropy_id) do
-      {:ok, uuid} -> entropy_id |> List.wrap() |> get_public_questions() |> Map.get(uuid)
-      :error -> nil
-    end
+    entropy_id
+    |> List.wrap()
+    |> get_public_questions()
+    |> Map.get(entropy_id)
   end
 
-  @spec get_public_questions([term()]) :: %{optional(Ecto.UUID.t()) => ProductThread.t() | nil}
+  @spec get_public_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
   def get_public_questions(entropy_ids) when is_list(entropy_ids) do
-    entropy_ids =
-      entropy_ids
-      |> Enum.flat_map(fn entropy_id ->
-        case Ecto.UUID.cast(entropy_id) do
-          {:ok, uuid} -> [uuid]
-          :error -> []
-        end
-      end)
-      |> Enum.uniq()
-
-    questions =
-      case entropy_ids do
-        [] ->
-          %{}
-
-        _ ->
-          ProductThread
-          |> where(
-            [question],
-            question.entropy_id in ^entropy_ids and question.kind == :question and
-              question.moderation_status == :published
-          )
-          |> preload(:accepted_post)
-          |> Repo.all()
-          |> Map.new(&{&1.entropy_id, &1})
-      end
-
-    Map.new(entropy_ids, &{&1, Map.get(questions, &1)})
+    Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
+      ProductThread
+      |> where(
+        [question],
+        question.entropy_id in ^validated_entropy_ids and question.kind == :question and
+          question.moderation_status == :published
+      )
+      |> preload(:accepted_post)
+      |> Repo.all()
+    end)
   end
 
   @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::

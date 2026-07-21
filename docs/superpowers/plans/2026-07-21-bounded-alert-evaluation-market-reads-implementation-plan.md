@@ -1,5 +1,7 @@
 # Bounded Alert Evaluation Market Reads Implementation Plan
 
+**Status:** complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
@@ -39,12 +41,12 @@ cooldowns, partial-failure reporting, and later-watch progress remain intact.
 and classify shared merchant-product/latest-price reads separately from the
 required price-point load, applicable-watch read, and per-watch lock reads.
 
-- [ ] Add a failing regression that grows a mixed product/listing watch set
+- [x] Add a failing regression that grows a mixed product/listing watch set
   from two to six watches for one product, currency, and triggering listing.
-- [ ] Assert identical event facts and summaries before comparing query counts.
-- [ ] Confirm RED because shared merchant-product/latest-price SELECTs grow
+- [x] Assert identical event facts and summaries before comparing query counts.
+- [x] Confirm RED because shared merchant-product/latest-price SELECTs grow
   with the watch count while the per-watch row-lock SELECTs grow intentionally.
-- [ ] Keep the existing fault-isolation and replay tests in the focused gate.
+- [x] Keep the existing fault-isolation and replay tests in the focused gate.
 
 ### Task 2: Precompute Market Facts Per Evaluation Run
 
@@ -60,16 +62,16 @@ merchant product plus its latest price for the listing fact. Pass the snapshot
 only through the default evaluator; custom evaluators retain their current
 three- and four-arity contracts.
 
-- [ ] Build the immutable fact snapshot once after loading the applicable
+- [x] Build the immutable fact snapshot once after loading the applicable
   watches and before beginning independent watch transactions.
-- [ ] Inside each transaction, select the snapshot fact from the locked
+- [x] Inside each transaction, select the snapshot fact from the locked
   watch's unchanged product/listing scope and run the existing condition,
   event, delivery, and state-update logic.
-- [ ] Confirm shared market-fact SELECT counts are identical for two and six
+- [x] Confirm shared market-fact SELECT counts are identical for two and six
   watches while required watch locks remain one per watch.
-- [ ] Re-run edge, cooldown, stale/incomplete/out-of-stock, owner-scope,
+- [x] Re-run edge, cooldown, stale/incomplete/out-of-stock, owner-scope,
   fault-isolation, and replay tests.
-- [ ] Commit with message `perf: bound alert evaluation market reads`.
+- [x] Commit with message `perf: bound alert evaluation market reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -77,8 +79,21 @@ three- and four-arity contracts.
 
 - Modify: `docs/work/bounded-alert-evaluation-market-reads.md`
 
-- [ ] Record exact before/after shared-read and required-lock counts.
-- [ ] Run `mix test test/product_compare/alerts/alerts_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Record exact before/after shared-read and required-lock counts.
+- [x] Run `mix test test/product_compare/alerts/alerts_test.exs`.
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.
+
+## Completion Evidence
+
+- The mixed product/listing regression proved the pre-change shared merchant-
+  product and latest-price reads grew from 2 to 6 as watches grew from 2 to 6.
+- The completed evaluator holds both shared read classes at 2 while preserving
+  the required one-row-lock-per-watch growth from 2 to 6.
+- Exact event facts and 2/2 versus 6/6 summaries remain unchanged. The focused
+  eight-test suite covers cooldown, stale and unavailable facts, owner scope,
+  replay, both custom-evaluator arities, fault isolation, and later-watch
+  progress.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed at completion.

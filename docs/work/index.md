@@ -1262,7 +1262,7 @@ products remain fixed at one, anonymous aliases issue zero tracked reads, and
 operator gates, ownership, missing/malformed behavior, nested values, and Relay
 identity remain unchanged. Shared UUID validation/projection prevents owner-
 context policy drift and keeps the clone budget unchanged. The focused gate
-passes 68 tests, its shared-input suite passes 20, and full CI passes 851
+passes 68 tests, its shared-input suite passes 20, and final PR CI passes 852
 backend plus 1,507 frontend tests.
 
 Before claiming the alert-evaluation successor, a tenth claim-floor audit

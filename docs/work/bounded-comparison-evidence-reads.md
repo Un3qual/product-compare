@@ -89,5 +89,5 @@ qualification, privacy, token, or revocation behavior.
 
 ## Remaining Work
 
-None. Authorized-node GraphQL reads, alert-evaluation market reads, and
-comparison-root GraphQL reads remain ready in the live queue.
+None. Authorized-management connections, catalog and offer-discovery root
+reads, and comparison-root reads remain ready in the live queue.
