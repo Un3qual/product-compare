@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-20
+Updated: 2026-07-21
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1158,7 +1158,61 @@ connections completed on `codex/bounded-product-offer-connections`: product
 offers, active coupons, and price history now hold at `{1, 1, 2}` SELECTs at
 both three and six product parents while preserving filters, order, validity,
 ranges, Relay pagination, latest prices, and invalid-input errors. The three
-successor rows remain ready.
+successor rows remain ready. Before claiming the merchant-offer successor on
+2026-07-21, the coordinator verified a fourth coherent read-budget outcome:
+aliased public category lookups and their nested qualified-product connections
+still execute per category. Bounded category GraphQL reads was promoted so the
+claim leaves three independently shippable ready rows. Bounded merchant-offer
+connections then completed on `codex/bounded-merchant-offer-connections`:
+merchant-product and latest-price SELECT counts now hold at `{1, 1}` for both
+three and six merchant parents while active-only filtering, ordering, Relay,
+association, and invalid-input behavior remain unchanged.
+Before claiming the viewer-community successor, a third claim-floor audit
+verified that aliased public `product(slug:)` and `merchant(slug:)` entry-point
+fields still perform direct per-alias lookups. Bounded public slug GraphQL
+reads was promoted as one coherent lookup outcome, leaving three independently
+shippable ready rows after the claim. Bounded viewer-community submission reads
+then completed on `codex/bounded-graphql-read-budgets`: review, question, and
+answer SELECT counts now hold at `{1, 1, 1}` for both three and six product
+parents while owner privacy, moderation states, per-kind limits, order,
+hidden-parent answer manageability, and anonymous zero-query behavior remain
+unchanged.
+Before claiming the public-node successor, a fourth claim-floor audit verified
+that the remaining nullable public opaque-key entry points—source artifacts,
+published product questions, and comparison snapshots—still perform direct
+per-alias reads. Those visibility and preload variants were grouped as one
+public-entry read-budget outcome, leaving three independently shippable ready
+rows after the claim.
+Bounded public-node GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: Product, Brand, Merchant,
+MerchantProduct, PricePoint, SourceArtifact, and source-preload SELECT counts
+now each hold at one for both three and six same-schema aliases while public
+values, valid-missing `nil`, invalid IDs, operator authorization, owner scope,
+and source metadata remain unchanged.
+Before claiming the category successor, a fifth claim-floor audit verified
+that live recommendations and immutable comparison snapshots still repeat
+offer, specification, and merchant evidence reads per selected product. Those
+surfaces share one two-or-three-product decision-evidence lifecycle, so they
+were promoted together as Bounded Comparison Evidence Reads, leaving three
+independently shippable ready rows after the claim.
+Bounded category GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: two and four category aliases now both
+hold at `%{taxons: 1, products: 2}` SELECTs while category qualification,
+shared-time semantics, metadata, descendant product order, Relay pagination,
+and missing-category behavior remain unchanged.
+Before claiming the public-slug successor, a sixth claim-floor audit verified
+that the remaining operator-only and owner-scoped Relay node types still read
+once per authorized alias. Affiliate network/program/link/coupon nodes and
+owner-filtered saved-set/API-token nodes share one authorization-aware Relay
+lookup boundary, so they were promoted together as Bounded Authorized Node
+GraphQL Reads, leaving three independently shippable ready rows after the
+claim.
+Bounded public slug GraphQL reads then completed on
+`codex/bounded-graphql-read-budgets`: two and four product/merchant alias sets
+now both hold at two product lookups, one historical-alias join, and one
+merchant lookup while canonical precedence, historical redirects, nested
+Dataloader values, request-local cache clearing, and missing results remain
+unchanged.
 
 ## Active Work
 
@@ -1166,146 +1220,168 @@ None.
 
 ## Ready Work
 
-### 1. Bounded Merchant Offer GraphQL Connections
+### 1. Bounded Public Opaque-Key GraphQL Reads
 
 Status: ready
-Lane: Bounded merchant offer GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
-Batch outcome: `Merchant.merchantProducts` keeps a fixed SELECT budget as a
-GraphQL merchant connection grows, without changing active-offer, Relay,
-association, or latest-price behavior.
-Next action: add parent-partitioned active merchant-offer pages, route the field
-through a request-scoped Dataloader source, and prove fixed query budgets under
-growing merchant parent counts.
+Lane: Bounded public opaque-key GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
+Batch outcome: aliased public `sourceArtifact(id:)`, `productQuestion(id:)`,
+and `comparisonSnapshot(token:)` entry-point reads keep fixed SELECT budgets
+per lookup kind as alias count grows, without changing ID errors, nullable
+missing results, source preloads, publication and revocation gates,
+accepted-answer values, snapshot hydration, or public privacy.
+Next action: add set-based context lookups, route the three opaque-key public
+entry points through one request-scoped Dataloader source, and prove semantic,
+privacy, preload, and fixed-budget parity.
 Owned paths:
 
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare_web/graphql/connection.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-merchant-offer-graphql-connections.md`
-
-Internal slices:
-
-- Parent-partitioned active merchant-offer pages.
-- Request-scoped merchant-offer Dataloader integration.
-- Relay parity plus fixed query budgets as merchant parents grow.
-
-Prerequisites:
-
-- Existing active-only and ascending offer-ID behavior remains authoritative.
-- Existing Relay cursor, page-size, edge, and `pageInfo` behavior remains the
-  contract.
-- This row executes serially with shared Pricing/Connection/Loader rows; it is
-  not blocked by their product-parent contracts.
-
-Verification:
-
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: merchant-offer edges, active filtering, order, cursors, page
-info, associations, and latest prices match current behavior while relevant
-SELECT counts stay fixed as merchant parent count grows.
-
-### 2. Bounded Viewer Community Submission Reads
-
-Status: ready
-Lane: Bounded viewer community submission reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
-Batch outcome: authenticated `Product.viewerCommunitySubmissions` keeps fixed
-owner-private review, question, and answer read budgets as product parent count
-grows.
-Next action: add parent-partitioned owner submission reads, delegate the
-authenticated resolver through Dataloader, and prove lifecycle/privacy parity
-under growing product parent counts.
-Owned paths:
-
+- `lib/product_compare/specs.ex`
 - `lib/product_compare/discussions.ex`
+- `lib/product_compare/comparison_snapshots.ex`
 - `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/specs_resolver.ex`
 - `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
+- `test/product_compare/specs_test.exs`
 - `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/source_artifact_query_test.exs`
 - `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-viewer-community-submission-reads.md`
+- `docs/work/bounded-public-opaque-key-graphql-reads.md`
 
 Internal slices:
 
-- Parent-partitioned owner review, question, and answer reads.
-- Authenticated request-scoped Dataloader integration.
-- Privacy, lifecycle parity, and fixed query-budget coverage.
+- Set-based source-artifact, public-question, and active-snapshot context reads.
+- Request-scoped opaque-key loading for all three public root resolvers.
+- Semantic, privacy, preload, and fixed per-kind query-budget parity.
 
 Prerequisites:
 
-- Existing owner-only, anonymous-empty, order, status, and per-kind limit
-  behavior remains authoritative.
-- Published answers under non-public parents remain owner-manageable.
-- This row executes serially with shared Discussions/Loader rows; it is not
-  dependent on the public community connection contract.
+- Existing global-ID errors, nullable missing behavior, source preload,
+  publication/revocation filters, accepted-answer values, and snapshot
+  hydration remain authoritative.
+- Public snapshot reads continue to expose no owner identity.
+- This row executes serially with shared Loader work but is independent of
+  slug identity, category qualification, and Relay node allowlist behavior.
 
 Verification:
 
-- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix test test/product_compare/specs_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: owner submission lists, privacy, lifecycle visibility, order,
-and per-kind limits match current behavior while review, thread, and post
-SELECT counts stay fixed as product parent count grows.
+Exit condition: all three public entry points preserve their current values,
+visibility, privacy, preload, invalid-input, and missing-result behavior while
+per-kind SELECT counts stay fixed as aliases grow.
 
-### 3. Bounded Public Node GraphQL Reads
+### 2. Bounded Comparison Evidence Reads
 
 Status: ready
-Lane: Bounded public node GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
-Batch outcome: public Relay `node(id:)` aliases batch by public schema so
-SELECT counts remain fixed per type as alias count grows, without changing
-identity, missing-node, field-value, source-preload, or authorization behavior.
-Next action: characterize growing mixed-type alias budgets, route the six
-public node types through request-scoped Dataloader sources, and prove semantic
-and query-count parity.
+Lane: Bounded comparison evidence reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
+Batch outcome: live recommendations and immutable snapshot publication collect
+comparison evidence with fixed SELECT budgets as selection grows from two
+products to three, without changing ranking, captured facts, order, shared-time
+semantics, qualification, privacy, token, or revocation behavior.
+Next action: route live recommendations through set-based current offer truth,
+gather snapshot attributes/offers/merchants in set-based phases, and prove
+semantic and fixed-budget parity on both surfaces.
 Owned paths:
 
-- `lib/product_compare_web/resolvers/node_resolver.ex`
+- `lib/product_compare/recommendations.ex`
+- `lib/product_compare/comparison_snapshots.ex`
+- `test/product_compare/recommendations_test.exs`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/recommendations_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `docs/work/bounded-comparison-evidence-reads.md`
+
+Internal slices:
+
+- Set-based live recommendation current-offer evidence.
+- Set-based immutable snapshot attributes, offers, and merchant evidence.
+- Semantic, privacy, shared-time, and fixed-budget parity.
+
+Prerequisites:
+
+- Existing two-or-three-product validation, recommendation algorithms,
+  snapshot payload, qualification, privacy, and revocation contracts remain
+  authoritative.
+- Existing `Specs.list_current_attributes_for_products/1` and
+  `Pricing.current_offer_truths/2` remain the shared evidence sources.
+- This row is independent of category, slug identity, and public opaque-key
+  entry-point batching.
+
+Verification:
+
+- `mix test test/product_compare/recommendations_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: two- and three-product live recommendations and immutable
+snapshots preserve exact facts and lifecycle behavior while comparison-evidence
+SELECT counts stay fixed as selection grows.
+
+### 3. Bounded Authorized Node GraphQL Reads
+
+Status: ready
+Lane: Bounded authorized node GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
+Batch outcome: operator-only and owner-scoped Relay `node(id:)` aliases keep a
+fixed SELECT budget per node type as authorized alias count grows, without
+changing authorization, ownership, privacy, missing/error behavior, nested
+values, or Relay identity.
+Next action: add set-based affiliate and owner-filtered context reads, route the
+six non-public node types through an authorization-aware request-scoped
+Dataloader source, and prove semantic, privacy, and fixed-budget parity.
+Owned paths:
+
+- `lib/product_compare/affiliate.ex`
+- `lib/product_compare/accounts.ex`
+- `lib/product_compare/catalog.ex`
 - `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/node_resolver.ex`
+- `test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `test/product_compare/accounts/api_token_test.exs`
+- `test/product_compare/catalog/saved_comparison_set_test.exs`
 - `test/product_compare_web/graphql/node_query_test.exs`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-public-node-graphql-reads.md`
+- `docs/work/bounded-authorized-node-graphql-reads.md`
 
 Internal slices:
 
-- Growing mixed-type public node alias query-budget characterization.
-- Public type-to-Dataloader mapping and asynchronous resolution.
-- Semantic, source-preload, and fixed per-schema budget parity.
+- Set-based operator-only affiliate node lookups.
+- Set-based owner-filtered saved-set and API-token lookups that preserve lazy
+  associations.
+- Authorization-aware request-scoped loading plus semantic, privacy, and
+  fixed-budget coverage.
 
 Prerequisites:
 
-- The existing six-type public allowlist and global-ID error contract remain
-  authoritative.
-- Valid missing nodes remain `nil`; operator and owner-scoped node behavior is
-  unchanged.
-- This row executes serially with shared Loader work but is independent of
-  nested Relay connection pagination.
+- The completed public-node Dataloader pattern and current Relay type decoder
+  remain authoritative.
+- Operator checks happen before reads; anonymous and cross-owner scoped nodes
+  remain `nil`, and forbidden operator reads retain their current error.
+- This row executes serially with shared Accounts/Catalog/Loader work but is
+  independent of opaque-key entry points and comparison evidence collection.
 
 Verification:
 
-- `mix test test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix test test/product_compare/affiliate/affiliate_workflows_test.exs test/product_compare/accounts/api_token_test.exs test/product_compare/catalog/saved_comparison_set_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: all six public node types retain their current values and
-missing/error behavior while same-schema SELECT counts stay fixed as aliases
-grow.
+Exit condition: operator and owner-scoped node types preserve exact values,
+authorization, privacy, lazy nested loading, invalid-input, and missing behavior
+while per-type SELECT counts stay fixed as authorized aliases grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

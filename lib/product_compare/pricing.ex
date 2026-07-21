@@ -56,8 +56,31 @@ defmodule ProductCompare.Pricing do
       do: Repo.get(Merchant, merchant_id)
 
   @spec get_merchant_by_slug(String.t()) :: Merchant.t() | nil
-  def get_merchant_by_slug(slug) when is_binary(slug), do: Repo.get_by(Merchant, slug: slug)
+  def get_merchant_by_slug(slug) when is_binary(slug) do
+    [slug]
+    |> get_merchants_by_slugs()
+    |> Map.fetch!(slug)
+  end
+
   def get_merchant_by_slug(_slug), do: nil
+
+  @spec get_merchants_by_slugs([term()]) :: %{optional(String.t()) => Merchant.t() | nil}
+  def get_merchants_by_slugs(slugs) when is_list(slugs) do
+    requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
+    query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
+
+    merchants_by_slug =
+      if query_slugs == [] do
+        %{}
+      else
+        Merchant
+        |> where([merchant], merchant.slug in ^query_slugs)
+        |> Repo.all()
+        |> Map.new(&{&1.slug, &1})
+      end
+
+    Map.new(requested_slugs, &{&1, Map.get(merchants_by_slug, &1)})
+  end
 
   @spec merchant_detail(String.t() | Merchant.t(), keyword()) ::
           %{merchant: Merchant.t(), summary: map()} | nil
@@ -137,6 +160,40 @@ defmodule ProductCompare.Pricing do
     |> order_by([offer], asc: offer.id)
   end
 
+  @spec merchant_offer_pages([pos_integer()], %{
+          offset: non_neg_integer(),
+          fetch_limit: non_neg_integer()
+        }) :: %{optional(pos_integer()) => [MerchantProduct.t()]}
+  def merchant_offer_pages(merchant_ids, %{offset: offset, fetch_limit: fetch_limit})
+      when is_list(merchant_ids) do
+    merchant_ids = normalize_merchant_ids(merchant_ids)
+
+    if merchant_ids == [] do
+      %{}
+    else
+      ranked_offers =
+        MerchantProduct
+        |> where([offer], offer.merchant_id in ^merchant_ids)
+        |> maybe_where_active_only(true)
+        |> windows(
+          [offer],
+          merchant_offer_page: [partition_by: offer.merchant_id, order_by: [asc: offer.id]]
+        )
+        |> select([offer], %{
+          id: offer.id,
+          row_number: over(row_number(), :merchant_offer_page)
+        })
+
+      partitioned_merchant_product_pages(
+        ranked_offers,
+        merchant_ids,
+        :merchant_id,
+        offset,
+        fetch_limit
+      )
+    end
+  end
+
   @spec upsert_merchant_product(map()) ::
           {:ok, MerchantProduct.t()} | {:error, Ecto.Changeset.t()}
   def upsert_merchant_product(attrs) do
@@ -197,20 +254,13 @@ defmodule ProductCompare.Pricing do
           row_number: over(row_number(), :product_offer_page)
         })
 
-      offers_by_product =
-        MerchantProduct
-        |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
-        |> where(
-          [_offer, ranked],
-          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
-        )
-        |> order_by([offer, _ranked], asc: offer.product_id, asc: offer.id)
-        |> Repo.all()
-        |> Enum.group_by(& &1.product_id)
-
-      Map.new(product_ids, fn product_id ->
-        {product_id, Map.get(offers_by_product, product_id, [])}
-      end)
+      partitioned_merchant_product_pages(
+        ranked_offers,
+        product_ids,
+        :product_id,
+        offset,
+        fetch_limit
+      )
     end
   end
 
@@ -432,6 +482,38 @@ defmodule ProductCompare.Pricing do
 
   defp normalize_product_ids(product_ids) do
     product_ids
+    |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
+    |> Enum.uniq()
+  end
+
+  defp partitioned_merchant_product_pages(
+         ranked_offers,
+         parent_ids,
+         parent_field,
+         offset,
+         fetch_limit
+       ) do
+    offers_by_parent =
+      MerchantProduct
+      |> join(:inner, [offer], ranked in subquery(ranked_offers), on: ranked.id == offer.id)
+      |> where(
+        [_offer, ranked],
+        ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+      )
+      |> order_by([offer, _ranked],
+        asc: field(offer, ^parent_field),
+        asc: offer.id
+      )
+      |> Repo.all()
+      |> Enum.group_by(&Map.fetch!(&1, parent_field))
+
+    Map.new(parent_ids, fn parent_id ->
+      {parent_id, Map.get(offers_by_parent, parent_id, [])}
+    end)
+  end
+
+  defp normalize_merchant_ids(merchant_ids) do
+    merchant_ids
     |> Enum.filter(&(is_integer(&1) and &1 > 0 and &1 <= @max_bigint_id))
     |> Enum.uniq()
   end

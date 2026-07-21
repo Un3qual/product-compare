@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -610,11 +612,22 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     assert question_id == relay_id(:product_question, question.entropy_id)
     assert answer_id == relay_id(:product_answer, answer.entropy_id)
 
-    assert get_in(graphql(conn, owner_submissions_query(), %{"slug" => product.slug}), [
+    {anonymous_response, anonymous_queries} =
+      capture_select_queries(fn ->
+        graphql(conn, owner_submissions_query(), %{"slug" => product.slug})
+      end)
+
+    assert get_in(anonymous_response, [
              "data",
              "product",
              "viewerCommunitySubmissions"
            ]) == %{"reviews" => [], "questions" => [], "answers" => []}
+
+    refute Enum.any?(anonymous_queries, fn query ->
+             Enum.any?(~w(product_reviews product_threads thread_posts), fn table ->
+               String.contains?(query, ~s(FROM "#{table}"))
+             end)
+           end)
   end
 
   test "rate limits surface typed payload errors", %{conn: conn} do

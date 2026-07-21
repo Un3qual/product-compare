@@ -11,6 +11,7 @@ defmodule ProductCompare.SeoTest do
   alias ProductCompare.Repo
   alias ProductCompare.Seo
   alias ProductCompare.Specs
+  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
 
   @now ~U[2026-07-13 20:00:00Z]
@@ -155,6 +156,163 @@ defmodule ProductCompare.SeoTest do
     assert Enum.map(Seo.sitemap_entries(:categories, now: @now), & &1.path) == [
              "/categories/search-cameras"
            ]
+  end
+
+  test "batch category lookup preserves singular qualification with a fixed query budget" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    categories =
+      Enum.map(1..4, fn index ->
+        category =
+          TaxonomyFixtures.taxon_fixture(%{
+            taxonomy_id: type_taxonomy.id,
+            code: "batched-category-#{index}",
+            name: "Batched Category #{index}",
+            seo_slug: "batched-category-#{index}",
+            seo_description:
+              String.duplicate("Compare trusted category evidence and current offers. ", 2),
+            seo_indexable: true
+          })
+
+        if index <= 2 do
+          Enum.each(1..(4 - index), fn product_index ->
+            qualified_product(
+              "batched-category-#{index}-product-#{product_index}",
+              operator,
+              category
+            )
+          end)
+        end
+
+        category
+      end)
+
+    nonindexable =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "batched-category-private",
+        name: "Private Category",
+        seo_slug: "batched-category-private",
+        seo_description: @description,
+        seo_indexable: false
+      })
+
+    slugs = Enum.map(categories, & &1.seo_slug)
+
+    {two_categories, two_queries} =
+      capture_select_queries(fn -> Seo.get_categories(Enum.take(slugs, 2), now: @now) end)
+
+    {all_categories, all_queries} =
+      capture_select_queries(fn ->
+        Seo.get_categories(slugs ++ ["missing-category", "", nonindexable.seo_slug], now: @now)
+      end)
+
+    assert [_, _] = two_queries
+    assert [_, _] = all_queries
+
+    Enum.each(Enum.take(slugs, 2), fn slug ->
+      assert two_categories[slug] == Seo.get_category(slug, now: @now)
+    end)
+
+    Enum.each(slugs, fn slug ->
+      assert all_categories[slug] == Seo.get_category(slug, now: @now)
+    end)
+
+    assert all_categories["batched-category-1"].qualified_product_count == 3
+    assert all_categories["batched-category-1"].indexable
+    assert all_categories["batched-category-2"].qualified_product_count == 2
+    refute all_categories["batched-category-2"].indexable
+    assert all_categories["missing-category"] == nil
+    assert all_categories[""] == nil
+    assert all_categories[nonindexable.seo_slug] == nil
+    assert Seo.get_categories([], now: @now) == %{}
+  end
+
+  test "batch category product pages preserve descendant qualification and independent Relay windows" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    parent =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "batched-parent",
+        name: "Batched Parent"
+      })
+
+    child =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        parent_id: parent.id,
+        code: "batched-child",
+        name: "Batched Child"
+      })
+
+    direct_parent = qualified_product("batched-parent-product", operator, parent)
+
+    child_products =
+      Enum.map(1..4, fn index ->
+        qualified_product("batched-child-product-#{index}", operator, child)
+      end)
+
+    _unqualified_child =
+      SpecsFixtures.product_fixture(%{slug: "batched-child-thin", primary_type_taxon: child})
+
+    missing_taxon_id = child.id + 1_000_000
+    first_args = %{first: 2}
+    assert {:ok, first_window} = Connection.batch_window(first_args)
+
+    {first_pages, first_queries} =
+      capture_select_queries(fn ->
+        Seo.qualified_product_pages([parent.id, child.id, missing_taxon_id], @now, first_window)
+      end)
+
+    assert [_query] = first_queries
+
+    assert Enum.map(first_pages[parent.id], & &1.id) ==
+             Enum.map(Enum.take(child_products, 3), & &1.id)
+
+    assert Enum.map(first_pages[child.id], & &1.id) ==
+             Enum.map(Enum.take(child_products, 3), & &1.id)
+
+    refute direct_parent.id in Enum.map(first_pages[parent.id], & &1.id)
+    assert first_pages[missing_taxon_id] == []
+
+    assert Connection.from_prefetched_page(first_pages[parent.id], first_args) ==
+             Connection.from_query(
+               Seo.qualified_products_for_taxon_query(parent.id, @now),
+               first_args,
+               Repo
+             )
+
+    assert {:ok, first_connection} =
+             Connection.from_prefetched_page(first_pages[child.id], first_args)
+
+    next_args = %{first: 2, after: first_connection.page_info.end_cursor}
+    assert {:ok, next_window} = Connection.batch_window(next_args)
+
+    {next_pages, next_queries} =
+      capture_select_queries(fn ->
+        Seo.qualified_product_pages([parent.id, child.id], @now, next_window)
+      end)
+
+    assert [_query] = next_queries
+
+    Enum.each([parent.id, child.id], fn taxon_id ->
+      assert Connection.from_prefetched_page(next_pages[taxon_id], next_args) ==
+               Connection.from_query(
+                 Seo.qualified_products_for_taxon_query(taxon_id, @now),
+                 next_args,
+                 Repo
+               )
+    end)
+
+    assert {empty_pages, []} =
+             capture_select_queries(fn ->
+               Seo.qualified_product_pages([], @now, first_window)
+             end)
+
+    assert empty_pages == %{}
   end
 
   test "comparison snapshots are private to search by default and require explicit opt-in plus captured evidence" do

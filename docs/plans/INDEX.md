@@ -100,10 +100,33 @@ bounded product evidence/SEO reads, bounded public community connections,
 bounded product-offer/coupon/history connections, bounded merchant-parent
 active-offer connections, and bounded owner-private community submission
 reads. Product evidence, public community connections, and product-offer/coupon/history
-connections are complete; the other two remain ready.
+connections are complete. Merchant-parent connections and owner-private
+community submission reads are also complete.
 The claim-floor audit additionally promoted bounded public Relay node alias
 reads after verifying six direct per-alias public lookups and existing
-request-scoped Dataloader coverage; that outcome is also ready.
+request-scoped Dataloader coverage; that outcome is complete.
+A second claim-floor audit promoted bounded category GraphQL reads after
+verifying that aliased category lookups each repeat taxon and qualification
+queries and that each nested qualified-product connection still runs per
+category parent. That reviewer-sized outcome is complete.
+A third claim-floor audit promoted bounded public slug GraphQL reads after
+verifying that aliased product and merchant entry-point fields still repeat
+direct slug lookups. Product canonical/history lookup and merchant identity
+share one public-entry acceptance boundary; that outcome is complete.
+A fourth claim-floor audit promoted the remaining nullable public opaque-key
+entry points after verifying that source-artifact IDs, published-question IDs,
+and comparison-snapshot tokens each still trigger direct per-alias reads. Their
+source/preload, publication, revocation, hydration, error, and missing-result
+rules stay internal slices of one public-entry read-budget outcome.
+A fifth claim-floor audit promoted bounded comparison evidence reads after
+verifying that live recommendations and immutable snapshot publication still
+repeat offer, specification, and merchant evidence reads per selected product.
+Those two surfaces share one two-or-three-product evidence lifecycle and remain
+internal slices of one reviewer-sized outcome.
+A sixth claim-floor audit promoted the remaining authorized Relay node reads
+after verifying that four operator-only affiliate types and two owner-scoped
+types still query per alias. Their authorization and ownership variants stay
+internal slices of one non-public node acceptance boundary.
 Specification-correction lists were not promoted because their claim trees are
 already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
@@ -111,9 +134,9 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -144,12 +167,14 @@ batch and should not be recreated or promoted.
 ## Planned Follow-Up Groups
 
 - Current backend read-budget program: product evidence/SEO, public community
-  connections, and product-offer/coupon/history connections are complete.
-  Merchant-parent active-offer connections, owner-private community
-  submission reads, and public Relay node alias reads remain ready through the
-  active 2026-07-20 plans above. They are reviewer-sized domain outcomes; their
-  set-based context, Dataloader, and query-budget steps remain internal slices
-  rather than separate queue rows.
+  connections, product-offer/coupon/history connections, and merchant-parent
+  active-offer connections are complete. Owner-private community submission
+  reads, public Relay node aliases, and category lookup/qualified-product
+  connections are complete. Public product/merchant slug lookups are also
+  complete; the remaining public opaque-key lookups, comparison evidence reads,
+  and authorized Relay node reads remain ready through the active plans above.
+  They are reviewer-sized domain outcomes; their set-based context, Dataloader,
+  and query-budget steps remain internal slices rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
@@ -232,6 +257,12 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- 2026-07-20 through 2026-07-21 bounded GraphQL reads: merchant-offer
+  connections, owner-private community submissions, public Relay nodes,
+  category qualification and product pages, and public product/merchant slug
+  aliases. Their implementation plans are explicitly complete, and their lane
+  docs retain the query-budget and semantic-parity evidence.
 
 - 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
   lifecycle reliability, community content lifecycle, Relay cursor forward

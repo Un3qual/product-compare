@@ -118,18 +118,44 @@ defmodule ProductCompare.Catalog do
   def get_product_by_slug(nil), do: nil
 
   def get_product_by_slug(slug) when is_binary(slug) do
-    case Repo.get_by(Product, slug: slug) do
-      %Product{} = product ->
-        product
+    [slug]
+    |> get_products_by_slugs()
+    |> Map.fetch!(slug)
+  end
 
-      nil ->
+  @spec get_products_by_slugs([term()]) :: %{optional(String.t()) => Product.t() | nil}
+  def get_products_by_slugs(slugs) when is_list(slugs) do
+    requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
+    query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
+
+    canonical_products =
+      if query_slugs == [] do
+        %{}
+      else
+        Product
+        |> where([product], product.slug in ^query_slugs)
+        |> Repo.all()
+        |> Map.new(&{&1.slug, &1})
+      end
+
+    unresolved_slugs = query_slugs -- Map.keys(canonical_products)
+
+    historical_products =
+      if unresolved_slugs == [] do
+        %{}
+      else
         Product
         |> join(:inner, [product], slug_alias in ProductSlugAlias,
           on: slug_alias.product_id == product.id
         )
-        |> where([_product, slug_alias], slug_alias.slug == ^slug)
-        |> Repo.one()
-    end
+        |> where([_product, slug_alias], slug_alias.slug in ^unresolved_slugs)
+        |> select([product, slug_alias], {slug_alias.slug, product})
+        |> Repo.all()
+        |> Map.new()
+      end
+
+    products_by_slug = Map.merge(historical_products, canonical_products)
+    Map.new(requested_slugs, &{&1, Map.get(products_by_slug, &1)})
   end
 
   defp ensure_slug_not_reserved(slug, product_id \\ nil)

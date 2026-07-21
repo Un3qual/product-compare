@@ -313,6 +313,214 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     end
   end
 
+  test "viewer submission batches preserve owner visibility across products" do
+    owner = AccountsFixtures.user_fixture()
+    stranger = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    public_only_product = SpecsFixtures.product_fixture()
+    empty_product = SpecsFixtures.product_fixture()
+    missing_product_id = empty_product.id + 1_000_000
+
+    assert {:ok, pending_review} =
+             Discussions.submit_review(owner.id, first_product.id, %{rating: 4})
+
+    assert {:ok, hidden_review} =
+             Discussions.submit_review(owner.id, second_product.id, %{rating: 3})
+
+    assert {:ok, hidden_review} =
+             Discussions.moderate(operator.id, :review, hidden_review.entropy_id, :hidden)
+
+    assert {:ok, published_review} =
+             Discussions.submit_review(owner.id, public_only_product.id, %{rating: 5})
+
+    assert {:ok, _published_review} =
+             Discussions.moderate(
+               operator.id,
+               :review,
+               published_review.entropy_id,
+               :published
+             )
+
+    assert {:ok, _stranger_review} =
+             Discussions.submit_review(stranger.id, first_product.id, %{rating: 2})
+
+    assert {:ok, pending_question} =
+             Discussions.ask_question(owner.id, first_product.id, %{title: "Pending question"})
+
+    assert {:ok, hidden_question} =
+             Discussions.ask_question(owner.id, second_product.id, %{title: "Hidden question"})
+
+    assert {:ok, hidden_question} =
+             Discussions.moderate(
+               operator.id,
+               :question,
+               hidden_question.entropy_id,
+               :published
+             )
+
+    assert {:ok, published_under_hidden_parent} =
+             Discussions.answer_question(owner.id, hidden_question.entropy_id, "Owner answer")
+
+    assert {:ok, published_under_hidden_parent} =
+             Discussions.moderate(
+               operator.id,
+               :answer,
+               published_under_hidden_parent.entropy_id,
+               :published
+             )
+
+    assert {:ok, hidden_question} =
+             Discussions.moderate(
+               operator.id,
+               :question,
+               hidden_question.entropy_id,
+               :hidden
+             )
+
+    assert {:ok, public_question} =
+             Discussions.ask_question(owner.id, public_only_product.id, %{
+               title: "Public question"
+             })
+
+    assert {:ok, public_question} =
+             Discussions.moderate(
+               operator.id,
+               :question,
+               public_question.entropy_id,
+               :published
+             )
+
+    assert {:ok, pending_answer} =
+             Discussions.answer_question(owner.id, public_question.entropy_id, "Pending answer")
+
+    assert {:ok, public_answer} =
+             Discussions.answer_question(stranger.id, public_question.entropy_id, "Public answer")
+
+    assert {:ok, _public_answer} =
+             Discussions.moderate(operator.id, :answer, public_answer.entropy_id, :published)
+
+    product_ids = [
+      first_product.id,
+      second_product.id,
+      public_only_product.id,
+      empty_product.id,
+      missing_product_id,
+      first_product.id,
+      -1
+    ]
+
+    actual = Discussions.viewer_community_submissions_for_products(owner.id, product_ids)
+
+    assert Map.keys(actual) |> Enum.sort() ==
+             [
+               first_product.id,
+               second_product.id,
+               public_only_product.id,
+               empty_product.id,
+               missing_product_id
+             ]
+             |> Enum.sort()
+
+    assert actual[first_product.id] == %{
+             reviews: [pending_review],
+             questions: [pending_question],
+             answers: []
+           }
+
+    assert actual[second_product.id] == %{
+             reviews: [hidden_review],
+             questions: [hidden_question],
+             answers: [published_under_hidden_parent]
+           }
+
+    assert actual[public_only_product.id] == %{
+             reviews: [],
+             questions: [],
+             answers: [pending_answer]
+           }
+
+    assert actual[empty_product.id] == %{reviews: [], questions: [], answers: []}
+    assert actual[missing_product_id] == %{reviews: [], questions: [], answers: []}
+    assert Discussions.viewer_community_submissions_for_products(owner.id, []) == %{}
+  end
+
+  test "viewer submission batches use one SELECT per content kind across products" do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+
+    for product <- [first_product, second_product] do
+      assert {:ok, _review} = Discussions.submit_review(owner.id, product.id, %{rating: 4})
+
+      assert {:ok, question} =
+               Discussions.ask_question(owner.id, product.id, %{title: "Question"})
+
+      assert {:ok, question} =
+               Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+      assert {:ok, _answer} =
+               Discussions.answer_question(owner.id, question.entropy_id, "Answer")
+    end
+
+    {submissions, queries} =
+      capture_select_queries(fn ->
+        Discussions.viewer_community_submissions_for_products(owner.id, [
+          first_product.id,
+          second_product.id
+        ])
+      end)
+
+    assert Map.keys(submissions) |> Enum.sort() ==
+             [first_product.id, second_product.id] |> Enum.sort()
+
+    assert [_, _, _] = queries
+  end
+
+  test "viewer submission batches apply the owner limit independently per product" do
+    owner = AccountsFixtures.user_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    timestamp = ~U[2026-07-21 12:00:00.000000Z]
+
+    first_question_ids =
+      for index <- 1..51 do
+        %ProductThread{}
+        |> ProductThread.changeset(%{
+          product_id: first_product.id,
+          created_by: owner.id,
+          title: "Question #{index}"
+        })
+        |> Repo.insert!()
+        |> set_inserted_at(timestamp)
+        |> Map.fetch!(:id)
+      end
+
+    second_question =
+      %ProductThread{}
+      |> ProductThread.changeset(%{
+        product_id: second_product.id,
+        created_by: owner.id,
+        title: "Second product question"
+      })
+      |> Repo.insert!()
+
+    submissions =
+      Discussions.viewer_community_submissions_for_products(owner.id, [
+        first_product.id,
+        second_product.id
+      ])
+
+    assert Enum.map(submissions[first_product.id].questions, & &1.id) ==
+             first_question_ids |> Enum.reverse() |> Enum.take(50)
+
+    assert Enum.map(submissions[second_product.id].questions, & &1.id) == [
+             second_question.id
+           ]
+  end
+
   test "published questions accept only a published answer from the same thread" do
     asker = AccountsFixtures.user_fixture()
     answerer = AccountsFixtures.user_fixture()

@@ -12,7 +12,6 @@ defmodule ProductCompare.Seo do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
-  alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Catalog.{ComparisonSnapshot, Product}
   alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
@@ -177,33 +176,52 @@ defmodule ProductCompare.Seo do
   def get_category(slug, opts \\ [])
 
   def get_category(slug, opts) when is_binary(slug) do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-
-    with %Taxon{} = taxon <- Taxonomy.get_taxon_by_seo_slug(slug),
-         true <- taxon.seo_indexable == true do
-      qualified_product_count =
-        taxon.id
-        |> qualified_products_for_taxon_query(now)
-        |> Repo.aggregate(:count, :id)
-
-      %{
-        id: taxon.id,
-        entropy_id: taxon.entropy_id,
-        name: taxon.name,
-        slug: taxon.seo_slug,
-        description: taxon.seo_description,
-        qualified_product_count: qualified_product_count,
-        indexable:
-          adequate_text?(taxon.seo_description) and
-            qualified_product_count >= @minimum_category_products,
-        now: now
-      }
-    else
-      _ -> nil
-    end
+    [slug]
+    |> get_categories(opts)
+    |> Map.fetch!(slug)
   end
 
   def get_category(_slug, _opts), do: nil
+
+  @spec get_categories([String.t()], keyword()) :: %{String.t() => map() | nil}
+  def get_categories(slugs, opts \\ []) when is_list(slugs) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    requested_slugs = slugs |> Enum.filter(&is_binary/1) |> Enum.uniq()
+
+    query_slugs = Enum.reject(requested_slugs, &(String.trim(&1) == ""))
+
+    taxons =
+      if query_slugs == [] do
+        []
+      else
+        Taxon
+        |> where([taxon], taxon.seo_slug in ^query_slugs and taxon.seo_indexable == true)
+        |> Repo.all()
+      end
+
+    counts = qualified_product_counts(Enum.map(taxons, & &1.id), now)
+
+    categories_by_slug =
+      Map.new(taxons, fn taxon ->
+        qualified_product_count = Map.fetch!(counts, taxon.id)
+
+        {taxon.seo_slug,
+         %{
+           id: taxon.id,
+           entropy_id: taxon.entropy_id,
+           name: taxon.name,
+           slug: taxon.seo_slug,
+           description: taxon.seo_description,
+           qualified_product_count: qualified_product_count,
+           indexable:
+             adequate_text?(taxon.seo_description) and
+               qualified_product_count >= @minimum_category_products,
+           now: now
+         }}
+      end)
+
+    Map.new(requested_slugs, &{&1, Map.get(categories_by_slug, &1)})
+  end
 
   @spec category_metadata(map()) :: metadata()
   def category_metadata(category) do
@@ -246,6 +264,89 @@ defmodule ProductCompare.Seo do
     |> where([_product, closure], closure.ancestor_id == ^taxon_id)
     |> qualified_products_query(now)
     |> order_by([product], asc: product.name, asc: product.id)
+  end
+
+  @spec qualified_product_pages(
+          [pos_integer()],
+          DateTime.t(),
+          %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
+        ) :: %{optional(pos_integer()) => [Product.t()]}
+  def qualified_product_pages(taxon_ids, %DateTime{} = now, %{
+        offset: offset,
+        fetch_limit: fetch_limit
+      })
+      when is_list(taxon_ids) and is_integer(offset) and offset >= 0 and
+             is_integer(fetch_limit) and fetch_limit >= 0 do
+    taxon_ids =
+      taxon_ids
+      |> Enum.filter(&(is_integer(&1) and &1 > 0))
+      |> Enum.uniq()
+
+    if taxon_ids == [] do
+      %{}
+    else
+      qualifying_products = qualified_products_query(now)
+
+      ranked_products =
+        TaxonClosure
+        |> join(:inner, [closure], product in subquery(qualifying_products),
+          on: product.primary_type_taxon_id == closure.descendant_id
+        )
+        |> where([closure], closure.ancestor_id in ^taxon_ids)
+        |> windows(
+          [closure, product],
+          category_product_page: [
+            partition_by: closure.ancestor_id,
+            order_by: [asc: product.name, asc: product.id]
+          ]
+        )
+        |> select([closure, product], %{
+          category_id: closure.ancestor_id,
+          product_id: product.id,
+          row_number: over(row_number(), :category_product_page)
+        })
+
+      products_by_category =
+        Product
+        |> join(:inner, [product], ranked in subquery(ranked_products),
+          on: ranked.product_id == product.id
+        )
+        |> where(
+          [_product, ranked],
+          ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
+        )
+        |> order_by([product, ranked],
+          asc: ranked.category_id,
+          asc: product.name,
+          asc: product.id
+        )
+        |> select([product, ranked], {ranked.category_id, product})
+        |> Repo.all()
+        |> Enum.group_by(fn {category_id, _product} -> category_id end, fn {_category_id, product} ->
+          product
+        end)
+
+      Map.new(taxon_ids, &{&1, Map.get(products_by_category, &1, [])})
+    end
+  end
+
+  defp qualified_product_counts([], _now), do: %{}
+
+  defp qualified_product_counts(taxon_ids, now) do
+    qualifying_products = qualified_products_query(now)
+
+    counts =
+      TaxonClosure
+      |> join(:inner, [closure], product in subquery(qualifying_products),
+        on: product.primary_type_taxon_id == closure.descendant_id
+      )
+      |> where([closure], closure.ancestor_id in ^taxon_ids)
+      |> group_by([closure], closure.ancestor_id)
+      |> select([closure, product], {closure.ancestor_id, count(product.id, :distinct)})
+      |> Repo.all()
+      |> Map.new()
+
+    Map.new(taxon_ids, &{&1, Map.get(counts, &1, 0)})
   end
 
   @spec sitemap_entries(:products | :merchants | :categories | :comparisons, keyword()) :: [map()]

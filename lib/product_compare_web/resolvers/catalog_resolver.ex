@@ -12,6 +12,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -23,7 +24,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   @max_comparison_products 3
   @max_search_query_length 100
 
-  @spec product(any(), map(), Absinthe.Resolution.t()) :: {:ok, Product.t() | nil}
+  @spec product(any(), map(), Absinthe.Resolution.t()) ::
+          {:ok, Product.t() | nil} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product(_parent, args, %{context: %{loader: loader}} = resolution) do
+    clear_base_unit_symbol_cache(resolution)
+    slug = Input.fetch_value(args || %{}, :slug)
+    source = Loader.public_slug_source()
+
+    loader
+    |> Dataloader.load(source, :product, slug)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, :product, slug)}
+    end)
+  end
+
   def product(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
     {:ok, Catalog.get_product_by_slug(Input.fetch_value(args || %{}, :slug))}

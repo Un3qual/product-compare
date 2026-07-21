@@ -78,6 +78,47 @@ defmodule ProductCompare.PricingTest do
              ]
     end
 
+    test "batch merchant slug lookup preserves singular results with a fixed query budget" do
+      merchants =
+        Enum.map(1..4, fn index ->
+          {:ok, merchant} =
+            Pricing.upsert_merchant(%{
+              name: "Batch Slug Merchant #{index}",
+              domain: "batch-slug-merchant-#{index}.example"
+            })
+
+          merchant
+        end)
+
+      slugs = Enum.map(merchants, & &1.slug)
+
+      {initial_results, initial_queries} =
+        capture_select_queries(fn -> Pricing.get_merchants_by_slugs(Enum.take(slugs, 2)) end)
+
+      {grown_results, grown_queries} =
+        capture_select_queries(fn ->
+          Pricing.get_merchants_by_slugs(slugs ++ ["missing-merchant", "", hd(slugs), nil, 42])
+        end)
+
+      assert [_] = initial_queries
+      assert [_] = grown_queries
+
+      Enum.each(slugs ++ ["missing-merchant", ""], fn slug ->
+        assert grown_results[slug] == Pricing.get_merchant_by_slug(slug)
+      end)
+
+      assert initial_results[hd(slugs)].id == hd(merchants).id
+      assert grown_results["missing-merchant"] == nil
+      assert grown_results[""] == nil
+      refute Map.has_key?(grown_results, nil)
+      refute Map.has_key?(grown_results, 42)
+
+      assert {empty_results, []} =
+               capture_select_queries(fn -> Pricing.get_merchants_by_slugs([]) end)
+
+      assert empty_results == %{}
+    end
+
     test "get_merchant/1 and get_merchant_product/1 only accept positive integer ids" do
       oversized_id = 9_223_372_036_854_775_808
 
@@ -347,6 +388,81 @@ defmodule ProductCompare.PricingTest do
       {pages, queries} =
         capture_select_queries(fn ->
           Pricing.product_offer_pages([], %{active_only: true}, %{offset: 0, fetch_limit: 2})
+        end)
+
+      assert pages == %{}
+      assert queries == []
+    end
+  end
+
+  describe "merchant_offer_pages/2" do
+    test "matches active merchant-offer queries across offsets and empty parents", %{
+      test: test_name
+    } do
+      product_a = SpecsFixtures.product_fixture(%{slug: "#{test_name}-merchant-page-a"})
+      product_b = SpecsFixtures.product_fixture(%{slug: "#{test_name}-merchant-page-b"})
+
+      {:ok, merchant_a} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page A",
+          domain: "#{test_name}-merchant-page-a.example"
+        })
+
+      {:ok, merchant_b} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page B",
+          domain: "#{test_name}-merchant-page-b.example"
+        })
+
+      {:ok, empty_merchant} =
+        Pricing.upsert_merchant(%{
+          name: "#{test_name} Merchant Page Empty",
+          domain: "#{test_name}-merchant-page-empty.example"
+        })
+
+      for {merchant, product, suffix, active?} <- [
+            {merchant_a, product_a, "a-1", true},
+            {merchant_b, product_a, "b-1", true},
+            {merchant_a, product_b, "a-2", false},
+            {merchant_b, product_b, "b-2", true},
+            {merchant_a, product_b, "a-3", true},
+            {merchant_a, product_a, "a-4", true}
+          ] do
+        {:ok, _offer} =
+          Pricing.upsert_merchant_product(%{
+            merchant_id: merchant.id,
+            product_id: product.id,
+            url: "https://#{merchant.domain}/#{suffix}",
+            currency: "USD",
+            is_active: active?
+          })
+      end
+
+      missing_merchant_id = empty_merchant.id + 1_000_000
+      merchant_ids = [merchant_b.id, empty_merchant.id, missing_merchant_id, merchant_a.id]
+
+      for window <- [
+            %{offset: 0, fetch_limit: 3},
+            %{offset: 1, fetch_limit: 2},
+            %{offset: 3, fetch_limit: 2}
+          ] do
+        expected = expected_merchant_offer_pages(merchant_ids, window)
+
+        {actual, queries} =
+          capture_select_queries(fn -> Pricing.merchant_offer_pages(merchant_ids, window) end)
+
+        assert offer_ids_by_merchant(actual) == offer_ids_by_merchant(expected)
+        assert Map.fetch!(actual, empty_merchant.id) == []
+        assert Map.fetch!(actual, missing_merchant_id) == []
+        assert [query] = queries
+        assert String.contains?(query, ~s(FROM "merchant_products"))
+      end
+    end
+
+    test "returns no pages and performs no query for an empty merchant list" do
+      {pages, queries} =
+        capture_select_queries(fn ->
+          Pricing.merchant_offer_pages([], %{offset: 0, fetch_limit: 2})
         end)
 
       assert pages == %{}
@@ -743,6 +859,25 @@ defmodule ProductCompare.PricingTest do
   defp offer_ids_by_product(pages) do
     Map.new(pages, fn {product_id, offers} ->
       {product_id, Enum.map(offers, & &1.id)}
+    end)
+  end
+
+  defp expected_merchant_offer_pages(merchant_ids, window) do
+    Map.new(merchant_ids, fn merchant_id ->
+      offers =
+        merchant_id
+        |> Pricing.list_merchant_offers_query(true)
+        |> Repo.all()
+        |> Enum.drop(window.offset)
+        |> Enum.take(window.fetch_limit)
+
+      {merchant_id, offers}
+    end)
+  end
+
+  defp offer_ids_by_merchant(pages) do
+    Map.new(pages, fn {merchant_id, offers} ->
+      {merchant_id, Enum.map(offers, & &1.id)}
     end)
   end
 

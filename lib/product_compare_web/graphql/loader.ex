@@ -16,7 +16,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
   @community_connection_source {__MODULE__, :community_connections}
+  @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
+  @category_source {__MODULE__, :categories}
+  @public_slug_source {__MODULE__, :public_slugs}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -36,8 +39,20 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       Dataloader.KV.new(&community_connection_batch/2, async?: false)
     )
     |> Dataloader.add_source(
+      @viewer_submission_source,
+      Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
       @offer_connection_source,
       Dataloader.KV.new(&offer_connection_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
+      @category_source,
+      Dataloader.KV.new(&category_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
+      @public_slug_source,
+      Dataloader.KV.new(&public_slug_batch/2, async?: false)
     )
   end
 
@@ -50,8 +65,17 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @spec community_connection_source() :: {module(), :community_connections}
   def community_connection_source, do: @community_connection_source
 
+  @spec viewer_submission_source() :: {module(), :viewer_community_submissions}
+  def viewer_submission_source, do: @viewer_submission_source
+
   @spec offer_connection_source() :: {module(), :offer_connections}
   def offer_connection_source, do: @offer_connection_source
+
+  @spec category_source() :: {module(), :categories}
+  def category_source, do: @category_source
+
+  @spec public_slug_source() :: {module(), :public_slugs}
+  def public_slug_source, do: @public_slug_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -154,6 +178,21 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     end)
   end
 
+  defp viewer_submission_batch(user_id, products)
+       when is_integer(user_id) and user_id > 0 do
+    products = Enum.to_list(products)
+
+    submissions =
+      Discussions.viewer_community_submissions_for_products(
+        user_id,
+        Enum.map(products, & &1.id)
+      )
+
+    Map.new(products, fn product ->
+      {product, Map.fetch!(submissions, product.id)}
+    end)
+  end
+
   defp offer_connection_batch({:product_offers, connection_args, filters}, products)
        when is_map(connection_args) and is_map(filters) do
     products = Enum.to_list(products)
@@ -162,6 +201,16 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     pages = Pricing.product_offer_pages(Enum.map(products, & &1.id), filters, window)
 
     project_connection_pages(products, pages, connection_args, & &1.id)
+  end
+
+  defp offer_connection_batch({:merchant_offers, connection_args}, merchants)
+       when is_map(connection_args) do
+    merchants = Enum.to_list(merchants)
+    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
+
+    pages = Pricing.merchant_offer_pages(Enum.map(merchants, & &1.id), window)
+
+    project_connection_pages(merchants, pages, connection_args, & &1.id)
   end
 
   defp offer_connection_batch({:active_coupons, connection_args}, merchant_products)
@@ -198,6 +247,37 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       |> Pricing.price_history_pages(range_filters, window)
 
     project_connection_pages(merchant_products, pages, connection_args, & &1.id)
+  end
+
+  defp category_batch(:lookup, slugs) do
+    slugs
+    |> Enum.to_list()
+    |> Seo.get_categories()
+  end
+
+  defp category_batch({:products, connection_args, now}, categories)
+       when is_map(connection_args) and is_struct(now, DateTime) do
+    categories = Enum.to_list(categories)
+    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
+
+    pages =
+      categories
+      |> Enum.map(& &1.id)
+      |> Seo.qualified_product_pages(now, window)
+
+    project_connection_pages(categories, pages, connection_args, & &1.id)
+  end
+
+  defp public_slug_batch(:product, slugs) do
+    slugs
+    |> Enum.to_list()
+    |> Catalog.get_products_by_slugs()
+  end
+
+  defp public_slug_batch(:merchant, slugs) do
+    slugs
+    |> Enum.to_list()
+    |> Pricing.get_merchants_by_slugs()
   end
 
   defp project_connection_pages(parents, pages, connection_args, parent_key) do
