@@ -1028,96 +1028,73 @@ defmodule ProductCompare.Discussions do
   end
 
   defp public_connection_page_query(:reviews, parent_ids, offset, fetch_limit) do
-    ranked_reviews =
-      ProductReview
-      |> where(
-        [review],
-        review.product_id in ^parent_ids and review.moderation_status == :published
-      )
-      |> windows(
-        [review],
-        public_connection_page: [
-          partition_by: review.product_id,
-          order_by: [desc: review.inserted_at, desc: review.id]
-        ]
-      )
-      |> select([review], %{
-        id: review.id,
-        row_number: over(row_number(), :public_connection_page)
-      })
-
     ProductReview
-    |> join(:inner, [review], ranked in subquery(ranked_reviews), on: ranked.id == review.id)
-    |> where(
-      [_review, ranked],
-      ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
-    )
-    |> order_by([review], asc: review.product_id, desc: review.inserted_at, desc: review.id)
+    |> published_connection_page_query(parent_ids, :product_id, :desc, offset, fetch_limit)
   end
 
   defp public_connection_page_query(:questions, parent_ids, offset, fetch_limit) do
-    ranked_questions =
-      ProductThread
-      |> where(
-        [question],
-        question.product_id in ^parent_ids and question.kind == :question and
-          question.moderation_status == :published
-      )
-      |> windows(
-        [question],
-        public_connection_page: [
-          partition_by: question.product_id,
-          order_by: [desc: question.inserted_at, desc: question.id]
-        ]
-      )
-      |> select([question], %{
-        id: question.id,
-        row_number: over(row_number(), :public_connection_page)
-      })
-
     ProductThread
-    |> join(:inner, [question], ranked in subquery(ranked_questions),
-      on: ranked.id == question.id
+    |> where([question], question.kind == :question)
+    |> published_connection_page_query(
+      parent_ids,
+      :product_id,
+      :desc,
+      offset,
+      fetch_limit
     )
-    |> join(:left, [question], accepted_post in assoc(question, :accepted_post))
-    |> where(
-      [_question, ranked, _accepted_post],
-      ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
-    )
-    |> order_by([question],
-      asc: question.product_id,
-      desc: question.inserted_at,
-      desc: question.id
-    )
+    |> join(:left, [question, _ranked], accepted_post in assoc(question, :accepted_post))
     |> preload([_question, _ranked, accepted_post], accepted_post: accepted_post)
   end
 
   defp public_connection_page_query(:answers, parent_ids, offset, fetch_limit) do
-    ranked_answers =
-      ThreadPost
+    ThreadPost
+    |> published_connection_page_query(parent_ids, :thread_id, :asc, offset, fetch_limit)
+  end
+
+  defp published_connection_page_query(
+         query,
+         parent_ids,
+         parent_field,
+         sort_direction,
+         offset,
+         fetch_limit
+       ) do
+    ranked_records =
+      query
       |> where(
-        [answer],
-        answer.thread_id in ^parent_ids and answer.moderation_status == :published
+        [record],
+        field(record, ^parent_field) in ^parent_ids and
+          record.moderation_status == :published
       )
       |> windows(
-        [answer],
+        [record],
         public_connection_page: [
-          partition_by: answer.thread_id,
-          order_by: [asc: answer.inserted_at, asc: answer.id]
+          partition_by: field(record, ^parent_field),
+          order_by: [
+            {^sort_direction, record.inserted_at},
+            {^sort_direction, record.id}
+          ]
         ]
       )
-      |> select([answer], %{
-        id: answer.id,
+      |> select([record], %{
+        id: record.id,
         row_number: over(row_number(), :public_connection_page)
       })
 
-    ThreadPost
-    |> join(:inner, [answer], ranked in subquery(ranked_answers), on: ranked.id == answer.id)
+    query
+    |> join(:inner, [record], ranked in subquery(ranked_records), on: ranked.id == record.id)
     |> where(
-      [_answer, ranked],
+      [_record, ranked],
       ranked.row_number > ^offset and ranked.row_number <= ^(offset + fetch_limit)
     )
-    |> order_by([answer], asc: answer.thread_id, asc: answer.inserted_at, asc: answer.id)
+    |> order_by(
+      [record, _ranked],
+      [
+        {:asc, field(record, ^parent_field)},
+        {^sort_direction, record.inserted_at},
+        {^sort_direction, record.id}
+      ]
+    )
   end
 
   defp public_connection_parent_id(:reviews, %ProductReview{product_id: product_id}),

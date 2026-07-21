@@ -309,7 +309,7 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
         end)
 
       assert Map.keys(pages) |> Enum.sort() == Enum.sort(parent_ids)
-      assert length(queries) == 1
+      assert [_query] = queries
     end
   end
 

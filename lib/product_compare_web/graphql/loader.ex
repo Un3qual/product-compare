@@ -15,6 +15,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
+  @community_connection_source {__MODULE__, :community_connections}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -29,6 +30,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @product_evidence_source,
       Dataloader.KV.new(&product_evidence_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @community_connection_source,
+      Dataloader.KV.new(&community_connection_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
@@ -36,6 +41,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec product_evidence_source() :: {module(), :product_evidence}
   def product_evidence_source, do: @product_evidence_source
+
+  @spec community_connection_source() :: {module(), :community_connections}
+  def community_connection_source, do: @community_connection_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -120,5 +128,21 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       :seo ->
         Seo.product_metadata_batch(products, now: now)
     end
+  end
+
+  defp community_connection_batch({kind, connection_args}, parents)
+       when kind in [:reviews, :questions, :answers] and is_map(connection_args) do
+    parents = Enum.to_list(parents)
+    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
+
+    pages =
+      Discussions.public_connection_pages(kind, Enum.map(parents, & &1.id), window)
+
+    Map.new(parents, fn parent ->
+      {parent,
+       pages
+       |> Map.fetch!(parent.id)
+       |> ProductCompareWeb.GraphQL.Connection.from_prefetched_page(connection_args)}
+    end)
   end
 end

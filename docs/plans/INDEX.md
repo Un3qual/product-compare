@@ -99,8 +99,8 @@ A fresh post-completion resolver audit found five coherent backend outcomes:
 bounded product evidence/SEO reads, bounded public community connections,
 bounded product-offer/coupon/history connections, bounded merchant-parent
 active-offer connections, and bounded owner-private community submission
-reads. Product evidence is complete, public community connections are active,
-and the other three remain ready.
+reads. Product evidence and public community connections are complete; the
+other three remain ready.
 Specification-correction lists were not promoted because their claim trees are
 already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
@@ -108,7 +108,6 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
@@ -141,13 +140,13 @@ batch and should not be recreated or promoted.
 
 ## Planned Follow-Up Groups
 
-- Current backend read-budget program: product evidence/SEO is complete. Public
-  community connections are active; product-offer/coupon/history connections,
-  merchant-parent active-offer connections, and owner-private community
-  submission reads remain ready through the four active 2026-07-20 plans
-  above. They are reviewer-sized domain outcomes; their set-based context,
-  Dataloader, and query-budget steps remain internal slices rather than
-  separate queue rows.
+- Current backend read-budget program: product evidence/SEO and public
+  community connections are complete. Product-offer/coupon/history
+  connections, merchant-parent active-offer connections, and owner-private
+  community submission reads remain ready through the three active 2026-07-20
+  plans above. They are reviewer-sized domain outcomes; their set-based
+  context, Dataloader, and query-budget steps remain internal slices rather
+  than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

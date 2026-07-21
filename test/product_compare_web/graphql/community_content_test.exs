@@ -238,6 +238,51 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
            } = get_in(second_page, ["data", "product", "reviews"])
   end
 
+  test "community connection pagination preserves invalid GraphQL error messages", %{conn: conn} do
+    operator = AccountsFixtures.operator_fixture()
+    user = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    {:ok, review} = Discussions.submit_review(user.id, product.id, %{rating: 4})
+    {:ok, _review} = Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+
+    {:ok, question} =
+      Discussions.ask_question(user.id, product.id, %{
+        title: "Public question",
+        body: "Public question body"
+      })
+
+    {:ok, question} =
+      Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    {:ok, answer} = Discussions.answer_question(user.id, question.entropy_id, "Public answer")
+    {:ok, _answer} = Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+    invalid_review =
+      graphql(conn, invalid_product_connection_query(), %{
+        "slug" => product.slug,
+        "first" => -1
+      })
+
+    assert get_in(invalid_review, ["errors", Access.at(0), "message"]) == "invalid first"
+
+    invalid_question =
+      graphql(conn, invalid_question_connection_query(), %{
+        "slug" => product.slug,
+        "after" => "not-a-valid-cursor"
+      })
+
+    assert get_in(invalid_question, ["errors", Access.at(0), "message"]) == "invalid cursor"
+
+    invalid_answer =
+      graphql(conn, invalid_answer_connection_query(), %{
+        "id" => relay_id(:product_question, question.entropy_id),
+        "first" => -1
+      })
+
+    assert get_in(invalid_answer, ["errors", Access.at(0), "message"]) == "invalid first"
+  end
+
   describe "prefetched Relay connection windows" do
     test "matches the default page connection" do
       assert_prefetched_connection_matches_list(Enum.to_list(1..60), %{})
@@ -652,6 +697,42 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
         reviews(first: $first, after: $after) {
           edges { cursor node { id rating } }
           pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp invalid_product_connection_query do
+    """
+    query InvalidReviewConnection($slug: String!, $first: Int!) {
+      product(slug: $slug) {
+        reviews(first: $first) {
+          edges { cursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp invalid_question_connection_query do
+    """
+    query InvalidQuestionConnection($slug: String!, $after: String!) {
+      product(slug: $slug) {
+        questions(after: $after) {
+          edges { cursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp invalid_answer_connection_query do
+    """
+    query InvalidAnswerConnection($id: ID!, $first: Int!) {
+      productQuestion(id: $id) {
+        answers(first: $first) {
+          edges { cursor }
         }
       }
     }

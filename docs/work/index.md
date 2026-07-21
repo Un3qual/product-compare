@@ -1151,58 +1151,14 @@ serial with overlapping resolver/context rows but have distinct contracts and
 acceptance boundaries. Product evidence completed on
 `codex/bounded-product-evidence-reads`; its growing-parent regression now holds
 the tracked evidence query budget fixed at three and six product parents.
-Bounded community GraphQL connections are active on
-`codex/bounded-community-connections`; three complete rows remain ready.
+Bounded community GraphQL connections completed on
+`codex/bounded-community-connections`; reviews, questions, and nested answers
+now each hold at one SELECT as their parent graph grows. Three complete rows
+remain ready.
 
 ## Active Work
 
-### Bounded Community GraphQL Connections
-
-Status: active
-Owner: `codex/bounded-community-connections`
-Lane: Bounded community GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
-Batch outcome: published review, question, and nested answer Relay connections
-use bounded set-based reads whose query count does not grow with product or
-question parent count.
-Next action: add parent-partitioned community connection batches, delegate the
-three resolvers through Dataloader, and prove pagination and visibility parity
-under growing parent counts.
-Owned paths:
-
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare_web/graphql/connection.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-community-graphql-connections.md`
-
-Internal slices:
-
-- Parent-partitioned published review and question pages.
-- Parent-partitioned published answer pages with accepted-answer preload parity.
-- Dataloader integration and constant query-budget regression coverage.
-
-Prerequisites:
-
-- Public reads remain published-only and author identity remains private.
-- Existing Relay cursor, page-size, order, and `pageInfo` behavior remains the
-  contract.
-- Community owner lifecycle and moderation behavior remain unchanged.
-
-Verification:
-
-- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: community connection edges, ordering, visibility, accepted-
-answer data, and page info match current behavior while review/question/answer
-SELECT counts stay fixed as parent counts grow.
+None.
 
 ## Ready Work
 

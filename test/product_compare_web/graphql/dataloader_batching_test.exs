@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
+  @community_connection_tables ~w(product_reviews product_threads thread_posts)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
@@ -229,6 +230,50 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_offer_as_of_is_shared(initial_nodes)
       assert_offer_as_of_is_shared(grown_nodes)
     end
+
+    test "community connections keep their public Relay values and SELECT budgets fixed as parents grow",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+      prefix = "community-connections-#{test_name}-#{System.unique_integer([:positive])}"
+
+      initial_products =
+        Enum.map(["first", "second"], fn suffix ->
+          public_community_product("#{prefix}-#{suffix}", operator)
+        end)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, community_connections_batch_query(), %{"first" => 10})
+        end)
+
+      initial_nodes = community_connection_nodes(initial_response)
+      assert [_, _] = initial_nodes
+      assert_public_community_connection_values(initial_nodes, initial_products)
+
+      initial_budget = community_connection_query_budget(initial_queries)
+
+      assert initial_budget == %{
+               product_reviews: 1,
+               product_threads: 1,
+               thread_posts: 1
+             }
+
+      grown_products =
+        initial_products ++
+          Enum.map(["third", "fourth"], fn suffix ->
+            public_community_product("#{prefix}-#{suffix}", operator)
+          end)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, community_connections_batch_query(), %{"first" => 10})
+        end)
+
+      grown_nodes = community_connection_nodes(grown_response)
+      assert [_, _, _, _] = grown_nodes
+      assert_public_community_connection_values(grown_nodes, grown_products)
+      assert community_connection_query_budget(grown_queries) == initial_budget
+    end
   end
 
   defp batching_query do
@@ -335,6 +380,40 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp community_connections_batch_query do
+    """
+    query CommunityConnectionsBatch($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            reviews(first: 2) {
+              edges { cursor node { id rating title moderationStatus } }
+              pageInfo { hasNextPage endCursor }
+            }
+            questions(first: 1) {
+              edges {
+                cursor
+                node {
+                  id
+                  title
+                  moderationStatus
+                  acceptedAnswerId
+                  answers(first: 1) {
+                    edges { cursor node { id body moderationStatus } }
+                    pageInfo { hasNextPage endCursor }
+                  }
+                }
+              }
+              pageInfo { hasNextPage endCursor }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp graphql(conn, query, variables) do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
@@ -371,6 +450,169 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     |> get_in(["data", "products", "edges"])
     |> Enum.map(& &1["node"])
   end
+
+  defp community_connection_nodes(response) do
+    response
+    |> get_in(["data", "products", "edges"])
+    |> Enum.map(& &1["node"])
+  end
+
+  defp assert_public_community_connection_values(nodes, products) do
+    Enum.each(products, fn product ->
+      node = node_for(nodes, product.product.slug)
+
+      assert node["reviews"] == %{
+               "edges" =>
+                 Enum.map(product.visible_reviews, fn review ->
+                   %{
+                     "cursor" => cursor_for(review.cursor_index),
+                     "node" => %{
+                       "id" => relay_id(:product_review, review.entropy_id),
+                       "rating" => review.rating,
+                       "title" => review.title,
+                       "moderationStatus" => "PUBLISHED"
+                     }
+                   }
+                 end),
+               "pageInfo" => %{"hasNextPage" => true, "endCursor" => cursor_for(1)}
+             }
+
+      assert node["questions"] == %{
+               "edges" => [
+                 %{
+                   "cursor" => cursor_for(0),
+                   "node" => %{
+                     "id" => relay_id(:product_question, product.question.entropy_id),
+                     "title" => product.question.title,
+                     "moderationStatus" => "PUBLISHED",
+                     "acceptedAnswerId" =>
+                       relay_id(:product_answer, product.accepted_answer.entropy_id),
+                     "answers" => %{
+                       "edges" => [
+                         %{
+                           "cursor" => cursor_for(0),
+                           "node" => %{
+                             "id" => relay_id(:product_answer, product.first_answer.entropy_id),
+                             "body" => product.first_answer.body_md,
+                             "moderationStatus" => "PUBLISHED"
+                           }
+                         }
+                       ],
+                       "pageInfo" => %{"hasNextPage" => true, "endCursor" => cursor_for(0)}
+                     }
+                   }
+                 }
+               ],
+               "pageInfo" => %{"hasNextPage" => true, "endCursor" => cursor_for(0)}
+             }
+
+      refute inspect(node) =~ "hidden review"
+      refute inspect(node) =~ "hidden question"
+      refute inspect(node) =~ "hidden answer"
+    end)
+  end
+
+  defp community_connection_query_budget(queries) do
+    Enum.into(@community_connection_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp public_community_product(slug, operator) do
+    product = SpecsFixtures.product_fixture(%{slug: slug, name: "#{slug} product"})
+
+    published_reviews =
+      for rating <- 3..5 do
+        reviewer = AccountsFixtures.user_fixture()
+
+        {:ok, review} =
+          Discussions.submit_review(reviewer.id, product.id, %{
+            rating: rating,
+            title: "published review #{rating}"
+          })
+
+        {:ok, review} = Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+        review
+      end
+
+    hidden_reviewer = AccountsFixtures.user_fixture()
+
+    {:ok, hidden_review} =
+      Discussions.submit_review(hidden_reviewer.id, product.id, %{
+        rating: 1,
+        title: "hidden review"
+      })
+
+    {:ok, _hidden_review} =
+      Discussions.moderate(operator.id, :review, hidden_review.entropy_id, :hidden)
+
+    asker = AccountsFixtures.user_fixture()
+
+    {:ok, older_question} =
+      Discussions.ask_question(asker.id, product.id, %{
+        title: "older published question",
+        body: "Older published question body"
+      })
+
+    {:ok, _older_question} =
+      Discussions.moderate(operator.id, :question, older_question.entropy_id, :published)
+
+    {:ok, question} =
+      Discussions.ask_question(asker.id, product.id, %{
+        title: "newer published question",
+        body: "Newer published question body"
+      })
+
+    {:ok, question} =
+      Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+    answerer = AccountsFixtures.user_fixture()
+
+    {:ok, first_answer} =
+      Discussions.answer_question(answerer.id, question.entropy_id, "first published answer")
+
+    {:ok, first_answer} =
+      Discussions.moderate(operator.id, :answer, first_answer.entropy_id, :published)
+
+    {:ok, accepted_answer} =
+      Discussions.answer_question(answerer.id, question.entropy_id, "accepted published answer")
+
+    {:ok, accepted_answer} =
+      Discussions.moderate(operator.id, :answer, accepted_answer.entropy_id, :published)
+
+    {:ok, hidden_answer} =
+      Discussions.answer_question(answerer.id, question.entropy_id, "hidden answer")
+
+    {:ok, _hidden_answer} =
+      Discussions.moderate(operator.id, :answer, hidden_answer.entropy_id, :hidden)
+
+    {:ok, question} =
+      Discussions.accept_answer(asker.id, question.entropy_id, accepted_answer.entropy_id)
+
+    {:ok, hidden_question} =
+      Discussions.ask_question(asker.id, product.id, %{
+        title: "hidden question",
+        body: "Hidden question body"
+      })
+
+    {:ok, _hidden_question} =
+      Discussions.moderate(operator.id, :question, hidden_question.entropy_id, :hidden)
+
+    %{
+      product: product,
+      visible_reviews:
+        published_reviews
+        |> Enum.reverse()
+        |> Enum.take(2)
+        |> Enum.with_index()
+        |> Enum.map(fn {review, cursor_index} -> Map.put(review, :cursor_index, cursor_index) end),
+      question: question,
+      first_answer: first_answer,
+      accepted_answer: accepted_answer
+    }
+  end
+
+  defp cursor_for(index), do: Base.encode64("cursor:#{index}")
 
   defp assert_product_evidence_values(nodes, products) do
     Enum.each(Enum.chunk_every(products, 3), &assert_product_evidence_group(nodes, &1))
