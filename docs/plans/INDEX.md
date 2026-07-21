@@ -200,8 +200,9 @@ batch and should not be recreated or promoted.
   reads, public Relay node aliases, and category lookup/qualified-product
   connections are complete. Public product/merchant slug and opaque-key
   lookups, comparison evidence reads, and authorized Relay node reads are also
-  complete. Bounded alert evaluation market reads is active through the plan
-  above. Bounded comparison root GraphQL reads and bounded authorized
+  complete. Bounded alert evaluation market reads is also complete: one
+  immutable product/listing fact snapshot now feeds the independent watch
+  transactions. Bounded comparison root GraphQL reads and bounded authorized
   management GraphQL connections remain ready, with the latter grouping the
   remaining owner and operator connection aliases. Bounded catalog and offer-
   discovery root GraphQL reads groups the remaining public catalog, filter-

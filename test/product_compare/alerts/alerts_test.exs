@@ -1,6 +1,8 @@
 defmodule ProductCompare.AlertsTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Alerts
   alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -281,6 +283,45 @@ defmodule ProductCompare.AlertsTest do
     assert Repo.aggregate(AlertDeliveryAttempt, :count, :id) == 3
   end
 
+  test "mixed watch evaluation reuses shared market facts as watch count grows", %{now: now} do
+    two_watch_run = mixed_watch_evaluation_fixture(2, now)
+    six_watch_run = mixed_watch_evaluation_fixture(6, DateTime.add(now, 10, :second))
+
+    {two_watch_result, two_watch_queries} =
+      capture_select_queries(fn ->
+        Alerts.evaluate_price_point(two_watch_run.trigger.id,
+          now: two_watch_run.trigger.observed_at
+        )
+      end)
+
+    {six_watch_result, six_watch_queries} =
+      capture_select_queries(fn ->
+        Alerts.evaluate_price_point(six_watch_run.trigger.id,
+          now: six_watch_run.trigger.observed_at
+        )
+      end)
+
+    assert two_watch_result == {:ok, %{evaluated: 2, events_created: 2}}
+    assert six_watch_result == {:ok, %{evaluated: 6, events_created: 6}}
+    assert_event_facts(two_watch_run, 2)
+    assert_event_facts(six_watch_run, 6)
+
+    two_watch_budget = alert_evaluation_query_budget(two_watch_queries)
+    six_watch_budget = alert_evaluation_query_budget(six_watch_queries)
+
+    assert {two_watch_budget, six_watch_budget} == {
+             %{
+               triggering_price_point_reads: 1,
+               triggering_merchant_product_reads: 1,
+               applicable_watch_reads: 1,
+               shared_merchant_product_reads: 2,
+               shared_latest_price_reads: 2,
+               watch_lock_reads: 2
+             },
+             %{two_watch_budget | watch_lock_reads: 6}
+           }
+  end
+
   defp offer_fixture(currency) do
     product = SpecsFixtures.product_fixture()
 
@@ -314,5 +355,80 @@ defmodule ProductCompare.AlertsTest do
       })
 
     point
+  end
+
+  defp mixed_watch_evaluation_fixture(watch_count, now) do
+    %{product: product, merchant_product: offer} = offer_fixture("USD")
+    _baseline = price_fixture(offer, "100", "0", true, now)
+
+    Enum.each(1..watch_count, fn index ->
+      user = AccountsFixtures.user_fixture()
+
+      attrs = %{
+        product_id: product.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "50"
+      }
+
+      attrs =
+        if rem(index, 2) == 0, do: Map.put(attrs, :merchant_product_id, offer.id), else: attrs
+
+      assert {:ok, _watch} = Alerts.create_watch(user.id, attrs)
+    end)
+
+    trigger = price_fixture(offer, "40", "5", true, DateTime.add(now, 1, :second))
+    %{offer: offer, trigger: trigger}
+  end
+
+  defp assert_event_facts(%{offer: offer, trigger: trigger}, expected_count) do
+    events =
+      AlertEvent
+      |> Repo.all()
+      |> Enum.filter(&(&1.triggering_price_point_id == trigger.id))
+
+    assert length(events) == expected_count
+
+    assert Enum.all?(events, fn event ->
+             event.merchant_product_id == offer.id and
+               event.currency == "USD" and
+               Decimal.eq?(event.item_price, Decimal.new("40")) and
+               Decimal.eq?(event.shipping, Decimal.new("5")) and
+               Decimal.eq?(event.landed_price, Decimal.new("45")) and
+               event.observed_at == trigger.observed_at
+           end)
+  end
+
+  defp alert_evaluation_query_budget(queries) do
+    {trigger_queries, watch_queries} =
+      Enum.split_while(queries, &(not applicable_watch_query?(&1)))
+
+    [_applicable_watch_query | evaluation_queries] = watch_queries
+
+    %{
+      triggering_price_point_reads:
+        Enum.count(trigger_queries, &query_targets_table?(&1, :price_points)),
+      triggering_merchant_product_reads:
+        Enum.count(trigger_queries, &query_targets_table?(&1, :merchant_products)),
+      applicable_watch_reads: Enum.count(queries, &applicable_watch_query?/1),
+      shared_merchant_product_reads:
+        Enum.count(evaluation_queries, &query_targets_table?(&1, :merchant_products)),
+      shared_latest_price_reads:
+        Enum.count(evaluation_queries, &query_targets_table?(&1, :price_points)),
+      watch_lock_reads:
+        Enum.count(queries, fn query ->
+          query_targets_table?(query, :price_watch_rules) and
+            String.contains?(query, "FOR UPDATE")
+        end)
+    }
+  end
+
+  defp applicable_watch_query?(query) do
+    query_targets_table?(query, :price_watch_rules) and
+      not String.contains?(query, "FOR UPDATE")
+  end
+
+  defp query_targets_table?(query, table) do
+    String.contains?(query, ~s(FROM "#{table}"))
   end
 end

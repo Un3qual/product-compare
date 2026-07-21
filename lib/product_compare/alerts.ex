@@ -134,7 +134,12 @@ defmodule ProductCompare.Alerts do
 
   def evaluate_price_point(price_point_id, opts) when valid_id(price_point_id) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    watch_evaluator = Keyword.get(opts, :watch_evaluator, &evaluate_watch/3)
+
+    watch_evaluator =
+      case Keyword.fetch(opts, :watch_evaluator) do
+        :error -> :default
+        {:ok, evaluator} -> evaluator
+      end
 
     case Repo.get(PricePoint, price_point_id) |> Repo.preload(merchant_product: :product) do
       nil ->
@@ -153,12 +158,23 @@ defmodule ProductCompare.Alerts do
               order_by: [asc: watch.id]
           )
 
+        evaluation_facts =
+          if watch_evaluator == :default do
+            evaluation_facts(watches, merchant_product, price_point, now)
+          end
+
         {summary, failed_watch_ids} =
           Enum.reduce(
             watches,
             {%{evaluated: 0, events_created: 0}, []},
             fn watch, {summary, failed_watch_ids} ->
-              case run_watch_evaluator(watch_evaluator, watch.id, price_point, now) do
+              case run_watch_evaluator(
+                     watch_evaluator,
+                     watch.id,
+                     price_point,
+                     now,
+                     evaluation_facts
+                   ) do
                 {:ok, created?} ->
                   updated_summary =
                     summary
@@ -182,17 +198,25 @@ defmodule ProductCompare.Alerts do
 
   def evaluate_price_point(_price_point_id, _opts), do: {:error, :price_point_not_found}
 
-  defp run_watch_evaluator(evaluator, watch_id, price_point, now)
+  defp run_watch_evaluator(:default, watch_id, price_point, now, evaluation_facts) do
+    evaluate_watch(watch_id, price_point, now, evaluation_facts)
+  end
+
+  defp run_watch_evaluator(evaluator, watch_id, price_point, now, _evaluation_facts)
        when is_function(evaluator, 4) do
     evaluator.(watch_id, price_point, now, &evaluate_watch/3)
   end
 
-  defp run_watch_evaluator(evaluator, watch_id, price_point, now)
+  defp run_watch_evaluator(evaluator, watch_id, price_point, now, _evaluation_facts)
        when is_function(evaluator, 3) do
     evaluator.(watch_id, price_point, now)
   end
 
   defp evaluate_watch(watch_id, triggering_price_point, now) do
+    evaluate_watch(watch_id, triggering_price_point, now, nil)
+  end
+
+  defp evaluate_watch(watch_id, triggering_price_point, now, evaluation_facts) do
     Repo.transaction(fn ->
       watch =
         Repo.one!(
@@ -201,8 +225,12 @@ defmodule ProductCompare.Alerts do
             lock: "FOR UPDATE"
         )
 
-      scope = %{product_id: watch.product_id, merchant_product_id: watch.merchant_product_id}
-      fact = current_scope_fact(scope, watch.currency, now, triggering_price_point)
+      fact =
+        case evaluation_facts do
+          %{} -> Map.fetch!(evaluation_facts, watch_scope(watch))
+          nil -> current_watch_scope_fact(watch, triggering_price_point, now)
+        end
+
       condition_met = condition_met?(watch, fact)
 
       create_event? =
@@ -224,6 +252,39 @@ defmodule ProductCompare.Alerts do
       end
     end)
   end
+
+  defp evaluation_facts(watches, merchant_product, triggering_price_point, now) do
+    watches
+    |> Enum.map(&watch_scope/1)
+    |> MapSet.new()
+    |> Map.new(fn
+      :product ->
+        scope = %{product_id: merchant_product.product_id, merchant_product_id: nil}
+
+        {:product,
+         current_scope_fact(scope, merchant_product.currency, now, triggering_price_point)}
+
+      :listing ->
+        scope = %{
+          product_id: merchant_product.product_id,
+          merchant_product_id: merchant_product.id
+        }
+
+        {:listing,
+         current_scope_fact(scope, merchant_product.currency, now, triggering_price_point)}
+    end)
+  end
+
+  defp current_watch_scope_fact(watch, triggering_price_point, now) do
+    scope = %{product_id: watch.product_id, merchant_product_id: watch.merchant_product_id}
+    current_scope_fact(scope, watch.currency, now, triggering_price_point)
+  end
+
+  defp watch_scope(%PriceWatchRule{merchant_product_id: merchant_product_id})
+       when is_integer(merchant_product_id),
+       do: :listing
+
+  defp watch_scope(%PriceWatchRule{}), do: :product
 
   defp insert_event(watch, fact, now) do
     attrs = %{

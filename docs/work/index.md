@@ -1276,53 +1276,20 @@ focused suites pass 51 tests, and deferred eBay and ingestion-dashboard work
 remains closed. Three independently shippable ready rows remain after the
 claim.
 
+Bounded alert evaluation market reads then completed on
+`codex/bounded-public-opaque-graphql-reads`: the default evaluator now computes
+only the product and triggering-listing scopes present in one applicable watch
+set and reuses those immutable facts across independent watch transactions.
+As mixed watches grow from two to six, shared merchant-product and latest-price
+SELECTs now both hold at two while required watch locks still grow from two to
+six. Event facts, summaries, edge and cooldown behavior, stale/incomplete/out-
+of-stock handling, owner scope, replay safety, three- and four-arity fault
+injection, and later-watch progress remain unchanged. The focused suite passes
+8 tests, and the type, format, queue, and diff gates are green.
+
 ## Active Work
 
-### Bounded Alert Evaluation Market Reads
-
-Status: active on `codex/bounded-public-opaque-graphql-reads`
-Lane: Bounded alert evaluation market reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
-Batch outcome: every watch applicable to one persisted price observation
-reuses one immutable product-wide or triggering-listing market-fact snapshot,
-while per-watch row locks, state updates, event uniqueness, cooldowns, replay
-safety, fault isolation, and later-watch progress remain unchanged.
-Next action: characterize shared market-fact SELECT growth separately from
-required per-watch locks, compute only the product and listing fact scopes used
-by the evaluation run, and prove semantic plus fixed shared-read parity.
-Owned paths:
-
-- `lib/product_compare/alerts.ex`
-- `test/product_compare/alerts/alerts_test.exs`
-- `docs/work/bounded-alert-evaluation-market-reads.md`
-
-Internal slices:
-
-- Mixed product/listing watch query-budget characterization.
-- One immutable market-fact snapshot per evaluation run.
-- Semantic, replay, fault-isolation, lock, and shared-read parity evidence.
-
-Prerequisites:
-
-- The current one-transaction and one-row-lock boundary per watch remains
-  authoritative and intentionally proportional to watch count.
-- Product-wide and listing-scoped facts retain current eligibility, price,
-  shipping, stock, observation, and triggering-price fallback semantics.
-- Existing three- and four-arity custom evaluator hooks remain unchanged.
-- This row is independent of GraphQL Loader work and comparison evidence reads.
-
-Verification:
-
-- `mix test test/product_compare/alerts/alerts_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: shared merchant-product and latest-price SELECT counts stay
-fixed as applicable watches grow from two to six, while required per-watch
-locks, exact lifecycle results, replay safety, and fault isolation remain
-unchanged.
+None.
 
 ## Ready Work
 
