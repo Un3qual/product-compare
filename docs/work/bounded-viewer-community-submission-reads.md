@@ -2,26 +2,35 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
-- Last verified: 2026-07-20 against owner-submission context policy, the
-  product resolver, community GraphQL coverage, and Dataloader coverage.
+- Completed: 2026-07-21 on `codex/bounded-graphql-read-budgets`.
+- Last verified: 2026-07-21 against owner-submission context policy, the
+  product resolver, community GraphQL coverage, growing-parent Dataloader
+  coverage, and the full repository gate.
 
 ## Batch Outcome
 
 Authenticated `Product.viewerCommunitySubmissions` keeps fixed owner-private
 review, question, and answer read budgets as product parent count grows.
 
-## Ready Evidence
+## Completion Evidence
 
-- `DiscussionsResolver.viewer_community_submissions/3` invokes the context once
-  for every product parent.
-- `Discussions.viewer_community_submissions/2` performs three separately
-  limited reads per product while enforcing owner/status policy.
-- Existing GraphQL coverage proves lifecycle visibility for one product but
-  does not prove a growing product-parent query budget.
+- Before batching, growing to three product parents produced
+  `{product_reviews: 3, product_threads: 3, thread_posts: 3}` SELECTs.
+- After batching, both three and six product parents hold at
+  `{product_reviews: 1, product_threads: 1, thread_posts: 1}`.
+- `Discussions.viewer_community_submissions_for_products/2` applies each
+  per-kind limit independently per product, fills empty and missing parents,
+  returns no queries for empty input, and keeps the single-product API on the
+  same policy path.
+- Context and GraphQL coverage preserve owner-only visibility, descending
+  order, pending/hidden/rejected status policy, published answers beneath
+  non-public questions, exact IDs and values, and owner edit/remove capability.
+- Anonymous GraphQL reads still return three empty lists without selecting any
+  community content table.
 
 ## Internal Slices
 
@@ -38,9 +47,12 @@ review, question, and answer read budgets as product parent count grows.
 
 ## Verification
 
-- Owner submission context parity tests.
-- Community GraphQL and growing-parent Dataloader tests.
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
+- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs` — 49 tests, 0 failures.
+- `mix typecheck` — passed.
+- `mix format --check-formatted` — passed.
+- `mix work_queue.validate` — passed with three ready rows after closeout.
+- `git diff --check` — passed.
+- `mix ci` — passed with queue validation, Credo clean, clone budget 6/6, no
+  new cross-function smells, Dialyzer clean, 832 backend tests, 83.67%
+  coverage, Relay validation, TypeScript, 1,507 frontend tests, client and SSR
+  builds, and the client bundle budget.

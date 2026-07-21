@@ -1171,57 +1171,16 @@ Before claiming the viewer-community successor, a third claim-floor audit
 verified that aliased public `product(slug:)` and `merchant(slug:)` entry-point
 fields still perform direct per-alias lookups. Bounded public slug GraphQL
 reads was promoted as one coherent lookup outcome, leaving three independently
-shippable ready rows after the claim.
+shippable ready rows after the claim. Bounded viewer-community submission reads
+then completed on `codex/bounded-graphql-read-budgets`: review, question, and
+answer SELECT counts now hold at `{1, 1, 1}` for both three and six product
+parents while owner privacy, moderation states, per-kind limits, order,
+hidden-parent answer manageability, and anonymous zero-query behavior remain
+unchanged.
 
 ## Active Work
 
-### 1. Bounded Viewer Community Submission Reads
-
-Status: active
-Owner: `codex/bounded-graphql-read-budgets`
-Lane: Bounded viewer community submission reads
-Plan: `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
-Batch outcome: authenticated `Product.viewerCommunitySubmissions` keeps fixed
-owner-private review, question, and answer read budgets as product parent count
-grows.
-Next action: add parent-partitioned owner submission reads, delegate the
-authenticated resolver through Dataloader, and prove lifecycle/privacy parity
-under growing product parent counts.
-Owned paths:
-
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-viewer-community-submission-reads.md`
-
-Internal slices:
-
-- Parent-partitioned owner review, question, and answer reads.
-- Authenticated request-scoped Dataloader integration.
-- Privacy, lifecycle parity, and fixed query-budget coverage.
-
-Prerequisites:
-
-- Existing owner-only, anonymous-empty, order, status, and per-kind limit
-  behavior remains authoritative.
-- Published answers under non-public parents remain owner-manageable.
-- This row executes serially with shared Discussions/Loader rows; it is not
-  dependent on the public community connection contract.
-
-Verification:
-
-- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: owner submission lists, privacy, lifecycle visibility, order,
-and per-kind limits match current behavior while review, thread, and post
-SELECT counts stay fixed as product parent count grows.
+None.
 
 ## Ready Work
 

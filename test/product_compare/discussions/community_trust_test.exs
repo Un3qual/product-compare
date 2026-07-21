@@ -476,7 +476,7 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert Map.keys(submissions) |> Enum.sort() ==
              [first_product.id, second_product.id] |> Enum.sort()
 
-    assert length(queries) == 3
+    assert [_, _, _] = queries
   end
 
   test "viewer submission batches apply the owner limit independently per product" do

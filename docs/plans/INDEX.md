@@ -100,8 +100,8 @@ bounded product evidence/SEO reads, bounded public community connections,
 bounded product-offer/coupon/history connections, bounded merchant-parent
 active-offer connections, and bounded owner-private community submission
 reads. Product evidence, public community connections, and product-offer/coupon/history
-connections are complete. Merchant-parent connections are also complete; the
-owner submission outcome is active.
+connections are complete. Merchant-parent connections and owner-private
+community submission reads are also complete.
 The claim-floor audit additionally promoted bounded public Relay node alias
 reads after verifying six direct per-alias public lookups and existing
 request-scoped Dataloader coverage; that outcome is also ready.
@@ -120,7 +120,6 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
@@ -156,11 +155,11 @@ batch and should not be recreated or promoted.
 - Current backend read-budget program: product evidence/SEO, public community
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
-  reads are active. Public Relay node aliases, category lookup/qualified-
-  product connections, and public product/merchant slug lookups remain ready
-  through the active plans above. They are reviewer-sized domain outcomes;
-  their set-based context, Dataloader, and query-budget steps remain internal
-  slices rather than separate queue rows.
+  reads are also complete. Public Relay node aliases, category lookup/
+  qualified-product connections, and public product/merchant slug lookups
+  remain ready through the active plans above. They are reviewer-sized domain
+  outcomes; their set-based context, Dataloader, and query-budget steps remain
+  internal slices rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
