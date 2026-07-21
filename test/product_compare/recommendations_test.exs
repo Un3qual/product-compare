@@ -139,7 +139,9 @@ defmodule ProductCompare.RecommendationsTest do
     {first, first_point} = product_with_price("Context first", "120")
     {second, second_point} = product_with_price("Context second", "90")
     {third, third_point} = product_with_price("Context third", "100")
-    {fourth, fourth_point} = product_with_price("Context fourth", "110")
+    {fourth, fourth_point} = product_with_price("Context fourth", "100")
+    first_claim = current_text_claim(first, "Context panel", "OLED")
+    second_claim = current_text_claim(second, "Context panel", "LCD")
 
     two_requests = [
       {[first.id, second.id], :lowest_current_cost},
@@ -149,12 +151,132 @@ defmodule ProductCompare.RecommendationsTest do
     four_requests =
       two_requests ++
         [
-          {[first.id, third.id], :lowest_current_cost},
-          {[second.id, fourth.id], :lowest_current_cost}
+          {[first.id, second.id], :best_value},
+          {[first.id, third.id], :best_value}
         ]
 
-    expected_two = Enum.map(two_requests, &compare_request/1)
-    expected_four = Enum.map(four_requests, &compare_request/1)
+    expected_two = [
+      %{
+        profile: :lowest_current_cost,
+        algorithm_version: "lowest-current-cost-v1",
+        evaluated_at: @now,
+        status: :winner,
+        winner_product_id: second.id,
+        currency: "USD",
+        rankings: [
+          %{
+            product_id: second.id,
+            product_name: "Context second",
+            landed_price: Decimal.new("90"),
+            currency: "USD",
+            price_point_id: second_point.id,
+            merchant_product_id: second_point.merchant_product_id,
+            claim_ids: [second_claim.id],
+            reasons: ["Lowest eligible landed price: 90 USD."],
+            rank: 1
+          },
+          %{
+            product_id: first.id,
+            product_name: "Context first",
+            landed_price: Decimal.new("120"),
+            currency: "USD",
+            price_point_id: first_point.id,
+            merchant_product_id: first_point.merchant_product_id,
+            claim_ids: [first_claim.id],
+            reasons: ["Lowest eligible landed price: 120 USD."],
+            rank: 2
+          }
+        ],
+        missing_inputs: []
+      },
+      %{
+        profile: :lowest_current_cost,
+        algorithm_version: "lowest-current-cost-v1",
+        evaluated_at: @now,
+        status: :tie,
+        winner_product_id: nil,
+        currency: "USD",
+        rankings: [
+          %{
+            product_id: third.id,
+            product_name: "Context third",
+            landed_price: Decimal.new("100"),
+            currency: "USD",
+            price_point_id: third_point.id,
+            merchant_product_id: third_point.merchant_product_id,
+            claim_ids: [],
+            reasons: ["Lowest eligible landed price: 100 USD."],
+            rank: 1
+          },
+          %{
+            product_id: fourth.id,
+            product_name: "Context fourth",
+            landed_price: Decimal.new("100"),
+            currency: "USD",
+            price_point_id: fourth_point.id,
+            merchant_product_id: fourth_point.merchant_product_id,
+            claim_ids: [],
+            reasons: ["Lowest eligible landed price: 100 USD."],
+            rank: 2
+          }
+        ],
+        missing_inputs: ["Top products have the same eligible landed price."]
+      }
+    ]
+
+    expected_four =
+      expected_two ++
+        [
+          %{
+            profile: :best_value,
+            algorithm_version: "best-supported-current-cost-v1",
+            evaluated_at: @now,
+            status: :winner,
+            winner_product_id: second.id,
+            currency: "USD",
+            rankings: [
+              %{
+                product_id: second.id,
+                product_name: "Context second",
+                landed_price: Decimal.new("90"),
+                currency: "USD",
+                price_point_id: second_point.id,
+                merchant_product_id: second_point.merchant_product_id,
+                claim_ids: [second_claim.id],
+                reasons: [
+                  "Eligible landed price: 90 USD.",
+                  "Backed by 1 accepted specification claim."
+                ],
+                rank: 1
+              },
+              %{
+                product_id: first.id,
+                product_name: "Context first",
+                landed_price: Decimal.new("120"),
+                currency: "USD",
+                price_point_id: first_point.id,
+                merchant_product_id: first_point.merchant_product_id,
+                claim_ids: [first_claim.id],
+                reasons: [
+                  "Eligible landed price: 120 USD.",
+                  "Backed by 1 accepted specification claim."
+                ],
+                rank: 2
+              }
+            ],
+            missing_inputs: []
+          },
+          %{
+            profile: :best_value,
+            algorithm_version: "best-supported-current-cost-v1",
+            evaluated_at: @now,
+            status: :insufficient_evidence,
+            winner_product_id: nil,
+            currency: nil,
+            rankings: [],
+            missing_inputs: ["Context third has no accepted specification evidence."]
+          }
+        ]
 
     {two_results, two_queries} =
       capture_select_queries(fn -> Recommendations.compare_many(two_requests, now: @now) end)
@@ -173,8 +295,8 @@ defmodule ProductCompare.RecommendationsTest do
     assert Enum.map(four_results, &ranking_product_and_price_ids/1) == [
              [{second.id, second_point.id}, {first.id, first_point.id}],
              [{third.id, third_point.id}, {fourth.id, fourth_point.id}],
-             [{third.id, third_point.id}, {first.id, first_point.id}],
-             [{second.id, second_point.id}, {fourth.id, fourth_point.id}]
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             []
            ]
 
     assert evidence_query_counts(two_queries) == %{
@@ -236,10 +358,6 @@ defmodule ProductCompare.RecommendationsTest do
     {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
     {:ok, _current} = Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
     claim
-  end
-
-  defp compare_request({product_ids, profile}) do
-    Recommendations.compare(product_ids, profile, now: @now)
   end
 
   defp ranking_product_and_price_ids(result) do
