@@ -1153,64 +1153,16 @@ acceptance boundaries. Product evidence completed on
 the tracked evidence query budget fixed at three and six product parents.
 Bounded community GraphQL connections completed on
 `codex/bounded-community-connections`; reviews, questions, and nested answers
-now each hold at one SELECT as their parent graph grows. Before the next claim,
-the coordinator verified and promoted bounded public Relay node alias reads as
-a fourth substantive backend outcome. Product-offer connections are active on
-`codex/bounded-product-offer-connections`; three complete rows remain ready.
+now each hold at one SELECT as their parent graph grows. Bounded product-offer
+connections completed on `codex/bounded-product-offer-connections`: product
+offers, active coupons, and price history now hold at `{1, 1, 2}` SELECTs at
+both three and six product parents while preserving filters, order, validity,
+ranges, Relay pagination, latest prices, and invalid-input errors. The three
+successor rows remain ready.
 
 ## Active Work
 
-### 1. Bounded Product Offer GraphQL Connections
-
-Status: active
-Lane: Bounded product offer GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
-Batch outcome: product offer, active-coupon, and price-history Relay connections
-use bounded set-based reads whose query count does not grow with product or
-merchant-product parent count.
-Next action: implement parent-partitioned offer/coupon/history batches, route
-the nested fields through Dataloader, and add growing-parent query-budget tests
-for the product-detail and compare-shaped graph.
-Owned paths:
-
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/affiliate.ex`
-- `lib/product_compare_web/graphql/connection.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-product-offer-graphql-connections.md`
-
-Internal slices:
-
-- Parent-partitioned product merchant-product connection pages.
-- Merchant-keyed active-coupon pages for merchant-product parents.
-- Parent-partitioned price-history pages and fixed nested query budgets.
-
-Prerequisites:
-
-- Existing active-only, merchant filter, coupon-validity, time-range, and
-  price-history ordering semantics remain unchanged.
-- Existing Relay cursor, page-size, and `pageInfo` behavior remains the
-  contract.
-- Latest-price Dataloader behavior remains intact.
-
-Verification:
-
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: product-offer, coupon, and history edges, filters, ordering,
-validity, and page info match current behavior while relevant SELECT counts
-stay fixed as product and offer parent counts grow.
+None.
 
 ## Ready Work
 

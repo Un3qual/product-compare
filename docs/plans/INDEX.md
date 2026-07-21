@@ -99,8 +99,8 @@ A fresh post-completion resolver audit found five coherent backend outcomes:
 bounded product evidence/SEO reads, bounded public community connections,
 bounded product-offer/coupon/history connections, bounded merchant-parent
 active-offer connections, and bounded owner-private community submission
-reads. Product evidence and public community connections are complete; the
-product-offer/coupon/history outcome is active, and the other two remain ready.
+reads. Product evidence, public community connections, and product-offer/coupon/history
+connections are complete; the other two remain ready.
 The claim-floor audit additionally promoted bounded public Relay node alias
 reads after verifying six direct per-alias public lookups and existing
 request-scoped Dataloader coverage; that outcome is also ready.
@@ -111,7 +111,6 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-product-offer-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-merchant-offer-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-viewer-community-submission-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
