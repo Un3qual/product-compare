@@ -3,7 +3,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.{Affiliate, Catalog, Discussions, Pricing, Specs}
+  alias ProductCompare.{Affiliate, Catalog, ComparisonSnapshots, Discussions, Pricing, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @offer_connection_tables ~w(merchant_products coupons price_points)a
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @category_tables ~w(taxons products)a
+  @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
@@ -198,6 +199,39 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                  merchants: 1,
                  merchant_products: 1,
                  price_points: 1
+               },
+               initial_budget
+             }
+    end
+
+    test "public opaque-key aliases keep values and SELECT budgets fixed per lookup kind as aliases grow",
+         %{conn: conn} do
+      prefix = "public-opaque-#{System.unique_integer([:positive])}"
+      records = public_opaque_records(prefix, 1..4)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, public_opaque_batch_query(Enum.take(records, 2)), %{})
+        end)
+
+      assert_public_opaque_values(initial_response, Enum.take(records, 2))
+      initial_budget = public_opaque_query_budget(initial_queries)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, public_opaque_batch_query(records), %{})
+        end)
+
+      assert_public_opaque_values(grown_response, records)
+      grown_budget = public_opaque_query_budget(grown_queries)
+
+      assert {initial_budget, grown_budget} == {
+               %{
+                 source_artifacts: 1,
+                 sources: 1,
+                 product_threads: 1,
+                 thread_posts: 1,
+                 comparison_snapshots: 1
                },
                initial_budget
              }
@@ -648,6 +682,43 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp public_opaque_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          """
+          sourceArtifact#{index}: sourceArtifact(id: "#{relay_id(:source_artifact, record.artifact.id)}") {
+            id sourceKind sourceName sourceDomain url fetchedAt
+          }
+          """,
+          """
+          productQuestion#{index}: productQuestion(id: "#{relay_id(:product_question, record.question.entropy_id)}") {
+            id title acceptedAnswerId
+          }
+          """,
+          """
+          comparisonSnapshot#{index}: comparisonSnapshot(token: "#{record.snapshot.public_token}") {
+            id title capturedAt
+          }
+          """
+        ]
+      end)
+
+    missing_selections = [
+      "missingSourceArtifact: sourceArtifact(id: \"#{relay_id(:source_artifact, 2_147_483_647)}\") { id }",
+      "missingProductQuestion: productQuestion(id: \"#{relay_id(:product_question, Ecto.UUID.generate())}\") { id }",
+      "missingComparisonSnapshot: comparisonSnapshot(token: \"#{String.duplicate("z", 43)}\") { id }"
+    ]
+
+    """
+    query PublicOpaqueBatch {
+      #{Enum.join(selections ++ missing_selections, "\n")}
+    }
+    """
+  end
+
   defp public_node_selection(alias_name, type, id) do
     """
     #{alias_name}: node(id: "#{relay_id(type, id)}") {
@@ -898,6 +969,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     }
   end
 
+  defp public_opaque_query_budget(queries) do
+    Enum.into(@public_opaque_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
   defp assert_public_slug_values(response, products, merchants) do
     assert %{"data" => data} = response
 
@@ -934,6 +1011,38 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                    "eligibleOfferCount" => 1
                  }
                }
+    end)
+  end
+
+  defp assert_public_opaque_values(response, records) do
+    assert %{"data" => data} = response
+    assert data["missingSourceArtifact"] == nil
+    assert data["missingProductQuestion"] == nil
+    assert data["missingComparisonSnapshot"] == nil
+
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["sourceArtifact#{index}"] == %{
+               "id" => relay_id(:source_artifact, record.artifact.id),
+               "sourceKind" => record.source.kind,
+               "sourceName" => record.source.name,
+               "sourceDomain" => record.source.domain,
+               "url" => record.artifact.url,
+               "fetchedAt" => DateTime.to_iso8601(record.artifact.fetched_at)
+             }
+
+      assert data["productQuestion#{index}"] == %{
+               "id" => relay_id(:product_question, record.question.entropy_id),
+               "title" => record.question.title,
+               "acceptedAnswerId" => relay_id(:product_answer, record.answer.entropy_id)
+             }
+
+      assert data["comparisonSnapshot#{index}"] == %{
+               "id" => relay_id(:comparison_snapshot, record.snapshot.entropy_id),
+               "title" => record.snapshot.title,
+               "capturedAt" => record.snapshot.payload.captured_at
+             }
     end)
   end
 
@@ -2069,6 +2178,81 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         price_point: price_point,
         source: source,
         artifact: artifact
+      }
+    end)
+  end
+
+  defp public_opaque_records(prefix, indexes) do
+    owner = AccountsFixtures.user_fixture()
+    answer_author = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+
+    Enum.map(indexes, fn index ->
+      fetched_at =
+        ~U[2026-07-21 18:00:00Z]
+        |> DateTime.add(index, :second)
+        |> DateTime.truncate(:microsecond)
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: "#{prefix} Source #{index}",
+          domain: "#{prefix}-source-#{index}.example.com"
+        })
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://#{prefix}-source-#{index}.example.com/product",
+          fetched_at: fetched_at,
+          content_hash: "#{prefix}-artifact-#{index}"
+        })
+        |> Repo.insert!()
+
+      question_product =
+        SpecsFixtures.product_fixture(%{name: "#{prefix} Question Product #{index}"})
+
+      {:ok, question} =
+        Discussions.ask_question(owner.id, question_product.id, %{
+          title: "#{prefix} Question #{index}",
+          body: "Public opaque-key question #{index}"
+        })
+
+      {:ok, question} =
+        Discussions.moderate(operator.id, :question, question.entropy_id, :published)
+
+      {:ok, answer} =
+        Discussions.answer_question(
+          answer_author.id,
+          question.entropy_id,
+          "Public opaque-key answer #{index}"
+        )
+
+      {:ok, answer} =
+        Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+      {:ok, question} =
+        Discussions.accept_answer(owner.id, question.entropy_id, answer.entropy_id)
+
+      comparison_product =
+        SpecsFixtures.product_fixture(%{name: "#{prefix} Comparison Product #{index}"})
+
+      {:ok, snapshot} =
+        ComparisonSnapshots.publish(owner.id, %{
+          title: "#{prefix} Snapshot #{index}",
+          product_ids: [question_product.id, comparison_product.id],
+          recommendation_profile: :lowest_current_cost
+        })
+
+      %{
+        source: source,
+        artifact: artifact,
+        question: question,
+        answer: answer,
+        snapshot: snapshot
       }
     end)
   end

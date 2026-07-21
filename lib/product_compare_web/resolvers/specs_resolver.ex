@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
@@ -9,10 +11,27 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   @spec source_artifact(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, term() | nil} | {:error, String.t()}
+          {:ok, term() | nil}
+          | {:error, String.t()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def source_artifact(_parent, %{id: id}, %{context: %{loader: loader}}) do
+    with {:ok, artifact_id} <- GlobalId.decode_integer(id, :source_artifact) do
+      source = Loader.public_opaque_source()
+
+      loader
+      |> Dataloader.load(source, :source_artifact, artifact_id)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, :source_artifact, artifact_id)}
+      end)
+    else
+      :error -> {:error, "invalid source artifact id"}
+    end
+  end
+
   def source_artifact(_parent, %{id: id}, _resolution) do
     case GlobalId.decode_integer(id, :source_artifact) do
       {:ok, artifact_id} -> {:ok, Specs.get_source_artifact(artifact_id)}

@@ -5,7 +5,16 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   import Ecto.Query
 
-  alias ProductCompare.{Affiliate, Catalog, Discussions, Pricing, Seo}
+  alias ProductCompare.{
+    Affiliate,
+    Catalog,
+    ComparisonSnapshots,
+    Discussions,
+    Pricing,
+    Seo,
+    Specs
+  }
+
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
@@ -20,6 +29,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @offer_connection_source {__MODULE__, :offer_connections}
   @category_source {__MODULE__, :categories}
   @public_slug_source {__MODULE__, :public_slugs}
+  @public_opaque_source {__MODULE__, :public_opaque_keys}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -54,6 +64,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @public_slug_source,
       Dataloader.KV.new(&public_slug_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @public_opaque_source,
+      Dataloader.KV.new(&public_opaque_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
@@ -76,6 +90,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec public_slug_source() :: {module(), :public_slugs}
   def public_slug_source, do: @public_slug_source
+
+  @spec public_opaque_source() :: {module(), :public_opaque_keys}
+  def public_opaque_source, do: @public_opaque_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -278,6 +295,28 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     slugs
     |> Enum.to_list()
     |> Pricing.get_merchants_by_slugs()
+  end
+
+  defp public_opaque_batch(:source_artifact, ids) do
+    ids
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, Specs.get_source_artifacts(&1)))
+  end
+
+  defp public_opaque_batch(:product_question, entropy_ids) do
+    entropy_ids
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, Discussions.get_public_questions(&1)))
+  end
+
+  defp public_opaque_batch(:comparison_snapshot, tokens) do
+    tokens
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, ComparisonSnapshots.get_public_many(&1)))
+  end
+
+  defp project_lookup_results(items, values) do
+    Map.new(items, &{&1, Map.get(values, &1)})
   end
 
   defp project_connection_pages(parents, pages, connection_args, parent_key) do

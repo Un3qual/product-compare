@@ -1,5 +1,7 @@
 # Bounded Public Opaque-Key GraphQL Reads Implementation Plan
 
+**Status:** complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
@@ -54,14 +56,14 @@ lookup kind, after the resolvers perform the same ID decoding they do today.
 - Make each existing singular lookup delegate through its set-based API so the
   parity and visibility contracts cannot drift.
 
-- [ ] Add failing parity tests for empty, duplicate, malformed, missing,
+- [x] Add failing parity tests for empty, duplicate, malformed, missing,
   visible, unpublished or revoked inputs as applicable to each context.
-- [ ] Run the three focused context suites and confirm the batch APIs are absent.
-- [ ] Implement one bounded query per context plus the existing association
+- [x] Run the three focused context suites and confirm the batch APIs are absent.
+- [x] Implement one bounded query per context plus the existing association
   preloads, publication/revocation predicates, and snapshot hydration.
-- [ ] Compare singular and batch results and prove query counts are independent
+- [x] Compare singular and batch results and prove query counts are independent
   of requested key count.
-- [ ] Commit the context slices with messages scoped to their public lookup
+- [x] Commit the context slices with messages scoped to their public lookup
   contracts.
 
 ### Task 2: Request-Scoped Public Opaque Lookup Dataloader
@@ -83,17 +85,17 @@ Use the decoded integer ID, decoded UUID, or raw public token as the Dataloader
 item, and return the existing entity-or-`nil` resolver shapes through
 `on_load/2`.
 
-- [ ] Add a failing GraphQL regression that grows from two aliases to four for
+- [x] Add a failing GraphQL regression that grows from two aliases to four for
   every lookup kind and captures source-artifact/source, question/accepted-post,
   and comparison-snapshot SELECTs.
-- [ ] Assert IDs, safe metadata, publication and accepted-answer values,
+- [x] Assert IDs, safe metadata, publication and accepted-answer values,
   snapshot hydration, invalid-ID errors, revoked results, and missing results
   before asserting query budgets.
-- [ ] Confirm RED because direct resolver lookups grow SELECTs with alias count.
-- [ ] Register the source and route only the three public root resolvers through
+- [x] Confirm RED because direct resolver lookups grow SELECTs with alias count.
+- [x] Register the source and route only the three public root resolvers through
   it, preserving the existing decode/error steps.
-- [ ] Confirm each per-kind SELECT budget is identical at both alias counts.
-- [ ] Commit with message `perf: bound public opaque graphql reads`.
+- [x] Confirm each per-kind SELECT budget is identical at both alias counts.
+- [x] Commit with message `perf: bound public opaque graphql reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -101,14 +103,14 @@ item, and return the existing entity-or-`nil` resolver shapes through
 
 - Modify: `docs/work/bounded-public-opaque-key-graphql-reads.md`
 
-- [ ] Record exact before/after query counts and semantic parity coverage.
-- [ ] Run `mix test test/product_compare/specs/source_artifact_changeset_test.exs
+- [x] Record exact before/after query counts and semantic parity coverage.
+- [x] Run `mix test test/product_compare/specs/source_artifact_changeset_test.exs
   test/product_compare/discussions/community_trust_test.exs
   test/product_compare/comparison_snapshots_test.exs
   test/product_compare_web/graphql/source_artifact_query_test.exs
   test/product_compare_web/graphql/community_content_test.exs
   test/product_compare_web/graphql/comparison_snapshots_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.

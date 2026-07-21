@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete on `codex/bounded-public-opaque-graphql-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
@@ -18,7 +18,7 @@ lookup kind as alias count grows, without changing ID errors, nullable missing
 results, source preloads, publication and revocation gates, accepted-answer
 values, snapshot hydration, or public privacy.
 
-## Ready Evidence
+## Initial Evidence
 
 - `SpecsResolver.source_artifact/3` decodes each global ID and then calls
   `Specs.get_source_artifact/1`, which performs a direct artifact read plus
@@ -56,3 +56,33 @@ values, snapshot hydration, or public privacy.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+- Before batching, two aliases plus one valid missing lookup per kind issued
+  `%{source_artifacts: 3, sources: 2, product_threads: 3, thread_posts: 2,
+  comparison_snapshots: 3}` SELECTs. Four aliases plus the same missing lookups
+  issued `%{source_artifacts: 5, sources: 4, product_threads: 5,
+  thread_posts: 4, comparison_snapshots: 5}`.
+- After batching, both request sizes issue `%{source_artifacts: 1, sources: 1,
+  product_threads: 1, thread_posts: 1, comparison_snapshots: 1}`. Source and
+  accepted-answer preloads remain one bounded association query per kind.
+- Context coverage proves empty, duplicate, malformed, missing, visible,
+  unpublished or revoked inputs as applicable. Singular lookups delegate to
+  the set-based APIs, and source artifacts, questions, and snapshots retain
+  their preloaded or hydrated values.
+- GraphQL coverage asserts exact safe source metadata, question titles and
+  accepted-answer IDs, hydrated snapshot timestamps, and nullable valid-missing
+  results before comparing budgets. Existing behavior suites retain invalid
+  global-ID errors, publication/revocation gates, and public privacy checks.
+- Focused verification passed 74 tests across the context, source-artifact,
+  community, snapshot, and Dataloader suites; typecheck and formatting passed.
+- `mix ci` passed 843 backend tests with 83.64% coverage, Credo with no issues,
+  the 6/6 ExDNA clone budget, cross-function smell detection, Dialyzer, Relay
+  validation, TypeScript, 1,507 frontend tests across 105 files, client and SSR
+  builds, and the 182,164-byte gzip client-bundle budget.
+
+## Remaining Work
+
+None. Comparison-evidence, authorized-node, and bounded alert-evaluation
+market-read outcomes remain ready in the live queue.

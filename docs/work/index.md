@@ -1221,66 +1221,16 @@ reliability/performance outcome. It preserves the required per-watch row lock,
 update, replay, cooldown, and fault-isolation boundaries while bounding only
 the shared offer-evidence reads, leaving three independently shippable ready
 rows after the claim.
+Bounded public opaque-key GraphQL reads then completed on
+`codex/bounded-public-opaque-graphql-reads`: source-artifact, published-question,
+and active-snapshot entry points now each hold at one entity SELECT for both two
+and four aliases, with one bounded source or accepted-answer preload where
+applicable. Safe values, hydration, publication and revocation gates, invalid
+IDs, nullable missing results, and public privacy remain unchanged.
 
 ## Active Work
 
-### Bounded Public Opaque-Key GraphQL Reads
-
-Status: active
-Lane: Bounded public opaque-key GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
-Batch outcome: aliased public `sourceArtifact(id:)`, `productQuestion(id:)`,
-and `comparisonSnapshot(token:)` entry-point reads keep fixed SELECT budgets
-per lookup kind as alias count grows, without changing ID errors, nullable
-missing results, source preloads, publication and revocation gates,
-accepted-answer values, snapshot hydration, or public privacy.
-Next action: add set-based context lookups, route the three opaque-key public
-entry points through one request-scoped Dataloader source, and prove semantic,
-privacy, preload, and fixed-budget parity.
-Owned paths:
-
-- `lib/product_compare/specs.ex`
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare/comparison_snapshots.ex`
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/specs_resolver.ex`
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
-- `test/product_compare/specs/source_artifact_changeset_test.exs`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/source_artifact_query_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-public-opaque-key-graphql-reads.md`
-
-Internal slices:
-
-- Set-based source-artifact, public-question, and active-snapshot context reads.
-- Request-scoped opaque-key loading for all three public root resolvers.
-- Semantic, privacy, preload, and fixed per-kind query-budget parity.
-
-Prerequisites:
-
-- Existing global-ID errors, nullable missing behavior, source preload,
-  publication/revocation filters, accepted-answer values, and snapshot
-  hydration remain authoritative.
-- Public snapshot reads continue to expose no owner identity.
-- This row executes serially with shared Loader work but is independent of
-  slug identity, category qualification, and Relay node allowlist behavior.
-
-Verification:
-
-- `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: all three public entry points preserve their current values,
-visibility, privacy, preload, invalid-input, and missing-result behavior while
-per-kind SELECT counts stay fixed as aliases grow.
+None.
 
 ## Ready Work
 
