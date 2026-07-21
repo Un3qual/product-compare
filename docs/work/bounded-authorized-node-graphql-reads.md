@@ -44,8 +44,12 @@ Relay identity.
 - The operator-node context slice is green: Affiliate now returns an explicit
   record-or-`nil` map for empty, duplicate, missing, two-ID, and four-ID
   requests across all four schemas with exactly one SELECT per non-empty type.
-- The focused Affiliate, Accounts, Catalog baseline and new context regressions
-  pass as part of 32 tests; owner-context and GraphQL loader milestones follow.
+- The owner-context slice is green: Accounts and Catalog validate and dedupe
+  requested UUIDs, retain missing and cross-owner `nil` entries, keep saved-set
+  associations lazy, perform no query for an empty request, and hold at one
+  SELECT from two IDs through four.
+- The focused Affiliate, Accounts, and Catalog suites pass 32 tests; the
+  authorization-aware GraphQL loader milestone follows.
 
 ## Boundaries
 

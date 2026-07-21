@@ -68,13 +68,13 @@ entries cannot cross principals.
   entropy IDs, keyed by every requested valid UUID.
 - Preserve lazy saved-set associations and token owner filtering.
 
-- [ ] Add failing empty, duplicate, missing, cross-owner, and two-versus-four
+- [x] Add failing empty, duplicate, missing, cross-owner, and two-versus-four
   parity/query-budget tests for both owner-scoped types.
-- [ ] Run the focused Accounts and Catalog tests and confirm the APIs are absent.
-- [ ] Implement bounded owner-filtered reads without eager association loads.
-- [ ] Re-run the focused tests and prove exact singular, privacy, and lazy-load
+- [x] Run the focused Accounts and Catalog tests and confirm the APIs are absent.
+- [x] Implement bounded owner-filtered reads without eager association loads.
+- [x] Re-run the focused tests and prove exact singular, privacy, and lazy-load
   parity with fixed budgets.
-- [ ] Commit with message `perf: batch owner scoped node reads`.
+- [x] Commit with message `perf: batch owner scoped node reads`.
 
 ### Task 3: Authorization-Aware Node Dataloader
 

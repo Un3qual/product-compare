@@ -1,6 +1,8 @@
 defmodule ProductCompare.Catalog.SavedComparisonSetTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -110,6 +112,67 @@ defmodule ProductCompare.Catalog.SavedComparisonSetTest do
       assert loaded_saved_set.id == saved_set.id
       assert loaded_saved_set.user_id == user.id
       refute Ecto.assoc_loaded?(loaded_saved_set.items)
+    end
+  end
+
+  describe "get_saved_comparison_sets_for_user/2" do
+    test "preserves owner scope and lazy associations with one SELECT as ids grow" do
+      owner = AccountsFixtures.user_fixture()
+      other_user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "saved-node-batch-product"})
+
+      saved_sets =
+        Enum.map(1..4, fn index ->
+          {:ok, saved_set} =
+            Catalog.create_saved_comparison_set(owner.id, %{
+              name: "Batch set #{index}",
+              product_ids: [product.id]
+            })
+
+          saved_set
+        end)
+
+      {:ok, other_saved_set} =
+        Catalog.create_saved_comparison_set(other_user.id, %{
+          name: "Other owner set",
+          product_ids: [product.id]
+        })
+
+      entropy_ids = Enum.map(saved_sets, & &1.entropy_id)
+
+      {two_results, two_queries} =
+        capture_select_queries(fn ->
+          Catalog.get_saved_comparison_sets_for_user(owner, Enum.take(entropy_ids, 2))
+        end)
+
+      {four_results, four_queries} =
+        capture_select_queries(fn ->
+          Catalog.get_saved_comparison_sets_for_user(owner, entropy_ids)
+        end)
+
+      assert Enum.map(Enum.take(entropy_ids, 2), &Map.fetch!(two_results, &1).id) ==
+               Enum.take(saved_sets, 2) |> Enum.map(& &1.id)
+
+      assert Enum.map(entropy_ids, &Map.fetch!(four_results, &1).id) ==
+               Enum.map(saved_sets, & &1.id)
+
+      assert Enum.all?(Map.values(four_results), &(not Ecto.assoc_loaded?(&1.items)))
+      assert length(two_queries) == 1
+      assert length(four_queries) == 1
+
+      assert Catalog.get_saved_comparison_sets_for_user(owner, [
+               hd(entropy_ids),
+               hd(entropy_ids),
+               other_saved_set.entropy_id,
+               "not-a-uuid"
+             ]) == %{
+               hd(entropy_ids) =>
+                 Catalog.get_saved_comparison_set_for_user(owner, hd(entropy_ids)),
+               other_saved_set.entropy_id => nil,
+               "not-a-uuid" => nil
+             }
+
+      assert Catalog.get_saved_comparison_sets_for_user(owner, []) == %{}
     end
   end
 

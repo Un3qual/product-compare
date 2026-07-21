@@ -1,6 +1,8 @@
 defmodule ProductCompare.Accounts.ApiTokenTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias Ecto.Adapters.SQL
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
@@ -18,6 +20,54 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
     end)
 
     :ok
+  end
+
+  describe "get_api_tokens_for_user/2" do
+    test "preserves owner scope and keeps one SELECT as requested ids grow" do
+      owner = user_fixture()
+      other_user = user_fixture()
+
+      tokens =
+        Enum.map(1..4, fn index ->
+          {:ok, %{api_token: token}} =
+            Accounts.create_api_token(owner.id, %{label: "batch-token-#{index}"})
+
+          token
+        end)
+
+      {:ok, %{api_token: other_token}} =
+        Accounts.create_api_token(other_user.id, %{label: "other-owner"})
+
+      entropy_ids = Enum.map(tokens, & &1.entropy_id)
+
+      {two_results, two_queries} =
+        capture_select_queries(fn ->
+          Accounts.get_api_tokens_for_user(owner, Enum.take(entropy_ids, 2))
+        end)
+
+      {four_results, four_queries} =
+        capture_select_queries(fn -> Accounts.get_api_tokens_for_user(owner, entropy_ids) end)
+
+      assert Enum.map(Enum.take(entropy_ids, 2), &Map.fetch!(two_results, &1).id) ==
+               Enum.take(tokens, 2) |> Enum.map(& &1.id)
+
+      assert Enum.map(entropy_ids, &Map.fetch!(four_results, &1).id) == Enum.map(tokens, & &1.id)
+      assert length(two_queries) == 1
+      assert length(four_queries) == 1
+
+      assert Accounts.get_api_tokens_for_user(owner, [
+               hd(entropy_ids),
+               hd(entropy_ids),
+               other_token.entropy_id,
+               "not-a-uuid"
+             ]) == %{
+               hd(entropy_ids) => Accounts.get_api_token_for_user(owner, hd(entropy_ids)),
+               other_token.entropy_id => nil,
+               "not-a-uuid" => nil
+             }
+
+      assert Accounts.get_api_tokens_for_user(owner, []) == %{}
+    end
   end
 
   describe "create_api_token/2" do
