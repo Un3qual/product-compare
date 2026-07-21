@@ -134,9 +134,6 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
@@ -260,6 +257,12 @@ Completed implementation plans stay in `docs/plans/` as dated reference files.
 Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- 2026-07-20 through 2026-07-21 bounded GraphQL reads: merchant-offer
+  connections, owner-private community submissions, public Relay nodes,
+  category qualification and product pages, and public product/merchant slug
+  aliases. Their implementation plans are explicitly complete, and their lane
+  docs retain the query-budget and semantic-parity evidence.
 
 - 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
   lifecycle reliability, community content lifecycle, Relay cursor forward
