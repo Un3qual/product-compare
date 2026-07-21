@@ -9,6 +9,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
   @community_connection_tables ~w(product_reviews product_threads thread_posts)a
+  @viewer_submission_tables ~w(product_reviews product_threads thread_posts)a
   @offer_connection_tables ~w(merchant_products coupons price_points)a
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -310,6 +311,65 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert community_connection_query_budget(grown_queries) == initial_budget
     end
 
+    test "viewer community submissions keep owner values and SELECT budgets fixed as parents grow",
+         %{conn: conn, test: test_name} do
+      previous_discussion_config =
+        Application.get_env(:product_compare, ProductCompare.Discussions)
+
+      on_exit(fn ->
+        if previous_discussion_config do
+          Application.put_env(
+            :product_compare,
+            ProductCompare.Discussions,
+            previous_discussion_config
+          )
+        else
+          Application.delete_env(:product_compare, ProductCompare.Discussions)
+        end
+      end)
+
+      Application.put_env(:product_compare, ProductCompare.Discussions,
+        community_write_limits: [review: 10, question: 10, answer: 30, report: 30]
+      )
+
+      owner = AccountsFixtures.user_fixture()
+      operator = AccountsFixtures.operator_fixture()
+      owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+      prefix = "viewer-submissions-#{test_name}-#{System.unique_integer([:positive])}"
+
+      initial_products = viewer_submission_products(prefix, owner, operator, 1..3)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(owner_conn, viewer_submissions_batch_query(), %{"first" => 3})
+        end)
+
+      initial_nodes = viewer_submission_nodes(initial_response)
+      assert [_, _, _] = initial_nodes
+      assert_viewer_submission_values(initial_nodes, initial_products)
+
+      initial_budget = viewer_submission_query_budget(initial_queries)
+
+      assert initial_budget == %{
+               product_reviews: 1,
+               product_threads: 1,
+               thread_posts: 1
+             }
+
+      grown_products =
+        initial_products ++ viewer_submission_products(prefix, owner, operator, 4..6)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(owner_conn, viewer_submissions_batch_query(), %{"first" => 6})
+        end)
+
+      grown_nodes = viewer_submission_nodes(grown_response)
+      assert [_, _, _, _, _, _] = grown_nodes
+      assert_viewer_submission_values(grown_nodes, grown_products)
+      assert viewer_submission_query_budget(grown_queries) == initial_budget
+    end
+
     test "compare-shaped offer connections keep Relay values and SELECT budgets fixed as parents grow",
          %{conn: conn, test: test_name} do
       anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)
@@ -535,6 +595,25 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp viewer_submissions_batch_query do
+    """
+    query ViewerSubmissionsBatch($first: Int!) {
+      products(first: $first) {
+        edges {
+          node {
+            slug
+            viewerCommunitySubmissions {
+              reviews { id rating moderationStatus viewerCanEdit viewerCanRemove }
+              questions { id title moderationStatus viewerCanEdit viewerCanRemove }
+              answers { id body moderationStatus viewerCanEdit viewerCanRemove }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp offer_connections_batch_query do
     """
     query OfferConnectionsBatch(
@@ -670,6 +749,59 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     |> Enum.map(& &1["node"])
   end
 
+  defp viewer_submission_nodes(response) do
+    response
+    |> get_in(["data", "products", "edges"])
+    |> Enum.map(& &1["node"])
+  end
+
+  defp assert_viewer_submission_values(nodes, products) do
+    Enum.each(products, fn product_data ->
+      node = node_for(nodes, product_data.product.slug)
+
+      assert node["viewerCommunitySubmissions"] == %{
+               "reviews" => [
+                 %{
+                   "id" => relay_id(:product_review, product_data.review.entropy_id),
+                   "rating" => product_data.review.rating,
+                   "moderationStatus" => "PENDING",
+                   "viewerCanEdit" => true,
+                   "viewerCanRemove" => true
+                 }
+               ],
+               "questions" => [
+                 %{
+                   "id" => relay_id(:product_question, product_data.hidden_question.entropy_id),
+                   "title" => product_data.hidden_question.title,
+                   "moderationStatus" => "HIDDEN",
+                   "viewerCanEdit" => true,
+                   "viewerCanRemove" => true
+                 }
+               ],
+               "answers" => [
+                 %{
+                   "id" => relay_id(:product_answer, product_data.pending_answer.entropy_id),
+                   "body" => product_data.pending_answer.body_md,
+                   "moderationStatus" => "PENDING",
+                   "viewerCanEdit" => true,
+                   "viewerCanRemove" => true
+                 },
+                 %{
+                   "id" =>
+                     relay_id(
+                       :product_answer,
+                       product_data.published_hidden_answer.entropy_id
+                     ),
+                   "body" => product_data.published_hidden_answer.body_md,
+                   "moderationStatus" => "PUBLISHED",
+                   "viewerCanEdit" => true,
+                   "viewerCanRemove" => true
+                 }
+               ]
+             }
+    end)
+  end
+
   defp assert_public_community_connection_values(nodes, products) do
     Enum.each(products, fn product ->
       node = node_for(nodes, product.product.slug)
@@ -727,6 +859,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   defp community_connection_query_budget(queries) do
     Enum.into(@community_connection_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp viewer_submission_query_budget(queries) do
+    Enum.into(@viewer_submission_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
     end)
   end
@@ -1077,6 +1215,80 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       first_answer: first_answer,
       accepted_answer: accepted_answer
     }
+  end
+
+  defp viewer_submission_products(prefix, owner, operator, indexes) do
+    Enum.map(indexes, fn index ->
+      slug = "#{prefix}-#{String.pad_leading(Integer.to_string(index), 2, "0")}"
+      product = SpecsFixtures.product_fixture(%{slug: slug, name: slug})
+
+      {:ok, review} =
+        Discussions.submit_review(owner.id, product.id, %{
+          rating: rem(index, 5) + 1,
+          title: "Owner review #{index}"
+        })
+
+      {:ok, hidden_question} =
+        Discussions.ask_question(owner.id, product.id, %{
+          title: "Owner hidden question #{index}"
+        })
+
+      {:ok, hidden_question} =
+        Discussions.moderate(
+          operator.id,
+          :question,
+          hidden_question.entropy_id,
+          :published
+        )
+
+      {:ok, published_hidden_answer} =
+        Discussions.answer_question(
+          owner.id,
+          hidden_question.entropy_id,
+          "Published answer under hidden question #{index}"
+        )
+
+      {:ok, published_hidden_answer} =
+        Discussions.moderate(
+          operator.id,
+          :answer,
+          published_hidden_answer.entropy_id,
+          :published
+        )
+
+      {:ok, hidden_question} =
+        Discussions.moderate(operator.id, :question, hidden_question.entropy_id, :hidden)
+
+      other_asker = AccountsFixtures.user_fixture()
+
+      {:ok, public_question} =
+        Discussions.ask_question(other_asker.id, product.id, %{
+          title: "Other user's public question #{index}"
+        })
+
+      {:ok, public_question} =
+        Discussions.moderate(
+          operator.id,
+          :question,
+          public_question.entropy_id,
+          :published
+        )
+
+      {:ok, pending_answer} =
+        Discussions.answer_question(
+          owner.id,
+          public_question.entropy_id,
+          "Pending answer #{index}"
+        )
+
+      %{
+        product: product,
+        review: review,
+        hidden_question: hidden_question,
+        published_hidden_answer: published_hidden_answer,
+        pending_answer: pending_answer
+      }
+    end)
   end
 
   defp cursor_for(index), do: Base.encode64("cursor:#{index}")

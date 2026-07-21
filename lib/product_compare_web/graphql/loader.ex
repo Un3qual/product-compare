@@ -16,6 +16,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
   @community_connection_source {__MODULE__, :community_connections}
+  @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
 
   @spec new(map()) :: Dataloader.t()
@@ -36,6 +37,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       Dataloader.KV.new(&community_connection_batch/2, async?: false)
     )
     |> Dataloader.add_source(
+      @viewer_submission_source,
+      Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
       @offer_connection_source,
       Dataloader.KV.new(&offer_connection_batch/2, async?: false)
     )
@@ -49,6 +54,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec community_connection_source() :: {module(), :community_connections}
   def community_connection_source, do: @community_connection_source
+
+  @spec viewer_submission_source() :: {module(), :viewer_community_submissions}
+  def viewer_submission_source, do: @viewer_submission_source
 
   @spec offer_connection_source() :: {module(), :offer_connections}
   def offer_connection_source, do: @offer_connection_source
@@ -151,6 +159,21 @@ defmodule ProductCompareWeb.GraphQL.Loader do
        pages
        |> Map.fetch!(parent.id)
        |> ProductCompareWeb.GraphQL.Connection.from_prefetched_page(connection_args)}
+    end)
+  end
+
+  defp viewer_submission_batch(user_id, products)
+       when is_integer(user_id) and user_id > 0 do
+    products = Enum.to_list(products)
+
+    submissions =
+      Discussions.viewer_community_submissions_for_products(
+        user_id,
+        Enum.map(products, & &1.id)
+      )
+
+    Map.new(products, fn product ->
+      {product, Map.fetch!(submissions, product.id)}
     end)
   end
 

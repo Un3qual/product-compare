@@ -45,6 +45,21 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
+  def viewer_community_submissions(
+        %{id: product_id} = product,
+        _args,
+        %{context: %{current_user: user, loader: loader}}
+      )
+      when is_integer(product_id) do
+    source = Loader.viewer_submission_source()
+
+    loader
+    |> Dataloader.load(source, user.id, product)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, user.id, product)}
+    end)
+  end
+
   def viewer_community_submissions(product, _args, %{context: %{current_user: user}}),
     do: {:ok, Discussions.viewer_community_submissions(user.id, product.id)}
 
