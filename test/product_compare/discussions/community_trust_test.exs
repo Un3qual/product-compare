@@ -313,6 +313,62 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     end
   end
 
+  test "public question batches preserve publication, accepted answers, missing values, and query budgets" do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, accepted_question} =
+             Discussions.ask_question(owner.id, product.id, %{title: "Accepted question"})
+
+    assert {:ok, accepted_question} =
+             Discussions.moderate(
+               operator.id,
+               :question,
+               accepted_question.entropy_id,
+               :published
+             )
+
+    accepted_answer = public_answer_fixture(accepted_question, operator)
+
+    assert {:ok, _accepted_question} =
+             Discussions.accept_answer(
+               owner.id,
+               accepted_question.entropy_id,
+               accepted_answer.entropy_id
+             )
+
+    second_question = public_question_fixture(product, operator)
+    hidden_question = public_question_fixture(product, operator, :hidden)
+    missing_id = Ecto.UUID.generate()
+
+    {initial, initial_queries} =
+      capture_select_queries(fn ->
+        Discussions.get_public_questions([accepted_question.entropy_id])
+      end)
+
+    {grown, grown_queries} =
+      capture_select_queries(fn ->
+        Discussions.get_public_questions([
+          accepted_question.entropy_id,
+          second_question.entropy_id,
+          accepted_question.entropy_id,
+          hidden_question.entropy_id,
+          missing_id,
+          "invalid"
+        ])
+      end)
+
+    assert initial[accepted_question.entropy_id].accepted_post.id == accepted_answer.id
+    assert grown[accepted_question.entropy_id].accepted_post.id == accepted_answer.id
+    assert grown[second_question.entropy_id].accepted_post == nil
+    assert grown[hidden_question.entropy_id] == nil
+    assert grown[missing_id] == nil
+    refute Map.has_key?(grown, "invalid")
+    assert Discussions.get_public_questions([]) == %{}
+    assert length(grown_queries) == length(initial_queries)
+  end
+
   test "viewer submission batches preserve owner visibility across products" do
     owner = AccountsFixtures.user_fixture()
     stranger = AccountsFixtures.user_fixture()

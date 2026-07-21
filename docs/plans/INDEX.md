@@ -127,6 +127,12 @@ A sixth claim-floor audit promoted the remaining authorized Relay node reads
 after verifying that four operator-only affiliate types and two owner-scoped
 types still query per alias. Their authorization and ownership variants stay
 internal slices of one non-public node acceptance boundary.
+A seventh claim-floor audit promoted bounded alert evaluation market reads
+after verifying that the default evaluator repeats identical product-wide or
+triggering-listing offer evidence inside every applicable watch transaction.
+The shared market-fact snapshot, required per-watch locks, replay safety,
+cooldowns, and partial-failure behavior remain internal slices of one alert
+evaluation reliability/performance outcome.
 Specification-correction lists were not promoted because their claim trees are
 already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
@@ -137,6 +143,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -171,10 +178,12 @@ batch and should not be recreated or promoted.
   active-offer connections are complete. Owner-private community submission
   reads, public Relay node aliases, and category lookup/qualified-product
   connections are complete. Public product/merchant slug lookups are also
-  complete; the remaining public opaque-key lookups, comparison evidence reads,
-  and authorized Relay node reads remain ready through the active plans above.
-  They are reviewer-sized domain outcomes; their set-based context, Dataloader,
-  and query-budget steps remain internal slices rather than separate queue rows.
+  complete; the remaining public opaque-key lookups are active, while
+  comparison evidence reads, authorized Relay node reads, and bounded alert
+  evaluation market reads remain ready through the active plans above. They
+  are reviewer-sized domain outcomes; their set-based context, Dataloader,
+  shared-fact, and query-budget steps remain internal slices rather than
+  separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

@@ -1213,16 +1213,20 @@ now both hold at two product lookups, one historical-alias join, and one
 merchant lookup while canonical precedence, historical redirects, nested
 Dataloader values, request-local cache clearing, and missing results remain
 unchanged.
+Before claiming the public opaque-key successor, a seventh claim-floor audit
+verified that one alert evaluation still repeats identical product-wide or
+triggering-listing market-fact reads inside every applicable watch transaction.
+Bounded Alert Evaluation Market Reads was promoted as one coherent backend
+reliability/performance outcome. It preserves the required per-watch row lock,
+update, replay, cooldown, and fault-isolation boundaries while bounding only
+the shared offer-evidence reads, leaving three independently shippable ready
+rows after the claim.
 
 ## Active Work
 
-None.
+### Bounded Public Opaque-Key GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Public Opaque-Key GraphQL Reads
-
-Status: ready
+Status: active
 Lane: Bounded public opaque-key GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
 Batch outcome: aliased public `sourceArtifact(id:)`, `productQuestion(id:)`,
@@ -1242,7 +1246,7 @@ Owned paths:
 - `lib/product_compare_web/resolvers/specs_resolver.ex`
 - `lib/product_compare_web/resolvers/discussions_resolver.ex`
 - `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
-- `test/product_compare/specs_test.exs`
+- `test/product_compare/specs/source_artifact_changeset_test.exs`
 - `test/product_compare/discussions/community_trust_test.exs`
 - `test/product_compare/comparison_snapshots_test.exs`
 - `test/product_compare_web/graphql/source_artifact_query_test.exs`
@@ -1268,7 +1272,7 @@ Prerequisites:
 
 Verification:
 
-- `mix test test/product_compare/specs_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix test test/product_compare/specs/source_artifact_changeset_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
@@ -1278,7 +1282,9 @@ Exit condition: all three public entry points preserve their current values,
 visibility, privacy, preload, invalid-input, and missing-result behavior while
 per-kind SELECT counts stay fixed as aliases grow.
 
-### 2. Bounded Comparison Evidence Reads
+## Ready Work
+
+### 1. Bounded Comparison Evidence Reads
 
 Status: ready
 Lane: Bounded comparison evidence reads
@@ -1328,7 +1334,7 @@ Exit condition: two- and three-product live recommendations and immutable
 snapshots preserve exact facts and lifecycle behavior while comparison-evidence
 SELECT counts stay fixed as selection grows.
 
-### 3. Bounded Authorized Node GraphQL Reads
+### 2. Bounded Authorized Node GraphQL Reads
 
 Status: ready
 Lane: Bounded authorized node GraphQL reads
@@ -1382,6 +1388,52 @@ Verification:
 Exit condition: operator and owner-scoped node types preserve exact values,
 authorization, privacy, lazy nested loading, invalid-input, and missing behavior
 while per-type SELECT counts stay fixed as authorized aliases grow.
+
+### 3. Bounded Alert Evaluation Market Reads
+
+Status: ready
+Lane: Bounded alert evaluation market reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
+Batch outcome: every watch applicable to one persisted price observation
+reuses one immutable product-wide or triggering-listing market-fact snapshot,
+while per-watch row locks, state updates, event uniqueness, cooldowns, replay
+safety, fault isolation, and later-watch progress remain unchanged.
+Next action: characterize shared market-fact SELECT growth separately from
+required per-watch locks, compute only the product and listing fact scopes used
+by the evaluation run, and prove semantic plus fixed shared-read parity.
+Owned paths:
+
+- `lib/product_compare/alerts.ex`
+- `test/product_compare/alerts/alerts_test.exs`
+- `docs/work/bounded-alert-evaluation-market-reads.md`
+
+Internal slices:
+
+- Mixed product/listing watch query-budget characterization.
+- One immutable market-fact snapshot per evaluation run.
+- Semantic, replay, fault-isolation, lock, and shared-read parity evidence.
+
+Prerequisites:
+
+- The current one-transaction and one-row-lock boundary per watch remains
+  authoritative and intentionally proportional to watch count.
+- Product-wide and listing-scoped facts retain current eligibility, price,
+  shipping, stock, observation, and triggering-price fallback semantics.
+- Existing three- and four-arity custom evaluator hooks remain unchanged.
+- This row is independent of GraphQL Loader work and comparison evidence reads.
+
+Verification:
+
+- `mix test test/product_compare/alerts/alerts_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: shared merchant-product and latest-price SELECT counts stay
+fixed as applicable watches grow from two to six, while required per-watch
+locks, exact lifecycle results, replay safety, and fault isolation remain
+unchanged.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

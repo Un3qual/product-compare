@@ -445,10 +445,42 @@ defmodule ProductCompare.Discussions do
 
   @spec get_public_question(Ecto.UUID.t()) :: ProductThread.t() | nil
   def get_public_question(entropy_id) do
-    case public_question_by_entropy(entropy_id) do
-      %ProductThread{} = question -> Repo.preload(question, :accepted_post)
-      nil -> nil
+    case Ecto.UUID.cast(entropy_id) do
+      {:ok, uuid} -> entropy_id |> List.wrap() |> get_public_questions() |> Map.get(uuid)
+      :error -> nil
     end
+  end
+
+  @spec get_public_questions([term()]) :: %{optional(Ecto.UUID.t()) => ProductThread.t() | nil}
+  def get_public_questions(entropy_ids) when is_list(entropy_ids) do
+    entropy_ids =
+      entropy_ids
+      |> Enum.flat_map(fn entropy_id ->
+        case Ecto.UUID.cast(entropy_id) do
+          {:ok, uuid} -> [uuid]
+          :error -> []
+        end
+      end)
+      |> Enum.uniq()
+
+    questions =
+      case entropy_ids do
+        [] ->
+          %{}
+
+        _ ->
+          ProductThread
+          |> where(
+            [question],
+            question.entropy_id in ^entropy_ids and question.kind == :question and
+              question.moderation_status == :published
+          )
+          |> preload(:accepted_post)
+          |> Repo.all()
+          |> Map.new(&{&1.entropy_id, &1})
+      end
+
+    Map.new(entropy_ids, &{&1, Map.get(questions, &1)})
   end
 
   @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::
@@ -1110,13 +1142,6 @@ defmodule ProductCompare.Discussions do
       desc: record.inserted_at,
       desc: record.id
     )
-  end
-
-  defp public_question_by_entropy(entropy_id) do
-    case question_by_entropy(entropy_id) do
-      %ProductThread{moderation_status: :published} = question -> question
-      _ -> nil
-    end
   end
 
   defp public_connection_page_query(:reviews, parent_ids, offset, fetch_limit) do

@@ -96,12 +96,32 @@ defmodule ProductCompare.Specs do
 
   @spec get_source_artifact(term()) :: SourceArtifact.t() | nil
   def get_source_artifact(id) when valid_id_guard(id) do
-    SourceArtifact
-    |> Repo.get(id)
-    |> Repo.preload(:source)
+    [id]
+    |> get_source_artifacts()
+    |> Map.fetch!(id)
   end
 
   def get_source_artifact(_id), do: nil
+
+  @spec get_source_artifacts([term()]) :: %{optional(pos_integer()) => SourceArtifact.t() | nil}
+  def get_source_artifacts(ids) when is_list(ids) do
+    ids = ids |> Enum.filter(&valid_id?/1) |> Enum.uniq()
+
+    artifacts =
+      case ids do
+        [] ->
+          %{}
+
+        _ ->
+          SourceArtifact
+          |> where([artifact], artifact.id in ^ids)
+          |> preload(:source)
+          |> Repo.all()
+          |> Map.new(&{&1.id, &1})
+      end
+
+    Map.new(ids, &{&1, Map.get(artifacts, &1)})
+  end
 
   @spec propose_claim(pos_integer(), pos_integer(), map(), map()) ::
           {:ok, ProductAttributeClaim.t()} | {:error, term()}

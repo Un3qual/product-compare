@@ -37,7 +37,7 @@ lookup kind, after the resolvers perform the same ID decoding they do today.
 - Modify: `lib/product_compare/specs.ex`
 - Modify: `lib/product_compare/discussions.ex`
 - Modify: `lib/product_compare/comparison_snapshots.ex`
-- Modify: `test/product_compare/specs_test.exs`
+- Modify: `test/product_compare/specs/source_artifact_changeset_test.exs`
 - Modify: `test/product_compare/discussions/community_trust_test.exs`
 - Modify: `test/product_compare/comparison_snapshots_test.exs`
 
@@ -102,7 +102,7 @@ item, and return the existing entity-or-`nil` resolver shapes through
 - Modify: `docs/work/bounded-public-opaque-key-graphql-reads.md`
 
 - [ ] Record exact before/after query counts and semantic parity coverage.
-- [ ] Run `mix test test/product_compare/specs_test.exs
+- [ ] Run `mix test test/product_compare/specs/source_artifact_changeset_test.exs
   test/product_compare/discussions/community_trust_test.exs
   test/product_compare/comparison_snapshots_test.exs
   test/product_compare_web/graphql/source_artifact_query_test.exs

@@ -19,6 +19,7 @@ defmodule ProductCompare.ComparisonSnapshots do
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @profiles [:lowest_current_cost, :best_value]
+  @public_token_pattern ~r/^[A-Za-z0-9_-]{43}$/
 
   @spec publish(pos_integer(), map(), keyword()) ::
           {:ok, ComparisonSnapshot.t()}
@@ -52,15 +53,37 @@ defmodule ProductCompare.ComparisonSnapshots do
 
   @spec get_public(String.t()) :: ComparisonSnapshot.t() | nil
   def get_public(token) when is_binary(token) do
-    if Regex.match?(~r/^[A-Za-z0-9_-]{43}$/, token) do
-      ComparisonSnapshot
-      |> where([snapshot], snapshot.public_token == ^token and is_nil(snapshot.revoked_at))
-      |> Repo.one()
-      |> hydrate()
-    end
+    [token]
+    |> get_public_many()
+    |> Map.get(token)
   end
 
   def get_public(_token), do: nil
+
+  @spec get_public_many([term()]) :: %{optional(String.t()) => ComparisonSnapshot.t() | nil}
+  def get_public_many(tokens) when is_list(tokens) do
+    tokens =
+      tokens
+      |> Enum.filter(&(is_binary(&1) and Regex.match?(@public_token_pattern, &1)))
+      |> Enum.uniq()
+
+    snapshots =
+      case tokens do
+        [] ->
+          %{}
+
+        _ ->
+          ComparisonSnapshot
+          |> where(
+            [snapshot],
+            snapshot.public_token in ^tokens and is_nil(snapshot.revoked_at)
+          )
+          |> Repo.all()
+          |> Map.new(&{&1.public_token, hydrate(&1)})
+      end
+
+    Map.new(tokens, &{&1, Map.get(snapshots, &1)})
+  end
 
   @spec active_for_owner_query(pos_integer()) :: Ecto.Query.t()
   def active_for_owner_query(user_id) when is_integer(user_id) do
