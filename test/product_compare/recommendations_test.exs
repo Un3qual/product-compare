@@ -1,6 +1,8 @@
 defmodule ProductCompare.RecommendationsTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -64,6 +66,53 @@ defmodule ProductCompare.RecommendationsTest do
     assert tied.missing_inputs == ["Top products have the same eligible landed price."]
   end
 
+  test "comparison evidence SELECT budgets stay fixed as selection grows" do
+    {first, first_point} = product_with_price("Budget first", "120")
+    {second, second_point} = product_with_price("Budget second", "90")
+    {third, third_point} = product_with_price("Budget third", "100")
+
+    {two_product_result, two_product_queries} =
+      capture_select_queries(fn ->
+        Recommendations.compare([first.id, second.id], :lowest_current_cost, now: @now)
+      end)
+
+    {three_product_result, three_product_queries} =
+      capture_select_queries(fn ->
+        Recommendations.compare(
+          [first.id, second.id, third.id],
+          :lowest_current_cost,
+          now: @now
+        )
+      end)
+
+    assert two_product_result.status == :winner
+    assert two_product_result.winner_product_id == second.id
+
+    assert Enum.map(two_product_result.rankings, &{&1.product_id, &1.price_point_id}) == [
+             {second.id, second_point.id},
+             {first.id, first_point.id}
+           ]
+
+    assert three_product_result.status == :winner
+    assert three_product_result.winner_product_id == second.id
+
+    assert Enum.map(three_product_result.rankings, &{&1.product_id, &1.price_point_id}) == [
+             {second.id, second_point.id},
+             {third.id, third_point.id},
+             {first.id, first_point.id}
+           ]
+
+    assert evidence_query_counts(two_product_queries) == %{
+             merchant_products: 1,
+             price_points: 1,
+             product_attribute_current: 1,
+             products: 1
+           }
+
+    assert evidence_query_counts(three_product_queries) ==
+             evidence_query_counts(two_product_queries)
+  end
+
   defp product_with_price(name, price, currency \\ "USD") do
     product = SpecsFixtures.product_fixture(%{name: name})
 
@@ -113,5 +162,17 @@ defmodule ProductCompare.RecommendationsTest do
     {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
     {:ok, _current} = Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
     claim
+  end
+
+  defp evidence_query_counts(queries) do
+    Map.new(
+      [
+        merchant_products: ~r/FROM "merchant_products"/,
+        price_points: ~r/FROM "price_points"/,
+        product_attribute_current: ~r/FROM "product_attribute_current"/,
+        products: ~r/FROM "products"/
+      ],
+      fn {name, pattern} -> {name, Enum.count(queries, &Regex.match?(pattern, &1))} end
+    )
   end
 end

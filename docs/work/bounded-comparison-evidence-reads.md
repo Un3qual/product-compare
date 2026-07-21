@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active on `codex/bounded-public-opaque-graphql-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
@@ -16,7 +16,7 @@ evidence with fixed SELECT budgets as selection grows from two products to
 three, without changing ranking, captured facts, order, shared-time semantics,
 qualification, privacy, token, or revocation behavior.
 
-## Ready Evidence
+## Initial Evidence
 
 - `Recommendations.compare/3` loads products and claims in sets, but calls
   `Pricing.current_offer_truth/2` once for every selected product even though
@@ -30,6 +30,15 @@ qualification, privacy, token, or revocation behavior.
   internal slices rather than separate micro-batches.
 - Recommendation and snapshot context/GraphQL suites passed 13 tests on
   2026-07-21, but none proves a fixed budget from two products to three.
+
+## Implementation Evidence
+
+- Recommendation RED grew merchant-product and price-point SELECTs from two to
+  three as selection grew from two products to three. GREEN holds products,
+  current claims, merchant products, and price points at one SELECT each for
+  both selection sizes.
+- Exact recommendation ranking order, winner, price-point IDs, reasons, and
+  public GraphQL values remain green.
 
 ## Internal Slices
 

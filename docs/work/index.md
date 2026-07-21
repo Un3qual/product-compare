@@ -1227,16 +1227,22 @@ and active-snapshot entry points now each hold at one entity SELECT for both two
 and four aliases, with one bounded source or accepted-answer preload where
 applicable. Safe values, hydration, publication and revocation gates, invalid
 IDs, nullable missing results, and public privacy remain unchanged.
+Before claiming the comparison-evidence successor, an eighth claim-floor audit
+verified that repeated public `comparisonProducts` and
+`comparisonRecommendation` aliases still execute their bounded slug and
+recommendation evidence reads independently. Bounded Comparison Root GraphQL
+Reads was promoted as one public comparison-selection outcome. Its product-list
+and recommendation variants remain internal slices, and it executes serially
+with other Recommendations/Loader work, leaving three independently shippable
+ready rows after the claim.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Bounded Comparison Evidence Reads
 
-Status: ready
+Status: active
+Worker: Codex
+Branch: `codex/bounded-public-opaque-graphql-reads`
 Lane: Bounded comparison evidence reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
 Batch outcome: live recommendations and immutable snapshot publication collect
@@ -1284,7 +1290,9 @@ Exit condition: two- and three-product live recommendations and immutable
 snapshots preserve exact facts and lifecycle behavior while comparison-evidence
 SELECT counts stay fixed as selection grows.
 
-### 2. Bounded Authorized Node GraphQL Reads
+## Ready Work
+
+### 1. Bounded Authorized Node GraphQL Reads
 
 Status: ready
 Lane: Bounded authorized node GraphQL reads
@@ -1339,7 +1347,7 @@ Exit condition: operator and owner-scoped node types preserve exact values,
 authorization, privacy, lazy nested loading, invalid-input, and missing behavior
 while per-type SELECT counts stay fixed as authorized aliases grow.
 
-### 3. Bounded Alert Evaluation Market Reads
+### 2. Bounded Alert Evaluation Market Reads
 
 Status: ready
 Lane: Bounded alert evaluation market reads
@@ -1384,6 +1392,58 @@ Exit condition: shared merchant-product and latest-price SELECT counts stay
 fixed as applicable watches grow from two to six, while required per-watch
 locks, exact lifecycle results, replay safety, and fault isolation remain
 unchanged.
+
+### 3. Bounded Comparison Root GraphQL Reads
+
+Status: ready
+Lane: Bounded comparison root GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
+Batch outcome: public comparison-product and comparison-recommendation root
+aliases keep fixed SELECT budgets as aliases grow within one request, without
+changing input validation, order, missing positions, rankings, evidence, or
+errors.
+Next action: add set-based comparison-selection context reads, route both
+public root fields through one request-scoped comparison loader, and prove
+semantic plus fixed-budget parity for growing aliases.
+Owned paths:
+
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare/recommendations.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/resolvers/recommendations_resolver.ex`
+- `test/product_compare/recommendations_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/recommendations_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-comparison-root-graphql-reads.md`
+
+Internal slices:
+
+- Set-based canonical product projection for multiple slug selections.
+- Set-based recommendation projection for multiple product/profile requests.
+- Request-scoped GraphQL loading plus semantic and fixed-budget parity.
+
+Prerequisites:
+
+- Existing comparison slug validation, recommendation profiles, result
+  semantics, and public schema remain authoritative.
+- Existing set-based product, accepted-claim, and current-offer evidence reads
+  can support union projection without a schema or policy change.
+- This row is independently implementable but executes serially with active
+  Recommendations or Loader ownership.
+
+Verification:
+
+- `mix test test/product_compare/recommendations_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: two and four valid comparison root aliases preserve exact
+values and validation behavior while products, current claims,
+merchant-products, and price-point SELECT counts remain fixed.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

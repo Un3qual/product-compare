@@ -42,15 +42,15 @@ existing ordered immutable payload from those maps.
 result contract, but loads current offer truth once for every selected product
 through `Pricing.current_offer_truths/2` and then ranks from that keyed map.
 
-- [ ] Add a failing query-budget regression comparing two and three products
+- [x] Add a failing query-budget regression comparing two and three products
   with complete same-currency offer evidence and accepted claims.
-- [ ] Assert complete result parity before asserting product, claim,
+- [x] Assert complete result parity before asserting product, claim,
   merchant-product, price-point, artifact, and source SELECT budgets.
-- [ ] Confirm RED because offer truth currently executes once per product.
-- [ ] Replace per-product offer reads with one set-based read at the existing
+- [x] Confirm RED because offer truth currently executes once per product.
+- [x] Replace per-product offer reads with one set-based read at the existing
   shared `now`.
-- [ ] Re-run context and GraphQL recommendation suites.
-- [ ] Commit with message `perf: batch recommendation evidence reads`.
+- [x] Re-run context and GraphQL recommendation suites.
+- [x] Commit with message `perf: batch recommendation evidence reads`.
 
 ### Task 2: Set-Based Immutable Snapshot Capture
 

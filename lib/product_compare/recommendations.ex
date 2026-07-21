@@ -42,7 +42,9 @@ defmodule ProductCompare.Recommendations do
     claims_by_product = accepted_claim_ids(products)
 
     offer_truth_by_product =
-      Map.new(products, &{&1.id, Pricing.current_offer_truth(&1.id, now: now)})
+      products
+      |> Enum.map(& &1.id)
+      |> Pricing.current_offer_truths(now: now)
 
     shared_currencies = shared_eligible_currencies(products, offer_truth_by_product)
 
