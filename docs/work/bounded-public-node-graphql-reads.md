@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active on `codex/bounded-graphql-read-budgets`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
-- Last verified: 2026-07-20 against the public Relay Node allowlist,
+- Last verified: 2026-07-21 against the public Relay Node allowlist,
   request-scoped Dataloader sources, public node behavior tests, and current
   query-budget coverage.
 

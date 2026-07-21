@@ -113,6 +113,11 @@ A third claim-floor audit promoted bounded public slug GraphQL reads after
 verifying that aliased product and merchant entry-point fields still repeat
 direct slug lookups. Product canonical/history lookup and merchant identity
 share one public-entry acceptance boundary, so they remain one ready outcome.
+A fourth claim-floor audit promoted the remaining nullable public opaque-key
+entry points after verifying that source-artifact IDs, published-question IDs,
+and comparison-snapshot tokens each still trigger direct per-alias reads. Their
+source/preload, publication, revocation, hydration, error, and missing-result
+rules stay internal slices of one public-entry read-budget outcome.
 Specification-correction lists were not promoted because their claim trees are
 already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
@@ -123,6 +128,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-category-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-public-slug-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -155,11 +161,12 @@ batch and should not be recreated or promoted.
 - Current backend read-budget program: product evidence/SEO, public community
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
-  reads are also complete. Public Relay node aliases, category lookup/
-  qualified-product connections, and public product/merchant slug lookups
-  remain ready through the active plans above. They are reviewer-sized domain
-  outcomes; their set-based context, Dataloader, and query-budget steps remain
-  internal slices rather than separate queue rows.
+  reads are also complete. Public Relay node aliases are active; category
+  lookup/qualified-product connections, public product/merchant slug lookups,
+  and the remaining public opaque-key lookups remain ready through the active
+  plans above. They are reviewer-sized domain outcomes; their set-based
+  context, Dataloader, and query-budget steps remain internal slices rather
+  than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

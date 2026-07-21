@@ -1177,16 +1177,18 @@ answer SELECT counts now hold at `{1, 1, 1}` for both three and six product
 parents while owner privacy, moderation states, per-kind limits, order,
 hidden-parent answer manageability, and anonymous zero-query behavior remain
 unchanged.
+Before claiming the public-node successor, a fourth claim-floor audit verified
+that the remaining nullable public opaque-key entry points—source artifacts,
+published product questions, and comparison snapshots—still perform direct
+per-alias reads. Those visibility and preload variants were grouped as one
+public-entry read-budget outcome, leaving three independently shippable ready
+rows after the claim.
 
 ## Active Work
 
-None.
+### Bounded Public Node GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Public Node GraphQL Reads
-
-Status: ready
+Status: active on `codex/bounded-graphql-read-budgets`
 Lane: Bounded public node GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-20-bounded-public-node-graphql-reads-implementation-plan.md`
 Batch outcome: public Relay `node(id:)` aliases batch by public schema so
@@ -1230,7 +1232,9 @@ Exit condition: all six public node types retain their current values and
 missing/error behavior while same-schema SELECT counts stay fixed as aliases
 grow.
 
-### 2. Bounded Category GraphQL Reads
+## Ready Work
+
+### 1. Bounded Category GraphQL Reads
 
 Status: ready
 Lane: Bounded category GraphQL reads
@@ -1282,7 +1286,7 @@ Exit condition: category values, qualification counts, metadata, product
 edges, order, cursors, page info, and missing behavior match current semantics
 while taxon and qualified-product SELECT counts stay fixed as aliases grow.
 
-### 3. Bounded Public Slug GraphQL Reads
+### 2. Bounded Public Slug GraphQL Reads
 
 Status: ready
 Lane: Bounded public slug GraphQL reads
@@ -1335,6 +1339,64 @@ Verification:
 Exit condition: product and merchant IDs, slugs, canonical/history precedence,
 nested values, cache behavior, and missing results match current semantics
 while product and merchant SELECT counts stay fixed as aliases grow.
+
+### 3. Bounded Public Opaque-Key GraphQL Reads
+
+Status: ready
+Lane: Bounded public opaque-key GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
+Batch outcome: aliased public `sourceArtifact(id:)`, `productQuestion(id:)`,
+and `comparisonSnapshot(token:)` entry-point reads keep fixed SELECT budgets
+per lookup kind as alias count grows, without changing ID errors, nullable
+missing results, source preloads, publication and revocation gates,
+accepted-answer values, snapshot hydration, or public privacy.
+Next action: add set-based context lookups, route the three opaque-key public
+entry points through one request-scoped Dataloader source, and prove semantic,
+privacy, preload, and fixed-budget parity.
+Owned paths:
+
+- `lib/product_compare/specs.ex`
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare/comparison_snapshots.ex`
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/specs_resolver.ex`
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
+- `test/product_compare/specs_test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/source_artifact_query_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-public-opaque-key-graphql-reads.md`
+
+Internal slices:
+
+- Set-based source-artifact, public-question, and active-snapshot context reads.
+- Request-scoped opaque-key loading for all three public root resolvers.
+- Semantic, privacy, preload, and fixed per-kind query-budget parity.
+
+Prerequisites:
+
+- Existing global-ID errors, nullable missing behavior, source preload,
+  publication/revocation filters, accepted-answer values, and snapshot
+  hydration remain authoritative.
+- Public snapshot reads continue to expose no owner identity.
+- This row executes serially with shared Loader work but is independent of
+  slug identity, category qualification, and Relay node allowlist behavior.
+
+Verification:
+
+- `mix test test/product_compare/specs_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all three public entry points preserve their current values,
+visibility, privacy, preload, invalid-input, and missing-result behavior while
+per-kind SELECT counts stay fixed as aliases grow.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

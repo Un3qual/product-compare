@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.Resolvers.NodeResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
@@ -10,6 +12,9 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Catalog.{Brand, Product}
+  alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
+  alias ProductCompareSchemas.Specs.SourceArtifact
 
   @public_types [
     :product,
@@ -23,23 +28,13 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   @owner_scoped_types [:saved_comparison_set, :api_token]
 
   @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, term() | nil} | {:error, String.t() | GraphQLErrors.top_level_error()}
+          {:ok, term() | nil}
+          | {:error, String.t() | GraphQLErrors.top_level_error()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
   def node(_parent, %{id: id}, resolution) do
-    with {:ok, {type, local_id}} <- decode_node_id(id),
-         {:ok, record} <- fetch_node(type, local_id, resolution) do
-      {:ok, record}
-    else
-      :not_found ->
-        {:ok, nil}
-
-      {:error, :invalid_id} ->
-        {:error, "invalid node id"}
-
-      {:error, :unsupported_type} ->
-        {:error, "invalid node id"}
-
-      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
-        {:error, GraphQLErrors.authorization_error(reason)}
+    case decode_node_id(id) do
+      {:ok, {type, local_id}} -> fetch_node(type, local_id, resolution)
+      error -> node_result(error)
     end
   end
 
@@ -51,17 +46,42 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     )
   end
 
+  defp fetch_node(type, local_id, %{context: %{loader: loader}}) when type in @public_types do
+    {source, schema} = public_batch(type)
+    batch = {:one, schema}
+    item = [id: local_id]
+
+    loader
+    |> Dataloader.load(source, batch, item)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, batch, item)}
+    end)
+  end
+
   defp fetch_node(type, local_id, _resolution) when type in @public_types do
-    fetch_public_node(type, local_id)
+    type
+    |> fetch_public_node(local_id)
+    |> node_result()
   end
 
   defp fetch_node(type, local_id, resolution) when type in @operator_types do
-    fetch_operator_node(type, local_id, resolution)
+    type
+    |> fetch_operator_node(local_id, resolution)
+    |> node_result()
   end
 
   defp fetch_node(type, local_id, resolution) when type in @owner_scoped_types do
-    fetch_owner_scoped_node(type, local_id, resolution)
+    type
+    |> fetch_owner_scoped_node(local_id, resolution)
+    |> node_result()
   end
+
+  defp public_batch(:product), do: {Catalog, Product}
+  defp public_batch(:brand), do: {Catalog, Brand}
+  defp public_batch(:merchant), do: {Pricing, Merchant}
+  defp public_batch(:merchant_product), do: {Pricing, MerchantProduct}
+  defp public_batch(:price_point), do: {Pricing, PricePoint}
+  defp public_batch(:source_artifact), do: {Pricing, SourceArtifact}
 
   defp fetch_public_node(:product, id), do: fetch_record(Catalog.get_product(id))
   defp fetch_public_node(:brand, id), do: fetch_record(Catalog.get_brand(id))
@@ -103,6 +123,15 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   defp fetch_owner_scoped_node(:api_token, _token_entropy_id, _resolution),
     do: fetch_record(nil)
+
+  defp node_result({:ok, record}), do: {:ok, record}
+  defp node_result(:not_found), do: {:ok, nil}
+
+  defp node_result({:error, reason}) when reason in [:invalid_id, :unsupported_type],
+    do: {:error, "invalid node id"}
+
+  defp node_result({:error, reason}) when reason in [:unauthenticated, :forbidden],
+    do: {:error, GraphQLErrors.authorization_error(reason)}
 
   defp fetch_record(nil), do: :not_found
   defp fetch_record(record), do: {:ok, record}

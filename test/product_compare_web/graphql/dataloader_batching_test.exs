@@ -5,8 +5,11 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   alias ProductCompare.{Affiliate, Catalog, Discussions, Pricing, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
 
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
+  @public_node_tables ~w(products brands merchants merchant_products price_points source_artifacts sources)a
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
   @community_connection_tables ~w(product_reviews product_threads thread_posts)a
   @viewer_submission_tables ~w(product_reviews product_threads thread_posts)a
@@ -123,6 +126,40 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                merchant_products: 1,
                merchants: 1,
                price_points: 1
+             }
+    end
+
+    test "public node aliases keep values and SELECT budgets fixed per schema as aliases grow",
+         %{conn: conn, test: test_name} do
+      records = public_node_records("#{test_name}-#{System.unique_integer([:positive])}", 1..6)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, public_node_batch_query(Enum.take(records, 3)), %{})
+        end)
+
+      assert_public_node_values(initial_response, Enum.take(records, 3))
+      initial_budget = public_node_query_budget(initial_queries)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, public_node_batch_query(records), %{})
+        end)
+
+      assert_public_node_values(grown_response, records)
+      grown_budget = public_node_query_budget(grown_queries)
+
+      assert {initial_budget, grown_budget} == {
+               %{
+                 products: 1,
+                 brands: 1,
+                 merchants: 1,
+                 merchant_products: 1,
+                 price_points: 1,
+                 source_artifacts: 1,
+                 sources: 1
+               },
+               initial_budget
              }
     end
 
@@ -474,6 +511,48 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp public_node_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          public_node_selection("product#{index}", :product, record.product.id),
+          public_node_selection("brand#{index}", :brand, record.brand.id),
+          public_node_selection("merchant#{index}", :merchant, record.merchant.id),
+          public_node_selection(
+            "merchantProduct#{index}",
+            :merchant_product,
+            record.merchant_product.id
+          ),
+          public_node_selection("pricePoint#{index}", :price_point, record.price_point.id),
+          public_node_selection("sourceArtifact#{index}", :source_artifact, record.artifact.id)
+        ]
+      end)
+
+    missing = public_node_selection("missingProduct", :product, 2_147_483_647)
+
+    """
+    query PublicNodeBatch {
+      #{Enum.join(selections ++ [missing], "\n")}
+    }
+    """
+  end
+
+  defp public_node_selection(alias_name, type, id) do
+    """
+    #{alias_name}: node(id: "#{relay_id(type, id)}") {
+      __typename
+      ... on Product { id slug name }
+      ... on Brand { id name }
+      ... on Merchant { id name domain }
+      ... on MerchantProduct { id merchantId productId isActive }
+      ... on PricePoint { id merchantProductId observedAt price }
+      ... on SourceArtifact { id sourceKind sourceName sourceDomain url fetchedAt }
+    }
+    """
+  end
+
   defp merchant_summary_batch_query do
     """
     query MerchantSummaryBatch($first: Int!) {
@@ -660,6 +739,67 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp count_queries_by_table(queries) do
     Enum.into(@tracked_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp public_node_query_budget(queries) do
+    Enum.into(@public_node_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp assert_public_node_values(response, records) do
+    assert %{"data" => data} = response
+    assert data["missingProduct"] == nil
+
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["product#{index}"] == %{
+               "__typename" => "Product",
+               "id" => relay_id(:product, record.product.id),
+               "slug" => record.product.slug,
+               "name" => record.product.name
+             }
+
+      assert data["brand#{index}"] == %{
+               "__typename" => "Brand",
+               "id" => relay_id(:brand, record.brand.id),
+               "name" => record.brand.name
+             }
+
+      assert data["merchant#{index}"] == %{
+               "__typename" => "Merchant",
+               "id" => relay_id(:merchant, record.merchant.id),
+               "name" => record.merchant.name,
+               "domain" => record.merchant.domain
+             }
+
+      assert data["merchantProduct#{index}"] == %{
+               "__typename" => "MerchantProduct",
+               "id" => relay_id(:merchant_product, record.merchant_product.id),
+               "merchantId" => relay_id(:merchant, record.merchant.id),
+               "productId" => relay_id(:product, record.product.id),
+               "isActive" => record.merchant_product.is_active
+             }
+
+      assert data["pricePoint#{index}"] == %{
+               "__typename" => "PricePoint",
+               "id" => relay_id(:price_point, record.price_point.id),
+               "merchantProductId" => relay_id(:merchant_product, record.merchant_product.id),
+               "observedAt" => DateTime.to_iso8601(record.price_point.observed_at),
+               "price" => Decimal.to_string(record.price_point.price)
+             }
+
+      assert data["sourceArtifact#{index}"] == %{
+               "__typename" => "SourceArtifact",
+               "id" => relay_id(:source_artifact, record.artifact.id),
+               "sourceKind" => record.source.kind,
+               "sourceName" => record.source.name,
+               "sourceDomain" => record.source.domain,
+               "url" => record.artifact.url,
+               "fetchedAt" => DateTime.to_iso8601(record.artifact.fetched_at)
+             }
     end)
   end
 
@@ -1483,6 +1623,73 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     canonical_slug = canonical_slug(slug)
     {:ok, brand} = Catalog.upsert_brand(%{name: "#{canonical_slug} Brand"})
     SpecsFixtures.product_fixture(%{slug: slug, brand_id: brand.id})
+  end
+
+  defp public_node_records(prefix, indexes) do
+    Enum.map(indexes, fn index ->
+      {:ok, brand} = Catalog.upsert_brand(%{name: "#{prefix} Brand #{index}"})
+
+      product =
+        SpecsFixtures.product_fixture(%{
+          brand_id: brand.id,
+          slug: "#{prefix}-product-#{index}",
+          name: "#{prefix} Product #{index}"
+        })
+
+      merchant =
+        merchant_fixture(%{
+          name: "#{prefix} Merchant #{index}",
+          domain: unique_domain("#{prefix}-merchant-#{index}")
+        })
+
+      merchant_product =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: product,
+          is_active: rem(index, 2) == 1
+        })
+
+      observed_at =
+        ~U[2026-07-21 12:00:00Z]
+        |> DateTime.add(index, :second)
+        |> DateTime.truncate(:microsecond)
+
+      {:ok, price_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: observed_at,
+          price: Decimal.new("#{100 + index}.25")
+        })
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: "#{prefix} Source #{index}",
+          domain: "#{prefix}-source-#{index}.example.com"
+        })
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://#{prefix}-source-#{index}.example.com/product",
+          fetched_at: observed_at,
+          content_hash: "#{prefix}-artifact-#{index}"
+        })
+        |> Repo.insert!()
+
+      %{
+        product: product,
+        brand: brand,
+        merchant: merchant,
+        merchant_product: merchant_product,
+        price_point: price_point,
+        source: source,
+        artifact: artifact
+      }
+    end)
   end
 
   defp canonical_slug(value) do
