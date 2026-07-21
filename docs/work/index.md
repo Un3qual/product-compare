@@ -1243,15 +1243,22 @@ specification, offer, merchant, and hydration reads fixed at the same selection
 sizes while preserving ordered captured facts, exact evidence IDs, shared-time
 semantics, qualification, privacy, tokens, and revocation behavior.
 
+Before claiming the authorized-node successor, a ninth claim-floor audit
+verified that the remaining non-public Relay connections still execute one
+direct page query for every identical alias. Six owner-scoped management
+collections and two operator-only queues share one authorization-aware
+connection acceptance boundary, so they were promoted together as Bounded
+Authorized Management GraphQL Connections. The existing focused suites pass
+45 tests; deferred ingestion dashboard work remains closed because this batch
+only bounds the already-shipped merchant-feed review query. Three independently
+shippable ready rows remain after the claim.
+
 ## Active Work
-
-None.
-
-## Ready Work
 
 ### 1. Bounded Authorized Node GraphQL Reads
 
-Status: ready
+Status: active
+Owner: `codex/bounded-public-opaque-graphql-reads`
 Lane: Bounded authorized node GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 Batch outcome: operator-only and owner-scoped Relay `node(id:)` aliases keep a
@@ -1304,7 +1311,9 @@ Exit condition: operator and owner-scoped node types preserve exact values,
 authorization, privacy, lazy nested loading, invalid-input, and missing behavior
 while per-type SELECT counts stay fixed as authorized aliases grow.
 
-### 2. Bounded Alert Evaluation Market Reads
+## Ready Work
+
+### 1. Bounded Alert Evaluation Market Reads
 
 Status: ready
 Lane: Bounded alert evaluation market reads
@@ -1350,7 +1359,7 @@ fixed as applicable watches grow from two to six, while required per-watch
 locks, exact lifecycle results, replay safety, and fault isolation remain
 unchanged.
 
-### 3. Bounded Comparison Root GraphQL Reads
+### 2. Bounded Comparison Root GraphQL Reads
 
 Status: ready
 Lane: Bounded comparison root GraphQL reads
@@ -1401,6 +1410,63 @@ Verification:
 Exit condition: two and four valid comparison root aliases preserve exact
 values and validation behavior while products, current claims,
 merchant-products, and price-point SELECT counts remain fixed.
+
+### 3. Bounded Authorized Management GraphQL Connections
+
+Status: ready
+Lane: Bounded authorized management GraphQL connections
+Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
+Batch outcome: identical owner-scoped and operator-only management Relay
+connection aliases reuse one authorized database read per collection, filter,
+and page within a GraphQL request without changing privacy, authorization,
+filtering, ordering, pagination, errors, nested values, or schema behavior.
+Next action: route the six owner collections and two operator queues through one
+authorization-keyed request source and prove semantic plus fixed-budget parity
+as identical aliases grow.
+Owned paths:
+
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/specs_resolver.ex`
+- `lib/product_compare_web/resolvers/alerts_resolver.ex`
+- `lib/product_compare_web/resolvers/auth_resolver.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
+- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
+- `test/product_compare_web/graphql/specification_corrections_test.exs`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `test/product_compare_web/graphql/api_token_auth_test.exs`
+- `test/product_compare_web/graphql/saved_comparisons_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-authorized-management-graphql-connections.md`
+
+Internal slices:
+
+- Owner-scoped management connection request reuse.
+- Operator-only queue connection request reuse.
+- Growing-alias query budgets plus authorization and semantic parity.
+
+Prerequisites:
+
+- Existing authorization, owner filtering, query ordering, and connection
+  projection remain authoritative.
+- Every cache key includes role, principal ID, collection kind, normalized
+  filters, and Relay connection arguments.
+- This row executes serially with Loader or affected resolver ownership and
+  does not reopen deferred ingestion dashboard/operator UI work.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every authorized management collection preserves current
+privacy, authorization, filters, pagination, order, nested values, and errors
+while identical two- and four-alias SELECT budgets remain equal per collection.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

@@ -45,13 +45,13 @@ entries cannot cross principals.
 - Keep singular Affiliate getters delegating through the corresponding shared
   lookup policy where practical so values cannot drift.
 
-- [ ] Add failing empty, duplicate, missing, and two-versus-four ID parity and
+- [x] Add failing empty, duplicate, missing, and two-versus-four ID parity and
   query-budget tests for all four affiliate node schemas.
-- [ ] Run the focused Affiliate tests and confirm the set-based API is absent.
-- [ ] Implement one bounded query per requested node schema.
-- [ ] Re-run the focused tests and prove exact singular parity with fixed
+- [x] Run the focused Affiliate tests and confirm the set-based API is absent.
+- [x] Implement one bounded query per requested node schema.
+- [x] Re-run the focused tests and prove exact singular parity with fixed
   per-schema SELECT counts.
-- [ ] Commit with message `perf: batch operator node reads`.
+- [x] Commit with message `perf: batch operator node reads`.
 
 ### Task 2: Set-Based Owner-Scoped Node Lookups
 

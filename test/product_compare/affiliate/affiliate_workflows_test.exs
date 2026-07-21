@@ -13,6 +13,42 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
 
+  describe "get_affiliate_nodes/2" do
+    test "returns aligned records with one SELECT per type as requested ids grow" do
+      records = Enum.map(1..4, fn _index -> affiliate_node_record_fixture() end)
+
+      for {type, field, singular_getter} <- [
+            {:affiliate_network, :network, :get_affiliate_network},
+            {:affiliate_program, :program, :get_affiliate_program},
+            {:affiliate_link, :link, :get_affiliate_link},
+            {:coupon, :coupon, :get_coupon}
+          ] do
+        nodes = Enum.map(records, &Map.fetch!(&1, field))
+        ids = Enum.map(nodes, & &1.id)
+        missing_id = Enum.max(ids) + 1_000_000
+
+        {two_results, two_queries} =
+          capture_select_queries(fn -> Affiliate.get_affiliate_nodes(type, Enum.take(ids, 2)) end)
+
+        {four_results, four_queries} =
+          capture_select_queries(fn -> Affiliate.get_affiliate_nodes(type, ids) end)
+
+        assert Map.keys(two_results) |> Enum.sort() == Enum.take(ids, 2) |> Enum.sort()
+        assert Enum.map(Enum.take(ids, 2), &Map.fetch!(two_results, &1).id) == Enum.take(ids, 2)
+        assert Enum.map(ids, &Map.fetch!(four_results, &1).id) == ids
+        assert length(two_queries) == 1
+        assert length(four_queries) == 1
+
+        assert Affiliate.get_affiliate_nodes(type, [hd(ids), hd(ids), missing_id]) == %{
+                 hd(ids) => apply(Affiliate, singular_getter, [hd(ids)]),
+                 missing_id => nil
+               }
+
+        assert Affiliate.get_affiliate_nodes(type, []) == %{}
+      end
+    end
+  end
+
   describe "upsert_network/1" do
     test "inserts then upserts existing network by name" do
       name = "Network-#{System.unique_integer([:positive])}"
@@ -396,6 +432,36 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
       |> Affiliate.upsert_network()
 
     network
+  end
+
+  defp affiliate_node_record_fixture do
+    network = network_fixture()
+    merchant = merchant_fixture()
+    merchant_product = merchant_product_fixture(%{merchant: merchant})
+
+    {:ok, program} =
+      Affiliate.upsert_program(%{
+        affiliate_network_id: network.id,
+        merchant_id: merchant.id,
+        program_code: "program-#{System.unique_integer([:positive])}",
+        status: "active"
+      })
+
+    {:ok, link} =
+      Affiliate.upsert_link(%{
+        merchant_product_id: merchant_product.id,
+        affiliate_network_id: network.id,
+        original_url: merchant_product.url,
+        affiliate_url: "https://affiliate.example.com/#{merchant_product.id}"
+      })
+
+    coupon =
+      create_coupon!(%{
+        merchant_id: merchant.id,
+        affiliate_network_id: network.id
+      })
+
+    %{network: network, program: program, link: link, coupon: coupon}
   end
 
   defp merchant_fixture(attrs \\ %{}) do

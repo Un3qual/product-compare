@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: `codex/bounded-public-opaque-graphql-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
@@ -37,6 +38,14 @@ Relay identity.
    associations.
 3. Authorization-aware request-scoped loading plus semantic, privacy, and
    fixed-budget coverage.
+
+## Progress
+
+- The operator-node context slice is green: Affiliate now returns an explicit
+  record-or-`nil` map for empty, duplicate, missing, two-ID, and four-ID
+  requests across all four schemas with exactly one SELECT per non-empty type.
+- The focused Affiliate, Accounts, Catalog baseline and new context regressions
+  pass as part of 32 tests; owner-context and GraphQL loader milestones follow.
 
 ## Boundaries
 

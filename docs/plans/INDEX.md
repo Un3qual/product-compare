@@ -140,8 +140,14 @@ aliases still execute their bounded slug and recommendation evidence reads
 independently. Canonical product selection, recommendation projection, and
 request-scoped loading remain internal slices of one public comparison entry
 outcome.
-Specification-correction lists were not promoted because their claim trees are
-already preloaded. The formerly optional loaded-price copy, loaded-product
+A ninth claim-floor audit promoted bounded authorized management GraphQL
+connections after verifying that six owner-scoped collections and two
+operator-only queues still repeat direct page reads for identical aliases.
+Authorization scope, collection kind, filters, connection arguments, and
+growing-alias coverage remain internal slices of one non-public connection
+outcome; deferred ingestion dashboard work stays closed. Specification-
+correction claim-tree loading was not promoted separately because those trees
+are already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
 work were also verified as already implemented and are not candidate work.
 
@@ -150,6 +156,7 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -185,11 +192,12 @@ batch and should not be recreated or promoted.
   reads, public Relay node aliases, and category lookup/qualified-product
   connections are complete. Public product/merchant slug and opaque-key
   lookups and comparison evidence reads are also complete. Authorized Relay
-  node reads, bounded alert evaluation market reads, and bounded comparison
-  root GraphQL reads remain ready through the active plans above. They are
-  reviewer-sized domain outcomes; their set-based context, Dataloader,
-  shared-fact, and query-budget steps remain internal slices rather than
-  separate queue rows.
+  node reads are active; bounded alert evaluation market reads and bounded
+  comparison root GraphQL reads remain ready through the active plans above. Bounded
+  authorized management GraphQL connections is the grouped successor for the
+  remaining owner and operator connection aliases. These are reviewer-sized
+  domain outcomes; their set-based context, Dataloader, shared-fact, and query-
+  budget steps remain internal slices rather than separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
