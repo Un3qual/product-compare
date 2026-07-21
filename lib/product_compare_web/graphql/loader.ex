@@ -30,6 +30,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
   @category_source {__MODULE__, :categories}
+  @comparison_source {__MODULE__, :comparison}
   @public_slug_source {__MODULE__, :public_slugs}
   @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
@@ -64,6 +65,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       Dataloader.KV.new(&category_batch/2, async?: false)
     )
     |> Dataloader.add_source(
+      @comparison_source,
+      Dataloader.KV.new(&comparison_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
       @public_slug_source,
       Dataloader.KV.new(&public_slug_batch/2, async?: false)
     )
@@ -94,6 +99,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec category_source() :: {module(), :categories}
   def category_source, do: @category_source
+
+  @spec comparison_source() :: {module(), :comparison}
+  def comparison_source, do: @comparison_source
 
   @spec public_slug_source() :: {module(), :public_slugs}
   def public_slug_source, do: @public_slug_source
@@ -293,6 +301,52 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       |> Seo.qualified_product_pages(now, window)
 
     project_connection_pages(categories, pages, connection_args, & &1.id)
+  end
+
+  defp comparison_batch(:products, slug_selections) do
+    slug_selections = Enum.to_list(slug_selections)
+    products_by_selection = Catalog.list_products_by_slug_selections(slug_selections)
+
+    Map.new(Enum.zip(slug_selections, products_by_selection))
+  end
+
+  defp comparison_batch(:recommendation, requests) do
+    requests = Enum.to_list(requests)
+
+    products_by_request =
+      requests
+      |> Enum.map(&elem(&1, 0))
+      |> Catalog.list_products_by_slug_selections()
+
+    recommendations =
+      requests
+      |> Enum.zip(products_by_request)
+      |> Enum.filter(fn {{slugs, _profile}, products} ->
+        length(slugs) in 2..3 and Enum.all?(products)
+      end)
+      |> then(fn valid_requests ->
+        results =
+          valid_requests
+          |> Enum.map(fn {{_slugs, profile}, products} ->
+            {Enum.map(products, & &1.id), profile}
+          end)
+          |> ProductCompare.Recommendations.compare_many([])
+
+        valid_requests
+        |> Enum.map(&elem(&1, 0))
+        |> Enum.zip(results)
+        |> Map.new()
+      end)
+
+    Map.new(requests, fn {_slugs, _profile} = request ->
+      result =
+        case Map.fetch(recommendations, request) do
+          {:ok, recommendation} -> recommendation
+          :error -> {:ok, {:error, "recommendations require two or three existing products"}}
+        end
+
+      {request, result}
+    end)
   end
 
   defp public_slug_batch(:product, slugs) do

@@ -25,6 +25,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @offer_connection_tables ~w(merchant_products coupons price_points)a
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @category_tables ~w(taxons products)a
+  @comparison_root_tables ~w(products product_attribute_current merchant_products price_points)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -172,6 +173,40 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                  sources: 1
                },
                initial_budget
+             }
+    end
+
+    test "comparison root aliases preserve values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      records =
+        for index <- 1..4 do
+          comparison_root_record("#{test_name}-#{System.unique_integer([:positive])}", index)
+        end
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, comparison_root_batch_query(Enum.take(records, 2)), %{})
+        end)
+
+      assert_comparison_root_values(two_response, Enum.take(records, 2))
+      two_budget = comparison_root_query_budget(two_queries)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, comparison_root_batch_query(records), %{})
+        end)
+
+      assert_comparison_root_values(four_response, records)
+      four_budget = comparison_root_query_budget(four_queries)
+
+      assert {two_budget, four_budget} == {
+               %{
+                 products: 3,
+                 product_attribute_current: 1,
+                 merchant_products: 1,
+                 price_points: 1
+               },
+               two_budget
              }
     end
 
@@ -777,6 +812,40 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp comparison_root_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          """
+          comparisonProducts#{index}: comparisonProducts(slugs: ["#{record.second.slug}", "missing-comparison-root-#{index}", "#{record.first.slug}"]) {
+            id
+            slug
+            name
+          }
+          """,
+          """
+          comparisonRecommendation#{index}: comparisonRecommendation(slugs: ["#{record.first.slug}", "#{record.second.slug}"], profile: LOWEST_CURRENT_COST) {
+            profile
+            algorithmVersion
+            status
+            winnerProductId
+            currency
+            missingInputs
+            rankings { rank productId pricePointId merchantProductId landedPrice currency claimIds reasons }
+          }
+          """
+        ]
+      end)
+
+    """
+    query ComparisonRootBatch {
+      #{Enum.join(selections, "\n")}
+    }
+    """
+  end
+
   defp authorized_node_batch_query(records) do
     selections =
       records
@@ -1185,6 +1254,68 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp public_opaque_query_budget(queries) do
     Enum.into(@public_opaque_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp comparison_root_query_budget(queries) do
+    Enum.into(@comparison_root_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp assert_comparison_root_values(response, records) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["comparisonProducts#{index}"] == [
+               %{
+                 "id" => relay_id(:product, record.second.id),
+                 "slug" => record.second.slug,
+                 "name" => record.second.name
+               },
+               nil,
+               %{
+                 "id" => relay_id(:product, record.first.id),
+                 "slug" => record.first.slug,
+                 "name" => record.first.name
+               }
+             ]
+
+      assert data["comparisonRecommendation#{index}"] == %{
+               "profile" => "LOWEST_CURRENT_COST",
+               "algorithmVersion" => "lowest-current-cost-v1",
+               "status" => "WINNER",
+               "winnerProductId" => relay_id(:product, record.second.id),
+               "currency" => "USD",
+               "missingInputs" => [],
+               "rankings" => [
+                 %{
+                   "rank" => 1,
+                   "productId" => relay_id(:product, record.second.id),
+                   "pricePointId" => relay_id(:price_point, record.second_point.id),
+                   "merchantProductId" =>
+                     relay_id(:merchant_product, record.second_point.merchant_product_id),
+                   "landedPrice" => "80",
+                   "currency" => "USD",
+                   "claimIds" => [],
+                   "reasons" => ["Lowest eligible landed price: 80 USD."]
+                 },
+                 %{
+                   "rank" => 2,
+                   "productId" => relay_id(:product, record.first.id),
+                   "pricePointId" => relay_id(:price_point, record.first_point.id),
+                   "merchantProductId" =>
+                     relay_id(:merchant_product, record.first_point.merchant_product_id),
+                   "landedPrice" => "100",
+                   "currency" => "USD",
+                   "claimIds" => [],
+                   "reasons" => ["Lowest eligible landed price: 100 USD."]
+                 }
+               ]
+             }
     end)
   end
 
@@ -2647,6 +2778,43 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp comparison_root_record(prefix, index) do
+    {first, first_point} =
+      comparison_root_product_with_price(prefix, index, "First", "100")
+
+    {second, second_point} =
+      comparison_root_product_with_price(prefix, index, "Second", "80")
+
+    %{first: first, first_point: first_point, second: second, second_point: second_point}
+  end
+
+  defp comparison_root_product_with_price(prefix, index, position, price) do
+    product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{prefix}-#{index}-#{position}"),
+        name: "Comparison Root #{index} #{position}"
+      })
+
+    merchant =
+      merchant_fixture(%{
+        name: "Comparison Root #{index} #{position} Merchant",
+        domain: canonical_slug("#{prefix}-#{index}-#{position}") <> ".example"
+      })
+
+    merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+    {:ok, point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: merchant_product.id,
+        observed_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
+        price: Decimal.new(price),
+        shipping: Decimal.new("0"),
+        in_stock: true
+      })
+
+    {product, point}
   end
 
   defp unique_name(prefix), do: "#{prefix} #{System.unique_integer([:positive])}"

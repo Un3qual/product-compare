@@ -204,11 +204,14 @@ batch and should not be recreated or promoted.
   lookups, comparison evidence reads, and authorized Relay node reads are also
   complete. Bounded alert evaluation market reads is also complete: one
   immutable product/listing fact snapshot now feeds the independent watch
-  transactions. Bounded comparison root GraphQL reads and bounded authorized
-  management GraphQL connections remain ready, with the latter grouping the
+  transactions. Bounded comparison root GraphQL reads is complete. Bounded
+  authorized management GraphQL connections remains ready, grouping the
   remaining owner and operator connection aliases. Bounded catalog and offer-
   discovery root GraphQL reads groups the remaining public catalog, filter-
-  metadata, merchant-directory, and offer-discovery root aliases. These are
+  metadata, merchant-directory, and offer-discovery root aliases. Bounded
+  operator reporting root GraphQL reads groups the remaining top-level active-
+  coupon and revenue-summary aliases behind one authorization-keyed request
+  source. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.

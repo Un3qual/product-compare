@@ -39,6 +39,34 @@ defmodule ProductCompareWeb.GraphQL.RecommendationsTest do
     assert price_point_id == relay_id(:price_point, second_point.id)
   end
 
+  test "comparisonRecommendation preserves validation errors for invalid product selections", %{
+    conn: conn
+  } do
+    existing = SpecsFixtures.product_fixture(%{name: "Existing recommendation product"})
+
+    Enum.each(
+      [
+        [existing.slug],
+        [existing.slug, "missing-recommendation-product"]
+      ],
+      fn slugs ->
+        assert %{
+                 "data" => nil,
+                 "errors" => [
+                   %{
+                     "message" => "recommendations require two or three existing products",
+                     "path" => ["comparisonRecommendation"]
+                   }
+                 ]
+               } =
+                 graphql(conn, query(), %{
+                   "slugs" => slugs,
+                   "profile" => "LOWEST_CURRENT_COST"
+                 })
+      end
+    )
+  end
+
   defp product_with_price(name, price) do
     product = SpecsFixtures.product_fixture(%{name: name})
 

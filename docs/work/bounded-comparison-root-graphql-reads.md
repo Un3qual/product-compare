@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete on `codex/bounded-comparison-root-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
@@ -51,3 +51,29 @@ input validation, order, missing positions, ranking, evidence, or errors.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+- `Catalog.list_products_by_slug_selections/1` projects duplicate and missing
+  positions from one union product lookup.
+- `Recommendations.compare_many/2` uses one timestamp and one union of products,
+  accepted claims, merchant products, and current price evidence, while the
+  singular API delegates without changing behavior.
+- The request-scoped comparison source keeps the two- and four-alias GraphQL
+  budgets equal at three product SELECTs, one current-claim SELECT, one merchant-
+  product SELECT, and one price-point SELECT. Before batching, the same counts
+  grew from six/two/two/two to twelve/four/four/four.
+- Literal behavior oracles cover lowest-cost winner and tie plus best-value
+  winner and insufficient-evidence results, including timestamps, profiles,
+  versions, currencies, reasons, rankings, and exact evidence IDs.
+- The recommendation context, catalog comparison, recommendation GraphQL, and
+  Dataloader batching suites pass 59 tests.
+- `mix typecheck`, `mix format --check-formatted`, `mix work_queue.validate`
+  (`work queue valid: 3 ready rows`), and `git diff --check` pass.
+- The full `mix ci` gate passes with 856 backend tests, 1,507 frontend tests,
+  Relay validation, client/SSR builds, static analysis, and 83.60% coverage.
+
+## Remaining Work
+
+Bounded authorized management connections, bounded catalog and offer-discovery
+roots, and bounded operator reporting roots remain ready in the shared queue.

@@ -44,7 +44,23 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec comparison_products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, [Product.t() | nil]} | {:error, String.t()}
+          {:ok, [Product.t() | nil]}
+          | {:error, String.t()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def comparison_products(_parent, args, %{context: %{loader: loader}} = resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
+    with {:ok, slugs} <- normalize_comparison_slugs(Input.fetch_list_value(args || %{}, :slugs)) do
+      source = Loader.comparison_source()
+
+      loader
+      |> Dataloader.load(source, :products, slugs)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, :products, slugs)}
+      end)
+    end
+  end
+
   def comparison_products(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
 
