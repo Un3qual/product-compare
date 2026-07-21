@@ -1265,15 +1265,22 @@ context policy drift and keeps the clone budget unchanged. The focused gate
 passes 68 tests, its shared-input suite passes 20, and full CI passes 851
 backend plus 1,507 frontend tests.
 
+Before claiming the alert-evaluation successor, a tenth claim-floor audit
+verified that `products`, `productFilterMetadata`, `merchants`, and top-level
+`merchantProducts` still execute their public discovery reads once per
+identical alias. Their catalog filters and metadata, merchant-directory
+pagination, offer filters, nested values, and request-reuse budgets share one
+catalog and offer-discovery acceptance boundary, so they were promoted
+together as Bounded Catalog And Offer Discovery Root GraphQL Reads. The three
+focused suites pass 51 tests, and deferred eBay and ingestion-dashboard work
+remains closed. Three independently shippable ready rows remain after the
+claim.
+
 ## Active Work
 
-None.
+### Bounded Alert Evaluation Market Reads
 
-## Ready Work
-
-### 1. Bounded Alert Evaluation Market Reads
-
-Status: ready
+Status: active on `codex/bounded-public-opaque-graphql-reads`
 Lane: Bounded alert evaluation market reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
 Batch outcome: every watch applicable to one persisted price observation
@@ -1317,7 +1324,9 @@ fixed as applicable watches grow from two to six, while required per-watch
 locks, exact lifecycle results, replay safety, and fault isolation remain
 unchanged.
 
-### 2. Bounded Comparison Root GraphQL Reads
+## Ready Work
+
+### 1. Bounded Comparison Root GraphQL Reads
 
 Status: ready
 Lane: Bounded comparison root GraphQL reads
@@ -1369,7 +1378,7 @@ Exit condition: two and four valid comparison root aliases preserve exact
 values and validation behavior while products, current claims,
 merchant-products, and price-point SELECT counts remain fixed.
 
-### 3. Bounded Authorized Management GraphQL Connections
+### 2. Bounded Authorized Management GraphQL Connections
 
 Status: ready
 Lane: Bounded authorized management GraphQL connections
@@ -1425,6 +1434,56 @@ Verification:
 Exit condition: every authorized management collection preserves current
 privacy, authorization, filters, pagination, order, nested values, and errors
 while identical two- and four-alias SELECT budgets remain equal per collection.
+
+### 3. Bounded Catalog And Offer Discovery Root GraphQL Reads
+
+Status: ready
+Lane: Bounded catalog and offer discovery root GraphQL reads
+Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
+Batch outcome: identical catalog, filter-metadata, merchant-directory, and
+offer-discovery root aliases reuse one database read per normalized field,
+filters, and page within a GraphQL request without changing public values,
+filtering, ordering, pagination, validation, nested values, or schema behavior.
+Next action: route the four discovery roots through one normalized request
+source and prove semantic plus fixed-budget parity as identical aliases grow.
+Owned paths:
+
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/bounded-catalog-offer-discovery-root-graphql-reads.md`
+
+Internal slices:
+
+- Catalog connection and filter-metadata request reuse.
+- Merchant-directory and top-level offer connection request reuse.
+- Growing-alias query budgets plus filter, pagination, validation, and nested-
+  value parity.
+
+Prerequisites:
+
+- Existing filter normalization, query ordering, connection projection, and
+  public schema remain authoritative.
+- Every request key includes field kind, normalized filters, and Relay
+  connection arguments.
+- This row executes serially with other Loader ownership and is independent of
+  alert evaluation and comparison recommendation work.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: identical two- and four-alias sets preserve exact catalog,
+metadata, merchant, and offer values plus validation behavior while each
+field's direct SELECT budget remains fixed.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

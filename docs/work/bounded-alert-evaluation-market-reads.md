@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active on `codex/bounded-public-opaque-graphql-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
