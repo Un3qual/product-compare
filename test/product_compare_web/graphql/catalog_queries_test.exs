@@ -222,7 +222,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert second_product_id == relay_id(:product, second_product.id)
       assert first_brand_id == relay_id(:brand, first_product.brand_id)
       assert second_brand_id == relay_id(:brand, second_product.brand_id)
-      assert [_, _, _] = queries
+      assert [_, _] = queries
     end
 
     test "product returns null for a non-existent slug", %{conn: conn} do

@@ -18,6 +18,16 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     Connection.from_query_result(query, Input.connection_args(args), Repo)
   end
 
+  def merchant(_parent, %{slug: slug}, %{context: %{loader: loader}}) do
+    source = Loader.public_slug_source()
+
+    loader
+    |> Dataloader.load(source, :merchant, slug)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, :merchant, slug)}
+    end)
+  end
+
   def merchant(_parent, %{slug: slug}, _resolution), do: {:ok, Pricing.get_merchant_by_slug(slug)}
 
   def merchant_detail_summary(merchant, _args, %{context: %{loader: loader}}) do
