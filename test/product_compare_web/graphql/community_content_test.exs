@@ -4,6 +4,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompareWeb.GraphQL.Connection
 
   setup do
     previous = Application.get_env(:product_compare, ProductCompare.Discussions)
@@ -235,6 +236,56 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
              "edges" => [%{"node" => %{"rating" => 4}}],
              "pageInfo" => %{"hasNextPage" => false}
            } = get_in(second_page, ["data", "product", "reviews"])
+  end
+
+  describe "prefetched Relay connection windows" do
+    test "matches the default page connection" do
+      assert_prefetched_connection_matches_list(Enum.to_list(1..60), %{})
+      assert Connection.batch_window(%{}) == {:ok, %{offset: 0, fetch_limit: 51}}
+    end
+
+    test "matches a zero-sized page connection" do
+      assert_prefetched_connection_matches_list([:first, :second], %{first: 0})
+      assert Connection.batch_window(%{first: 0}) == {:ok, %{offset: 0, fetch_limit: 1}}
+    end
+
+    test "matches a connection with an oversized page size" do
+      assert_prefetched_connection_matches_list(Enum.to_list(1..120), %{first: 200})
+      assert Connection.batch_window(%{first: 200}) == {:ok, %{offset: 0, fetch_limit: 101}}
+    end
+
+    test "matches a connection after a cursor" do
+      items = [:first, :second, :third, :fourth]
+      {:ok, first_page} = Connection.from_list(items, %{first: 1})
+      after_cursor = first_page.page_info.end_cursor
+
+      assert_prefetched_connection_matches_list(items, %{first: 2, after: after_cursor})
+
+      assert Connection.batch_window(%{first: 2, after: after_cursor}) ==
+               {:ok, %{offset: 1, fetch_limit: 3}}
+    end
+
+    test "matches the final page connection" do
+      items = [:first, :second, :third]
+      {:ok, first_page} = Connection.from_list(items, %{first: 2})
+
+      assert_prefetched_connection_matches_list(items, %{
+        first: 2,
+        after: first_page.page_info.end_cursor
+      })
+    end
+
+    test "rejects invalid first values" do
+      assert Connection.batch_window(%{first: -1}) == {:error, :invalid_first}
+      assert Connection.from_prefetched_page([:first], %{first: -1}) == {:error, :invalid_first}
+    end
+
+    test "rejects malformed cursors" do
+      assert Connection.batch_window(%{after: "not-a-valid-cursor"}) == {:error, :invalid_cursor}
+
+      assert Connection.from_prefetched_page([:first], %{after: "not-a-valid-cursor"}) ==
+               {:error, :invalid_cursor}
+    end
   end
 
   test "community writes require authentication", %{conn: conn} do
@@ -557,6 +608,15 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
 
   defp graphql(conn, query, variables) do
     conn |> post("/api/graphql", %{query: query, variables: variables}) |> json_response(200)
+  end
+
+  defp assert_prefetched_connection_matches_list(items, args) do
+    assert {:ok, %{offset: offset, fetch_limit: fetch_limit}} = Connection.batch_window(args)
+
+    prefetched_rows = items |> Enum.drop(offset) |> Enum.take(fetch_limit)
+
+    assert Connection.from_prefetched_page(prefetched_rows, args) ==
+             Connection.from_list(items, args)
   end
 
   defp product_community_query do
