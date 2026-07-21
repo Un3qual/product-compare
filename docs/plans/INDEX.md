@@ -123,7 +123,7 @@ A fifth claim-floor audit promoted bounded comparison evidence reads after
 verifying that live recommendations and immutable snapshot publication still
 repeat offer, specification, and merchant evidence reads per selected product.
 Those two surfaces share one two-or-three-product evidence lifecycle and remain
-internal slices of one reviewer-sized outcome.
+internal slices of one reviewer-sized outcome; that outcome is complete.
 A sixth claim-floor audit promoted the remaining authorized Relay node reads
 after verifying that four operator-only affiliate types and two owner-scoped
 types still query per alias. Their authorization and ownership variants stay
@@ -147,7 +147,6 @@ work were also verified as already implemented and are not candidate work.
 
 Active implementation plans:
 
-- `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
@@ -185,12 +184,12 @@ batch and should not be recreated or promoted.
   active-offer connections are complete. Owner-private community submission
   reads, public Relay node aliases, and category lookup/qualified-product
   connections are complete. Public product/merchant slug and opaque-key
-  lookups are also complete. Comparison evidence reads, authorized Relay node
-  reads, and bounded alert evaluation market reads remain ready through the
-  active plans above. Bounded comparison root GraphQL reads is also ready as a
-  serial public-entry successor. They are reviewer-sized domain outcomes;
-  their set-based context, Dataloader, shared-fact, and query-budget steps
-  remain internal slices rather than separate queue rows.
+  lookups and comparison evidence reads are also complete. Authorized Relay
+  node reads, bounded alert evaluation market reads, and bounded comparison
+  root GraphQL reads remain ready through the active plans above. They are
+  reviewer-sized domain outcomes; their set-based context, Dataloader,
+  shared-fact, and query-budget steps remain internal slices rather than
+  separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
@@ -274,12 +273,13 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
-- 2026-07-20 through 2026-07-21 bounded GraphQL reads: merchant-offer
-  connections, owner-private community submissions, public Relay nodes,
-  category qualification and product pages, public product/merchant slug
-  aliases, and public opaque-key entry points. Their implementation plans are
-  explicitly complete, and their lane docs retain the query-budget and
-  semantic-parity evidence.
+- 2026-07-20 through 2026-07-21 bounded GraphQL and comparison evidence reads:
+  merchant-offer connections, owner-private community submissions, public
+  Relay nodes, category qualification and product pages, public
+  product/merchant slug aliases, public opaque-key entry points, live
+  recommendations, and immutable
+  snapshot publication. Their implementation plans are explicitly complete,
+  and their lane docs retain the query-budget and semantic-parity evidence.
 
 - 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
   lifecycle reliability, community content lifecycle, Relay cursor forward

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active on `codex/bounded-public-opaque-graphql-reads`
+- Status: complete on `codex/bounded-public-opaque-graphql-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
@@ -39,6 +39,16 @@ qualification, privacy, token, or revocation behavior.
   both selection sizes.
 - Exact recommendation ranking order, winner, price-point IDs, reasons, and
   public GraphQL values remain green.
+- Snapshot RED grew products `4 -> 5`, merchant products `6 -> 9`, price points
+  `4 -> 6`, current attributes `3 -> 4`, merchants `2 -> 3`, accepted claims
+  `2 -> 3`, and taxon attributes `2 -> 3`.
+- Snapshot GREEN holds products at three, merchant products at three, price
+  points at two, current attributes at two, merchants at one, accepted claims
+  at one, taxon attributes at one, and snapshot hydration at one SELECT for
+  both two- and three-product publications.
+- Exact requested product order, accepted claim IDs, price-point IDs,
+  recommendation winner, public GraphQL values, and existing snapshot lifecycle
+  suites remain green.
 
 ## Internal Slices
 
@@ -64,3 +74,20 @@ qualification, privacy, token, or revocation behavior.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion Evidence
+
+- Focused verification passed 16 recommendation and comparison-snapshot
+  context/GraphQL tests with zero failures.
+- `mix typecheck`, `mix format --check-formatted`, `mix work_queue.validate`,
+  and `git diff --check` passed; the live queue retains three complete ready
+  successors.
+- `mix ci` passed 845 backend tests with 83.67% coverage, Credo with no issues,
+  the 6/6 ExDNA clone budget, cross-function smell detection, Dialyzer, Relay
+  validation, TypeScript, 1,507 frontend tests across 105 files, client and SSR
+  builds, and the 182,164-byte gzip client-bundle budget.
+
+## Remaining Work
+
+None. Authorized-node GraphQL reads, alert-evaluation market reads, and
+comparison-root GraphQL reads remain ready in the live queue.

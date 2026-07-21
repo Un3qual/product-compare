@@ -1235,60 +1235,17 @@ Reads was promoted as one public comparison-selection outcome. Its product-list
 and recommendation variants remain internal slices, and it executes serially
 with other Recommendations/Loader work, leaving three independently shippable
 ready rows after the claim.
+Bounded comparison evidence reads then completed on
+`codex/bounded-public-opaque-graphql-reads`: recommendation product, current-
+claim, merchant-product, and price-point SELECTs now hold at one each for both
+two and three products. Snapshot publication now holds its product,
+specification, offer, merchant, and hydration reads fixed at the same selection
+sizes while preserving ordered captured facts, exact evidence IDs, shared-time
+semantics, qualification, privacy, tokens, and revocation behavior.
 
 ## Active Work
 
-### 1. Bounded Comparison Evidence Reads
-
-Status: active
-Worker: Codex
-Branch: `codex/bounded-public-opaque-graphql-reads`
-Lane: Bounded comparison evidence reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
-Batch outcome: live recommendations and immutable snapshot publication collect
-comparison evidence with fixed SELECT budgets as selection grows from two
-products to three, without changing ranking, captured facts, order, shared-time
-semantics, qualification, privacy, token, or revocation behavior.
-Next action: route live recommendations through set-based current offer truth,
-gather snapshot attributes/offers/merchants in set-based phases, and prove
-semantic and fixed-budget parity on both surfaces.
-Owned paths:
-
-- `lib/product_compare/recommendations.ex`
-- `lib/product_compare/comparison_snapshots.ex`
-- `test/product_compare/recommendations_test.exs`
-- `test/product_compare/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/recommendations_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `docs/work/bounded-comparison-evidence-reads.md`
-
-Internal slices:
-
-- Set-based live recommendation current-offer evidence.
-- Set-based immutable snapshot attributes, offers, and merchant evidence.
-- Semantic, privacy, shared-time, and fixed-budget parity.
-
-Prerequisites:
-
-- Existing two-or-three-product validation, recommendation algorithms,
-  snapshot payload, qualification, privacy, and revocation contracts remain
-  authoritative.
-- Existing `Specs.list_current_attributes_for_products/1` and
-  `Pricing.current_offer_truths/2` remain the shared evidence sources.
-- This row is independent of category, slug identity, and public opaque-key
-  entry-point batching.
-
-Verification:
-
-- `mix test test/product_compare/recommendations_test.exs test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: two- and three-product live recommendations and immutable
-snapshots preserve exact facts and lifecycle behavior while comparison-evidence
-SELECT counts stay fixed as selection grows.
+None.
 
 ## Ready Work
 

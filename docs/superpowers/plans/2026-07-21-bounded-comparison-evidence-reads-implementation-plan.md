@@ -1,5 +1,7 @@
 # Bounded Comparison Evidence Reads Implementation Plan
 
+**Status:** complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:subagent-driven-development` (recommended) or
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use
@@ -66,16 +68,16 @@ with `Pricing.current_offer_truths/2`, and merchants for all captured best
 offers in one query. Projection helpers receive those maps rather than issuing
 queries for an individual product.
 
-- [ ] Add a failing query-budget regression comparing two- and three-product
+- [x] Add a failing query-budget regression comparing two- and three-product
   publications with attributes, provenance, offers, and recommendation facts.
-- [ ] Assert exact ordered payload, public GraphQL values, qualification,
+- [x] Assert exact ordered payload, public GraphQL values, qualification,
   privacy, token, and revocation semantics before the query budget.
-- [ ] Confirm RED because attributes, offer truth, and merchant reads currently
+- [x] Confirm RED because attributes, offer truth, and merchant reads currently
   repeat for every selected product.
-- [ ] Implement set-based evidence gathering and pure ordered payload
+- [x] Implement set-based evidence gathering and pure ordered payload
   projection at one shared timestamp.
-- [ ] Re-run context and GraphQL snapshot suites.
-- [ ] Commit with message `perf: batch comparison snapshot evidence reads`.
+- [x] Re-run context and GraphQL snapshot suites.
+- [x] Commit with message `perf: batch comparison snapshot evidence reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -83,11 +85,11 @@ queries for an individual product.
 
 - Modify: `docs/work/bounded-comparison-evidence-reads.md`
 
-- [ ] Record exact before/after query counts and semantic parity coverage.
-- [ ] Run `mix test test/product_compare/recommendations_test.exs
+- [x] Record exact before/after query counts and semantic parity coverage.
+- [x] Run `mix test test/product_compare/recommendations_test.exs
   test/product_compare/comparison_snapshots_test.exs
   test/product_compare_web/graphql/recommendations_test.exs
   test/product_compare_web/graphql/comparison_snapshots_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.
