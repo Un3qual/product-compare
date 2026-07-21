@@ -164,6 +164,16 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     project_connection_pages(products, pages, connection_args, & &1.id)
   end
 
+  defp offer_connection_batch({:merchant_offers, connection_args}, merchants)
+       when is_map(connection_args) do
+    merchants = Enum.to_list(merchants)
+    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
+
+    pages = Pricing.merchant_offer_pages(Enum.map(merchants, & &1.id), window)
+
+    project_connection_pages(merchants, pages, connection_args, & &1.id)
+  end
+
   defp offer_connection_batch({:active_coupons, connection_args}, merchant_products)
        when is_map(connection_args) do
     merchant_products = Enum.to_list(merchant_products)

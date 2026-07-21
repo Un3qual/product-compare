@@ -65,6 +65,26 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
     assert get_in(graphql(conn, query(), %{"slug" => "missing"}), ["data", "merchant"]) == nil
   end
 
+  test "merchant detail offers preserve Relay input errors", %{conn: conn} do
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "Invalid Relay shop", domain: "invalid-relay.example"})
+
+    assert %{
+             "data" => %{"merchant" => nil},
+             "errors" => [
+               %{
+                 "message" => "invalid first",
+                 "path" => ["merchant", "merchantProducts"]
+               }
+               | _
+             ]
+           } =
+             graphql(conn, pagination_query(), %{
+               "slug" => merchant.slug,
+               "first" => -1
+             })
+  end
+
   defp graphql(conn, query, variables) do
     conn |> post("/api/graphql", %{query: query, variables: variables}) |> json_response(200)
   end
@@ -78,6 +98,19 @@ defmodule ProductCompareWeb.GraphQL.MerchantDetailTest do
         detailSummary { activeOfferCount distinctProductCount eligibleOfferCount lastObservedAt }
         merchantProducts(first: 10) {
           edges { node { id currency product { id name slug } latestPrice { id price observedAt } } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+    """
+  end
+
+  defp pagination_query do
+    """
+    query MerchantDetailPagination($slug: String!, $first: Int!) {
+      merchant(slug: $slug) {
+        merchantProducts(first: $first) {
+          edges { node { id } }
           pageInfo { hasNextPage endCursor }
         }
       }

@@ -33,6 +33,19 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
     end)
   end
 
+  def merchant_offers(
+        %{id: merchant_id} = merchant,
+        args,
+        %{context: %{loader: loader}}
+      )
+      when is_integer(merchant_id) do
+    connection_args = Input.connection_args(args)
+
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      load_offer_connection(loader, {:merchant_offers, connection_args}, merchant)
+    end
+  end
+
   def merchant_offers(%{id: merchant_id}, args, _resolution) do
     query = Pricing.list_merchant_offers_query(merchant_id, true)
     Connection.from_query_result(query, Input.connection_args(args), Repo)

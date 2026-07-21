@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
   @community_connection_tables ~w(product_reviews product_threads thread_posts)a
   @offer_connection_tables ~w(merchant_products coupons price_points)a
+  @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
@@ -190,6 +191,39 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert grown_response |> get_in(["data", "merchants", "edges"]) |> length() == 6
       assert initial_budget == %{merchant_products: 1, price_points: 1}
       assert merchant_summary_query_budget(grown_queries) == initial_budget
+    end
+
+    test "merchant offer connections keep Relay values and SELECT budgets fixed as parents grow",
+         %{conn: conn, test: test_name} do
+      initial_merchants = merchant_offer_parents("#{test_name}-initial", 1..3)
+
+      {initial_response, initial_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_offer_connections_batch_query(), %{"first" => 3})
+        end)
+
+      initial_nodes = merchant_offer_connection_nodes(initial_response)
+      assert [_, _, _] = initial_nodes
+      assert_merchant_offer_connection_values(initial_nodes, initial_merchants)
+
+      grown_merchants =
+        initial_merchants ++ merchant_offer_parents("#{test_name}-grown", 4..6)
+
+      {grown_response, grown_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_offer_connections_batch_query(), %{"first" => 6})
+        end)
+
+      grown_nodes = merchant_offer_connection_nodes(grown_response)
+      assert [_, _, _, _, _, _] = grown_nodes
+      assert_merchant_offer_connection_values(grown_nodes, grown_merchants)
+
+      fixed_budget = %{merchant_products: 1, price_points: 1}
+
+      assert {
+               merchant_offer_connection_query_budget(initial_queries),
+               merchant_offer_connection_query_budget(grown_queries)
+             } == {fixed_budget, fixed_budget}
     end
 
     test "product evidence fields keep semantic values and SELECT budgets fixed as parents grow",
@@ -440,6 +474,33 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp merchant_offer_connections_batch_query do
+    """
+    query MerchantOfferConnectionsBatch($first: Int!) {
+      merchants(first: $first) {
+        edges {
+          node {
+            id
+            name
+            merchantProducts(first: 2) {
+              edges {
+                cursor
+                node {
+                  id
+                  merchant { id name }
+                  product { id name slug }
+                  latestPrice { id price }
+                }
+              }
+              pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp community_connections_batch_query do
     """
     query CommunityConnectionsBatch($first: Int!) {
@@ -528,6 +589,61 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       merchant_products: Enum.count(queries, &query_targets_table?(&1, :merchant_products)),
       price_points: Enum.count(queries, &query_targets_table?(&1, :price_points))
     }
+  end
+
+  defp merchant_offer_connection_nodes(response) do
+    response
+    |> get_in(["data", "merchants", "edges"])
+    |> Enum.map(& &1["node"])
+  end
+
+  defp merchant_offer_connection_query_budget(queries) do
+    Enum.into(@merchant_offer_connection_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp assert_merchant_offer_connection_values(nodes, merchants) do
+    Enum.each(merchants, fn merchant_data ->
+      node = Enum.find(nodes, &(&1["name"] == merchant_data.merchant.name))
+
+      assert node["id"] == relay_id(:merchant, merchant_data.merchant.id)
+
+      expected_edges =
+        merchant_data.visible_offers
+        |> Enum.with_index()
+        |> Enum.map(fn {offer_data, index} ->
+          %{
+            "cursor" => cursor_for(index),
+            "node" => %{
+              "id" => relay_id(:merchant_product, offer_data.offer.id),
+              "merchant" => %{
+                "id" => relay_id(:merchant, merchant_data.merchant.id),
+                "name" => merchant_data.merchant.name
+              },
+              "product" => %{
+                "id" => relay_id(:product, offer_data.product.id),
+                "name" => offer_data.product.name,
+                "slug" => offer_data.product.slug
+              },
+              "latestPrice" => %{
+                "id" => relay_id(:price_point, offer_data.latest_price.id),
+                "price" => Decimal.to_string(offer_data.latest_price.price)
+              }
+            }
+          }
+        end)
+
+      assert node["merchantProducts"] == %{
+               "edges" => expected_edges,
+               "pageInfo" => %{
+                 "hasNextPage" => true,
+                 "hasPreviousPage" => false,
+                 "startCursor" => cursor_for(0),
+                 "endCursor" => cursor_for(1)
+               }
+             }
+    end)
   end
 
   defp product_evidence_query_budget(queries) do
@@ -744,6 +860,59 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         })
 
       {merchant.id, %{first: first, second: second}}
+    end)
+  end
+
+  defp merchant_offer_parents(prefix, indexes) do
+    Enum.map(indexes, fn merchant_index ->
+      merchant =
+        merchant_fixture(%{
+          name: unique_name("Merchant Offer Parent #{merchant_index}"),
+          domain: unique_domain("#{prefix}-merchant-#{merchant_index}")
+        })
+
+      inactive_product =
+        SpecsFixtures.product_fixture(%{
+          slug: "#{prefix}-merchant-#{merchant_index}-inactive",
+          name: "Merchant #{merchant_index} Inactive Product"
+        })
+
+      _inactive_offer =
+        merchant_product_fixture(%{
+          merchant: merchant,
+          product: inactive_product,
+          is_active: false
+        })
+
+      active_offers =
+        Enum.map(1..3, fn offer_index ->
+          product =
+            SpecsFixtures.product_fixture(%{
+              slug: "#{prefix}-merchant-#{merchant_index}-active-#{offer_index}",
+              name: "Merchant #{merchant_index} Active Product #{offer_index}"
+            })
+
+          offer =
+            merchant_product_fixture(%{
+              merchant: merchant,
+              product: product,
+              is_active: true
+            })
+
+          {:ok, latest_price} =
+            Pricing.add_price_point(%{
+              merchant_product_id: offer.id,
+              observed_at:
+                DateTime.utc_now()
+                |> DateTime.add(offer_index, :second)
+                |> DateTime.truncate(:microsecond),
+              price: Decimal.new(merchant_index * 100 + offer_index)
+            })
+
+          %{offer: offer, product: product, latest_price: latest_price}
+        end)
+
+      %{merchant: merchant, visible_offers: Enum.take(active_offers, 2)}
     end)
   end
 
