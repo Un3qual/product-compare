@@ -45,13 +45,13 @@ entries cannot cross principals.
 - Keep singular Affiliate getters delegating through the corresponding shared
   lookup policy where practical so values cannot drift.
 
-- [ ] Add failing empty, duplicate, missing, and two-versus-four ID parity and
+- [x] Add failing empty, duplicate, missing, and two-versus-four ID parity and
   query-budget tests for all four affiliate node schemas.
-- [ ] Run the focused Affiliate tests and confirm the set-based API is absent.
-- [ ] Implement one bounded query per requested node schema.
-- [ ] Re-run the focused tests and prove exact singular parity with fixed
+- [x] Run the focused Affiliate tests and confirm the set-based API is absent.
+- [x] Implement one bounded query per requested node schema.
+- [x] Re-run the focused tests and prove exact singular parity with fixed
   per-schema SELECT counts.
-- [ ] Commit with message `perf: batch operator node reads`.
+- [x] Commit with message `perf: batch operator node reads`.
 
 ### Task 2: Set-Based Owner-Scoped Node Lookups
 
@@ -59,8 +59,10 @@ entries cannot cross principals.
 
 - Modify: `lib/product_compare/accounts.ex`
 - Modify: `lib/product_compare/catalog.ex`
+- Modify: `lib/product_compare/input.ex`
 - Modify: `test/product_compare/accounts/api_token_test.exs`
 - Modify: `test/product_compare/catalog/saved_comparison_set_test.exs`
+- Modify: `test/product_compare/input_test.exs`
 
 **Interfaces:**
 
@@ -68,13 +70,13 @@ entries cannot cross principals.
   entropy IDs, keyed by every requested valid UUID.
 - Preserve lazy saved-set associations and token owner filtering.
 
-- [ ] Add failing empty, duplicate, missing, cross-owner, and two-versus-four
+- [x] Add failing empty, duplicate, missing, cross-owner, and two-versus-four
   parity/query-budget tests for both owner-scoped types.
-- [ ] Run the focused Accounts and Catalog tests and confirm the APIs are absent.
-- [ ] Implement bounded owner-filtered reads without eager association loads.
-- [ ] Re-run the focused tests and prove exact singular, privacy, and lazy-load
+- [x] Run the focused Accounts and Catalog tests and confirm the APIs are absent.
+- [x] Implement bounded owner-filtered reads without eager association loads.
+- [x] Re-run the focused tests and prove exact singular, privacy, and lazy-load
   parity with fixed budgets.
-- [ ] Commit with message `perf: batch owner scoped node reads`.
+- [x] Commit with message `perf: batch owner scoped node reads`.
 
 ### Task 3: Authorization-Aware Node Dataloader
 
@@ -92,13 +94,13 @@ entries cannot cross principals.
 - Authorize operator aliases before scheduling loads; return anonymous
   owner-scoped aliases without scheduling any query.
 
-- [ ] Add failing GraphQL alias-growth tests for every operator and owner type.
-- [ ] Assert exact values, missing behavior, nested saved-set items, forbidden
+- [x] Add failing GraphQL alias-growth tests for every operator and owner type.
+- [x] Assert exact values, missing behavior, nested saved-set items, forbidden
   errors, anonymous zero-query behavior, and cross-owner privacy before budgets.
-- [ ] Prove per-type SELECT budgets remain identical from two aliases to four.
-- [ ] Register the source and route non-public node types through `on_load/2`.
-- [ ] Re-run node and Dataloader suites.
-- [ ] Commit with message `perf: bound authorized graphql node reads`.
+- [x] Prove per-type SELECT budgets remain identical from two aliases to four.
+- [x] Register the source and route non-public node types through `on_load/2`.
+- [x] Re-run node and Dataloader suites.
+- [x] Commit with message `perf: bound authorized graphql node reads`.
 
 ### Task 4: Lane Evidence And Batch Gate
 
@@ -106,13 +108,13 @@ entries cannot cross principals.
 
 - Modify: `docs/work/bounded-authorized-node-graphql-reads.md`
 
-- [ ] Record before/after query counts, authorization, privacy, and semantic
+- [x] Record before/after query counts, authorization, privacy, and semantic
   parity coverage.
-- [ ] Run `mix test test/product_compare/affiliate/affiliate_workflows_test.exs
+- [x] Run `mix test test/product_compare/affiliate/affiliate_workflows_test.exs
   test/product_compare/accounts/api_token_test.exs
   test/product_compare/catalog/saved_comparison_set_test.exs
   test/product_compare_web/graphql/node_query_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.

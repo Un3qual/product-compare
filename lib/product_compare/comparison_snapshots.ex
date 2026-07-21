@@ -19,6 +19,7 @@ defmodule ProductCompare.ComparisonSnapshots do
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @profiles [:lowest_current_cost, :best_value]
+  @public_token_pattern ~r/^[A-Za-z0-9_-]{43}$/
 
   @spec publish(pos_integer(), map(), keyword()) ::
           {:ok, ComparisonSnapshot.t()}
@@ -52,15 +53,37 @@ defmodule ProductCompare.ComparisonSnapshots do
 
   @spec get_public(String.t()) :: ComparisonSnapshot.t() | nil
   def get_public(token) when is_binary(token) do
-    if Regex.match?(~r/^[A-Za-z0-9_-]{43}$/, token) do
-      ComparisonSnapshot
-      |> where([snapshot], snapshot.public_token == ^token and is_nil(snapshot.revoked_at))
-      |> Repo.one()
-      |> hydrate()
-    end
+    [token]
+    |> get_public_many()
+    |> Map.get(token)
   end
 
   def get_public(_token), do: nil
+
+  @spec get_public_many([term()]) :: %{optional(String.t()) => ComparisonSnapshot.t() | nil}
+  def get_public_many(tokens) when is_list(tokens) do
+    tokens =
+      tokens
+      |> Enum.filter(&(is_binary(&1) and Regex.match?(@public_token_pattern, &1)))
+      |> Enum.uniq()
+
+    snapshots =
+      case tokens do
+        [] ->
+          %{}
+
+        _ ->
+          ComparisonSnapshot
+          |> where(
+            [snapshot],
+            snapshot.public_token in ^tokens and is_nil(snapshot.revoked_at)
+          )
+          |> Repo.all()
+          |> Map.new(&{&1.public_token, hydrate(&1)})
+      end
+
+    Map.new(tokens, &{&1, Map.get(snapshots, &1)})
+  end
 
   @spec active_for_owner_query(pos_integer()) :: Ecto.Query.t()
   def active_for_owner_query(user_id) when is_integer(user_id) do
@@ -125,17 +148,35 @@ defmodule ProductCompare.ComparisonSnapshots do
   end
 
   defp capture(products, profile, now) do
-    recommendation = Recommendations.compare(Enum.map(products, & &1.id), profile, now: now)
+    product_ids = Enum.map(products, & &1.id)
+    recommendation = Recommendations.compare(product_ids, profile, now: now)
+    attributes_by_product = Specs.list_current_attributes_for_products(product_ids)
+    offer_truths_by_product = Pricing.current_offer_truths(product_ids, now: now)
+    merchants_by_offer_id = captured_merchants_by_offer_id(offer_truths_by_product)
 
     %{
       version: 1,
       captured_at: DateTime.to_iso8601(now),
-      products: Enum.map(products, &capture_product(&1, now)),
+      products:
+        Enum.map(
+          products,
+          &capture_product(
+            &1,
+            attributes_by_product,
+            offer_truths_by_product,
+            merchants_by_offer_id
+          )
+        ),
       recommendation: capture_recommendation(recommendation)
     }
   end
 
-  defp capture_product(product, now) do
+  defp capture_product(
+         product,
+         attributes_by_product,
+         offer_truths_by_product,
+         merchants_by_offer_id
+       ) do
     %{
       id: product.id,
       name: product.name,
@@ -144,10 +185,13 @@ defmodule ProductCompare.ComparisonSnapshots do
       model_number: product.model_number,
       brand_name: product.brand && product.brand.name,
       attributes:
-        product.id
-        |> Specs.list_current_attributes_for_product()
+        attributes_by_product
+        |> Map.fetch!(product.id)
         |> Enum.map(&capture_attribute/1),
-      offers: capture_offers(product.id, now)
+      offers:
+        offer_truths_by_product
+        |> Map.fetch!(product.id)
+        |> capture_offers(merchants_by_offer_id)
     }
   end
 
@@ -178,27 +222,10 @@ defmodule ProductCompare.ComparisonSnapshots do
     }
   end
 
-  defp capture_offers(product_id, now) do
-    truth = Pricing.current_offer_truth(product_id, now: now)
-
+  defp capture_offers(truth, merchants_by_offer_id) do
     best_offers =
       truth.currency_summaries
       |> Enum.flat_map(&List.wrap(&1.best_offer))
-
-    merchants_by_offer_id =
-      best_offers
-      |> Enum.map(& &1.merchant_product_id)
-      |> case do
-        [] ->
-          %{}
-
-        ids ->
-          MerchantProduct
-          |> where([offer], offer.id in ^ids)
-          |> preload([:merchant])
-          |> Repo.all()
-          |> Map.new(&{&1.id, &1.merchant})
-      end
 
     Enum.map(best_offers, fn offer ->
       merchant = Map.fetch!(merchants_by_offer_id, offer.merchant_product_id)
@@ -216,6 +243,28 @@ defmodule ProductCompare.ComparisonSnapshots do
         freshness: Atom.to_string(offer.freshness)
       }
     end)
+  end
+
+  defp captured_merchants_by_offer_id(offer_truths_by_product) do
+    offer_ids =
+      offer_truths_by_product
+      |> Map.values()
+      |> Enum.flat_map(& &1.currency_summaries)
+      |> Enum.flat_map(&List.wrap(&1.best_offer))
+      |> Enum.map(& &1.merchant_product_id)
+      |> Enum.uniq()
+
+    case offer_ids do
+      [] ->
+        %{}
+
+      ids ->
+        MerchantProduct
+        |> where([offer], offer.id in ^ids)
+        |> preload([:merchant])
+        |> Repo.all()
+        |> Map.new(&{&1.id, &1.merchant})
+    end
   end
 
   defp capture_recommendation(result) do

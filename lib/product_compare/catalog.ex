@@ -322,17 +322,16 @@ defmodule ProductCompare.Catalog do
   @spec get_saved_comparison_set_for_user(User.t(), binary()) :: SavedComparisonSet.t() | nil
   def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id)
       when is_binary(entropy_id) do
-    with {:ok, validated_entropy_id} <- Ecto.UUID.cast(entropy_id) do
-      SavedComparisonSet
-      |> where(
-        [saved_comparison_set],
-        saved_comparison_set.entropy_id == ^validated_entropy_id and
-          saved_comparison_set.user_id == ^user_id
-      )
-      |> Repo.one()
-    else
-      :error -> nil
-    end
+    user_id
+    |> get_saved_comparison_sets_for_user_id([entropy_id])
+    |> Map.get(entropy_id)
+  end
+
+  @spec get_saved_comparison_sets_for_user(User.t(), [binary()]) ::
+          %{optional(binary()) => SavedComparisonSet.t() | nil}
+  def get_saved_comparison_sets_for_user(%User{id: user_id}, entropy_ids)
+      when is_list(entropy_ids) do
+    get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
@@ -356,6 +355,18 @@ defmodule ProductCompare.Catalog do
       :error -> {:error, :not_found}
       nil -> {:error, :not_found}
     end
+  end
+
+  defp get_saved_comparison_sets_for_user_id(user_id, entropy_ids) do
+    Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
+      SavedComparisonSet
+      |> where(
+        [saved_comparison_set],
+        saved_comparison_set.user_id == ^user_id and
+          saved_comparison_set.entropy_id in ^validated_entropy_ids
+      )
+      |> Repo.all()
+    end)
   end
 
   defp insert_saved_comparison_items(repo, saved_comparison_set_id, product_ids) do

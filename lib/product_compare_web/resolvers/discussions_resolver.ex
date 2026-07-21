@@ -76,6 +76,20 @@ defmodule ProductCompareWeb.Resolvers.DiscussionsResolver do
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
 
+  def question(_parent, %{id: id}, %{context: %{loader: loader}}) do
+    with {:ok, entropy_id} <- GlobalId.decode_uuid(id, :product_question) do
+      source = Loader.public_opaque_source()
+
+      loader
+      |> Dataloader.load(source, :product_question, entropy_id)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, :product_question, entropy_id)}
+      end)
+    else
+      :error -> {:error, "invalid product question id"}
+    end
+  end
+
   def question(_parent, %{id: id}, _resolution) do
     with {:ok, entropy_id} <- GlobalId.decode_uuid(id, :product_question) do
       {:ok, Discussions.get_public_question(entropy_id)}

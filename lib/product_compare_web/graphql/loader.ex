@@ -5,8 +5,19 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   import Ecto.Query
 
-  alias ProductCompare.{Affiliate, Catalog, Discussions, Pricing, Seo}
+  alias ProductCompare.{
+    Accounts,
+    Affiliate,
+    Catalog,
+    ComparisonSnapshots,
+    Discussions,
+    Pricing,
+    Seo,
+    Specs
+  }
+
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -20,6 +31,8 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @offer_connection_source {__MODULE__, :offer_connections}
   @category_source {__MODULE__, :categories}
   @public_slug_source {__MODULE__, :public_slugs}
+  @public_opaque_source {__MODULE__, :public_opaque_keys}
+  @authorized_node_source {__MODULE__, :authorized_nodes}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -54,6 +67,14 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @public_slug_source,
       Dataloader.KV.new(&public_slug_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @public_opaque_source,
+      Dataloader.KV.new(&public_opaque_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
+      @authorized_node_source,
+      Dataloader.KV.new(&authorized_node_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
@@ -76,6 +97,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec public_slug_source() :: {module(), :public_slugs}
   def public_slug_source, do: @public_slug_source
+
+  @spec public_opaque_source() :: {module(), :public_opaque_keys}
+  def public_opaque_source, do: @public_opaque_source
+
+  @spec authorized_node_source() :: {module(), :authorized_nodes}
+  def authorized_node_source, do: @authorized_node_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -278,6 +305,50 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     slugs
     |> Enum.to_list()
     |> Pricing.get_merchants_by_slugs()
+  end
+
+  defp public_opaque_batch(:source_artifact, ids) do
+    ids
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, Specs.get_source_artifacts(&1)))
+  end
+
+  defp public_opaque_batch(:product_question, entropy_ids) do
+    entropy_ids
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, Discussions.get_public_questions(&1)))
+  end
+
+  defp public_opaque_batch(:comparison_snapshot, tokens) do
+    tokens
+    |> Enum.to_list()
+    |> then(&project_lookup_results(&1, ComparisonSnapshots.get_public_many(&1)))
+  end
+
+  defp authorized_node_batch({:operator, type, operator_id}, ids)
+       when type in [:affiliate_network, :affiliate_program, :affiliate_link, :coupon] and
+              is_integer(operator_id) and operator_id > 0 do
+    ids
+    |> Enum.to_list()
+    |> then(&Affiliate.get_affiliate_nodes(type, &1))
+  end
+
+  defp authorized_node_batch({:owner, :saved_comparison_set, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids
+    |> Enum.to_list()
+    |> then(&Catalog.get_saved_comparison_sets_for_user(%User{id: user_id}, &1))
+  end
+
+  defp authorized_node_batch({:owner, :api_token, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids
+    |> Enum.to_list()
+    |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
+  end
+
+  defp project_lookup_results(items, values) do
+    Map.new(items, &{&1, Map.get(values, &1)})
   end
 
   defp project_connection_pages(parents, pages, connection_args, parent_key) do

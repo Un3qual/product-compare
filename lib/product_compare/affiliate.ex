@@ -24,6 +24,29 @@ defmodule ProductCompare.Affiliate do
   @spec get_coupon(pos_integer()) :: Coupon.t() | nil
   def get_coupon(id), do: Repo.get(Coupon, id)
 
+  @type node_type :: :affiliate_network | :affiliate_program | :affiliate_link | :coupon
+
+  @spec get_affiliate_nodes(node_type(), [pos_integer()]) ::
+          %{optional(pos_integer()) => struct() | nil}
+  def get_affiliate_nodes(type, ids) when is_list(ids) do
+    schema = affiliate_node_schema(type)
+    ids = Enum.uniq(ids)
+
+    records_by_id =
+      case ids do
+        [] ->
+          %{}
+
+        ids ->
+          schema
+          |> where([record], record.id in ^ids)
+          |> Repo.all()
+          |> Map.new(&{&1.id, &1})
+      end
+
+    Map.new(ids, &{&1, Map.get(records_by_id, &1)})
+  end
+
   @spec upsert_network(map()) :: {:ok, AffiliateNetwork.t()} | {:error, Ecto.Changeset.t()}
   def upsert_network(attrs) do
     now = DateTime.utc_now()
@@ -155,4 +178,9 @@ defmodule ProductCompare.Affiliate do
       end
     end)
   end
+
+  defp affiliate_node_schema(:affiliate_network), do: AffiliateNetwork
+  defp affiliate_node_schema(:affiliate_program), do: AffiliateProgram
+  defp affiliate_node_schema(:affiliate_link), do: AffiliateLink
+  defp affiliate_node_schema(:coupon), do: Coupon
 end

@@ -117,26 +117,54 @@ A fourth claim-floor audit promoted the remaining nullable public opaque-key
 entry points after verifying that source-artifact IDs, published-question IDs,
 and comparison-snapshot tokens each still trigger direct per-alias reads. Their
 source/preload, publication, revocation, hydration, error, and missing-result
-rules stay internal slices of one public-entry read-budget outcome.
+rules stayed internal slices of one public-entry read-budget outcome; that
+outcome is complete.
 A fifth claim-floor audit promoted bounded comparison evidence reads after
 verifying that live recommendations and immutable snapshot publication still
 repeat offer, specification, and merchant evidence reads per selected product.
 Those two surfaces share one two-or-three-product evidence lifecycle and remain
-internal slices of one reviewer-sized outcome.
+internal slices of one reviewer-sized outcome; that outcome is complete.
 A sixth claim-floor audit promoted the remaining authorized Relay node reads
 after verifying that four operator-only affiliate types and two owner-scoped
 types still query per alias. Their authorization and ownership variants stay
 internal slices of one non-public node acceptance boundary.
-Specification-correction lists were not promoted because their claim trees are
-already preloaded. The formerly optional loaded-price copy, loaded-product
+A seventh claim-floor audit promoted bounded alert evaluation market reads
+after verifying that the default evaluator repeats identical product-wide or
+triggering-listing offer evidence inside every applicable watch transaction.
+The shared market-fact snapshot, required per-watch locks, replay safety,
+cooldowns, and partial-failure behavior remain internal slices of one alert
+evaluation reliability/performance outcome.
+An eighth claim-floor audit promoted bounded comparison root GraphQL reads
+after verifying that repeated public comparison-product and recommendation
+aliases still execute their bounded slug and recommendation evidence reads
+independently. Canonical product selection, recommendation projection, and
+request-scoped loading remain internal slices of one public comparison entry
+outcome.
+A ninth claim-floor audit promoted bounded authorized management GraphQL
+connections after verifying that six owner-scoped collections and two
+operator-only queues still repeat direct page reads for identical aliases.
+Authorization scope, collection kind, filters, connection arguments, and
+growing-alias coverage remain internal slices of one non-public connection
+outcome; deferred ingestion dashboard work stays closed. Specification-
+correction claim-tree loading was not promoted separately because those trees
+are already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
 work were also verified as already implemented and are not candidate work.
+A tenth claim-floor audit promoted bounded catalog and offer-discovery root
+GraphQL reads after verifying that `products`, `productFilterMetadata`,
+`merchants`, and top-level `merchantProducts` still repeat identical public
+discovery reads per alias. Catalog filters and metadata, merchant-directory
+pagination, offer filters, nested values, and growing-alias budgets remain
+internal slices of one discovery-entry acceptance boundary. Their three
+focused suites pass 51 tests.
 
-Active implementation plans:
+Implementation plan references (non-dispatch):
 
-- `docs/superpowers/plans/2026-07-21-bounded-public-opaque-key-graphql-reads-implementation-plan.md`
-- `docs/superpowers/plans/2026-07-21-bounded-comparison-evidence-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -145,10 +173,12 @@ Active implementation plans:
 - `docs/superpowers/plans/2026-07-12-post-stack-ready-batches.md`
 - `docs/superpowers/plans/2026-07-14-route-policy-data-contracts.md`
 
-These plans are dispatched only from `docs/work/index.md`. Three is the live
-queue floor, not a catalog cap; the catalog may retain every additional useful
-validated candidate. Internal slices, per-route steps, and milestone commits do
-not count as separate candidates or ready rows; batch coherence takes priority
+This reference list intentionally retains plans across ready and completed
+states. It is not a candidate pool and must never be used to infer status or
+redispatch work. Read `docs/work/index.md` for the only live status and the
+linked lane document for completion evidence. Three is the live queue floor,
+not a catalog cap; internal slices, per-route steps, and milestone commits do
+not count as separate candidates or ready rows. Batch coherence takes priority
 over requested counts and replenishment depth.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
@@ -170,11 +200,18 @@ batch and should not be recreated or promoted.
   connections, product-offer/coupon/history connections, and merchant-parent
   active-offer connections are complete. Owner-private community submission
   reads, public Relay node aliases, and category lookup/qualified-product
-  connections are complete. Public product/merchant slug lookups are also
-  complete; the remaining public opaque-key lookups, comparison evidence reads,
-  and authorized Relay node reads remain ready through the active plans above.
-  They are reviewer-sized domain outcomes; their set-based context, Dataloader,
-  and query-budget steps remain internal slices rather than separate queue rows.
+  connections are complete. Public product/merchant slug and opaque-key
+  lookups, comparison evidence reads, and authorized Relay node reads are also
+  complete. Bounded alert evaluation market reads is also complete: one
+  immutable product/listing fact snapshot now feeds the independent watch
+  transactions. Bounded comparison root GraphQL reads and bounded authorized
+  management GraphQL connections remain ready, with the latter grouping the
+  remaining owner and operator connection aliases. Bounded catalog and offer-
+  discovery root GraphQL reads groups the remaining public catalog, filter-
+  metadata, merchant-directory, and offer-discovery root aliases. These are
+  reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
+  fact, and query-budget steps remain internal slices rather than separate
+  queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
@@ -258,11 +295,14 @@ Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
-- 2026-07-20 through 2026-07-21 bounded GraphQL reads: merchant-offer
-  connections, owner-private community submissions, public Relay nodes,
-  category qualification and product pages, and public product/merchant slug
-  aliases. Their implementation plans are explicitly complete, and their lane
-  docs retain the query-budget and semantic-parity evidence.
+- 2026-07-20 through 2026-07-21 bounded GraphQL and comparison evidence reads:
+  merchant-offer connections, owner-private community submissions, public
+  Relay nodes, category qualification and product pages, public
+  product/merchant slug aliases, public opaque-key entry points, live
+  recommendations, immutable snapshot publication, authorized Relay nodes, and
+  alert evaluation market-fact reuse. Their implementation plans are explicitly
+  complete, and their lane docs retain the query-budget and semantic-parity
+  evidence.
 
 - 2026-07-20 cross-stack correctness: durable ingestion recurrence, alert
   lifecycle reliability, community content lifecycle, Relay cursor forward

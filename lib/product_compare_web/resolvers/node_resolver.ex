@@ -11,6 +11,7 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.{Brand, Product}
   alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
@@ -65,15 +66,11 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   end
 
   defp fetch_node(type, local_id, resolution) when type in @operator_types do
-    type
-    |> fetch_operator_node(local_id, resolution)
-    |> node_result()
+    fetch_operator_node(type, local_id, resolution)
   end
 
   defp fetch_node(type, local_id, resolution) when type in @owner_scoped_types do
-    type
-    |> fetch_owner_scoped_node(local_id, resolution)
-    |> node_result()
+    fetch_owner_scoped_node(type, local_id, resolution)
   end
 
   defp public_batch(:product), do: {Catalog, Product}
@@ -94,8 +91,15 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   defp fetch_public_node(:source_artifact, id), do: fetch_record(Specs.get_source_artifact(id))
 
   defp fetch_operator_node(type, id, resolution) do
-    with {:ok, _operator} <- Authorization.require_operator(resolution) do
-      fetch_record(fetch_affiliate_node(type, id))
+    with {:ok, %User{id: operator_id}} <- Authorization.require_operator(resolution) do
+      fetch_authorized_node(
+        {:operator, type, operator_id},
+        id,
+        resolution,
+        fn -> fetch_affiliate_node(type, id) end
+      )
+    else
+      error -> node_result(error)
     end
   end
 
@@ -105,24 +109,48 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   defp fetch_affiliate_node(:coupon, id), do: Affiliate.get_coupon(id)
 
   defp fetch_owner_scoped_node(
-         :saved_comparison_set,
+         type,
          entropy_id,
-         %{context: %{current_user: %User{} = user}}
-       ) do
-    fetch_record(Catalog.get_saved_comparison_set_for_user(user, entropy_id))
+         %{
+           context: %{current_user: %User{id: user_id} = user}
+         } = resolution
+       )
+       when type in @owner_scoped_types do
+    fetch_authorized_node(
+      {:owner, type, user_id},
+      entropy_id,
+      resolution,
+      fn -> fetch_owner_scoped_record(type, user, entropy_id) end
+    )
   end
 
-  defp fetch_owner_scoped_node(:saved_comparison_set, _entropy_id, _resolution),
-    do: fetch_record(nil)
+  defp fetch_owner_scoped_node(type, _entropy_id, _resolution)
+       when type in @owner_scoped_types,
+       do: node_result(:not_found)
 
-  defp fetch_owner_scoped_node(:api_token, token_entropy_id, %{
-         context: %{current_user: %User{} = user}
-       }) do
-    fetch_record(Accounts.get_api_token_for_user(user, token_entropy_id))
+  defp fetch_owner_scoped_record(:saved_comparison_set, user, entropy_id) do
+    Catalog.get_saved_comparison_set_for_user(user, entropy_id)
   end
 
-  defp fetch_owner_scoped_node(:api_token, _token_entropy_id, _resolution),
-    do: fetch_record(nil)
+  defp fetch_owner_scoped_record(:api_token, user, token_entropy_id) do
+    Accounts.get_api_token_for_user(user, token_entropy_id)
+  end
+
+  defp fetch_authorized_node(batch, item, %{context: %{loader: loader}}, _fallback) do
+    source = Loader.authorized_node_source()
+
+    loader
+    |> Dataloader.load(source, batch, item)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, batch, item)}
+    end)
+  end
+
+  defp fetch_authorized_node(_batch, _item, _resolution, fallback) do
+    fallback.()
+    |> fetch_record()
+    |> node_result()
+  end
 
   defp node_result({:ok, record}), do: {:ok, record}
   defp node_result(:not_found), do: {:ok, nil}

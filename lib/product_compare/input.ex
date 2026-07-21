@@ -46,6 +46,37 @@ defmodule ProductCompare.Input do
 
   def normalize_integer_id(_value), do: :error
 
+  @spec uuid_lookup_results([term()], ([Ecto.UUID.t()] -> [map()])) ::
+          %{optional(term()) => map() | nil}
+  def uuid_lookup_results(requested_ids, load_records)
+      when is_list(requested_ids) and is_function(load_records, 1) do
+    requested_ids = Enum.uniq(requested_ids)
+
+    validated_ids =
+      Enum.flat_map(requested_ids, fn requested_id ->
+        case Ecto.UUID.cast(requested_id) do
+          {:ok, validated_id} -> [{requested_id, validated_id}]
+          :error -> []
+        end
+      end)
+
+    records_by_entropy_id =
+      validated_ids
+      |> Enum.map(&elem(&1, 1))
+      |> Enum.uniq()
+      |> case do
+        [] -> %{}
+        entropy_ids -> entropy_ids |> load_records.() |> Map.new(&{&1.entropy_id, &1})
+      end
+
+    validated_by_requested_id = Map.new(validated_ids)
+
+    Map.new(requested_ids, fn requested_id ->
+      validated_id = Map.get(validated_by_requested_id, requested_id)
+      {requested_id, Map.get(records_by_entropy_id, validated_id)}
+    end)
+  end
+
   @spec clamp_limit(integer(), pos_integer(), pos_integer()) :: pos_integer()
   def clamp_limit(value, _default, max) when is_integer(value) and value > 0, do: min(value, max)
   def clamp_limit(_value, default, _max), do: default
