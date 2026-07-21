@@ -1150,18 +1150,16 @@ active-offer connections and owner-private community submission lists. They are
 serial with overlapping resolver/context rows but have distinct contracts and
 acceptance boundaries. Product evidence completed on
 `codex/bounded-product-evidence-reads`; its growing-parent regression now holds
-the tracked evidence query budget fixed at three and six product parents. Four
-complete rows remain ready.
+the tracked evidence query budget fixed at three and six product parents.
+Bounded community GraphQL connections are active on
+`codex/bounded-community-connections`; three complete rows remain ready.
 
 ## Active Work
 
-None.
+### Bounded Community GraphQL Connections
 
-## Ready Work
-
-### 1. Bounded Community GraphQL Connections
-
-Status: ready
+Status: active
+Owner: `codex/bounded-community-connections`
 Lane: Bounded community GraphQL connections
 Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
 Batch outcome: published review, question, and nested answer Relay connections
@@ -1206,7 +1204,9 @@ Exit condition: community connection edges, ordering, visibility, accepted-
 answer data, and page info match current behavior while review/question/answer
 SELECT counts stay fixed as parent counts grow.
 
-### 2. Bounded Product Offer GraphQL Connections
+## Ready Work
+
+### 1. Bounded Product Offer GraphQL Connections
 
 Status: ready
 Lane: Bounded product offer GraphQL connections
@@ -1258,7 +1258,7 @@ Exit condition: product-offer, coupon, and history edges, filters, ordering,
 validity, and page info match current behavior while relevant SELECT counts
 stay fixed as product and offer parent counts grow.
 
-### 3. Bounded Merchant Offer GraphQL Connections
+### 2. Bounded Merchant Offer GraphQL Connections
 
 Status: ready
 Lane: Bounded merchant offer GraphQL connections
@@ -1306,7 +1306,7 @@ Exit condition: merchant-offer edges, active filtering, order, cursors, page
 info, associations, and latest prices match current behavior while relevant
 SELECT counts stay fixed as merchant parent count grows.
 
-### 4. Bounded Viewer Community Submission Reads
+### 3. Bounded Viewer Community Submission Reads
 
 Status: ready
 Lane: Bounded viewer community submission reads

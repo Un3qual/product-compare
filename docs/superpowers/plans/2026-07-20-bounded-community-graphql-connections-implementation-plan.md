@@ -1,6 +1,6 @@
 # Bounded Community GraphQL Connections Implementation Plan
 
-**Status:** ready
+**Status:** active
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use
 > `superpowers:executing-plans` to implement this plan task-by-task. Steps use

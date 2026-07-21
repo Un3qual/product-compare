@@ -99,7 +99,8 @@ A fresh post-completion resolver audit found five coherent backend outcomes:
 bounded product evidence/SEO reads, bounded public community connections,
 bounded product-offer/coupon/history connections, bounded merchant-parent
 active-offer connections, and bounded owner-private community submission
-reads. Product evidence is complete; the other four remain ready.
+reads. Product evidence is complete, public community connections are active,
+and the other three remain ready.
 Specification-correction lists were not promoted because their claim trees are
 already preloaded. The formerly optional loaded-price copy, loaded-product
 picker filter, visible-page merchant filter, wildcard 404, and route metadata
@@ -141,11 +142,12 @@ batch and should not be recreated or promoted.
 ## Planned Follow-Up Groups
 
 - Current backend read-budget program: product evidence/SEO is complete. Public
-  community connections, product-offer/coupon/history connections, merchant-
-  parent active-offer connections, and owner-private community submission reads
-  remain ready through the four active 2026-07-20 plans above. They are
-  reviewer-sized domain outcomes; their set-based context, Dataloader, and
-  query-budget steps remain internal slices rather than separate queue rows.
+  community connections are active; product-offer/coupon/history connections,
+  merchant-parent active-offer connections, and owner-private community
+  submission reads remain ready through the four active 2026-07-20 plans
+  above. They are reviewer-sized domain outcomes; their set-based context,
+  Dataloader, and query-budget steps remain internal slices rather than
+  separate queue rows.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

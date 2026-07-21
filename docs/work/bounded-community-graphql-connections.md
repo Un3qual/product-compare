@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: `codex/bounded-community-connections`
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-20-bounded-community-graphql-connections-implementation-plan.md`
@@ -47,4 +48,3 @@ count.
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `git diff --check`
-
