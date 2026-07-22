@@ -69,28 +69,33 @@ behavior.
 
 - Snapshot Status remains **active** pending controller whole-batch review and
   queue closeout.
-- `ProductCompare.Discussions` is a 249-line stable public facade: it retains
+- `ProductCompare.Discussions` is a 252-line stable public facade: it retains
   all caller-facing contracts and delegates reads/query projection to
-  `Reads` (432 lines), raw thread/post/review CRUD and parent validation to
+  `Reads` (429 lines), raw thread/post/review CRUD and parent validation to
   `Crud` (190 lines), authenticated submission, ownership, idempotency,
-  reporting, and write-limit policy to `Submissions` (518 lines), and
-  answer acceptance plus operator moderation to `Moderation` (174 lines).
+  reporting, and write-limit policy to `Submissions` (483 lines), and
+  answer acceptance plus operator moderation to `Moderation` (176 lines).
 - A repository-wide search for direct `Reads`, `Crud`, `Submissions`, or
   `Moderation` references outside the facade and implementation directory
   found no production callers; the only result was this change's design-plan
   prose. Resolvers, SEO, and tests therefore continue through the facade.
-- The seven focused suites passed with **108 tests, 0 failures** (14.9s).
+- The seven focused suites passed with **108 tests, 0 failures** (10.9s).
   `mix typecheck`, `mix format --check-formatted`, and `git diff --check`
   each exited 0.
 - `mix work_queue.validate` first failed before startup in the sandbox because
   Mix.PubSub could not open its local TCP socket (`:eperm`); the identical
   command passed with the allowed escalation: `work queue valid: 3 ready
   rows`.
-- `mix ci` did **not** pass. It reran queue validation, formatting, and
-  typechecking successfully; Credo checked 303 source files / 3,520
-  mods-funs with no issues, but ExDNA reported 13 clones against the budget
-  of 6 and exited nonzero. Consequently `test --cover` (backend count and
-  coverage gate) and `frontend_check` (frontend Bun check) were not reached;
-  no counts or passing result are claimed for either. The ExDNA report includes
-  five discussion-directory clone groups, including shared answer-locking
-  logic in `Moderation` and `Submissions`.
+- The post-fix `mix ci` command exited 0. Its quality gate checked 303 source
+  files / 3,519 mods-funs with no Credo issues; ExDNA passed at **6/6** clones
+  and Dialyzer passed. The CI backend coverage stage passed **902 tests, 0
+  failures** in 27.9s at **83.77%** total coverage (69% threshold). The
+  frontend check passed Relay validation (51 reader, 50 normalization, and 50
+  operation documents), TypeScript, **105** Vitest files / **1,507** tests,
+  both Vite builds, and the client-bundle contract at 182,164 gzip bytes under
+  its 200,000-byte budget.
+- Observed non-failing output: backend tests emitted expected delivery-hook and
+  CJ-import warning-path logs; Vite advised that a 596,440-byte raw initial
+  client chunk exceeds its 500 kB advisory threshold. Historical diagnostic:
+  the pre-fix ExDNA run was 13/6; the approved consolidation resolved it to
+  the passing 6/6 result above.
