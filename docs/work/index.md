@@ -1384,8 +1384,10 @@ Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
 facing facade while association, parent-collection, and root-request source
 construction and callbacks live in focused modules with unchanged source keys,
 values, errors, authorization boundaries, timestamps, and query budgets.
-Next action: extract the loader's two Ecto and eleven current KV source domains by
-responsibility without changing resolver APIs or GraphQL behavior.
+Next action: extract the loader's two Ecto and twelve current KV source domains
+by responsibility without changing resolver APIs or GraphQL behavior.
+`RootSources` owns the completed discovery-root constructor and callback while
+`Loader` keeps and pairs its stable discovery-root key constant.
 Owned paths:
 
 - `lib/product_compare_web/graphql/loader.ex`
@@ -1474,7 +1476,7 @@ Prerequisites:
   must remain byte-for-byte unchanged.
 - Root query/mutation operations, `context/1`, and `plugins/0` remain in the
   schema facade; only declarations move.
-- This row is path-disjoint from the active discovery-root work and the ready
+- This row is path-disjoint from the completed discovery-root work and the ready
   request-loader decomposition.
 
 Verification:
