@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
@@ -8,6 +10,39 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   describe "specification correction GraphQL workflow" do
+    test "moderation queue rejects non-operators before reading corrections", %{conn: conn} do
+      {anonymous_response, anonymous_queries} =
+        capture_select_queries(fn -> graphql(conn, moderation_queue_query(), %{}) end)
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "unauthorized",
+                   "path" => ["specificationCorrectionModerationQueue"],
+                   "extensions" => %{"code" => "UNAUTHENTICATED"}
+                 }
+               ]
+             } = anonymous_response
+
+      member_conn = member_conn(conn)
+
+      {forbidden_response, forbidden_queries} =
+        capture_select_queries(fn -> graphql(member_conn, moderation_queue_query(), %{}) end)
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "forbidden",
+                   "path" => ["specificationCorrectionModerationQueue"],
+                   "extensions" => %{"code" => "FORBIDDEN"}
+                 }
+               ]
+             } = forbidden_response
+
+      assert correction_select_count(anonymous_queries) == 0
+      assert correction_select_count(forbidden_queries) == 0
+    end
+
     test "requires authentication and validates typed IDs without writing", %{conn: conn} do
       product = SpecsFixtures.product_fixture()
       attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
@@ -228,6 +263,10 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp correction_select_count(queries) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "specification_corrections")))
   end
 
   defp propose_mutation do

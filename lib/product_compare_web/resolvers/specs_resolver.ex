@@ -48,7 +48,7 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
     filters = %{status: Input.fetch_value(args, :status)}
 
     with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_owner_connection(
+      load_authorized_connection(
         loader,
         {:owner, :specification_corrections, user.id, authorization_role(user), filters,
          connection_args}
@@ -67,6 +67,32 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
 
   @spec specification_correction_moderation_queue(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, term()}
+  def specification_correction_moderation_queue(
+        _parent,
+        args,
+        %{
+          context: %{loader: %Dataloader{} = loader}
+        } = resolution
+      ) do
+    connection_args = Input.connection_args(args)
+    filters = %{status: Input.fetch_value(args, :status, :pending)}
+
+    with {:ok, operator} <- Authorization.require_operator(resolution),
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      load_authorized_connection(
+        loader,
+        {:operator, :specification_correction_moderation_queue, operator.id, :operator, filters,
+         connection_args}
+      )
+    else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
   def specification_correction_moderation_queue(_parent, args, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution) do
       Specs.list_correction_moderation_query(status: Input.fetch_value(args, :status, :pending))
@@ -186,7 +212,7 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
     end
   end
 
-  defp load_owner_connection(loader, batch_key) do
+  defp load_authorized_connection(loader, batch_key) do
     source = Loader.authorized_connection_source()
 
     loader

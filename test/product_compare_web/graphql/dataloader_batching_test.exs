@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Catalog,
     ComparisonSnapshots,
     Discussions,
+    Ingestion,
     Pricing,
     Specs
   }
@@ -28,6 +29,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @category_tables ~w(taxons products)a
   @comparison_root_tables ~w(products product_attribute_current merchant_products price_points)a
   @owner_management_collections ~w(specification_corrections price_watches alert_events api_tokens saved_comparison_sets comparison_snapshots)a
+  @operator_management_collections ~w(specification_correction_moderation_queue merchant_feed_candidates)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -249,6 +251,64 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
         two_budget = owner_management_connection_query_budget(two_queries, collection)
         four_budget = owner_management_connection_query_budget(four_queries, collection)
+
+        assert {two_budget, four_budget} == {1, two_budget}
+      end
+    end
+
+    for collection <- @operator_management_collections do
+      test "#{collection} operator connection aliases preserve values, filters, pagination, authorization, and fixed SELECT budgets as aliases grow",
+           %{conn: conn} do
+        collection = unquote(collection)
+        operator = AccountsFixtures.operator_fixture()
+        prefix = "operator-#{collection}-#{System.unique_integer([:positive])}"
+        expected_node = operator_management_records(collection, operator, prefix)
+
+        operator_conn =
+          conn
+          |> log_in_user(operator)
+          |> put_req_header_same_origin()
+
+        {two_response, two_queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_connection_values(two_response, collection, 2, expected_node)
+
+        {four_response, four_queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_connection_query(collection, 4), %{})
+          end)
+
+        assert_operator_management_connection_values(four_response, collection, 4, expected_node)
+
+        member = AccountsFixtures.user_fixture()
+
+        member_conn =
+          conn
+          |> log_in_user(member)
+          |> put_req_header_same_origin()
+
+        {forbidden_response, forbidden_queries} =
+          capture_select_queries(fn ->
+            graphql(member_conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_forbidden(forbidden_response, collection, 2)
+
+        {anonymous_response, anonymous_queries} =
+          capture_select_queries(fn ->
+            graphql(conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_unauthenticated(anonymous_response, collection, 2)
+
+        assert operator_management_connection_query_budget(forbidden_queries, collection) == 0
+        assert operator_management_connection_query_budget(anonymous_queries, collection) == 0
+
+        two_budget = operator_management_connection_query_budget(two_queries, collection)
+        four_budget = operator_management_connection_query_budget(four_queries, collection)
 
         assert {two_budget, four_budget} == {1, two_budget}
       end
@@ -956,6 +1016,42 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp owner_management_node_selection(:comparison_snapshots),
     do: "id title sharePath products { id name }"
 
+  defp operator_management_connection_query(collection, alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        #{operator_management_alias(collection, index)}: #{operator_management_field(collection)} {
+          edges {
+            cursor
+            node { #{operator_management_node_selection(collection)} }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OperatorManagementConnections {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_management_alias(collection, index),
+    do: "#{collection |> Atom.to_string() |> Absinthe.Utils.camelize(lower: true)}#{index}"
+
+  defp operator_management_field(:specification_correction_moderation_queue),
+    do: "specificationCorrectionModerationQueue(first: 1, status: PENDING)"
+
+  defp operator_management_field(:merchant_feed_candidates),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_node_selection(:specification_correction_moderation_queue),
+    do: "id productId attributeId status valueText moderationNote"
+
+  defp operator_management_node_selection(:merchant_feed_candidates),
+    do: "id providerFeedId advertiserName productCount reviewStatus reviewNote"
+
   defp authorized_node_batch_query(records) do
     selections =
       records
@@ -1387,6 +1483,16 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.count(queries, &query_targets_table?(&1, table))
   end
 
+  defp operator_management_connection_query_budget(queries, collection) do
+    table =
+      case collection do
+        :specification_correction_moderation_queue -> :specification_corrections
+        :merchant_feed_candidates -> :merchant_feed_candidates
+      end
+
+    Enum.count(queries, &query_targets_table?(&1, table))
+  end
+
   defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
     assert %{"data" => data} = response
     refute Map.has_key?(response, "errors")
@@ -1423,6 +1529,54 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     assert errors != []
     assert Enum.all?(errors, &(&1["message"] == "unauthorized"))
+  end
+
+  defp assert_operator_management_connection_values(response, collection, alias_count, expected) do
+    cursor = Base.encode64("cursor:0")
+
+    expected_connection = %{
+      "edges" => [%{"cursor" => cursor, "node" => expected}],
+      "pageInfo" => %{
+        "hasNextPage" => true,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor,
+        "endCursor" => cursor
+      }
+    }
+
+    expected_data =
+      Map.new(1..alias_count, fn index ->
+        {operator_management_alias(collection, index), expected_connection}
+      end)
+
+    assert response == %{"data" => expected_data}
+  end
+
+  defp assert_operator_management_forbidden(response, collection, alias_count) do
+    assert_operator_management_error(response, collection, alias_count, "FORBIDDEN")
+  end
+
+  defp assert_operator_management_unauthenticated(response, collection, alias_count) do
+    assert_operator_management_error(response, collection, alias_count, "UNAUTHENTICATED")
+  end
+
+  defp assert_operator_management_error(response, collection, alias_count, code) do
+    alias_names = MapSet.new(1..alias_count, &operator_management_alias(collection, &1))
+
+    assert %{"errors" => errors} = response
+    assert Enum.all?(errors, &(get_in(&1, ["extensions", "code"]) == code))
+
+    case collection do
+      :specification_correction_moderation_queue ->
+        assert [%{"path" => [alias_name]}] = errors
+        assert MapSet.member?(alias_names, alias_name)
+        assert Map.get(response, "data") in [nil, %{}]
+
+      :merchant_feed_candidates ->
+        assert length(errors) == alias_count
+        assert MapSet.new(errors, &get_in(&1, ["path", Access.at(0)])) == alias_names
+        assert response["data"] == Map.new(alias_names, &{&1, nil})
+    end
   end
 
   defp assert_comparison_root_values(response, records) do
@@ -3044,6 +3198,115 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         %{"id" => relay_id(:product, second.id), "name" => second.name}
       ]
     }
+  end
+
+  defp operator_management_records(:specification_correction_moderation_queue, operator, prefix) do
+    owner = AccountsFixtures.user_fixture()
+
+    rejected = specification_correction_record(owner, "#{prefix}-rejected", "Excluded value")
+    {:ok, _rejected} = Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+    first = specification_correction_record(owner, "#{prefix}-first", "First pending value")
+    _second = specification_correction_record(owner, "#{prefix}-second", "Second pending value")
+
+    %{
+      "id" => relay_id(:specification_correction, first.id),
+      "productId" => relay_id(:product, first.product_id),
+      "attributeId" => relay_id(:attribute, first.attribute_id),
+      "status" => "PENDING",
+      "valueText" => "First pending value",
+      "moderationNote" => nil
+    }
+  end
+
+  defp operator_management_records(:merchant_feed_candidates, _operator, prefix) do
+    source =
+      %Source{}
+      |> Source.changeset(%{
+        kind: "affiliate_feed",
+        name: "#{prefix} Feed",
+        domain: "#{prefix}.example.com"
+      })
+      |> Repo.insert!()
+
+    _excluded =
+      merchant_feed_candidate_record(source, "#{prefix}-excluded", %{
+        advertiser_name: "Excluded pending candidate",
+        product_count: 500,
+        review_status: "pending"
+      })
+
+    first =
+      merchant_feed_candidate_record(source, "#{prefix}-first", %{
+        advertiser_name: "First shortlisted candidate",
+        product_count: 200,
+        review_status: "shortlisted"
+      })
+
+    _second =
+      merchant_feed_candidate_record(source, "#{prefix}-second", %{
+        advertiser_name: "Second shortlisted candidate",
+        product_count: 100,
+        review_status: "shortlisted"
+      })
+
+    %{
+      "id" => relay_id(:merchant_feed_candidate, first.id),
+      "providerFeedId" => "#{prefix}-first",
+      "advertiserName" => "First shortlisted candidate",
+      "productCount" => 200,
+      "reviewStatus" => "SHORTLISTED",
+      "reviewNote" => nil
+    }
+  end
+
+  defp specification_correction_record(owner, prefix, value) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Product"})
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: canonical_slug("#{prefix}-attribute"),
+        data_type: :text,
+        display_name: "#{prefix} Attribute"
+      })
+
+    {:ok, correction} =
+      Specs.propose_correction(
+        product.id,
+        attribute.id,
+        owner.id,
+        %{value_text: value},
+        %{
+          reason: "Operator queue batching regression evidence.",
+          explanation: "The regression fixture includes reviewable source context."
+        }
+      )
+
+    correction
+  end
+
+  defp merchant_feed_candidate_record(source, provider_feed_id, attrs) do
+    defaults = %{
+      advertiser_country: "US",
+      advertiser_id: provider_feed_id,
+      advertiser_name: provider_feed_id,
+      currency: "USD",
+      feed_name: provider_feed_id,
+      language: "EN",
+      last_seen_at: ~U[2026-07-21 12:00:00Z],
+      product_count: 1,
+      provider: "cj",
+      provider_feed_id: provider_feed_id,
+      provider_last_updated_at: ~U[2026-07-21 12:00:00Z],
+      raw_metadata: %{},
+      review_status: "pending",
+      source_feed_type: "SHOPPING"
+    }
+
+    {:ok, candidate} =
+      Ingestion.upsert_merchant_feed_candidate(source, Map.merge(defaults, attrs))
+
+    candidate
   end
 
   defp canonical_slug(value) do

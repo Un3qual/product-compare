@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -112,6 +114,11 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates rejects unauthorized requests", %{conn: conn} do
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+        end)
+
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
                "errors" => [
@@ -122,17 +129,25 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                  }
                  | _
                ]
-             } = graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+             } = response
+
+      assert merchant_feed_candidate_select_count(queries) == 0
     end
 
     test "merchantFeedCandidates rejects authenticated members", %{conn: conn} do
       conn = member_conn(conn)
 
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+        end)
+
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
                "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
-             } =
-               graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+             } = response
+
+      assert merchant_feed_candidate_select_count(queries) == 0
     end
 
     test "merchantFeedCandidate does not expose raw metadata fields", %{conn: conn} do
@@ -626,5 +641,9 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp merchant_feed_candidate_select_count(queries) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "merchant_feed_candidates")))
   end
 end
