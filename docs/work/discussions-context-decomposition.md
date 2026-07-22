@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
@@ -10,11 +10,11 @@
   discussion suites, community GraphQL, SEO qualification, and Dataloader
   batching.
 
-## Target Outcome
+## Batch Outcome
 
-`ProductCompare.Discussions` will remain the stable application-facing context
+`ProductCompare.Discussions` remains the stable application-facing context,
 while read/query, legacy CRUD, submission/owner-policy, and moderation
-implementations move into focused internal modules with unchanged public APIs,
+implementations live in focused internal modules with unchanged public APIs,
 queries, locks, transactions, privacy, limits, idempotency, errors, and GraphQL
 behavior.
 
@@ -67,8 +67,8 @@ behavior.
 
 ## Final Contract And Lane Gate (2026-07-22)
 
-- Snapshot Status remains **active** pending controller whole-batch review and
-  queue closeout.
+- Snapshot Status is **complete** after clean task and whole-batch review; the
+  active queue row is closed while three ready successors remain.
 - `ProductCompare.Discussions` is a 252-line stable public facade: it retains
   all caller-facing contracts and delegates reads/query projection to
   `Reads` (429 lines), raw thread/post/review CRUD and parent validation to

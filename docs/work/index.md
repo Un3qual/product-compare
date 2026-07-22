@@ -1382,68 +1382,18 @@ reconciliation, and merchant-feed-candidate GraphQL characterization gate
 passed 60 tests. The Discussions claim therefore leaves three complete ready
 rows without reopening deferred provider, dashboard, or operator work.
 
+Discussions Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions` is now a 252-line stable public facade;
+`Reads`, `Crud`, `Submissions`, and `Moderation` own the four planned
+responsibilities without caller bypasses. The exact focused gate passed 108
+tests, and the final `mix ci` passed 902 backend tests at 83.77% coverage,
+1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract. The three ready
+successors remain dispatchable.
+
 ## Active Work
 
-### 1. Discussions Context Decomposition
-
-Status: active
-Lane: Discussions context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Discussions` remains the stable caller-facing
-context while read/query, legacy CRUD, authenticated submission/owner policy,
-and operator moderation implementations live in focused internal modules with
-unchanged public APIs, data behavior, privacy, limits, errors, and GraphQL
-semantics.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct context, SEO, GraphQL, privacy, and fixed-query-
-budget parity.
-Owned paths:
-
-- `lib/product_compare/discussions.ex`
-- `lib/product_compare/discussions/reads.ex`
-- `lib/product_compare/discussions/crud.ex`
-- `lib/product_compare/discussions/submissions.ex`
-- `lib/product_compare/discussions/moderation.ex`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare/discussions/product_review_immutability_test.exs`
-- `test/product_compare/discussions/thread_crud_test.exs`
-- `test/product_compare/discussions/thread_post_validation_test.exs`
-- `test/product_compare/seo_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/discussions-context-decomposition.md`
-
-Internal slices:
-
-- Read and query ownership extraction.
-- Legacy CRUD and parent-validation ownership extraction.
-- Submission, owner lifecycle, idempotency, reporting, and rate-policy
-  extraction.
-- Answer-acceptance and operator-moderation ownership extraction.
-
-Prerequisites:
-
-- Existing `ProductCompare.Discussions` public functions, arities, defaults,
-  typespecs, values, and errors remain authoritative.
-- Preserve query filters/order/pagination, locks, transactions, privacy,
-  moderation transitions, accepted-answer cleanup, write limits, and
-  idempotency replay/conflict behavior.
-- Keep resolvers, SEO, and other contexts dependent only on the facade; do not
-  change schemas, migrations, GraphQL SDL, frontend behavior, or product policy.
-
-Verification:
-
-- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare/discussions/product_review_immutability_test.exs test/product_compare/discussions/thread_crud_test.exs test/product_compare/discussions/thread_post_validation_test.exs test/product_compare/seo_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused internal owner, all seven
-characterization suites and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 
