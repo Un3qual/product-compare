@@ -65,7 +65,7 @@ Dataloader behavior, authorization, errors, and public GraphQL values.
 - The five notation modules own all 151 declarations: Common 4 (58 lines),
   Accounts 10 (78 lines), Commerce 50 (514 lines), Catalog 37 (458 lines),
   and Trust 50 (485 lines).
-- The facade has 29 domain selective `import_types` entries (30 total including
+- The facade has 29 domain-selective `import_types` entries (30 total including
   `Absinthe.Type.Custom`). Their sequence deliberately preserves the reverse
   of the original contiguous ownership runs: Absinthe accumulates imported
   types globally, so this atomic ordering retains the monolith's effective

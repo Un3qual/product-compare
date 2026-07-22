@@ -257,15 +257,16 @@ defmodule ProductCompare.Specs.Claims do
     |> Base.encode16(case: :lower)
   end
 
-  defp canonical_claim_value(value) when is_map(value) do
+  defp canonical_claim_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)
+  defp canonical_claim_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
+  defp canonical_claim_value(%Date{} = value), do: Date.to_iso8601(value)
+
+  defp canonical_claim_value(value) when is_map(value) and not is_struct(value) do
     value
     |> Enum.map(fn {key, nested} -> [to_string(key), canonical_claim_value(nested)] end)
     |> Enum.sort_by(&List.first/1)
   end
 
-  defp canonical_claim_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)
-  defp canonical_claim_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp canonical_claim_value(%Date{} = value), do: Date.to_iso8601(value)
   defp canonical_claim_value(value), do: value
 
   defp insert_or_fetch_imported_claim(attrs, fingerprint) do

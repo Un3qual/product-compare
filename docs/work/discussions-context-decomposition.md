@@ -18,7 +18,10 @@ implementations live in focused internal modules with unchanged public APIs,
 queries, locks, transactions, privacy, limits, idempotency, errors, and GraphQL
 behavior.
 
-## Ready Evidence
+## Pre-extraction Baseline
+
+The following measurements are the historical baseline recorded before the
+implementation was split into focused internal modules.
 
 - `lib/product_compare/discussions.ex` is 1,285 lines and owns at least four
   independently describable responsibilities: read/query projection, raw

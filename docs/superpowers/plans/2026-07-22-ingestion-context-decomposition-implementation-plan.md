@@ -185,8 +185,17 @@ mix test test/product_compare/ingestion/ingestion_test.exs \
 
 - [ ] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, `mix ci`, and `git diff --check`.
-- [ ] Confirm `rg 'ProductCompare.Ingestion.(Runs|FeedCandidates|MerchantIdentities|ListingPersistence)' lib test`
-  finds no caller outside the facade and the four internal modules.
+- [ ] Confirm the following command finds no caller outside the facade and the
+  four internal modules (the expected result is empty):
+
+```bash
+rg -n \
+  --glob '!lib/product_compare/ingestion.ex' \
+  --glob '!lib/product_compare/ingestion/**' \
+  'ProductCompare\.Ingestion\.(Runs|FeedCandidates|MerchantIdentities|ListingPersistence)' \
+  lib test
+```
+
 - [ ] Record final module responsibilities, facade size, exact test counts, and
   gate results in the lane doc.
 - [ ] Include the lane evidence in the final code/test milestone commit.

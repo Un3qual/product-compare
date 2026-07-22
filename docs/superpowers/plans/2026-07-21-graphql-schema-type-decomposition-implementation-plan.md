@@ -74,6 +74,7 @@ therefore required to preserve the byte-for-byte SDL.
 
   assert File.read!(schema_path) == Absinthe.Schema.to_sdl(ProductCompareWeb.Schema)
   ```
+
 - [ ] Create the five notation modules with only the aliases and `dataloader/2`
   import required by the declarations they own:
 

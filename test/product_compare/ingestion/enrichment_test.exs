@@ -4,6 +4,7 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
   import ProductCompare.Fixtures.CJIngestionFixtures
 
   alias ProductCompare.Catalog
+  alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.MediaObservation
   alias ProductCompare.Ingestion.NormalizedListing
@@ -117,6 +118,83 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
     assert candidate.display_path == "Footwear > Running shoes"
     assert candidate.normalized_path == "footwear > running shoes"
     assert candidate.observation_count == 2
+  end
+
+  test "persists and replays numeric, date, and timestamp specification observations" do
+    source = source_fixture()
+    dimension = SpecsFixtures.dimension_fixture(%{code: "time"})
+
+    unit =
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: "hz",
+        symbol: "Hz"
+      })
+
+    refresh_rate =
+      SpecsFixtures.attribute_fixture(%{
+        code: "refresh-rate",
+        data_type: :numeric,
+        dimension_id: dimension.id
+      })
+
+    release_date =
+      SpecsFixtures.attribute_fixture(%{code: "release-date", data_type: :date})
+
+    measured_at =
+      SpecsFixtures.attribute_fixture(%{code: "measured-at", data_type: :timestamp})
+
+    listing =
+      listing(%{
+        specifications: [
+          %SpecificationObservation{
+            attribute_code: refresh_rate.code,
+            data_type: :numeric,
+            value: Decimal.new("144"),
+            unit_code: unit.code
+          },
+          %SpecificationObservation{
+            attribute_code: release_date.code,
+            data_type: :date,
+            value: ~D[2026-07-22]
+          },
+          %SpecificationObservation{
+            attribute_code: measured_at.code,
+            data_type: :timestamp,
+            value: ~U[2026-07-22 18:30:00Z]
+          }
+        ]
+      })
+
+    assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
+    assert persisted.specifications == %{accepted: 0, persisted: 3, rejected: 0, replayed: 0}
+
+    assert %ProductAttributeClaim{value_num: value_num, unit_id: unit_id} =
+             Repo.get_by!(ProductAttributeClaim,
+               product_id: persisted.product.id,
+               attribute_id: refresh_rate.id
+             )
+
+    assert Decimal.equal?(value_num, Decimal.new("144"))
+    assert unit_id == unit.id
+
+    assert %ProductAttributeClaim{value_date: ~D[2026-07-22]} =
+             Repo.get_by!(ProductAttributeClaim,
+               product_id: persisted.product.id,
+               attribute_id: release_date.id
+             )
+
+    assert %ProductAttributeClaim{value_ts: value_ts} =
+             Repo.get_by!(ProductAttributeClaim,
+               product_id: persisted.product.id,
+               attribute_id: measured_at.id
+             )
+
+    assert DateTime.compare(value_ts, ~U[2026-07-22 18:30:00Z]) == :eq
+
+    assert {:ok, replayed} = Ingestion.persist_normalized_listing(source, listing)
+    assert replayed.specifications == %{accepted: 0, persisted: 0, rejected: 0, replayed: 3}
+    assert Repo.aggregate(ProductAttributeClaim, :count, :id) == 3
   end
 
   test "exact category aliases assign a type while provider copy only fills missing fields" do

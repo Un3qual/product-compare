@@ -79,4 +79,4 @@ The following checks were run on 2026-07-22:
   SSR builds passed; frontend Vitest passed 105 files and 1,507 tests; the
   client bundle contract passed at 182,164 gzip bytes against its 200,000-byte
   budget.
-- `git diff --check` — exit 0 before the lane-record edit.
+- `git diff --check` — exit 0 after the final lane-record edit.
