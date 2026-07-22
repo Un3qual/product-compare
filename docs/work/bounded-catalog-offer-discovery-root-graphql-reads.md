@@ -2,14 +2,15 @@
 
 ## Snapshot
 
-- Status: verification-complete-pending-closeout
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 - Last verified: 2026-07-21 against the committed catalog and offer discovery
   root behavior, request loader, connection helper, and 95 passing focused
-  tests. Final whole-batch review, full CI, and coordinator queue removal are
-  still required before this lane is done.
+  tests. Coordinator closeout has recorded the completed lane; final docs
+  re-review and exact-head post-closeout CI remain coordinator verification,
+  not lane implementation blockers.
 - Owner: `codex/bounded-comparison-root-reads`
 
 ## Batch Outcome
@@ -33,6 +34,10 @@ pagination, validation, nested values, or schema behavior.
 | `merchants` | Four identical aliases | 4 `merchants` SELECTs | 1 `merchants` SELECT |
 | `merchantProducts` | Two identical aliases | 2 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
 | `merchantProducts` | Four identical aliases | 4 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
+
+The independently established budgets are products 2/4 to 1/1,
+`productFilterMetadata` 6/12 to 3/3, merchants 2/4 to 1/1, and
+`merchantProducts` 2/4 to 1/1.
 
 Products-only and metadata-only GraphQL requests establish these individual
 budgets directly. Mutation verification temporarily restored each root's direct
@@ -83,3 +88,12 @@ the budget assertions. The loader-backed production bytes were then restored.
   attempt could not open Mix.PubSub's local socket (`:eperm`); the
   permission-enabled retry passed.
 - `git diff --check` — passed.
+- Pre-closeout full `mix ci` — exit 0: 895 backend tests and 1,507 frontend
+  tests.
+- ExDNA unchanged gate — passed.
+
+## Closeout
+
+This lane is complete. The exact focused four-suite gate passed 95 tests with
+0 failures. Final docs re-review and exact-head post-closeout CI are coordinator
+verification after the implementation closeout; they are not lane blockers.

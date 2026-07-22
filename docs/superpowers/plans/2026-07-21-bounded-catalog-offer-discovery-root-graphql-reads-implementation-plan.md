@@ -48,14 +48,14 @@ loads use `{:products, normalized_filters, connection_args}` or
 `{:product_filter_metadata, normalized_filters}` as the batch key and `:root`
 as the request value.
 
-- [ ] Add a growing-alias regression that repeats identical `products` and
+- [x] Add a growing-alias regression that repeats identical `products` and
   `productFilterMetadata` selections two and four times.
-- [ ] Assert exact product edges, page info, filter metadata, selected state,
+- [x] Assert exact product edges, page info, filter metadata, selected state,
   and validation behavior before comparing SELECT budgets.
-- [ ] Run
+- [x] Run
   `mix test test/product_compare_web/graphql/dataloader_batching_test.exs`
   and confirm RED because every alias currently executes its reads directly.
-- [ ] Register `Loader.discovery_root_source/0` and implement the catalog batch
+- [x] Register `Loader.discovery_root_source/0` and implement the catalog batch
   keys by applying the existing normalized filters and connection projection:
 
   ```elixir
@@ -68,11 +68,11 @@ as the request value.
   end)
   ```
 
-- [ ] Route loader-backed catalog roots through the source after validation and
+- [x] Route loader-backed catalog roots through the source after validation and
   retain the existing direct query and metadata calls as fallback clauses.
-- [ ] Re-run the batching, catalog-query, and catalog-filter-metadata suites and
+- [x] Re-run the batching, catalog-query, and catalog-filter-metadata suites and
   confirm the catalog slice is green.
-- [ ] Commit with message `perf: reuse catalog discovery root reads`.
+- [x] Commit with message `perf: reuse catalog discovery root reads`.
 
 ### Task 2: Merchant And Offer Root Read Reuse
 
@@ -87,13 +87,13 @@ as the request value.
 loads use `{:merchant_products, normalized_input, connection_args}`. The same
 source returns the existing Relay connection maps.
 
-- [ ] Extend the growing-alias regression with identical `merchants` and
+- [x] Extend the growing-alias regression with identical `merchants` and
   top-level `merchantProducts` selections at two and four aliases.
-- [ ] Assert exact edges, page info, filters, nested values, and invalid
+- [x] Assert exact edges, page info, filters, nested values, and invalid
   ID/cursor/page-size errors before query-budget assertions.
-- [ ] Run the regression and confirm RED because both root resolvers call
+- [x] Run the regression and confirm RED because both root resolvers call
   `Connection.from_query_result/3` once per alias.
-- [ ] Route loader-backed merchant and offer roots through the discovery source
+- [x] Route loader-backed merchant and offer roots through the discovery source
   after the existing input normalization:
 
   ```elixir
@@ -106,11 +106,11 @@ source returns the existing Relay connection maps.
   end)
   ```
 
-- [ ] Preserve the direct resolver clauses and prove identical two- and
+- [x] Preserve the direct resolver clauses and prove identical two- and
   four-alias SELECT budgets while distinct arguments stay isolated.
-- [ ] Run the batching and pricing-query suites and confirm the full discovery
+- [x] Run the batching and pricing-query suites and confirm the full discovery
   batch is green.
-- [ ] Commit with message `perf: reuse offer discovery root reads`.
+- [x] Commit with message `perf: reuse offer discovery root reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -121,11 +121,11 @@ source returns the existing Relay connection maps.
 **Interfaces:** The lane doc records the exact before/after budgets and the
 semantic coverage that proves the optimization did not change the public API.
 
-- [ ] Record exact before/after SELECT counts for all four root fields.
-- [ ] Run `mix test test/product_compare_web/graphql/catalog_queries_test.exs
+- [x] Record exact before/after SELECT counts for all four root fields.
+- [x] Run `mix test test/product_compare_web/graphql/catalog_queries_test.exs
   test/product_compare_web/graphql/catalog_filter_metadata_test.exs
   test/product_compare_web/graphql/pricing_queries_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.

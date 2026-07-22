@@ -1312,58 +1312,16 @@ construction, role derivation, validation order, loader scheduling, and result
 projection. The unchanged ExDNA budget is green at 6/6, and all 84 focused
 management tests remain green.
 
+Bounded Catalog And Offer Discovery Root GraphQL Reads is complete. Identical
+aliases now hold products at 2/4 to 1/1 SELECTs, product-filter metadata at
+6/12 to 3/3, merchants at 2/4 to 1/1, and merchant products at 2/4 to 1/1;
+the exact focused four-suite gate passed 95 tests with 0 failures. Pre-closeout
+full `mix ci` exited 0 with 895 backend tests and 1,507 frontend tests, and the
+ExDNA unchanged gate passed. The three ready successors remain dispatchable.
+
 ## Active Work
 
-### Bounded Catalog And Offer Discovery Root GraphQL Reads
-
-Status: active
-Owner: `codex/bounded-comparison-root-reads`
-Lane: Bounded catalog and offer discovery root GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
-Batch outcome: identical catalog, filter-metadata, merchant-directory, and
-offer-discovery root aliases reuse one database read per normalized field,
-filters, and page within a GraphQL request without changing public values,
-filtering, ordering, pagination, validation, nested values, or schema behavior.
-Next action: route the four discovery roots through one normalized request
-source and prove semantic plus fixed-budget parity as identical aliases grow.
-Owned paths:
-
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-catalog-offer-discovery-root-graphql-reads.md`
-
-Internal slices:
-
-- Catalog connection and filter-metadata request reuse.
-- Merchant-directory and top-level offer connection request reuse.
-- Growing-alias query budgets plus filter, pagination, validation, and nested-
-  value parity.
-
-Prerequisites:
-
-- Existing filter normalization, query ordering, connection projection, and
-  public schema remain authoritative.
-- Every request key includes field kind, normalized filters, and Relay
-  connection arguments.
-- This row executes serially with other Loader ownership and is independent of
-  alert evaluation and comparison recommendation work.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: identical two- and four-alias sets preserve exact catalog,
-metadata, merchant, and offer values plus validation behavior while each
-field's direct SELECT budget remains fixed.
+None.
 
 ## Ready Work
 

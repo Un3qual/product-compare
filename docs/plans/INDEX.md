@@ -153,10 +153,12 @@ work were also verified as already implemented and are not candidate work.
 A tenth claim-floor audit promoted bounded catalog and offer-discovery root
 GraphQL reads after verifying that `products`, `productFilterMetadata`,
 `merchants`, and top-level `merchantProducts` still repeat identical public
-discovery reads per alias. Catalog filters and metadata, merchant-directory
-pagination, offer filters, nested values, and growing-alias budgets remain
-internal slices of one discovery-entry acceptance boundary. Their three
-focused suites pass 51 tests.
+discovery reads per alias. That outcome is complete: its independent two/four
+alias budgets are products 2/4 to 1/1, filter metadata 6/12 to 3/3, merchants
+2/4 to 1/1, and merchant products 2/4 to 1/1 SELECTs. Its exact focused four
+suite gate passed 95 tests with 0 failures. Catalog filters and metadata,
+merchant-directory pagination, offer filters, nested values, and growing-alias
+budgets remained internal slices of one discovery-entry acceptance boundary.
 An eleventh claim-floor audit promoted GraphQL schema type decomposition after
 verifying that the only project schema module is 2,004 lines and combines root
 runtime behavior with 151 type, input, enum, and interface declarations. The
@@ -216,9 +218,9 @@ batch and should not be recreated or promoted.
   transactions. Bounded comparison root GraphQL reads is complete. Bounded
   authorized management GraphQL connections is complete, with six owner and
   two operator connection aliases sharing authorization-keyed request reads.
-  Bounded catalog and offer-
-  discovery root GraphQL reads groups the remaining public catalog, filter-
-  metadata, merchant-directory, and offer-discovery root aliases. Bounded
+  Bounded catalog and offer-discovery root GraphQL reads is complete: products
+  2/4 to 1/1, filter metadata 6/12 to 3/3, merchants 2/4 to 1/1, and merchant
+  products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
   operator reporting root GraphQL reads groups the remaining top-level active-
   coupon and revenue-summary aliases behind one authorization-keyed request
   source. GraphQL request loader decomposition then preserves the facade and
