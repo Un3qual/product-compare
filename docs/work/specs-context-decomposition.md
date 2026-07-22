@@ -2,16 +2,17 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 at `1d45e009` against the live Specs facade,
-  five direct consumer characterization suites, and the full CI gate.
+- Last verified: 2026-07-22 at implementation head `9bc9f650` against the live
+  Specs facade, five direct consumer characterization suites, and the full CI
+  gate.
 
-## Target Outcome
+## Batch Outcome
 
-`ProductCompare.Specs` will remain the stable caller-facing context while
+`ProductCompare.Specs` remains the stable caller-facing context while
 definition upserts, typed-value normalization, claim/import workflows,
 correction/moderation workflows, and read projections live in focused internal
 modules with unchanged public APIs and behavior.
@@ -45,7 +46,8 @@ modules with unchanged public APIs and behavior.
   implementation files: callers continue to use `ProductCompare.Specs` only.
 - The exact direct Specs, ingestion enrichment, catalog filter
   metadata/filtering, and recommendation characterization gate passed 79 tests
-  with 0 failures on 2026-07-22.
+  before final review and 81 tests after the two public-facade error-contract
+  regressions were added, with 0 failures on 2026-07-22.
 
 ## Analyzer Resolution Evidence
 
@@ -60,6 +62,11 @@ modules with unchanged public APIs and behavior.
   repair introduced the local `map_set/1` reducer instead, satisfying both
   Dialyzer and Reach with no configuration, baseline, ignore-list, budget,
   test, or public-spec change.
+- Whole-batch review found that manual invalid-changeset preflight had lost the
+  original `Ecto.Multi.insert` error action. The `9bc9f650` fix applies the
+  changeset with `:insert` before returning it, and public-facade regression
+  tests prove invalid claim and correction proposals return
+  `action: :insert` without persisting data.
 
 ## Boundaries
 
@@ -76,15 +83,16 @@ modules with unchanged public APIs and behavior.
 
 ## Verification
 
-- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs` — 79 tests, 0 failures.
+- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs` — 81 tests, 0 failures.
 - `mix typecheck` — passed.
 - `mix format --check-formatted` — passed.
 - `mix work_queue.validate` — passed; 3 ready rows.
 - `mix ci` — passed (Credo: 3,574 mods/funs with no issues; ExDNA clone budget
   6/6; Reach: no new smells; Dialyzer: 15 baseline findings skipped; backend
-  coverage: 902 tests, 0 failures, configured 69% threshold, and generated
-  HTML results; frontend Relay validation, `tsc --noEmit`, and Vitest unit
-  checks passed; client and SSR builds completed in 2.73s and 1.54s; the
+  coverage: 904 tests, 0 failures, 83.64% against the configured 69% threshold,
+  and generated HTML results; frontend Relay validation, `tsc --noEmit`, and
+  1,507 Vitest checks across 105 files passed; client and SSR builds completed
+  in 2.71s and 1.38s; the
   bundle contract passed at 596,440 raw / 182,164 gzip bytes across 1 initial
   JavaScript file against the 200,000-gzip-byte budget).
 - `git diff --check` — passed.
