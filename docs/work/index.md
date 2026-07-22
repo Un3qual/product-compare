@@ -1314,13 +1314,10 @@ management tests remain green.
 
 ## Active Work
 
-None.
+### Bounded Catalog And Offer Discovery Root GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Catalog And Offer Discovery Root GraphQL Reads
-
-Status: ready
+Status: active
+Owner: `codex/bounded-comparison-root-reads`
 Lane: Bounded catalog and offer discovery root GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 Batch outcome: identical catalog, filter-metadata, merchant-directory, and
@@ -1368,7 +1365,9 @@ Exit condition: identical two- and four-alias sets preserve exact catalog,
 metadata, merchant, and offer values plus validation behavior while each
 field's direct SELECT budget remains fixed.
 
-### 2. Bounded Operator Reporting Root GraphQL Reads
+## Ready Work
+
+### 1. Bounded Operator Reporting Root GraphQL Reads
 
 Status: ready
 Lane: Bounded operator reporting root GraphQL reads
@@ -1418,7 +1417,7 @@ Exit condition: identical two- and four-alias sets preserve exact coupon pages,
 revenue summaries, authorization failures, validation errors, and nested values
 while each root's direct SELECT budget remains fixed.
 
-### 3. GraphQL Request Loader Decomposition
+### 2. GraphQL Request Loader Decomposition
 
 Status: ready
 Lane: GraphQL request loader decomposition
@@ -1481,6 +1480,58 @@ Verification:
 Exit condition: the facade only assembles sources and exposes stable keys, each
 source callback has one focused module owner, and all semantic plus query-budget
 gates pass without resolver or schema changes.
+
+### 3. GraphQL Schema Type Decomposition
+
+Status: ready
+Lane: GraphQL schema type decomposition
+Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
+Batch outcome: the 2,004-line GraphQL schema remains one stable root-operation
+facade while its 151 type, input, enum, and interface definitions move into
+focused Absinthe notation modules with byte-for-byte SDL and unchanged runtime
+behavior.
+Next action: extract shared/account, commerce, catalog, and trust/community type
+declarations by domain while retaining root operations, context, and plugins in
+`ProductCompareWeb.Schema`.
+Owned paths:
+
+- `lib/product_compare_web/schema.ex`
+- `lib/product_compare_web/schema/types/common.ex`
+- `lib/product_compare_web/schema/types/accounts.ex`
+- `lib/product_compare_web/schema/types/commerce.ex`
+- `lib/product_compare_web/schema/types/catalog.ex`
+- `lib/product_compare_web/schema/types/trust.ex`
+- `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `docs/work/graphql-schema-type-decomposition.md`
+
+Internal slices:
+
+- Shared, account, and commerce notation-module extraction.
+- Catalog and trust/community notation-module extraction.
+- Exact SDL, module-boundary, focused GraphQL, and full-suite parity.
+
+Prerequisites:
+
+- `assets/schema.graphql` and the live schema snapshot are authoritative and
+  must remain byte-for-byte unchanged.
+- Root query/mutation operations, `context/1`, and `plugins/0` remain in the
+  schema facade; only declarations move.
+- This row is path-disjoint from the active discovery-root work and the ready
+  request-loader decomposition.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/schema_snapshot_test.exs`
+- `mix test test/product_compare_web/graphql`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade owns only runtime/root-operation concerns, five
+domain notation modules own all declarations, the checked-in SDL is unchanged,
+and focused plus full GraphQL and repository gates pass.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

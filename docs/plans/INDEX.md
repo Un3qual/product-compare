@@ -157,6 +157,12 @@ discovery reads per alias. Catalog filters and metadata, merchant-directory
 pagination, offer filters, nested values, and growing-alias budgets remain
 internal slices of one discovery-entry acceptance boundary. Their three
 focused suites pass 51 tests.
+An eleventh claim-floor audit promoted GraphQL schema type decomposition after
+verifying that the only project schema module is 2,004 lines and combines root
+runtime behavior with 151 type, input, enum, and interface declarations. The
+existing byte-for-byte SDL snapshot makes a domain-notation extraction
+immediately executable without choosing new product behavior. Root operations,
+context, plugins, resolver wiring, and `assets/schema.graphql` remain fixed.
 
 Implementation plan references (non-dispatch):
 
@@ -167,6 +173,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -220,6 +227,10 @@ batch and should not be recreated or promoted.
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.
+- GraphQL schema type decomposition is the path-disjoint structural successor:
+  the root facade stays stable while shared/account, commerce, catalog, and
+  trust/community declarations move to five domain notation modules under the
+  exact checked-in SDL snapshot.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

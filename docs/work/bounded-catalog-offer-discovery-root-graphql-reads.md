@@ -2,12 +2,13 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 - Last verified: 2026-07-21 against the live root schema, catalog and pricing
   resolvers, request loader, connection helper, and 51 passing focused tests.
+- Owner: `codex/bounded-comparison-root-reads`
 
 ## Batch Outcome
 
