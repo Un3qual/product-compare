@@ -107,8 +107,5 @@
 - Account-manager automation, Tier-3 direct scraping, credential persistence,
   application submission, and CSV export remain out of scope until a later
   explicit product/backend decision.
-- The live queue now targets three source-backed backend read-budget outcomes:
-  set-based product evidence/SEO fields, public community Relay connections,
-  and product-offer/coupon/history Relay connections. Each keeps its domain
-  semantics and public schema stable while database-query counts remain fixed
-  as GraphQL parent counts grow.
+- Current implementation dispatch is recorded only in `docs/work/index.md`;
+  this architecture document does not duplicate the changing ready-row list.

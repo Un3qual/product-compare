@@ -165,6 +165,8 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -205,13 +207,16 @@ batch and should not be recreated or promoted.
   complete. Bounded alert evaluation market reads is also complete: one
   immutable product/listing fact snapshot now feeds the independent watch
   transactions. Bounded comparison root GraphQL reads is complete. Bounded
-  authorized management GraphQL connections remains ready, grouping the
-  remaining owner and operator connection aliases. Bounded catalog and offer-
+  authorized management GraphQL connections is complete, with six owner and
+  two operator connection aliases sharing authorization-keyed request reads.
+  Bounded catalog and offer-
   discovery root GraphQL reads groups the remaining public catalog, filter-
   metadata, merchant-directory, and offer-discovery root aliases. Bounded
   operator reporting root GraphQL reads groups the remaining top-level active-
   coupon and revenue-summary aliases behind one authorization-keyed request
-  source. These are
+  source. GraphQL request loader decomposition then preserves the facade and
+  source keys while separating association, parent-collection, and root-request
+  source ownership. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.

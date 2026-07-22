@@ -1296,70 +1296,22 @@ merchant-product, and price-point SELECT counts remain fixed at three, one,
 one, and one respectively. The four focused suites pass 59 tests, and the type,
 format, queue, and diff gates are green.
 
+Bounded authorized management GraphQL connections then completed on the same
+branch. Six owner collections and two operator-only queues now reuse identical
+authorized connection reads within one request. Every collection moved from
+two/four alias SELECT counts of 2/4 to fixed counts of 1/1 while preserving
+principal isolation, authorization-before-load, filters, ordering, pagination,
+nested values, errors, zero-query denials, direct fallbacks, and schema
+behavior. The seven focused suites pass 67 tests, and three independently
+shippable ready rows remain after closeout.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Bounded Authorized Management GraphQL Connections
-
-Status: ready
-Lane: Bounded authorized management GraphQL connections
-Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
-Batch outcome: identical owner-scoped and operator-only management Relay
-connection aliases reuse one authorized database read per collection, filter,
-and page within a GraphQL request without changing privacy, authorization,
-filtering, ordering, pagination, errors, nested values, or schema behavior.
-Next action: route the six owner collections and two operator queues through one
-authorization-keyed request source and prove semantic plus fixed-budget parity
-as identical aliases grow.
-Owned paths:
-
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/specs_resolver.ex`
-- `lib/product_compare_web/resolvers/alerts_resolver.ex`
-- `lib/product_compare_web/resolvers/auth_resolver.ex`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `lib/product_compare_web/resolvers/comparison_snapshots_resolver.ex`
-- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `test/product_compare_web/graphql/saved_comparisons_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-authorized-management-graphql-connections.md`
-
-Internal slices:
-
-- Owner-scoped management connection request reuse.
-- Operator-only queue connection request reuse.
-- Growing-alias query budgets plus authorization and semantic parity.
-
-Prerequisites:
-
-- Existing authorization, owner filtering, query ordering, and connection
-  projection remain authoritative.
-- Every cache key includes role, principal ID, collection kind, normalized
-  filters, and Relay connection arguments.
-- This row executes serially with Loader or affected resolver ownership and
-  does not reopen deferred ingestion dashboard/operator UI work.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: every authorized management collection preserves current
-privacy, authorization, filters, pagination, order, nested values, and errors
-while identical two- and four-alias SELECT budgets remain equal per collection.
-
-### 2. Bounded Catalog And Offer Discovery Root GraphQL Reads
+### 1. Bounded Catalog And Offer Discovery Root GraphQL Reads
 
 Status: ready
 Lane: Bounded catalog and offer discovery root GraphQL reads
@@ -1409,7 +1361,7 @@ Exit condition: identical two- and four-alias sets preserve exact catalog,
 metadata, merchant, and offer values plus validation behavior while each
 field's direct SELECT budget remains fixed.
 
-### 3. Bounded Operator Reporting Root GraphQL Reads
+### 2. Bounded Operator Reporting Root GraphQL Reads
 
 Status: ready
 Lane: Bounded operator reporting root GraphQL reads
@@ -1458,6 +1410,54 @@ Verification:
 Exit condition: identical two- and four-alias sets preserve exact coupon pages,
 revenue summaries, authorization failures, validation errors, and nested values
 while each root's direct SELECT budget remains fixed.
+
+### 3. GraphQL Request Loader Decomposition
+
+Status: ready
+Lane: GraphQL request loader decomposition
+Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
+Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
+facing facade while association, parent-collection, and root-request source
+construction and callbacks live in focused modules with unchanged source keys,
+values, errors, authorization boundaries, timestamps, and query budgets.
+Next action: extract the loader's two Ecto and ten current KV source domains by
+responsibility without changing resolver APIs or GraphQL behavior.
+Owned paths:
+
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/graphql/loader/association_sources.ex`
+- `lib/product_compare_web/graphql/loader/parent_sources.ex`
+- `lib/product_compare_web/graphql/loader/root_sources.ex`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- Focused GraphQL test suites selected from the sources present at claim time.
+- `docs/work/graphql-request-loader-decomposition.md`
+
+Internal slices:
+
+- Association and parent-collection source extraction.
+- Root-request source extraction with stable facade keys.
+- Semantic, authorization, timestamp, and fixed-budget parity.
+
+Prerequisites:
+
+- Existing Loader source keys and resolver-facing accessors remain authoritative.
+- Execute serially with every other row that owns Loader; include compatible
+  sources added before claim in the same responsibility boundary.
+- This is a behavior-preserving decomposition and does not change domain SQL,
+  public schema, or direct resolver fallbacks.
+
+Verification:
+
+- Dataloader batching plus every focused resolver suite for moved sources.
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade only assembles sources and exposes stable keys, each
+source callback has one focused module owner, and all semantic plus query-budget
+gates pass without resolver or schema changes.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
