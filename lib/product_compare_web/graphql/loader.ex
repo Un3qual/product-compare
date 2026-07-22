@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     Alerts,
     Affiliate,
     Catalog,
+    CommerceAttribution,
     ComparisonSnapshots,
     Discussions,
     Ingestion,
@@ -425,6 +426,22 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
 
     Map.new(requests, &{&1, result})
+  end
+
+  defp operator_reporting_batch(
+         {:revenue_summary, operator_id, filters, connection_args},
+         requests
+       )
+       when is_integer(operator_id) and operator_id > 0 and is_map(filters) and
+              is_map(connection_args) do
+    result =
+      try do
+        {:ok, CommerceAttribution.dashboard_revenue_summary(filters)}
+      rescue
+        ArgumentError -> {:error, :invalid_revenue_summary_filters}
+      end
+
+    Map.new(requests, &{&1, {:ok, result}})
   end
 
   defp public_slug_batch(:product, slugs) do

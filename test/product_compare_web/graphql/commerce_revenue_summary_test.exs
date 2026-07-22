@@ -2,9 +2,11 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   use ProductCompareWeb.ConnCase, async: false
 
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
 
   setup %{conn: conn} do
     {:ok, conn: operator_conn(conn), anonymous_conn: conn}
@@ -53,6 +55,38 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                  }
                }
              } = graphql(conn, revenue_summary_query(), %{})
+    end
+
+    test "direct resolver fallback preserves normalized filters and suppression" do
+      operator = AccountsFixtures.operator_fixture()
+      merchant = merchant_fixture()
+      merchant_id = relay_id(:merchant, merchant.id)
+
+      assert {:ok,
+              %{
+                filters: %{
+                  currency: "USD",
+                  from: nil,
+                  merchant_id: ^merchant_id,
+                  network: nil,
+                  product_id: nil,
+                  to: nil
+                },
+                metrics: %{
+                  average_paid_price: nil,
+                  clicks: nil,
+                  commission_revenue: nil,
+                  conversions: nil,
+                  currency: nil,
+                  gross_order_value: nil
+                },
+                suppression: %{suppressed: true, threshold: 2}
+              }} =
+               CommerceAttributionResolver.revenue_summary(
+                 nil,
+                 %{input: %{"currency" => "usd", "merchant_id" => merchant_id}},
+                 %{context: %{current_user: operator}}
+               )
     end
 
     test "aggregates approved and paid conversions with Relay ID filters", %{conn: conn} do
@@ -189,6 +223,21 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    "merchantId" => relay_id(:merchant, merchant.id)
                  }
                })
+    end
+
+    test "returns the stable GraphQL error when an unfiltered summary spans currencies", %{
+      conn: conn
+    } do
+      conversion_fixture(%{status: :approved, currency: "USD"})
+      conversion_fixture(%{status: :paid, currency: "EUR"})
+
+      assert %{
+               "data" => %{"revenueSummary" => nil},
+               "errors" => [
+                 %{"message" => "invalid revenue summary filters", "path" => ["revenueSummary"]}
+                 | _
+               ]
+             } = graphql(conn, revenue_summary_query(), %{})
     end
 
     test "returns GraphQL errors for invalid merchant and product IDs", %{conn: conn} do

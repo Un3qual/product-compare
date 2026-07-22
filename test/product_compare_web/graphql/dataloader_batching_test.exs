@@ -457,6 +457,66 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert operator_active_coupon_query_budget(queries) == 4
     end
 
+    test "operator revenue-summary aliases preserve values and fixed SELECT budgets as aliases grow",
+         %{conn: conn} do
+      operator = AccountsFixtures.operator_fixture()
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_alias_query(2), %{})
+        end)
+
+      assert_operator_revenue_summary_alias_values(two_response, 2)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_alias_query(4), %{})
+        end)
+
+      assert_operator_revenue_summary_alias_values(four_response, 4)
+
+      expected_budget = %{commerce_conversions: 2, commerce_click_sessions: 1}
+
+      assert {operator_revenue_summary_query_budget(two_queries),
+              operator_revenue_summary_query_budget(four_queries)} ==
+               {expected_budget, expected_budget}
+    end
+
+    test "operator revenue-summary aliases coalesce normalized inputs while distinct filters stay isolated",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+
+      merchant =
+        merchant_fixture(%{
+          name: "#{test_name} Revenue Merchant",
+          domain:
+            canonical_slug("#{test_name}-#{System.unique_integer([:positive])}-revenue") <>
+              ".example"
+        })
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_mixed_key_query(merchant), %{})
+        end)
+
+      assert_operator_revenue_summary_mixed_key_values(response, merchant)
+
+      assert operator_revenue_summary_query_budget(queries) == %{
+               commerce_conversions: 5,
+               commerce_click_sessions: 3
+             }
+    end
+
     test "authorized node aliases keep values and SELECT budgets fixed per schema as aliases grow",
          %{conn: conn, test: test_name} do
       owner = AccountsFixtures.operator_fixture()
@@ -2065,6 +2125,44 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp operator_revenue_summary_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        operator_revenue_summary_selection("revenueSummary#{index}", nil)
+      end)
+
+    """
+    query OperatorRevenueSummaryAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_revenue_summary_mixed_key_query(merchant) do
+    """
+    query OperatorRevenueSummaryMixedKeys {
+      #{operator_revenue_summary_selection("sameOne", "{ currency: \"usd\" }")}
+      #{operator_revenue_summary_selection("sameTwo", "{ currency: \"USD\" }")}
+      #{operator_revenue_summary_selection("unfiltered", nil)}
+      #{operator_revenue_summary_selection("merchant", "{ merchantId: \"#{relay_id(:merchant, merchant.id)}\" }")}
+    }
+    """
+  end
+
+  defp operator_revenue_summary_selection(alias_name, input) do
+    input_argument = if input, do: "(input: #{input})", else: ""
+
+    """
+    #{alias_name}: revenueSummary#{input_argument} {
+      filters { currency from merchantId network productId to }
+      metrics {
+        averagePaidPrice clicks commissionRevenue conversions currency grossOrderValue
+      }
+      suppression { suppressed threshold }
+    }
+    """
+  end
+
   defp operator_management_field_with_invalid_connection(
          :specification_correction_moderation_queue,
          :invalid_first
@@ -2872,6 +2970,14 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.count(queries, &query_targets_table?(&1, :coupons))
   end
 
+  defp operator_revenue_summary_query_budget(queries) do
+    %{
+      commerce_conversions: Enum.count(queries, &query_targets_table?(&1, :commerce_conversions)),
+      commerce_click_sessions:
+        Enum.count(queries, &query_targets_table?(&1, :commerce_click_sessions))
+    }
+  end
+
   defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
   defp operator_management_mixed_key_budget(:merchant_feed_candidates), do: 4
 
@@ -3013,6 +3119,63 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         "hasPreviousPage" => false,
         "startCursor" => nil,
         "endCursor" => nil
+      }
+    }
+  end
+
+  defp assert_operator_revenue_summary_alias_values(response, alias_count) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    expected = empty_operator_revenue_summary()
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["revenueSummary#{index}"] == expected
+    end)
+  end
+
+  defp assert_operator_revenue_summary_mixed_key_values(response, merchant) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    assert data["sameOne"] == data["sameTwo"]
+
+    assert data["sameOne"] ==
+             empty_operator_revenue_summary(%{"currency" => "USD"})
+
+    assert data["unfiltered"] == empty_operator_revenue_summary()
+
+    assert data["merchant"] ==
+             empty_operator_revenue_summary(%{
+               "merchantId" => relay_id(:merchant, merchant.id)
+             })
+  end
+
+  defp empty_operator_revenue_summary(filter_overrides \\ %{}) do
+    %{
+      "filters" =>
+        Map.merge(
+          %{
+            "currency" => nil,
+            "from" => nil,
+            "merchantId" => nil,
+            "network" => nil,
+            "productId" => nil,
+            "to" => nil
+          },
+          filter_overrides
+        ),
+      "metrics" => %{
+        "averagePaidPrice" => nil,
+        "clicks" => nil,
+        "commissionRevenue" => nil,
+        "conversions" => nil,
+        "currency" => nil,
+        "grossOrderValue" => nil
+      },
+      "suppression" => %{
+        "suppressed" => true,
+        "threshold" => 2
       }
     }
   end
