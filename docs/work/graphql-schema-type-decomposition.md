@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
-- Last verified: 2026-07-21 against the live Absinthe schema, exact SDL
+- Last verified: 2026-07-22 against the live Absinthe schema, exact SDL
   snapshot, GraphQL suites, and current module layout.
 
 ## Target Outcome

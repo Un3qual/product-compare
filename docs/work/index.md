@@ -1354,15 +1354,20 @@ exact focused gate passed 222 tests, and full `mix ci` passed 902 backend tests,
 1,507 frontend tests, 83.82% coverage, ExDNA at 6/6, Dialyzer, Relay, builds,
 and the bundle budget. The three ready successors remain dispatchable.
 
+Before claiming GraphQL Schema Type Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,041-line `ProductCompare.CommerceAttribution` context still owns tracked
+click/redirect, conversion/purchase-fact, and revenue-summary implementations
+behind one stable public boundary. Commerce Attribution Context Decomposition
+was promoted after its direct context, destination-policy, redirect-controller,
+commerce-click GraphQL, and revenue GraphQL characterization gate passed 81
+tests. The schema claim therefore leaves three complete ready rows.
+
 ## Active Work
-
-None.
-
-## Ready Work
 
 ### 1. GraphQL Schema Type Decomposition
 
-Status: ready
+Status: active
 Lane: GraphQL schema type decomposition
 Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
 Batch outcome: the 2,004-line GraphQL schema remains one stable root-operation
@@ -1411,7 +1416,9 @@ Exit condition: the facade owns only runtime/root-operation concerns, five
 domain notation modules own all declarations, the checked-in SDL is unchanged,
 and focused plus full GraphQL and repository gates pass.
 
-### 2. Discussions Context Decomposition
+## Ready Work
+
+### 1. Discussions Context Decomposition
 
 Status: ready
 Lane: Discussions context decomposition
@@ -1472,7 +1479,7 @@ implementation responsibility has one focused internal owner, all seven
 characterization suites and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. Specs Context Decomposition
+### 2. Specs Context Decomposition
 
 Status: ready
 Lane: Specs context decomposition
@@ -1533,6 +1540,64 @@ Verification:
 
 Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused internal owner, the exact 79-
+test characterization gate and repository gates pass, and no caller bypasses
+the facade.
+
+### 3. Commerce Attribution Context Decomposition
+
+Status: ready
+Lane: Commerce attribution context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.CommerceAttribution` remains the stable
+caller-facing context while click/redirect, conversion/purchase-fact, and
+revenue-summary implementations live in focused internal modules with
+unchanged public APIs, transactions, destination safety, attribution conflict
+handling, query semantics, suppression, errors, and GraphQL behavior.
+Next action: extract the three implementation responsibilities behind explicit
+facade wrappers and prove direct context, controller, GraphQL, and destination-
+policy parity.
+Owned paths:
+
+- `lib/product_compare/commerce_attribution.ex`
+- `lib/product_compare/commerce_attribution/clicks.ex`
+- `lib/product_compare/commerce_attribution/conversions.ex`
+- `lib/product_compare/commerce_attribution/revenue.ex`
+- `test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+- `test/product_compare/commerce_attribution/destination_url_test.exs`
+- `test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
+- `test/product_compare_web/graphql/commerce_click_test.exs`
+- `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
+- `docs/work/commerce-attribution-context-decomposition.md`
+
+Internal slices:
+
+- Commerce-link, click-session, tracked-click, and redirect ownership.
+- Conversion attribution, replay/conflict, and purchase-fact ownership.
+- Revenue query, normalization, aggregation, and suppression ownership.
+- Public-contract, controller, GraphQL, type, and full-suite parity.
+
+Prerequisites:
+
+- Existing `ProductCompare.CommerceAttribution` public functions, arities,
+  defaults, typespecs, values, and errors remain authoritative.
+- Preserve transactions, conflict targets, URL policy, attribution replay and
+  conflicts, revenue queries, date boundaries, mixed-currency errors, and
+  suppression.
+- Keep controllers, resolvers, adapters, and other contexts dependent only on
+  the facade; do not change schemas, migrations, GraphQL SDL, frontend
+  behavior, provider policy, or deferred ingestion/operator work.
+
+Verification:
+
+- `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare/commerce_attribution/destination_url_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, the exact 81-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
 
