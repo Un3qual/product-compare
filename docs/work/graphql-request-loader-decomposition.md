@@ -37,6 +37,10 @@ timestamps, authorization boundaries, and query budgets remain unchanged.
   characterized semantic values and fixed query budgets, including the
   `async?: false` source behavior, time-sampling boundaries, authorization
   before loads, and direct resolver fallbacks.
+- The KV constructors now sit directly before their existing matching callback
+  groups. This preserves every constructor and callback while avoiding ExDNA's
+  adjacent sibling-window fingerprint; `mix ex_dna --max-clones 6` returns the
+  established 6/6 baseline.
 
 ## Boundaries
 
@@ -61,8 +65,12 @@ The following checks were run on 2026-07-22:
 - `mix typecheck` — exit 0.
 - `mix format --check-formatted` — exit 0.
 - `mix work_queue.validate` — exit 0 with local Mix PubSub socket access; 3 ready rows.
-- `mix ci` — exit 1 at ExDNA. Credo checked 294 source files and 3,471
-  mods/funs with no issues; ExDNA found 8 clones against the configured budget
-  of 6 (including reports in `ParentSources` and `RootSources`). The command
-  stopped at this gate, so it did not establish later full-CI suite counts.
+- `mix ex_dna --max-clones 6` — exit 0; 6 clones against the 6-clone budget.
+- `mix ci` — exit 2 after passing work-queue validation (3 ready rows), Credo
+  (294 source files and 3,471 mods/funs, no issues), ExDNA (6/6), and
+  cross-function smell detection (no issues). Dialyzer then reported 31
+  errors, including 13 `Dataloader.KV.t/0` unknown-type findings in the two
+  loader-source modules; it halted before backend/frontend tests, coverage,
+  Relay, typecheck, build, and bundle gates, so those counts were not
+  established by this run.
 - `git diff --check` — exit 0 before the lane-record edit.

@@ -24,36 +24,6 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     Dataloader.KV.new(&comparison_batch/2, async?: false)
   end
 
-  @spec public_slugs() :: Dataloader.KV.t()
-  def public_slugs do
-    Dataloader.KV.new(&public_slug_batch/2, async?: false)
-  end
-
-  @spec public_opaque_keys() :: Dataloader.KV.t()
-  def public_opaque_keys do
-    Dataloader.KV.new(&public_opaque_batch/2, async?: false)
-  end
-
-  @spec authorized_nodes() :: Dataloader.KV.t()
-  def authorized_nodes do
-    Dataloader.KV.new(&authorized_node_batch/2, async?: false)
-  end
-
-  @spec authorized_connections() :: Dataloader.KV.t()
-  def authorized_connections do
-    Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
-  end
-
-  @spec operator_reporting() :: Dataloader.KV.t()
-  def operator_reporting do
-    Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
-  end
-
-  @spec discovery_roots() :: Dataloader.KV.t()
-  def discovery_roots do
-    Dataloader.KV.new(&discovery_root_batch/2, async?: false)
-  end
-
   defp comparison_batch(:products, slug_selections) do
     slug_selections = Enum.to_list(slug_selections)
     products_by_selection = Catalog.list_products_by_slug_selections(slug_selections)
@@ -100,6 +70,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     end)
   end
 
+  @spec discovery_roots() :: Dataloader.KV.t()
+  def discovery_roots do
+    Dataloader.KV.new(&discovery_root_batch/2, async?: false)
+  end
+
   defp discovery_root_batch({:products, filters, connection_args}, roots)
        when is_map(filters) and is_map(connection_args) do
     result =
@@ -131,6 +106,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
       |> Connection.from_query_result(connection_args, Repo)
 
     Map.new(roots, &{&1, result})
+  end
+
+  @spec operator_reporting() :: Dataloader.KV.t()
+  def operator_reporting do
+    Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
   end
 
   defp operator_reporting_batch(
@@ -167,6 +147,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     Map.new(requests, &{&1, {:ok, result}})
   end
 
+  @spec public_slugs() :: Dataloader.KV.t()
+  def public_slugs do
+    Dataloader.KV.new(&public_slug_batch/2, async?: false)
+  end
+
   defp public_slug_batch(:product, slugs) do
     slugs
     |> Enum.to_list()
@@ -177,6 +162,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     slugs
     |> Enum.to_list()
     |> Pricing.get_merchants_by_slugs()
+  end
+
+  @spec public_opaque_keys() :: Dataloader.KV.t()
+  def public_opaque_keys do
+    Dataloader.KV.new(&public_opaque_batch/2, async?: false)
   end
 
   defp public_opaque_batch(:source_artifact, ids) do
@@ -195,6 +185,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     tokens
     |> Enum.to_list()
     |> then(&project_lookup_results(&1, ComparisonSnapshots.get_public_many(&1)))
+  end
+
+  @spec authorized_nodes() :: Dataloader.KV.t()
+  def authorized_nodes do
+    Dataloader.KV.new(&authorized_node_batch/2, async?: false)
   end
 
   defp authorized_node_batch({:operator, type, operator_id}, ids)
@@ -217,6 +212,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     entropy_ids
     |> Enum.to_list()
     |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
+  end
+
+  @spec authorized_connections() :: Dataloader.KV.t()
+  def authorized_connections do
+    Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
   end
 
   defp authorized_connection_batch(

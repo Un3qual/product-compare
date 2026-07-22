@@ -9,35 +9,15 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
   end
 
-  @spec product_evidence() :: Dataloader.KV.t()
-  def product_evidence do
-    Dataloader.KV.new(&product_evidence_batch/2, async?: false)
-  end
-
-  @spec community_connections() :: Dataloader.KV.t()
-  def community_connections do
-    Dataloader.KV.new(&community_connection_batch/2, async?: false)
-  end
-
-  @spec viewer_submissions() :: Dataloader.KV.t()
-  def viewer_submissions do
-    Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
-  end
-
-  @spec offer_connections() :: Dataloader.KV.t()
-  def offer_connections do
-    Dataloader.KV.new(&offer_connection_batch/2, async?: false)
-  end
-
-  @spec categories() :: Dataloader.KV.t()
-  def categories do
-    Dataloader.KV.new(&category_batch/2, async?: false)
-  end
-
   defp merchant_detail_batch(:summary, merchants) do
     merchants
     |> Enum.to_list()
     |> Pricing.merchant_details(now: DateTime.utc_now())
+  end
+
+  @spec product_evidence() :: Dataloader.KV.t()
+  def product_evidence do
+    Dataloader.KV.new(&product_evidence_batch/2, async?: false)
   end
 
   defp product_evidence_batch(batch_key, products) do
@@ -65,6 +45,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     end
   end
 
+  @spec community_connections() :: Dataloader.KV.t()
+  def community_connections do
+    Dataloader.KV.new(&community_connection_batch/2, async?: false)
+  end
+
   defp community_connection_batch({kind, connection_args}, parents)
        when kind in [:reviews, :questions, :answers] and is_map(connection_args) do
     parents = Enum.to_list(parents)
@@ -81,6 +66,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     end)
   end
 
+  @spec viewer_submissions() :: Dataloader.KV.t()
+  def viewer_submissions do
+    Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
+  end
+
   defp viewer_submission_batch(user_id, products)
        when is_integer(user_id) and user_id > 0 do
     products = Enum.to_list(products)
@@ -94,6 +84,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     Map.new(products, fn product ->
       {product, Map.fetch!(submissions, product.id)}
     end)
+  end
+
+  @spec offer_connections() :: Dataloader.KV.t()
+  def offer_connections do
+    Dataloader.KV.new(&offer_connection_batch/2, async?: false)
   end
 
   defp offer_connection_batch({:product_offers, connection_args, filters}, products)
@@ -150,6 +145,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
       |> Pricing.price_history_pages(range_filters, window)
 
     project_connection_pages(merchant_products, pages, connection_args, & &1.id)
+  end
+
+  @spec categories() :: Dataloader.KV.t()
+  def categories do
+    Dataloader.KV.new(&category_batch/2, async?: false)
   end
 
   defp category_batch(:lookup, slugs) do
