@@ -4,7 +4,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
   alias ProductCompare.{Affiliate, Discussions, Pricing, Seo}
   alias ProductCompareWeb.GraphQL.Connection
 
-  @spec merchant_detail() :: Dataloader.KV.t()
+  @spec merchant_detail() :: Dataloader.Source.t()
   def merchant_detail do
     Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
   end
@@ -15,7 +15,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     |> Pricing.merchant_details(now: DateTime.utc_now())
   end
 
-  @spec product_evidence() :: Dataloader.KV.t()
+  @spec product_evidence() :: Dataloader.Source.t()
   def product_evidence do
     Dataloader.KV.new(&product_evidence_batch/2, async?: false)
   end
@@ -45,7 +45,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     end
   end
 
-  @spec community_connections() :: Dataloader.KV.t()
+  @spec community_connections() :: Dataloader.Source.t()
   def community_connections do
     Dataloader.KV.new(&community_connection_batch/2, async?: false)
   end
@@ -66,7 +66,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     end)
   end
 
-  @spec viewer_submissions() :: Dataloader.KV.t()
+  @spec viewer_submissions() :: Dataloader.Source.t()
   def viewer_submissions do
     Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
   end
@@ -86,7 +86,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     end)
   end
 
-  @spec offer_connections() :: Dataloader.KV.t()
+  @spec offer_connections() :: Dataloader.Source.t()
   def offer_connections do
     Dataloader.KV.new(&offer_connection_batch/2, async?: false)
   end
@@ -147,7 +147,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     project_connection_pages(merchant_products, pages, connection_args, & &1.id)
   end
 
-  @spec categories() :: Dataloader.KV.t()
+  @spec categories() :: Dataloader.Source.t()
   def categories do
     Dataloader.KV.new(&category_batch/2, async?: false)
   end

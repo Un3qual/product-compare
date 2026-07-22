@@ -19,7 +19,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareWeb.GraphQL.Connection
 
-  @spec comparison() :: Dataloader.KV.t()
+  @spec comparison() :: Dataloader.Source.t()
   def comparison do
     Dataloader.KV.new(&comparison_batch/2, async?: false)
   end
@@ -70,7 +70,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     end)
   end
 
-  @spec discovery_roots() :: Dataloader.KV.t()
+  @spec discovery_roots() :: Dataloader.Source.t()
   def discovery_roots do
     Dataloader.KV.new(&discovery_root_batch/2, async?: false)
   end
@@ -108,7 +108,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     Map.new(roots, &{&1, result})
   end
 
-  @spec operator_reporting() :: Dataloader.KV.t()
+  @spec operator_reporting() :: Dataloader.Source.t()
   def operator_reporting do
     Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
   end
@@ -147,7 +147,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     Map.new(requests, &{&1, {:ok, result}})
   end
 
-  @spec public_slugs() :: Dataloader.KV.t()
+  @spec public_slugs() :: Dataloader.Source.t()
   def public_slugs do
     Dataloader.KV.new(&public_slug_batch/2, async?: false)
   end
@@ -164,7 +164,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     |> Pricing.get_merchants_by_slugs()
   end
 
-  @spec public_opaque_keys() :: Dataloader.KV.t()
+  @spec public_opaque_keys() :: Dataloader.Source.t()
   def public_opaque_keys do
     Dataloader.KV.new(&public_opaque_batch/2, async?: false)
   end
@@ -187,7 +187,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     |> then(&project_lookup_results(&1, ComparisonSnapshots.get_public_many(&1)))
   end
 
-  @spec authorized_nodes() :: Dataloader.KV.t()
+  @spec authorized_nodes() :: Dataloader.Source.t()
   def authorized_nodes do
     Dataloader.KV.new(&authorized_node_batch/2, async?: false)
   end
@@ -214,7 +214,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
   end
 
-  @spec authorized_connections() :: Dataloader.KV.t()
+  @spec authorized_connections() :: Dataloader.Source.t()
   def authorized_connections do
     Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
   end

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: complete with CI concern
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
@@ -41,6 +41,9 @@ timestamps, authorization boundaries, and query budgets remain unchanged.
   groups. This preserves every constructor and callback while avoiding ExDNA's
   adjacent sibling-window fingerprint; `mix ex_dna --max-clones 6` returns the
   established 6/6 baseline.
+- All thirteen KV constructor specs use the public `Dataloader.Source.t()`
+  abstraction. This matches the protocol implemented by `Dataloader.KV` and
+  permits Dialyzer to verify the extracted source modules.
 
 ## Boundaries
 
@@ -66,11 +69,14 @@ The following checks were run on 2026-07-22:
 - `mix format --check-formatted` — exit 0.
 - `mix work_queue.validate` — exit 0 with local Mix PubSub socket access; 3 ready rows.
 - `mix ex_dna --max-clones 6` — exit 0; 6 clones against the 6-clone budget.
-- `mix ci` — exit 2 after passing work-queue validation (3 ready rows), Credo
-  (294 source files and 3,471 mods/funs, no issues), ExDNA (6/6), and
-  cross-function smell detection (no issues). Dialyzer then reported 31
-  errors, including 13 `Dataloader.KV.t/0` unknown-type findings in the two
-  loader-source modules; it halted before backend/frontend tests, coverage,
-  Relay, typecheck, build, and bundle gates, so those counts were not
-  established by this run.
+- `mix dialyzer` — exit 0; 18 baseline findings skipped, with no loader-source
+  type errors.
+- `mix ci` — exit 0. Work-queue validation reported 3 ready rows; Credo checked
+  294 source files and 3,471 mods/funs with no issues; ExDNA passed at 6/6;
+  cross-function smell detection reported no issues; Dialyzer passed with 18
+  baseline findings skipped; backend ExUnit passed 902 tests with 0 failures
+  and 83.82% total coverage; Relay validation, TypeScript, and both client and
+  SSR builds passed; frontend Vitest passed 105 files and 1,507 tests; the
+  client bundle contract passed at 182,164 gzip bytes against its 200,000-byte
+  budget.
 - `git diff --check` — exit 0 before the lane-record edit.
