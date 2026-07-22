@@ -1328,58 +1328,19 @@ Decomposition was promoted after its direct context, SEO, community GraphQL,
 and Dataloader characterization gate passed 104 tests. The operator-reporting
 claim therefore leaves three complete ready rows.
 
+Bounded Operator Reporting Root GraphQL Reads then completed on the current
+detached worktree. Active-coupon aliases moved from 2/4 to 1/1 coupon SELECTs,
+and revenue-summary aliases moved from conversion/click budgets of 4/2 and 8/4
+to a fixed 2/1. Normalized identical inputs coalesce while merchant, time,
+filter, and Relay-page keys remain isolated. Direct resolver fallbacks,
+authorization, validation, pagination, suppression, populated metrics, and
+mixed-currency errors retain their prior behavior. The three ready successors
+remain dispatchable, and the loader-decomposition row now includes the
+thirteenth operator-reporting KV source.
+
 ## Active Work
 
-### Bounded Operator Reporting Root GraphQL Reads
-
-Status: active
-Owner: current detached worktree
-Lane: Bounded operator reporting root GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
-Batch outcome: identical operator-only active-coupon and revenue-summary root
-aliases reuse one authorized read per normalized input within a GraphQL
-request without changing authorization, time/filter semantics, pagination,
-suppression, metrics, errors, or schema behavior.
-Next action: route both remaining operator reporting roots through one
-authorization-keyed request source and prove semantic plus fixed-budget parity
-as identical aliases grow.
-Owned paths:
-
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
-- `lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-operator-reporting-root-graphql-reads.md`
-
-Internal slices:
-
-- Operator-authorized active-coupon connection request reuse.
-- Operator-authorized revenue-summary aggregate request reuse.
-- Growing-alias query budgets plus authorization and semantic parity.
-
-Prerequisites:
-
-- Existing operator gates, input normalization, query ordering, connection
-  projection, revenue suppression, and GraphQL projections remain authoritative.
-- Every cache key includes the operator ID, field kind, normalized filters, and
-  connection arguments; omitted coupon observation time is sampled once inside
-  the request batch.
-- This row executes serially with other Loader ownership and does not reopen
-  deferred ingestion dashboard/operator UI work.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: identical two- and four-alias sets preserve exact coupon pages,
-revenue summaries, authorization failures, validation errors, and nested values
-while each root's direct SELECT budget remains fixed.
+None.
 
 ## Ready Work
 
@@ -1392,7 +1353,7 @@ Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
 facing facade while association, parent-collection, and root-request source
 construction and callbacks live in focused modules with unchanged source keys,
 values, errors, authorization boundaries, timestamps, and query budgets.
-Next action: extract the loader's two Ecto and twelve current KV source domains
+Next action: extract the loader's two Ecto and thirteen current KV source domains
 by responsibility without changing resolver APIs or GraphQL behavior.
 `RootSources` owns the completed discovery-root constructor and callback while
 `Loader` keeps and pairs its stable discovery-root key constant.
@@ -1407,6 +1368,7 @@ Owned paths:
 - `test/product_compare_web/graphql/pricing_queries_test.exs`
 - `test/product_compare_web/graphql/merchant_detail_test.exs`
 - `test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
 - `test/product_compare_web/graphql/community_content_test.exs`
 - `test/product_compare_web/graphql/seo_surfaces_test.exs`
 - `test/product_compare_web/graphql/recommendations_test.exs`
@@ -1431,14 +1393,15 @@ Prerequisites:
 - Existing Loader source keys and resolver-facing accessors remain authoritative.
 - Execute serially with every other row that owns Loader; include compatible
   sources added before claim in the same responsibility boundary.
-- Before claim, the coordinator must refresh the explicit focused-suite list
-  if either higher-ranked Loader batch has added a source.
+- Include the completed operator-reporting source in `RootSources` while
+  preserving coupon/revenue normalization, error, fallback, time, and budget
+  behavior.
 - This is a behavior-preserving decomposition and does not change domain SQL,
   public schema, or direct resolver fallbacks.
 
 Verification:
 
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`

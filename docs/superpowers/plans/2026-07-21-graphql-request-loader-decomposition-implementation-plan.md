@@ -68,23 +68,23 @@ with its existing facade-owned key constants.
 
 **Interfaces:** `RootSources.comparison/0`, `public_slugs/0`,
 `public_opaque_keys/0`, `authorized_nodes/0`, `authorized_connections/0`, and
-`discovery_roots/0` each return one top-level request-reuse KV source.
+`discovery_roots/0`, and `operator_reporting/0` each return one top-level
+request-reuse KV source.
 `RootSources.discovery_roots/0` owns the completed discovery-root constructor
 and batch callback. `Loader.new/1` keeps and pairs every existing facade-owned
-key constant, including the discovery-root key. Before claim, the coordinator
-adds an explicit constructor and focused suites here for any compatible
-operator-reporting source introduced by the higher-ranked row.
+key constant, including discovery-root and operator-reporting keys.
 
 - [ ] Extract root-request callbacks, including discovery-root construction and
-  batching, without changing normalization, authorization scope, missing-value
-  projection, validation, or errors.
+  batching plus operator-reporting construction and batching, without changing
+  normalization, authorization scope, missing-value projection, validation, or
+  errors.
 - [ ] Preserve one request-local time sample wherever the current callback owns
   that boundary.
 - [ ] Keep all resolver-facing source accessors in `Loader` and verify existing
   resolver call sites require no API changes.
-- [ ] Re-run the exact sixteen-suite command from the lane verification section,
-  including Dataloader batching plus catalog and pricing suites for discovery
-  root values, validation, and query budgets.
+- [ ] Re-run the exact seventeen-suite command from the lane verification
+  section, including Dataloader batching, catalog/pricing discovery roots, and
+  affiliate/commerce operator-reporting values, validation, and query budgets.
 - [ ] Commit with message `refactor: isolate graphql root loader sources`.
 
 ### Task 3: Lane Evidence And Batch Gate

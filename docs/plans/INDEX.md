@@ -221,12 +221,13 @@ batch and should not be recreated or promoted.
   Bounded catalog and offer-discovery root GraphQL reads is complete: products
   2/4 to 1/1, filter metadata 6/12 to 3/3, merchants 2/4 to 1/1, and merchant
   products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
-  operator reporting root GraphQL reads groups the remaining top-level active-
-  coupon and revenue-summary aliases behind one authorization-keyed request
-  source. GraphQL request loader decomposition is the remaining successor: it
+  operator reporting root GraphQL reads is complete: top-level active-coupon
+  and revenue-summary aliases now share one authorization-keyed request source.
+  GraphQL request loader decomposition is the remaining successor: it
   preserves the facade and source keys while separating association,
   parent-collection, and root-request source ownership across two Ecto and
-  twelve KV domains, including completed discovery roots. These are
+  thirteen KV domains, including completed discovery and operator-reporting
+  roots. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.
