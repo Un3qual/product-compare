@@ -657,6 +657,284 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert catalog_discovery_product_query_budget(queries) == 3
     end
 
+    test "merchant discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+         %{conn: conn} do
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Discovery Merchant First"),
+          domain: unique_domain("discovery-merchant-first")
+        })
+
+      _second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Discovery Merchant Second"),
+          domain: unique_domain("discovery-merchant-second")
+        })
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_alias_query(2), %{})
+        end)
+
+      assert_merchant_discovery_alias_values(two_response, 2, first_merchant)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_alias_query(4), %{})
+        end)
+
+      assert_merchant_discovery_alias_values(four_response, 4, first_merchant)
+
+      assert {
+               merchant_discovery_query_budget(two_queries),
+               merchant_discovery_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "merchant discovery root keeps duplicate aliases coalesced while Relay pages stay isolated",
+         %{conn: conn} do
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Merchant First"),
+          domain: unique_domain("mixed-merchant-first")
+        })
+
+      second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Merchant Second"),
+          domain: unique_domain("mixed-merchant-second")
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_mixed_key_query(), %{"after" => cursor_for(0)})
+        end)
+
+      assert %{
+               "data" => %{
+                 "first" => first_page,
+                 "firstDuplicate" => first_duplicate_page,
+                 "next" => next_page
+               }
+             } = response
+
+      assert_merchant_discovery_page(first_page, first_merchant, 0, true, false)
+      assert first_duplicate_page == first_page
+      assert_merchant_discovery_page(next_page, second_merchant, 1, false, true)
+      assert merchant_discovery_query_budget(queries) == 2
+    end
+
+    test "offer discovery root aliases preserve nested values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-offer-discovery-product"),
+          name: "Offer Discovery Product"
+        })
+
+      merchant =
+        merchant_fixture(%{
+          name: unique_name("Offer Discovery Merchant"),
+          domain: unique_domain("offer-discovery-merchant")
+        })
+
+      merchant_product =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: true})
+
+      observed_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      earlier_observed_at = DateTime.add(observed_at, -60, :second)
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: unique_name("Offer Discovery Source"),
+          domain: unique_domain("offer-discovery-source")
+        })
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://#{source.domain}/product",
+          fetched_at: observed_at,
+          content_hash: "offer-discovery-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      {:ok, _earlier_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: earlier_observed_at,
+          price: Decimal.new("129.99")
+        })
+
+      {:ok, latest_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: observed_at,
+          price: Decimal.new("99.99"),
+          artifact_id: artifact.id
+        })
+
+      coupon_valid_to = DateTime.add(observed_at, 3_600, :second)
+
+      {:ok, coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "DISCOVERY-SAVE",
+          description: "Offer discovery coupon",
+          discount_type: :percent,
+          discount_value: Decimal.new("10"),
+          valid_to: coupon_valid_to
+        })
+
+      variables = %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "merchantId" => relay_id(:merchant, merchant.id),
+          "activeOnly" => true,
+          "first" => 1
+        }
+      }
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_alias_query(2), variables)
+        end)
+
+      assert_offer_discovery_alias_values(
+        two_response,
+        2,
+        merchant_product,
+        merchant,
+        product,
+        latest_price,
+        artifact,
+        source,
+        coupon,
+        observed_at,
+        coupon_valid_to
+      )
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_alias_query(4), variables)
+        end)
+
+      assert_offer_discovery_alias_values(
+        four_response,
+        4,
+        merchant_product,
+        merchant,
+        product,
+        latest_price,
+        artifact,
+        source,
+        coupon,
+        observed_at,
+        coupon_valid_to
+      )
+
+      assert {
+               offer_discovery_query_budget(two_queries),
+               offer_discovery_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "offer discovery root keeps duplicate aliases coalesced while filters and Relay pages stay isolated",
+         %{conn: conn, test: test_name} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-offer-first-product"),
+          name: "Mixed Offer First Product"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-offer-second-product"),
+          name: "Mixed Offer Second Product"
+        })
+
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Offer First Merchant"),
+          domain: unique_domain("mixed-offer-first-merchant")
+        })
+
+      second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Offer Second Merchant"),
+          domain: unique_domain("mixed-offer-second-merchant")
+        })
+
+      first_offer =
+        merchant_product_fixture(%{
+          merchant: first_merchant,
+          product: first_product,
+          is_active: true
+        })
+
+      second_offer =
+        merchant_product_fixture(%{
+          merchant: second_merchant,
+          product: first_product,
+          is_active: false
+        })
+
+      other_product_offer =
+        merchant_product_fixture(%{
+          merchant: first_merchant,
+          product: second_product,
+          is_active: true
+        })
+
+      variables = %{
+        "productFirst" => %{"productId" => relay_id(:product, first_product.id), "first" => 1},
+        "merchantFiltered" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "merchantId" => relay_id(:merchant, second_merchant.id),
+          "first" => 1
+        },
+        "activeOnly" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "activeOnly" => true,
+          "first" => 1
+        },
+        "otherProduct" => %{"productId" => relay_id(:product, second_product.id), "first" => 1},
+        "productNext" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "first" => 1,
+          "after" => cursor_for(0)
+        }
+      }
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_mixed_key_query(), variables)
+        end)
+
+      assert %{
+               "data" => %{
+                 "productFirst" => product_first_page,
+                 "productFirstDuplicate" => product_first_duplicate_page,
+                 "merchantFiltered" => merchant_filtered_page,
+                 "activeOnly" => active_only_page,
+                 "otherProduct" => other_product_page,
+                 "productNext" => product_next_page
+               }
+             } = response
+
+      assert_offer_discovery_page(product_first_page, first_offer, 0, true, false)
+      assert product_first_duplicate_page == product_first_page
+      assert_offer_discovery_page(merchant_filtered_page, second_offer, 0, false, false)
+      assert_offer_discovery_page(active_only_page, first_offer, 0, false, false)
+      assert_offer_discovery_page(other_product_page, other_product_offer, 0, false, false)
+      assert_offer_discovery_page(product_next_page, second_offer, 1, false, true)
+      assert offer_discovery_query_budget(queries) == 5
+    end
+
     test "public opaque-key aliases keep values and SELECT budgets fixed per lookup kind as aliases grow",
          %{conn: conn} do
       prefix = "public-opaque-#{System.unique_integer([:positive])}"
@@ -1181,6 +1459,139 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       }
       monitorNext: products(first: 1, after: $after, filters: $monitorFilters) {
         edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp merchant_discovery_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        merchants#{index}: merchants(first: 1) {
+          edges { cursor node { id name domain } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query MerchantDiscoveryAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp merchant_discovery_mixed_key_query do
+    """
+    query MerchantDiscoveryMixedKeys($after: String!) {
+      first: merchants(first: 1) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      firstDuplicate: merchants(first: 1) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      next: merchants(first: 1, after: $after) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp offer_discovery_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        merchantProducts#{index}: merchantProducts(input: $input) {
+          edges {
+            cursor
+            node {
+              id
+              isActive
+              merchant { id name domain }
+              product { id name slug }
+              latestPrice {
+                id
+                observedAt
+                price
+                sourceArtifact { id sourceName fetchedAt }
+              }
+              activeCoupons(first: 1) {
+                edges {
+                  cursor
+                  node {
+                    code
+                    description
+                    discountType
+                    discountValue
+                    currency
+                    validTo
+                    terms
+                  }
+                }
+                pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+              }
+              priceHistory(first: 1) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    observedAt
+                    price
+                    sourceArtifact { id sourceName fetchedAt }
+                  }
+                }
+                pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+              }
+            }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OfferDiscoveryAliases($input: MerchantProductsInput!) {
+      #{selections}
+    }
+    """
+  end
+
+  defp offer_discovery_mixed_key_query do
+    """
+    query OfferDiscoveryMixedKeys(
+      $productFirst: MerchantProductsInput!
+      $merchantFiltered: MerchantProductsInput!
+      $activeOnly: MerchantProductsInput!
+      $otherProduct: MerchantProductsInput!
+      $productNext: MerchantProductsInput!
+    ) {
+      productFirst: merchantProducts(input: $productFirst) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      productFirstDuplicate: merchantProducts(input: $productFirst) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      merchantFiltered: merchantProducts(input: $merchantFiltered) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      activeOnly: merchantProducts(input: $activeOnly) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      otherProduct: merchantProducts(input: $otherProduct) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      productNext: merchantProducts(input: $productNext) {
+        edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
     }
@@ -2009,6 +2420,187 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                    "id" => relay_id(:product, product.id),
                    "name" => product.name,
                    "slug" => product.slug
+                 }
+               }
+             ],
+             "pageInfo" => %{
+               "hasNextPage" => has_next_page,
+               "hasPreviousPage" => has_previous_page,
+               "startCursor" => cursor_for(cursor_index),
+               "endCursor" => cursor_for(cursor_index)
+             }
+           }
+  end
+
+  defp merchant_discovery_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :merchants))
+  end
+
+  defp offer_discovery_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :merchant_products))
+  end
+
+  defp assert_merchant_discovery_alias_values(response, alias_count, merchant) do
+    assert %{"data" => data} = response
+
+    expected_page = merchant_discovery_page(merchant, 0, true, false)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["merchants#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_merchant_discovery_page(
+         page,
+         merchant,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page ==
+             merchant_discovery_page(merchant, cursor_index, has_next_page, has_previous_page)
+  end
+
+  defp merchant_discovery_page(merchant, cursor_index, has_next_page, has_previous_page) do
+    %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(cursor_index),
+          "node" => %{
+            "id" => relay_id(:merchant, merchant.id),
+            "name" => merchant.name,
+            "domain" => merchant.domain
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => has_next_page,
+        "hasPreviousPage" => has_previous_page,
+        "startCursor" => cursor_for(cursor_index),
+        "endCursor" => cursor_for(cursor_index)
+      }
+    }
+  end
+
+  defp assert_offer_discovery_alias_values(
+         response,
+         alias_count,
+         merchant_product,
+         merchant,
+         product,
+         latest_price,
+         artifact,
+         source,
+         coupon,
+         observed_at,
+         coupon_valid_to
+       ) do
+    assert %{"data" => data} = response
+
+    expected_page = %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(0),
+          "node" => %{
+            "id" => relay_id(:merchant_product, merchant_product.id),
+            "isActive" => true,
+            "merchant" => %{
+              "id" => relay_id(:merchant, merchant.id),
+              "name" => merchant.name,
+              "domain" => merchant.domain
+            },
+            "product" => %{
+              "id" => relay_id(:product, product.id),
+              "name" => product.name,
+              "slug" => product.slug
+            },
+            "latestPrice" => %{
+              "id" => relay_id(:price_point, latest_price.id),
+              "observedAt" => DateTime.to_iso8601(observed_at),
+              "price" => "99.99",
+              "sourceArtifact" => %{
+                "id" => relay_id(:source_artifact, artifact.id),
+                "sourceName" => source.name,
+                "fetchedAt" => DateTime.to_iso8601(observed_at)
+              }
+            },
+            "activeCoupons" => %{
+              "edges" => [
+                %{
+                  "cursor" => cursor_for(0),
+                  "node" => %{
+                    "code" => coupon.code,
+                    "description" => coupon.description,
+                    "discountType" => "PERCENT",
+                    "discountValue" => "10",
+                    "currency" => nil,
+                    "validTo" => DateTime.to_iso8601(coupon_valid_to),
+                    "terms" => nil
+                  }
+                }
+              ],
+              "pageInfo" => %{
+                "hasNextPage" => false,
+                "hasPreviousPage" => false,
+                "startCursor" => cursor_for(0),
+                "endCursor" => cursor_for(0)
+              }
+            },
+            "priceHistory" => %{
+              "edges" => [
+                %{
+                  "cursor" => cursor_for(0),
+                  "node" => %{
+                    "id" => relay_id(:price_point, latest_price.id),
+                    "observedAt" => DateTime.to_iso8601(observed_at),
+                    "price" => "99.99",
+                    "sourceArtifact" => %{
+                      "id" => relay_id(:source_artifact, artifact.id),
+                      "sourceName" => source.name,
+                      "fetchedAt" => DateTime.to_iso8601(observed_at)
+                    }
+                  }
+                }
+              ],
+              "pageInfo" => %{
+                "hasNextPage" => true,
+                "hasPreviousPage" => false,
+                "startCursor" => cursor_for(0),
+                "endCursor" => cursor_for(0)
+              }
+            }
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => false,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor_for(0),
+        "endCursor" => cursor_for(0)
+      }
+    }
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["merchantProducts#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_offer_discovery_page(
+         page,
+         merchant_product,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page == %{
+             "edges" => [
+               %{
+                 "cursor" => cursor_for(cursor_index),
+                 "node" => %{
+                   "id" => relay_id(:merchant_product, merchant_product.id),
+                   "merchantId" => relay_id(:merchant, merchant_product.merchant_id),
+                   "productId" => relay_id(:product, merchant_product.product_id),
+                   "isActive" => merchant_product.is_active
                  }
                }
              ],

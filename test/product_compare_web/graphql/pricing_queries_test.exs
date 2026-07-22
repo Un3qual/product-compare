@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -237,6 +238,132 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                    "first" => -1
                  }
                })
+    end
+
+    test "merchants directly paginates the public directory without a loader" do
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Direct Merchant First"),
+          domain: unique_domain("direct-merchant-first")
+        })
+
+      second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Direct Merchant Second"),
+          domain: unique_domain("direct-merchant-second")
+        })
+
+      assert {:ok,
+              %{
+                edges: [%{cursor: cursor, node: first_node}],
+                page_info: %{has_next_page: true, has_previous_page: false}
+              }} = PricingResolver.merchants(nil, %{first: 1}, %{})
+
+      assert first_node.id == first_merchant.id
+
+      assert {:ok,
+              %{
+                edges: [%{node: second_node}],
+                page_info: %{has_next_page: false, has_previous_page: true}
+              }} = PricingResolver.merchants(nil, %{first: 1, after: cursor}, %{})
+
+      assert second_node.id == second_merchant.id
+    end
+
+    test "merchantProducts directly applies normalized public filters without a loader" do
+      product = SpecsFixtures.product_fixture(%{slug: "direct-offer-product"})
+      merchant = merchant_fixture(%{name: unique_name("Direct Offer Merchant")})
+
+      active_offer =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: true})
+
+      _inactive_offer =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: false})
+
+      assert {:ok,
+              %{
+                edges: [%{node: offer}],
+                page_info: %{has_next_page: false, has_previous_page: false}
+              }} =
+               PricingResolver.merchant_products(
+                 nil,
+                 %{
+                   input: %{
+                     product_id: relay_id(:product, product.id),
+                     merchant_id: relay_id(:merchant, merchant.id),
+                     active_only: true,
+                     first: 1
+                   }
+                 },
+                 %{}
+               )
+
+      assert offer.id == active_offer.id
+      assert offer.product_id == product.id
+      assert offer.merchant_id == merchant.id
+      assert offer.is_active
+    end
+
+    test "merchant discovery root rejects invalid connection inputs before collection SELECTs", %{
+      conn: conn
+    } do
+      {invalid_cursor_response, invalid_cursor_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchants_query(), %{"first" => 1, "after" => "bad-cursor"})
+        end)
+
+      assert %{
+               "data" => %{"merchants" => nil},
+               "errors" => [%{"message" => "invalid cursor", "path" => ["merchants"]} | _]
+             } = invalid_cursor_response
+
+      assert root_collection_select_count(invalid_cursor_queries, :merchants) == 0
+
+      {invalid_first_response, invalid_first_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchants_query(), %{"first" => -1})
+        end)
+
+      assert %{
+               "data" => %{"merchants" => nil},
+               "errors" => [%{"message" => "invalid first", "path" => ["merchants"]} | _]
+             } = invalid_first_response
+
+      assert root_collection_select_count(invalid_first_queries, :merchants) == 0
+    end
+
+    test "offer discovery root rejects invalid IDs and connection inputs before collection SELECTs",
+         %{conn: conn, test: test_name} do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-validation-product"})
+      merchant = merchant_fixture(%{name: unique_name("Validation Merchant")})
+
+      invalid_inputs = [
+        {%{"productId" => product.id}, "invalid product id"},
+        {
+          %{
+            "productId" => relay_id(:product, product.id),
+            "merchantId" => merchant.id
+          },
+          "invalid merchant id"
+        },
+        {%{"productId" => relay_id(:product, product.id), "first" => -1}, "invalid first"},
+        {%{"productId" => relay_id(:product, product.id), "after" => "bad-cursor"},
+         "invalid cursor"}
+      ]
+
+      Enum.each(invalid_inputs, fn {input, message} ->
+        {response, queries} =
+          capture_select_queries(fn ->
+            graphql(conn, merchant_products_query(), %{"input" => input})
+          end)
+
+        assert %{
+                 "data" => %{"merchantProducts" => nil},
+                 "errors" => [%{"message" => ^message, "path" => ["merchantProducts"]} | _]
+               } = response
+
+        assert root_collection_select_count(queries, :merchant_products) == 0
+      end)
     end
 
     test "product merchantProducts scopes offers to its parent and preserves pagination", %{
@@ -1257,6 +1384,10 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp root_collection_select_count(queries, table) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
   defp unique_name(prefix), do: "#{prefix} #{System.unique_integer([:positive])}"

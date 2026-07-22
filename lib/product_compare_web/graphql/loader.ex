@@ -383,6 +383,24 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     Map.new(roots, &{&1, {:ok, result}})
   end
 
+  defp discovery_root_batch({:merchants, connection_args}, roots) when is_map(connection_args) do
+    result =
+      Pricing.list_merchants_query()
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
+  defp discovery_root_batch({:merchant_products, attrs, connection_args}, roots)
+       when is_map(attrs) and is_map(connection_args) do
+    result =
+      attrs
+      |> Pricing.list_merchant_products_query()
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
   defp public_slug_batch(:product, slugs) do
     slugs
     |> Enum.to_list()

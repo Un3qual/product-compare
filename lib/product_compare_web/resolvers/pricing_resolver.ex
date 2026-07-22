@@ -12,7 +12,22 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @spec merchants(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def merchants(_parent, args, %{context: %{loader: loader}}) do
+    connection_args = Input.connection_args(args)
+
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.discovery_root_source()
+      batch_key = {:merchants, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def merchants(_parent, args, _resolution) do
     query = Pricing.list_merchants_query()
     Connection.from_query_result(query, Input.connection_args(args), Repo)
@@ -62,7 +77,22 @@ defmodule ProductCompareWeb.Resolvers.PricingResolver do
   end
 
   @spec merchant_products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def merchant_products(_parent, %{input: input}, %{context: %{loader: loader}}) do
+    with {:ok, attrs} <- normalize_merchant_products_input(input),
+         connection_args = Input.connection_args(attrs),
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.discovery_root_source()
+      batch_key = {:merchant_products, attrs, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def merchant_products(_parent, %{input: input}, _resolution) do
     with {:ok, attrs} <- normalize_merchant_products_input(input) do
       query = Pricing.list_merchant_products_query(attrs)
