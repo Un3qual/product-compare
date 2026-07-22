@@ -524,43 +524,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     test "catalog discovery root aliases preserve exact values and fixed SELECT budgets as aliases grow",
          %{conn: conn, test: test_name} do
-      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
-
-      laptop_taxon =
-        TaxonomyFixtures.taxon_fixture(%{
-          taxonomy_id: type_taxonomy.id,
-          code: canonical_slug("#{test_name}-catalog-laptop"),
-          name: "Laptop"
-        })
-
-      monitor_taxon =
-        TaxonomyFixtures.taxon_fixture(%{
-          taxonomy_id: type_taxonomy.id,
-          code: canonical_slug("#{test_name}-catalog-monitor"),
-          name: "Monitor"
-        })
-
-      monitor_product =
-        SpecsFixtures.product_fixture(%{
-          slug: canonical_slug("#{test_name}-catalog-monitor-first"),
-          name: "Catalog Monitor First",
-          primary_type_taxon: monitor_taxon
-        })
-
-      _monitor_sibling =
-        SpecsFixtures.product_fixture(%{
-          slug: canonical_slug("#{test_name}-catalog-monitor-second"),
-          name: "Catalog Monitor Second",
-          primary_type_taxon: monitor_taxon
-        })
-
-      _laptop_product =
-        SpecsFixtures.product_fixture(%{
-          slug: canonical_slug("#{test_name}-catalog-laptop-first"),
-          name: "Catalog Laptop First",
-          primary_type_taxon: laptop_taxon
-        })
-
+      {monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
       filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
 
       {two_response, two_queries} =
@@ -593,6 +557,56 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                catalog_discovery_product_query_budget(two_queries),
                catalog_discovery_product_query_budget(four_queries)
              } == {4, 4}
+    end
+
+    test "products discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      {monitor_product, monitor_taxon, _laptop_taxon} = catalog_discovery_records(test_name)
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_products_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_products_alias_values(two_response, 2, monitor_product)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_products_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_products_alias_values(four_response, 4, monitor_product)
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "product filter metadata root aliases preserve exact selected values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      {_monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_filter_metadata_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_filter_metadata_alias_values(two_response, 2, monitor_taxon, laptop_taxon)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_filter_metadata_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_filter_metadata_alias_values(four_response, 4, monitor_taxon, laptop_taxon)
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {3, 3}
     end
 
     test "catalog discovery roots keep normalized filters and Relay pages isolated in one request",
@@ -1438,6 +1452,42 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     query CatalogDiscoveryAliases($filters: ProductFiltersInput!) {
       #{product_selections}
       #{metadata_selections}
+    }
+    """
+  end
+
+  defp catalog_products_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        products#{index}: products(first: 1, filters: $filters) {
+          edges { cursor node { id name slug brand { id } } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query CatalogProductsAliases($filters: ProductFiltersInput!) {
+      #{selections}
+    }
+    """
+  end
+
+  defp catalog_filter_metadata_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        metadata#{index}: productFilterMetadata(filters: $filters) {
+          resultCount
+          typeOptions { id label count selected disabled }
+        }
+        """
+      end)
+
+    """
+    query CatalogFilterMetadataAliases($filters: ProductFiltersInput!) {
+      #{selections}
     }
     """
   end
@@ -2350,6 +2400,47 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.count(queries, &query_targets_table?(&1, :products))
   end
 
+  defp catalog_discovery_records(test_name) do
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    laptop_taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: canonical_slug("#{test_name}-catalog-laptop"),
+        name: "Laptop"
+      })
+
+    monitor_taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: canonical_slug("#{test_name}-catalog-monitor"),
+        name: "Monitor"
+      })
+
+    monitor_product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-monitor-first"),
+        name: "Catalog Monitor First",
+        primary_type_taxon: monitor_taxon
+      })
+
+    _monitor_sibling =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-monitor-second"),
+        name: "Catalog Monitor Second",
+        primary_type_taxon: monitor_taxon
+      })
+
+    _laptop_product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-laptop-first"),
+        name: "Catalog Laptop First",
+        primary_type_taxon: laptop_taxon
+      })
+
+    {monitor_product, monitor_taxon, laptop_taxon}
+  end
+
   defp assert_catalog_discovery_alias_values(
          response,
          alias_count,
@@ -2359,7 +2450,40 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
        ) do
     assert %{"data" => data} = response
 
-    expected_page = %{
+    expected_page = catalog_discovery_product_page(monitor_product)
+    expected_metadata = catalog_filter_metadata(monitor_taxon, laptop_taxon)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["products#{index}"] == expected_page
+      assert data["metadata#{index}"] == expected_metadata
+    end)
+  end
+
+  defp assert_catalog_products_alias_values(response, alias_count, monitor_product) do
+    assert %{"data" => data} = response
+    expected_page = catalog_discovery_product_page(monitor_product)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["products#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_catalog_filter_metadata_alias_values(
+         response,
+         alias_count,
+         monitor_taxon,
+         laptop_taxon
+       ) do
+    assert %{"data" => data} = response
+    expected_metadata = catalog_filter_metadata(monitor_taxon, laptop_taxon)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["metadata#{index}"] == expected_metadata
+    end)
+  end
+
+  defp catalog_discovery_product_page(monitor_product) do
+    %{
       "edges" => [
         %{
           "cursor" => cursor_for(0),
@@ -2378,8 +2502,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         "endCursor" => cursor_for(0)
       }
     }
+  end
 
-    expected_metadata = %{
+  defp catalog_filter_metadata(monitor_taxon, laptop_taxon) do
+    %{
       "resultCount" => 2,
       "typeOptions" => [
         %{
@@ -2398,11 +2524,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         }
       ]
     }
-
-    Enum.each(1..alias_count, fn index ->
-      assert data["products#{index}"] == expected_page
-      assert data["metadata#{index}"] == expected_metadata
-    end)
   end
 
   defp assert_catalog_discovery_page(

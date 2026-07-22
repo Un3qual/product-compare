@@ -7,7 +7,7 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
 - Last verified: 2026-07-21 against the committed catalog and offer discovery
-  root behavior, request loader, connection helper, and 93 passing focused
+  root behavior, request loader, connection helper, and 95 passing focused
   tests. Final whole-batch review, full CI, and coordinator queue removal are
   still required before this lane is done.
 - Owner: `codex/bounded-comparison-root-reads`
@@ -25,20 +25,20 @@ pagination, validation, nested values, or schema behavior.
 
 | Root field | Request shape | Before | After |
 | --- | --- | ---: | ---: |
-| `products` + `productFilterMetadata` | Two identical aliases of each root | 8 combined catalog-root `products` SELECTs | 4 combined catalog-root `products` SELECTs |
-| `products` + `productFilterMetadata` | Four identical aliases of each root | 16 combined catalog-root `products` SELECTs | 4 combined catalog-root `products` SELECTs |
+| `products` | Two identical aliases | 2 `products` SELECTs | 1 `products` SELECT |
+| `products` | Four identical aliases | 4 `products` SELECTs | 1 `products` SELECT |
+| `productFilterMetadata` | Two identical aliases | 6 `products` SELECTs | 3 `products` SELECTs |
+| `productFilterMetadata` | Four identical aliases | 12 `products` SELECTs | 3 `products` SELECTs |
 | `merchants` | Two identical aliases | 2 `merchants` SELECTs | 1 `merchants` SELECT |
 | `merchants` | Four identical aliases | 4 `merchants` SELECTs | 1 `merchants` SELECT |
 | `merchantProducts` | Two identical aliases | 2 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
 | `merchantProducts` | Four identical aliases | 4 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
 
-`products` and `productFilterMetadata` share the same catalog-root regression
-and table-level counter, so it does not establish a truthful per-field split.
-**NEEDS_CONTEXT:** a behavioral oracle that issues repeated aliases of one
-catalog root while holding the other absent (or separately tags each root's
-query) is required to state individual `products` and
-`productFilterMetadata` budgets. The recorded combined budget is the exact
-evidence currently established; it is not a claimed individual budget.
+Products-only and metadata-only GraphQL requests establish these individual
+budgets directly. Mutation verification temporarily restored each root's direct
+resolver path independently: products grew to 2 then 4 SELECTs, and metadata
+grew to 6 then 12 SELECTs, while their exact value assertions remained ahead of
+the budget assertions. The loader-backed production bytes were then restored.
 
 ### Public-behavior coverage
 
@@ -76,7 +76,7 @@ evidence currently established; it is not a claimed individual budget.
 
 ## Verification
 
-- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs` — 93 tests, 0 failures.
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs` — 95 tests, 0 failures.
 - `mix typecheck` — passed.
 - `mix format --check-formatted` — passed.
 - `mix work_queue.validate` — passed: 3 ready rows. The restricted-sandbox
