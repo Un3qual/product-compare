@@ -1372,15 +1372,21 @@ The full GraphQL gate passed 307 tests, and `mix ci` passed 902 backend tests,
 1,507 frontend tests, Relay validation, TypeScript, and both production builds.
 The three ready successors remain dispatchable.
 
+Before claiming Discussions Context Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,291-line `ProductCompare.Ingestion` facade still owns import-run lifecycle,
+merchant-feed-candidate policy, merchant identity, and canonical normalized-
+listing persistence behind one stable public boundary. Ingestion Context
+Decomposition was promoted after its direct ingestion, enrichment,
+reconciliation, and merchant-feed-candidate GraphQL characterization gate
+passed 60 tests. The Discussions claim therefore leaves three complete ready
+rows without reopening deferred provider, dashboard, or operator work.
+
 ## Active Work
-
-None.
-
-## Ready Work
 
 ### 1. Discussions Context Decomposition
 
-Status: ready
+Status: active
 Lane: Discussions context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Discussions` remains the stable caller-facing
@@ -1439,7 +1445,9 @@ implementation responsibility has one focused internal owner, all seven
 characterization suites and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Specs Context Decomposition
+## Ready Work
+
+### 1. Specs Context Decomposition
 
 Status: ready
 Lane: Specs context decomposition
@@ -1503,7 +1511,7 @@ implementation responsibility has one focused internal owner, the exact 79-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
 
-### 3. Commerce Attribution Context Decomposition
+### 2. Commerce Attribution Context Decomposition
 
 Status: ready
 Lane: Commerce attribution context decomposition
@@ -1558,6 +1566,64 @@ Verification:
 
 Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused internal owner, the exact 81-
+test characterization gate and repository gates pass, and no caller bypasses
+the facade.
+
+### 3. Ingestion Context Decomposition
+
+Status: ready
+Lane: Ingestion context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Ingestion` remains the stable caller-facing
+context while import-run lifecycle, merchant-feed-candidate policy, merchant
+identity, and canonical normalized-listing persistence implementations live in
+focused internal modules with unchanged public APIs, transactions, conflicts,
+freshness, provenance, reconciliation, errors, and GraphQL behavior.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct ingestion, enrichment, reconciliation, and
+merchant-feed-candidate GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/ingestion.ex`
+- `lib/product_compare/ingestion/runs.ex`
+- `lib/product_compare/ingestion/feed_candidates.ex`
+- `lib/product_compare/ingestion/merchant_identities.ex`
+- `lib/product_compare/ingestion/listing_persistence.ex`
+- `test/product_compare/ingestion/ingestion_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/ingestion/reconciliation_test.exs`
+- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `docs/work/ingestion-context-decomposition.md`
+
+Internal slices:
+
+- Import-run lifecycle and reconciliation ownership extraction.
+- Merchant-feed-candidate query, ordering, and review ownership extraction.
+- Merchant identity resolution and freshness-safe conflict ownership.
+- Canonical normalized-listing transaction and persistence ownership.
+
+Prerequisites:
+
+- Existing `ProductCompare.Ingestion` public functions, arities, typespecs,
+  values, and errors remain authoritative.
+- Preserve transactions, conflict targets, freshness rules, replay,
+  reconciliation, product identity, enrichment, provenance, offer and price
+  persistence, and alert enqueueing.
+- Keep Mix tasks, jobs, resolvers, loaders, fixtures, and tests dependent only
+  on the facade; do not change schemas, migrations, GraphQL SDL, providers,
+  scheduling, product policy, or deferred ingestion/operator scope.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, the exact 60-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
 

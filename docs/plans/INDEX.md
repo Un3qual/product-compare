@@ -171,6 +171,13 @@ definition upserts, typed-value normalization, claim/import workflows,
 corrections/moderation, and read projections. Its path-disjoint direct Specs,
 ingestion enrichment, catalog filter, and recommendation characterization gate
 passed 79 tests, making the extraction executable without new product policy.
+Before claiming Discussions context decomposition, a thirteenth claim-floor
+audit promoted Ingestion context decomposition. The 1,291-line stable facade
+still combines import-run lifecycle, merchant-feed-candidate policy, merchant
+identity, and canonical normalized-listing persistence. Its direct ingestion,
+enrichment, reconciliation, and merchant-feed-candidate GraphQL
+characterization gate passed 60 tests. The structural extraction leaves
+provider, scheduling, dashboard, operator, and product policy unchanged.
 
 Implementation plan references (non-dispatch):
 
@@ -182,7 +189,10 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -254,6 +264,19 @@ batch and should not be recreated or promoted.
   typed-value, claim/import, correction/moderation, and read implementations
   move into focused internal modules. Its direct consumer characterization
   gate passes 79 tests.
+- Commerce Attribution context decomposition is a path-disjoint structural
+  successor: the stable `ProductCompare.CommerceAttribution` facade remains
+  caller-facing while click/redirect, conversion/purchase-fact, and revenue
+  implementations move into focused internal modules. Its direct context,
+  destination-policy, controller, and GraphQL characterization gate passes 81
+  tests.
+- Ingestion context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Ingestion` facade remains caller-facing while
+  import-run, merchant-feed-candidate, merchant-identity, and canonical listing
+  persistence implementations move into focused internal modules. Its direct
+  and GraphQL characterization gate passes 60 tests; deferred provider,
+  dashboard, operator, scheduling, and application-submission scope stays
+  closed.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
