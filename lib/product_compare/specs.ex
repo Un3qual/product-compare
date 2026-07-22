@@ -3,16 +3,12 @@ defmodule ProductCompare.Specs do
   Specs context for dimensions, units, attributes, and claim workflows.
   """
 
-  import Ecto.Query
-
-  alias Ecto.Multi
-  alias ProductCompare.Repo
+  alias ProductCompare.Ingestion.SpecificationObservation
+  alias ProductCompare.Specs.Claims
+  alias ProductCompare.Specs.Corrections
   alias ProductCompare.Specs.Definitions
   alias ProductCompare.Specs.Reads
-  alias ProductCompare.Specs.TypedValues
-  alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompareSchemas.Specs.Attribute
-  alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.Dimension
   alias ProductCompareSchemas.Specs.EnumOption
   alias ProductCompareSchemas.Specs.EnumSet
@@ -22,10 +18,6 @@ defmodule ProductCompare.Specs do
   alias ProductCompareSchemas.Specs.SpecificationCorrection
   alias ProductCompareSchemas.Specs.TaxonAttribute
   alias ProductCompareSchemas.Specs.Unit
-  alias ProductCompareSchemas.Catalog.Product
-
-  @claim_fingerprint_conflict_target {:unsafe_fragment,
-                                      "(fingerprint) WHERE fingerprint IS NOT NULL"}
 
   @max_bigint_id 9_223_372_036_854_775_807
   defguardp valid_id_guard(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
@@ -68,30 +60,7 @@ defmodule ProductCompare.Specs do
   @spec propose_claim(pos_integer(), pos_integer(), map(), map()) ::
           {:ok, ProductAttributeClaim.t()} | {:error, term()}
   def propose_claim(product_id, attribute_id, typed_value, provenance) do
-    with {:ok, attribute} <- fetch_attribute(attribute_id),
-         {:ok, normalized_value} <- normalize_typed_value(attribute, typed_value) do
-      attrs =
-        normalized_value
-        |> Map.merge(%{
-          product_id: product_id,
-          attribute_id: attribute_id,
-          source_type: Map.get(provenance, :source_type, :user),
-          status: :proposed,
-          created_by: Map.get(provenance, :created_by),
-          confidence: Map.get(provenance, :confidence)
-        })
-
-      Multi.new()
-      |> Multi.insert(:claim, ProductAttributeClaim.changeset(%ProductAttributeClaim{}, attrs))
-      |> Multi.run(:evidence, fn repo, %{claim: claim} ->
-        maybe_insert_evidence(repo, claim, provenance)
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{claim: claim}} -> {:ok, claim}
-        {:error, _step, reason, _changes} -> {:error, reason}
-      end
-    end
+    Claims.propose_claim(product_id, attribute_id, typed_value, provenance)
   end
 
   @spec propose_correction(pos_integer(), pos_integer(), pos_integer(), map(), map()) ::
@@ -99,55 +68,7 @@ defmodule ProductCompare.Specs do
   def propose_correction(product_id, attribute_id, user_id, typed_value, attrs)
       when valid_id_guard(product_id) and valid_id_guard(attribute_id) and
              valid_id_guard(user_id) and is_map(attrs) do
-    with %Product{} <- Repo.get(Product, product_id),
-         {:ok, attribute} <- fetch_attribute(attribute_id),
-         {:ok, normalized_value} <- normalize_typed_value(attribute, typed_value) do
-      current_claim_id =
-        Repo.one(
-          from current in ProductAttributeCurrent,
-            where: current.product_id == ^product_id and current.attribute_id == ^attribute_id,
-            select: current.claim_id
-        )
-
-      claim_attrs =
-        normalized_value
-        |> Map.merge(%{
-          product_id: product_id,
-          attribute_id: attribute_id,
-          source_type: :user,
-          status: :proposed,
-          created_by: user_id,
-          supersedes_claim_id: current_claim_id
-        })
-
-      Multi.new()
-      |> Multi.insert(
-        :claim,
-        ProductAttributeClaim.changeset(%ProductAttributeClaim{}, claim_attrs)
-      )
-      |> Multi.insert(:correction, fn %{claim: claim} ->
-        correction_attrs =
-          attrs
-          |> Map.take([:reason, :source_url, :explanation])
-          |> Map.merge(%{
-            claim_id: claim.id,
-            product_id: product_id,
-            attribute_id: attribute_id,
-            submitted_by: user_id,
-            status: :pending
-          })
-
-        SpecificationCorrection.changeset(%SpecificationCorrection{}, correction_attrs)
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{correction: correction}} -> {:ok, preload_correction(correction)}
-        {:error, _step, reason, _changes} -> {:error, reason}
-      end
-    else
-      nil -> {:error, :product_not_found}
-      {:error, _reason} = error -> error
-    end
+    Corrections.propose_correction(product_id, attribute_id, user_id, typed_value, attrs)
   end
 
   def propose_correction(_product_id, _attribute_id, _user_id, _typed_value, _attrs),
@@ -155,31 +76,18 @@ defmodule ProductCompare.Specs do
 
   @spec list_user_corrections_query(pos_integer(), keyword()) :: Ecto.Query.t()
   def list_user_corrections_query(user_id, opts \\ []) do
-    SpecificationCorrection
-    |> where([correction], correction.submitted_by == ^user_id)
-    |> maybe_filter_correction_status(Keyword.get(opts, :status))
-    |> order_by([correction], desc: correction.inserted_at, desc: correction.id)
-    |> preload([:product, :attribute, claim: [:unit, :enum_option]])
+    Corrections.list_user_corrections_query(user_id, opts)
   end
 
   @spec list_correction_moderation_query(keyword()) :: Ecto.Query.t()
   def list_correction_moderation_query(opts \\ []) do
-    SpecificationCorrection
-    |> maybe_filter_correction_status(Keyword.get(opts, :status, :pending))
-    |> order_by([correction], asc: correction.inserted_at, asc: correction.id)
-    |> preload([:product, :attribute, claim: [:unit, :enum_option]])
+    Corrections.list_correction_moderation_query(opts)
   end
 
   @spec correction_counts_for_product(pos_integer()) ::
           %{optional(pos_integer()) => %{pending: non_neg_integer(), accepted: non_neg_integer()}}
   def correction_counts_for_product(product_id) when valid_id_guard(product_id) do
-    SpecificationCorrection
-    |> where([correction], correction.product_id == ^product_id)
-    |> where([correction], correction.status in [:pending, :accepted])
-    |> group_by([correction], [correction.attribute_id, correction.status])
-    |> select([correction], {correction.attribute_id, correction.status, count(correction.id)})
-    |> Repo.all()
-    |> correction_counts_from_rows()
+    Corrections.correction_counts_for_product(product_id)
   end
 
   def correction_counts_for_product(_product_id), do: %{}
@@ -187,178 +95,21 @@ defmodule ProductCompare.Specs do
   @spec correction_counts([SpecificationCorrection.t()]) ::
           %{optional(pos_integer()) => %{pending: non_neg_integer(), accepted: non_neg_integer()}}
   def correction_counts(corrections) when is_list(corrections) do
-    corrections
-    |> Enum.filter(&(&1.status in [:pending, :accepted]))
-    |> Enum.frequencies_by(&{&1.attribute_id, &1.status})
-    |> Enum.map(fn {{attribute_id, status}, count} -> {attribute_id, status, count} end)
-    |> correction_counts_from_rows()
+    Corrections.correction_counts(corrections)
   end
 
   def correction_counts(_corrections), do: %{}
-
-  defp correction_counts_from_rows(rows) do
-    Enum.reduce(rows, %{}, fn {attribute_id, status, count}, counts ->
-      Map.update(
-        counts,
-        attribute_id,
-        %{
-          pending: if(status == :pending, do: count, else: 0),
-          accepted: if(status == :accepted, do: count, else: 0)
-        },
-        &Map.put(&1, status, count)
-      )
-    end)
-  end
 
   @spec moderate_correction(pos_integer(), pos_integer(), :accepted | :rejected, map()) ::
           {:ok, SpecificationCorrection.t()} | {:error, term()}
   def moderate_correction(correction_id, moderator_id, decision, attrs)
       when valid_id_guard(correction_id) and valid_id_guard(moderator_id) and
              decision in [:accepted, :rejected] and is_map(attrs) do
-    Repo.transaction(fn ->
-      correction =
-        Repo.one(
-          from correction in SpecificationCorrection,
-            where: correction.id == ^correction_id,
-            lock: "FOR UPDATE"
-        )
-
-      case correction do
-        nil ->
-          Repo.rollback(:correction_not_found)
-
-        %SpecificationCorrection{status: ^decision} ->
-          correction
-
-        %SpecificationCorrection{status: status} when status != :pending ->
-          Repo.rollback(:invalid_status_transition)
-
-        %SpecificationCorrection{} = correction ->
-          moderate_pending_correction(correction, moderator_id, decision, attrs)
-      end
-    end)
-    |> case do
-      {:ok, correction} -> {:ok, preload_correction(correction)}
-      {:error, reason} -> {:error, reason}
-    end
+    Corrections.moderate_correction(correction_id, moderator_id, decision, attrs)
   end
 
   def moderate_correction(_correction_id, _moderator_id, _decision, _attrs),
     do: {:error, :invalid_argument}
-
-  defp moderate_pending_correction(correction, moderator_id, :rejected, attrs) do
-    claim = lock_correction_claim!(correction.claim_id)
-
-    with {:ok, _claim} <-
-           claim
-           |> ProductAttributeClaim.changeset(%{status: :rejected})
-           |> Repo.update(),
-         {:ok, correction} <-
-           update_correction_decision(correction, moderator_id, :rejected, attrs) do
-      correction
-    else
-      {:error, reason} -> Repo.rollback(reason)
-    end
-  end
-
-  defp moderate_pending_correction(correction, moderator_id, :accepted, attrs) do
-    claim = lock_correction_claim!(correction.claim_id)
-
-    current =
-      Repo.one(
-        from current in ProductAttributeCurrent,
-          where:
-            current.product_id == ^correction.product_id and
-              current.attribute_id == ^correction.attribute_id,
-          lock: "FOR UPDATE"
-      )
-
-    current_claim_id = current && current.claim_id
-
-    if current_claim_id != claim.supersedes_claim_id do
-      Repo.rollback(:stale_current_claim)
-    end
-
-    with :ok <- supersede_previous_current(current),
-         {:ok, _claim} <-
-           claim
-           |> ProductAttributeClaim.changeset(%{status: :accepted})
-           |> Repo.update(),
-         {:ok, _current} <- upsert_correction_current(correction, moderator_id),
-         {:ok, correction} <-
-           update_correction_decision(correction, moderator_id, :accepted, attrs) do
-      correction
-    else
-      {:error, reason} -> Repo.rollback(reason)
-    end
-  end
-
-  defp lock_correction_claim!(claim_id) do
-    Repo.one!(
-      from claim in ProductAttributeClaim,
-        where: claim.id == ^claim_id and claim.status == :proposed,
-        lock: "FOR UPDATE"
-    )
-  end
-
-  defp supersede_previous_current(nil), do: :ok
-
-  defp supersede_previous_current(%ProductAttributeCurrent{claim_id: claim_id}) do
-    claim = Repo.get!(ProductAttributeClaim, claim_id)
-
-    case claim
-         |> ProductAttributeClaim.changeset(%{status: :superseded})
-         |> Repo.update() do
-      {:ok, _claim} -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp upsert_correction_current(correction, moderator_id) do
-    now = DateTime.utc_now()
-
-    %ProductAttributeCurrent{}
-    |> ProductAttributeCurrent.changeset(%{
-      product_id: correction.product_id,
-      attribute_id: correction.attribute_id,
-      claim_id: correction.claim_id,
-      selected_by: moderator_id,
-      selected_at: now
-    })
-    |> Repo.insert(
-      on_conflict: [
-        set: [claim_id: correction.claim_id, selected_by: moderator_id, selected_at: now]
-      ],
-      conflict_target: [:product_id, :attribute_id],
-      returning: true
-    )
-  end
-
-  defp update_correction_decision(correction, moderator_id, decision, attrs) do
-    moderation_attrs = %{
-      status: decision,
-      reviewed_by: moderator_id,
-      reviewed_at: DateTime.utc_now(),
-      moderation_note: Map.get(attrs, :moderation_note)
-    }
-
-    correction
-    |> SpecificationCorrection.moderation_changeset(moderation_attrs)
-    |> Repo.update()
-  end
-
-  defp maybe_filter_correction_status(query, nil), do: query
-
-  defp maybe_filter_correction_status(query, status)
-       when status in [:pending, :accepted, :rejected] do
-    where(query, [correction], correction.status == ^status)
-  end
-
-  defp maybe_filter_correction_status(query, _status), do: where(query, [correction], false)
-
-  defp preload_correction(correction) do
-    Repo.preload(correction, [:product, :attribute, claim: [:unit, :enum_option]])
-  end
 
   @spec import_observation(
           pos_integer(),
@@ -374,252 +125,25 @@ defmodule ProductCompare.Specs do
         provider,
         %SpecificationObservation{} = observation
       ) do
-    with %Attribute{} = attribute <- Repo.get_by(Attribute, code: observation.attribute_code),
-         :ok <- ensure_observation_type(attribute, observation),
-         {:ok, typed_value} <- observation_typed_value(attribute, observation),
-         {:ok, normalized_value} <- normalize_typed_value(attribute, typed_value) do
-      accepted = auto_accept_import?(product_id, attribute, provider, observation.confidence)
-      fingerprint = claim_fingerprint(product_id, attribute.id, artifact_id, normalized_value)
-
-      attrs =
-        normalized_value
-        |> Map.merge(%{
-          product_id: product_id,
-          attribute_id: attribute.id,
-          source_type: :import,
-          status: if(accepted, do: :accepted, else: :proposed),
-          confidence: observation.confidence,
-          fingerprint: fingerprint
-        })
-
-      Repo.transaction(fn ->
-        with {:ok, claim, replayed} <- insert_or_fetch_imported_claim(attrs, fingerprint),
-             :ok <- insert_import_evidence(claim, artifact_id, observation.evidence_excerpt),
-             {:ok, claim} <- maybe_select_imported_claim(claim, accepted) do
-          %{claim: claim, accepted: claim.status == :accepted, replayed: replayed}
-        else
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-    else
-      nil -> {:error, :attribute_not_found}
-      {:error, _reason} = error -> error
-    end
+    Claims.import_observation(product_id, artifact_id, provider, observation)
   end
-
-  defp ensure_observation_type(%Attribute{data_type: data_type}, %{data_type: data_type}), do: :ok
-  defp ensure_observation_type(_attribute, _observation), do: {:error, :attribute_type_mismatch}
-
-  defp observation_typed_value(%Attribute{data_type: :text}, %{value: value})
-       when is_binary(value),
-       do: {:ok, %{value_text: value}}
-
-  defp observation_typed_value(%Attribute{data_type: :bool}, %{value: value})
-       when is_boolean(value),
-       do: {:ok, %{value_bool: value}}
-
-  defp observation_typed_value(%Attribute{data_type: :int}, %{value: value})
-       when is_integer(value),
-       do: {:ok, %{value_int: value}}
-
-  defp observation_typed_value(%Attribute{data_type: :numeric} = attribute, observation) do
-    unit =
-      Repo.get_by(Unit,
-        dimension_id: attribute.dimension_id,
-        code: observation.unit_code
-      )
-
-    case unit do
-      %Unit{} -> {:ok, %{value_num: observation.value, unit_id: unit.id}}
-      nil -> {:error, :unit_not_found}
-    end
-  end
-
-  defp observation_typed_value(%Attribute{data_type: :enum} = attribute, observation) do
-    enum_option =
-      Repo.get_by(EnumOption,
-        enum_set_id: attribute.enum_set_id,
-        code: observation.enum_option_code
-      )
-
-    case enum_option do
-      %EnumOption{} -> {:ok, %{enum_option_id: enum_option.id}}
-      nil -> {:error, :invalid_enum_option}
-    end
-  end
-
-  defp observation_typed_value(%Attribute{data_type: :date}, %{value: %Date{} = value}),
-    do: {:ok, %{value_date: value}}
-
-  defp observation_typed_value(%Attribute{data_type: :timestamp}, %{
-         value: %DateTime{} = value
-       }),
-       do: {:ok, %{value_ts: value}}
-
-  defp observation_typed_value(%Attribute{data_type: :json}, %{value: value})
-       when is_map(value) or is_list(value),
-       do: {:ok, %{value_json: value}}
-
-  defp observation_typed_value(_attribute, _observation), do: {:error, :invalid_typed_value}
-
-  defp auto_accept_import?(product_id, attribute, provider, confidence) do
-    configured_codes =
-      :product_compare
-      |> Application.get_env(:ingestion_auto_accept_attributes, %{})
-      |> Map.get(to_string(provider), [])
-
-    confidence_high_enough? =
-      match?(%Decimal{}, confidence) and Decimal.compare(confidence, Decimal.new("0.90")) != :lt
-
-    attribute.code in configured_codes and confidence_high_enough? and
-      not Repo.exists?(
-        from current in ProductAttributeCurrent,
-          where: current.product_id == ^product_id and current.attribute_id == ^attribute.id
-      )
-  end
-
-  defp claim_fingerprint(product_id, attribute_id, artifact_id, normalized_value) do
-    [product_id, attribute_id, artifact_id, canonical_claim_value(normalized_value)]
-    |> Jason.encode!()
-    |> then(&:crypto.hash(:sha256, &1))
-    |> Base.encode16(case: :lower)
-  end
-
-  defp canonical_claim_value(value) when is_map(value) do
-    value
-    |> Enum.map(fn {key, nested} -> [to_string(key), canonical_claim_value(nested)] end)
-    |> Enum.sort_by(&List.first/1)
-  end
-
-  defp canonical_claim_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)
-  defp canonical_claim_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp canonical_claim_value(%Date{} = value), do: Date.to_iso8601(value)
-  defp canonical_claim_value(value), do: value
-
-  defp insert_or_fetch_imported_claim(attrs, fingerprint) do
-    %ProductAttributeClaim{}
-    |> ProductAttributeClaim.changeset(attrs)
-    |> Repo.insert(
-      on_conflict: :nothing,
-      conflict_target: @claim_fingerprint_conflict_target,
-      returning: true
-    )
-    |> case do
-      {:ok, %ProductAttributeClaim{id: nil}} ->
-        case Repo.get_by(ProductAttributeClaim, fingerprint: fingerprint) do
-          %ProductAttributeClaim{} = claim -> {:ok, claim, true}
-          nil -> {:error, :imported_claim_not_found}
-        end
-
-      {:ok, %ProductAttributeClaim{} = claim} ->
-        {:ok, claim, false}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  defp insert_import_evidence(claim, artifact_id, excerpt) do
-    %ClaimEvidence{}
-    |> ClaimEvidence.changeset(%{
-      claim_id: claim.id,
-      artifact_id: artifact_id,
-      excerpt: truncate_excerpt(excerpt)
-    })
-    |> Repo.insert(on_conflict: :nothing)
-    |> case do
-      {:ok, _evidence} -> :ok
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp truncate_excerpt(value) when is_binary(value), do: String.slice(value, 0, 500)
-  defp truncate_excerpt(_value), do: nil
-
-  defp maybe_select_imported_claim(%ProductAttributeClaim{status: :accepted} = claim, true) do
-    case select_current_claim(claim.product_id, claim.attribute_id, claim.id, nil) do
-      {:ok, _current} -> {:ok, claim}
-      {:error, reason} -> {:error, reason}
-    end
-  end
-
-  defp maybe_select_imported_claim(claim, _accepted), do: {:ok, claim}
 
   @spec accept_claim(pos_integer(), pos_integer()) ::
           {:ok, ProductAttributeClaim.t()} | {:error, term()}
   def accept_claim(claim_id, moderator_user_id) do
-    update_claim_status(claim_id, moderator_user_id, :accepted)
+    Claims.accept_claim(claim_id, moderator_user_id)
   end
 
   @spec reject_claim(pos_integer(), pos_integer()) ::
           {:ok, ProductAttributeClaim.t()} | {:error, term()}
   def reject_claim(claim_id, moderator_user_id) do
-    update_claim_status(claim_id, moderator_user_id, :rejected)
+    Claims.reject_claim(claim_id, moderator_user_id)
   end
 
   @spec select_current_claim(pos_integer(), pos_integer(), pos_integer(), pos_integer() | nil) ::
           {:ok, ProductAttributeCurrent.t()} | {:error, term()}
   def select_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
-    Multi.new()
-    |> Multi.run(:claim, fn repo, _changes ->
-      claim =
-        repo.one(
-          from claim in ProductAttributeClaim,
-            where: claim.id == ^claim_id,
-            lock: "FOR UPDATE"
-        )
-
-      case claim do
-        nil ->
-          {:error, :claim_not_found}
-
-        %ProductAttributeClaim{
-          product_id: ^product_id,
-          attribute_id: ^attribute_id,
-          status: :accepted
-        } = claim ->
-          {:ok, claim}
-
-        %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} ->
-          {:error, :claim_not_accepted}
-
-        _ ->
-          {:error, :claim_product_attribute_mismatch}
-      end
-    end)
-    |> Multi.run(:lock_existing, fn repo, _changes ->
-      repo.one(
-        from pac in ProductAttributeCurrent,
-          where: pac.product_id == ^product_id and pac.attribute_id == ^attribute_id,
-          lock: "FOR UPDATE"
-      )
-
-      {:ok, :locked}
-    end)
-    |> Multi.run(:upsert_current, fn repo, _changes ->
-      now = DateTime.utc_now()
-
-      attrs = %{
-        product_id: product_id,
-        attribute_id: attribute_id,
-        claim_id: claim_id,
-        selected_by: selector_user_id,
-        selected_at: now
-      }
-
-      %ProductAttributeCurrent{}
-      |> ProductAttributeCurrent.changeset(attrs)
-      |> repo.insert(
-        on_conflict: [set: [claim_id: claim_id, selected_by: selector_user_id, selected_at: now]],
-        conflict_target: [:product_id, :attribute_id],
-        returning: true
-      )
-    end)
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{upsert_current: current}} -> {:ok, current}
-      {:error, _step, reason, _changes} -> {:error, reason}
-    end
+    Claims.select_current_claim(product_id, attribute_id, claim_id, selector_user_id)
   end
 
   @spec list_current_attributes_for_products([pos_integer()]) :: %{
@@ -720,51 +244,5 @@ defmodule ProductCompare.Specs do
       current_attributes,
       taxon_attributes
     )
-  end
-
-  defp fetch_attribute(attribute_id) do
-    case Repo.get(Attribute, attribute_id) do
-      nil -> {:error, :attribute_not_found}
-      attribute -> {:ok, attribute}
-    end
-  end
-
-  defp normalize_typed_value(attribute, typed_value),
-    do: TypedValues.normalize(attribute, typed_value)
-
-  defp update_claim_status(claim_id, _moderator_user_id, new_status) do
-    case Repo.get(ProductAttributeClaim, claim_id) do
-      nil ->
-        {:error, :claim_not_found}
-
-      %ProductAttributeClaim{status: ^new_status} = claim ->
-        {:ok, claim}
-
-      %ProductAttributeClaim{status: :proposed} = claim ->
-        claim
-        |> ProductAttributeClaim.changeset(%{status: new_status})
-        |> Repo.update()
-
-      %ProductAttributeClaim{} ->
-        {:error, :invalid_status_transition}
-    end
-  end
-
-  defp maybe_insert_evidence(repo, claim, provenance) do
-    case Map.get(provenance, :artifact_id) do
-      nil ->
-        {:ok, :no_evidence}
-
-      artifact_id ->
-        evidence_attrs = %{
-          claim_id: claim.id,
-          artifact_id: artifact_id,
-          excerpt: Map.get(provenance, :excerpt)
-        }
-
-        %ClaimEvidence{}
-        |> ClaimEvidence.changeset(evidence_attrs)
-        |> repo.insert(on_conflict: :nothing)
-    end
   end
 end
