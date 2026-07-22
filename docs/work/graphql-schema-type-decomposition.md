@@ -2,21 +2,21 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
 - Last verified: 2026-07-22 against the live Absinthe schema, exact SDL
   snapshot, GraphQL suites, and current module layout.
 
-## Target Outcome
+## Batch Outcome
 
-`ProductCompareWeb.Schema` will remain the one root-operation and runtime facade,
-while its 151 type, input, enum, and interface definitions will move into
+`ProductCompareWeb.Schema` remains the one root-operation and runtime facade,
+while its 151 type, input, enum, and interface definitions live in
 focused Absinthe notation modules with unchanged SDL, resolver wiring,
 Dataloader behavior, authorization, errors, and public GraphQL values.
 
-## Ready Evidence
+## Baseline Evidence
 
 - `lib/product_compare_web/schema.ex` is 2,004 lines and is the only project
   schema/type module.
@@ -55,7 +55,7 @@ Dataloader behavior, authorization, errors, and public GraphQL values.
 - `mix ci`
 - `git diff --check`
 
-## Batch Outcome
+## Implementation Evidence
 
 - Status: complete at implementation commit `5e1614e6c69acda5d22f16d42b98f3c5effdea4e`
   (`refactor: extract graphql schema types`).

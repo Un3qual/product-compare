@@ -1363,58 +1363,18 @@ was promoted after its direct context, destination-policy, redirect-controller,
 commerce-click GraphQL, and revenue GraphQL characterization gate passed 81
 tests. The schema claim therefore leaves three complete ready rows.
 
+GraphQL Schema Type Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Schema` is now a 689-line root-operation and
+runtime facade, while Common, Accounts, Commerce, Catalog, and Trust notation
+modules own all 151 declarations. Ordered selective imports preserve the
+historical Absinthe registration order and the checked-in SDL byte for byte.
+The full GraphQL gate passed 307 tests, and `mix ci` passed 902 backend tests,
+1,507 frontend tests, Relay validation, TypeScript, and both production builds.
+The three ready successors remain dispatchable.
+
 ## Active Work
 
-### 1. GraphQL Schema Type Decomposition
-
-Status: active
-Lane: GraphQL schema type decomposition
-Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
-Batch outcome: the 2,004-line GraphQL schema remains one stable root-operation
-facade while its 151 type, input, enum, and interface definitions move into
-focused Absinthe notation modules with byte-for-byte SDL and unchanged runtime
-behavior.
-Next action: extract shared/account, commerce, catalog, and trust/community type
-declarations by domain while retaining root operations, context, and plugins in
-`ProductCompareWeb.Schema`.
-Owned paths:
-
-- `lib/product_compare_web/schema.ex`
-- `lib/product_compare_web/schema/types/common.ex`
-- `lib/product_compare_web/schema/types/accounts.ex`
-- `lib/product_compare_web/schema/types/commerce.ex`
-- `lib/product_compare_web/schema/types/catalog.ex`
-- `lib/product_compare_web/schema/types/trust.ex`
-- `test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `docs/work/graphql-schema-type-decomposition.md`
-
-Internal slices:
-
-- Shared, account, and commerce notation-module extraction.
-- Catalog and trust/community notation-module extraction.
-- Exact SDL, module-boundary, focused GraphQL, and full-suite parity.
-
-Prerequisites:
-
-- `assets/schema.graphql` and the live schema snapshot are authoritative and
-  must remain byte-for-byte unchanged.
-- Root query/mutation operations, `context/1`, and `plugins/0` remain in the
-  schema facade; only declarations move.
-- This row is path-disjoint from the completed request-loader decomposition.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `mix test test/product_compare_web/graphql`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade owns only runtime/root-operation concerns, five
-domain notation modules own all declarations, the checked-in SDL is unchanged,
-and focused plus full GraphQL and repository gates pass.
+None.
 
 ## Ready Work
 

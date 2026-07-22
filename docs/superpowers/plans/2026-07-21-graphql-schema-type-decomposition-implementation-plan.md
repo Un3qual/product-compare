@@ -32,40 +32,50 @@ prove resolver, Dataloader, authorization, and value parity.
 
 ---
 
-### Task 1: Shared, Account, And Commerce Type Modules
+### Task 1: Atomic Domain Type Extraction
 
 **Files:**
 
 - Create: `lib/product_compare_web/schema/types/common.ex`
 - Create: `lib/product_compare_web/schema/types/accounts.ex`
 - Create: `lib/product_compare_web/schema/types/commerce.ex`
+- Create: `lib/product_compare_web/schema/types/catalog.ex`
+- Create: `lib/product_compare_web/schema/types/trust.ex`
 - Modify: `lib/product_compare_web/schema.ex`
 - Modify: `test/product_compare_web/graphql/schema_snapshot_test.exs`
 
-**Interfaces:** Each new module uses `Absinthe.Schema.Notation` and is imported
-exactly once from `ProductCompareWeb.Schema`. `Common` owns `:page_info`,
-`:node`, `:mutation_error`, and cross-domain metadata. `Accounts` owns user,
-API-token, and browser-auth declarations. `Commerce` owns affiliate, revenue,
-merchant, offer, price, coupon, and ingestion-review declarations.
+**Interfaces:** Each new module uses `Absinthe.Schema.Notation` and defines each
+owned declaration exactly once. `Common` owns Relay and cross-domain metadata;
+`Accounts` owns user, API-token, and browser-auth declarations; `Commerce` owns
+affiliate, revenue, merchant, offer, price, coupon, and ingestion-review
+declarations; `Catalog` owns product, filter, recommendation, saved-comparison,
+and comparison-snapshot declarations; and `Trust` owns source-artifact,
+correction, watch, alert, review, Q&A, report, and moderation declarations.
 
-- [ ] Add a module-boundary characterization asserting all three notation
+This extraction is atomic. Absinthe accumulates notation-module imports before
+facade-local notation, while the historical schema interleaves the five
+domains. Ordered, non-overlapping selective imports across all five modules are
+therefore required to preserve the byte-for-byte SDL.
+
+- [ ] Add a module-boundary characterization asserting all five notation
   modules load while the full generated SDL still equals
-  `assets/schema.graphql`; run it before creating the modules and confirm RED
-  because the modules do not exist:
+  `assets/schema.graphql`; run it before creating the modules and confirm RED.
 
   ```elixir
   for module <- [
         ProductCompareWeb.Schema.Types.Common,
         ProductCompareWeb.Schema.Types.Accounts,
-        ProductCompareWeb.Schema.Types.Commerce
+        ProductCompareWeb.Schema.Types.Commerce,
+        ProductCompareWeb.Schema.Types.Catalog,
+        ProductCompareWeb.Schema.Types.Trust
       ] do
     assert Code.ensure_loaded?(module)
   end
 
   assert File.read!(schema_path) == Absinthe.Schema.to_sdl(ProductCompareWeb.Schema)
   ```
-- [ ] Create the three notation modules with this boundary and only the aliases
-  and `dataloader/2` import required by the declarations they own:
+- [ ] Create the five notation modules with only the aliases and `dataloader/2`
+  import required by the declarations they own:
 
   ```elixir
   defmodule ProductCompareWeb.Schema.Types.Common do
@@ -73,49 +83,18 @@ merchant, offer, price, coupon, and ingestion-review declarations.
   end
   ```
 
-- [ ] Move each owned declaration intact, import the modules from the schema
-  facade, and delete only the original duplicate declarations.
-- [ ] Run `mix test test/product_compare_web/graphql/schema_snapshot_test.exs
+- [ ] Move all 151 owned declarations intact and delete only their originals.
+- [ ] Add ordered, non-overlapping selective imports that cover every moved
+  declaration once and preserve the exact generated SDL.
+- [ ] Assert `ProductCompareWeb.Schema` retains root query/mutation operations,
+  `context/1`, and `plugins/0`, while the complete SDL snapshot remains exact.
+- [ ] Run the combined focused gate: `mix test
+  test/product_compare_web/graphql/schema_snapshot_test.exs
   test/product_compare_web/graphql/api_token_auth_test.exs
   test/product_compare_web/graphql/affiliate_workflows_test.exs
   test/product_compare_web/graphql/commerce_revenue_summary_test.exs
   test/product_compare_web/graphql/pricing_queries_test.exs
-  test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-  and confirm the boundary plus SDL and behavior are green.
-- [ ] Commit with message `refactor: extract shared commerce graphql types`.
-
-### Task 2: Catalog And Trust Type Modules
-
-**Files:**
-
-- Create: `lib/product_compare_web/schema/types/catalog.ex`
-- Create: `lib/product_compare_web/schema/types/trust.ex`
-- Modify: `lib/product_compare_web/schema.ex`
-- Modify: `test/product_compare_web/graphql/schema_snapshot_test.exs`
-
-**Interfaces:** `Catalog` owns product, filter metadata, recommendation, saved
-comparison, and immutable comparison-snapshot declarations. `Trust` owns
-source-artifact, specification-correction, price-watch, alert, review,
-question, answer, report, moderation, and community-submission declarations.
-Both modules follow the Task 1 notation-module boundary and are imported by the
-schema facade.
-
-- [ ] Extend the boundary characterization for both modules; run it before
-  creating them and confirm RED because the modules do not exist:
-
-  ```elixir
-  for module <- [
-        ProductCompareWeb.Schema.Types.Catalog,
-        ProductCompareWeb.Schema.Types.Trust
-      ] do
-    assert Code.ensure_loaded?(module)
-  end
-  ```
-- [ ] Create both notation modules, move their declarations intact, import
-  them from the schema facade, and remove only the original declarations.
-- [ ] Assert `ProductCompareWeb.Schema` retains root query/mutation operations,
-  `context/1`, and `plugins/0`, while the complete SDL snapshot remains exact.
-- [ ] Run `mix test test/product_compare_web/graphql/schema_snapshot_test.exs
+  test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs
   test/product_compare_web/graphql/catalog_queries_test.exs
   test/product_compare_web/graphql/catalog_filter_metadata_test.exs
   test/product_compare_web/graphql/recommendations_test.exs
@@ -126,9 +105,9 @@ schema facade.
   test/product_compare_web/graphql/price_watches_and_alerts_test.exs
   test/product_compare_web/graphql/community_content_test.exs` and confirm
   the boundary plus SDL and behavior are green.
-- [ ] Commit with message `refactor: extract catalog trust graphql types`.
+- [ ] Commit with message `refactor: extract graphql schema types`.
 
-### Task 3: Schema Decomposition Batch Gate
+### Task 2: Schema Decomposition Batch Gate
 
 **Files:**
 
