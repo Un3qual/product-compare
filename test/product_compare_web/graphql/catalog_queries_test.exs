@@ -1,7 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Catalog
   alias ProductCompare.Ingestion.MediaObservation
@@ -671,8 +672,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  ]
              end)
 
-      assert count_queries_targeting_table(queries, :product_attribute_current) == 1
-      assert count_queries_targeting_table(queries, :taxon_attributes) == 1
+      assert count_select_queries_targeting_table(queries, :product_attribute_current) == 1
+      assert count_select_queries_targeting_table(queries, :taxon_attributes) == 1
     end
 
     test "products caches base unit symbol lookups for current attribute connection nodes", %{
@@ -912,7 +913,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                "errors" => [%{"message" => "invalid cursor", "path" => ["products"]} | _]
              } = response
 
-      assert count_queries_targeting_table(queries, :products) == 0
+      assert count_select_queries_targeting_table(queries, :products) == 0
     end
 
     test "products rejects invalid first input", %{conn: conn} do
@@ -926,7 +927,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                "errors" => [%{"message" => "invalid first", "path" => ["products"]} | _]
              } = response
 
-      assert count_queries_targeting_table(queries, :products) == 0
+      assert count_select_queries_targeting_table(queries, :products) == 0
     end
 
     test "products searches product and brand text fields case-insensitively", %{conn: conn} do
@@ -1795,10 +1796,6 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp count_queries_targeting_table(queries, table) when is_atom(table) do
-    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
   defp count_base_unit_symbol_queries(queries) do

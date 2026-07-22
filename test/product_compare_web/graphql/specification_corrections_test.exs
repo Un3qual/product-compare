@@ -1,7 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
   use ProductCompareWeb.ConnCase, async: false
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -40,8 +41,13 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                ]
              } = forbidden_response
 
-      assert correction_select_count(anonymous_queries) == 0
-      assert correction_select_count(forbidden_queries) == 0
+      assert count_select_queries_targeting_table(anonymous_queries, :specification_corrections) ==
+               0
+
+      assert count_select_queries_targeting_table(
+               forbidden_queries,
+               :specification_corrections
+             ) == 0
     end
 
     test "requires authentication and validates typed IDs without writing", %{conn: conn} do
@@ -366,10 +372,6 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp correction_select_count(queries) do
-    Enum.count(queries, &String.contains?(&1, ~s(FROM "specification_corrections")))
   end
 
   defp propose_mutation do

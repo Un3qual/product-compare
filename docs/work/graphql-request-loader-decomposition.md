@@ -9,12 +9,12 @@
 - Last verified: 2026-07-21 against the live loader facade, resolver call sites,
   and Dataloader batching suite.
 
-## Batch Outcome
+## Target Outcome
 
-The request-scoped GraphQL loader remains one stable resolver-facing facade,
+The request-scoped GraphQL loader will remain one stable resolver-facing facade,
 while association, parent-collection, and root-request source construction and
-batch callbacks live in focused modules with unchanged source keys, values,
-errors, timestamps, authorization boundaries, and query budgets.
+batch callbacks will live in focused modules with unchanged source keys,
+values, errors, timestamps, authorization boundaries, and query budgets.
 
 ## Ready Evidence
 

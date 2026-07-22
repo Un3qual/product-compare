@@ -1,7 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Affiliate
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -317,7 +318,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                "errors" => [%{"message" => "invalid cursor", "path" => ["merchants"]} | _]
              } = invalid_cursor_response
 
-      assert root_collection_select_count(invalid_cursor_queries, :merchants) == 0
+      assert count_select_queries_targeting_table(invalid_cursor_queries, :merchants) == 0
 
       {invalid_first_response, invalid_first_queries} =
         capture_select_queries(fn ->
@@ -329,7 +330,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                "errors" => [%{"message" => "invalid first", "path" => ["merchants"]} | _]
              } = invalid_first_response
 
-      assert root_collection_select_count(invalid_first_queries, :merchants) == 0
+      assert count_select_queries_targeting_table(invalid_first_queries, :merchants) == 0
     end
 
     test "offer discovery root rejects invalid IDs and connection inputs before collection SELECTs",
@@ -362,7 +363,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "errors" => [%{"message" => ^message, "path" => ["merchantProducts"]} | _]
                } = response
 
-        assert root_collection_select_count(queries, :merchant_products) == 0
+        assert count_select_queries_targeting_table(queries, :merchant_products) == 0
       end)
     end
 
@@ -1384,10 +1385,6 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp root_collection_select_count(queries, table) do
-    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
   defp unique_name(prefix), do: "#{prefix} #{System.unique_integer([:positive])}"

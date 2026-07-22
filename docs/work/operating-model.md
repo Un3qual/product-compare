@@ -151,6 +151,11 @@ A plan should not include:
 - coordinator-owned docs as worker-owned files unless the row is explicitly a
   coordinator row
 
+A `ready` lane work doc labels its prospective contract `Target Outcome` and
+writes it in prospective language. Rename that section to `Batch Outcome` only
+after implementation and verification are complete, when it describes observed
+behavior rather than planned behavior.
+
 ## Handoff Formats
 
 Ready row handoff:

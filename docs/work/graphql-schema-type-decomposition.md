@@ -9,12 +9,12 @@
 - Last verified: 2026-07-21 against the live Absinthe schema, exact SDL
   snapshot, GraphQL suites, and current module layout.
 
-## Batch Outcome
+## Target Outcome
 
-`ProductCompareWeb.Schema` remains the one root-operation and runtime facade,
-while its 151 type, input, enum, and interface definitions move into focused
-Absinthe notation modules with unchanged SDL, resolver wiring, Dataloader
-behavior, authorization, errors, and public GraphQL values.
+`ProductCompareWeb.Schema` will remain the one root-operation and runtime facade,
+while its 151 type, input, enum, and interface definitions will move into
+focused Absinthe notation modules with unchanged SDL, resolver wiring,
+Dataloader behavior, authorization, errors, and public GraphQL values.
 
 ## Ready Evidence
 

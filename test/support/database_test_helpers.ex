@@ -30,6 +30,11 @@ defmodule ProductCompare.DatabaseTestHelpers do
     end
   end
 
+  @spec count_select_queries_targeting_table([String.t()], atom()) :: non_neg_integer()
+  def count_select_queries_targeting_table(queries, table) when is_atom(table) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
+  end
+
   def assert_blocked_by(waiting_backend_pid, blocking_backend_pid) do
     deadline = System.monotonic_time(:millisecond) + 2_000
     wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)

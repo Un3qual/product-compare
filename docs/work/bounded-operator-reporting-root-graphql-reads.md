@@ -9,11 +9,11 @@
 - Last verified: 2026-07-21 against live affiliate-workflow, commerce-revenue,
   and Dataloader GraphQL suites.
 
-## Batch Outcome
+## Target Outcome
 
-Identical operator-only active-coupon and revenue-summary root aliases reuse one
-authorized database read per normalized input within a GraphQL request without
-changing authorization, time/filter semantics, pagination, suppression,
+Identical operator-only active-coupon and revenue-summary root aliases will
+reuse one authorized database read per normalized input within a GraphQL request
+without changing authorization, time/filter semantics, pagination, suppression,
 metrics, errors, or schema behavior.
 
 ## Ready Evidence

@@ -1,7 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Ingestion
@@ -133,7 +134,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                ]
              } = response
 
-      assert merchant_feed_candidate_select_count(queries) == 0
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 0
     end
 
     test "merchantFeedCandidates rejects authenticated members", %{conn: conn} do
@@ -149,7 +150,7 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
              } = response
 
-      assert merchant_feed_candidate_select_count(queries) == 0
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 0
     end
 
     test "merchantFeedCandidate does not expose raw metadata fields", %{conn: conn} do
@@ -697,9 +698,5 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
-  end
-
-  defp merchant_feed_candidate_select_count(queries) do
-    Enum.count(queries, &String.contains?(&1, ~s(FROM "merchant_feed_candidates")))
   end
 end
