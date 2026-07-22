@@ -6,8 +6,8 @@
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the live Specs facade and five direct
-  consumer characterization suites.
+- Last verified: 2026-07-22 at `1d45e009` against the live Specs facade,
+  five direct consumer characterization suites, and the full CI gate.
 
 ## Target Outcome
 
@@ -16,24 +16,50 @@ definition upserts, typed-value normalization, claim/import workflows,
 correction/moderation workflows, and read projections live in focused internal
 modules with unchanged public APIs and behavior.
 
-## Ready Evidence
+## Final Structure Evidence
 
-- `ProductCompare.Specs` is 1,212 lines and owns five independently explainable
-  responsibilities behind one stable public context boundary.
-- Existing callers already depend only on the facade, so the implementation can
-  move internals without changing resolver, ingestion, catalog, SEO,
-  recommendation, comparison, or fixture call sites.
-- Direct Specs, ingestion enrichment, catalog filter metadata/filtering, and
-  recommendation characterization passed 79 tests on 2026-07-22.
-- The owned source and direct tests are path-disjoint from the other ready
-  structural rows and the completed loader decomposition.
+- `ProductCompare.Specs` is a 248-line stable public facade. It retains every
+  caller-facing guard, default, typespec, and delegation boundary.
+- `ProductCompare.Specs.Definitions` (89 lines) owns dimension, unit,
+  enum-set, enum-option, and attribute upserts plus canonical base-unit
+  conversion.
+- `ProductCompare.Specs.TypedValues` (158 lines) normalizes typed claim values
+  and validates decimal input, numeric ranges, units, and enum ownership.
+- `ProductCompare.Specs.Claims` (355 lines) owns claim proposal, imported
+  observation fingerprints/evidence/replay/auto-acceptance, status
+  transitions, and locked current-claim selection.
+- `ProductCompare.Specs.Corrections` (274 lines) owns correction proposal,
+  correction queries/counts, and transactional moderation/current-claim
+  replacement with stale-current protection.
+- `ProductCompare.Specs.Reads` (377 lines) owns source-artifact reads,
+  current-attribute projections and metadata, plus filter, enum-option, and
+  unit-symbol read helpers.
+- Existing focused helpers remain `ProductCompare.Specs.ClaimValue` (23 lines,
+  display formatting) and `ProductCompare.Specs.UnitConversion` (21 lines,
+  canonical decimal conversion). The facade and seven focused/supporting
+  modules total 1,545 lines.
+- A source-parsed public-export comparison against pre-decomposition
+  `cee69bee` found 34 facade exports before and after, with no additions or
+  removals. An external-caller scan for `Definitions`, `TypedValues`, `Claims`,
+  `Corrections`, and `Reads` returned no matches outside the facade and owned
+  implementation files: callers continue to use `ProductCompare.Specs` only.
+- The exact direct Specs, ingestion enrichment, catalog filter
+  metadata/filtering, and recommendation characterization gate passed 79 tests
+  with 0 failures on 2026-07-22.
 
-## Internal Slices
+## Analyzer Resolution Evidence
 
-1. Definition upsert, conversion, typed-value, and read ownership extraction.
-2. Claim, imported-observation, evidence, and current-selection extraction.
-3. Correction proposal, query/count, and moderation extraction.
-4. Full public-contract, transaction, query-budget, and consumer parity.
+- Initial CI exposed four Specs Dialyzer warnings after extraction: opaque
+  `Ecto.Multi` construction in claim/correction workflows and the
+  `MapSet` contract for filterable enum-option pairs. The source-only
+  `c987dab1` repair made the transaction sequencing explicit with
+  `Repo.transaction`/`with` while preserving the lock, rollback, idempotency,
+  and public-result contracts.
+- That repair briefly used `Enum.into(..., MapSet.new())` for the set contract;
+  Reach rejected the three occurrences as a smell. The source-only `1d45e009`
+  repair introduced the local `map_set/1` reducer instead, satisfying both
+  Dialyzer and Reach with no configuration, baseline, ignore-list, budget,
+  test, or public-spec change.
 
 ## Boundaries
 
@@ -50,9 +76,15 @@ modules with unchanged public APIs and behavior.
 
 ## Verification
 
-- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
+- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs` — 79 tests, 0 failures.
+- `mix typecheck` — passed.
+- `mix format --check-formatted` — passed.
+- `mix work_queue.validate` — passed; 3 ready rows.
+- `mix ci` — passed (Credo: 3,574 mods/funs with no issues; ExDNA clone budget
+  6/6; Reach: no new smells; Dialyzer: 15 baseline findings skipped; backend
+  coverage: 902 tests, 0 failures, configured 69% threshold, and generated
+  HTML results; frontend Relay validation, `tsc --noEmit`, and Vitest unit
+  checks passed; client and SSR builds completed in 2.73s and 1.54s; the
+  bundle contract passed at 596,440 raw / 182,164 gzip bytes across 1 initial
+  JavaScript file against the 200,000-gzip-byte budget).
+- `git diff --check` — passed.
