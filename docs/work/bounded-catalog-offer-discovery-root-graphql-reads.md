@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: verification-complete-pending-closeout
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
-- Last verified: 2026-07-21 against the live root schema, catalog and pricing
-  resolvers, request loader, connection helper, and 51 passing focused tests.
+- Last verified: 2026-07-21 against the committed catalog and offer discovery
+  root behavior, request loader, connection helper, and 93 passing focused
+  tests. Final whole-batch review, full CI, and coordinator queue removal are
+  still required before this lane is done.
 - Owner: `codex/bounded-comparison-root-reads`
 
 ## Batch Outcome
@@ -17,19 +19,44 @@ root aliases reuse one database read per normalized field, filters, and page
 within a GraphQL request without changing public values, filtering, ordering,
 pagination, validation, nested values, or schema behavior.
 
-## Ready Evidence
+## Verified Evidence
 
-- `products` validates filters and calls `Connection.from_query_result/3`
-  directly for every alias.
-- `productFilterMetadata` validates the same catalog filter contract and calls
-  `Catalog.product_filter_metadata/1` directly for every alias.
-- `merchants` and top-level `merchantProducts` each call
-  `Connection.from_query_result/3` directly for every alias after their current
-  argument normalization.
-- The focused catalog-query, filter-metadata, and pricing-query suites pass 51
-  tests. They characterize search, sorting, filters, selected metadata, Relay
-  IDs, connection order, cursors, page sizes, missing values, and nested offer
-  data, but do not prove repeated-alias budgets.
+### Root-read SELECT budgets
+
+| Root field | Request shape | Before | After |
+| --- | --- | ---: | ---: |
+| `products` + `productFilterMetadata` | Two identical aliases of each root | 8 combined catalog-root `products` SELECTs | 4 combined catalog-root `products` SELECTs |
+| `products` + `productFilterMetadata` | Four identical aliases of each root | 16 combined catalog-root `products` SELECTs | 4 combined catalog-root `products` SELECTs |
+| `merchants` | Two identical aliases | 2 `merchants` SELECTs | 1 `merchants` SELECT |
+| `merchants` | Four identical aliases | 4 `merchants` SELECTs | 1 `merchants` SELECT |
+| `merchantProducts` | Two identical aliases | 2 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
+| `merchantProducts` | Four identical aliases | 4 `merchant_products` SELECTs | 1 `merchant_products` SELECT |
+
+`products` and `productFilterMetadata` share the same catalog-root regression
+and table-level counter, so it does not establish a truthful per-field split.
+**NEEDS_CONTEXT:** a behavioral oracle that issues repeated aliases of one
+catalog root while holding the other absent (or separately tags each root's
+query) is required to state individual `products` and
+`productFilterMetadata` budgets. The recorded combined budget is the exact
+evidence currently established; it is not a claimed individual budget.
+
+### Public-behavior coverage
+
+- Growing-alias tests first assert exact Relay edge, cursor, page-info, Relay
+  ID, merchant, product, latest-price, active-coupon, price-history, and
+  source-artifact values; the SELECT budgets are asserted only afterward.
+- Catalog tests retain exact search, sort, numeric, boolean, enum, use-case,
+  and combined filter behavior. Filter metadata retains display-safe values,
+  Relay IDs, result counts, and selected numeric, boolean, and enum state.
+- Mixed-key requests prove isolation: normalized product filters and an
+  independent next Relay page use three `products` SELECTs; duplicate merchant
+  first pages plus a distinct next page use two `merchants` SELECTs; duplicate
+  offer keys plus distinct product, merchant, `activeOnly`, and next-page keys
+  use five `merchant_products` SELECTs.
+- Invalid catalog filters, IDs, cursors, and page sizes preserve their exact
+  GraphQL errors and execute zero root collection SELECTs before loading.
+- Direct no-loader resolver fallbacks remain covered for `products`,
+  `productFilterMetadata`, `merchants`, and `merchantProducts`.
 
 ## Internal Slices
 
@@ -49,10 +76,10 @@ pagination, validation, nested values, or schema behavior.
 
 ## Verification
 
-- Catalog-query, catalog-filter-metadata, pricing-query, and Dataloader batching
-  suites.
-- Growing-alias query-budget regressions for all four root fields.
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs` — 93 tests, 0 failures.
+- `mix typecheck` — passed.
+- `mix format --check-formatted` — passed.
+- `mix work_queue.validate` — passed: 3 ready rows. The restricted-sandbox
+  attempt could not open Mix.PubSub's local socket (`:eperm`); the
+  permission-enabled retry passed.
+- `git diff --check` — passed.
