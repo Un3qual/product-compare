@@ -165,6 +165,12 @@ runtime behavior with 151 type, input, enum, and interface declarations. The
 existing byte-for-byte SDL snapshot makes a domain-notation extraction
 immediately executable without choosing new product behavior. Root operations,
 context, plugins, resolver wiring, and `assets/schema.graphql` remain fixed.
+Before claiming the loader decomposition, a twelfth claim-floor audit promoted
+Specs context decomposition. The 1,212-line stable facade still combines
+definition upserts, typed-value normalization, claim/import workflows,
+corrections/moderation, and read projections. Its path-disjoint direct Specs,
+ingestion enrichment, catalog filter, and recommendation characterization gate
+passed 79 tests, making the extraction executable without new product policy.
 
 Implementation plan references (non-dispatch):
 
@@ -176,6 +182,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -241,6 +248,11 @@ batch and should not be recreated or promoted.
   moderation implementations move into focused internal modules. Its direct
   discussion, SEO, community GraphQL, and Dataloader characterization gate
   passes 104 tests.
+- Specs context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Specs` facade remains caller-facing while definition,
+  typed-value, claim/import, correction/moderation, and read implementations
+  move into focused internal modules. Its direct consumer characterization
+  gate passes 79 tests.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

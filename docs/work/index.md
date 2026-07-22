@@ -1338,15 +1338,20 @@ mixed-currency errors retain their prior behavior. The three ready successors
 remain dispatchable, and the loader-decomposition row now includes the
 thirteenth operator-reporting KV source.
 
+Before claiming GraphQL Request Loader Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,212-line `ProductCompare.Specs` facade still owns definition upserts, typed-
+value normalization, claim/import workflows, corrections/moderation, and read
+projections. Specs Context Decomposition was promoted after its path-disjoint
+direct consumer characterization gate passed 79 tests. The loader claim
+therefore leaves three complete ready rows.
+
 ## Active Work
-
-None.
-
-## Ready Work
 
 ### 1. GraphQL Request Loader Decomposition
 
-Status: ready
+Status: active
+Worker: current detached worktree
 Lane: GraphQL request loader decomposition
 Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
 Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
@@ -1412,7 +1417,9 @@ Exit condition: the facade only assembles sources and exposes stable keys, each
 source callback has one focused module owner, and all semantic plus query-budget
 gates pass without resolver or schema changes.
 
-### 2. GraphQL Schema Type Decomposition
+## Ready Work
+
+### 1. GraphQL Schema Type Decomposition
 
 Status: ready
 Lane: GraphQL schema type decomposition
@@ -1464,7 +1471,7 @@ Exit condition: the facade owns only runtime/root-operation concerns, five
 domain notation modules own all declarations, the checked-in SDL is unchanged,
 and focused plus full GraphQL and repository gates pass.
 
-### 3. Discussions Context Decomposition
+### 2. Discussions Context Decomposition
 
 Status: ready
 Lane: Discussions context decomposition
@@ -1524,6 +1531,70 @@ Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused internal owner, all seven
 characterization suites and repository gates pass, and no caller bypasses the
 facade.
+
+### 3. Specs Context Decomposition
+
+Status: ready
+Lane: Specs context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Specs` remains the stable caller-facing context
+while definition upserts, typed-value normalization, claim/import workflows,
+correction/moderation workflows, and read projections live in focused internal
+modules with unchanged public APIs, data behavior, transactions, errors,
+ordering, and query budgets.
+Next action: extract the five implementation responsibilities behind explicit
+facade wrappers and prove direct Specs plus consumer parity.
+Owned paths:
+
+- `lib/product_compare/specs.ex`
+- `lib/product_compare/specs/definitions.ex`
+- `lib/product_compare/specs/typed_values.ex`
+- `lib/product_compare/specs/claims.ex`
+- `lib/product_compare/specs/corrections.ex`
+- `lib/product_compare/specs/reads.ex`
+- `test/product_compare/specs/claim_moderation_status_transition_test.exs`
+- `test/product_compare/specs/corrections_test.exs`
+- `test/product_compare/specs/current_claim_selection_test.exs`
+- `test/product_compare/specs/product_attribute_claim_changeset_test.exs`
+- `test/product_compare/specs/product_attribute_claim_db_constraint_test.exs`
+- `test/product_compare/specs/read_helpers_test.exs`
+- `test/product_compare/specs/source_artifact_changeset_test.exs`
+- `test/product_compare/specs/unit_conversion_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `test/product_compare/catalog/filtering_regression_test.exs`
+- `test/product_compare/recommendations_test.exs`
+- `docs/work/specs-context-decomposition.md`
+
+Internal slices:
+
+- Definition upsert, conversion, typed-value, and read ownership extraction.
+- Claim, imported-observation, evidence, and current-selection extraction.
+- Correction proposal, query/count, and moderation extraction.
+- Public-contract, transaction, query-budget, and consumer parity.
+
+Prerequisites:
+
+- Existing `ProductCompare.Specs` public functions, arities, defaults,
+  typespecs, values, and errors remain authoritative.
+- Preserve typed normalization, transactions, locks, fingerprints, evidence,
+  replay, moderation, current selection, preloads, ordering, and query budgets.
+- Keep every caller dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, SQL semantics, or product policy.
+
+Verification:
+
+- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, the exact 79-
+test characterization gate and repository gates pass, and no caller bypasses
+the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
