@@ -1391,15 +1391,20 @@ tests, and the final `mix ci` passed 902 backend tests at 83.77% coverage,
 TypeScript, both production builds, and the bundle contract. The three ready
 successors remain dispatchable.
 
+Before claiming Specs Context Decomposition on 2026-07-22, the coordinator
+verified a fourth independently shippable structural outcome. The 721-line
+`ProductCompare.Accounts` facade still owns user provisioning/bootstrap,
+API-token lifecycle, and reputation behavior alongside the existing focused
+`UserAuth` owner. Accounts Context Decomposition was promoted after its direct
+Accounts, seed, API-token/session GraphQL, and authorized node characterization
+gate passed 112 tests. The Specs claim therefore leaves three complete ready
+rows without changing browser auth, authorization, seeds, or transport scope.
+
 ## Active Work
-
-None.
-
-## Ready Work
 
 ### 1. Specs Context Decomposition
 
-Status: ready
+Status: active
 Lane: Specs context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Specs` remains the stable caller-facing context
@@ -1461,7 +1466,9 @@ implementation responsibility has one focused internal owner, the exact 79-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
 
-### 2. Commerce Attribution Context Decomposition
+## Ready Work
+
+### 1. Commerce Attribution Context Decomposition
 
 Status: ready
 Lane: Commerce attribution context decomposition
@@ -1519,7 +1526,7 @@ implementation responsibility has one focused internal owner, the exact 81-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
 
-### 3. Ingestion Context Decomposition
+### 2. Ingestion Context Decomposition
 
 Status: ready
 Lane: Ingestion context decomposition
@@ -1576,6 +1583,69 @@ Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused internal owner, the exact 60-
 test characterization gate and repository gates pass, and no caller bypasses
 the facade.
+
+### 3. Accounts Context Decomposition
+
+Status: ready
+Lane: Accounts context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Accounts` remains the stable caller-facing
+context while user provisioning, API-token lifecycle, and reputation
+implementations live in focused internal modules alongside the existing
+`UserAuth` owner, with unchanged public APIs, auth behavior, transactions,
+locks, errors, and GraphQL behavior.
+Next action: extract the three remaining implementation responsibilities behind
+explicit facade wrappers and prove direct Accounts, seed, GraphQL auth, and
+authorized node parity.
+Owned paths:
+
+- `lib/product_compare/accounts.ex`
+- `lib/product_compare/accounts/users.ex`
+- `lib/product_compare/accounts/api_tokens.ex`
+- `lib/product_compare/accounts/reputation.ex`
+- `lib/product_compare/accounts/user_auth.ex`
+- `test/product_compare/accounts/api_token_test.exs`
+- `test/product_compare/accounts/create_user_test.exs`
+- `test/product_compare/accounts/reputation_upsert_test.exs`
+- `test/product_compare/accounts/user_auth_schema_test.exs`
+- `test/product_compare/accounts/user_auth_test.exs`
+- `test/product_compare/accounts/user_email_token_test.exs`
+- `test/product_compare/accounts/user_session_token_schema_test.exs`
+- `test/product_compare/repo/seeds_test.exs`
+- `test/product_compare_web/graphql/api_token_auth_test.exs`
+- `test/product_compare_web/graphql/session_auth_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `docs/work/accounts-context-decomposition.md`
+
+Internal slices:
+
+- User creation, lookup, trusted bootstrap, and password-repair ownership.
+- API-token issue, authentication, query, rotation, and revocation ownership.
+- Reputation persistence and bounded read ownership.
+- Existing `UserAuth`, configured-delivery, facade, GraphQL, and seed parity.
+
+Prerequisites:
+
+- Existing `ProductCompare.Accounts` public functions, arities, defaults,
+  typespecs, values, and errors remain authoritative.
+- Preserve normalization, password hashes, transactions, savepoints, locks,
+  test hooks, token cryptography/defaults/filters, and reputation pagination.
+- Keep every caller dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, browser auth, authorization, seeds, or transport.
+
+Verification:
+
+- `mix test test/product_compare/accounts test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/repo/seeds_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 112-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

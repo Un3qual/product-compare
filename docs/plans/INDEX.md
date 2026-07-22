@@ -178,6 +178,13 @@ identity, and canonical normalized-listing persistence. Its direct ingestion,
 enrichment, reconciliation, and merchant-feed-candidate GraphQL
 characterization gate passed 60 tests. The structural extraction leaves
 provider, scheduling, dashboard, operator, and product policy unchanged.
+Before claiming Specs context decomposition, a fourteenth claim-floor audit
+promoted Accounts context decomposition. The 721-line stable facade still
+combines user provisioning/bootstrap, API-token lifecycle, and reputation
+behavior alongside the existing focused `UserAuth` owner. Its direct Accounts,
+seed, API-token/session GraphQL, and authorized node characterization gate
+passed 112 tests. The extraction preserves the GraphQL auth contract,
+cookie-backed session authority, authorization, seeds, and transport scope.
 
 Implementation plan references (non-dispatch):
 
@@ -193,6 +200,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -277,6 +285,12 @@ batch and should not be recreated or promoted.
   and GraphQL characterization gate passes 60 tests; deferred provider,
   dashboard, operator, scheduling, and application-submission scope stays
   closed.
+- Accounts context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Accounts` facade remains caller-facing while user,
+  API-token, and reputation implementations move into focused internal modules
+  alongside the existing `UserAuth` owner. Its direct and GraphQL
+  characterization gate passes 112 tests; browser auth, authorization, seeds,
+  and email transport policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
