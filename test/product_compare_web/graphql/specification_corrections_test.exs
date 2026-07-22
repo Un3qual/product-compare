@@ -1,13 +1,55 @@
 defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
   alias ProductCompare.Specs
+  alias ProductCompareWeb.Resolvers.SpecsResolver
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   describe "specification correction GraphQL workflow" do
+    test "moderation queue rejects non-operators before reading corrections", %{conn: conn} do
+      {anonymous_response, anonymous_queries} =
+        capture_select_queries(fn -> graphql(conn, moderation_queue_query(), %{}) end)
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "unauthorized",
+                   "path" => ["specificationCorrectionModerationQueue"],
+                   "extensions" => %{"code" => "UNAUTHENTICATED"}
+                 }
+               ]
+             } = anonymous_response
+
+      member_conn = member_conn(conn)
+
+      {forbidden_response, forbidden_queries} =
+        capture_select_queries(fn -> graphql(member_conn, moderation_queue_query(), %{}) end)
+
+      assert %{
+               "errors" => [
+                 %{
+                   "message" => "forbidden",
+                   "path" => ["specificationCorrectionModerationQueue"],
+                   "extensions" => %{"code" => "FORBIDDEN"}
+                 }
+               ]
+             } = forbidden_response
+
+      assert count_select_queries_targeting_table(anonymous_queries, :specification_corrections) ==
+               0
+
+      assert count_select_queries_targeting_table(
+               forbidden_queries,
+               :specification_corrections
+             ) == 0
+    end
+
     test "requires authentication and validates typed IDs without writing", %{conn: conn} do
       product = SpecsFixtures.product_fixture()
       attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
@@ -187,6 +229,108 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                }
              } = graphql(conn, product_correction_state_query(), %{"slug" => product.slug})
     end
+
+    test "my_specification_corrections directly filters and paginates without a loader" do
+      owner = AccountsFixtures.user_fixture()
+      other_user = AccountsFixtures.user_fixture()
+      operator = AccountsFixtures.operator_fixture()
+      attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
+      first_pending = propose_correction!(owner, attribute, "First pending")
+      second_pending = propose_correction!(owner, attribute, "Second pending")
+      rejected = propose_correction!(owner, attribute, "Rejected")
+      _other_pending = propose_correction!(other_user, attribute, "Other pending")
+
+      assert {:ok, _rejected} =
+               Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+      resolution = %{context: %{current_user: owner}}
+
+      assert {:ok,
+              %{
+                edges: [%{cursor: cursor, node: first_node}],
+                page_info: %{has_next_page: true, has_previous_page: false}
+              }} =
+               SpecsResolver.my_specification_corrections(
+                 nil,
+                 %{status: :pending, first: 1},
+                 resolution
+               )
+
+      assert {:ok,
+              %{
+                edges: [%{node: second_node}],
+                page_info: %{has_next_page: false, has_previous_page: true}
+              }} =
+               SpecsResolver.my_specification_corrections(
+                 nil,
+                 %{status: :pending, first: 1, after: cursor},
+                 resolution
+               )
+
+      assert MapSet.new([first_node.id, second_node.id]) ==
+               MapSet.new([first_pending.id, second_pending.id])
+
+      refute rejected.id in [first_node.id, second_node.id]
+    end
+
+    test "specification_correction_moderation_queue directly filters and paginates without a loader" do
+      submitter = AccountsFixtures.user_fixture()
+      operator = AccountsFixtures.operator_fixture()
+      attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
+      first_pending = propose_correction!(submitter, attribute, "First pending")
+      second_pending = propose_correction!(submitter, attribute, "Second pending")
+      rejected = propose_correction!(submitter, attribute, "Rejected")
+
+      assert {:ok, _rejected} =
+               Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+      resolution = %{context: %{current_user: operator}}
+
+      assert {:ok,
+              %{
+                edges: [%{cursor: cursor, node: first_node}],
+                page_info: %{has_next_page: true, has_previous_page: false}
+              }} =
+               SpecsResolver.specification_correction_moderation_queue(
+                 nil,
+                 %{status: :pending, first: 1},
+                 resolution
+               )
+
+      assert {:ok,
+              %{
+                edges: [%{node: second_node}],
+                page_info: %{has_next_page: false, has_previous_page: true}
+              }} =
+               SpecsResolver.specification_correction_moderation_queue(
+                 nil,
+                 %{status: :pending, first: 1, after: cursor},
+                 resolution
+               )
+
+      assert MapSet.new([first_node.id, second_node.id]) ==
+               MapSet.new([first_pending.id, second_pending.id])
+
+      refute rejected.id in [first_node.id, second_node.id]
+    end
+  end
+
+  defp propose_correction!(user, attribute, value) do
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, correction} =
+             Specs.propose_correction(
+               product.id,
+               attribute.id,
+               user.id,
+               %{value_text: value},
+               %{
+                 reason: "Direct resolver fallback characterization",
+                 explanation: "Characterizes the existing no-loader query path."
+               }
+             )
+
+    correction
   end
 
   defp correction_variables(product, attribute, value) do

@@ -20,10 +20,63 @@ defmodule ProductCompare.Recommendations do
   @spec compare([pos_integer()], atom(), keyword()) :: map()
   def compare(product_ids, profile, opts \\ [])
       when is_list(product_ids) and map_size(@profiles) > 0 do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-    product_ids = Enum.uniq(product_ids)
-    products = load_products(product_ids)
+    compare_many([{product_ids, profile}], opts)
+    |> hd()
+  end
 
+  @spec compare_many([{[pos_integer()], atom()}], keyword()) :: [map()]
+  def compare_many(requests, opts) when is_list(requests) and map_size(@profiles) > 0 do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    requests =
+      Enum.map(requests, fn {product_ids, profile} ->
+        {Enum.uniq(product_ids), profile}
+      end)
+
+    products_by_id =
+      requests
+      |> Enum.flat_map(&elem(&1, 0))
+      |> load_products_by_id()
+
+    prepared_requests =
+      Enum.map(requests, fn {product_ids, profile} ->
+        products = ordered_products(product_ids, products_by_id)
+        {product_ids, profile, products}
+      end)
+
+    context_products =
+      prepared_requests
+      |> Enum.filter(&valid_request?/1)
+      |> Enum.flat_map(fn {_product_ids, _profile, products} -> products end)
+      |> Enum.uniq_by(& &1.id)
+
+    claims_by_product = accepted_claim_ids(context_products)
+
+    offer_truth_by_product =
+      context_products
+      |> Enum.map(& &1.id)
+      |> Pricing.current_offer_truths(now: now)
+
+    Enum.map(prepared_requests, fn {product_ids, profile, products} ->
+      compare_preloaded(
+        product_ids,
+        profile,
+        products,
+        claims_by_product,
+        offer_truth_by_product,
+        now
+      )
+    end)
+  end
+
+  defp compare_preloaded(
+         product_ids,
+         profile,
+         products,
+         claims_by_product,
+         offer_truth_by_product,
+         now
+       ) do
     cond do
       profile not in Map.keys(@profiles) ->
         empty_result(profile, "unsupported", now, ["Unsupported recommendation profile."])
@@ -34,18 +87,11 @@ defmodule ProductCompare.Recommendations do
         ])
 
       true ->
-        build_result(products, profile, now)
+        build_result(products, profile, now, claims_by_product, offer_truth_by_product)
     end
   end
 
-  defp build_result(products, profile, now) do
-    claims_by_product = accepted_claim_ids(products)
-
-    offer_truth_by_product =
-      products
-      |> Enum.map(& &1.id)
-      |> Pricing.current_offer_truths(now: now)
-
+  defp build_result(products, profile, now, claims_by_product, offer_truth_by_product) do
     shared_currencies = shared_eligible_currencies(products, offer_truth_by_product)
 
     missing_claims =
@@ -124,11 +170,22 @@ defmodule ProductCompare.Recommendations do
     end
   end
 
-  defp load_products(product_ids) do
+  defp load_products_by_id(product_ids) do
     products = Repo.all(from product in Product, where: product.id in ^product_ids)
-    products_by_id = Map.new(products, &{&1.id, &1})
+    Map.new(products, &{&1.id, &1})
+  end
+
+  defp ordered_products(product_ids, products_by_id) do
     Enum.flat_map(product_ids, &List.wrap(Map.get(products_by_id, &1)))
   end
+
+  defp valid_request?({product_ids, profile, products}) do
+    profile in Map.keys(@profiles) and
+      length(product_ids) in 2..3 and
+      length(products) == length(product_ids)
+  end
+
+  defp accepted_claim_ids([]), do: %{}
 
   defp accepted_claim_ids(products) do
     product_ids = Enum.map(products, & &1.id)

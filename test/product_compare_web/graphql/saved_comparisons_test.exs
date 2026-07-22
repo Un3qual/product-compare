@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
   describe "/api/graphql saved comparisons" do
@@ -85,6 +86,52 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
                  %{"message" => "invalid first", "path" => ["mySavedComparisonSets"]} | _
                ]
              } = graphql(conn, my_saved_comparison_sets_query(), %{"first" => -1})
+    end
+
+    test "my_saved_comparison_sets directly paginates the owner scope without a loader" do
+      owner = AccountsFixtures.user_fixture()
+      other_user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+
+      assert {:ok, first_saved_set} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "First owner set",
+                 product_ids: [product.id]
+               })
+
+      assert {:ok, second_saved_set} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "Second owner set",
+                 product_ids: [product.id]
+               })
+
+      assert {:ok, _other_saved_set} =
+               Catalog.create_saved_comparison_set(other_user.id, %{
+                 name: "Other user set",
+                 product_ids: [product.id]
+               })
+
+      resolution = %{context: %{current_user: owner}}
+
+      assert {:ok,
+              %{
+                edges: [%{cursor: cursor, node: first_node}],
+                page_info: %{has_next_page: true, has_previous_page: false}
+              }} = CatalogResolver.my_saved_comparison_sets(nil, %{first: 1}, resolution)
+
+      assert {:ok,
+              %{
+                edges: [%{node: second_node}],
+                page_info: %{has_next_page: false, has_previous_page: true}
+              }} =
+               CatalogResolver.my_saved_comparison_sets(
+                 nil,
+                 %{first: 1, after: cursor},
+                 resolution
+               )
+
+      assert MapSet.new([first_node.id, second_node.id]) ==
+               MapSet.new([first_saved_set.id, second_saved_set.id])
     end
 
     test "createSavedComparisonSet creates a saved set from relay product ids", %{conn: conn} do

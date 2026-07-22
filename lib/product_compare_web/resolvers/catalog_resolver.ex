@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -44,7 +45,23 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec comparison_products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, [Product.t() | nil]} | {:error, String.t()}
+          {:ok, [Product.t() | nil]}
+          | {:error, String.t()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def comparison_products(_parent, args, %{context: %{loader: loader}} = resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
+    with {:ok, slugs} <- normalize_comparison_slugs(Input.fetch_list_value(args || %{}, :slugs)) do
+      source = Loader.comparison_source()
+
+      loader
+      |> Dataloader.load(source, :products, slugs)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, :products, slugs)}
+      end)
+    end
+  end
+
   def comparison_products(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
 
@@ -54,7 +71,24 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def products(_parent, args, %{context: %{loader: loader}} = resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})),
+         connection_args = Input.connection_args(args),
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.discovery_root_source()
+      batch_key = {:products, filters, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def products(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
 
@@ -68,7 +102,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec product_filter_metadata(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product_filter_metadata(_parent, args, %{context: %{loader: loader}}) do
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
+      source = Loader.discovery_root_source()
+      batch_key = {:product_filter_metadata, filters}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def product_filter_metadata(_parent, args, _resolution) do
     with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       {:ok, Catalog.product_filter_metadata(filters)}
@@ -116,6 +163,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   @spec my_saved_comparison_sets(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def my_saved_comparison_sets(_parent, args, %{
+        context: %{current_user: current_user, loader: %Dataloader{} = loader}
+      }) do
+    connection_args = Input.connection_args(args)
+
+    AuthorizedConnection.load_owner(
+      loader,
+      current_user,
+      :saved_comparison_sets,
+      %{},
+      connection_args
+    )
+  end
+
   def my_saved_comparison_sets(_parent, args, %{context: %{current_user: current_user}}) do
     query = Catalog.list_saved_comparison_sets_query(current_user.id)
     connection_args = Input.connection_args(args)

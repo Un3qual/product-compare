@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete on `codex/bounded-comparison-root-reads`
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
 - Last verified: 2026-07-21 against the live schema, management resolvers,
-  connection helper, and 45 passing focused GraphQL tests.
+  request-scoped loader, and 84 passing focused GraphQL tests.
 
 ## Batch Outcome
 
@@ -16,20 +16,52 @@ reuse one authorized database read per collection, filter, and page within a
 GraphQL request without changing privacy, authorization, filtering, ordering,
 pagination, errors, nested values, or schema behavior.
 
-## Ready Evidence
+## Completion Evidence
 
 - Owner-scoped specification corrections, price watches, alert events, API
-  tokens, saved comparison sets, and comparison snapshots each call
-  `Connection.from_query_result/3` directly for every authorized alias.
-- The operator-only specification-correction moderation queue and merchant feed
-  candidate queue authorize and then call the same direct connection path for
-  every alias.
-- `Connection.from_query_result/3` executes one bounded page query; repeated
-  identical aliases therefore grow linearly even though their principal,
-  filters, ordering, and page are identical.
-- The six focused GraphQL suites pass 45 tests and already characterize the
-  relevant owner scope, operator gates, filters, cursors, page sizes, order,
-  and nested values, but do not prove repeated-alias budgets.
+  tokens, saved comparison sets, and comparison snapshots moved from RED
+  two-/four-identical-alias SELECT counts of `2/4` to GREEN fixed counts of
+  `1/1`. Same-request mixed-key regressions pair two identical aliases with a
+  successive Relay page for all six collections and an alternate status,
+  enabled, unread-only, or token-status filter where supported. They prove the
+  duplicate aliases share a read while each distinct filter/page key executes
+  and returns its own edges, cursors, and `pageInfo`.
+- Operator-only specification-correction moderation and merchant-feed candidate
+  queues likewise moved from RED `2/4` to GREEN `1/1` SELECT counts for
+  identical aliases. Mixed-key regressions prove moderation-status,
+  review-status, candidate sort, and Relay page inputs stay distinct while
+  duplicate aliases coalesce. Their broader regression coverage preserves
+  ranking/order behavior, Relay projection, correction `valueText`, and
+  candidate nested values.
+- Protected owner and operator roots retain their authorization behavior:
+  anonymous or forbidden callers receive the existing structured errors and
+  issue zero target-collection SELECTs. Anonymous snapshot discovery retains
+  its existing `viewer: null` result with zero snapshot SELECTs. Both operator
+  roots also return `UNAUTHENTICATED` or `FORBIDDEN`, rather than Relay input
+  errors, for anonymous/member requests carrying a negative `first` or malformed
+  cursor, with zero target-collection SELECTs.
+- Every private loader key includes collection kind, principal ID, role,
+  normalized filter, and Relay arguments, so distinct principals, filters, and
+  pagination windows do not share reads. Authorization and Relay argument
+  validation occur before a private load is scheduled.
+- Growing-alias GraphQL regressions exercise the request-loader path for all
+  eight management collections. Separate public-resolver characterizations
+  omit `:loader` and prove the direct `Connection.from_query_result/3` fallback
+  for owner specification corrections, price watches, alert events, API tokens,
+  saved comparison sets, comparison snapshots, operator correction moderation,
+  and merchant-feed candidates. Those direct tests assert real Relay edges and
+  `page_info` plus owner/operator scoping, relevant filters, sorting, active
+  state, and successive pages. The public schema and deferred ingestion
+  dashboard/operator UI scope remain unchanged.
+- `ProductCompareWeb.GraphQL.AuthorizedConnection` owns private key
+  construction, role derivation, owner validation, operator authorization-
+  before-validation, Dataloader scheduling, and result projection. The six
+  affected resolvers retain only their domain filters and direct fallbacks.
+- The exact seven-suite focused command passed 84 tests with zero failures:
+
+  ```text
+  mix test test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs
+  ```
 
 ## Internal Slices
 
@@ -47,12 +79,23 @@ pagination, errors, nested values, or schema behavior.
 - This batch does not reopen deferred ingestion dashboard or operator UI work;
   it only bounds the existing merchant-feed review query.
 
-## Verification
+## Batch Gate
 
-- Specification-correction, price-watch/alert, API-token, saved-comparison,
-  comparison-snapshot, merchant-feed-candidate, and Dataloader GraphQL suites.
-- Growing-alias query-budget regressions for all eight management collections.
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `git diff --check`
+- The seven focused GraphQL suites above: 84 tests, 0 failures.
+- Growing-alias query-budget regressions cover all eight management
+  collections, owner/operator authorization, zero-query denials, semantic
+  parity, filters, pagination, and nested values through request loaders.
+- Same-request mixed-key regressions cover all six owner and both operator
+  connections: two identical aliases coalesce while distinct supported filters,
+  merchant-candidate sorts, and Relay pages produce distinct reads and values.
+- Anonymous/member malformed-Relay-input regressions prove authorization runs
+  before connection validation for both operator roots, with zero collection
+  SELECTs.
+- Direct public-resolver no-loader characterizations cover all eight management
+  collections, real Relay connection projection, applicable filters and
+  sorting, owner/operator scoping, active-state exclusion, and cursor paging.
+- `mix typecheck`: passed (exit 0).
+- `mix format --check-formatted`: passed (exit 0).
+- `mix ex_dna --max-clones 6`: passed at the unchanged `6/6` clone budget.
+- `mix work_queue.validate`: passed with `work queue valid: 3 ready rows`.
+- `git diff --check`: passed (exit 0).

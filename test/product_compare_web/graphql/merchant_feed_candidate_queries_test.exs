@@ -1,8 +1,13 @@
 defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+
+  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
 
@@ -112,6 +117,11 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
     end
 
     test "merchantFeedCandidates rejects unauthorized requests", %{conn: conn} do
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+        end)
+
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
                "errors" => [
@@ -122,17 +132,25 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                  }
                  | _
                ]
-             } = graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+             } = response
+
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 0
     end
 
     test "merchantFeedCandidates rejects authenticated members", %{conn: conn} do
       conn = member_conn(conn)
 
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+        end)
+
       assert %{
                "data" => %{"merchantFeedCandidates" => nil},
                "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
-             } =
-               graphql(conn, merchant_feed_candidates_query(), %{"first" => 1})
+             } = response
+
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 0
     end
 
     test "merchantFeedCandidate does not expose raw metadata fields", %{conn: conn} do
@@ -231,6 +249,60 @@ defmodule ProductCompareWeb.GraphQL.MerchantFeedCandidateQueriesTest do
                  "reviewStatus" => "SHORTLISTED",
                  "sort" => "PRODUCT_COUNT_DESC"
                })
+    end
+
+    test "merchant_feed_candidates directly filters, ranks, and paginates without a loader" do
+      operator = AccountsFixtures.operator_fixture()
+      source = source_fixture()
+
+      large =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Large direct merchant",
+          product_count: 40,
+          provider_feed_id: "direct-large",
+          review_status: "shortlisted"
+        })
+
+      small =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Small direct merchant",
+          product_count: 10,
+          provider_feed_id: "direct-small",
+          review_status: "shortlisted"
+        })
+
+      _pending =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_name: "Pending direct merchant",
+          product_count: 100,
+          provider_feed_id: "direct-pending"
+        })
+
+      resolution = %{context: %{current_user: operator}}
+      args = %{review_status: :shortlisted, sort: :product_count_desc, first: 1}
+
+      assert {:ok,
+              %{
+                edges: [%{cursor: cursor, node: first_node}],
+                page_info: %{has_next_page: true, has_previous_page: false}
+              }} = IngestionResolver.merchant_feed_candidates(nil, args, resolution)
+
+      assert first_node.id == large.id
+      assert first_node.product_count == 40
+
+      assert {:ok,
+              %{
+                edges: [%{node: second_node}],
+                page_info: %{has_next_page: false, has_previous_page: true}
+              }} =
+               IngestionResolver.merchant_feed_candidates(
+                 nil,
+                 Map.put(args, :after, cursor),
+                 resolution
+               )
+
+      assert second_node.id == small.id
+      assert second_node.product_count == 10
     end
 
     test "merchantFeedCandidates ranks candidates by fit score", %{conn: conn} do

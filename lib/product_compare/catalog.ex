@@ -267,6 +267,25 @@ defmodule ProductCompare.Catalog do
     Enum.map(slugs, &Map.get(products_by_slug, &1))
   end
 
+  @spec list_products_by_slug_selections([[term()]]) :: [[Product.t() | nil]]
+  def list_products_by_slug_selections(slug_selections) when is_list(slug_selections) do
+    products_by_slug =
+      slug_selections
+      |> List.flatten()
+      |> Enum.filter(&is_binary/1)
+      |> Enum.uniq()
+      |> then(fn slugs ->
+        Product
+        |> where([product], product.slug in ^slugs)
+        |> Repo.all()
+        |> Map.new(&{&1.slug, &1})
+      end)
+
+    Enum.map(slug_selections, fn slugs ->
+      Enum.map(slugs, &Map.get(products_by_slug, &1))
+    end)
+  end
+
   @spec create_saved_comparison_set(pos_integer(), %{
           name: String.t(),
           product_ids: [pos_integer()]

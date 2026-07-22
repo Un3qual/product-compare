@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
   alias ProductCompareWeb.GraphQL.Authorization
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -41,6 +42,21 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
 
   @spec my_specification_corrections(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, term()}
+  def my_specification_corrections(_parent, args, %{
+        context: %{current_user: user, loader: %Dataloader{} = loader}
+      }) do
+    connection_args = Input.connection_args(args)
+    filters = %{status: Input.fetch_value(args, :status)}
+
+    AuthorizedConnection.load_owner(
+      loader,
+      user,
+      :specification_corrections,
+      filters,
+      connection_args
+    )
+  end
+
   def my_specification_corrections(_parent, args, %{context: %{current_user: user}}) do
     user.id
     |> Specs.list_user_corrections_query(status: Input.fetch_value(args, :status))
@@ -52,6 +68,25 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
 
   @spec specification_correction_moderation_queue(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, term()}
+  def specification_correction_moderation_queue(
+        _parent,
+        args,
+        %{
+          context: %{loader: %Dataloader{} = loader}
+        } = resolution
+      ) do
+    connection_args = Input.connection_args(args)
+    filters = %{status: Input.fetch_value(args, :status, :pending)}
+
+    AuthorizedConnection.load_operator(
+      resolution,
+      loader,
+      :specification_correction_moderation_queue,
+      filters,
+      connection_args
+    )
+  end
+
   def specification_correction_moderation_queue(_parent, args, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution) do
       Specs.list_correction_moderation_query(status: Input.fetch_value(args, :status, :pending))

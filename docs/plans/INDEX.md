@@ -153,10 +153,18 @@ work were also verified as already implemented and are not candidate work.
 A tenth claim-floor audit promoted bounded catalog and offer-discovery root
 GraphQL reads after verifying that `products`, `productFilterMetadata`,
 `merchants`, and top-level `merchantProducts` still repeat identical public
-discovery reads per alias. Catalog filters and metadata, merchant-directory
-pagination, offer filters, nested values, and growing-alias budgets remain
-internal slices of one discovery-entry acceptance boundary. Their three
-focused suites pass 51 tests.
+discovery reads per alias. That outcome is complete: its independent two/four
+alias budgets are products 2/4 to 1/1, filter metadata 6/12 to 3/3, merchants
+2/4 to 1/1, and merchant products 2/4 to 1/1 SELECTs. Its exact focused four
+suite gate passed 95 tests with 0 failures. Catalog filters and metadata,
+merchant-directory pagination, offer filters, nested values, and growing-alias
+budgets remained internal slices of one discovery-entry acceptance boundary.
+An eleventh claim-floor audit promoted GraphQL schema type decomposition after
+verifying that the only project schema module is 2,004 lines and combines root
+runtime behavior with 151 type, input, enum, and interface declarations. The
+existing byte-for-byte SDL snapshot makes a domain-notation extraction
+immediately executable without choosing new product behavior. Root operations,
+context, plugins, resolver wiring, and `assets/schema.graphql` remain fixed.
 
 Implementation plan references (non-dispatch):
 
@@ -165,6 +173,9 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-catalog-offer-discovery-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -204,14 +215,25 @@ batch and should not be recreated or promoted.
   lookups, comparison evidence reads, and authorized Relay node reads are also
   complete. Bounded alert evaluation market reads is also complete: one
   immutable product/listing fact snapshot now feeds the independent watch
-  transactions. Bounded comparison root GraphQL reads and bounded authorized
-  management GraphQL connections remain ready, with the latter grouping the
-  remaining owner and operator connection aliases. Bounded catalog and offer-
-  discovery root GraphQL reads groups the remaining public catalog, filter-
-  metadata, merchant-directory, and offer-discovery root aliases. These are
+  transactions. Bounded comparison root GraphQL reads is complete. Bounded
+  authorized management GraphQL connections is complete, with six owner and
+  two operator connection aliases sharing authorization-keyed request reads.
+  Bounded catalog and offer-discovery root GraphQL reads is complete: products
+  2/4 to 1/1, filter metadata 6/12 to 3/3, merchants 2/4 to 1/1, and merchant
+  products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
+  operator reporting root GraphQL reads groups the remaining top-level active-
+  coupon and revenue-summary aliases behind one authorization-keyed request
+  source. GraphQL request loader decomposition is the remaining successor: it
+  preserves the facade and source keys while separating association,
+  parent-collection, and root-request source ownership across two Ecto and
+  twelve KV domains, including completed discovery roots. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.
+- GraphQL schema type decomposition is the path-disjoint structural successor:
+  the root facade stays stable while shared/account, commerce, catalog, and
+  trust/community declarations move to five domain notation modules under the
+  exact checked-in SDL snapshot.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

@@ -40,4 +40,23 @@ defmodule ProductCompare.DatabaseTestHelpersTest do
     assert result.rows == [[3]]
     assert queries == ["SELECT 3 AS task_query"]
   end
+
+  test "counts captured queries by FROM table" do
+    queries = [
+      ~s(SELECT p0."id" FROM "products" AS p0),
+      ~s(SELECT p0."slug" FROM "products" AS p0 WHERE p0."slug" = $1),
+      ~s(SELECT m0."id" FROM "merchants" AS m0),
+      ~s(SELECT p0."id" FROM "price_points" AS p0 JOIN "products" AS p1 ON true)
+    ]
+
+    assert ProductCompare.DatabaseTestHelpers.count_select_queries_targeting_table(
+             queries,
+             :products
+           ) == 2
+
+    assert ProductCompare.DatabaseTestHelpers.count_select_queries_targeting_table(
+             queries,
+             :merchants
+           ) == 1
+  end
 end

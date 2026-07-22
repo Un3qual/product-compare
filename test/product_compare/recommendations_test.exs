@@ -3,6 +3,7 @@ defmodule ProductCompare.RecommendationsTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -113,6 +114,201 @@ defmodule ProductCompare.RecommendationsTest do
              evidence_query_counts(two_product_queries)
   end
 
+  test "comparison slug selections preserve duplicate and missing positions with one product query" do
+    first = SpecsFixtures.product_fixture(%{slug: "context-first"})
+    second = SpecsFixtures.product_fixture(%{slug: "context-second"})
+
+    selections = [
+      [first.slug, "missing-context-product", first.slug],
+      ["missing-context-product", second.slug]
+    ]
+
+    {products_by_selection, queries} =
+      capture_select_queries(fn -> Catalog.list_products_by_slug_selections(selections) end)
+
+    assert Enum.map(products_by_selection, &Enum.map(&1, fn product -> product && product.id end)) ==
+             [
+               [first.id, nil, first.id],
+               [nil, second.id]
+             ]
+
+    assert select_query_counts(queries) == %{products: 1}
+  end
+
+  test "batched recommendations preserve results while evidence SELECT budgets stay fixed as requests grow" do
+    {first, first_point} = product_with_price("Context first", "120")
+    {second, second_point} = product_with_price("Context second", "90")
+    {third, third_point} = product_with_price("Context third", "100")
+    {fourth, fourth_point} = product_with_price("Context fourth", "100")
+    first_claim = current_text_claim(first, "Context panel", "OLED")
+    second_claim = current_text_claim(second, "Context panel", "LCD")
+
+    two_requests = [
+      {[first.id, second.id], :lowest_current_cost},
+      {[third.id, fourth.id], :lowest_current_cost}
+    ]
+
+    four_requests =
+      two_requests ++
+        [
+          {[first.id, second.id], :best_value},
+          {[first.id, third.id], :best_value}
+        ]
+
+    expected_two = [
+      %{
+        profile: :lowest_current_cost,
+        algorithm_version: "lowest-current-cost-v1",
+        evaluated_at: @now,
+        status: :winner,
+        winner_product_id: second.id,
+        currency: "USD",
+        rankings: [
+          %{
+            product_id: second.id,
+            product_name: "Context second",
+            landed_price: Decimal.new("90"),
+            currency: "USD",
+            price_point_id: second_point.id,
+            merchant_product_id: second_point.merchant_product_id,
+            claim_ids: [second_claim.id],
+            reasons: ["Lowest eligible landed price: 90 USD."],
+            rank: 1
+          },
+          %{
+            product_id: first.id,
+            product_name: "Context first",
+            landed_price: Decimal.new("120"),
+            currency: "USD",
+            price_point_id: first_point.id,
+            merchant_product_id: first_point.merchant_product_id,
+            claim_ids: [first_claim.id],
+            reasons: ["Lowest eligible landed price: 120 USD."],
+            rank: 2
+          }
+        ],
+        missing_inputs: []
+      },
+      %{
+        profile: :lowest_current_cost,
+        algorithm_version: "lowest-current-cost-v1",
+        evaluated_at: @now,
+        status: :tie,
+        winner_product_id: nil,
+        currency: "USD",
+        rankings: [
+          %{
+            product_id: third.id,
+            product_name: "Context third",
+            landed_price: Decimal.new("100"),
+            currency: "USD",
+            price_point_id: third_point.id,
+            merchant_product_id: third_point.merchant_product_id,
+            claim_ids: [],
+            reasons: ["Lowest eligible landed price: 100 USD."],
+            rank: 1
+          },
+          %{
+            product_id: fourth.id,
+            product_name: "Context fourth",
+            landed_price: Decimal.new("100"),
+            currency: "USD",
+            price_point_id: fourth_point.id,
+            merchant_product_id: fourth_point.merchant_product_id,
+            claim_ids: [],
+            reasons: ["Lowest eligible landed price: 100 USD."],
+            rank: 2
+          }
+        ],
+        missing_inputs: ["Top products have the same eligible landed price."]
+      }
+    ]
+
+    expected_four =
+      expected_two ++
+        [
+          %{
+            profile: :best_value,
+            algorithm_version: "best-supported-current-cost-v1",
+            evaluated_at: @now,
+            status: :winner,
+            winner_product_id: second.id,
+            currency: "USD",
+            rankings: [
+              %{
+                product_id: second.id,
+                product_name: "Context second",
+                landed_price: Decimal.new("90"),
+                currency: "USD",
+                price_point_id: second_point.id,
+                merchant_product_id: second_point.merchant_product_id,
+                claim_ids: [second_claim.id],
+                reasons: [
+                  "Eligible landed price: 90 USD.",
+                  "Backed by 1 accepted specification claim."
+                ],
+                rank: 1
+              },
+              %{
+                product_id: first.id,
+                product_name: "Context first",
+                landed_price: Decimal.new("120"),
+                currency: "USD",
+                price_point_id: first_point.id,
+                merchant_product_id: first_point.merchant_product_id,
+                claim_ids: [first_claim.id],
+                reasons: [
+                  "Eligible landed price: 120 USD.",
+                  "Backed by 1 accepted specification claim."
+                ],
+                rank: 2
+              }
+            ],
+            missing_inputs: []
+          },
+          %{
+            profile: :best_value,
+            algorithm_version: "best-supported-current-cost-v1",
+            evaluated_at: @now,
+            status: :insufficient_evidence,
+            winner_product_id: nil,
+            currency: nil,
+            rankings: [],
+            missing_inputs: ["Context third has no accepted specification evidence."]
+          }
+        ]
+
+    {two_results, two_queries} =
+      capture_select_queries(fn -> Recommendations.compare_many(two_requests, now: @now) end)
+
+    {four_results, four_queries} =
+      capture_select_queries(fn -> Recommendations.compare_many(four_requests, now: @now) end)
+
+    assert two_results == expected_two
+    assert four_results == expected_four
+
+    assert Enum.map(two_results, &ranking_product_and_price_ids/1) == [
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             [{third.id, third_point.id}, {fourth.id, fourth_point.id}]
+           ]
+
+    assert Enum.map(four_results, &ranking_product_and_price_ids/1) == [
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             [{third.id, third_point.id}, {fourth.id, fourth_point.id}],
+             [{second.id, second_point.id}, {first.id, first_point.id}],
+             []
+           ]
+
+    assert evidence_query_counts(two_queries) == %{
+             merchant_products: 1,
+             price_points: 1,
+             product_attribute_current: 1,
+             products: 1
+           }
+
+    assert evidence_query_counts(four_queries) == evidence_query_counts(two_queries)
+  end
+
   defp product_with_price(name, price, currency \\ "USD") do
     product = SpecsFixtures.product_fixture(%{name: name})
 
@@ -164,6 +360,10 @@ defmodule ProductCompare.RecommendationsTest do
     claim
   end
 
+  defp ranking_product_and_price_ids(result) do
+    Enum.map(result.rankings, &{&1.product_id, &1.price_point_id})
+  end
+
   defp evidence_query_counts(queries) do
     Map.new(
       [
@@ -174,5 +374,9 @@ defmodule ProductCompare.RecommendationsTest do
       ],
       fn {name, pattern} -> {name, Enum.count(queries, &Regex.match?(pattern, &1))} end
     )
+  end
+
+  defp select_query_counts(queries) do
+    %{products: Enum.count(queries, &Regex.match?(~r/FROM "products"/, &1))}
   end
 end

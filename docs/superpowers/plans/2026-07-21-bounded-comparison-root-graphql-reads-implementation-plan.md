@@ -48,17 +48,17 @@ query. `Recommendations.compare_many/2` returns results aligned with a list of
 claims, and current offer truth once; `compare/3` delegates without changing
 its result.
 
-- [ ] Add failing context regressions for duplicate/missing slug selections and
+- [x] Add failing context regressions for duplicate/missing slug selections and
   two versus four valid recommendation requests.
-- [ ] Assert exact ordered products and full recommendation-result parity before
+- [x] Assert exact ordered products and full recommendation-result parity before
   asserting equal products, current-claim, merchant-product, and price-point
   SELECT counts for the small and growing request sets.
-- [ ] Confirm RED because no multi-selection context APIs exist.
-- [ ] Implement one union slug lookup and pure ordered selection projection.
-- [ ] Implement one union recommendation evidence load and pure aligned result
+- [x] Confirm RED because no multi-selection context APIs exist.
+- [x] Implement one union slug lookup and pure ordered selection projection.
+- [x] Implement one union recommendation evidence load and pure aligned result
   projection, then delegate the singular API.
-- [ ] Re-run the recommendation context suite.
-- [ ] Commit with message `perf: batch comparison root context reads`.
+- [x] Re-run the recommendation context suite.
+- [x] Commit with message `perf: batch comparison root context reads`.
 
 ### Task 2: Request-Scoped Comparison Root Loading
 
@@ -76,16 +76,16 @@ with separate `:products` and `:recommendation` batch keys. Resolver callbacks
 load the normalized slug selection or `{slugs, profile}` request and return the
 same product list, recommendation result, or existing validation error.
 
-- [ ] Add a failing growing-alias GraphQL regression with exact ordered product
+- [x] Add a failing growing-alias GraphQL regression with exact ordered product
   values, missing positions, recommendation evidence IDs, and error parity.
-- [ ] Capture two and four valid aliases and assert identical per-table SELECT
+- [x] Capture two and four valid aliases and assert identical per-table SELECT
   budgets after checking response equality.
-- [ ] Confirm RED because both root resolvers currently execute their context
+- [x] Confirm RED because both root resolvers currently execute their context
   reads independently for every alias.
-- [ ] Add the comparison KV source and route loader-present resolver paths
+- [x] Add the comparison KV source and route loader-present resolver paths
   through it while retaining direct fallbacks.
-- [ ] Re-run catalog, recommendation, and Dataloader batching suites.
-- [ ] Commit with message `perf: bound comparison root graphql reads`.
+- [x] Re-run catalog, recommendation, and Dataloader batching suites.
+- [x] Commit with message `perf: bound comparison root graphql reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -93,11 +93,22 @@ same product list, recommendation result, or existing validation error.
 
 - Modify: `docs/work/bounded-comparison-root-graphql-reads.md`
 
-- [ ] Record exact before/after query counts and semantic parity coverage.
-- [ ] Run `mix test test/product_compare/recommendations_test.exs
+- [x] Record exact before/after query counts and semantic parity coverage.
+- [x] Run `mix test test/product_compare/recommendations_test.exs
   test/product_compare_web/graphql/catalog_queries_test.exs
   test/product_compare_web/graphql/recommendations_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.
+
+## Completion Evidence
+
+- Context and GraphQL regressions observed RED on the missing set-based APIs and
+  per-alias query growth, then GREEN after the request-scoped implementation.
+- The four focused suites pass 59 tests with exact response and validation
+  parity; two and four aliases share the same three/one/one/one tracked SELECT
+  budget.
+- Type, format, queue validation with three ready rows, and diff hygiene pass.
+- The full `mix ci` gate passes with 856 backend tests, 1,507 frontend tests,
+  Relay validation, client/SSR builds, static analysis, and 83.60% coverage.

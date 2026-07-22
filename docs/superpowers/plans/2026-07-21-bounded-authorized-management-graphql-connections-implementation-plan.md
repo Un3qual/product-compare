@@ -50,14 +50,14 @@ each distinct key while preserving the current connection projection.
 Owner resolvers use keys containing collection kind, owner ID, normalized
 filters, and connection arguments, then return the existing Relay projection.
 
-- [ ] Add failing growing-alias regressions for all six owner collections.
-- [ ] Assert response semantics and unauthorized zero-query behavior before
+- [x] Add failing growing-alias regressions for all six owner collections.
+- [x] Assert response semantics and unauthorized zero-query behavior before
   asserting fixed per-collection SELECT budgets.
-- [ ] Confirm RED because every alias currently executes its query directly.
-- [ ] Add the request-scoped source and route authenticated resolver paths
+- [x] Confirm RED because every alias currently executes its query directly.
+- [x] Add the request-scoped source and route authenticated resolver paths
   through it while retaining direct fallbacks.
-- [ ] Re-run the owner management GraphQL suites.
-- [ ] Commit with message `perf: reuse owner management connection reads`.
+- [x] Re-run the owner management GraphQL suites.
+- [x] Commit with message `perf: reuse owner management connection reads`.
 
 ### Task 2: Operator Queue Connection Loading
 
@@ -74,13 +74,18 @@ filters, and connection arguments, then return the existing Relay projection.
 filters, and connection arguments. Authorization runs before scheduling any
 load.
 
-- [ ] Add failing growing-alias regressions for both operator queues.
-- [ ] Prove operator values, filters, pagination, forbidden errors, and
+- [x] Add failing growing-alias regressions for both operator queues.
+- [x] Prove operator values, filters, pagination, forbidden errors, and
   unauthenticated zero-query behavior before query-budget assertions.
-- [ ] Route authorized operator paths through the shared source without
+- [x] Route authorized operator paths through the shared source without
   changing the existing direct fallback.
-- [ ] Prove each identical two- and four-alias set has the same SELECT budget.
-- [ ] Commit with message `perf: reuse operator queue connection reads`.
+- [x] Prove each identical two- and four-alias set has the same SELECT budget.
+- [x] Prove same-request status, review-status, candidate-sort, and Relay-page
+  keys remain distinct while duplicate aliases coalesce.
+- [x] Prove anonymous/member invalid `first` and cursor requests receive
+  authorization errors before input-validation errors and issue zero
+  collection SELECTs.
+- [x] Commit with message `perf: reuse operator queue connection reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
 
@@ -88,15 +93,33 @@ load.
 
 - Modify: `docs/work/bounded-authorized-management-graphql-connections.md`
 
-- [ ] Record exact before/after query counts and authorization, filter,
+- [x] Record exact before/after query counts and authorization, filter,
   pagination, nested-value, and semantic parity coverage.
-- [ ] Run `mix test test/product_compare_web/graphql/specification_corrections_test.exs
+- [x] Run `mix test test/product_compare_web/graphql/specification_corrections_test.exs
   test/product_compare_web/graphql/price_watches_and_alerts_test.exs
   test/product_compare_web/graphql/api_token_auth_test.exs
   test/product_compare_web/graphql/saved_comparisons_test.exs
   test/product_compare_web/graphql/comparison_snapshots_test.exs
   test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs
   test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- [ ] Run `mix typecheck`, `mix format --check-formatted`,
+- [x] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`.
-- [ ] Include lane evidence in the final code/test milestone commit.
+- [x] Include lane evidence in the final code/test milestone commit.
+
+## Completion Evidence
+
+- Six owner collections and two operator queues each observed RED SELECT growth
+  of 2/4 for two/four aliases, then GREEN fixed budgets of 1/1.
+- Literal response, authorization-before-load, zero-query denial, filters,
+  pagination, ordering, nested values, and direct-fallback coverage pass.
+- Direct public-resolver characterizations now protect every no-loader
+  fallback. Same-request mixed-key regressions cover every management
+  connection, all supported owner/operator filters, merchant-candidate sort,
+  and Relay pagination. Both operator roots cover anonymous/member invalid
+  `first` and cursor denial before validation. The seven focused suites pass 84
+  tests; type, format, queue, and diff gates pass with three ready successor
+  rows retained.
+- Exact-head CI exposed four duplicated authorized-connection resolver groups.
+  `ProductCompareWeb.GraphQL.AuthorizedConnection` now centralizes key
+  construction, role derivation, validation order, scheduling, and projection;
+  `mix ex_dna --max-clones 6` passes at the unchanged `6/6` budget.

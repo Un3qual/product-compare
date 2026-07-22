@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
 
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -25,6 +26,23 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
 
   def comparison_snapshot(_parent, %{token: token}, _resolution) do
     {:ok, ComparisonSnapshots.get_public(token)}
+  end
+
+  def owned_snapshots(%{id: user_id}, args, %{
+        context: %{
+          current_user: %{id: user_id} = current_user,
+          loader: %Dataloader{} = loader
+        }
+      }) do
+    connection_args = Input.connection_args(args)
+
+    AuthorizedConnection.load_owner(
+      loader,
+      current_user,
+      :comparison_snapshots,
+      %{},
+      connection_args
+    )
   end
 
   def owned_snapshots(%{id: user_id}, args, %{context: %{current_user: %{id: user_id}}}) do

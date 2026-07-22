@@ -3,14 +3,38 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
 
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Authorization
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
+  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
 
   @spec merchant_feed_candidates(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def merchant_feed_candidates(
+        _parent,
+        args,
+        %{
+          context: %{loader: %Dataloader{} = loader}
+        } = resolution
+      ) do
+    connection_args = Input.connection_args(args)
+
+    filters = %{
+      review_status: normalize_review_status(Input.fetch_value(args, :review_status)),
+      sort: Input.fetch_value(args, :sort, :name_asc)
+    }
+
+    AuthorizedConnection.load_operator(
+      resolution,
+      loader,
+      :merchant_feed_candidates,
+      filters,
+      connection_args
+    )
+  end
+
   def merchant_feed_candidates(_parent, args, resolution) do
     with {:ok, _user} <- Authorization.require_operator(resolution) do
       query_opts = [

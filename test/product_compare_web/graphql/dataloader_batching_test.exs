@@ -5,10 +5,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   alias ProductCompare.{
     Accounts,
+    Alerts,
     Affiliate,
     Catalog,
     ComparisonSnapshots,
     Discussions,
+    Ingestion,
     Pricing,
     Specs
   }
@@ -25,6 +27,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @offer_connection_tables ~w(merchant_products coupons price_points)a
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @category_tables ~w(taxons products)a
+  @comparison_root_tables ~w(products product_attribute_current merchant_products price_points)a
+  @owner_management_collections ~w(specification_corrections price_watches alert_events api_tokens saved_comparison_sets comparison_snapshots)a
+  @operator_management_collections ~w(specification_correction_moderation_queue merchant_feed_candidates)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -175,6 +180,224 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              }
     end
 
+    test "comparison root aliases preserve values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      records =
+        for index <- 1..4 do
+          comparison_root_record("#{test_name}-#{System.unique_integer([:positive])}", index)
+        end
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, comparison_root_batch_query(Enum.take(records, 2)), %{})
+        end)
+
+      assert_comparison_root_values(two_response, Enum.take(records, 2))
+      two_budget = comparison_root_query_budget(two_queries)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, comparison_root_batch_query(records), %{})
+        end)
+
+      assert_comparison_root_values(four_response, records)
+      four_budget = comparison_root_query_budget(four_queries)
+
+      assert {two_budget, four_budget} == {
+               %{
+                 products: 3,
+                 product_attribute_current: 1,
+                 merchant_products: 1,
+                 price_points: 1
+               },
+               two_budget
+             }
+    end
+
+    for collection <- @owner_management_collections do
+      test "#{collection} owner connection aliases preserve values, authorization, and fixed SELECT budgets as aliases grow",
+           %{conn: conn} do
+        collection = unquote(collection)
+        owner = AccountsFixtures.user_fixture()
+        prefix = "owner-#{collection}-#{System.unique_integer([:positive])}"
+        expected_node = owner_management_record(collection, owner, prefix)
+
+        authorized_conn =
+          conn
+          |> log_in_user(owner)
+          |> put_req_header_same_origin()
+
+        {two_response, two_queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_owner_management_connection_values(two_response, collection, 2, expected_node)
+
+        {four_response, four_queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_connection_query(collection, 4), %{})
+          end)
+
+        assert_owner_management_connection_values(four_response, collection, 4, expected_node)
+
+        {anonymous_response, anonymous_queries} =
+          capture_select_queries(fn ->
+            graphql(conn, owner_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_unauthorized_owner_management_response(anonymous_response, collection)
+        assert owner_management_connection_query_budget(anonymous_queries, collection) == 0
+
+        two_budget = owner_management_connection_query_budget(two_queries, collection)
+        four_budget = owner_management_connection_query_budget(four_queries, collection)
+
+        assert {two_budget, four_budget} == {1, two_budget}
+      end
+    end
+
+    for collection <- @owner_management_collections do
+      test "#{collection} owner connection keeps filter and Relay page keys distinct while identical aliases coalesce",
+           %{conn: conn} do
+        collection = unquote(collection)
+        owner = AccountsFixtures.user_fixture()
+        prefix = "owner-mixed-#{collection}-#{System.unique_integer([:positive])}"
+        expected = owner_management_mixed_key_records(collection, owner, prefix)
+
+        authorized_conn =
+          conn
+          |> log_in_user(owner)
+          |> put_req_header_same_origin()
+
+        {response, queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_mixed_key_query(collection), %{})
+          end)
+
+        assert_owner_management_mixed_key_values(response, collection, expected)
+
+        expected_budget = if Map.has_key?(expected, :alternate), do: 3, else: 2
+
+        assert owner_management_connection_query_budget(queries, collection) == expected_budget
+      end
+    end
+
+    for collection <- @operator_management_collections do
+      test "#{collection} operator connection aliases preserve values, filters, pagination, authorization, and fixed SELECT budgets as aliases grow",
+           %{conn: conn} do
+        collection = unquote(collection)
+        operator = AccountsFixtures.operator_fixture()
+        prefix = "operator-#{collection}-#{System.unique_integer([:positive])}"
+        expected_node = operator_management_records(collection, operator, prefix)
+
+        operator_conn =
+          conn
+          |> log_in_user(operator)
+          |> put_req_header_same_origin()
+
+        {two_response, two_queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_connection_values(two_response, collection, 2, expected_node)
+
+        {four_response, four_queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_connection_query(collection, 4), %{})
+          end)
+
+        assert_operator_management_connection_values(four_response, collection, 4, expected_node)
+
+        member = AccountsFixtures.user_fixture()
+
+        member_conn =
+          conn
+          |> log_in_user(member)
+          |> put_req_header_same_origin()
+
+        {forbidden_response, forbidden_queries} =
+          capture_select_queries(fn ->
+            graphql(member_conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_forbidden(forbidden_response, collection, 2)
+
+        {anonymous_response, anonymous_queries} =
+          capture_select_queries(fn ->
+            graphql(conn, operator_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_operator_management_unauthenticated(anonymous_response, collection, 2)
+
+        assert operator_management_connection_query_budget(forbidden_queries, collection) == 0
+        assert operator_management_connection_query_budget(anonymous_queries, collection) == 0
+
+        two_budget = operator_management_connection_query_budget(two_queries, collection)
+        four_budget = operator_management_connection_query_budget(four_queries, collection)
+
+        assert {two_budget, four_budget} == {1, two_budget}
+      end
+    end
+
+    for collection <- @operator_management_collections do
+      test "#{collection} operator connection keeps filter, sort, and Relay page keys distinct while identical aliases coalesce",
+           %{conn: conn} do
+        collection = unquote(collection)
+        operator = AccountsFixtures.operator_fixture()
+        prefix = "operator-mixed-#{collection}-#{System.unique_integer([:positive])}"
+        expected = operator_management_mixed_key_records(collection, operator, prefix)
+
+        operator_conn =
+          conn
+          |> log_in_user(operator)
+          |> put_req_header_same_origin()
+
+        {response, queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_mixed_key_query(collection), %{})
+          end)
+
+        assert_operator_management_mixed_key_values(response, expected)
+
+        assert operator_management_connection_query_budget(queries, collection) ==
+                 operator_management_mixed_key_budget(collection)
+      end
+
+      test "#{collection} operator authorization precedes invalid Relay argument validation",
+           %{conn: conn} do
+        collection = unquote(collection)
+        member = AccountsFixtures.user_fixture()
+
+        member_conn =
+          conn
+          |> log_in_user(member)
+          |> put_req_header_same_origin()
+
+        Enum.each(
+          [
+            {conn, "UNAUTHENTICATED"},
+            {member_conn, "FORBIDDEN"}
+          ],
+          fn {request_conn, code} ->
+            Enum.each([:invalid_first, :invalid_cursor], fn invalid_kind ->
+              {response, queries} =
+                capture_select_queries(fn ->
+                  graphql(
+                    request_conn,
+                    operator_management_invalid_connection_query(collection, invalid_kind),
+                    %{}
+                  )
+                end)
+
+              assert_operator_management_error(response, collection, 1, code)
+              assert operator_management_connection_query_budget(queries, collection) == 0
+            end)
+          end
+        )
+      end
+    end
+
     test "authorized node aliases keep values and SELECT budgets fixed per schema as aliases grow",
          %{conn: conn, test: test_name} do
       owner = AccountsFixtures.operator_fixture()
@@ -297,6 +520,433 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                },
                initial_budget
              }
+    end
+
+    test "catalog discovery root aliases preserve exact values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      {monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_discovery_alias_values(
+        two_response,
+        2,
+        monitor_product,
+        monitor_taxon,
+        laptop_taxon
+      )
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_discovery_alias_values(
+        four_response,
+        4,
+        monitor_product,
+        monitor_taxon,
+        laptop_taxon
+      )
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {4, 4}
+    end
+
+    test "products discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      {monitor_product, monitor_taxon, _laptop_taxon} = catalog_discovery_records(test_name)
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_products_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_products_alias_values(two_response, 2, monitor_product)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_products_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_products_alias_values(four_response, 4, monitor_product)
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "product filter metadata root aliases preserve exact selected values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      {_monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_filter_metadata_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_filter_metadata_alias_values(two_response, 2, monitor_taxon, laptop_taxon)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_filter_metadata_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_filter_metadata_alias_values(four_response, 4, monitor_taxon, laptop_taxon)
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {3, 3}
+    end
+
+    test "catalog discovery roots keep normalized filters and Relay pages isolated in one request",
+         %{conn: conn, test: test_name} do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      laptop_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-mixed-laptop"),
+          name: "Laptop"
+        })
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-mixed-monitor"),
+          name: "Monitor"
+        })
+
+      monitor_first =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-monitor-first"),
+          name: "Mixed Monitor First",
+          primary_type_taxon: monitor_taxon
+        })
+
+      monitor_second =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-monitor-second"),
+          name: "Mixed Monitor Second",
+          primary_type_taxon: monitor_taxon
+        })
+
+      laptop_first =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-laptop-first"),
+          name: "Mixed Laptop First",
+          primary_type_taxon: laptop_taxon
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_mixed_key_query(), %{
+            "monitorFilters" => %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)},
+            "laptopFilters" => %{"primaryTypeTaxonId" => relay_id(:taxon, laptop_taxon.id)},
+            "after" => cursor_for(0)
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "monitorFirst" => monitor_first_page,
+                 "laptopFirst" => laptop_first_page,
+                 "monitorNext" => monitor_next_page
+               }
+             } = response
+
+      assert_catalog_discovery_page(monitor_first_page, monitor_first, 0, true, false)
+      assert_catalog_discovery_page(laptop_first_page, laptop_first, 0, false, false)
+      assert_catalog_discovery_page(monitor_next_page, monitor_second, 1, false, true)
+      assert catalog_discovery_product_query_budget(queries) == 3
+    end
+
+    test "merchant discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+         %{conn: conn} do
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Discovery Merchant First"),
+          domain: unique_domain("discovery-merchant-first")
+        })
+
+      _second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Discovery Merchant Second"),
+          domain: unique_domain("discovery-merchant-second")
+        })
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_alias_query(2), %{})
+        end)
+
+      assert_merchant_discovery_alias_values(two_response, 2, first_merchant)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_alias_query(4), %{})
+        end)
+
+      assert_merchant_discovery_alias_values(four_response, 4, first_merchant)
+
+      assert {
+               merchant_discovery_query_budget(two_queries),
+               merchant_discovery_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "merchant discovery root keeps duplicate aliases coalesced while Relay pages stay isolated",
+         %{conn: conn} do
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Merchant First"),
+          domain: unique_domain("mixed-merchant-first")
+        })
+
+      second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Merchant Second"),
+          domain: unique_domain("mixed-merchant-second")
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, merchant_discovery_mixed_key_query(), %{"after" => cursor_for(0)})
+        end)
+
+      assert %{
+               "data" => %{
+                 "first" => first_page,
+                 "firstDuplicate" => first_duplicate_page,
+                 "next" => next_page
+               }
+             } = response
+
+      assert_merchant_discovery_page(first_page, first_merchant, 0, true, false)
+      assert first_duplicate_page == first_page
+      assert_merchant_discovery_page(next_page, second_merchant, 1, false, true)
+      assert merchant_discovery_query_budget(queries) == 2
+    end
+
+    test "offer discovery root aliases preserve nested values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-offer-discovery-product"),
+          name: "Offer Discovery Product"
+        })
+
+      merchant =
+        merchant_fixture(%{
+          name: unique_name("Offer Discovery Merchant"),
+          domain: unique_domain("offer-discovery-merchant")
+        })
+
+      merchant_product =
+        merchant_product_fixture(%{merchant: merchant, product: product, is_active: true})
+
+      observed_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+      earlier_observed_at = DateTime.add(observed_at, -60, :second)
+
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate",
+          name: unique_name("Offer Discovery Source"),
+          domain: unique_domain("offer-discovery-source")
+        })
+        |> Repo.insert!()
+
+      artifact =
+        %SourceArtifact{}
+        |> SourceArtifact.changeset(%{
+          source_id: source.id,
+          url: "https://#{source.domain}/product",
+          fetched_at: observed_at,
+          content_hash: "offer-discovery-#{System.unique_integer([:positive])}"
+        })
+        |> Repo.insert!()
+
+      {:ok, _earlier_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: earlier_observed_at,
+          price: Decimal.new("129.99")
+        })
+
+      {:ok, latest_price} =
+        Pricing.add_price_point(%{
+          merchant_product_id: merchant_product.id,
+          observed_at: observed_at,
+          price: Decimal.new("99.99"),
+          artifact_id: artifact.id
+        })
+
+      coupon_valid_to = DateTime.add(observed_at, 3_600, :second)
+
+      {:ok, coupon} =
+        Affiliate.create_coupon(%{
+          merchant_id: merchant.id,
+          code: "DISCOVERY-SAVE",
+          description: "Offer discovery coupon",
+          discount_type: :percent,
+          discount_value: Decimal.new("10"),
+          valid_to: coupon_valid_to
+        })
+
+      variables = %{
+        "input" => %{
+          "productId" => relay_id(:product, product.id),
+          "merchantId" => relay_id(:merchant, merchant.id),
+          "activeOnly" => true,
+          "first" => 1
+        }
+      }
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_alias_query(2), variables)
+        end)
+
+      assert_offer_discovery_alias_values(
+        two_response,
+        2,
+        merchant_product,
+        merchant,
+        product,
+        latest_price,
+        artifact,
+        source,
+        coupon,
+        observed_at,
+        coupon_valid_to
+      )
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_alias_query(4), variables)
+        end)
+
+      assert_offer_discovery_alias_values(
+        four_response,
+        4,
+        merchant_product,
+        merchant,
+        product,
+        latest_price,
+        artifact,
+        source,
+        coupon,
+        observed_at,
+        coupon_valid_to
+      )
+
+      assert {
+               offer_discovery_query_budget(two_queries),
+               offer_discovery_query_budget(four_queries)
+             } == {1, 1}
+    end
+
+    test "offer discovery root keeps duplicate aliases coalesced while filters and Relay pages stay isolated",
+         %{conn: conn, test: test_name} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-offer-first-product"),
+          name: "Mixed Offer First Product"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-offer-second-product"),
+          name: "Mixed Offer Second Product"
+        })
+
+      first_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Offer First Merchant"),
+          domain: unique_domain("mixed-offer-first-merchant")
+        })
+
+      second_merchant =
+        merchant_fixture(%{
+          name: unique_name("Mixed Offer Second Merchant"),
+          domain: unique_domain("mixed-offer-second-merchant")
+        })
+
+      first_offer =
+        merchant_product_fixture(%{
+          merchant: first_merchant,
+          product: first_product,
+          is_active: true
+        })
+
+      second_offer =
+        merchant_product_fixture(%{
+          merchant: second_merchant,
+          product: first_product,
+          is_active: false
+        })
+
+      other_product_offer =
+        merchant_product_fixture(%{
+          merchant: first_merchant,
+          product: second_product,
+          is_active: true
+        })
+
+      variables = %{
+        "productFirst" => %{"productId" => relay_id(:product, first_product.id), "first" => 1},
+        "merchantFiltered" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "merchantId" => relay_id(:merchant, second_merchant.id),
+          "first" => 1
+        },
+        "activeOnly" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "activeOnly" => true,
+          "first" => 1
+        },
+        "otherProduct" => %{"productId" => relay_id(:product, second_product.id), "first" => 1},
+        "productNext" => %{
+          "productId" => relay_id(:product, first_product.id),
+          "first" => 1,
+          "after" => cursor_for(0)
+        }
+      }
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, offer_discovery_mixed_key_query(), variables)
+        end)
+
+      assert %{
+               "data" => %{
+                 "productFirst" => product_first_page,
+                 "productFirstDuplicate" => product_first_duplicate_page,
+                 "merchantFiltered" => merchant_filtered_page,
+                 "activeOnly" => active_only_page,
+                 "otherProduct" => other_product_page,
+                 "productNext" => product_next_page
+               }
+             } = response
+
+      assert_offer_discovery_page(product_first_page, first_offer, 0, true, false)
+      assert product_first_duplicate_page == product_first_page
+      assert_offer_discovery_page(merchant_filtered_page, second_offer, 0, false, false)
+      assert_offer_discovery_page(active_only_page, first_offer, 0, false, false)
+      assert_offer_discovery_page(other_product_page, other_product_offer, 0, false, false)
+      assert_offer_discovery_page(product_next_page, second_offer, 1, false, true)
+      assert offer_discovery_query_budget(queries) == 5
     end
 
     test "public opaque-key aliases keep values and SELECT budgets fixed per lookup kind as aliases grow",
@@ -777,6 +1427,558 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp catalog_discovery_alias_query(alias_count) do
+    product_selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        products#{index}: products(first: 1, filters: $filters) {
+          edges { cursor node { id name slug brand { id } } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    metadata_selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        metadata#{index}: productFilterMetadata(filters: $filters) {
+          resultCount
+          typeOptions { id label count selected disabled }
+        }
+        """
+      end)
+
+    """
+    query CatalogDiscoveryAliases($filters: ProductFiltersInput!) {
+      #{product_selections}
+      #{metadata_selections}
+    }
+    """
+  end
+
+  defp catalog_products_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        products#{index}: products(first: 1, filters: $filters) {
+          edges { cursor node { id name slug brand { id } } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query CatalogProductsAliases($filters: ProductFiltersInput!) {
+      #{selections}
+    }
+    """
+  end
+
+  defp catalog_filter_metadata_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        metadata#{index}: productFilterMetadata(filters: $filters) {
+          resultCount
+          typeOptions { id label count selected disabled }
+        }
+        """
+      end)
+
+    """
+    query CatalogFilterMetadataAliases($filters: ProductFiltersInput!) {
+      #{selections}
+    }
+    """
+  end
+
+  defp catalog_discovery_mixed_key_query do
+    """
+    query CatalogDiscoveryMixedKeys(
+      $monitorFilters: ProductFiltersInput!
+      $laptopFilters: ProductFiltersInput!
+      $after: String!
+    ) {
+      monitorFirst: products(first: 1, filters: $monitorFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      laptopFirst: products(first: 1, filters: $laptopFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      monitorNext: products(first: 1, after: $after, filters: $monitorFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp merchant_discovery_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        merchants#{index}: merchants(first: 1) {
+          edges { cursor node { id name domain } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query MerchantDiscoveryAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp merchant_discovery_mixed_key_query do
+    """
+    query MerchantDiscoveryMixedKeys($after: String!) {
+      first: merchants(first: 1) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      firstDuplicate: merchants(first: 1) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      next: merchants(first: 1, after: $after) {
+        edges { cursor node { id name domain } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp offer_discovery_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        merchantProducts#{index}: merchantProducts(input: $input) {
+          edges {
+            cursor
+            node {
+              id
+              isActive
+              merchant { id name domain }
+              product { id name slug }
+              latestPrice {
+                id
+                observedAt
+                price
+                sourceArtifact { id sourceName fetchedAt }
+              }
+              activeCoupons(first: 1) {
+                edges {
+                  cursor
+                  node {
+                    code
+                    description
+                    discountType
+                    discountValue
+                    currency
+                    validTo
+                    terms
+                  }
+                }
+                pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+              }
+              priceHistory(first: 1) {
+                edges {
+                  cursor
+                  node {
+                    id
+                    observedAt
+                    price
+                    sourceArtifact { id sourceName fetchedAt }
+                  }
+                }
+                pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+              }
+            }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OfferDiscoveryAliases($input: MerchantProductsInput!) {
+      #{selections}
+    }
+    """
+  end
+
+  defp offer_discovery_mixed_key_query do
+    """
+    query OfferDiscoveryMixedKeys(
+      $productFirst: MerchantProductsInput!
+      $merchantFiltered: MerchantProductsInput!
+      $activeOnly: MerchantProductsInput!
+      $otherProduct: MerchantProductsInput!
+      $productNext: MerchantProductsInput!
+    ) {
+      productFirst: merchantProducts(input: $productFirst) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      productFirstDuplicate: merchantProducts(input: $productFirst) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      merchantFiltered: merchantProducts(input: $merchantFiltered) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      activeOnly: merchantProducts(input: $activeOnly) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      otherProduct: merchantProducts(input: $otherProduct) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      productNext: merchantProducts(input: $productNext) {
+        edges { cursor node { id merchantId productId isActive } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp comparison_root_batch_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.flat_map(fn {record, index} ->
+        [
+          """
+          comparisonProducts#{index}: comparisonProducts(slugs: ["#{record.second.slug}", "missing-comparison-root-#{index}", "#{record.first.slug}"]) {
+            id
+            slug
+            name
+          }
+          """,
+          """
+          comparisonRecommendation#{index}: comparisonRecommendation(slugs: ["#{record.first.slug}", "#{record.second.slug}"], profile: LOWEST_CURRENT_COST) {
+            profile
+            algorithmVersion
+            status
+            winnerProductId
+            currency
+            missingInputs
+            rankings { rank productId pricePointId merchantProductId landedPrice currency claimIds reasons }
+          }
+          """
+        ]
+      end)
+
+    """
+    query ComparisonRootBatch {
+      #{Enum.join(selections, "\n")}
+    }
+    """
+  end
+
+  defp owner_management_connection_query(collection, alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        #{owner_management_alias(collection, index)}: #{owner_management_field(collection)} {
+          edges {
+            cursor
+            node { #{owner_management_node_selection(collection)} }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    case collection do
+      :comparison_snapshots ->
+        """
+        query OwnerManagementConnections {
+          viewer {
+            #{selections}
+          }
+        }
+        """
+
+      _collection ->
+        """
+        query OwnerManagementConnections {
+          #{selections}
+        }
+        """
+    end
+  end
+
+  defp owner_management_alias(collection, index),
+    do: "#{collection |> Atom.to_string() |> Absinthe.Utils.camelize(lower: true)}#{index}"
+
+  defp owner_management_field(:specification_corrections),
+    do: "mySpecificationCorrections(first: 10, status: PENDING)"
+
+  defp owner_management_field(:price_watches),
+    do: "myPriceWatches(first: 10, enabled: true)"
+
+  defp owner_management_field(:alert_events),
+    do: "myAlertEvents(first: 10, unreadOnly: false)"
+
+  defp owner_management_field(:api_tokens), do: "myApiTokens(first: 10, status: ACTIVE)"
+  defp owner_management_field(:saved_comparison_sets), do: "mySavedComparisonSets(first: 10)"
+  defp owner_management_field(:comparison_snapshots), do: "comparisonSnapshots(first: 10)"
+
+  defp owner_management_node_selection(:specification_corrections),
+    do: "id productId status valueText"
+
+  defp owner_management_node_selection(:price_watches),
+    do: "id enabled productName merchantName"
+
+  defp owner_management_node_selection(:alert_events),
+    do: "id productName merchantName landedPrice readAt"
+
+  defp owner_management_node_selection(:api_tokens), do: "id label tokenPrefix revokedAt"
+
+  defp owner_management_node_selection(:saved_comparison_sets),
+    do: "id name items { position product { id name } }"
+
+  defp owner_management_node_selection(:comparison_snapshots),
+    do: "id title sharePath products { id name }"
+
+  defp owner_management_mixed_key_query(collection) do
+    selections =
+      [
+        {"sameOne", owner_management_mixed_key_field(collection, :same)},
+        {"sameTwo", owner_management_mixed_key_field(collection, :same)},
+        {"nextPage", owner_management_mixed_key_field(collection, :next_page)}
+      ]
+      |> then(fn selections ->
+        case owner_management_mixed_key_field(collection, :alternate) do
+          nil -> selections
+          field -> selections ++ [{"alternateFilter", field}]
+        end
+      end)
+      |> Enum.map_join("\n", fn {alias_name, field} ->
+        """
+        #{alias_name}: #{field} {
+          edges { cursor node { id } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    case collection do
+      :comparison_snapshots ->
+        """
+        query OwnerManagementMixedKeys {
+          viewer {
+            #{selections}
+          }
+        }
+        """
+
+      _collection ->
+        """
+        query OwnerManagementMixedKeys {
+          #{selections}
+        }
+        """
+    end
+  end
+
+  defp owner_management_mixed_key_field(:specification_corrections, :same),
+    do: "mySpecificationCorrections(first: 1, status: PENDING)"
+
+  defp owner_management_mixed_key_field(:specification_corrections, :next_page),
+    do: "mySpecificationCorrections(first: 1, after: \"#{cursor_for(0)}\", status: PENDING)"
+
+  defp owner_management_mixed_key_field(:specification_corrections, :alternate),
+    do: "mySpecificationCorrections(first: 1, status: REJECTED)"
+
+  defp owner_management_mixed_key_field(:price_watches, :same),
+    do: "myPriceWatches(first: 1, enabled: true)"
+
+  defp owner_management_mixed_key_field(:price_watches, :next_page),
+    do: "myPriceWatches(first: 1, after: \"#{cursor_for(0)}\", enabled: true)"
+
+  defp owner_management_mixed_key_field(:price_watches, :alternate),
+    do: "myPriceWatches(first: 1, enabled: false)"
+
+  defp owner_management_mixed_key_field(:alert_events, :same),
+    do: "myAlertEvents(first: 1, unreadOnly: true)"
+
+  defp owner_management_mixed_key_field(:alert_events, :next_page),
+    do: "myAlertEvents(first: 1, after: \"#{cursor_for(0)}\", unreadOnly: true)"
+
+  defp owner_management_mixed_key_field(:alert_events, :alternate),
+    do: "myAlertEvents(first: 1, unreadOnly: false)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :same),
+    do: "myApiTokens(first: 1, status: ACTIVE)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :next_page),
+    do: "myApiTokens(first: 1, after: \"#{cursor_for(0)}\", status: ACTIVE)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :alternate),
+    do: "myApiTokens(first: 1, status: REVOKED)"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :same),
+    do: "mySavedComparisonSets(first: 1)"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :next_page),
+    do: "mySavedComparisonSets(first: 1, after: \"#{cursor_for(0)}\")"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :alternate), do: nil
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :same),
+    do: "comparisonSnapshots(first: 1)"
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :next_page),
+    do: "comparisonSnapshots(first: 1, after: \"#{cursor_for(0)}\")"
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :alternate), do: nil
+
+  defp operator_management_connection_query(collection, alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        #{operator_management_alias(collection, index)}: #{operator_management_field(collection)} {
+          edges {
+            cursor
+            node { #{operator_management_node_selection(collection)} }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OperatorManagementConnections {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_management_alias(collection, index),
+    do: "#{collection |> Atom.to_string() |> Absinthe.Utils.camelize(lower: true)}#{index}"
+
+  defp operator_management_field(:specification_correction_moderation_queue),
+    do: "specificationCorrectionModerationQueue(first: 1, status: PENDING)"
+
+  defp operator_management_field(:merchant_feed_candidates),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_node_selection(:specification_correction_moderation_queue),
+    do: "id productId attributeId status valueText moderationNote"
+
+  defp operator_management_node_selection(:merchant_feed_candidates),
+    do: "id providerFeedId advertiserName productCount reviewStatus reviewNote"
+
+  defp operator_management_mixed_key_query(collection) do
+    selections =
+      [
+        {"sameOne", operator_management_mixed_key_field(collection, :same)},
+        {"sameTwo", operator_management_mixed_key_field(collection, :same)},
+        {"nextPage", operator_management_mixed_key_field(collection, :next_page)},
+        {"alternateFilter", operator_management_mixed_key_field(collection, :alternate_filter)}
+      ]
+      |> then(fn selections ->
+        case operator_management_mixed_key_field(collection, :alternate_sort) do
+          nil -> selections
+          field -> selections ++ [{"alternateSort", field}]
+        end
+      end)
+      |> Enum.map_join("\n", fn {alias_name, field} ->
+        """
+        #{alias_name}: #{field} {
+          edges { cursor node { id } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OperatorManagementMixedKeys {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_management_mixed_key_field(:specification_correction_moderation_queue, :same),
+    do: "specificationCorrectionModerationQueue(first: 1, status: PENDING)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :next_page
+       ),
+       do:
+         "specificationCorrectionModerationQueue(first: 1, after: \"#{cursor_for(0)}\", status: PENDING)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :alternate_filter
+       ),
+       do: "specificationCorrectionModerationQueue(first: 1, status: REJECTED)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :alternate_sort
+       ),
+       do: nil
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :same),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :next_page),
+    do:
+      "merchantFeedCandidates(first: 1, after: \"#{cursor_for(0)}\", reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_filter),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: PENDING, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_sort),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: NAME_ASC)"
+
+  defp operator_management_invalid_connection_query(collection, invalid_kind) do
+    field = operator_management_field_with_invalid_connection(collection, invalid_kind)
+    alias_name = operator_management_alias(collection, 1)
+
+    """
+    query OperatorManagementInvalidConnection {
+      #{alias_name}: #{field} {
+        edges { node { id } }
+      }
+    }
+    """
+  end
+
+  defp operator_management_field_with_invalid_connection(
+         :specification_correction_moderation_queue,
+         :invalid_first
+       ),
+       do: "specificationCorrectionModerationQueue(first: -1, status: PENDING)"
+
+  defp operator_management_field_with_invalid_connection(
+         :specification_correction_moderation_queue,
+         :invalid_cursor
+       ),
+       do: "specificationCorrectionModerationQueue(first: 1, after: \"not-a-cursor\")"
+
+  defp operator_management_field_with_invalid_connection(
+         :merchant_feed_candidates,
+         :invalid_first
+       ),
+       do: "merchantFeedCandidates(first: -1, reviewStatus: SHORTLISTED)"
+
+  defp operator_management_field_with_invalid_connection(
+         :merchant_feed_candidates,
+         :invalid_cursor
+       ),
+       do: "merchantFeedCandidates(first: 1, after: \"not-a-cursor\")"
+
   defp authorized_node_batch_query(records) do
     selections =
       records
@@ -1185,6 +2387,566 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp public_opaque_query_budget(queries) do
     Enum.into(@public_opaque_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp comparison_root_query_budget(queries) do
+    Enum.into(@comparison_root_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
+  end
+
+  defp catalog_discovery_product_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :products))
+  end
+
+  defp catalog_discovery_records(test_name) do
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    laptop_taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: canonical_slug("#{test_name}-catalog-laptop"),
+        name: "Laptop"
+      })
+
+    monitor_taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: canonical_slug("#{test_name}-catalog-monitor"),
+        name: "Monitor"
+      })
+
+    monitor_product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-monitor-first"),
+        name: "Catalog Monitor First",
+        primary_type_taxon: monitor_taxon
+      })
+
+    _monitor_sibling =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-monitor-second"),
+        name: "Catalog Monitor Second",
+        primary_type_taxon: monitor_taxon
+      })
+
+    _laptop_product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{test_name}-catalog-laptop-first"),
+        name: "Catalog Laptop First",
+        primary_type_taxon: laptop_taxon
+      })
+
+    {monitor_product, monitor_taxon, laptop_taxon}
+  end
+
+  defp assert_catalog_discovery_alias_values(
+         response,
+         alias_count,
+         monitor_product,
+         monitor_taxon,
+         laptop_taxon
+       ) do
+    assert %{"data" => data} = response
+
+    expected_page = catalog_discovery_product_page(monitor_product)
+    expected_metadata = catalog_filter_metadata(monitor_taxon, laptop_taxon)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["products#{index}"] == expected_page
+      assert data["metadata#{index}"] == expected_metadata
+    end)
+  end
+
+  defp assert_catalog_products_alias_values(response, alias_count, monitor_product) do
+    assert %{"data" => data} = response
+    expected_page = catalog_discovery_product_page(monitor_product)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["products#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_catalog_filter_metadata_alias_values(
+         response,
+         alias_count,
+         monitor_taxon,
+         laptop_taxon
+       ) do
+    assert %{"data" => data} = response
+    expected_metadata = catalog_filter_metadata(monitor_taxon, laptop_taxon)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["metadata#{index}"] == expected_metadata
+    end)
+  end
+
+  defp catalog_discovery_product_page(monitor_product) do
+    %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(0),
+          "node" => %{
+            "id" => relay_id(:product, monitor_product.id),
+            "name" => monitor_product.name,
+            "slug" => monitor_product.slug,
+            "brand" => %{"id" => relay_id(:brand, monitor_product.brand_id)}
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => true,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor_for(0),
+        "endCursor" => cursor_for(0)
+      }
+    }
+  end
+
+  defp catalog_filter_metadata(monitor_taxon, laptop_taxon) do
+    %{
+      "resultCount" => 2,
+      "typeOptions" => [
+        %{
+          "id" => relay_id(:taxon, laptop_taxon.id),
+          "label" => laptop_taxon.name,
+          "count" => 1,
+          "selected" => false,
+          "disabled" => false
+        },
+        %{
+          "id" => relay_id(:taxon, monitor_taxon.id),
+          "label" => monitor_taxon.name,
+          "count" => 2,
+          "selected" => true,
+          "disabled" => false
+        }
+      ]
+    }
+  end
+
+  defp assert_catalog_discovery_page(
+         page,
+         product,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page == %{
+             "edges" => [
+               %{
+                 "cursor" => cursor_for(cursor_index),
+                 "node" => %{
+                   "id" => relay_id(:product, product.id),
+                   "name" => product.name,
+                   "slug" => product.slug
+                 }
+               }
+             ],
+             "pageInfo" => %{
+               "hasNextPage" => has_next_page,
+               "hasPreviousPage" => has_previous_page,
+               "startCursor" => cursor_for(cursor_index),
+               "endCursor" => cursor_for(cursor_index)
+             }
+           }
+  end
+
+  defp merchant_discovery_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :merchants))
+  end
+
+  defp offer_discovery_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :merchant_products))
+  end
+
+  defp assert_merchant_discovery_alias_values(response, alias_count, merchant) do
+    assert %{"data" => data} = response
+
+    expected_page = merchant_discovery_page(merchant, 0, true, false)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["merchants#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_merchant_discovery_page(
+         page,
+         merchant,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page ==
+             merchant_discovery_page(merchant, cursor_index, has_next_page, has_previous_page)
+  end
+
+  defp merchant_discovery_page(merchant, cursor_index, has_next_page, has_previous_page) do
+    %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(cursor_index),
+          "node" => %{
+            "id" => relay_id(:merchant, merchant.id),
+            "name" => merchant.name,
+            "domain" => merchant.domain
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => has_next_page,
+        "hasPreviousPage" => has_previous_page,
+        "startCursor" => cursor_for(cursor_index),
+        "endCursor" => cursor_for(cursor_index)
+      }
+    }
+  end
+
+  defp assert_offer_discovery_alias_values(
+         response,
+         alias_count,
+         merchant_product,
+         merchant,
+         product,
+         latest_price,
+         artifact,
+         source,
+         coupon,
+         observed_at,
+         coupon_valid_to
+       ) do
+    assert %{"data" => data} = response
+
+    expected_page = %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(0),
+          "node" => %{
+            "id" => relay_id(:merchant_product, merchant_product.id),
+            "isActive" => true,
+            "merchant" => %{
+              "id" => relay_id(:merchant, merchant.id),
+              "name" => merchant.name,
+              "domain" => merchant.domain
+            },
+            "product" => %{
+              "id" => relay_id(:product, product.id),
+              "name" => product.name,
+              "slug" => product.slug
+            },
+            "latestPrice" => %{
+              "id" => relay_id(:price_point, latest_price.id),
+              "observedAt" => DateTime.to_iso8601(observed_at),
+              "price" => "99.99",
+              "sourceArtifact" => %{
+                "id" => relay_id(:source_artifact, artifact.id),
+                "sourceName" => source.name,
+                "fetchedAt" => DateTime.to_iso8601(observed_at)
+              }
+            },
+            "activeCoupons" => %{
+              "edges" => [
+                %{
+                  "cursor" => cursor_for(0),
+                  "node" => %{
+                    "code" => coupon.code,
+                    "description" => coupon.description,
+                    "discountType" => "PERCENT",
+                    "discountValue" => "10",
+                    "currency" => nil,
+                    "validTo" => DateTime.to_iso8601(coupon_valid_to),
+                    "terms" => nil
+                  }
+                }
+              ],
+              "pageInfo" => %{
+                "hasNextPage" => false,
+                "hasPreviousPage" => false,
+                "startCursor" => cursor_for(0),
+                "endCursor" => cursor_for(0)
+              }
+            },
+            "priceHistory" => %{
+              "edges" => [
+                %{
+                  "cursor" => cursor_for(0),
+                  "node" => %{
+                    "id" => relay_id(:price_point, latest_price.id),
+                    "observedAt" => DateTime.to_iso8601(observed_at),
+                    "price" => "99.99",
+                    "sourceArtifact" => %{
+                      "id" => relay_id(:source_artifact, artifact.id),
+                      "sourceName" => source.name,
+                      "fetchedAt" => DateTime.to_iso8601(observed_at)
+                    }
+                  }
+                }
+              ],
+              "pageInfo" => %{
+                "hasNextPage" => true,
+                "hasPreviousPage" => false,
+                "startCursor" => cursor_for(0),
+                "endCursor" => cursor_for(0)
+              }
+            }
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => false,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor_for(0),
+        "endCursor" => cursor_for(0)
+      }
+    }
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["merchantProducts#{index}"] == expected_page
+    end)
+  end
+
+  defp assert_offer_discovery_page(
+         page,
+         merchant_product,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page == %{
+             "edges" => [
+               %{
+                 "cursor" => cursor_for(cursor_index),
+                 "node" => %{
+                   "id" => relay_id(:merchant_product, merchant_product.id),
+                   "merchantId" => relay_id(:merchant, merchant_product.merchant_id),
+                   "productId" => relay_id(:product, merchant_product.product_id),
+                   "isActive" => merchant_product.is_active
+                 }
+               }
+             ],
+             "pageInfo" => %{
+               "hasNextPage" => has_next_page,
+               "hasPreviousPage" => has_previous_page,
+               "startCursor" => cursor_for(cursor_index),
+               "endCursor" => cursor_for(cursor_index)
+             }
+           }
+  end
+
+  defp owner_management_connection_query_budget(queries, collection) do
+    table =
+      case collection do
+        :specification_corrections -> :specification_corrections
+        :price_watches -> :price_watch_rules
+        :alert_events -> :alert_events
+        :api_tokens -> :api_tokens
+        :saved_comparison_sets -> :saved_comparison_sets
+        :comparison_snapshots -> :comparison_snapshots
+      end
+
+    Enum.count(queries, &query_targets_table?(&1, table))
+  end
+
+  defp operator_management_connection_query_budget(queries, collection) do
+    table =
+      case collection do
+        :specification_correction_moderation_queue -> :specification_corrections
+        :merchant_feed_candidates -> :merchant_feed_candidates
+      end
+
+    Enum.count(queries, &query_targets_table?(&1, table))
+  end
+
+  defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
+  defp operator_management_mixed_key_budget(:merchant_feed_candidates), do: 4
+
+  defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    data = if collection == :comparison_snapshots, do: Map.fetch!(data, "viewer"), else: data
+
+    Enum.each(1..alias_count, fn index ->
+      alias_name = owner_management_alias(collection, index)
+
+      assert %{
+               "edges" => [%{"cursor" => cursor, "node" => ^expected}],
+               "pageInfo" => %{
+                 "hasNextPage" => false,
+                 "hasPreviousPage" => false,
+                 "startCursor" => cursor,
+                 "endCursor" => cursor
+               }
+             } = Map.fetch!(data, alias_name)
+    end)
+  end
+
+  defp assert_owner_management_mixed_key_values(response, collection, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    data = if collection == :comparison_snapshots, do: Map.fetch!(data, "viewer"), else: data
+
+    assert data["sameOne"] == data["sameTwo"]
+    assert_connection_page(data["sameOne"], expected.first["id"], 0, true, false)
+    assert_connection_page(data["nextPage"], expected.second["id"], 1, false, true)
+
+    if alternate = Map.get(expected, :alternate) do
+      assert get_in(data, ["alternateFilter", "edges", Access.at(0), "node", "id"]) ==
+               alternate["id"]
+    end
+  end
+
+  defp assert_unauthorized_owner_management_response(response, :comparison_snapshots) do
+    assert response == %{"data" => %{"viewer" => nil}}
+  end
+
+  defp assert_unauthorized_owner_management_response(response, collection) do
+    assert %{"data" => data, "errors" => errors} = response
+
+    if collection in [:saved_comparison_sets] do
+      assert Enum.all?(data, fn {_alias, value} -> is_nil(value) end)
+    else
+      assert data == nil
+    end
+
+    assert errors != []
+    assert Enum.all?(errors, &(&1["message"] == "unauthorized"))
+  end
+
+  defp assert_operator_management_connection_values(response, collection, alias_count, expected) do
+    cursor = Base.encode64("cursor:0")
+
+    expected_connection = %{
+      "edges" => [%{"cursor" => cursor, "node" => expected}],
+      "pageInfo" => %{
+        "hasNextPage" => true,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor,
+        "endCursor" => cursor
+      }
+    }
+
+    expected_data =
+      Map.new(1..alias_count, fn index ->
+        {operator_management_alias(collection, index), expected_connection}
+      end)
+
+    assert response == %{"data" => expected_data}
+  end
+
+  defp assert_operator_management_mixed_key_values(response, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    assert data["sameOne"] == data["sameTwo"]
+    assert_connection_page(data["sameOne"], expected.first, 0, true, false)
+    assert_connection_page(data["nextPage"], expected.second, 1, false, true)
+
+    assert get_in(data, ["alternateFilter", "edges", Access.at(0), "node", "id"]) ==
+             expected.alternate
+
+    if alternate_sort = Map.get(expected, :alternate_sort) do
+      assert get_in(data, ["alternateSort", "edges", Access.at(0), "node", "id"]) ==
+               alternate_sort
+    end
+  end
+
+  defp assert_connection_page(connection, expected_id, cursor_index, has_next, has_previous) do
+    cursor = cursor_for(cursor_index)
+
+    assert connection == %{
+             "edges" => [%{"cursor" => cursor, "node" => %{"id" => expected_id}}],
+             "pageInfo" => %{
+               "hasNextPage" => has_next,
+               "hasPreviousPage" => has_previous,
+               "startCursor" => cursor,
+               "endCursor" => cursor
+             }
+           }
+  end
+
+  defp assert_operator_management_forbidden(response, collection, alias_count) do
+    assert_operator_management_error(response, collection, alias_count, "FORBIDDEN")
+  end
+
+  defp assert_operator_management_unauthenticated(response, collection, alias_count) do
+    assert_operator_management_error(response, collection, alias_count, "UNAUTHENTICATED")
+  end
+
+  defp assert_operator_management_error(response, collection, alias_count, code) do
+    alias_names = MapSet.new(1..alias_count, &operator_management_alias(collection, &1))
+
+    assert %{"errors" => errors} = response
+    assert Enum.all?(errors, &(get_in(&1, ["extensions", "code"]) == code))
+
+    case collection do
+      :specification_correction_moderation_queue ->
+        assert [%{"path" => [alias_name]}] = errors
+        assert MapSet.member?(alias_names, alias_name)
+        assert Map.get(response, "data") in [nil, %{}]
+
+      :merchant_feed_candidates ->
+        assert length(errors) == alias_count
+        assert MapSet.new(errors, &get_in(&1, ["path", Access.at(0)])) == alias_names
+        assert response["data"] == Map.new(alias_names, &{&1, nil})
+    end
+  end
+
+  defp assert_comparison_root_values(response, records) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["comparisonProducts#{index}"] == [
+               %{
+                 "id" => relay_id(:product, record.second.id),
+                 "slug" => record.second.slug,
+                 "name" => record.second.name
+               },
+               nil,
+               %{
+                 "id" => relay_id(:product, record.first.id),
+                 "slug" => record.first.slug,
+                 "name" => record.first.name
+               }
+             ]
+
+      assert data["comparisonRecommendation#{index}"] == %{
+               "profile" => "LOWEST_CURRENT_COST",
+               "algorithmVersion" => "lowest-current-cost-v1",
+               "status" => "WINNER",
+               "winnerProductId" => relay_id(:product, record.second.id),
+               "currency" => "USD",
+               "missingInputs" => [],
+               "rankings" => [
+                 %{
+                   "rank" => 1,
+                   "productId" => relay_id(:product, record.second.id),
+                   "pricePointId" => relay_id(:price_point, record.second_point.id),
+                   "merchantProductId" =>
+                     relay_id(:merchant_product, record.second_point.merchant_product_id),
+                   "landedPrice" => "80",
+                   "currency" => "USD",
+                   "claimIds" => [],
+                   "reasons" => ["Lowest eligible landed price: 80 USD."]
+                 },
+                 %{
+                   "rank" => 2,
+                   "productId" => relay_id(:product, record.first.id),
+                   "pricePointId" => relay_id(:price_point, record.first_point.id),
+                   "merchantProductId" =>
+                     relay_id(:merchant_product, record.first_point.merchant_product_id),
+                   "landedPrice" => "100",
+                   "currency" => "USD",
+                   "claimIds" => [],
+                   "reasons" => ["Lowest eligible landed price: 100 USD."]
+                 }
+               ]
+             }
     end)
   end
 
@@ -2603,6 +4365,380 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     end)
   end
 
+  defp owner_management_mixed_key_records(:specification_corrections, owner, prefix) do
+    alternate = owner_management_record(:specification_corrections, owner, "#{prefix}-rejected")
+    [rejected | _] = Repo.all(Specs.list_user_corrections_query(owner.id))
+    operator = AccountsFixtures.operator_fixture()
+    {:ok, _rejected} = Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+    second = owner_management_record(:specification_corrections, owner, "#{prefix}-second")
+    first = owner_management_record(:specification_corrections, owner, "#{prefix}-first")
+
+    %{first: first, second: second, alternate: Map.put(alternate, "status", "REJECTED")}
+  end
+
+  defp owner_management_mixed_key_records(:price_watches, owner, prefix) do
+    alternate = owner_management_record(:price_watches, owner, "#{prefix}-disabled")
+    [disabled | _] = Repo.all(Alerts.list_watch_rules_query(owner.id))
+    {:ok, _disabled} = Alerts.update_watch(owner.id, disabled.entropy_id, %{enabled: false})
+
+    second = owner_management_record(:price_watches, owner, "#{prefix}-second")
+    first = owner_management_record(:price_watches, owner, "#{prefix}-first")
+
+    %{first: first, second: second, alternate: Map.put(alternate, "enabled", false)}
+  end
+
+  defp owner_management_mixed_key_records(:alert_events, owner, prefix) do
+    second = owner_management_record(:alert_events, owner, "#{prefix}-second")
+    first = owner_management_record(:alert_events, owner, "#{prefix}-first")
+    alternate = owner_management_record(:alert_events, owner, "#{prefix}-read")
+    [read | _] = Repo.all(Alerts.list_alert_events_query(owner.id))
+    {:ok, read} = Alerts.mark_alert_read(owner.id, read.entropy_id)
+
+    %{
+      first: first,
+      second: second,
+      alternate: Map.put(alternate, "readAt", DateTime.to_iso8601(read.read_at))
+    }
+  end
+
+  defp owner_management_mixed_key_records(:api_tokens, owner, prefix) do
+    alternate = owner_management_record(:api_tokens, owner, "#{prefix}-revoked")
+    [revoked | _] = Accounts.list_api_tokens(owner.id)
+    {:ok, revoked} = Accounts.revoke_api_token(owner.id, revoked.entropy_id)
+
+    second = owner_management_record(:api_tokens, owner, "#{prefix}-second")
+    first = owner_management_record(:api_tokens, owner, "#{prefix}-first")
+
+    %{
+      first: first,
+      second: second,
+      alternate: Map.put(alternate, "revokedAt", DateTime.to_iso8601(revoked.revoked_at))
+    }
+  end
+
+  defp owner_management_mixed_key_records(:saved_comparison_sets, owner, prefix) do
+    second = owner_management_record(:saved_comparison_sets, owner, "#{prefix}-second")
+    first = owner_management_record(:saved_comparison_sets, owner, "#{prefix}-first")
+    %{first: first, second: second}
+  end
+
+  defp owner_management_mixed_key_records(:comparison_snapshots, owner, prefix) do
+    second = owner_management_record(:comparison_snapshots, owner, "#{prefix}-second")
+    first = owner_management_record(:comparison_snapshots, owner, "#{prefix}-first")
+    %{first: first, second: second}
+  end
+
+  defp owner_management_record(:specification_corrections, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Correction Product"})
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: canonical_slug("#{prefix}-correction-attribute"),
+        data_type: :text,
+        display_name: "#{prefix} Correction Attribute"
+      })
+
+    {:ok, correction} =
+      Specs.propose_correction(
+        product.id,
+        attribute.id,
+        owner.id,
+        %{value_text: "Owner proposed value"},
+        %{
+          reason: "Owner supplied correction evidence.",
+          explanation: "The visible specification differs from the manufacturer's documentation."
+        }
+      )
+
+    %{
+      "id" => relay_id(:specification_correction, correction.id),
+      "productId" => relay_id(:product, product.id),
+      "status" => "PENDING",
+      "valueText" => "Owner proposed value"
+    }
+  end
+
+  defp owner_management_record(:price_watches, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Watch Product"})
+
+    {:ok, watch} =
+      Alerts.create_watch(owner.id, %{
+        product_id: product.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "75"
+      })
+
+    %{
+      "id" => relay_id(:price_watch, watch.entropy_id),
+      "enabled" => true,
+      "productName" => product.name,
+      "merchantName" => nil
+    }
+  end
+
+  defp owner_management_record(:alert_events, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Alert Product"})
+
+    merchant =
+      merchant_fixture(%{
+        name: "#{prefix} Alert Merchant",
+        domain: unique_domain("#{prefix}-alert-merchant")
+      })
+
+    merchant_product =
+      merchant_product_fixture(%{merchant: merchant, product: product, currency: "USD"})
+
+    {:ok, _watch} =
+      Alerts.create_watch(owner.id, %{
+        product_id: product.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "50"
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    {:ok, price_point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: merchant_product.id,
+        observed_at: now,
+        price: "40",
+        shipping: "5",
+        in_stock: true
+      })
+
+    {:ok, %{events_created: 1}} = Alerts.evaluate_price_point(price_point.id, now: now)
+    [event | _] = owner.id |> Alerts.list_alert_events_query() |> Repo.all()
+
+    %{
+      "id" => relay_id(:alert_event, event.entropy_id),
+      "productName" => product.name,
+      "merchantName" => merchant.name,
+      "landedPrice" => "45",
+      "readAt" => nil
+    }
+  end
+
+  defp owner_management_record(:api_tokens, owner, prefix) do
+    {:ok, %{api_token: token}} =
+      Accounts.create_api_token(owner.id, %{label: "#{prefix} Owner Token"})
+
+    %{
+      "id" => relay_id(:api_token, token.entropy_id),
+      "label" => token.label,
+      "tokenPrefix" => token.token_prefix,
+      "revokedAt" => nil
+    }
+  end
+
+  defp owner_management_record(:saved_comparison_sets, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Saved Product"})
+
+    {:ok, saved_set} =
+      Catalog.create_saved_comparison_set(owner.id, %{
+        name: "#{prefix} Saved Set",
+        product_ids: [product.id]
+      })
+
+    %{
+      "id" => relay_id(:saved_comparison_set, saved_set.entropy_id),
+      "name" => saved_set.name,
+      "items" => [
+        %{
+          "position" => 1,
+          "product" => %{
+            "id" => relay_id(:product, product.id),
+            "name" => product.name
+          }
+        }
+      ]
+    }
+  end
+
+  defp owner_management_record(:comparison_snapshots, owner, prefix) do
+    first = SpecsFixtures.product_fixture(%{name: "#{prefix} Snapshot First"})
+    second = SpecsFixtures.product_fixture(%{name: "#{prefix} Snapshot Second"})
+
+    {:ok, snapshot} =
+      ComparisonSnapshots.publish(owner.id, %{
+        title: "#{prefix} Snapshot",
+        product_ids: [first.id, second.id],
+        recommendation_profile: :lowest_current_cost
+      })
+
+    %{
+      "id" => relay_id(:comparison_snapshot, snapshot.entropy_id),
+      "title" => snapshot.title,
+      "sharePath" => "/compare/shared/#{snapshot.public_token}",
+      "products" => [
+        %{"id" => relay_id(:product, first.id), "name" => first.name},
+        %{"id" => relay_id(:product, second.id), "name" => second.name}
+      ]
+    }
+  end
+
+  defp operator_management_mixed_key_records(
+         :specification_correction_moderation_queue,
+         operator,
+         prefix
+       ) do
+    _expected =
+      operator_management_records(:specification_correction_moderation_queue, operator, prefix)
+
+    [first, second] =
+      :pending
+      |> then(&Specs.list_correction_moderation_query(status: &1))
+      |> Repo.all()
+
+    [alternate] =
+      :rejected
+      |> then(&Specs.list_correction_moderation_query(status: &1))
+      |> Repo.all()
+
+    %{
+      first: relay_id(:specification_correction, first.id),
+      second: relay_id(:specification_correction, second.id),
+      alternate: relay_id(:specification_correction, alternate.id)
+    }
+  end
+
+  defp operator_management_mixed_key_records(:merchant_feed_candidates, operator, prefix) do
+    _expected = operator_management_records(:merchant_feed_candidates, operator, prefix)
+
+    [first, second] =
+      [review_status: "shortlisted", sort: :product_count_desc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    [alternate] =
+      [review_status: "pending", sort: :product_count_desc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    [alternate_sort | _] =
+      [review_status: "shortlisted", sort: :name_asc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    %{
+      first: relay_id(:merchant_feed_candidate, first.id),
+      second: relay_id(:merchant_feed_candidate, second.id),
+      alternate: relay_id(:merchant_feed_candidate, alternate.id),
+      alternate_sort: relay_id(:merchant_feed_candidate, alternate_sort.id)
+    }
+  end
+
+  defp operator_management_records(:specification_correction_moderation_queue, operator, prefix) do
+    owner = AccountsFixtures.user_fixture()
+
+    rejected = specification_correction_record(owner, "#{prefix}-rejected", "Excluded value")
+    {:ok, _rejected} = Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+    first = specification_correction_record(owner, "#{prefix}-first", "First pending value")
+    _second = specification_correction_record(owner, "#{prefix}-second", "Second pending value")
+
+    %{
+      "id" => relay_id(:specification_correction, first.id),
+      "productId" => relay_id(:product, first.product_id),
+      "attributeId" => relay_id(:attribute, first.attribute_id),
+      "status" => "PENDING",
+      "valueText" => "First pending value",
+      "moderationNote" => nil
+    }
+  end
+
+  defp operator_management_records(:merchant_feed_candidates, _operator, prefix) do
+    source =
+      %Source{}
+      |> Source.changeset(%{
+        kind: "affiliate_feed",
+        name: "#{prefix} Feed",
+        domain: "#{prefix}.example.com"
+      })
+      |> Repo.insert!()
+
+    _excluded =
+      merchant_feed_candidate_record(source, "#{prefix}-excluded", %{
+        advertiser_name: "Excluded pending candidate",
+        product_count: 500,
+        review_status: "pending"
+      })
+
+    first =
+      merchant_feed_candidate_record(source, "#{prefix}-first", %{
+        advertiser_name: "Zulu shortlisted candidate",
+        product_count: 200,
+        review_status: "shortlisted"
+      })
+
+    _second =
+      merchant_feed_candidate_record(source, "#{prefix}-second", %{
+        advertiser_name: "Alpha shortlisted candidate",
+        product_count: 100,
+        review_status: "shortlisted"
+      })
+
+    %{
+      "id" => relay_id(:merchant_feed_candidate, first.id),
+      "providerFeedId" => "#{prefix}-first",
+      "advertiserName" => "Zulu shortlisted candidate",
+      "productCount" => 200,
+      "reviewStatus" => "SHORTLISTED",
+      "reviewNote" => nil
+    }
+  end
+
+  defp specification_correction_record(owner, prefix, value) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Product"})
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: canonical_slug("#{prefix}-attribute"),
+        data_type: :text,
+        display_name: "#{prefix} Attribute"
+      })
+
+    {:ok, correction} =
+      Specs.propose_correction(
+        product.id,
+        attribute.id,
+        owner.id,
+        %{value_text: value},
+        %{
+          reason: "Operator queue batching regression evidence.",
+          explanation: "The regression fixture includes reviewable source context."
+        }
+      )
+
+    correction
+  end
+
+  defp merchant_feed_candidate_record(source, provider_feed_id, attrs) do
+    defaults = %{
+      advertiser_country: "US",
+      advertiser_id: provider_feed_id,
+      advertiser_name: provider_feed_id,
+      currency: "USD",
+      feed_name: provider_feed_id,
+      language: "EN",
+      last_seen_at: ~U[2026-07-21 12:00:00Z],
+      product_count: 1,
+      provider: "cj",
+      provider_feed_id: provider_feed_id,
+      provider_last_updated_at: ~U[2026-07-21 12:00:00Z],
+      raw_metadata: %{},
+      review_status: "pending",
+      source_feed_type: "SHOPPING"
+    }
+
+    {:ok, candidate} =
+      Ingestion.upsert_merchant_feed_candidate(source, Map.merge(defaults, attrs))
+
+    candidate
+  end
+
   defp canonical_slug(value) do
     value
     |> String.downcase()
@@ -2647,6 +4783,43 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp comparison_root_record(prefix, index) do
+    {first, first_point} =
+      comparison_root_product_with_price(prefix, index, "First", "100")
+
+    {second, second_point} =
+      comparison_root_product_with_price(prefix, index, "Second", "80")
+
+    %{first: first, first_point: first_point, second: second, second_point: second_point}
+  end
+
+  defp comparison_root_product_with_price(prefix, index, position, price) do
+    product =
+      SpecsFixtures.product_fixture(%{
+        slug: canonical_slug("#{prefix}-#{index}-#{position}"),
+        name: "Comparison Root #{index} #{position}"
+      })
+
+    merchant =
+      merchant_fixture(%{
+        name: "Comparison Root #{index} #{position} Merchant",
+        domain: canonical_slug("#{prefix}-#{index}-#{position}") <> ".example"
+      })
+
+    merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+    {:ok, point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: merchant_product.id,
+        observed_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
+        price: Decimal.new(price),
+        shipping: Decimal.new("0"),
+        in_stock: true
+      })
+
+    {product, point}
   end
 
   defp unique_name(prefix), do: "#{prefix} #{System.unique_integer([:positive])}"

@@ -7,10 +7,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.{
     Accounts,
+    Alerts,
     Affiliate,
     Catalog,
     ComparisonSnapshots,
     Discussions,
+    Ingestion,
     Pricing,
     Seo,
     Specs
@@ -18,6 +20,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -30,9 +33,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
   @category_source {__MODULE__, :categories}
+  @comparison_source {__MODULE__, :comparison}
   @public_slug_source {__MODULE__, :public_slugs}
   @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
+  @authorized_connection_source {__MODULE__, :authorized_connections}
+  @discovery_root_source {__MODULE__, :discovery_roots}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -64,6 +70,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       Dataloader.KV.new(&category_batch/2, async?: false)
     )
     |> Dataloader.add_source(
+      @comparison_source,
+      Dataloader.KV.new(&comparison_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
       @public_slug_source,
       Dataloader.KV.new(&public_slug_batch/2, async?: false)
     )
@@ -74,6 +84,14 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     |> Dataloader.add_source(
       @authorized_node_source,
       Dataloader.KV.new(&authorized_node_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
+      @authorized_connection_source,
+      Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
+      @discovery_root_source,
+      Dataloader.KV.new(&discovery_root_batch/2, async?: false)
     )
   end
 
@@ -95,6 +113,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @spec category_source() :: {module(), :categories}
   def category_source, do: @category_source
 
+  @spec comparison_source() :: {module(), :comparison}
+  def comparison_source, do: @comparison_source
+
   @spec public_slug_source() :: {module(), :public_slugs}
   def public_slug_source, do: @public_slug_source
 
@@ -103,6 +124,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec authorized_node_source() :: {module(), :authorized_nodes}
   def authorized_node_source, do: @authorized_node_source
+
+  @spec authorized_connection_source() :: {module(), :authorized_connections}
+  def authorized_connection_source, do: @authorized_connection_source
+
+  @spec discovery_root_source() :: {module(), :discovery_roots}
+  def discovery_root_source, do: @discovery_root_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -295,6 +322,85 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     project_connection_pages(categories, pages, connection_args, & &1.id)
   end
 
+  defp comparison_batch(:products, slug_selections) do
+    slug_selections = Enum.to_list(slug_selections)
+    products_by_selection = Catalog.list_products_by_slug_selections(slug_selections)
+
+    Map.new(Enum.zip(slug_selections, products_by_selection))
+  end
+
+  defp comparison_batch(:recommendation, requests) do
+    requests = Enum.to_list(requests)
+
+    products_by_request =
+      requests
+      |> Enum.map(&elem(&1, 0))
+      |> Catalog.list_products_by_slug_selections()
+
+    recommendations =
+      requests
+      |> Enum.zip(products_by_request)
+      |> Enum.filter(fn {{slugs, _profile}, products} ->
+        length(slugs) in 2..3 and Enum.all?(products)
+      end)
+      |> then(fn valid_requests ->
+        results =
+          valid_requests
+          |> Enum.map(fn {{_slugs, profile}, products} ->
+            {Enum.map(products, & &1.id), profile}
+          end)
+          |> ProductCompare.Recommendations.compare_many([])
+
+        valid_requests
+        |> Enum.map(&elem(&1, 0))
+        |> Enum.zip(results)
+        |> Map.new()
+      end)
+
+    Map.new(requests, fn {_slugs, _profile} = request ->
+      result =
+        case Map.fetch(recommendations, request) do
+          {:ok, recommendation} -> recommendation
+          :error -> {:ok, {:error, "recommendations require two or three existing products"}}
+        end
+
+      {request, result}
+    end)
+  end
+
+  defp discovery_root_batch({:products, filters, connection_args}, roots)
+       when is_map(filters) and is_map(connection_args) do
+    result =
+      Product
+      |> ProductCompare.Catalog.Filtering.apply_filters(filters)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
+  defp discovery_root_batch({:product_filter_metadata, filters}, roots) when is_map(filters) do
+    result = Catalog.product_filter_metadata(filters)
+    Map.new(roots, &{&1, {:ok, result}})
+  end
+
+  defp discovery_root_batch({:merchants, connection_args}, roots) when is_map(connection_args) do
+    result =
+      Pricing.list_merchants_query()
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
+  defp discovery_root_batch({:merchant_products, attrs, connection_args}, roots)
+       when is_map(attrs) and is_map(connection_args) do
+    result =
+      attrs
+      |> Pricing.list_merchant_products_query()
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
   defp public_slug_batch(:product, slugs) do
     slugs
     |> Enum.to_list()
@@ -345,6 +451,77 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     entropy_ids
     |> Enum.to_list()
     |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
+  end
+
+  defp authorized_connection_batch(
+         {:owner, kind, owner_id, role, filters, connection_args},
+         requests
+       )
+       when kind in [
+              :specification_corrections,
+              :price_watches,
+              :alert_events,
+              :api_tokens,
+              :saved_comparison_sets,
+              :comparison_snapshots
+            ] and is_integer(owner_id) and owner_id > 0 and role in [:member, :operator] and
+              is_map(filters) and is_map(connection_args) do
+    result =
+      kind
+      |> authorized_owner_connection_query(owner_id, filters)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(requests, &{&1, result})
+  end
+
+  defp authorized_connection_batch(
+         {:operator, kind, operator_id, role, filters, connection_args},
+         requests
+       )
+       when kind in [:specification_correction_moderation_queue, :merchant_feed_candidates] and
+              is_integer(operator_id) and operator_id > 0 and role == :operator and
+              is_map(filters) and is_map(connection_args) do
+    result =
+      kind
+      |> authorized_operator_connection_query(filters)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(requests, &{&1, result})
+  end
+
+  defp authorized_owner_connection_query(:specification_corrections, owner_id, filters) do
+    Specs.list_user_corrections_query(owner_id, status: Map.get(filters, :status))
+  end
+
+  defp authorized_owner_connection_query(:price_watches, owner_id, filters) do
+    Alerts.list_watch_rules_query(owner_id, enabled: Map.get(filters, :enabled))
+  end
+
+  defp authorized_owner_connection_query(:alert_events, owner_id, filters) do
+    Alerts.list_alert_events_query(owner_id, unread_only: Map.fetch!(filters, :unread_only))
+  end
+
+  defp authorized_owner_connection_query(:api_tokens, owner_id, filters) do
+    Accounts.list_api_tokens_query(owner_id, status: Map.fetch!(filters, :status))
+  end
+
+  defp authorized_owner_connection_query(:saved_comparison_sets, owner_id, _filters) do
+    Catalog.list_saved_comparison_sets_query(owner_id)
+  end
+
+  defp authorized_owner_connection_query(:comparison_snapshots, owner_id, _filters) do
+    ComparisonSnapshots.active_for_owner_query(owner_id)
+  end
+
+  defp authorized_operator_connection_query(:specification_correction_moderation_queue, filters) do
+    Specs.list_correction_moderation_query(status: Map.fetch!(filters, :status))
+  end
+
+  defp authorized_operator_connection_query(:merchant_feed_candidates, filters) do
+    Ingestion.list_merchant_feed_candidates_query(
+      review_status: Map.fetch!(filters, :review_status),
+      sort: Map.fetch!(filters, :sort)
+    )
   end
 
   defp project_lookup_results(items, values) do
