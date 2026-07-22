@@ -1,11 +1,14 @@
 defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
+  alias ProductCompareWeb.Resolvers.CatalogResolver
 
   describe "productFilterMetadata" do
     test "returns display-safe filter metadata with Relay IDs and selected state", %{conn: conn} do
@@ -300,23 +303,62 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
     test "rejects invalid filter metadata filters without leaking internals", %{conn: conn} do
       {numeric_attribute, _unit} = numeric_attribute_with_unit_fixture()
 
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, product_filter_metadata_query(), %{
+            "filters" => %{
+              "numeric" => [
+                %{
+                  "attributeId" => relay_id(:attribute, numeric_attribute.id),
+                  "min" => "100",
+                  "max" => "10"
+                }
+              ]
+            }
+          })
+        end)
+
       assert %{
                "data" => nil,
                "errors" => [
                  %{"message" => "invalid numeric filter", "path" => ["productFilterMetadata"]} | _
                ]
-             } =
-               graphql(conn, product_filter_metadata_query(), %{
-                 "filters" => %{
-                   "numeric" => [
-                     %{
-                       "attributeId" => relay_id(:attribute, numeric_attribute.id),
-                       "min" => "100",
-                       "max" => "10"
-                     }
-                   ]
-                 }
-               })
+             } = response
+
+      assert count_queries_targeting_table(queries, :products) == 0
+    end
+
+    test "productFilterMetadata direct no-loader fallback preserves normalized selected state" do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("gql-filter-meta-direct-monitor"),
+          name: "Monitor"
+        })
+
+      SpecsFixtures.product_fixture(%{
+        slug: unique_code("gql-filter-meta-direct-product"),
+        primary_type_taxon: monitor_taxon
+      })
+
+      assert {:ok, %{result_count: 1, type_options: type_options}} =
+               CatalogResolver.product_filter_metadata(
+                 nil,
+                 %{filters: %{primary_type_taxon_id: relay_id(:taxon, monitor_taxon.id)}},
+                 %{}
+               )
+
+      assert %{
+               id: monitor_taxon_id,
+               label: "Monitor",
+               count: 1,
+               selected: true,
+               disabled: false
+             } = Enum.find(type_options, &(&1.id == monitor_taxon.id))
+
+      assert monitor_taxon_id == monitor_taxon.id
     end
   end
 
@@ -378,6 +420,10 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp count_queries_targeting_table(queries, table) when is_atom(table) do
+    Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

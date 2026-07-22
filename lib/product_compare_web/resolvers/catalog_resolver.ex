@@ -71,7 +71,24 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def products(_parent, args, %{context: %{loader: loader}} = resolution) do
+    clear_base_unit_symbol_cache(resolution)
+
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})),
+         connection_args = Input.connection_args(args),
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      source = Loader.discovery_root_source()
+      batch_key = {:products, filters, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def products(_parent, args, resolution) do
     clear_base_unit_symbol_cache(resolution)
 
@@ -85,7 +102,20 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   end
 
   @spec product_filter_metadata(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()}
+          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product_filter_metadata(_parent, args, %{context: %{loader: loader}}) do
+    with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
+      source = Loader.discovery_root_source()
+      batch_key = {:product_filter_metadata, filters}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+      end)
+    end
+  end
+
   def product_filter_metadata(_parent, args, _resolution) do
     with {:ok, filters} <- normalize_filters(Input.fetch_value(args || %{}, :filters, %{})) do
       {:ok, Catalog.product_filter_metadata(filters)}

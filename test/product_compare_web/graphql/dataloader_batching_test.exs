@@ -522,6 +522,141 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              }
     end
 
+    test "catalog discovery root aliases preserve exact values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      laptop_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-catalog-laptop"),
+          name: "Laptop"
+        })
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-catalog-monitor"),
+          name: "Monitor"
+        })
+
+      monitor_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-catalog-monitor-first"),
+          name: "Catalog Monitor First",
+          primary_type_taxon: monitor_taxon
+        })
+
+      _monitor_sibling =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-catalog-monitor-second"),
+          name: "Catalog Monitor Second",
+          primary_type_taxon: monitor_taxon
+        })
+
+      _laptop_product =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-catalog-laptop-first"),
+          name: "Catalog Laptop First",
+          primary_type_taxon: laptop_taxon
+        })
+
+      filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_alias_query(2), %{"filters" => filters})
+        end)
+
+      assert_catalog_discovery_alias_values(
+        two_response,
+        2,
+        monitor_product,
+        monitor_taxon,
+        laptop_taxon
+      )
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_alias_query(4), %{"filters" => filters})
+        end)
+
+      assert_catalog_discovery_alias_values(
+        four_response,
+        4,
+        monitor_product,
+        monitor_taxon,
+        laptop_taxon
+      )
+
+      assert {
+               catalog_discovery_product_query_budget(two_queries),
+               catalog_discovery_product_query_budget(four_queries)
+             } == {4, 4}
+    end
+
+    test "catalog discovery roots keep normalized filters and Relay pages isolated in one request",
+         %{conn: conn, test: test_name} do
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      laptop_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-mixed-laptop"),
+          name: "Laptop"
+        })
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: canonical_slug("#{test_name}-mixed-monitor"),
+          name: "Monitor"
+        })
+
+      monitor_first =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-monitor-first"),
+          name: "Mixed Monitor First",
+          primary_type_taxon: monitor_taxon
+        })
+
+      monitor_second =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-monitor-second"),
+          name: "Mixed Monitor Second",
+          primary_type_taxon: monitor_taxon
+        })
+
+      laptop_first =
+        SpecsFixtures.product_fixture(%{
+          slug: canonical_slug("#{test_name}-mixed-laptop-first"),
+          name: "Mixed Laptop First",
+          primary_type_taxon: laptop_taxon
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_discovery_mixed_key_query(), %{
+            "monitorFilters" => %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)},
+            "laptopFilters" => %{"primaryTypeTaxonId" => relay_id(:taxon, laptop_taxon.id)},
+            "after" => cursor_for(0)
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "monitorFirst" => monitor_first_page,
+                 "laptopFirst" => laptop_first_page,
+                 "monitorNext" => monitor_next_page
+               }
+             } = response
+
+      assert_catalog_discovery_page(monitor_first_page, monitor_first, 0, true, false)
+      assert_catalog_discovery_page(laptop_first_page, laptop_first, 0, false, false)
+      assert_catalog_discovery_page(monitor_next_page, monitor_second, 1, false, true)
+      assert catalog_discovery_product_query_budget(queries) == 3
+    end
+
     test "public opaque-key aliases keep values and SELECT budgets fixed per lookup kind as aliases grow",
          %{conn: conn} do
       prefix = "public-opaque-#{System.unique_integer([:positive])}"
@@ -996,6 +1131,58 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
     query PublicSlugBatch {
       #{Enum.join(product_selections ++ merchant_selections, "\n")}
+    }
+    """
+  end
+
+  defp catalog_discovery_alias_query(alias_count) do
+    product_selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        products#{index}: products(first: 1, filters: $filters) {
+          edges { cursor node { id name slug brand { id } } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    metadata_selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        metadata#{index}: productFilterMetadata(filters: $filters) {
+          resultCount
+          typeOptions { id label count selected disabled }
+        }
+        """
+      end)
+
+    """
+    query CatalogDiscoveryAliases($filters: ProductFiltersInput!) {
+      #{product_selections}
+      #{metadata_selections}
+    }
+    """
+  end
+
+  defp catalog_discovery_mixed_key_query do
+    """
+    query CatalogDiscoveryMixedKeys(
+      $monitorFilters: ProductFiltersInput!
+      $laptopFilters: ProductFiltersInput!
+      $after: String!
+    ) {
+      monitorFirst: products(first: 1, filters: $monitorFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      laptopFirst: products(first: 1, filters: $laptopFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+      monitorNext: products(first: 1, after: $after, filters: $monitorFilters) {
+        edges { cursor node { id name slug } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
     }
     """
   end
@@ -1746,6 +1933,92 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.into(@comparison_root_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
     end)
+  end
+
+  defp catalog_discovery_product_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :products))
+  end
+
+  defp assert_catalog_discovery_alias_values(
+         response,
+         alias_count,
+         monitor_product,
+         monitor_taxon,
+         laptop_taxon
+       ) do
+    assert %{"data" => data} = response
+
+    expected_page = %{
+      "edges" => [
+        %{
+          "cursor" => cursor_for(0),
+          "node" => %{
+            "id" => relay_id(:product, monitor_product.id),
+            "name" => monitor_product.name,
+            "slug" => monitor_product.slug,
+            "brand" => %{"id" => relay_id(:brand, monitor_product.brand_id)}
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => true,
+        "hasPreviousPage" => false,
+        "startCursor" => cursor_for(0),
+        "endCursor" => cursor_for(0)
+      }
+    }
+
+    expected_metadata = %{
+      "resultCount" => 2,
+      "typeOptions" => [
+        %{
+          "id" => relay_id(:taxon, laptop_taxon.id),
+          "label" => laptop_taxon.name,
+          "count" => 1,
+          "selected" => false,
+          "disabled" => false
+        },
+        %{
+          "id" => relay_id(:taxon, monitor_taxon.id),
+          "label" => monitor_taxon.name,
+          "count" => 2,
+          "selected" => true,
+          "disabled" => false
+        }
+      ]
+    }
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["products#{index}"] == expected_page
+      assert data["metadata#{index}"] == expected_metadata
+    end)
+  end
+
+  defp assert_catalog_discovery_page(
+         page,
+         product,
+         cursor_index,
+         has_next_page,
+         has_previous_page
+       ) do
+    assert page == %{
+             "edges" => [
+               %{
+                 "cursor" => cursor_for(cursor_index),
+                 "node" => %{
+                   "id" => relay_id(:product, product.id),
+                   "name" => product.name,
+                   "slug" => product.slug
+                 }
+               }
+             ],
+             "pageInfo" => %{
+               "hasNextPage" => has_next_page,
+               "hasPreviousPage" => has_previous_page,
+               "startCursor" => cursor_for(cursor_index),
+               "endCursor" => cursor_for(cursor_index)
+             }
+           }
   end
 
   defp owner_management_connection_query_budget(queries, collection) do

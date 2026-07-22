@@ -20,6 +20,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -37,6 +38,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
   @authorized_connection_source {__MODULE__, :authorized_connections}
+  @discovery_root_source {__MODULE__, :discovery_roots}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -87,6 +89,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @authorized_connection_source,
       Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @discovery_root_source,
+      Dataloader.KV.new(&discovery_root_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
@@ -121,6 +127,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec authorized_connection_source() :: {module(), :authorized_connections}
   def authorized_connection_source, do: @authorized_connection_source
+
+  @spec discovery_root_source() :: {module(), :discovery_roots}
+  def discovery_root_source, do: @discovery_root_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -357,6 +366,21 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
       {request, result}
     end)
+  end
+
+  defp discovery_root_batch({:products, filters, connection_args}, roots)
+       when is_map(filters) and is_map(connection_args) do
+    result =
+      Product
+      |> ProductCompare.Catalog.Filtering.apply_filters(filters)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(roots, &{&1, result})
+  end
+
+  defp discovery_root_batch({:product_filter_metadata, filters}, roots) when is_map(filters) do
+    result = Catalog.product_filter_metadata(filters)
+    Map.new(roots, &{&1, {:ok, result}})
   end
 
   defp public_slug_batch(:product, slugs) do

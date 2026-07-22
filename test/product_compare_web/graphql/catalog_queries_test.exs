@@ -832,7 +832,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert second_brand_id == relay_id(:brand, second_product.brand_id)
     end
 
-    test "products resolver normalizes string-key pagination args" do
+    test "products direct no-loader fallback normalizes string-key pagination args" do
       first_product =
         SpecsFixtures.product_fixture(%{
           slug: "catalog-direct-first",
@@ -902,17 +902,31 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     test "products rejects invalid cursor input", %{conn: conn} do
       SpecsFixtures.product_fixture(%{slug: "catalog-invalid-cursor"})
 
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_query(), %{"after" => "not-a-valid-cursor"})
+        end)
+
       assert %{
                "data" => %{"products" => nil},
                "errors" => [%{"message" => "invalid cursor", "path" => ["products"]} | _]
-             } = graphql(conn, products_query(), %{"after" => "not-a-valid-cursor"})
+             } = response
+
+      assert count_queries_targeting_table(queries, :products) == 0
     end
 
     test "products rejects invalid first input", %{conn: conn} do
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, products_query(), %{"first" => -1})
+        end)
+
       assert %{
                "data" => %{"products" => nil},
                "errors" => [%{"message" => "invalid first", "path" => ["products"]} | _]
-             } = graphql(conn, products_query(), %{"first" => -1})
+             } = response
+
+      assert count_queries_targeting_table(queries, :products) == 0
     end
 
     test "products searches product and brand text fields case-insensitively", %{conn: conn} do
