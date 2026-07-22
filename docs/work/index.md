@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-21
+Updated: 2026-07-22
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1319,15 +1319,21 @@ the exact focused four-suite gate passed 95 tests with 0 failures. Pre-closeout
 full `mix ci` exited 0 with 895 backend tests and 1,507 frontend tests, and the
 ExDNA unchanged gate passed. The three ready successors remain dispatchable.
 
+Before claiming Bounded Operator Reporting Root GraphQL Reads on 2026-07-22,
+the coordinator verified a fourth independently shippable structural outcome.
+The 1,285-line `ProductCompare.Discussions` context still owns read/query,
+legacy CRUD, authenticated submission/owner policy, and operator moderation
+implementations behind one stable public boundary. Discussions Context
+Decomposition was promoted after its direct context, SEO, community GraphQL,
+and Dataloader characterization gate passed 104 tests. The operator-reporting
+claim therefore leaves three complete ready rows.
+
 ## Active Work
 
-None.
+### Bounded Operator Reporting Root GraphQL Reads
 
-## Ready Work
-
-### 1. Bounded Operator Reporting Root GraphQL Reads
-
-Status: ready
+Status: active
+Owner: current detached worktree
 Lane: Bounded operator reporting root GraphQL reads
 Plan: `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
 Batch outcome: identical operator-only active-coupon and revenue-summary root
@@ -1375,7 +1381,9 @@ Exit condition: identical two- and four-alias sets preserve exact coupon pages,
 revenue summaries, authorization failures, validation errors, and nested values
 while each root's direct SELECT budget remains fixed.
 
-### 2. GraphQL Request Loader Decomposition
+## Ready Work
+
+### 1. GraphQL Request Loader Decomposition
 
 Status: ready
 Lane: GraphQL request loader decomposition
@@ -1441,7 +1449,7 @@ Exit condition: the facade only assembles sources and exposes stable keys, each
 source callback has one focused module owner, and all semantic plus query-budget
 gates pass without resolver or schema changes.
 
-### 3. GraphQL Schema Type Decomposition
+### 2. GraphQL Schema Type Decomposition
 
 Status: ready
 Lane: GraphQL schema type decomposition
@@ -1492,6 +1500,67 @@ Verification:
 Exit condition: the facade owns only runtime/root-operation concerns, five
 domain notation modules own all declarations, the checked-in SDL is unchanged,
 and focused plus full GraphQL and repository gates pass.
+
+### 3. Discussions Context Decomposition
+
+Status: ready
+Lane: Discussions context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Discussions` remains the stable caller-facing
+context while read/query, legacy CRUD, authenticated submission/owner policy,
+and operator moderation implementations live in focused internal modules with
+unchanged public APIs, data behavior, privacy, limits, errors, and GraphQL
+semantics.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct context, SEO, GraphQL, privacy, and fixed-query-
+budget parity.
+Owned paths:
+
+- `lib/product_compare/discussions.ex`
+- `lib/product_compare/discussions/reads.ex`
+- `lib/product_compare/discussions/crud.ex`
+- `lib/product_compare/discussions/submissions.ex`
+- `lib/product_compare/discussions/moderation.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare/discussions/product_review_immutability_test.exs`
+- `test/product_compare/discussions/thread_crud_test.exs`
+- `test/product_compare/discussions/thread_post_validation_test.exs`
+- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/discussions-context-decomposition.md`
+
+Internal slices:
+
+- Read and query ownership extraction.
+- Legacy CRUD and parent-validation ownership extraction.
+- Submission, owner lifecycle, idempotency, reporting, and rate-policy
+  extraction.
+- Answer-acceptance and operator-moderation ownership extraction.
+
+Prerequisites:
+
+- Existing `ProductCompare.Discussions` public functions, arities, defaults,
+  typespecs, values, and errors remain authoritative.
+- Preserve query filters/order/pagination, locks, transactions, privacy,
+  moderation transitions, accepted-answer cleanup, write limits, and
+  idempotency replay/conflict behavior.
+- Keep resolvers, SEO, and other contexts dependent only on the facade; do not
+  change schemas, migrations, GraphQL SDL, frontend behavior, or product policy.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs test/product_compare/discussions/product_review_immutability_test.exs test/product_compare/discussions/thread_crud_test.exs test/product_compare/discussions/thread_post_validation_test.exs test/product_compare/seo_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, all seven
+characterization suites and repository gates pass, and no caller bypasses the
+facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

@@ -234,6 +234,12 @@ batch and should not be recreated or promoted.
   the root facade stays stable while shared/account, commerce, catalog, and
   trust/community declarations move to five domain notation modules under the
   exact checked-in SDL snapshot.
+- Discussions context decomposition is a path-disjoint structural successor:
+  the stable `ProductCompare.Discussions` facade remains caller-facing while
+  read/query, legacy CRUD, authenticated submission/owner policy, and operator
+  moderation implementations move into focused internal modules. Its direct
+  discussion, SEO, community GraphQL, and Dataloader characterization gate
+  passes 104 tests.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
