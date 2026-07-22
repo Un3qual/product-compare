@@ -3,7 +3,6 @@ defmodule ProductCompare.Specs.Claims do
 
   import Ecto.Query
 
-  alias Ecto.Multi
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
   alias ProductCompare.Specs.TypedValues
@@ -31,15 +30,23 @@ defmodule ProductCompare.Specs.Claims do
           confidence: Map.get(provenance, :confidence)
         })
 
-      Multi.new()
-      |> Multi.insert(:claim, ProductAttributeClaim.changeset(%ProductAttributeClaim{}, attrs))
-      |> Multi.run(:evidence, fn repo, %{claim: claim} ->
-        maybe_insert_evidence(repo, claim, provenance)
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{claim: claim}} -> {:ok, claim}
-        {:error, _step, reason, _changes} -> {:error, reason}
+      changeset = ProductAttributeClaim.changeset(%ProductAttributeClaim{}, attrs)
+
+      if changeset.valid? do
+        Repo.transaction(fn ->
+          with {:ok, claim} <- Repo.insert(changeset),
+               {:ok, _evidence} <- maybe_insert_evidence(Repo, claim, provenance) do
+            claim
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
+        end)
+        |> case do
+          {:ok, claim} -> {:ok, claim}
+          {:error, reason} -> {:error, reason}
+        end
+      else
+        {:error, changeset}
       end
     end
   end
@@ -92,66 +99,77 @@ defmodule ProductCompare.Specs.Claims do
   end
 
   def select_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
-    Multi.new()
-    |> Multi.run(:claim, fn repo, _changes ->
-      claim =
-        repo.one(
-          from claim in ProductAttributeClaim,
-            where: claim.id == ^claim_id,
-            lock: "FOR UPDATE"
-        )
-
-      case claim do
-        nil ->
-          {:error, :claim_not_found}
-
-        %ProductAttributeClaim{
-          product_id: ^product_id,
-          attribute_id: ^attribute_id,
-          status: :accepted
-        } = claim ->
-          {:ok, claim}
-
-        %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} ->
-          {:error, :claim_not_accepted}
-
-        _ ->
-          {:error, :claim_product_attribute_mismatch}
+    Repo.transaction(fn ->
+      with {:ok, _claim} <- lock_selected_claim(product_id, attribute_id, claim_id),
+           :ok <- lock_existing_current(product_id, attribute_id),
+           {:ok, current} <-
+             upsert_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
+        current
+      else
+        {:error, reason} -> Repo.rollback(reason)
       end
     end)
-    |> Multi.run(:lock_existing, fn repo, _changes ->
-      repo.one(
-        from pac in ProductAttributeCurrent,
-          where: pac.product_id == ^product_id and pac.attribute_id == ^attribute_id,
+    |> case do
+      {:ok, current} -> {:ok, current}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp lock_selected_claim(product_id, attribute_id, claim_id) do
+    claim =
+      Repo.one(
+        from claim in ProductAttributeClaim,
+          where: claim.id == ^claim_id,
           lock: "FOR UPDATE"
       )
 
-      {:ok, :locked}
-    end)
-    |> Multi.run(:upsert_current, fn repo, _changes ->
-      now = DateTime.utc_now()
+    case claim do
+      nil ->
+        {:error, :claim_not_found}
 
-      attrs = %{
-        product_id: product_id,
-        attribute_id: attribute_id,
-        claim_id: claim_id,
-        selected_by: selector_user_id,
-        selected_at: now
-      }
+      %ProductAttributeClaim{
+        product_id: ^product_id,
+        attribute_id: ^attribute_id,
+        status: :accepted
+      } = claim ->
+        {:ok, claim}
 
-      %ProductAttributeCurrent{}
-      |> ProductAttributeCurrent.changeset(attrs)
-      |> repo.insert(
-        on_conflict: [set: [claim_id: claim_id, selected_by: selector_user_id, selected_at: now]],
-        conflict_target: [:product_id, :attribute_id],
-        returning: true
-      )
-    end)
-    |> Repo.transaction()
-    |> case do
-      {:ok, %{upsert_current: current}} -> {:ok, current}
-      {:error, _step, reason, _changes} -> {:error, reason}
+      %ProductAttributeClaim{product_id: ^product_id, attribute_id: ^attribute_id} ->
+        {:error, :claim_not_accepted}
+
+      _ ->
+        {:error, :claim_product_attribute_mismatch}
     end
+  end
+
+  defp lock_existing_current(product_id, attribute_id) do
+    Repo.one(
+      from pac in ProductAttributeCurrent,
+        where: pac.product_id == ^product_id and pac.attribute_id == ^attribute_id,
+        lock: "FOR UPDATE"
+    )
+
+    :ok
+  end
+
+  defp upsert_current_claim(product_id, attribute_id, claim_id, selector_user_id) do
+    now = DateTime.utc_now()
+
+    attrs = %{
+      product_id: product_id,
+      attribute_id: attribute_id,
+      claim_id: claim_id,
+      selected_by: selector_user_id,
+      selected_at: now
+    }
+
+    %ProductAttributeCurrent{}
+    |> ProductAttributeCurrent.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: [set: [claim_id: claim_id, selected_by: selector_user_id, selected_at: now]],
+      conflict_target: [:product_id, :attribute_id],
+      returning: true
+    )
   end
 
   defp fetch_attribute(attribute_id) do

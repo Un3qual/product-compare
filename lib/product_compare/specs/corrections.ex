@@ -3,7 +3,6 @@ defmodule ProductCompare.Specs.Corrections do
 
   import Ecto.Query
 
-  alias Ecto.Multi
   alias ProductCompare.Repo
   alias ProductCompare.Specs.TypedValues
   alias ProductCompareSchemas.Catalog.Product
@@ -34,29 +33,24 @@ defmodule ProductCompare.Specs.Corrections do
           supersedes_claim_id: current_claim_id
         })
 
-      Multi.new()
-      |> Multi.insert(
-        :claim,
-        ProductAttributeClaim.changeset(%ProductAttributeClaim{}, claim_attrs)
-      )
-      |> Multi.insert(:correction, fn %{claim: claim} ->
-        correction_attrs =
-          attrs
-          |> Map.take([:reason, :source_url, :explanation])
-          |> Map.merge(%{
-            claim_id: claim.id,
-            product_id: product_id,
-            attribute_id: attribute_id,
-            submitted_by: user_id,
-            status: :pending
-          })
+      claim_changeset = ProductAttributeClaim.changeset(%ProductAttributeClaim{}, claim_attrs)
 
-        SpecificationCorrection.changeset(%SpecificationCorrection{}, correction_attrs)
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{correction: correction}} -> {:ok, preload_correction(correction)}
-        {:error, _step, reason, _changes} -> {:error, reason}
+      if claim_changeset.valid? do
+        Repo.transaction(fn ->
+          with {:ok, claim} <- Repo.insert(claim_changeset),
+               {:ok, correction} <-
+                 insert_correction(claim, product_id, attribute_id, user_id, attrs) do
+            correction
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
+        end)
+        |> case do
+          {:ok, correction} -> {:ok, preload_correction(correction)}
+          {:error, reason} -> {:error, reason}
+        end
+      else
+        {:error, claim_changeset}
       end
     else
       nil -> {:error, :product_not_found}
@@ -131,6 +125,23 @@ defmodule ProductCompare.Specs.Corrections do
       nil -> {:error, :attribute_not_found}
       attribute -> {:ok, attribute}
     end
+  end
+
+  defp insert_correction(claim, product_id, attribute_id, user_id, attrs) do
+    correction_attrs =
+      attrs
+      |> Map.take([:reason, :source_url, :explanation])
+      |> Map.merge(%{
+        claim_id: claim.id,
+        product_id: product_id,
+        attribute_id: attribute_id,
+        submitted_by: user_id,
+        status: :pending
+      })
+
+    %SpecificationCorrection{}
+    |> SpecificationCorrection.changeset(correction_attrs)
+    |> Repo.insert()
   end
 
   defp correction_counts_from_rows(rows) do

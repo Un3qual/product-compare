@@ -167,7 +167,7 @@ defmodule ProductCompare.Specs.Reads do
     enum_option_ids = normalize_ids(enum_option_ids)
 
     if attribute_ids == [] or enum_option_ids == [] do
-      MapSet.new()
+      Enum.into([], MapSet.new())
     else
       Repo.all(
         from attribute in Attribute,
@@ -179,11 +179,12 @@ defmodule ProductCompare.Specs.Reads do
           where: enum_option.id in ^enum_option_ids,
           select: {attribute.id, enum_option.id}
       )
-      |> MapSet.new()
+      |> Enum.into(MapSet.new())
     end
   end
 
-  def filterable_enum_option_pairs(_attribute_ids, _enum_option_ids), do: MapSet.new()
+  def filterable_enum_option_pairs(_attribute_ids, _enum_option_ids),
+    do: Enum.into([], MapSet.new())
 
   @spec enum_option_belongs_to_attribute?(term(), term()) :: boolean()
   def enum_option_belongs_to_attribute?(attribute_id, enum_option_id)
