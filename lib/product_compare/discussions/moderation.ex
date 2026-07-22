@@ -60,7 +60,8 @@ defmodule ProductCompare.Discussions.Moderation do
     end
   end
 
-  defp locked_record_by_entropy(schema, entropy_id) do
+  @doc false
+  def locked_record_by_entropy(schema, entropy_id) do
     with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
       Repo.one(from record in schema, where: record.entropy_id == ^uuid, lock: "FOR UPDATE")
     else
@@ -101,7 +102,8 @@ defmodule ProductCompare.Discussions.Moderation do
     end)
   end
 
-  defp with_locked_answer(entropy_id, callback) do
+  @doc false
+  def with_locked_answer(entropy_id, callback) do
     case record_by_entropy(ThreadPost, entropy_id) do
       nil ->
         Repo.rollback(:not_found)

@@ -3,6 +3,7 @@ defmodule ProductCompare.Discussions.Submissions do
 
   import Ecto.Query
 
+  alias ProductCompare.Discussions.Moderation
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
@@ -73,7 +74,7 @@ defmodule ProductCompare.Discussions.Submissions do
          {:ok, digest} <-
            submission_digest(changeset, :answer, [:thread_id, :body_md], question.entropy_id) do
       idempotent_insert(user_id, :answer, idempotency_key, digest, changeset, fn ->
-        case locked_record_by_entropy(ProductThread, question.entropy_id) do
+        case Moderation.locked_record_by_entropy(ProductThread, question.entropy_id) do
           %ProductThread{kind: :question, moderation_status: :published} -> :ok
           _not_public -> Repo.rollback(:not_found)
         end
@@ -223,7 +224,7 @@ defmodule ProductCompare.Discussions.Submissions do
   end
 
   defp update_owned_transaction(user_id, :answer, entropy_id, attrs) do
-    with_locked_answer(entropy_id, fn answer, question ->
+    Moderation.with_locked_answer(entropy_id, fn answer, question ->
       ensure_owner_and_editable!(answer, user_id)
 
       changeset = owned_update_changeset(:answer, answer, attrs)
@@ -259,7 +260,7 @@ defmodule ProductCompare.Discussions.Submissions do
   end
 
   defp remove_owned_transaction(user_id, :answer, entropy_id) do
-    with_locked_answer(entropy_id, fn answer, question ->
+    Moderation.with_locked_answer(entropy_id, fn answer, question ->
       ensure_owner_and_editable!(answer, user_id)
 
       removed_answer =
@@ -281,38 +282,10 @@ defmodule ProductCompare.Discussions.Submissions do
     |> update_or_rollback()
   end
 
-  defp with_locked_answer(entropy_id, callback) do
-    case record_by_entropy(ThreadPost, entropy_id) do
-      nil ->
-        Repo.rollback(:not_found)
-
-      %ThreadPost{} = unlocked_answer ->
-        question =
-          Repo.one(
-            from question in ProductThread,
-              where: question.id == ^unlocked_answer.thread_id,
-              lock: "FOR UPDATE"
-          )
-
-        if is_nil(question), do: Repo.rollback(:not_found)
-
-        answer =
-          Repo.one(
-            from answer in ThreadPost,
-              where: answer.id == ^unlocked_answer.id,
-              where: answer.thread_id == ^question.id,
-              lock: "FOR UPDATE"
-          )
-
-        if is_nil(answer), do: Repo.rollback(:not_found)
-        callback.(answer, question)
-    end
-  end
-
   defp locked_content_or_rollback!(type, entropy_id) do
     schema = content_schema(type)
 
-    case locked_record_by_entropy(schema, entropy_id) do
+    case Moderation.locked_record_by_entropy(schema, entropy_id) do
       nil -> Repo.rollback(:not_found)
       record -> record
     end
@@ -493,14 +466,6 @@ defmodule ProductCompare.Discussions.Submissions do
   defp record_by_entropy(schema, entropy_id) do
     with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
       Repo.get_by(schema, entropy_id: uuid)
-    else
-      :error -> nil
-    end
-  end
-
-  defp locked_record_by_entropy(schema, entropy_id) do
-    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
-      Repo.one(from record in schema, where: record.entropy_id == ^uuid, lock: "FOR UPDATE")
     else
       :error -> nil
     end

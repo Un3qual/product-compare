@@ -16,28 +16,18 @@ defmodule ProductCompare.Discussions.Reads do
 
   @spec list_threads_for_product(pos_integer(), keyword() | map()) :: [ProductThread.t()]
   def list_threads_for_product(product_id, opts \\ []) do
-    {limit, offset} = normalize_pagination(opts)
-
-    Repo.all(
-      from t in ProductThread,
-        where: t.product_id == ^product_id,
-        order_by: [desc: t.inserted_at, desc: t.id],
-        limit: ^limit,
-        offset: ^offset
-    )
+    ProductThread
+    |> where([thread], thread.product_id == ^product_id)
+    |> order_by([thread], desc: thread.inserted_at, desc: thread.id)
+    |> paginated_results(opts)
   end
 
   @spec list_posts_for_thread(pos_integer(), keyword() | map()) :: [ThreadPost.t()]
   def list_posts_for_thread(thread_id, opts \\ []) do
-    {limit, offset} = normalize_pagination(opts)
-
-    Repo.all(
-      from p in ThreadPost,
-        where: p.thread_id == ^thread_id,
-        order_by: [asc: p.inserted_at, asc: p.id],
-        limit: ^limit,
-        offset: ^offset
-    )
+    ThreadPost
+    |> where([post], post.thread_id == ^thread_id)
+    |> order_by([post], asc: post.inserted_at, asc: post.id)
+    |> paginated_results(opts)
   end
 
   @spec list_reviews_for_product(pos_integer(), keyword() | map()) :: [ProductReview.t()]
@@ -199,9 +189,7 @@ defmodule ProductCompare.Discussions.Reads do
         ) :: %{
           optional(pos_integer()) => [ProductReview.t() | ProductThread.t() | ThreadPost.t()]
         }
-  def public_connection_pages(kind, parent_ids, %{offset: offset, fetch_limit: fetch_limit})
-      when kind in [:reviews, :questions, :answers] and is_list(parent_ids) and
-             is_integer(offset) and offset >= 0 and is_integer(fetch_limit) and fetch_limit > 0 do
+  def public_connection_pages(kind, parent_ids, %{offset: offset, fetch_limit: fetch_limit}) do
     parent_ids = parent_ids |> Enum.filter(&valid_parent_id?/1) |> Enum.uniq()
     pages = Map.new(parent_ids, &{&1, []})
 
@@ -258,6 +246,15 @@ defmodule ProductCompare.Discussions.Reads do
       |> Input.clamp_non_negative(0)
 
     {limit, offset}
+  end
+
+  defp paginated_results(query, opts) do
+    {limit, offset} = normalize_pagination(opts)
+
+    query
+    |> limit(^limit)
+    |> offset(^offset)
+    |> Repo.all()
   end
 
   defp owner_review_submissions(user_id, product_ids) do

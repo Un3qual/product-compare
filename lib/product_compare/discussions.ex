@@ -12,6 +12,10 @@ defmodule ProductCompare.Discussions do
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
 
+  defguardp valid_review_submission?(user_id, product_id, attrs, idempotency_key)
+            when is_integer(user_id) and user_id > 0 and is_integer(product_id) and
+                   product_id > 0 and is_map(attrs) and is_binary(idempotency_key)
+
   @spec list_threads_for_product(pos_integer(), keyword() | map()) :: [ProductThread.t()]
   def list_threads_for_product(product_id, opts \\ []),
     do: Reads.list_threads_for_product(product_id, opts)
@@ -67,8 +71,7 @@ defmodule ProductCompare.Discussions do
     do: submit_review(user_id, product_id, attrs)
 
   def submit_review(user_id, product_id, attrs, idempotency_key)
-      when is_integer(user_id) and user_id > 0 and is_integer(product_id) and product_id > 0 and
-             is_map(attrs) and is_binary(idempotency_key) do
+      when valid_review_submission?(user_id, product_id, attrs, idempotency_key) do
     Submissions.submit_review(user_id, product_id, attrs, idempotency_key)
   end
 
