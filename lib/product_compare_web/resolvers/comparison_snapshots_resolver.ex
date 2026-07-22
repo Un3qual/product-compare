@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
 
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -35,13 +36,13 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
       }) do
     connection_args = Input.connection_args(args)
 
-    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_owner_connection(
-        loader,
-        {:owner, :comparison_snapshots, user_id, authorization_role(current_user), %{},
-         connection_args}
-      )
-    end
+    AuthorizedConnection.load_owner(
+      loader,
+      current_user,
+      :comparison_snapshots,
+      %{},
+      connection_args
+    )
   end
 
   def owned_snapshots(%{id: user_id}, args, %{context: %{current_user: %{id: user_id}}}) do
@@ -52,19 +53,6 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
 
   def owned_snapshots(_parent, _args, _resolution),
     do: {:error, GraphQLErrors.unauthenticated()}
-
-  defp load_owner_connection(loader, batch_key) do
-    source = Loader.authorized_connection_source()
-
-    loader
-    |> Dataloader.load(source, batch_key, :connection)
-    |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
-    end)
-  end
-
-  defp authorization_role(%{is_operator: true}), do: :operator
-  defp authorization_role(_user), do: :member
 
   def publish(_parent, %{input: input}, %{context: %{current_user: current_user}}) do
     with {:ok, product_ids} <-

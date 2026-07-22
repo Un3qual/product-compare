@@ -46,6 +46,10 @@ pagination, errors, nested values, or schema behavior.
   `page_info` plus owner/operator scoping, relevant filters, sorting, active
   state, and successive pages. The public schema and deferred ingestion
   dashboard/operator UI scope remain unchanged.
+- `ProductCompareWeb.GraphQL.AuthorizedConnection` owns private key
+  construction, role derivation, owner validation, operator authorization-
+  before-validation, Dataloader scheduling, and result projection. The six
+  affected resolvers retain only their domain filters and direct fallbacks.
 - The exact seven-suite focused command passed 74 tests with zero failures:
 
   ```text
@@ -79,5 +83,6 @@ pagination, errors, nested values, or schema behavior.
   sorting, owner/operator scoping, active-state exclusion, and cursor paging.
 - `mix typecheck`: passed (exit 0).
 - `mix format --check-formatted`: passed (exit 0).
+- `mix ex_dna --max-clones 6`: passed at the unchanged `6/6` clone budget.
 - `mix work_queue.validate`: passed with `work queue valid: 3 ready rows`.
 - `git diff --check`: passed (exit 0).

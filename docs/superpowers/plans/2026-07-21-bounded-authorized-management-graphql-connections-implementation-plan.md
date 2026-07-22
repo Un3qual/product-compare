@@ -110,3 +110,7 @@ load.
 - Direct public-resolver characterizations now protect every no-loader
   fallback. The seven focused suites pass 74 tests; type, format, queue, and diff gates
   pass with three ready successor rows retained.
+- Exact-head CI exposed four duplicated authorized-connection resolver groups.
+  `ProductCompareWeb.GraphQL.AuthorizedConnection` now centralizes key
+  construction, role derivation, validation order, scheduling, and projection;
+  `mix ex_dna --max-clones 6` passes at the unchanged `6/6` budget.

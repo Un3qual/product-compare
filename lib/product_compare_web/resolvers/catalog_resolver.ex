@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -137,13 +138,13 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
       }) do
     connection_args = Input.connection_args(args)
 
-    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_owner_connection(
-        loader,
-        {:owner, :saved_comparison_sets, current_user.id, authorization_role(current_user), %{},
-         connection_args}
-      )
-    end
+    AuthorizedConnection.load_owner(
+      loader,
+      current_user,
+      :saved_comparison_sets,
+      %{},
+      connection_args
+    )
   end
 
   def my_saved_comparison_sets(_parent, args, %{context: %{current_user: current_user}}) do
@@ -155,19 +156,6 @@ defmodule ProductCompareWeb.Resolvers.CatalogResolver do
 
   def my_saved_comparison_sets(_parent, _args, _resolution),
     do: {:error, GraphQLErrors.unauthenticated()}
-
-  defp load_owner_connection(loader, batch_key) do
-    source = Loader.authorized_connection_source()
-
-    loader
-    |> Dataloader.load(source, batch_key, :connection)
-    |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
-    end)
-  end
-
-  defp authorization_role(%{is_operator: true}), do: :operator
-  defp authorization_role(_user), do: :member
 
   @spec create_saved_comparison_set(any(), %{input: map()}, Absinthe.Resolution.t()) ::
           {:ok, map()}

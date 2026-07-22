@@ -1,29 +1,21 @@
 defmodule ProductCompareWeb.Resolvers.AlertsResolver do
   @moduledoc false
 
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
-
   alias ProductCompare.Alerts
   alias ProductCompare.Repo
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
-  alias ProductCompareWeb.GraphQL.Loader
 
   @spec my_price_watches(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()} | {:error, term()}
   def my_price_watches(_parent, args, %{
         context: %{current_user: user, loader: %Dataloader{} = loader}
       }) do
-    connection_args = Input.connection_args(args)
-    filters = %{enabled: Input.fetch_value(args, :enabled)}
-
-    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_owner_connection(
-        loader,
-        {:owner, :price_watches, user.id, authorization_role(user), filters, connection_args}
-      )
-    end
+    load_alert_connection(loader, user, args, :price_watches, %{
+      enabled: Input.fetch_value(args, :enabled)
+    })
   end
 
   def my_price_watches(_parent, args, %{context: %{current_user: user}}) do
@@ -39,15 +31,9 @@ defmodule ProductCompareWeb.Resolvers.AlertsResolver do
   def my_alert_events(_parent, args, %{
         context: %{current_user: user, loader: %Dataloader{} = loader}
       }) do
-    connection_args = Input.connection_args(args)
-    filters = %{unread_only: Input.fetch_value(args, :unread_only, false)}
-
-    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_owner_connection(
-        loader,
-        {:owner, :alert_events, user.id, authorization_role(user), filters, connection_args}
-      )
-    end
+    load_alert_connection(loader, user, args, :alert_events, %{
+      unread_only: Input.fetch_value(args, :unread_only, false)
+    })
   end
 
   def my_alert_events(_parent, args, %{context: %{current_user: user}}) do
@@ -166,18 +152,15 @@ defmodule ProductCompareWeb.Resolvers.AlertsResolver do
     end
   end
 
-  defp load_owner_connection(loader, batch_key) do
-    source = Loader.authorized_connection_source()
-
-    loader
-    |> Dataloader.load(source, batch_key, :connection)
-    |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
-    end)
+  defp load_alert_connection(loader, user, args, collection_kind, filters) do
+    AuthorizedConnection.load_owner(
+      loader,
+      user,
+      collection_kind,
+      filters,
+      Input.connection_args(args)
+    )
   end
-
-  defp authorization_role(%{is_operator: true}), do: :operator
-  defp authorization_role(_user), do: :member
 
   defp decode_optional_integer_id(input, field, type) do
     case Input.fetch_value(input, field) do

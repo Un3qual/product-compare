@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
   alias ProductCompareWeb.GraphQL.Authorization
+  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -47,13 +48,13 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
     connection_args = Input.connection_args(args)
     filters = %{status: Input.fetch_value(args, :status)}
 
-    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_authorized_connection(
-        loader,
-        {:owner, :specification_corrections, user.id, authorization_role(user), filters,
-         connection_args}
-      )
-    end
+    AuthorizedConnection.load_owner(
+      loader,
+      user,
+      :specification_corrections,
+      filters,
+      connection_args
+    )
   end
 
   def my_specification_corrections(_parent, args, %{context: %{current_user: user}}) do
@@ -77,20 +78,13 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
     connection_args = Input.connection_args(args)
     filters = %{status: Input.fetch_value(args, :status, :pending)}
 
-    with {:ok, operator} <- Authorization.require_operator(resolution),
-         {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      load_authorized_connection(
-        loader,
-        {:operator, :specification_correction_moderation_queue, operator.id, :operator, filters,
-         connection_args}
-      )
-    else
-      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
-        {:error, GraphQLErrors.authorization_error(reason)}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+    AuthorizedConnection.load_operator(
+      resolution,
+      loader,
+      :specification_correction_moderation_queue,
+      filters,
+      connection_args
+    )
   end
 
   def specification_correction_moderation_queue(_parent, args, resolution) do
@@ -211,19 +205,6 @@ defmodule ProductCompareWeb.Resolvers.SpecsResolver do
       :error -> {:error, {:invalid_id, camelize(field)}}
     end
   end
-
-  defp load_authorized_connection(loader, batch_key) do
-    source = Loader.authorized_connection_source()
-
-    loader
-    |> Dataloader.load(source, batch_key, :connection)
-    |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
-    end)
-  end
-
-  defp authorization_role(%{is_operator: true}), do: :operator
-  defp authorization_role(_user), do: :member
 
   defp normalize_typed_value(value) when is_map(value) do
     value_fields = [

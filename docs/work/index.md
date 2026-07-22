@@ -1306,6 +1306,12 @@ behavior. Direct no-loader characterizations now cover all eight fallbacks; the
 seven focused suites pass 74 tests, and three independently
 shippable ready rows remain after closeout.
 
+The exact-head quality gate then exposed four duplicate resolver lifecycle
+groups. One shared `AuthorizedConnection` boundary now owns private key
+construction, role derivation, validation order, loader scheduling, and result
+projection. The unchanged ExDNA budget is green at 6/6, and all 74 focused
+management tests remain green.
+
 ## Active Work
 
 None.
