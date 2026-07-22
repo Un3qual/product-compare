@@ -2,44 +2,41 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete with CI concern
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
-- Last verified: 2026-07-21 against the live loader facade, resolver call sites,
-  and Dataloader batching suite.
+- Last verified: 2026-07-22 against the completed loader facade and all three
+  extracted source modules.
 
-## Target Outcome
+## Batch Outcome
 
-The request-scoped GraphQL loader will remain one stable resolver-facing facade,
-while association, parent-collection, and root-request source construction and
-batch callbacks will live in focused modules with unchanged source keys,
-values, errors, timestamps, authorization boundaries, and query budgets.
+The request-scoped GraphQL loader remains one stable resolver-facing facade.
+Association, parent-collection, and root-request source construction and batch
+callbacks now live in focused modules while source keys, values, errors,
+timestamps, authorization boundaries, and query budgets remain unchanged.
 
-## Ready Evidence
+## Completion Evidence
 
-- `ProductCompareWeb.GraphQL.Loader` currently owns two Ecto sources plus
-  thirteen KV source domains: merchant detail, product evidence,
-  community connections, viewer submissions, offer connections, categories,
-  comparisons, public slugs, public opaque keys, authorized nodes, authorized
-  management connections, discovery roots, and operator reporting. It also owns
-  their public source-key accessors, query callbacks, batch callbacks, and
-  projection helpers.
-- The completed operator-reporting batch added the thirteenth KV domain for
-  active coupons and revenue summaries, increasing the facade's unrelated
-  reasons to change.
-- Resolvers already depend only on `Loader.new/1` and stable source-key
-  accessors, so implementation can preserve the public facade while moving
-  source internals behind responsibility-focused modules.
-- The Dataloader batching suite already characterizes every current source's
-  semantic values and fixed query budgets. Focused resolver suites cover
-  authorization, filtering, pagination, and errors.
-
-## Internal Slices
-
-1. Association and parent-collection source extraction.
-2. Root-request source extraction with stable facade keys.
-3. Full semantic, authorization, timestamp, and query-budget parity.
+- `ProductCompareWeb.GraphQL.Loader` remains the resolver-facing facade and
+  source-key owner. `Loader.new/1` wires the existing two Ecto source keys and
+  thirteen KV source keys without changing the public accessors.
+- `ProductCompareWeb.GraphQL.Loader.AssociationSources` owns the `Catalog` and
+  `Pricing` Ecto sources, including the existing query functions and the
+  `PricePoint` latest-price batch callback.
+- `ProductCompareWeb.GraphQL.Loader.ParentSources` owns six parent KV sources:
+  merchant detail, product evidence, community connections, viewer
+  submissions, offer connections, and categories.
+- `ProductCompareWeb.GraphQL.Loader.RootSources` owns seven request-reuse KV
+  sources: comparison, public slugs, public opaque keys, authorized nodes,
+  authorized connections, operator reporting, and discovery roots.
+- The 17 focused suites below passed with 222 tests and 0 failures. They cover
+  Dataloader batching plus the catalog and pricing query paths, authorization,
+  filtering, pagination, errors, source artifacts, snapshots, watches, API
+  tokens, saved comparisons, and merchant-feed candidates. This preserves the
+  characterized semantic values and fixed query budgets, including the
+  `async?: false` source behavior, time-sampling boundaries, authorization
+  before loads, and direct resolver fallbacks.
 
 ## Boundaries
 
@@ -58,13 +55,14 @@ values, errors, timestamps, authorization boundaries, and query budgets.
 
 ## Verification
 
-The exact focused suite list below includes Dataloader batching plus the
-catalog-query and pricing-query suites that characterize discovery-root values,
-validation, and fixed query budgets.
+The following checks were run on 2026-07-22:
 
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs` — exit 0; 222 tests, 0 failures.
+- `mix typecheck` — exit 0.
+- `mix format --check-formatted` — exit 0.
+- `mix work_queue.validate` — exit 0 with local Mix PubSub socket access; 3 ready rows.
+- `mix ci` — exit 1 at ExDNA. Credo checked 294 source files and 3,471
+  mods/funs with no issues; ExDNA found 8 clones against the configured budget
+  of 6 (including reports in `ParentSources` and `RootSources`). The command
+  stopped at this gate, so it did not establish later full-CI suite counts.
+- `git diff --check` — exit 0 before the lane-record edit.
