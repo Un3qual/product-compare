@@ -80,6 +80,11 @@ load.
 - [x] Route authorized operator paths through the shared source without
   changing the existing direct fallback.
 - [x] Prove each identical two- and four-alias set has the same SELECT budget.
+- [x] Prove same-request status, review-status, candidate-sort, and Relay-page
+  keys remain distinct while duplicate aliases coalesce.
+- [x] Prove anonymous/member invalid `first` and cursor requests receive
+  authorization errors before input-validation errors and issue zero
+  collection SELECTs.
 - [x] Commit with message `perf: reuse operator queue connection reads`.
 
 ### Task 3: Lane Evidence And Batch Gate
@@ -108,8 +113,12 @@ load.
 - Literal response, authorization-before-load, zero-query denial, filters,
   pagination, ordering, nested values, and direct-fallback coverage pass.
 - Direct public-resolver characterizations now protect every no-loader
-  fallback. The seven focused suites pass 74 tests; type, format, queue, and diff gates
-  pass with three ready successor rows retained.
+  fallback. Same-request mixed-key regressions cover every management
+  connection, all supported owner/operator filters, merchant-candidate sort,
+  and Relay pagination. Both operator roots cover anonymous/member invalid
+  `first` and cursor denial before validation. The seven focused suites pass 84
+  tests; type, format, queue, and diff gates pass with three ready successor
+  rows retained.
 - Exact-head CI exposed four duplicated authorized-connection resolver groups.
   `ProductCompareWeb.GraphQL.AuthorizedConnection` now centralizes key
   construction, role derivation, validation order, scheduling, and projection;

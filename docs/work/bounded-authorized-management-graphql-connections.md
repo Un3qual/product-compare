@@ -7,7 +7,7 @@
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-authorized-management-graphql-connections-implementation-plan.md`
 - Last verified: 2026-07-21 against the live schema, management resolvers,
-  request-scoped loader, and 74 passing focused GraphQL tests.
+  request-scoped loader, and 84 passing focused GraphQL tests.
 
 ## Batch Outcome
 
@@ -21,18 +21,25 @@ pagination, errors, nested values, or schema behavior.
 - Owner-scoped specification corrections, price watches, alert events, API
   tokens, saved comparison sets, and comparison snapshots moved from RED
   two-/four-identical-alias SELECT counts of `2/4` to GREEN fixed counts of
-  `1/1`. The same owner regressions prove identical Relay results and nested
-  values, authenticated owner filtering, filters, cursors, page sizes,
-  ordering, and `pageInfo` parity as aliases grow.
+  `1/1`. Same-request mixed-key regressions pair two identical aliases with a
+  successive Relay page for all six collections and an alternate status,
+  enabled, unread-only, or token-status filter where supported. They prove the
+  duplicate aliases share a read while each distinct filter/page key executes
+  and returns its own edges, cursors, and `pageInfo`.
 - Operator-only specification-correction moderation and merchant-feed candidate
   queues likewise moved from RED `2/4` to GREEN `1/1` SELECT counts for
-  identical aliases. Their regression coverage preserves moderation-status and
-  review-status filters, ranking/order behavior, cursors, page sizes, Relay
-  projection, correction `valueText`, and candidate nested values.
+  identical aliases. Mixed-key regressions prove moderation-status,
+  review-status, candidate sort, and Relay page inputs stay distinct while
+  duplicate aliases coalesce. Their broader regression coverage preserves
+  ranking/order behavior, Relay projection, correction `valueText`, and
+  candidate nested values.
 - Protected owner and operator roots retain their authorization behavior:
   anonymous or forbidden callers receive the existing structured errors and
   issue zero target-collection SELECTs. Anonymous snapshot discovery retains
-  its existing `viewer: null` result with zero snapshot SELECTs.
+  its existing `viewer: null` result with zero snapshot SELECTs. Both operator
+  roots also return `UNAUTHENTICATED` or `FORBIDDEN`, rather than Relay input
+  errors, for anonymous/member requests carrying a negative `first` or malformed
+  cursor, with zero target-collection SELECTs.
 - Every private loader key includes collection kind, principal ID, role,
   normalized filter, and Relay arguments, so distinct principals, filters, and
   pagination windows do not share reads. Authorization and Relay argument
@@ -50,7 +57,7 @@ pagination, errors, nested values, or schema behavior.
   construction, role derivation, owner validation, operator authorization-
   before-validation, Dataloader scheduling, and result projection. The six
   affected resolvers retain only their domain filters and direct fallbacks.
-- The exact seven-suite focused command passed 74 tests with zero failures:
+- The exact seven-suite focused command passed 84 tests with zero failures:
 
   ```text
   mix test test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs
@@ -74,10 +81,16 @@ pagination, errors, nested values, or schema behavior.
 
 ## Batch Gate
 
-- The seven focused GraphQL suites above: 74 tests, 0 failures.
+- The seven focused GraphQL suites above: 84 tests, 0 failures.
 - Growing-alias query-budget regressions cover all eight management
   collections, owner/operator authorization, zero-query denials, semantic
   parity, filters, pagination, and nested values through request loaders.
+- Same-request mixed-key regressions cover all six owner and both operator
+  connections: two identical aliases coalesce while distinct supported filters,
+  merchant-candidate sorts, and Relay pages produce distinct reads and values.
+- Anonymous/member malformed-Relay-input regressions prove authorization runs
+  before connection validation for both operator roots, with zero collection
+  SELECTs.
 - Direct public-resolver no-loader characterizations cover all eight management
   collections, real Relay connection projection, applicable filters and
   sorting, owner/operator scoping, active-state exclusion, and cursor paging.

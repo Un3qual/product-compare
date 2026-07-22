@@ -256,6 +256,32 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end
     end
 
+    for collection <- @owner_management_collections do
+      test "#{collection} owner connection keeps filter and Relay page keys distinct while identical aliases coalesce",
+           %{conn: conn} do
+        collection = unquote(collection)
+        owner = AccountsFixtures.user_fixture()
+        prefix = "owner-mixed-#{collection}-#{System.unique_integer([:positive])}"
+        expected = owner_management_mixed_key_records(collection, owner, prefix)
+
+        authorized_conn =
+          conn
+          |> log_in_user(owner)
+          |> put_req_header_same_origin()
+
+        {response, queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_mixed_key_query(collection), %{})
+          end)
+
+        assert_owner_management_mixed_key_values(response, collection, expected)
+
+        expected_budget = if Map.has_key?(expected, :alternate), do: 3, else: 2
+
+        assert owner_management_connection_query_budget(queries, collection) == expected_budget
+      end
+    end
+
     for collection <- @operator_management_collections do
       test "#{collection} operator connection aliases preserve values, filters, pagination, authorization, and fixed SELECT budgets as aliases grow",
            %{conn: conn} do
@@ -311,6 +337,64 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         four_budget = operator_management_connection_query_budget(four_queries, collection)
 
         assert {two_budget, four_budget} == {1, two_budget}
+      end
+    end
+
+    for collection <- @operator_management_collections do
+      test "#{collection} operator connection keeps filter, sort, and Relay page keys distinct while identical aliases coalesce",
+           %{conn: conn} do
+        collection = unquote(collection)
+        operator = AccountsFixtures.operator_fixture()
+        prefix = "operator-mixed-#{collection}-#{System.unique_integer([:positive])}"
+        expected = operator_management_mixed_key_records(collection, operator, prefix)
+
+        operator_conn =
+          conn
+          |> log_in_user(operator)
+          |> put_req_header_same_origin()
+
+        {response, queries} =
+          capture_select_queries(fn ->
+            graphql(operator_conn, operator_management_mixed_key_query(collection), %{})
+          end)
+
+        assert_operator_management_mixed_key_values(response, expected)
+
+        assert operator_management_connection_query_budget(queries, collection) ==
+                 operator_management_mixed_key_budget(collection)
+      end
+
+      test "#{collection} operator authorization precedes invalid Relay argument validation",
+           %{conn: conn} do
+        collection = unquote(collection)
+        member = AccountsFixtures.user_fixture()
+
+        member_conn =
+          conn
+          |> log_in_user(member)
+          |> put_req_header_same_origin()
+
+        Enum.each(
+          [
+            {conn, "UNAUTHENTICATED"},
+            {member_conn, "FORBIDDEN"}
+          ],
+          fn {request_conn, code} ->
+            Enum.each([:invalid_first, :invalid_cursor], fn invalid_kind ->
+              {response, queries} =
+                capture_select_queries(fn ->
+                  graphql(
+                    request_conn,
+                    operator_management_invalid_connection_query(collection, invalid_kind),
+                    %{}
+                  )
+                end)
+
+              assert_operator_management_error(response, collection, 1, code)
+              assert operator_management_connection_query_budget(queries, collection) == 0
+            end)
+          end
+        )
       end
     end
 
@@ -1016,6 +1100,99 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp owner_management_node_selection(:comparison_snapshots),
     do: "id title sharePath products { id name }"
 
+  defp owner_management_mixed_key_query(collection) do
+    selections =
+      [
+        {"sameOne", owner_management_mixed_key_field(collection, :same)},
+        {"sameTwo", owner_management_mixed_key_field(collection, :same)},
+        {"nextPage", owner_management_mixed_key_field(collection, :next_page)}
+      ]
+      |> then(fn selections ->
+        case owner_management_mixed_key_field(collection, :alternate) do
+          nil -> selections
+          field -> selections ++ [{"alternateFilter", field}]
+        end
+      end)
+      |> Enum.map_join("\n", fn {alias_name, field} ->
+        """
+        #{alias_name}: #{field} {
+          edges { cursor node { id } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    case collection do
+      :comparison_snapshots ->
+        """
+        query OwnerManagementMixedKeys {
+          viewer {
+            #{selections}
+          }
+        }
+        """
+
+      _collection ->
+        """
+        query OwnerManagementMixedKeys {
+          #{selections}
+        }
+        """
+    end
+  end
+
+  defp owner_management_mixed_key_field(:specification_corrections, :same),
+    do: "mySpecificationCorrections(first: 1, status: PENDING)"
+
+  defp owner_management_mixed_key_field(:specification_corrections, :next_page),
+    do: "mySpecificationCorrections(first: 1, after: \"#{cursor_for(0)}\", status: PENDING)"
+
+  defp owner_management_mixed_key_field(:specification_corrections, :alternate),
+    do: "mySpecificationCorrections(first: 1, status: REJECTED)"
+
+  defp owner_management_mixed_key_field(:price_watches, :same),
+    do: "myPriceWatches(first: 1, enabled: true)"
+
+  defp owner_management_mixed_key_field(:price_watches, :next_page),
+    do: "myPriceWatches(first: 1, after: \"#{cursor_for(0)}\", enabled: true)"
+
+  defp owner_management_mixed_key_field(:price_watches, :alternate),
+    do: "myPriceWatches(first: 1, enabled: false)"
+
+  defp owner_management_mixed_key_field(:alert_events, :same),
+    do: "myAlertEvents(first: 1, unreadOnly: true)"
+
+  defp owner_management_mixed_key_field(:alert_events, :next_page),
+    do: "myAlertEvents(first: 1, after: \"#{cursor_for(0)}\", unreadOnly: true)"
+
+  defp owner_management_mixed_key_field(:alert_events, :alternate),
+    do: "myAlertEvents(first: 1, unreadOnly: false)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :same),
+    do: "myApiTokens(first: 1, status: ACTIVE)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :next_page),
+    do: "myApiTokens(first: 1, after: \"#{cursor_for(0)}\", status: ACTIVE)"
+
+  defp owner_management_mixed_key_field(:api_tokens, :alternate),
+    do: "myApiTokens(first: 1, status: REVOKED)"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :same),
+    do: "mySavedComparisonSets(first: 1)"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :next_page),
+    do: "mySavedComparisonSets(first: 1, after: \"#{cursor_for(0)}\")"
+
+  defp owner_management_mixed_key_field(:saved_comparison_sets, :alternate), do: nil
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :same),
+    do: "comparisonSnapshots(first: 1)"
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :next_page),
+    do: "comparisonSnapshots(first: 1, after: \"#{cursor_for(0)}\")"
+
+  defp owner_management_mixed_key_field(:comparison_snapshots, :alternate), do: nil
+
   defp operator_management_connection_query(collection, alias_count) do
     selections =
       Enum.map_join(1..alias_count, "\n", fn index ->
@@ -1051,6 +1228,108 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   defp operator_management_node_selection(:merchant_feed_candidates),
     do: "id providerFeedId advertiserName productCount reviewStatus reviewNote"
+
+  defp operator_management_mixed_key_query(collection) do
+    selections =
+      [
+        {"sameOne", operator_management_mixed_key_field(collection, :same)},
+        {"sameTwo", operator_management_mixed_key_field(collection, :same)},
+        {"nextPage", operator_management_mixed_key_field(collection, :next_page)},
+        {"alternateFilter", operator_management_mixed_key_field(collection, :alternate_filter)}
+      ]
+      |> then(fn selections ->
+        case operator_management_mixed_key_field(collection, :alternate_sort) do
+          nil -> selections
+          field -> selections ++ [{"alternateSort", field}]
+        end
+      end)
+      |> Enum.map_join("\n", fn {alias_name, field} ->
+        """
+        #{alias_name}: #{field} {
+          edges { cursor node { id } }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    """
+    query OperatorManagementMixedKeys {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_management_mixed_key_field(:specification_correction_moderation_queue, :same),
+    do: "specificationCorrectionModerationQueue(first: 1, status: PENDING)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :next_page
+       ),
+       do:
+         "specificationCorrectionModerationQueue(first: 1, after: \"#{cursor_for(0)}\", status: PENDING)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :alternate_filter
+       ),
+       do: "specificationCorrectionModerationQueue(first: 1, status: REJECTED)"
+
+  defp operator_management_mixed_key_field(
+         :specification_correction_moderation_queue,
+         :alternate_sort
+       ),
+       do: nil
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :same),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :next_page),
+    do:
+      "merchantFeedCandidates(first: 1, after: \"#{cursor_for(0)}\", reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_filter),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: PENDING, sort: PRODUCT_COUNT_DESC)"
+
+  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_sort),
+    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: NAME_ASC)"
+
+  defp operator_management_invalid_connection_query(collection, invalid_kind) do
+    field = operator_management_field_with_invalid_connection(collection, invalid_kind)
+    alias_name = operator_management_alias(collection, 1)
+
+    """
+    query OperatorManagementInvalidConnection {
+      #{alias_name}: #{field} {
+        edges { node { id } }
+      }
+    }
+    """
+  end
+
+  defp operator_management_field_with_invalid_connection(
+         :specification_correction_moderation_queue,
+         :invalid_first
+       ),
+       do: "specificationCorrectionModerationQueue(first: -1, status: PENDING)"
+
+  defp operator_management_field_with_invalid_connection(
+         :specification_correction_moderation_queue,
+         :invalid_cursor
+       ),
+       do: "specificationCorrectionModerationQueue(first: 1, after: \"not-a-cursor\")"
+
+  defp operator_management_field_with_invalid_connection(
+         :merchant_feed_candidates,
+         :invalid_first
+       ),
+       do: "merchantFeedCandidates(first: -1, reviewStatus: SHORTLISTED)"
+
+  defp operator_management_field_with_invalid_connection(
+         :merchant_feed_candidates,
+         :invalid_cursor
+       ),
+       do: "merchantFeedCandidates(first: 1, after: \"not-a-cursor\")"
 
   defp authorized_node_batch_query(records) do
     selections =
@@ -1493,6 +1772,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.count(queries, &query_targets_table?(&1, table))
   end
 
+  defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
+  defp operator_management_mixed_key_budget(:merchant_feed_candidates), do: 4
+
   defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
     assert %{"data" => data} = response
     refute Map.has_key?(response, "errors")
@@ -1512,6 +1794,22 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                }
              } = Map.fetch!(data, alias_name)
     end)
+  end
+
+  defp assert_owner_management_mixed_key_values(response, collection, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    data = if collection == :comparison_snapshots, do: Map.fetch!(data, "viewer"), else: data
+
+    assert data["sameOne"] == data["sameTwo"]
+    assert_connection_page(data["sameOne"], expected.first["id"], 0, true, false)
+    assert_connection_page(data["nextPage"], expected.second["id"], 1, false, true)
+
+    if alternate = Map.get(expected, :alternate) do
+      assert get_in(data, ["alternateFilter", "edges", Access.at(0), "node", "id"]) ==
+               alternate["id"]
+    end
   end
 
   defp assert_unauthorized_owner_management_response(response, :comparison_snapshots) do
@@ -1550,6 +1848,37 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end)
 
     assert response == %{"data" => expected_data}
+  end
+
+  defp assert_operator_management_mixed_key_values(response, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    assert data["sameOne"] == data["sameTwo"]
+    assert_connection_page(data["sameOne"], expected.first, 0, true, false)
+    assert_connection_page(data["nextPage"], expected.second, 1, false, true)
+
+    assert get_in(data, ["alternateFilter", "edges", Access.at(0), "node", "id"]) ==
+             expected.alternate
+
+    if alternate_sort = Map.get(expected, :alternate_sort) do
+      assert get_in(data, ["alternateSort", "edges", Access.at(0), "node", "id"]) ==
+               alternate_sort
+    end
+  end
+
+  defp assert_connection_page(connection, expected_id, cursor_index, has_next, has_previous) do
+    cursor = cursor_for(cursor_index)
+
+    assert connection == %{
+             "edges" => [%{"cursor" => cursor, "node" => %{"id" => expected_id}}],
+             "pageInfo" => %{
+               "hasNextPage" => has_next,
+               "hasPreviousPage" => has_previous,
+               "startCursor" => cursor,
+               "endCursor" => cursor
+             }
+           }
   end
 
   defp assert_operator_management_forbidden(response, collection, alias_count) do
@@ -3050,6 +3379,70 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     end)
   end
 
+  defp owner_management_mixed_key_records(:specification_corrections, owner, prefix) do
+    alternate = owner_management_record(:specification_corrections, owner, "#{prefix}-rejected")
+    [rejected | _] = Repo.all(Specs.list_user_corrections_query(owner.id))
+    operator = AccountsFixtures.operator_fixture()
+    {:ok, _rejected} = Specs.moderate_correction(rejected.id, operator.id, :rejected, %{})
+
+    second = owner_management_record(:specification_corrections, owner, "#{prefix}-second")
+    first = owner_management_record(:specification_corrections, owner, "#{prefix}-first")
+
+    %{first: first, second: second, alternate: Map.put(alternate, "status", "REJECTED")}
+  end
+
+  defp owner_management_mixed_key_records(:price_watches, owner, prefix) do
+    alternate = owner_management_record(:price_watches, owner, "#{prefix}-disabled")
+    [disabled | _] = Repo.all(Alerts.list_watch_rules_query(owner.id))
+    {:ok, _disabled} = Alerts.update_watch(owner.id, disabled.entropy_id, %{enabled: false})
+
+    second = owner_management_record(:price_watches, owner, "#{prefix}-second")
+    first = owner_management_record(:price_watches, owner, "#{prefix}-first")
+
+    %{first: first, second: second, alternate: Map.put(alternate, "enabled", false)}
+  end
+
+  defp owner_management_mixed_key_records(:alert_events, owner, prefix) do
+    second = owner_management_record(:alert_events, owner, "#{prefix}-second")
+    first = owner_management_record(:alert_events, owner, "#{prefix}-first")
+    alternate = owner_management_record(:alert_events, owner, "#{prefix}-read")
+    [read | _] = Repo.all(Alerts.list_alert_events_query(owner.id))
+    {:ok, read} = Alerts.mark_alert_read(owner.id, read.entropy_id)
+
+    %{
+      first: first,
+      second: second,
+      alternate: Map.put(alternate, "readAt", DateTime.to_iso8601(read.read_at))
+    }
+  end
+
+  defp owner_management_mixed_key_records(:api_tokens, owner, prefix) do
+    alternate = owner_management_record(:api_tokens, owner, "#{prefix}-revoked")
+    [revoked | _] = Accounts.list_api_tokens(owner.id)
+    {:ok, revoked} = Accounts.revoke_api_token(owner.id, revoked.entropy_id)
+
+    second = owner_management_record(:api_tokens, owner, "#{prefix}-second")
+    first = owner_management_record(:api_tokens, owner, "#{prefix}-first")
+
+    %{
+      first: first,
+      second: second,
+      alternate: Map.put(alternate, "revokedAt", DateTime.to_iso8601(revoked.revoked_at))
+    }
+  end
+
+  defp owner_management_mixed_key_records(:saved_comparison_sets, owner, prefix) do
+    second = owner_management_record(:saved_comparison_sets, owner, "#{prefix}-second")
+    first = owner_management_record(:saved_comparison_sets, owner, "#{prefix}-first")
+    %{first: first, second: second}
+  end
+
+  defp owner_management_mixed_key_records(:comparison_snapshots, owner, prefix) do
+    second = owner_management_record(:comparison_snapshots, owner, "#{prefix}-second")
+    first = owner_management_record(:comparison_snapshots, owner, "#{prefix}-first")
+    %{first: first, second: second}
+  end
+
   defp owner_management_record(:specification_corrections, owner, prefix) do
     product = SpecsFixtures.product_fixture(%{name: "#{prefix} Correction Product"})
 
@@ -3131,7 +3524,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       })
 
     {:ok, %{events_created: 1}} = Alerts.evaluate_price_point(price_point.id, now: now)
-    event = owner.id |> Alerts.list_alert_events_query() |> Repo.one!()
+    [event | _] = owner.id |> Alerts.list_alert_events_query() |> Repo.all()
 
     %{
       "id" => relay_id(:alert_event, event.entropy_id),
@@ -3200,6 +3593,57 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     }
   end
 
+  defp operator_management_mixed_key_records(
+         :specification_correction_moderation_queue,
+         operator,
+         prefix
+       ) do
+    _expected =
+      operator_management_records(:specification_correction_moderation_queue, operator, prefix)
+
+    [first, second] =
+      :pending
+      |> then(&Specs.list_correction_moderation_query(status: &1))
+      |> Repo.all()
+
+    [alternate] =
+      :rejected
+      |> then(&Specs.list_correction_moderation_query(status: &1))
+      |> Repo.all()
+
+    %{
+      first: relay_id(:specification_correction, first.id),
+      second: relay_id(:specification_correction, second.id),
+      alternate: relay_id(:specification_correction, alternate.id)
+    }
+  end
+
+  defp operator_management_mixed_key_records(:merchant_feed_candidates, operator, prefix) do
+    _expected = operator_management_records(:merchant_feed_candidates, operator, prefix)
+
+    [first, second] =
+      [review_status: "shortlisted", sort: :product_count_desc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    [alternate] =
+      [review_status: "pending", sort: :product_count_desc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    [alternate_sort | _] =
+      [review_status: "shortlisted", sort: :name_asc]
+      |> Ingestion.list_merchant_feed_candidates_query()
+      |> Repo.all()
+
+    %{
+      first: relay_id(:merchant_feed_candidate, first.id),
+      second: relay_id(:merchant_feed_candidate, second.id),
+      alternate: relay_id(:merchant_feed_candidate, alternate.id),
+      alternate_sort: relay_id(:merchant_feed_candidate, alternate_sort.id)
+    }
+  end
+
   defp operator_management_records(:specification_correction_moderation_queue, operator, prefix) do
     owner = AccountsFixtures.user_fixture()
 
@@ -3238,14 +3682,14 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     first =
       merchant_feed_candidate_record(source, "#{prefix}-first", %{
-        advertiser_name: "First shortlisted candidate",
+        advertiser_name: "Zulu shortlisted candidate",
         product_count: 200,
         review_status: "shortlisted"
       })
 
     _second =
       merchant_feed_candidate_record(source, "#{prefix}-second", %{
-        advertiser_name: "Second shortlisted candidate",
+        advertiser_name: "Alpha shortlisted candidate",
         product_count: 100,
         review_status: "shortlisted"
       })
@@ -3253,7 +3697,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     %{
       "id" => relay_id(:merchant_feed_candidate, first.id),
       "providerFeedId" => "#{prefix}-first",
-      "advertiserName" => "First shortlisted candidate",
+      "advertiserName" => "Zulu shortlisted candidate",
       "productCount" => 200,
       "reviewStatus" => "SHORTLISTED",
       "reviewNote" => nil
