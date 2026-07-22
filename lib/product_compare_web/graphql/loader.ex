@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.{
     Accounts,
+    Alerts,
     Affiliate,
     Catalog,
     ComparisonSnapshots,
@@ -34,6 +35,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @public_slug_source {__MODULE__, :public_slugs}
   @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
+  @authorized_connection_source {__MODULE__, :authorized_connections}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -80,6 +82,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       @authorized_node_source,
       Dataloader.KV.new(&authorized_node_batch/2, async?: false)
     )
+    |> Dataloader.add_source(
+      @authorized_connection_source,
+      Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
+    )
   end
 
   @spec merchant_detail_source() :: {module(), :merchant_detail}
@@ -111,6 +117,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec authorized_node_source() :: {module(), :authorized_nodes}
   def authorized_node_source, do: @authorized_node_source
+
+  @spec authorized_connection_source() :: {module(), :authorized_connections}
+  def authorized_connection_source, do: @authorized_connection_source
 
   defp catalog_source(params) do
     Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
@@ -399,6 +408,51 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     entropy_ids
     |> Enum.to_list()
     |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
+  end
+
+  defp authorized_connection_batch(
+         {:owner, kind, owner_id, role, filters, connection_args},
+         requests
+       )
+       when kind in [
+              :specification_corrections,
+              :price_watches,
+              :alert_events,
+              :api_tokens,
+              :saved_comparison_sets,
+              :comparison_snapshots
+            ] and is_integer(owner_id) and owner_id > 0 and role in [:member, :operator] and
+              is_map(filters) and is_map(connection_args) do
+    result =
+      kind
+      |> authorized_owner_connection_query(owner_id, filters)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(requests, &{&1, result})
+  end
+
+  defp authorized_owner_connection_query(:specification_corrections, owner_id, filters) do
+    Specs.list_user_corrections_query(owner_id, status: Map.get(filters, :status))
+  end
+
+  defp authorized_owner_connection_query(:price_watches, owner_id, filters) do
+    Alerts.list_watch_rules_query(owner_id, enabled: Map.get(filters, :enabled))
+  end
+
+  defp authorized_owner_connection_query(:alert_events, owner_id, filters) do
+    Alerts.list_alert_events_query(owner_id, unread_only: Map.fetch!(filters, :unread_only))
+  end
+
+  defp authorized_owner_connection_query(:api_tokens, owner_id, filters) do
+    Accounts.list_api_tokens_query(owner_id, status: Map.fetch!(filters, :status))
+  end
+
+  defp authorized_owner_connection_query(:saved_comparison_sets, owner_id, _filters) do
+    Catalog.list_saved_comparison_sets_query(owner_id)
+  end
+
+  defp authorized_owner_connection_query(:comparison_snapshots, owner_id, _filters) do
+    ComparisonSnapshots.active_for_owner_query(owner_id)
   end
 
   defp project_lookup_results(items, values) do

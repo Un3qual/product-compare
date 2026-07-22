@@ -1,12 +1,15 @@
 defmodule ProductCompareWeb.Resolvers.AuthResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.GraphQL.SessionMutationBridge
 
   @invalid_credentials_message "invalid email or password"
@@ -129,6 +132,23 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
   @spec my_api_tokens(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+  def my_api_tokens(_parent, args, %{
+        context: %{current_user: current_user, loader: %Dataloader{} = loader}
+      }) do
+    args = args || %{}
+    status_filter = Input.fetch_value(args, :status, :all)
+    connection_args = args |> Input.drop_key(:status) |> Input.connection_args()
+    filters = %{status: status_filter}
+
+    with {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      load_owner_connection(
+        loader,
+        {:owner, :api_tokens, current_user.id, authorization_role(current_user), filters,
+         connection_args}
+      )
+    end
+  end
+
   def my_api_tokens(_parent, args, %{context: %{current_user: current_user}}) do
     args = args || %{}
     status_filter = Input.fetch_value(args, :status, :all)
@@ -140,6 +160,19 @@ defmodule ProductCompareWeb.Resolvers.AuthResolver do
 
   def my_api_tokens(_parent, _args, _resolution),
     do: {:error, GraphQLErrors.unauthenticated()}
+
+  defp load_owner_connection(loader, batch_key) do
+    source = Loader.authorized_connection_source()
+
+    loader
+    |> Dataloader.load(source, batch_key, :connection)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
+    end)
+  end
+
+  defp authorization_role(%{is_operator: true}), do: :operator
+  defp authorization_role(_user), do: :member
 
   @spec create_api_token(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}

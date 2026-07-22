@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
   alias ProductCompare.{
     Accounts,
+    Alerts,
     Affiliate,
     Catalog,
     ComparisonSnapshots,
@@ -26,6 +27,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @merchant_offer_connection_tables ~w(merchant_products price_points)a
   @category_tables ~w(taxons products)a
   @comparison_root_tables ~w(products product_attribute_current merchant_products price_points)a
+  @owner_management_collections ~w(specification_corrections price_watches alert_events api_tokens saved_comparison_sets comparison_snapshots)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -208,6 +210,48 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                },
                two_budget
              }
+    end
+
+    for collection <- @owner_management_collections do
+      test "#{collection} owner connection aliases preserve values, authorization, and fixed SELECT budgets as aliases grow",
+           %{conn: conn} do
+        collection = unquote(collection)
+        owner = AccountsFixtures.user_fixture()
+        prefix = "owner-#{collection}-#{System.unique_integer([:positive])}"
+        expected_node = owner_management_record(collection, owner, prefix)
+
+        authorized_conn =
+          conn
+          |> log_in_user(owner)
+          |> put_req_header_same_origin()
+
+        {two_response, two_queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_owner_management_connection_values(two_response, collection, 2, expected_node)
+
+        {four_response, four_queries} =
+          capture_select_queries(fn ->
+            graphql(authorized_conn, owner_management_connection_query(collection, 4), %{})
+          end)
+
+        assert_owner_management_connection_values(four_response, collection, 4, expected_node)
+
+        {anonymous_response, anonymous_queries} =
+          capture_select_queries(fn ->
+            graphql(conn, owner_management_connection_query(collection, 2), %{})
+          end)
+
+        assert_unauthorized_owner_management_response(anonymous_response, collection)
+        assert owner_management_connection_query_budget(anonymous_queries, collection) == 0
+
+        two_budget = owner_management_connection_query_budget(two_queries, collection)
+        four_budget = owner_management_connection_query_budget(four_queries, collection)
+
+        assert {two_budget, four_budget} == {1, two_budget}
+      end
     end
 
     test "authorized node aliases keep values and SELECT budgets fixed per schema as aliases grow",
@@ -846,6 +890,72 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp owner_management_connection_query(collection, alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        """
+        #{owner_management_alias(collection, index)}: #{owner_management_field(collection)} {
+          edges {
+            cursor
+            node { #{owner_management_node_selection(collection)} }
+          }
+          pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+        }
+        """
+      end)
+
+    case collection do
+      :comparison_snapshots ->
+        """
+        query OwnerManagementConnections {
+          viewer {
+            #{selections}
+          }
+        }
+        """
+
+      _collection ->
+        """
+        query OwnerManagementConnections {
+          #{selections}
+        }
+        """
+    end
+  end
+
+  defp owner_management_alias(collection, index),
+    do: "#{collection |> Atom.to_string() |> Absinthe.Utils.camelize(lower: true)}#{index}"
+
+  defp owner_management_field(:specification_corrections),
+    do: "mySpecificationCorrections(first: 10, status: PENDING)"
+
+  defp owner_management_field(:price_watches),
+    do: "myPriceWatches(first: 10, enabled: true)"
+
+  defp owner_management_field(:alert_events),
+    do: "myAlertEvents(first: 10, unreadOnly: false)"
+
+  defp owner_management_field(:api_tokens), do: "myApiTokens(first: 10, status: ACTIVE)"
+  defp owner_management_field(:saved_comparison_sets), do: "mySavedComparisonSets(first: 10)"
+  defp owner_management_field(:comparison_snapshots), do: "comparisonSnapshots(first: 10)"
+
+  defp owner_management_node_selection(:specification_corrections),
+    do: "id productId status valueText"
+
+  defp owner_management_node_selection(:price_watches),
+    do: "id enabled productName merchantName"
+
+  defp owner_management_node_selection(:alert_events),
+    do: "id productName merchantName landedPrice readAt"
+
+  defp owner_management_node_selection(:api_tokens), do: "id label tokenPrefix revokedAt"
+
+  defp owner_management_node_selection(:saved_comparison_sets),
+    do: "id name items { position product { id name } }"
+
+  defp owner_management_node_selection(:comparison_snapshots),
+    do: "id title sharePath products { id name }"
+
   defp authorized_node_batch_query(records) do
     selections =
       records
@@ -1261,6 +1371,58 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.into(@comparison_root_tables, %{}, fn table ->
       {table, Enum.count(queries, &query_targets_table?(&1, table))}
     end)
+  end
+
+  defp owner_management_connection_query_budget(queries, collection) do
+    table =
+      case collection do
+        :specification_corrections -> :specification_corrections
+        :price_watches -> :price_watch_rules
+        :alert_events -> :alert_events
+        :api_tokens -> :api_tokens
+        :saved_comparison_sets -> :saved_comparison_sets
+        :comparison_snapshots -> :comparison_snapshots
+      end
+
+    Enum.count(queries, &query_targets_table?(&1, table))
+  end
+
+  defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    data = if collection == :comparison_snapshots, do: Map.fetch!(data, "viewer"), else: data
+
+    Enum.each(1..alias_count, fn index ->
+      alias_name = owner_management_alias(collection, index)
+
+      assert %{
+               "edges" => [%{"cursor" => cursor, "node" => ^expected}],
+               "pageInfo" => %{
+                 "hasNextPage" => false,
+                 "hasPreviousPage" => false,
+                 "startCursor" => cursor,
+                 "endCursor" => cursor
+               }
+             } = Map.fetch!(data, alias_name)
+    end)
+  end
+
+  defp assert_unauthorized_owner_management_response(response, :comparison_snapshots) do
+    assert response == %{"data" => %{"viewer" => nil}}
+  end
+
+  defp assert_unauthorized_owner_management_response(response, collection) do
+    assert %{"data" => data, "errors" => errors} = response
+
+    if collection in [:saved_comparison_sets] do
+      assert Enum.all?(data, fn {_alias, value} -> is_nil(value) end)
+    else
+      assert data == nil
+    end
+
+    assert errors != []
+    assert Enum.all?(errors, &(&1["message"] == "unauthorized"))
   end
 
   defp assert_comparison_root_values(response, records) do
@@ -2732,6 +2894,156 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         snapshot: snapshot
       }
     end)
+  end
+
+  defp owner_management_record(:specification_corrections, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Correction Product"})
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: canonical_slug("#{prefix}-correction-attribute"),
+        data_type: :text,
+        display_name: "#{prefix} Correction Attribute"
+      })
+
+    {:ok, correction} =
+      Specs.propose_correction(
+        product.id,
+        attribute.id,
+        owner.id,
+        %{value_text: "Owner proposed value"},
+        %{
+          reason: "Owner supplied correction evidence.",
+          explanation: "The visible specification differs from the manufacturer's documentation."
+        }
+      )
+
+    %{
+      "id" => relay_id(:specification_correction, correction.id),
+      "productId" => relay_id(:product, product.id),
+      "status" => "PENDING",
+      "valueText" => "Owner proposed value"
+    }
+  end
+
+  defp owner_management_record(:price_watches, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Watch Product"})
+
+    {:ok, watch} =
+      Alerts.create_watch(owner.id, %{
+        product_id: product.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "75"
+      })
+
+    %{
+      "id" => relay_id(:price_watch, watch.entropy_id),
+      "enabled" => true,
+      "productName" => product.name,
+      "merchantName" => nil
+    }
+  end
+
+  defp owner_management_record(:alert_events, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Alert Product"})
+
+    merchant =
+      merchant_fixture(%{
+        name: "#{prefix} Alert Merchant",
+        domain: unique_domain("#{prefix}-alert-merchant")
+      })
+
+    merchant_product =
+      merchant_product_fixture(%{merchant: merchant, product: product, currency: "USD"})
+
+    {:ok, _watch} =
+      Alerts.create_watch(owner.id, %{
+        product_id: product.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "50"
+      })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    {:ok, price_point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: merchant_product.id,
+        observed_at: now,
+        price: "40",
+        shipping: "5",
+        in_stock: true
+      })
+
+    {:ok, %{events_created: 1}} = Alerts.evaluate_price_point(price_point.id, now: now)
+    event = owner.id |> Alerts.list_alert_events_query() |> Repo.one!()
+
+    %{
+      "id" => relay_id(:alert_event, event.entropy_id),
+      "productName" => product.name,
+      "merchantName" => merchant.name,
+      "landedPrice" => "45",
+      "readAt" => nil
+    }
+  end
+
+  defp owner_management_record(:api_tokens, owner, prefix) do
+    {:ok, %{api_token: token}} =
+      Accounts.create_api_token(owner.id, %{label: "#{prefix} Owner Token"})
+
+    %{
+      "id" => relay_id(:api_token, token.entropy_id),
+      "label" => token.label,
+      "tokenPrefix" => token.token_prefix,
+      "revokedAt" => nil
+    }
+  end
+
+  defp owner_management_record(:saved_comparison_sets, owner, prefix) do
+    product = SpecsFixtures.product_fixture(%{name: "#{prefix} Saved Product"})
+
+    {:ok, saved_set} =
+      Catalog.create_saved_comparison_set(owner.id, %{
+        name: "#{prefix} Saved Set",
+        product_ids: [product.id]
+      })
+
+    %{
+      "id" => relay_id(:saved_comparison_set, saved_set.entropy_id),
+      "name" => saved_set.name,
+      "items" => [
+        %{
+          "position" => 1,
+          "product" => %{
+            "id" => relay_id(:product, product.id),
+            "name" => product.name
+          }
+        }
+      ]
+    }
+  end
+
+  defp owner_management_record(:comparison_snapshots, owner, prefix) do
+    first = SpecsFixtures.product_fixture(%{name: "#{prefix} Snapshot First"})
+    second = SpecsFixtures.product_fixture(%{name: "#{prefix} Snapshot Second"})
+
+    {:ok, snapshot} =
+      ComparisonSnapshots.publish(owner.id, %{
+        title: "#{prefix} Snapshot",
+        product_ids: [first.id, second.id],
+        recommendation_profile: :lowest_current_cost
+      })
+
+    %{
+      "id" => relay_id(:comparison_snapshot, snapshot.entropy_id),
+      "title" => snapshot.title,
+      "sharePath" => "/compare/shared/#{snapshot.public_token}",
+      "products" => [
+        %{"id" => relay_id(:product, first.id), "name" => first.name},
+        %{"id" => relay_id(:product, second.id), "name" => second.name}
+      ]
+    }
   end
 
   defp canonical_slug(value) do
