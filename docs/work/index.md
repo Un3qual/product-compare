@@ -1303,13 +1303,13 @@ two/four alias SELECT counts of 2/4 to fixed counts of 1/1 while preserving
 principal isolation, authorization-before-load, filters, ordering, pagination,
 nested values, errors, zero-query denials, direct fallbacks, and schema
 behavior. Direct no-loader characterizations now cover all eight fallbacks; the
-seven focused suites pass 74 tests, and three independently
+seven focused suites pass 84 tests, and three independently
 shippable ready rows remain after closeout.
 
 The exact-head quality gate then exposed four duplicate resolver lifecycle
 groups. One shared `AuthorizedConnection` boundary now owns private key
 construction, role derivation, validation order, loader scheduling, and result
-projection. The unchanged ExDNA budget is green at 6/6, and all 74 focused
+projection. The unchanged ExDNA budget is green at 6/6, and all 84 focused
 management tests remain green.
 
 ## Active Work
