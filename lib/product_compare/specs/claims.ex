@@ -46,7 +46,7 @@ defmodule ProductCompare.Specs.Claims do
           {:error, reason} -> {:error, reason}
         end
       else
-        {:error, changeset}
+        Ecto.Changeset.apply_action(changeset, :insert)
       end
     end
   end

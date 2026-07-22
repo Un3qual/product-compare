@@ -50,7 +50,7 @@ defmodule ProductCompare.Specs.Corrections do
           {:error, reason} -> {:error, reason}
         end
       else
-        {:error, claim_changeset}
+        Ecto.Changeset.apply_action(claim_changeset, :insert)
       end
     else
       nil -> {:error, :product_not_found}

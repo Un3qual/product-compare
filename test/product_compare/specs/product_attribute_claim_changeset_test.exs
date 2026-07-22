@@ -1,8 +1,28 @@
 defmodule ProductCompare.Specs.ProductAttributeClaimChangesetTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Repo
+  alias ProductCompare.Specs
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.TaxonAttribute
+
+  describe "propose_claim/4 invalid changesets" do
+    test "returns the insert action without persisting the claim" do
+      product = SpecsFixtures.product_fixture()
+      attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
+
+      assert {:error, %Ecto.Changeset{action: :insert}} =
+               Specs.propose_claim(
+                 product.id,
+                 attribute.id,
+                 %{value_text: %{invalid: "value"}},
+                 %{source_type: :user}
+               )
+
+      assert Repo.aggregate(ProductAttributeClaim, :count, :id) == 0
+    end
+  end
 
   describe "ProductAttributeClaim.changeset/2 typed-value invariants" do
     test "accepts exactly one typed value" do
