@@ -6,8 +6,9 @@
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the live context, all direct discussion
-  suites, community GraphQL, SEO qualification, and Dataloader batching.
+- Last verified: 2026-07-22 against the final extracted context, all direct
+  discussion suites, community GraphQL, SEO qualification, and Dataloader
+  batching.
 
 ## Target Outcome
 
@@ -63,3 +64,33 @@ behavior.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Final Contract And Lane Gate (2026-07-22)
+
+- Snapshot Status remains **active** pending controller whole-batch review and
+  queue closeout.
+- `ProductCompare.Discussions` is a 249-line stable public facade: it retains
+  all caller-facing contracts and delegates reads/query projection to
+  `Reads` (432 lines), raw thread/post/review CRUD and parent validation to
+  `Crud` (190 lines), authenticated submission, ownership, idempotency,
+  reporting, and write-limit policy to `Submissions` (518 lines), and
+  answer acceptance plus operator moderation to `Moderation` (174 lines).
+- A repository-wide search for direct `Reads`, `Crud`, `Submissions`, or
+  `Moderation` references outside the facade and implementation directory
+  found no production callers; the only result was this change's design-plan
+  prose. Resolvers, SEO, and tests therefore continue through the facade.
+- The seven focused suites passed with **108 tests, 0 failures** (14.9s).
+  `mix typecheck`, `mix format --check-formatted`, and `git diff --check`
+  each exited 0.
+- `mix work_queue.validate` first failed before startup in the sandbox because
+  Mix.PubSub could not open its local TCP socket (`:eperm`); the identical
+  command passed with the allowed escalation: `work queue valid: 3 ready
+  rows`.
+- `mix ci` did **not** pass. It reran queue validation, formatting, and
+  typechecking successfully; Credo checked 303 source files / 3,520
+  mods-funs with no issues, but ExDNA reported 13 clones against the budget
+  of 6 and exited nonzero. Consequently `test --cover` (backend count and
+  coverage gate) and `frontend_check` (frontend Bun check) were not reached;
+  no counts or passing result are claimed for either. The ExDNA report includes
+  five discussion-directory clone groups, including shared answer-locking
+  logic in `Moderation` and `Submissions`.
