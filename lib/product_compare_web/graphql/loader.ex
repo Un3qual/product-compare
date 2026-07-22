@@ -3,8 +3,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   Builds the request-scoped GraphQL dataloader sources.
   """
 
-  import Ecto.Query
-
   alias ProductCompare.{
     Accounts,
     Alerts,
@@ -15,18 +13,13 @@ defmodule ProductCompareWeb.GraphQL.Loader do
     Discussions,
     Ingestion,
     Pricing,
-    Seo,
     Specs
   }
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Pricing.PricePoint
-  alias ProductCompareSchemas.Catalog.ProductMedia
-  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
-  alias ProductCompareSchemas.Specs.SpecificationCorrection
-  alias ProductCompareSchemas.Specs.SourceArtifact
+  alias ProductCompareWeb.GraphQL.Loader.{AssociationSources, ParentSources}
 
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
@@ -45,31 +38,31 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
     Dataloader.new()
-    |> Dataloader.add_source(Catalog, catalog_source(params))
-    |> Dataloader.add_source(Pricing, pricing_source(params))
+    |> Dataloader.add_source(Catalog, AssociationSources.catalog(params))
+    |> Dataloader.add_source(Pricing, AssociationSources.pricing(params))
     |> Dataloader.add_source(
       @merchant_detail_source,
-      Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
+      ParentSources.merchant_detail()
     )
     |> Dataloader.add_source(
       @product_evidence_source,
-      Dataloader.KV.new(&product_evidence_batch/2, async?: false)
+      ParentSources.product_evidence()
     )
     |> Dataloader.add_source(
       @community_connection_source,
-      Dataloader.KV.new(&community_connection_batch/2, async?: false)
+      ParentSources.community_connections()
     )
     |> Dataloader.add_source(
       @viewer_submission_source,
-      Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
+      ParentSources.viewer_submissions()
     )
     |> Dataloader.add_source(
       @offer_connection_source,
-      Dataloader.KV.new(&offer_connection_batch/2, async?: false)
+      ParentSources.offer_connections()
     )
     |> Dataloader.add_source(
       @category_source,
-      Dataloader.KV.new(&category_batch/2, async?: false)
+      ParentSources.categories()
     )
     |> Dataloader.add_source(
       @comparison_source,
@@ -139,197 +132,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec discovery_root_source() :: {module(), :discovery_roots}
   def discovery_root_source, do: @discovery_root_source
-
-  defp catalog_source(params) do
-    Dataloader.Ecto.new(Repo, query: &catalog_query/2, default_params: params)
-  end
-
-  defp pricing_source(params) do
-    Dataloader.Ecto.new(Repo,
-      query: &pricing_query/2,
-      default_params: params,
-      run_batch: &pricing_run_batch/5
-    )
-  end
-
-  defp catalog_query(ProductAttributeCurrent, _params) do
-    ProductAttributeCurrent
-    |> join(:inner, [current], attribute in assoc(current, :attribute))
-    |> order_by([_current, attribute], asc: attribute.display_name, asc: attribute.code)
-    |> preload([_current, attribute],
-      attribute: attribute,
-      claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
-    )
-  end
-
-  defp catalog_query(ProductMedia, _params) do
-    ProductMedia
-    |> order_by([media], asc: media.position, asc: media.url, asc: media.id)
-    |> preload([media], source_artifact: [:source])
-  end
-
-  defp catalog_query(SpecificationCorrection, _params) do
-    SpecificationCorrection
-    |> where([correction], correction.status in [:pending, :accepted])
-    |> order_by([correction], asc: correction.attribute_id, asc: correction.id)
-  end
-
-  defp catalog_query(queryable, _params), do: queryable
-  defp pricing_query(SourceArtifact, _params), do: preload(SourceArtifact, :source)
-  defp pricing_query(queryable, _params), do: queryable
-
-  defp pricing_run_batch(PricePoint, query, :latest_price, merchant_product_ids, repo_opts) do
-    latest_prices =
-      query
-      |> Pricing.latest_prices_query(merchant_product_ids)
-      |> Repo.all(repo_opts)
-      |> Map.new(&{&1.merchant_product_id, &1})
-
-    for merchant_product_id <- merchant_product_ids do
-      [Map.get(latest_prices, merchant_product_id)]
-    end
-  end
-
-  defp pricing_run_batch(queryable, query, col, inputs, repo_opts) do
-    Dataloader.Ecto.run_batch(Repo, queryable, query, col, inputs, repo_opts)
-  end
-
-  defp merchant_detail_batch(:summary, merchants) do
-    merchants
-    |> Enum.to_list()
-    |> Pricing.merchant_details(now: DateTime.utc_now())
-  end
-
-  defp product_evidence_batch(batch_key, products) do
-    products = Enum.to_list(products)
-    now = DateTime.utc_now()
-
-    case batch_key do
-      :offer_truth ->
-        offer_truths = Pricing.current_offer_truths(Enum.map(products, & &1.id), now: now)
-        empty_offer_truth = Pricing.current_offer_truth(nil, now: now)
-
-        Map.new(products, fn product ->
-          {product, Map.get(offer_truths, product.id, empty_offer_truth)}
-        end)
-
-      :review_summary ->
-        summaries = Discussions.review_summaries(Enum.map(products, & &1.id))
-
-        Map.new(products, fn product ->
-          {product, Map.fetch!(summaries, product.id)}
-        end)
-
-      :seo ->
-        Seo.product_metadata_batch(products, now: now)
-    end
-  end
-
-  defp community_connection_batch({kind, connection_args}, parents)
-       when kind in [:reviews, :questions, :answers] and is_map(connection_args) do
-    parents = Enum.to_list(parents)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-
-    pages =
-      Discussions.public_connection_pages(kind, Enum.map(parents, & &1.id), window)
-
-    Map.new(parents, fn parent ->
-      {parent,
-       pages
-       |> Map.fetch!(parent.id)
-       |> ProductCompareWeb.GraphQL.Connection.from_prefetched_page(connection_args)}
-    end)
-  end
-
-  defp viewer_submission_batch(user_id, products)
-       when is_integer(user_id) and user_id > 0 do
-    products = Enum.to_list(products)
-
-    submissions =
-      Discussions.viewer_community_submissions_for_products(
-        user_id,
-        Enum.map(products, & &1.id)
-      )
-
-    Map.new(products, fn product ->
-      {product, Map.fetch!(submissions, product.id)}
-    end)
-  end
-
-  defp offer_connection_batch({:product_offers, connection_args, filters}, products)
-       when is_map(connection_args) and is_map(filters) do
-    products = Enum.to_list(products)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-
-    pages = Pricing.product_offer_pages(Enum.map(products, & &1.id), filters, window)
-
-    project_connection_pages(products, pages, connection_args, & &1.id)
-  end
-
-  defp offer_connection_batch({:merchant_offers, connection_args}, merchants)
-       when is_map(connection_args) do
-    merchants = Enum.to_list(merchants)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-
-    pages = Pricing.merchant_offer_pages(Enum.map(merchants, & &1.id), window)
-
-    project_connection_pages(merchants, pages, connection_args, & &1.id)
-  end
-
-  defp offer_connection_batch({:active_coupons, connection_args}, merchant_products)
-       when is_map(connection_args) do
-    merchant_products = Enum.to_list(merchant_products)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-    now = DateTime.utc_now()
-
-    pages =
-      merchant_products
-      |> Enum.map(& &1.merchant_id)
-      |> Enum.uniq()
-      |> Affiliate.active_coupon_pages(now, window)
-
-    project_connection_pages(
-      merchant_products,
-      pages,
-      connection_args,
-      & &1.merchant_id
-    )
-  end
-
-  defp offer_connection_batch(
-         {:price_history, connection_args, range_filters},
-         merchant_products
-       )
-       when is_map(connection_args) and is_map(range_filters) do
-    merchant_products = Enum.to_list(merchant_products)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-
-    pages =
-      merchant_products
-      |> Enum.map(& &1.id)
-      |> Pricing.price_history_pages(range_filters, window)
-
-    project_connection_pages(merchant_products, pages, connection_args, & &1.id)
-  end
-
-  defp category_batch(:lookup, slugs) do
-    slugs
-    |> Enum.to_list()
-    |> Seo.get_categories()
-  end
-
-  defp category_batch({:products, connection_args, now}, categories)
-       when is_map(connection_args) and is_struct(now, DateTime) do
-    categories = Enum.to_list(categories)
-    {:ok, window} = ProductCompareWeb.GraphQL.Connection.batch_window(connection_args)
-
-    pages =
-      categories
-      |> Enum.map(& &1.id)
-      |> Seo.qualified_product_pages(now, window)
-
-    project_connection_pages(categories, pages, connection_args, & &1.id)
-  end
 
   defp comparison_batch(:products, slug_selections) do
     slug_selections = Enum.to_list(slug_selections)
@@ -569,14 +371,5 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   defp project_lookup_results(items, values) do
     Map.new(items, &{&1, Map.get(values, &1)})
-  end
-
-  defp project_connection_pages(parents, pages, connection_args, parent_key) do
-    Map.new(parents, fn parent ->
-      {parent,
-       pages
-       |> Map.fetch!(parent_key.(parent))
-       |> ProductCompareWeb.GraphQL.Connection.from_prefetched_page(connection_args)}
-    end)
   end
 end
