@@ -230,11 +230,12 @@ batch and should not be recreated or promoted.
   products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
   operator reporting root GraphQL reads is complete: top-level active-coupon
   and revenue-summary aliases now share one authorization-keyed request source.
-  GraphQL request loader decomposition is the remaining successor: it
-  preserves the facade and source keys while separating association,
-  parent-collection, and root-request source ownership across two Ecto and
-  thirteen KV domains, including completed discovery and operator-reporting
-  roots. These are
+  GraphQL request loader decomposition is complete: the facade and source keys
+  remain stable while association, parent-collection, and root-request source
+  ownership now lives across focused modules for two Ecto and thirteen KV
+  domains, including discovery and operator-reporting roots. Its exact focused
+  gate passed 222 tests and full `mix ci` passed 902 backend tests, 1,507
+  frontend tests, ExDNA at 6/6, and Dialyzer. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.

@@ -25,8 +25,8 @@ modules with unchanged public APIs and behavior.
   recommendation, comparison, or fixture call sites.
 - Direct Specs, ingestion enrichment, catalog filter metadata/filtering, and
   recommendation characterization passed 79 tests on 2026-07-22.
-- The owned source and direct tests are path-disjoint from the three higher-
-  ranked ready structural rows.
+- The owned source and direct tests are path-disjoint from the other ready
+  structural rows and the completed loader decomposition.
 
 ## Internal Slices
 

@@ -1346,76 +1346,17 @@ projections. Specs Context Decomposition was promoted after its path-disjoint
 direct consumer characterization gate passed 79 tests. The loader claim
 therefore leaves three complete ready rows.
 
+GraphQL Request Loader Decomposition then completed on the current detached
+worktree. `Loader` remains the sole resolver-facing assembly facade and stable
+source-key owner, while `AssociationSources`, `ParentSources`, and
+`RootSources` own the two Ecto and thirteen KV source implementations. The
+exact focused gate passed 222 tests, and full `mix ci` passed 902 backend tests,
+1,507 frontend tests, 83.82% coverage, ExDNA at 6/6, Dialyzer, Relay, builds,
+and the bundle budget. The three ready successors remain dispatchable.
+
 ## Active Work
 
-### 1. GraphQL Request Loader Decomposition
-
-Status: active
-Worker: current detached worktree
-Lane: GraphQL request loader decomposition
-Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
-Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
-facing facade while association, parent-collection, and root-request source
-construction and callbacks live in focused modules with unchanged source keys,
-values, errors, authorization boundaries, timestamps, and query budgets.
-Next action: extract the loader's two Ecto and thirteen current KV source domains
-by responsibility without changing resolver APIs or GraphQL behavior.
-`RootSources` owns the completed discovery-root constructor and callback while
-`Loader` keeps and pairs its stable discovery-root key constant.
-Owned paths:
-
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/graphql/loader/association_sources.ex`
-- `lib/product_compare_web/graphql/loader/parent_sources.ex`
-- `lib/product_compare_web/graphql/loader/root_sources.ex`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `test/product_compare_web/graphql/recommendations_test.exs`
-- `test/product_compare_web/graphql/source_artifact_query_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `test/product_compare_web/graphql/saved_comparisons_test.exs`
-- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `docs/work/graphql-request-loader-decomposition.md`
-
-Internal slices:
-
-- Association and parent-collection source extraction.
-- Root-request source extraction with stable facade keys.
-- Semantic, authorization, timestamp, and fixed-budget parity.
-
-Prerequisites:
-
-- Existing Loader source keys and resolver-facing accessors remain authoritative.
-- Execute serially with every other row that owns Loader; include compatible
-  sources added before claim in the same responsibility boundary.
-- Include the completed operator-reporting source in `RootSources` while
-  preserving coupon/revenue normalization, error, fallback, time, and budget
-  behavior.
-- This is a behavior-preserving decomposition and does not change domain SQL,
-  public schema, or direct resolver fallbacks.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade only assembles sources and exposes stable keys, each
-source callback has one focused module owner, and all semantic plus query-budget
-gates pass without resolver or schema changes.
+None.
 
 ## Ready Work
 
@@ -1454,8 +1395,7 @@ Prerequisites:
   must remain byte-for-byte unchanged.
 - Root query/mutation operations, `context/1`, and `plugins/0` remain in the
   schema facade; only declarations move.
-- This row is path-disjoint from the completed discovery-root work and the ready
-  request-loader decomposition.
+- This row is path-disjoint from the completed request-loader decomposition.
 
 Verification:
 
