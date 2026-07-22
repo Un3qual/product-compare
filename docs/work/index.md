@@ -1302,7 +1302,8 @@ authorized connection reads within one request. Every collection moved from
 two/four alias SELECT counts of 2/4 to fixed counts of 1/1 while preserving
 principal isolation, authorization-before-load, filters, ordering, pagination,
 nested values, errors, zero-query denials, direct fallbacks, and schema
-behavior. The seven focused suites pass 67 tests, and three independently
+behavior. Direct no-loader characterizations now cover all eight fallbacks; the
+seven focused suites pass 74 tests, and three independently
 shippable ready rows remain after closeout.
 
 ## Active Work
@@ -1420,7 +1421,7 @@ Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
 facing facade while association, parent-collection, and root-request source
 construction and callbacks live in focused modules with unchanged source keys,
 values, errors, authorization boundaries, timestamps, and query budgets.
-Next action: extract the loader's two Ecto and ten current KV source domains by
+Next action: extract the loader's two Ecto and eleven current KV source domains by
 responsibility without changing resolver APIs or GraphQL behavior.
 Owned paths:
 
@@ -1429,7 +1430,21 @@ Owned paths:
 - `lib/product_compare_web/graphql/loader/parent_sources.ex`
 - `lib/product_compare_web/graphql/loader/root_sources.ex`
 - `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- Focused GraphQL test suites selected from the sources present at claim time.
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `test/product_compare_web/graphql/recommendations_test.exs`
+- `test/product_compare_web/graphql/source_artifact_query_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `test/product_compare_web/graphql/specification_corrections_test.exs`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `test/product_compare_web/graphql/api_token_auth_test.exs`
+- `test/product_compare_web/graphql/saved_comparisons_test.exs`
+- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `docs/work/graphql-request-loader-decomposition.md`
 
 Internal slices:
@@ -1443,12 +1458,14 @@ Prerequisites:
 - Existing Loader source keys and resolver-facing accessors remain authoritative.
 - Execute serially with every other row that owns Loader; include compatible
   sources added before claim in the same responsibility boundary.
+- Before claim, the coordinator must refresh the explicit focused-suite list
+  if either higher-ranked Loader batch has added a source.
 - This is a behavior-preserving decomposition and does not change domain SQL,
   public schema, or direct resolver fallbacks.
 
 Verification:
 
-- Dataloader batching plus every focused resolver suite for moved sources.
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`

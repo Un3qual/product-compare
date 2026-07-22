@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.AlertsResolver
   alias ProductCompareSchemas.Alerts.PriceWatchRule
 
   test "watch and inbox APIs require authentication", %{conn: conn} do
@@ -167,6 +168,121 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
 
     assert is_binary(read_at)
     assert is_binary(merchant_name)
+  end
+
+  test "my_price_watches directly filters and paginates without a loader" do
+    owner = AccountsFixtures.user_fixture()
+    other_user = AccountsFixtures.user_fixture()
+    first_enabled = price_watch_fixture(owner)
+    second_enabled = price_watch_fixture(owner)
+    disabled = price_watch_fixture(owner)
+    _other_enabled = price_watch_fixture(other_user)
+
+    assert {:ok, _disabled} =
+             Alerts.update_watch(owner.id, disabled.entropy_id, %{enabled: false})
+
+    resolution = %{context: %{current_user: owner}}
+
+    assert {:ok,
+            %{
+              edges: [%{cursor: cursor, node: first_node}],
+              page_info: %{has_next_page: true, has_previous_page: false}
+            }} =
+             AlertsResolver.my_price_watches(nil, %{enabled: true, first: 1}, resolution)
+
+    assert {:ok,
+            %{
+              edges: [%{node: second_node}],
+              page_info: %{has_next_page: false, has_previous_page: true}
+            }} =
+             AlertsResolver.my_price_watches(
+               nil,
+               %{enabled: true, first: 1, after: cursor},
+               resolution
+             )
+
+    assert MapSet.new([first_node.id, second_node.id]) ==
+             MapSet.new([first_enabled.id, second_enabled.id])
+
+    refute disabled.id in [first_node.id, second_node.id]
+  end
+
+  test "my_alert_events directly filters and paginates without a loader" do
+    owner = AccountsFixtures.user_fixture()
+    other_user = AccountsFixtures.user_fixture()
+    first_unread = alert_event_fixture(owner, ~U[2026-07-13 21:00:00Z])
+    second_unread = alert_event_fixture(owner, ~U[2026-07-13 22:00:00Z])
+    read_event = alert_event_fixture(owner, ~U[2026-07-13 23:00:00Z])
+    _other_unread = alert_event_fixture(other_user, ~U[2026-07-14 00:00:00Z])
+
+    assert {:ok, _read_event} = Alerts.mark_alert_read(owner.id, read_event.entropy_id)
+
+    resolution = %{context: %{current_user: owner}}
+
+    assert {:ok,
+            %{
+              edges: [%{cursor: cursor, node: first_node}],
+              page_info: %{has_next_page: true, has_previous_page: false}
+            }} =
+             AlertsResolver.my_alert_events(nil, %{unread_only: true, first: 1}, resolution)
+
+    assert {:ok,
+            %{
+              edges: [%{node: second_node}],
+              page_info: %{has_next_page: false, has_previous_page: true}
+            }} =
+             AlertsResolver.my_alert_events(
+               nil,
+               %{unread_only: true, first: 1, after: cursor},
+               resolution
+             )
+
+    assert MapSet.new([first_node.id, second_node.id]) ==
+             MapSet.new([first_unread.id, second_unread.id])
+
+    refute read_event.id in [first_node.id, second_node.id]
+  end
+
+  defp price_watch_fixture(user) do
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, watch} =
+             Alerts.create_watch(user.id, %{
+               product_id: product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "50"
+             })
+
+    watch
+  end
+
+  defp alert_event_fixture(user, observed_at) do
+    %{product: product, merchant_product: offer} = offer_fixture()
+
+    assert {:ok, _watch} =
+             Alerts.create_watch(user.id, %{
+               product_id: product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "50"
+             })
+
+    assert {:ok, point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               price: "40",
+               shipping: "5",
+               in_stock: true,
+               observed_at: observed_at
+             })
+
+    assert {:ok, %{events_created: 1}} = Alerts.evaluate_price_point(point.id, now: observed_at)
+
+    user.id
+    |> Alerts.list_alert_events_query()
+    |> Repo.all()
+    |> hd()
   end
 
   defp offer_fixture do

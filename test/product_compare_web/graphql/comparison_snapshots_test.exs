@@ -1,10 +1,12 @@
 defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver
 
   test "authenticated publish returns a share path and public self-contained snapshot", %{
     conn: conn
@@ -176,6 +178,62 @@ defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
              "comparisonSnapshots",
              "edges"
            ]) == []
+  end
+
+  test "owned_snapshots directly paginates active owner snapshots without a loader" do
+    owner = AccountsFixtures.user_fixture()
+    other_user = AccountsFixtures.user_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    snapshot_attrs = %{product_ids: [first_product.id, second_product.id]}
+
+    assert {:ok, first_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               Map.put(snapshot_attrs, :title, "First active")
+             )
+
+    assert {:ok, second_snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               Map.put(snapshot_attrs, :title, "Second active")
+             )
+
+    assert {:ok, revoked_snapshot} =
+             ComparisonSnapshots.publish(owner.id, Map.put(snapshot_attrs, :title, "Revoked"))
+
+    assert {:ok, _revoked_snapshot} =
+             ComparisonSnapshots.revoke(owner.id, revoked_snapshot.entropy_id)
+
+    assert {:ok, _other_snapshot} =
+             ComparisonSnapshots.publish(
+               other_user.id,
+               Map.put(snapshot_attrs, :title, "Other user")
+             )
+
+    resolution = %{context: %{current_user: owner}}
+
+    assert {:ok,
+            %{
+              edges: [%{cursor: cursor, node: first_node}],
+              page_info: %{has_next_page: true, has_previous_page: false}
+            }} = ComparisonSnapshotsResolver.owned_snapshots(owner, %{first: 1}, resolution)
+
+    assert {:ok,
+            %{
+              edges: [%{node: second_node}],
+              page_info: %{has_next_page: false, has_previous_page: true}
+            }} =
+             ComparisonSnapshotsResolver.owned_snapshots(
+               owner,
+               %{first: 1, after: cursor},
+               resolution
+             )
+
+    assert MapSet.new([first_node.id, second_node.id]) ==
+             MapSet.new([first_snapshot.id, second_snapshot.id])
+
+    refute revoked_snapshot.id in [first_node.id, second_node.id]
   end
 
   defp graphql(conn, query, variables) do

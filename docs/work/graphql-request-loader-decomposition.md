@@ -18,10 +18,13 @@ errors, timestamps, authorization boundaries, and query budgets.
 
 ## Ready Evidence
 
-- `ProductCompareWeb.GraphQL.Loader` is 416 lines and currently owns two Ecto
-  sources plus ten KV source domains, their public source-key accessors, query
-  callbacks, batch callbacks, and connection projection helpers.
-- The three higher-ranked ready batches add more authorization-aware root
+- `ProductCompareWeb.GraphQL.Loader` is 497 lines and currently owns two Ecto
+  sources plus eleven KV source domains: merchant detail, product evidence,
+  public community connections, viewer submissions, offer connections,
+  categories, comparisons, public slugs, public opaque keys, authorized nodes,
+  and authorized management connections. It also owns their public source-key
+  accessors, query callbacks, batch callbacks, and projection helpers.
+- The two higher-ranked ready batches can add discovery and operator-reporting
   sources to this same module, increasing unrelated reasons for it to change.
 - Resolvers already depend only on `Loader.new/1` and stable source-key
   accessors, so implementation can preserve the public facade while moving
@@ -46,11 +49,12 @@ errors, timestamps, authorization boundaries, and query budgets.
   add generic callback indirection that obscures source ownership.
 - Inventory and include any compatible sources added before this row is
   claimed; execute serially with all other Loader ownership.
+- Before claim, the coordinator refreshes the explicit focused-suite list if a
+  higher-ranked Loader batch adds a source.
 
 ## Verification
 
-- Dataloader batching plus every focused resolver suite for sources moved by
-  this batch.
+- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`

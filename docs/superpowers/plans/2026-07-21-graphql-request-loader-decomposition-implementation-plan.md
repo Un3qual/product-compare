@@ -42,8 +42,10 @@ source keys stay in the facade so their request-cache identity cannot drift.
 
 **Interfaces:** `AssociationSources.catalog/1` and
 `AssociationSources.pricing/1` return the existing Ecto sources.
-`ParentSources.sources/0` returns the existing nested parent-bound KV sources
-under the exact source keys supplied by the facade.
+`ParentSources.merchant_detail/0`, `product_evidence/0`,
+`community_connections/0`, `viewer_submissions/0`, `offer_connections/0`, and
+`categories/0` each return one KV source. `Loader.new/1` pairs those constructors
+with its existing facade-owned key constants.
 
 - [ ] Run the Dataloader batching suite as a green characterization baseline.
 - [ ] Extract catalog/pricing Ecto query and run-batch callbacks without
@@ -64,10 +66,12 @@ under the exact source keys supplied by the facade.
 - Modify: `test/product_compare_web/graphql/dataloader_batching_test.exs` only
   when a behavior regression needs an additional oracle.
 
-**Interfaces:** `RootSources.sources/0` returns the public and authorized
-top-level request-reuse KV sources under exact facade-owned keys. It includes
-the comparison, public-slug, public-opaque, authorized-node, and any compatible
-management, discovery, or reporting sources present when the row is claimed.
+**Interfaces:** `RootSources.comparison/0`, `public_slugs/0`,
+`public_opaque_keys/0`, `authorized_nodes/0`, and
+`authorized_connections/0` each return one top-level request-reuse KV source.
+`Loader.new/1` pairs them with its existing facade-owned key constants. Before
+claim, the coordinator adds an explicit constructor and focused suites here for
+any compatible discovery or reporting source introduced by a higher-ranked row.
 
 - [ ] Extract root-request callbacks without changing normalization,
   authorization scope, missing-value projection, validation, or errors.
@@ -75,8 +79,7 @@ management, discovery, or reporting sources present when the row is claimed.
   that boundary.
 - [ ] Keep all resolver-facing source accessors in `Loader` and verify existing
   resolver call sites require no API changes.
-- [ ] Re-run Dataloader batching plus every focused root suite represented by
-  the extracted sources.
+- [ ] Re-run the exact sixteen-suite command from the lane verification section.
 - [ ] Commit with message `refactor: isolate graphql root loader sources`.
 
 ### Task 3: Lane Evidence And Batch Gate

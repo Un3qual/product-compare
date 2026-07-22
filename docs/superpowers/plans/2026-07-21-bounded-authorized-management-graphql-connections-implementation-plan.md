@@ -107,5 +107,6 @@ load.
   of 2/4 for two/four aliases, then GREEN fixed budgets of 1/1.
 - Literal response, authorization-before-load, zero-query denial, filters,
   pagination, ordering, nested values, and direct-fallback coverage pass.
-- The seven focused suites pass 67 tests; type, format, queue, and diff gates
+- Direct public-resolver characterizations now protect every no-loader
+  fallback. The seven focused suites pass 74 tests; type, format, queue, and diff gates
   pass with three ready successor rows retained.
