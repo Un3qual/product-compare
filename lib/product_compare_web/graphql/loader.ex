@@ -38,6 +38,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
   @authorized_connection_source {__MODULE__, :authorized_connections}
+  @operator_reporting_source {__MODULE__, :operator_reporting}
   @discovery_root_source {__MODULE__, :discovery_roots}
 
   @spec new(map()) :: Dataloader.t()
@@ -90,6 +91,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
     )
     |> Dataloader.add_source(
+      @operator_reporting_source,
+      Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
+    )
+    |> Dataloader.add_source(
       @discovery_root_source,
       Dataloader.KV.new(&discovery_root_batch/2, async?: false)
     )
@@ -127,6 +132,9 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec authorized_connection_source() :: {module(), :authorized_connections}
   def authorized_connection_source, do: @authorized_connection_source
+
+  @spec operator_reporting_source() :: {module(), :operator_reporting}
+  def operator_reporting_source, do: @operator_reporting_source
 
   @spec discovery_root_source() :: {module(), :discovery_roots}
   def discovery_root_source, do: @discovery_root_source
@@ -399,6 +407,24 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
 
     Map.new(roots, &{&1, result})
+  end
+
+  defp operator_reporting_batch(
+         {:active_coupons, operator_id, merchant_id, observation_time, connection_args},
+         requests
+       )
+       when is_integer(operator_id) and operator_id > 0 and is_integer(merchant_id) and
+              merchant_id > 0 and
+              (is_nil(observation_time) or is_struct(observation_time, DateTime)) and
+              is_map(connection_args) do
+    observed_at = observation_time || DateTime.utc_now()
+
+    result =
+      merchant_id
+      |> Affiliate.list_active_coupons_query(observed_at)
+      |> ProductCompareWeb.GraphQL.Connection.from_query_result(connection_args, Repo)
+
+    Map.new(requests, &{&1, result})
   end
 
   defp public_slug_batch(:product, slugs) do

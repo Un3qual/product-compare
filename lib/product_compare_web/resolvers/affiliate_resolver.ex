@@ -82,29 +82,45 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
   def create_coupon(_parent, _args, resolution), do: denied_mutation(:coupon, resolution)
 
   @spec active_coupons(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
-  def active_coupons(_parent, %{input: input}, resolution) do
-    with {:ok, _user} <- Authorization.require_operator(resolution),
-         {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]) do
-      case active_coupon_connection(merchant_id, attrs) do
-        {:ok, connection} ->
-          {:ok, %{coupons: connection}}
+          {:ok, map()}
+          | {:error, String.t() | GraphQLErrors.top_level_error()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def active_coupons(
+        _parent,
+        %{input: input},
+        %{context: %{loader: %Dataloader{} = loader}} = resolution
+      ) do
+    with {:ok, operator, merchant_id, attrs, connection_args} <-
+           normalize_active_coupon_request(input, resolution) do
+      observation_time =
+        case Input.fetch_value(attrs, :at) do
+          %DateTime{} = at -> at
+          _other -> nil
+        end
 
-        {:error, message} ->
-          {:error, message}
-      end
+      source = Loader.operator_reporting_source()
+
+      batch_key =
+        {:active_coupons, operator.id, merchant_id, observation_time, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        connection = Dataloader.get(loader, source, batch_key, :root)
+        {:ok, %{coupons: connection}}
+      end)
     else
-      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
-        {:error, GraphQLErrors.authorization_error(reason)}
+      {:error, reason} -> active_coupon_error(reason)
+    end
+  end
 
-      {:error, {:invalid_id, field}} ->
-        {:error, invalid_id_message(field)}
-
-      {:error, reason} when is_binary(reason) ->
-        {:error, reason}
-
-      _ ->
-        {:error, "invalid input"}
+  def active_coupons(_parent, %{input: input}, resolution) do
+    with {:ok, _operator, merchant_id, attrs, _connection_args} <-
+           normalize_active_coupon_request(input, resolution),
+         {:ok, connection} <- active_coupon_connection(merchant_id, attrs) do
+      {:ok, %{coupons: connection}}
+    else
+      {:error, reason} -> active_coupon_error(reason)
     end
   end
 
@@ -153,6 +169,22 @@ defmodule ProductCompareWeb.Resolvers.AffiliateResolver do
     |> Affiliate.list_active_coupons_query(now)
     |> Connection.from_query_result(Input.connection_args(args), Repo)
   end
+
+  defp normalize_active_coupon_request(input, resolution) do
+    with {:ok, operator} <- Authorization.require_operator(resolution),
+         {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_ids(input, [:merchant_id]),
+         connection_args = Input.connection_args(attrs),
+         {:ok, _window} <- Connection.batch_window_result(connection_args) do
+      {:ok, operator, merchant_id, attrs, connection_args}
+    end
+  end
+
+  defp active_coupon_error(reason) when reason in [:unauthenticated, :forbidden],
+    do: {:error, GraphQLErrors.authorization_error(reason)}
+
+  defp active_coupon_error({:invalid_id, field}), do: {:error, invalid_id_message(field)}
+  defp active_coupon_error(reason) when is_binary(reason), do: {:error, reason}
+  defp active_coupon_error(_reason), do: {:error, "invalid input"}
 
   defp normalize_attrs(attrs, id_fields, attr_fields) do
     with {:ok, attrs} <- normalize_ids(attrs, id_fields) do
