@@ -6,6 +6,7 @@ defmodule ProductCompare.Taxonomy do
   import Ecto.Query
 
   alias ProductCompare.Repo
+  alias ProductCompare.Taxonomy.Assignments
   alias ProductCompare.Taxonomy.Hierarchy
   alias ProductCompare.Taxonomy.Taxonomies
   alias ProductCompareSchemas.Taxonomy.{ProductTaxon, Taxon, TaxonAlias, Taxonomy}
@@ -47,33 +48,18 @@ defmodule ProductCompare.Taxonomy do
         ) ::
           {:ok, ProductTaxon.t()} | {:error, term()}
   def assign_use_case(product_id, use_case_taxon_id, created_by, source_type, confidence \\ nil) do
-    with {:ok, :use_case} <- ensure_taxon_in_taxonomy(use_case_taxon_id, "use_case") do
-      %ProductTaxon{}
-      |> ProductTaxon.changeset(%{
-        product_id: product_id,
-        taxon_id: use_case_taxon_id,
-        created_by: created_by,
-        source_type: source_type,
-        confidence: confidence
-      })
-      |> Repo.insert(
-        on_conflict: {:replace, [:source_type, :confidence, :created_by, :inserted_at]},
-        conflict_target: [:product_id, :taxon_id],
-        returning: true
-      )
-    end
+    Assignments.assign_use_case(
+      product_id,
+      use_case_taxon_id,
+      created_by,
+      source_type,
+      confidence
+    )
   end
 
   @spec unassign_use_case(pos_integer(), pos_integer()) :: {:ok, non_neg_integer()}
-  def unassign_use_case(product_id, use_case_taxon_id) do
-    {count, _} =
-      Repo.delete_all(
-        from pt in ProductTaxon,
-          where: pt.product_id == ^product_id and pt.taxon_id == ^use_case_taxon_id
-      )
-
-    {:ok, count}
-  end
+  def unassign_use_case(product_id, use_case_taxon_id),
+    do: Assignments.unassign_use_case(product_id, use_case_taxon_id)
 
   @spec ensure_taxon_in_taxonomy(pos_integer(), String.t()) ::
           {:ok, :use_case | :type} | {:error, :invalid_taxon}
