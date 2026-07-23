@@ -76,14 +76,10 @@ defmodule ProductCompare.Seo.Categories do
   @spec qualified_product_pages(
           [pos_integer()],
           DateTime.t(),
-          %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
+          non_neg_integer(),
+          non_neg_integer()
         ) :: %{optional(pos_integer()) => [Product.t()]}
-  def qualified_product_pages(taxon_ids, %DateTime{} = now, %{
-        offset: offset,
-        fetch_limit: fetch_limit
-      })
-      when is_list(taxon_ids) and is_integer(offset) and offset >= 0 and
-             is_integer(fetch_limit) and fetch_limit >= 0 do
+  def qualified_product_pages(taxon_ids, %DateTime{} = now, offset, fetch_limit) do
     taxon_ids =
       taxon_ids
       |> Enum.filter(&(is_integer(&1) and &1 > 0))

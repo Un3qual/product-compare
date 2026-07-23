@@ -64,11 +64,7 @@ defmodule ProductCompare.Seo do
       })
       when is_list(taxon_ids) and is_integer(offset) and offset >= 0 and
              is_integer(fetch_limit) and fetch_limit >= 0,
-      do:
-        Categories.qualified_product_pages(taxon_ids, now, %{
-          offset: offset,
-          fetch_limit: fetch_limit
-        })
+      do: Categories.qualified_product_pages(taxon_ids, now, offset, fetch_limit)
 
   @spec sitemap_entries(:products | :merchants | :categories | :comparisons, keyword()) :: [map()]
   def sitemap_entries(kind, opts \\ []), do: Sitemaps.entries(kind, opts)
