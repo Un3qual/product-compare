@@ -1456,15 +1456,21 @@ bypasses. The exact focused gate passed 112 tests, and final `mix ci` passed
 unchanged 6/6 budget, Dialyzer, Relay, TypeScript, both production builds, and
 the bundle contract. Pricing, SEO, and Alerts remain ready.
 
+Before claiming Pricing Context Decomposition on 2026-07-22, the coordinator
+validated a fourth independently shippable structural successor. The 482-line
+`ProductCompare.Catalog` facade combines product and brand lifecycle, product
+identifier and media evidence, saved-comparison lifecycle, and existing
+catalog-filter entry points behind one stable boundary; its direct and GraphQL
+characterization gate passed 106 tests. Catalog Context Decomposition was
+promoted without changing catalog, filtering, ingestion, taxonomy, GraphQL, or
+frontend behavior. The Pricing claim therefore leaves SEO, Alerts, and Catalog
+as three complete, path-disjoint ready rows.
+
 ## Active Work
 
-None.
+### Pricing Context Decomposition
 
-## Ready Work
-
-### 1. Pricing Context Decomposition
-
-Status: ready
+Status: active
 Lane: Pricing context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Pricing` remains the stable caller-facing
@@ -1517,7 +1523,9 @@ implementation responsibility has one focused owner, the exact 39-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. SEO Context Decomposition
+## Ready Work
+
+### 1. SEO Context Decomposition
 
 Status: ready
 Lane: SEO context decomposition
@@ -1569,7 +1577,7 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. Alerts Context Decomposition
+### 2. Alerts Context Decomposition
 
 Status: ready
 Lane: Alerts context decomposition
@@ -1621,6 +1629,69 @@ Verification:
 
 Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused owner, the exact 13-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 3. Catalog Context Decomposition
+
+Status: ready
+Lane: Catalog context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Catalog` remains the stable caller-facing
+context while product/brand lifecycle, product evidence, and saved-comparison
+implementations live in focused internal modules with unchanged public APIs,
+transactions, queries, ordering, errors, owner scope, filtering, and GraphQL
+behavior.
+Next action: extract the three implementation responsibilities behind explicit
+facade wrappers, preserve the existing focused filter owners, and prove direct
+Catalog and GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare/catalog/products.ex`
+- `lib/product_compare/catalog/evidence.ex`
+- `lib/product_compare/catalog/saved_comparisons.ex`
+- `lib/product_compare/catalog/filtering.ex`
+- `lib/product_compare/catalog/filter_metadata.ex`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `test/product_compare/catalog/filtering_regression_test.exs`
+- `test/product_compare/catalog/gtin_test.exs`
+- `test/product_compare/catalog/product_lookup_test.exs`
+- `test/product_compare/catalog/saved_comparison_set_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+- `test/product_compare_web/graphql/saved_comparisons_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `docs/work/catalog-context-decomposition.md`
+
+Internal slices:
+
+- Product and brand persistence, validation, slug identity, and read ownership.
+- Product identifier and media persistence and read ownership.
+- Owner-scoped saved-comparison lifecycle and query ownership.
+- Existing filtering and metadata facade parity.
+
+Prerequisites:
+
+- Existing `ProductCompare.Catalog` public functions, guards, typespecs,
+  values, exceptions, and errors remain authoritative.
+- Preserve conflict targets, validation, ordering, filters, transactions,
+  preloads, owner scope, entropy-ID handling, and historical slug behavior.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, frontend contracts, ingestion, taxonomy policy, or
+  product behavior.
+
+Verification:
+
+- `mix test test/product_compare/catalog test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/node_query_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 106-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 

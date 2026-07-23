@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
 - Last verified: 2026-07-22 against the direct Pricing, merchant-detail, and
   Pricing GraphQL characterization suites.
+- Claimed: 2026-07-22 on the current detached worktree after Catalog Context
+  Decomposition restored the three-ready-row floor.
 
 ## Target Outcome
 

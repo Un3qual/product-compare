@@ -207,6 +207,13 @@ the public contract while `Users`, `ApiTokens`, and `Reputation` own the
 remaining implementations alongside unchanged `UserAuth`. Its exact
 characterization gate passes 112 tests, and full `mix ci` passes 905 backend
 tests, 1,507 frontend tests, and all repository quality/build gates.
+Before claiming Pricing context decomposition, a seventeenth claim-floor audit
+promoted Catalog context decomposition. The 482-line stable facade still
+combines product/brand lifecycle, identifier and media evidence,
+saved-comparison lifecycle, and existing filtering entry points. Its direct and
+GraphQL characterization gate passed 106 tests. The structural extraction
+leaves catalog, ingestion, taxonomy, GraphQL, and frontend policy unchanged and
+is path-disjoint from Pricing, SEO, and Alerts.
 
 Implementation plan references (non-dispatch):
 
@@ -226,6 +233,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -330,6 +338,13 @@ batch and should not be recreated or promoted.
   market-fact, evaluation, and inbox implementations move into focused internal
   modules. Its direct and GraphQL characterization gate passes 13 tests; alert
   policy, pricing enqueueing, transports, and frontend behavior stay unchanged.
+- Catalog context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Catalog` facade remains caller-facing while
+  product/brand lifecycle, identifier/media evidence, and saved-comparison
+  implementations move into focused internal modules alongside the existing
+  `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
+  characterization gate passes 106 tests; catalog, ingestion, taxonomy,
+  GraphQL, and frontend policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
