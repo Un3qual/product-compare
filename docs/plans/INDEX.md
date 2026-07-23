@@ -238,6 +238,11 @@ category-alias behavior. Its direct Taxonomy and ingestion enrichment
 characterization gate passed 13 tests. The structural extraction preserves
 taxonomy, catalog, ingestion, SEO, GraphQL, and frontend policy and is
 path-disjoint from Alerts, Catalog, and Comparison Snapshots.
+Alerts context decomposition is complete. The 73-line stable facade retains
+the public contract while `WatchRules`, `MarketFacts`, `Evaluation`, and
+`Inbox` own the four planned responsibilities. Its exact characterization
+gate passes 13 tests, and full `mix ci` passes 905 backend tests at 83.53%
+coverage, 1,507 frontend tests, and all repository quality/build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -359,7 +364,7 @@ batch and should not be recreated or promoted.
   category qualification, and sitemap behavior move into focused internal
   modules. Its direct, controller, and GraphQL characterization gate passes 13
   tests; qualification, route, and frontend metadata policy stay unchanged.
-- Alerts context decomposition is a path-disjoint structural successor: the
+- Alerts context decomposition is complete: the
   stable `ProductCompare.Alerts` facade remains caller-facing while watch-rule,
   market-fact, evaluation, and inbox implementations move into focused internal
   modules. Its direct and GraphQL characterization gate passes 13 tests; alert

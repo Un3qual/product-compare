@@ -1499,63 +1499,18 @@ Taxonomy and ingestion enrichment characterization gate passed 13 tests.
 Alerts was therefore claimed while Catalog, Comparison Snapshots, and Taxonomy
 remained ready.
 
+Alerts Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Alerts` is now a 73-line stable public facade; `WatchRules`,
+`MarketFacts`, `Evaluation`, and `Inbox` own the four planned responsibilities
+without caller bypasses or behavior changes. The exact focused gate passed 13
+tests, and final `mix ci` passed 905 backend tests at 83.53% coverage, 1,507
+frontend tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer,
+Relay, TypeScript, both production builds, and the bundle contract. Catalog,
+Comparison Snapshots, and Taxonomy remain ready.
+
 ## Active Work
 
-### Alerts Context Decomposition
-
-Status: active
-Claimed by: current detached worktree
-Lane: Alerts context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Alerts` remains the stable caller-facing
-context while watch-rule lifecycle, market-fact projection, durable evaluation,
-and alert-inbox implementations live in focused internal modules with unchanged
-public APIs, policy, transactions, locks, events, errors, jobs, and GraphQL
-behavior.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct Alerts and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/alerts.ex`
-- `lib/product_compare/alerts/watch_rules.ex`
-- `lib/product_compare/alerts/market_facts.ex`
-- `lib/product_compare/alerts/evaluation.ex`
-- `lib/product_compare/alerts/inbox.ex`
-- `test/product_compare/alerts/alerts_test.exs`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `docs/work/alerts-context-decomposition.md`
-
-Internal slices:
-
-- Watch lifecycle, validation, normalization, and query ownership.
-- Product- and listing-scoped current market-fact ownership.
-- Durable evaluation, transitions, events, delivery attempts, and retries.
-- Owner-scoped alert inbox query and read-state ownership.
-
-Prerequisites:
-
-- Existing `ProductCompare.Alerts` public functions, defaults, guards,
-  typespecs, values, and errors remain authoritative.
-- Preserve owner scope, queries, ordering, preloads, fact eligibility,
-  transactions, locks, cooldowns, replay suppression, partial failures, retry
-  behavior, delivery attempts, and query bounds.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, resolver authorization, Oban worker behavior,
-  pricing policy, frontend contracts, or transports.
-
-Verification:
-
-- `mix test test/product_compare/alerts/alerts_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 13-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 

@@ -2,33 +2,49 @@
 
 ## Snapshot
 
-- Status: active
-- Claimed by: current detached worktree
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the direct Alerts and price-watch/alert
-  GraphQL characterization suites.
+- Last verified: 2026-07-22 against the direct characterization suites, full
+  repository CI, type, format, queue, caller-boundary, and diff gates.
 
-## Target Outcome
+## Batch Outcome
 
 `ProductCompare.Alerts` remains the stable application-facing context while
 watch-rule lifecycle, market-fact projection, durable evaluation, and alert-
-inbox implementations move into focused internal modules with unchanged public
-APIs, policy, transactions, locks, events, errors, jobs, and GraphQL behavior.
+inbox implementations now live in focused internal modules with unchanged
+public APIs, policy, transactions, locks, events, errors, jobs, and GraphQL
+behavior.
 
-## Ready Evidence
+## Completion Evidence
 
-- `lib/product_compare/alerts.ex` is 543 lines and owns four focused
-  implementation responsibilities behind one public boundary.
-- Resolvers, the evaluation worker, GraphQL loader sources, pricing, and tests
-  depend on the facade, so implementation ownership can move without changing
-  application call sites.
-- The selected direct and GraphQL characterization gate passed 13 tests on
-  2026-07-22.
-- Existing price-point enqueueing, watch policy, event delivery scope, and
-  resolver authorization remain unchanged.
-- The row is path-disjoint from Accounts, Pricing, and SEO decomposition.
+- `ProductCompare.Alerts` remains the only application-facing boundary and is
+  now a 73-line facade preserving the existing public functions, defaults,
+  guards, typespecs, values, and errors.
+- `ProductCompare.Alerts.WatchRules` (164 lines) owns watch creation,
+  validation, normalization, owner-scoped queries, updates, deletion, and
+  loading.
+- `ProductCompare.Alerts.MarketFacts` (80 lines) owns product- and
+  listing-scoped current market facts plus eligible baselines.
+- `ProductCompare.Alerts.Evaluation` (282 lines) owns applicable-watch
+  selection, fact reuse, row-locked evaluation, transitions, cooldowns,
+  events, delivery attempts, replay suppression, retries, and partial-failure
+  summaries.
+- `ProductCompare.Alerts.Inbox` (54 lines) owns owner-scoped event queries,
+  unread filtering, deterministic ordering, preloads, and read-state updates.
+- The application caller scan found zero direct references to `WatchRules`,
+  `MarketFacts`, `Evaluation`, or `Inbox` outside the facade and internal Alerts
+  implementation paths.
+- The exact direct and GraphQL characterization command passed 13 tests with
+  zero failures.
+- The full contract and repository gate passed without changing schemas,
+  migrations, GraphQL SDL, resolver authorization, Oban worker behavior,
+  pricing policy, frontend contracts, or transports.
+- One final-state CI attempt hit the pre-existing 250 ms async timeout in
+  `CJFeedDiscoverySchedulerTest`; the exact test and full 12-test scheduler
+  module passed immediately, and the repeated full CI gate passed without
+  changing scheduler code or tests.
 
 ## Internal Slices
 
@@ -50,8 +66,18 @@ APIs, policy, transactions, locks, events, errors, jobs, and GraphQL behavior.
 ## Verification
 
 - `mix test test/product_compare/alerts/alerts_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
+  passed 13 tests with zero failures.
+- `mix typecheck` passed.
+- `mix format --check-formatted` passed.
+- `mix work_queue.validate` passed with three ready rows.
+- `mix ci` passed: 905 backend tests and 1,507 frontend unit tests had zero
+  failures; Relay validation, TypeScript typechecking, client and SSR builds,
+  and the client bundle contract also passed.
+- `rg -n "\b(WatchRules|MarketFacts|Evaluation|Inbox)\b" lib --glob '!lib/product_compare/alerts.ex' --glob '!lib/product_compare/alerts/**'`
+  returned zero application-caller matches.
+- `git diff --check` passed.
+
+## Remaining Work
+
+None in this lane. Catalog, Comparison Snapshots, and Taxonomy Context
+Decomposition remain ready in the live queue.
