@@ -272,6 +272,16 @@ facade retains the public contract while `Lifecycle`, `Capture`, and
 payload decoding. Its exact characterization gate passes 12 tests, the
 application caller scan finds no facade bypasses, and full `mix ci` passes all
 repository quality, test, and build gates.
+Before claiming Taxonomy context decomposition, a twenty-second claim-floor
+audit promoted Catalog Resolver decomposition. The 720-line stable GraphQL
+resolver combines catalog discovery, input normalization, current-attribute
+projection, and saved-comparison behavior behind eight public resolver
+callbacks. Its catalog, filter-metadata, saved-comparison,
+specification-correction, and Dataloader characterization gate passed 100
+tests. The structural extraction preserves schema wiring, loader sources and
+keys, query budgets, filter validation, request-local unit caching,
+authorization, mutation payloads, and frontend behavior while remaining
+path-disjoint from Taxonomy, CJ Import, and CJ Runs.
 
 Implementation plan references (non-dispatch):
 
@@ -296,6 +306,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -419,6 +430,14 @@ batch and should not be recreated or promoted.
   move into focused internal modules. Its direct Taxonomy and ingestion
   enrichment characterization gate passes 13 tests; taxonomy, catalog,
   ingestion, SEO, GraphQL, and frontend policy stay unchanged.
+- Catalog Resolver decomposition is a path-disjoint structural successor: the
+  stable `ProductCompareWeb.Resolvers.CatalogResolver` remains schema-facing
+  while discovery and input normalization, current-attribute projection, and
+  saved-comparison resolution move into focused internal modules. Its catalog,
+  filter-metadata, saved-comparison, specification-correction, and Dataloader
+  characterization gate passes 100 tests; schema wiring, loader keys, query
+  budgets, validation, authorization, payloads, and frontend policy stay
+  unchanged.
 - CJ Import task decomposition is a path-disjoint structural successor: the
   stable `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
   caller-facing while input normalization, durable single-run imports, and

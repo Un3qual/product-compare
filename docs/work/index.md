@@ -1541,17 +1541,14 @@ responsibilities without caller bypasses or behavior changes. Final review
 removed one unused internal hydration forwarding API. The exact focused gate
 passed 12 tests, and final `mix ci` passed the queue, formatting, typecheck,
 quality, backend/frontend test, Relay, TypeScript, production-build, and bundle
-gates. Taxonomy, CJ Import, and CJ Runs remain ready.
+gates. Taxonomy is active; CJ Import, CJ Runs, and Catalog Resolver
+decomposition remain ready.
 
 ## Active Work
 
-None.
+### Taxonomy Context Decomposition
 
-## Ready Work
-
-### 1. Taxonomy Context Decomposition
-
-Status: ready
+Status: active
 Lane: Taxonomy context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Taxonomy` remains the stable caller-facing
@@ -1605,7 +1602,9 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. CJ Import Task Decomposition
+## Ready Work
+
+### 1. CJ Import Task Decomposition
 
 Status: ready
 Lane: CJ import task decomposition
@@ -1658,7 +1657,7 @@ contract, each implementation responsibility has one focused owner, the exact
 19-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 3. CJ Runs Task Decomposition
+### 2. CJ Runs Task Decomposition
 
 Status: ready
 Lane: CJ runs task decomposition
@@ -1711,6 +1710,65 @@ Exit condition: the stable task retains the full caller-facing and CLI
 contract, each implementation responsibility has one focused owner, the exact
 10-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
+
+### 3. Catalog Resolver Decomposition
+
+Status: ready
+Lane: Catalog resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompareWeb.Resolvers.CatalogResolver` remains the
+stable schema-facing resolver while catalog discovery and input normalization,
+current-attribute projection, and saved-comparison behavior live in focused
+internal modules with unchanged public callbacks, loader keys, query budgets,
+values, authorization, mutation payloads, and errors.
+Next action: extract the four implementation responsibilities behind explicit
+resolver-facade wrappers and prove catalog GraphQL and Dataloader parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/catalog_resolver.ex`
+- `lib/product_compare_web/resolvers/catalog/discovery.ex`
+- `lib/product_compare_web/resolvers/catalog/input_normalization.ex`
+- `lib/product_compare_web/resolvers/catalog/current_attributes.ex`
+- `lib/product_compare_web/resolvers/catalog/saved_comparisons.ex`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+- `test/product_compare_web/graphql/saved_comparisons_test.exs`
+- `test/product_compare_web/graphql/specification_corrections_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/catalog-resolver-decomposition.md`
+
+Internal slices:
+
+- Catalog discovery resolver ownership.
+- Catalog resolver input normalization ownership.
+- Current-attribute loading and projection ownership.
+- Saved-comparison resolver ownership.
+
+Prerequisites:
+
+- Existing `CatalogResolver` public functions, clauses, typespecs, values,
+  loader tuples, results, and errors remain authoritative.
+- Preserve connection arguments, loader sources and keys, filter and
+  comparison validation, request-local cache behavior, evidence bounds,
+  correction counts, authorization, global IDs, and mutation payloads.
+- Keep schema, type, production, and test callers dependent only on the
+  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
+  catalog, specification, taxonomy, saved-comparison, query-budget, or
+  frontend policy.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains the full schema- and test-facing
+contract, each implementation responsibility has one focused owner, the exact
+100-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

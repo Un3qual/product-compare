@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the direct Taxonomy and ingestion
+- Last verified: 2026-07-23 against the direct Taxonomy and ingestion
   enrichment characterization paths.
 
 ## Target Outcome
