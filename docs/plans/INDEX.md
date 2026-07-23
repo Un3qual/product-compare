@@ -185,6 +185,16 @@ behavior alongside the existing focused `UserAuth` owner. Its direct Accounts,
 seed, API-token/session GraphQL, and authorized node characterization gate
 passed 112 tests. The extraction preserves the GraphQL auth contract,
 cookie-backed session authority, authorization, seeds, and transport scope.
+Before claiming Ingestion context decomposition, a fifteenth claim-floor audit
+promoted Pricing context decomposition. The 625-line stable facade combines
+merchant, offer, price-history, and current offer-truth read implementations;
+its direct Pricing, merchant-detail, and GraphQL characterization gate passed
+39 tests without changing `OfferTruth` policy.
+The same claim-floor audit promoted SEO context decomposition. The 603-line
+stable facade combines metadata, category qualification, and sitemap behavior;
+its direct SEO, controller, and GraphQL characterization gate passed 13 tests.
+Both outcomes are path-disjoint from Ingestion and Accounts, and neither
+reopens deferred provider, dashboard, operator, or product-policy work.
 
 Implementation plan references (non-dispatch):
 
@@ -201,6 +211,8 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -273,10 +285,9 @@ batch and should not be recreated or promoted.
   move into focused internal modules. Its direct consumer characterization
   gate passes 79 tests.
 - Commerce Attribution context decomposition is a path-disjoint structural
-  successor: the stable `ProductCompare.CommerceAttribution` facade remains
-  caller-facing while click/redirect, conversion/purchase-fact, and revenue
-  implementations move into focused internal modules. Its direct context,
-  destination-policy, controller, and GraphQL characterization gate passes 81
+  successor and is complete: the stable `ProductCompare.CommerceAttribution`
+  facade remains caller-facing while `Clicks`, `Conversions`, and `Revenue`
+  own the focused implementations. Its exact characterization gate passes 81
   tests.
 - Ingestion context decomposition is a path-disjoint structural successor: the
   stable `ProductCompare.Ingestion` facade remains caller-facing while
@@ -291,6 +302,16 @@ batch and should not be recreated or promoted.
   alongside the existing `UserAuth` owner. Its direct and GraphQL
   characterization gate passes 112 tests; browser auth, authorization, seeds,
   and email transport policy stay unchanged.
+- Pricing context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Pricing` facade remains caller-facing while merchant,
+  offer, price-history, and product-level offer-truth reads move into focused
+  internal modules. Its direct and GraphQL characterization gate passes 39
+  tests; pricing, alert, and ingestion policy stay unchanged.
+- SEO context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Seo` facade remains caller-facing while metadata,
+  category qualification, and sitemap behavior move into focused internal
+  modules. Its direct, controller, and GraphQL characterization gate passes 13
+  tests; qualification, route, and frontend metadata policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
