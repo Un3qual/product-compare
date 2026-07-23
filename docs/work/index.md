@@ -1806,6 +1806,373 @@ contract, each implementation responsibility has one focused owner, the exact
 57-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
+### 4. Community Reads Decomposition
+
+Status: ready
+Lane: Community reads decomposition
+Plan: `docs/superpowers/plans/2026-07-23-community-reads-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Discussions.Reads` remains the stable
+Discussions-internal read facade while legacy lists, public content, viewer
+submissions, and bounded public connections live in focused internal modules
+with unchanged behavior.
+Next action: extract the four read responsibilities and prove direct,
+community GraphQL, and Dataloader parity.
+Owned paths:
+
+- `lib/product_compare/discussions/reads.ex`
+- `lib/product_compare/discussions/reads/legacy.ex`
+- `lib/product_compare/discussions/reads/public_content.ex`
+- `lib/product_compare/discussions/reads/viewer_submissions.ex`
+- `lib/product_compare/discussions/reads/connections.ex`
+- `test/product_compare/discussions/`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_test.exs`
+- `docs/work/community-reads-decomposition.md`
+
+Internal slices:
+
+- Legacy thread, post, and review lists.
+- Published review and Q&A projections.
+- Viewer-owned submission projections.
+- Bounded public connections.
+- Stable facade and pagination normalization.
+
+Prerequisites:
+
+- Preserve every current function, default, guard, result, query, ordering,
+  preload, visibility rule, limit, and query budget.
+- Keep `ProductCompare.Discussions` as the only production caller.
+- Do not change schemas, migrations, moderation, GraphQL, loaders, Relay, or
+  frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/discussions test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable read facade retains its full contract, all four
+responsibilities have focused owners, direct and GraphQL gates pass, and no
+production caller bypasses the Discussions context.
+
+### 5. Accounts Authentication Decomposition
+
+Status: ready
+Lane: Accounts authentication decomposition
+Plan: `docs/superpowers/plans/2026-07-23-accounts-authentication-decomposition-implementation-plan.md`
+Batch outcome: the existing Accounts, `UserAuth`, `ApiTokens`, and
+schema-facing `AuthResolver` contracts remain stable while credential,
+persisted-token, email-token, API-token, account-action, and API-token resolver
+implementations live in focused internal modules.
+Next action: extract authentication internals behind the three stable facades
+and prove direct Accounts and GraphQL auth parity.
+Owned paths:
+
+- `lib/product_compare/accounts/user_auth.ex`
+- `lib/product_compare/accounts/user_auth/credentials.ex`
+- `lib/product_compare/accounts/user_auth/sessions.ex`
+- `lib/product_compare/accounts/user_auth/email_tokens.ex`
+- `lib/product_compare/accounts/api_tokens.ex`
+- `lib/product_compare/accounts/api_tokens/secrets.ex`
+- `lib/product_compare/accounts/api_tokens/authentication.ex`
+- `lib/product_compare/accounts/api_tokens/queries.ex`
+- `lib/product_compare/accounts/api_tokens/lifecycle.ex`
+- `lib/product_compare_web/resolvers/auth_resolver.ex`
+- `lib/product_compare_web/resolvers/auth/account_actions.ex`
+- `lib/product_compare_web/resolvers/auth/api_tokens.ex`
+- `test/product_compare/accounts/`
+- `test/product_compare_web/graphql/session_auth_test.exs`
+- `test/product_compare_web/graphql/api_token_auth_test.exs`
+- `docs/work/accounts-authentication-decomposition.md`
+
+Internal slices:
+
+- Password credential verification, persisted sessions, and email tokens.
+- API-token secrets, authentication, reads, and lifecycle.
+- GraphQL account and API-token actions.
+- Stable facades and caller-path parity.
+
+Prerequisites:
+
+- Preserve every public function, default, guard, value, error, transaction,
+  lock, payload, origin check, expiry, delivery hook, and owner scope.
+- Keep Phoenix cookie-backed sessions authoritative and test hooks configured
+  under `ProductCompare.Accounts.UserAuth`.
+- Do not change schemas, migrations, GraphQL SDL, auth policy, email
+  transport, Relay, or frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/accounts test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: all stable authentication facades retain exact behavior,
+focused owners hold each implementation responsibility, direct and GraphQL
+gates pass, and callers remain on the Accounts and resolver boundaries.
+
+### 6. Specifications Internals Decomposition
+
+Status: ready
+Lane: Specifications internals decomposition
+Plan: `docs/superpowers/plans/2026-07-23-specifications-internals-decomposition-implementation-plan.md`
+Batch outcome: `Specs.Reads`, `Specs.Claims`, and `SpecsResolver` remain stable
+facades while artifact, current-attribute, reference-data, claim-workflow, and
+resolver implementations live in focused owners with unchanged contracts.
+Next action: extract read, claim, and resolver owners and prove direct Specs,
+consumer, and GraphQL correction parity.
+Owned paths:
+
+- `lib/product_compare/specs/reads.ex`
+- `lib/product_compare/specs/reads/artifacts.ex`
+- `lib/product_compare/specs/reads/current_attributes.ex`
+- `lib/product_compare/specs/reads/reference_data.ex`
+- `lib/product_compare/specs/claims.ex`
+- `lib/product_compare/specs/claims/proposals.ex`
+- `lib/product_compare/specs/claims/imports.ex`
+- `lib/product_compare/specs/claims/moderation.ex`
+- `lib/product_compare_web/resolvers/specs_resolver.ex`
+- `lib/product_compare_web/resolvers/specs/reads.ex`
+- `lib/product_compare_web/resolvers/specs/corrections.ex`
+- `test/product_compare/specs/`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `test/product_compare/recommendations_test.exs`
+- `test/product_compare_web/graphql/specification_corrections_test.exs`
+- `docs/work/specifications-internals-decomposition.md`
+
+Internal slices:
+
+- Artifact, current-attribute, and reference-data reads.
+- Proposal, import, and moderation/current-selection claim workflows.
+- GraphQL reads and correction actions.
+- Stable facades and caller-path parity.
+
+Prerequisites:
+
+- Preserve every function, default, guard, result, error, query, order,
+  preload, budget, transaction, lock, typed value, fingerprint, and Global ID.
+- Keep `ProductCompare.Specs` as the only application-facing context.
+- Do not change schemas, migrations, GraphQL SDL, domain policy, ingestion,
+  Relay, or frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the three stable facades retain exact read, claim, and
+resolver behavior, focused owners hold each responsibility, and all direct
+and consumer gates pass without caller bypasses.
+
+### 7. Commerce Attribution Internals Decomposition
+
+Status: ready
+Lane: Commerce attribution internals decomposition
+Plan: `docs/superpowers/plans/2026-07-23-commerce-attribution-internals-decomposition-implementation-plan.md`
+Batch outcome: `Clicks`, `Conversions`, `Revenue`, and
+`CommerceAttributionResolver` remain stable facades while their link,
+destination, session, redirect, attribution, persistence, purchase-fact,
+revenue, and resolver workflows live in focused internal modules.
+Next action: after Destination URL completion, extract the commerce workflow
+owners and prove direct, controller, and GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/commerce_attribution/clicks.ex`
+- `lib/product_compare/commerce_attribution/clicks/`
+- `lib/product_compare/commerce_attribution/conversions.ex`
+- `lib/product_compare/commerce_attribution/conversions/`
+- `lib/product_compare/commerce_attribution/revenue.ex`
+- `lib/product_compare/commerce_attribution/revenue/`
+- `lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`
+- `lib/product_compare_web/resolvers/commerce_attribution/`
+- `test/product_compare/commerce_attribution/`
+- `test/product_compare_web/controllers/commerce_click_controller_test.exs`
+- `test/product_compare_web/graphql/commerce_attribution_test.exs`
+- `docs/work/commerce-attribution-internals-decomposition.md`
+
+Internal slices:
+
+- Commerce links, destinations, click sessions, and redirects.
+- Conversion attribution, persistence, and purchase facts.
+- Revenue filters, aggregation, and projection.
+- GraphQL reads and mutations.
+- Stable facades and caller-path parity.
+
+Prerequisites:
+
+- Complete Commerce Destination URL decomposition first.
+- Preserve every public function, value, error, conflict, transaction,
+  destination, redirect, attribution dimension, query, suppression rule, and
+  GraphQL payload.
+- Do not change schemas, migrations, providers, GraphQL SDL, controllers,
+  Relay, frontend behavior, or product policy.
+
+Verification:
+
+- `mix test test/product_compare/commerce_attribution test/product_compare_web/controllers/commerce_click_controller_test.exs test/product_compare_web/graphql/commerce_attribution_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: all four stable commerce facades retain exact behavior,
+focused owners hold each responsibility, all named gates pass, and callers
+remain on the public context and schema-facing resolver.
+
+### 8. Affiliate Resolver Decomposition
+
+Status: ready
+Lane: Affiliate resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
+Batch outcome: `AffiliateResolver` remains schema-facing while active-coupon
+reads and operator mutations live in focused owners with unchanged callback,
+authorization, payload, and error behavior.
+Next action: extract read and mutation owners and prove direct Affiliate and
+GraphQL workflow parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
+- `lib/product_compare_web/resolvers/affiliate/reads.ex`
+- `lib/product_compare_web/resolvers/affiliate/mutations.ex`
+- `test/product_compare/affiliate/`
+- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `docs/work/affiliate-resolver-decomposition.md`
+
+Internal slices:
+
+- Public, nested, and operator-scoped coupon reads.
+- Network, program, link, and coupon mutations.
+- Stable resolver wrappers and schema-call parity.
+
+Prerequisites:
+
+- Preserve every callback, clause, result, authorization decision, Global ID
+  rule, connection argument, payload, and error.
+- Keep schema files dependent only on `AffiliateResolver`.
+- Do not change Affiliate behavior, schemas, migrations, GraphQL SDL, Relay,
+  or frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/affiliate test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains its full schema contract, read and
+mutation owners are focused, all named gates pass, and schema callers do not
+bypass the facade.
+
+### 9. Pricing Resolver Decomposition
+
+Status: ready
+Lane: Pricing resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-pricing-resolver-decomposition-implementation-plan.md`
+Batch outcome: `PricingResolver` remains schema-facing while merchant, offer,
+and evidence reads live in focused owners with unchanged callbacks, queries,
+pagination, and errors.
+Next action: extract merchant, offer, and evidence owners and prove pricing
+query and merchant-detail parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/pricing_resolver.ex`
+- `lib/product_compare_web/resolvers/pricing/merchants.ex`
+- `lib/product_compare_web/resolvers/pricing/offers.ex`
+- `lib/product_compare_web/resolvers/pricing/evidence.ex`
+- `test/product_compare_web/graphql/pricing_queries_test.exs`
+- `test/product_compare_web/graphql/merchant_detail_test.exs`
+- `docs/work/pricing-resolver-decomposition.md`
+
+Internal slices:
+
+- Merchant collections, detail, summaries, and scoped offers.
+- Product and merchant-product offers, price facts, truth, and history.
+- Source-artifact evidence resolution.
+- Stable resolver wrappers and schema-call parity.
+
+Prerequisites:
+
+- Preserve every callback, clause, result, order, filter, pagination rule,
+  loader key, direct fallback, query budget, and invalid-ID error.
+- Keep schema files dependent only on `PricingResolver`.
+- Do not change Pricing or Specs behavior, schemas, migrations, GraphQL SDL,
+  Relay, or frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains exact merchant, offer, and
+evidence behavior, focused owners hold each responsibility, all named gates
+pass, and schema callers do not bypass the facade.
+
+### 10. Alerts Resolver Decomposition
+
+Status: ready
+Lane: Alerts resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-alerts-resolver-decomposition-implementation-plan.md`
+Batch outcome: `AlertsResolver` remains schema-facing while owner-scoped
+reads, watch lifecycle actions, and event actions live in focused owners with
+unchanged callbacks and payloads.
+Next action: extract read, watch-mutation, and event-mutation owners and prove
+direct Alerts and GraphQL alert parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/alerts_resolver.ex`
+- `lib/product_compare_web/resolvers/alerts/reads.ex`
+- `lib/product_compare_web/resolvers/alerts/watch_mutations.ex`
+- `lib/product_compare_web/resolvers/alerts/event_mutations.ex`
+- `test/product_compare/alerts/`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `docs/work/alerts-resolver-decomposition.md`
+
+Internal slices:
+
+- Owner-scoped watch and event connections.
+- Price-watch create, update, and delete actions.
+- Alert-event read and dismiss actions.
+- Stable resolver wrappers and schema-call parity.
+
+Prerequisites:
+
+- Preserve every callback, clause, owner check, Global ID rule, connection
+  argument, value, payload, and error.
+- Keep schema files dependent only on `AlertsResolver`.
+- Do not change Alerts behavior, schemas, migrations, GraphQL SDL, Relay, or
+  frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/alerts test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains exact read and mutation behavior,
+focused owners hold all three responsibilities, all named gates pass, and
+schema callers do not bypass the facade.
+
 ## Completed 2026-07-20 Cross-Stack Work
 
 ### 1. Durable Ingestion Recurrence

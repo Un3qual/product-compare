@@ -354,6 +354,17 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-backend-decomposition-completion-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-catalog-filter-metadata-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-community-submissions-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-commerce-destination-url-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-community-reads-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-accounts-authentication-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-specifications-internals-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-commerce-attribution-internals-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-pricing-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-alerts-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`

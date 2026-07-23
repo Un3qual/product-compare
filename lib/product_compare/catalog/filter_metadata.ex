@@ -5,11 +5,10 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   import Ecto.Query
 
-  alias ProductCompare.Catalog.Filtering
+  alias ProductCompare.Catalog.FilterMetadata.Query
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
-  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Taxonomy.ProductTaxon
@@ -28,7 +27,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   @spec metadata(map()) :: map()
   def metadata(filters) when is_map(filters) do
     %{
-      result_count: result_count(filters),
+      result_count: Query.result_count(filters),
       type_options: type_options(filters),
       use_case_options: use_case_options(filters),
       numeric_filters: numeric_filters(filters),
@@ -38,12 +37,6 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   end
 
   def metadata(_filters), do: metadata(%{})
-
-  defp result_count(filters) do
-    filters
-    |> filtered_products_query()
-    |> Repo.aggregate(:count, :id)
-  end
 
   defp type_options(filters) do
     selected_id = Map.get(filters, :primary_type_taxon_id)
@@ -191,7 +184,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp primary_type_counts(filters) do
     filters
-    |> filtered_products_query(:primary_type)
+    |> Query.filtered_products(:primary_type)
     |> then(fn query ->
       Repo.all(
         from product in subquery(query),
@@ -205,7 +198,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   end
 
   defp use_case_counts(filters) do
-    filtered_query = filtered_products_query(filters, :use_case)
+    filtered_query = Query.filtered_products(filters, :use_case)
 
     Repo.all(
       from product_taxon in ProductTaxon,
@@ -254,7 +247,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   defp numeric_ranges(_filters, [], _omitted_group), do: %{}
 
   defp numeric_ranges(filters, attribute_ids, omitted_group) do
-    filtered_query = filtered_products_query(filters, omitted_group)
+    filtered_query = Query.filtered_products(filters, omitted_group)
 
     Repo.all(
       from current in ProductAttributeCurrent,
@@ -274,7 +267,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   defp boolean_counts(_filters, [], _omitted_group), do: %{}
 
   defp boolean_counts(filters, attribute_ids, omitted_group) do
-    filtered_query = filtered_products_query(filters, omitted_group)
+    filtered_query = Query.filtered_products(filters, omitted_group)
 
     Repo.all(
       from current in ProductAttributeCurrent,
@@ -304,7 +297,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   defp enum_option_counts(_filters, [], _omitted_group), do: %{}
 
   defp enum_option_counts(filters, attribute_ids, omitted_group) do
-    filtered_query = filtered_products_query(filters, omitted_group)
+    filtered_query = Query.filtered_products(filters, omitted_group)
 
     Repo.all(
       from current in ProductAttributeCurrent,
@@ -467,12 +460,6 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   defp empty_range, do: %{min: nil, max: nil}
 
   defp empty_boolean_counts, do: %{true_count: 0, false_count: 0}
-
-  defp filtered_products_query(filters, omitted_group \\ nil) do
-    Product
-    |> Filtering.apply_filters_except(filters, omitted_group)
-    |> exclude(:order_by)
-  end
 
   defp present_range?(%{min: nil, max: nil}), do: false
   defp present_range?(_range), do: true
