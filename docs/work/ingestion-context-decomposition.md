@@ -2,12 +2,13 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the live facade, direct ingestion,
-  enrichment, reconciliation, and merchant-feed-candidate GraphQL suites.
+- Last verified: 2026-07-22 against the decomposed facade, focused ingestion,
+  enrichment, reconciliation, merchant-feed-candidate GraphQL, and full
+  repository gates.
 
 ## Target Outcome
 
@@ -26,7 +27,7 @@ freshness, provenance, reconciliation, errors, and GraphQL behavior.
 - The public context is already a stable boundary used by Mix tasks, ingestion
   jobs, resolvers, GraphQL request loaders, fixtures, and tests, so extraction
   can preserve callers while narrowing implementation ownership.
-- The selected four-suite characterization gate passed 60 tests on 2026-07-22.
+- The selected four-suite characterization gate passed 57 tests on 2026-07-22.
   It covers run completion and reconciliation, candidate filtering/ranking and
   GraphQL behavior, merchant identity conflict/freshness behavior, canonical
   GTIN persistence, enrichment/provenance, offer and price persistence, replay,
@@ -65,3 +66,23 @@ freshness, provenance, reconciliation, errors, and GraphQL behavior.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- `ProductCompare.Ingestion` is a 75-line stable public facade.
+  `Runs` is 63 lines, `FeedCandidates` is 171 lines,
+  `MerchantIdentities` is 238 lines, and `ListingPersistence` is 840 lines.
+- The exact four-suite characterization gate passed 57 tests with 0 failures.
+  The earlier 60-test lane snapshot had drifted before implementation; the
+  current baseline and completion command both executed the same four files.
+- The internal-owner caller scan is empty outside the facade and the four
+  implementation modules.
+- Module-local Dialyzer annotations preserve existing fallback clauses whose
+  reachability became more precise after extraction; no runtime clause or
+  result was removed to satisfy static analysis.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed. The queue validator
+  reported three complete ready rows.
+- `mix ci` passed 905 backend tests at 83.79% coverage, 1,507 frontend tests,
+  Credo, Reach, ExDNA at the unchanged 6/6 clone budget, Dialyzer, Relay,
+  TypeScript, both production builds, and the client-bundle contract.

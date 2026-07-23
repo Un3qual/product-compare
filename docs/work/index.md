@@ -1428,17 +1428,18 @@ direct, controller, and GraphQL characterization gate passed 13 tests. The
 Ingestion claim therefore leaves Accounts, Pricing, and SEO as three complete,
 path-disjoint ready rows without promoting deferred work or micro-batches.
 
+Ingestion Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Ingestion` is now a 75-line stable public facade;
+`Runs`, `FeedCandidates`, `MerchantIdentities`, and `ListingPersistence` own
+the four planned responsibilities without caller bypasses. The live focused
+gate passed 57 tests, and the final `mix ci` passed 905 backend tests at 83.79%
+coverage, 1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer,
+Relay, TypeScript, both production builds, and the bundle contract. Accounts,
+Pricing, and SEO remain as three complete ready successors.
+
 ## Active Work
 
-### Ingestion Context Decomposition
-
-Status: active
-Worker: current detached worktree
-Lane: `docs/work/ingestion-context-decomposition.md`
-Plan: `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
-Outcome: keep `ProductCompare.Ingestion` as the stable public facade while
-four focused internal modules own run lifecycle, feed candidates, merchant
-identity, and canonical listing persistence.
+None.
 
 ## Ready Work
 

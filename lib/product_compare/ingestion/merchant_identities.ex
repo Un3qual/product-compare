@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.MerchantIdentities do
   @moduledoc false
 
+  @dialyzer {:nowarn_function, preload_merchant: 1}
+
   import Ecto.Query
 
   alias ProductCompare.Ingestion.NormalizedListing

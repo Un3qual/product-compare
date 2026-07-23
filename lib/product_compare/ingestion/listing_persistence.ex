@@ -1,6 +1,12 @@
 defmodule ProductCompare.Ingestion.ListingPersistence do
   @moduledoc false
 
+  @dialyzer {:nowarn_function,
+             display_category_path: 1,
+             persist_listing_by_freshness: 5,
+             persist_specifications: 3,
+             present_string: 1}
+
   import Ecto.Query
 
   alias ProductCompare.ChangesetErrors

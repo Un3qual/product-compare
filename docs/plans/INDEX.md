@@ -289,11 +289,11 @@ batch and should not be recreated or promoted.
   facade remains caller-facing while `Clicks`, `Conversions`, and `Revenue`
   own the focused implementations. Its exact characterization gate passes 81
   tests.
-- Ingestion context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Ingestion` facade remains caller-facing while
-  import-run, merchant-feed-candidate, merchant-identity, and canonical listing
-  persistence implementations move into focused internal modules. Its direct
-  and GraphQL characterization gate passes 60 tests; deferred provider,
+- Ingestion context decomposition is complete: the stable
+  `ProductCompare.Ingestion` facade remains caller-facing while import-run,
+  merchant-feed-candidate, merchant-identity, and canonical listing persistence
+  implementations live in four focused internal modules. Its current direct
+  and GraphQL characterization gate passes 57 tests; deferred provider,
   dashboard, operator, scheduling, and application-submission scope stays
   closed.
 - Accounts context decomposition is a path-disjoint structural successor: the
