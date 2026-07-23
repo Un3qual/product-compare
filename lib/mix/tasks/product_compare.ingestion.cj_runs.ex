@@ -14,7 +14,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
   def run(argv) do
     RepoOnlyStartup.start!()
 
-    opts = parse_argv(argv)
+    opts = Options.parse_argv(argv)
 
     if Keyword.fetch!(opts, :resume) do
       run_resume(opts)
@@ -30,6 +30,4 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns do
 
   @spec run_resume(keyword()) :: {:ok, map()} | {:error, :no_resume_cursor} | :ok
   def run_resume(opts), do: Resume.run_resume(opts)
-
-  defp parse_argv(argv), do: Options.parse_argv(argv)
 end
