@@ -39,6 +39,11 @@ shapes, and downstream policy.
   attachment, and stale product and merchant-product reads now live in
   `ListingPersistence.Artifacts`.
 - The exact ingestion and reconciliation slice passed 40 tests on 2026-07-23.
+- Canonical product identity, validated GTIN attachment, slug collision
+  handling, brand creation, and the ingested-type fallback now live in
+  `ListingPersistence.Products`.
+- The exact ingestion characterization slice passed 32 tests on 2026-07-23
+  after the product-identity extraction.
 
 ## Internal Slices
 
