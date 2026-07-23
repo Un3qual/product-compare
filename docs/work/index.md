@@ -1646,6 +1646,16 @@ focused gate passed 10 tests, and final `mix ci` passed 913 backend tests at
 83.45% coverage, 1,507 frontend tests, and every queue, quality, duplication,
 type, Relay, build, and bundle gate.
 
+Community Submissions Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions.Submissions` is now a 47-line stable
+facade; `WriteLimits`, `Creates`, `OwnerActions`, and `Reports` own
+transactional rate limits, idempotent creation, retained owner lifecycle, and
+duplicate-safe reports. The existing `Moderation` boundary now owns the shared
+cross-content entropy lookup instead of duplicating it. The exact focused gate
+passed 25 tests, and final `mix ci` passed 913 backend tests, 1,507 frontend
+tests, and every queue, quality, duplication, type, Relay, build, and bundle
+gate.
+
 ## Active Work
 
 None.
@@ -1705,11 +1715,11 @@ query contract, each implementation responsibility has one focused owner, the
 exact 10-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-## Ready Work
+## Completed 2026-07-23 Backend Decomposition Work (continued)
 
 ### 2. Community Submissions Decomposition
 
-Status: ready
+Status: complete
 Lane: Community submissions decomposition
 Plan: `docs/superpowers/plans/2026-07-23-community-submissions-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Discussions.Submissions` remains the stable
@@ -1717,8 +1727,7 @@ discussion-context boundary while idempotent creation, owner lifecycle
 actions, reporting, and shared write-limit persistence live in focused
 internal modules with unchanged transactions, ownership, moderation lifecycle,
 idempotency, limits, values, and errors.
-Next action: extract the four implementation responsibilities behind the
-stable submissions facade and prove direct community-trust parity.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `lib/product_compare/discussions/submissions.ex`
@@ -1726,6 +1735,7 @@ Owned paths:
 - `lib/product_compare/discussions/submissions/creates.ex`
 - `lib/product_compare/discussions/submissions/owner_actions.ex`
 - `lib/product_compare/discussions/submissions/reports.ex`
+- `lib/product_compare/discussions/moderation.ex`
 - `test/product_compare/discussions/community_trust_test.exs`
 - `docs/work/community-submissions-decomposition.md`
 
@@ -1761,6 +1771,8 @@ Exit condition: the stable submissions facade retains the full caller-facing
 contract, each implementation responsibility has one focused owner, the exact
 25-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
+
+## Ready Work
 
 ### 3. Commerce Destination URL Decomposition
 

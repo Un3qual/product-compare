@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -58,3 +58,20 @@ and errors.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- Completed on 2026-07-23 on the aggregate detached-worktree commit stack.
+- The stable facade is 47 lines.
+- `WriteLimits` is 65 lines, `Creates` is 183 lines, `OwnerActions` is 178
+  lines, and `Reports` is 74 lines.
+- The existing `ProductCompare.Discussions.Moderation` boundary owns the
+  cross-content entropy lookup shared by creation replay and reporting; this
+  removed the exact-copy group exposed by the extraction.
+- The exact characterization gate passed 25 tests with no failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `mix ci`, and `git diff --check` passed.
+- Final `mix ci` passed 913 backend tests and 1,507 frontend tests, plus every
+  quality, duplication, type, Relay, build, and bundle gate.
+- Production references to focused owners are limited to the stable facade or
+  modules inside the same implementation namespace.

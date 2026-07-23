@@ -544,8 +544,8 @@ batch and should not be recreated or promoted.
   focused internal modules. Its direct characterization gate passes 10 tests;
   query behavior, counts, ordering, units, selection, catalog policy, GraphQL,
   Relay, and frontend behavior stay unchanged.
-- Community Submissions decomposition is a path-disjoint structural successor:
-  the stable `ProductCompare.Discussions.Submissions` boundary remains
+- Community Submissions decomposition is complete: the stable
+  `ProductCompare.Discussions.Submissions` boundary remains
   discussion-context-facing while creation and idempotency, owner lifecycle,
   reporting, and write-limit persistence move into focused internal modules.
   Its direct community-trust characterization gate passes 25 tests;

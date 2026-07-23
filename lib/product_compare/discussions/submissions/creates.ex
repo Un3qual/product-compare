@@ -61,7 +61,8 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
   @spec answer_question(pos_integer(), Ecto.UUID.t(), String.t(), String.t()) ::
           {:ok, ThreadPost.t()} | {:error, :not_found | Ecto.Changeset.t() | atom()}
   def answer_question(user_id, question_entropy_id, body, idempotency_key) do
-    with %ProductThread{} = question <- record_by_entropy(ProductThread, question_entropy_id),
+    with %ProductThread{} = question <-
+           Moderation.record_by_type_and_entropy(:question, question_entropy_id),
          changeset <-
            ThreadPost.changeset(%ThreadPost{}, %{
              thread_id: question.id,
@@ -106,7 +107,10 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
 
         case locked_write_receipt(user_id, mutation_kind, idempotency_key) do
           %CommunityWriteReceipt{payload_digest: ^digest} = receipt ->
-            case moderation_record(receipt.content_type, receipt.content_entropy_id) do
+            case Moderation.record_by_type_and_entropy(
+                   receipt.content_type,
+                   receipt.content_entropy_id
+                 ) do
               nil -> Repo.rollback(:not_found)
               content -> content
             end
@@ -165,18 +169,6 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
         where: receipt.idempotency_key == ^idempotency_key,
         lock: "FOR UPDATE"
     )
-  end
-
-  defp moderation_record(:review, entropy_id), do: record_by_entropy(ProductReview, entropy_id)
-  defp moderation_record(:question, entropy_id), do: record_by_entropy(ProductThread, entropy_id)
-  defp moderation_record(:answer, entropy_id), do: record_by_entropy(ThreadPost, entropy_id)
-
-  defp record_by_entropy(schema, entropy_id) do
-    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
-      Repo.get_by(schema, entropy_id: uuid)
-    else
-      :error -> nil
-    end
   end
 
   defp insert_or_rollback(changeset) do

@@ -1,13 +1,9 @@
 defmodule ProductCompare.Discussions.Submissions do
   @moduledoc false
 
-  import Ecto.Query
-
-  alias ProductCompare.Discussions.Moderation
   alias ProductCompare.Discussions.Submissions.Creates
   alias ProductCompare.Discussions.Submissions.OwnerActions
-  alias ProductCompare.Discussions.Submissions.WriteLimits
-  alias ProductCompare.Repo
+  alias ProductCompare.Discussions.Submissions.Reports
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -46,77 +42,6 @@ defmodule ProductCompare.Discussions.Submissions do
   @spec report(pos_integer(), :review | :question | :answer, Ecto.UUID.t(), String.t()) ::
           {:ok, CommunityReport.t()}
           | {:error, :not_found | :already_reported | :rate_limited | Ecto.Changeset.t()}
-  def report(reporter_id, type, entropy_id, reason) do
-    with record when not is_nil(record) <- moderation_record(type, entropy_id) do
-      target =
-        case type do
-          :review -> %{review_id: record.id}
-          :question -> %{thread_id: record.id}
-          :answer -> %{post_id: record.id}
-        end
-
-      transaction_result(fn ->
-        if report_exists?(reporter_id, type, record.id), do: Repo.rollback(:already_reported)
-
-        WriteLimits.increment!(reporter_id, :report)
-
-        changeset =
-          CommunityReport.changeset(
-            %CommunityReport{},
-            Map.merge(target, %{reporter_id: reporter_id, reason: reason})
-          )
-
-        case Repo.insert(changeset) do
-          {:ok, report} ->
-            report
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            if unique_constraint_error?(changeset),
-              do: Repo.rollback(:already_reported),
-              else: Repo.rollback(changeset)
-        end
-      end)
-    else
-      nil -> {:error, :not_found}
-    end
-  end
-
-  defp report_exists?(reporter_id, :review, content_id),
-    do:
-      Repo.exists?(
-        from report in CommunityReport,
-          where: report.reporter_id == ^reporter_id and report.review_id == ^content_id
-      )
-
-  defp report_exists?(reporter_id, :question, content_id),
-    do:
-      Repo.exists?(
-        from report in CommunityReport,
-          where: report.reporter_id == ^reporter_id and report.thread_id == ^content_id
-      )
-
-  defp report_exists?(reporter_id, :answer, content_id),
-    do:
-      Repo.exists?(
-        from report in CommunityReport,
-          where: report.reporter_id == ^reporter_id and report.post_id == ^content_id
-      )
-
-  defp unique_constraint_error?(%Ecto.Changeset{errors: errors}) do
-    Enum.any?(errors, fn {_field, {_message, opts}} -> opts[:constraint] == :unique end)
-  end
-
-  defp transaction_result(callback), do: Repo.transaction(callback)
-
-  defp moderation_record(:review, entropy_id), do: record_by_entropy(ProductReview, entropy_id)
-  defp moderation_record(:question, entropy_id), do: record_by_entropy(ProductThread, entropy_id)
-  defp moderation_record(:answer, entropy_id), do: record_by_entropy(ThreadPost, entropy_id)
-
-  defp record_by_entropy(schema, entropy_id) do
-    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
-      Repo.get_by(schema, entropy_id: uuid)
-    else
-      :error -> nil
-    end
-  end
+  def report(reporter_id, type, entropy_id, reason),
+    do: Reports.create(reporter_id, type, entropy_id, reason)
 end
