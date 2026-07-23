@@ -2,11 +2,11 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
-- Last verified: 2026-07-23 against the dedicated CJ import Mix-task suite.
+- Last verified: 2026-07-23 against the final CJ import contract and lane gate.
 
 ## Target Outcome
 
@@ -57,3 +57,24 @@ reports, errors, and credential safety.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Final Contract And Lane Gate (2026-07-23)
+
+- Ownership is complete: the stable `CjImport` facade owns CLI parsing and the
+  public `run/1` / `run_import/1` boundary; `Options` owns normalization and
+  readiness, `Runner` owns durable imports and reports, and `Candidates` owns
+  reviewed-candidate batching.
+- Exact source sizes: facade 108 lines; `Options` 161 lines; `Runner` 213
+  lines; `Candidates` 187 lines (669 lines total across the four modules).
+- Characterization: `mix test
+  test/mix/tasks/product_compare_ingestion_cj_import_test.exs` passed with
+  exactly 19 tests and 0 failures.
+- Full gates passed: `mix typecheck`; `mix format --check-formatted`; `mix
+  work_queue.validate` (3 ready rows; rerun with the permitted local PubSub
+  socket escalation after the sandbox denied the socket); `mix ci`; and `git
+  diff --check`.
+- Boundary scan: `CJProductImportWorker` invokes only
+  `CjImport.run_import/1`; `CjRuns` uses only `&CjImport.run_import/1` as its
+  default resume runner. No external caller references `CjImport.Options`,
+  `CjImport.Runner`, or `CjImport.Candidates`; those names occur only within
+  the facade and the focused implementation modules themselves.

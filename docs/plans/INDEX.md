@@ -446,11 +446,11 @@ batch and should not be recreated or promoted.
   characterization gate passes 100 tests; schema wiring, loader keys, query
   budgets, validation, authorization, payloads, and frontend policy stay
   unchanged.
-- CJ Import task decomposition is a path-disjoint structural successor: the
-  stable `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
-  caller-facing while input normalization, durable single-run imports, and
-  reviewed-candidate batching move into focused internal modules. Its
-  dedicated characterization gate passes 19 tests; provider requests,
+- CJ Import task decomposition is complete: the stable
+  `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
+  caller-facing while `Options`, `Runner`, and `Candidates` own input
+  normalization, durable single-run imports, and reviewed-candidate batching.
+  Its dedicated characterization gate passes 19 tests; provider requests,
   ingestion persistence, worker/resume callers, scheduling, deferred operator
   scope, and product policy stay unchanged.
 - CJ Runs task decomposition is a path-disjoint structural successor: the

@@ -1560,60 +1560,18 @@ reconciliation characterization gate passed 44 tests. CJ Import was therefore
 claimed while CJ Runs, Catalog Resolver, and Listing Persistence decomposition
 remain ready.
 
+CJ Import Task Decomposition then completed on the current detached worktree.
+`Mix.Tasks.ProductCompare.Ingestion.CjImport` is now a 108-line stable facade;
+`Options`, `Runner`, and `Candidates` own normalization and credential
+readiness, durable single-source imports, and reviewed-candidate batching
+without caller bypasses or behavior changes. The exact focused gate passed 19
+tests, and final `mix ci` passed the queue, formatting, typecheck, quality,
+backend/frontend test, Relay, TypeScript, production-build, and bundle gates.
+CJ Runs, Catalog Resolver, and Listing Persistence decomposition remain ready.
+
 ## Active Work
 
-### CJ Import Task Decomposition
-
-Status: active
-Lane: CJ import task decomposition
-Plan: `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
-Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjImport` remains the stable
-manual, worker, and resume entry point while option normalization, durable
-single-run imports, and reviewed-candidate batching live in focused internal
-modules with unchanged CLI behavior, public results, durable run state,
-candidate policy, reports, errors, and credential safety.
-Next action: extract the three implementation responsibilities behind the
-stable Mix-task facade and prove the dedicated task and caller boundary.
-Owned paths:
-
-- `lib/mix/tasks/product_compare.ingestion.cj_import.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_import/options.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_import/runner.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_import/candidates.ex`
-- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-- `docs/work/cj-import-task-decomposition.md`
-
-Internal slices:
-
-- CLI/default/fetch-option normalization and credential readiness.
-- Source resolution, durable run lifecycle, bounded page import, and reports.
-- Reviewed-candidate selection, deterministic batching, and aggregate results.
-- Stable facade, worker/resume caller boundary, and output parity.
-
-Prerequisites:
-
-- Existing `CjImport.run/1` and `run_import/1` inputs, results, errors, and
-  printed output remain authoritative.
-- Preserve provider requests, source resolution, durable run state, cursors,
-  reconciliation, counts, failure categories, candidate policy, and credential
-  safety.
-- Keep the Oban worker and `CjRuns` dependent only on `run_import/1`; do not
-  change persistence, schemas, migrations, scheduling, deferred operator scope,
-  or product policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable task retains the full caller-facing and CLI
-contract, each implementation responsibility has one focused owner, the exact
-19-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
+None.
 
 ## Ready Work
 
