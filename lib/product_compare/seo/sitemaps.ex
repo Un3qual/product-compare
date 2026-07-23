@@ -4,13 +4,11 @@ defmodule ProductCompare.Seo.Sitemaps do
   import Ecto.Query
 
   alias ProductCompare.Repo
-  alias ProductCompare.Seo.{Categories, Metadata}
+  alias ProductCompare.Seo.{Categories, Metadata, QualificationPolicy}
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
-  @minimum_description_length 80
-  @minimum_category_products 3
   @maximum_sitemap_entries 10_000
 
   @spec entries(:products | :merchants | :categories | :comparisons, keyword()) :: [map()]
@@ -73,6 +71,8 @@ defmodule ProductCompare.Seo.Sitemaps do
 
   defp sitemap_query(:categories, now, limit) do
     qualifying_products = Categories.qualified_products_query(now)
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    minimum_category_products = QualificationPolicy.minimum_category_products()
 
     Taxon
     |> join(:inner, [taxon], closure in TaxonClosure, on: closure.ancestor_id == taxon.id)
@@ -85,13 +85,13 @@ defmodule ProductCompare.Seo.Sitemaps do
         fragment(
           "char_length(trim(coalesce(?, ''))) >= ?",
           taxon.seo_description,
-          ^@minimum_description_length
+          ^minimum_description_length
         )
     )
     |> group_by([taxon], [taxon.id, taxon.seo_slug, taxon.updated_at])
     |> having(
       [taxon, _closure, product],
-      count(product.id, :distinct) >= ^@minimum_category_products
+      count(product.id, :distinct) >= ^minimum_category_products
     )
     |> order_by([taxon], asc: taxon.id)
     |> limit(^limit)

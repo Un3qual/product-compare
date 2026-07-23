@@ -4,13 +4,10 @@ defmodule ProductCompare.Seo.Categories do
   import Ecto.Query
 
   alias ProductCompare.Repo
+  alias ProductCompare.Seo.QualificationPolicy
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
-
-  @minimum_description_length 80
-  @minimum_specification_count 2
-  @minimum_category_products 3
 
   @spec get(String.t(), keyword()) :: map() | nil
   def get(slug, opts \\ [])
@@ -53,8 +50,8 @@ defmodule ProductCompare.Seo.Categories do
            description: taxon.seo_description,
            qualified_product_count: qualified_product_count,
            indexable:
-             adequate_text?(taxon.seo_description) and
-               qualified_product_count >= @minimum_category_products,
+             QualificationPolicy.adequate_text?(taxon.seo_description) and
+               qualified_product_count >= QualificationPolicy.minimum_category_products(),
            now: now
          }}
       end)
@@ -171,6 +168,9 @@ defmodule ProductCompare.Seo.Categories do
   end
 
   defp qualified_products_query(queryable, %DateTime{} = now) do
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    minimum_specification_count = QualificationPolicy.minimum_specification_count()
+
     eligible_products =
       now
       |> eligible_offer_scope()
@@ -186,7 +186,7 @@ defmodule ProductCompare.Seo.Categories do
       fragment(
         "(SELECT count(*) FROM product_attribute_current pac WHERE pac.product_id = ?) >= ?",
         product.id,
-        ^@minimum_specification_count
+        ^minimum_specification_count
       )
     )
     |> where(
@@ -194,7 +194,7 @@ defmodule ProductCompare.Seo.Categories do
       fragment(
         "char_length(trim(coalesce(?, ''))) >= ?",
         product.description,
-        ^@minimum_description_length
+        ^minimum_description_length
       ) or
         fragment("EXISTS (SELECT 1 FROM product_media pm WHERE pm.product_id = ?)", product.id)
     )
@@ -210,9 +210,4 @@ defmodule ProductCompare.Seo.Categories do
     policy = ProductCompare.Pricing.OfferTruth.policy()
     DateTime.add(now, -policy.stale_after_seconds, :second)
   end
-
-  defp adequate_text?(value) when is_binary(value),
-    do: String.length(String.trim(value)) >= @minimum_description_length
-
-  defp adequate_text?(_value), do: false
 end

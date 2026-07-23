@@ -46,7 +46,6 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
           Repo.rollback(attribution_conflict_changeset(attrs, conflicts))
       end
     end)
-    |> unwrap_transaction()
   end
 
   @spec create_purchase_price_fact(map()) ::
@@ -72,7 +71,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
     changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
 
     update_fields =
-      present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
+      Input.present_upsert_fields(attrs, changeset, @commerce_conversion_upsert_fields)
 
     changeset
     |> Repo.insert(
@@ -83,9 +82,6 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
     )
     |> maybe_fetch_unchanged_conversion(changeset)
   end
-
-  defp unwrap_transaction({:ok, conversion}), do: {:ok, conversion}
-  defp unwrap_transaction({:error, reason}), do: {:error, reason}
 
   defp conversion_conflict_query(update_fields, now) do
     from conversion in CommerceConversion,
@@ -317,12 +313,6 @@ defmodule ProductCompare.CommerceAttribution.Conversions do
       true ->
         attrs
     end
-  end
-
-  defp present_upsert_fields(attrs, changeset, fields) do
-    for field <- fields,
-        Input.attr_key_present?(attrs, field),
-        do: {field, Ecto.Changeset.get_field(changeset, field)}
   end
 
   defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)

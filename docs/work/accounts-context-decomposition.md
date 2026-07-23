@@ -19,20 +19,21 @@ now live in focused internal modules alongside the existing `UserAuth` owner,
 with unchanged public APIs, auth behavior, transactions, locks, errors, and
 GraphQL behavior.
 
-## Ready Evidence
+## Pre-decomposition Evidence
 
-- `lib/product_compare/accounts.ex` is 721 lines and still owns user
-  provisioning/bootstrap, API-token lifecycle, and reputation persistence and
-  reads in addition to facade delegation to the existing focused `UserAuth`.
+- Before this batch, `lib/product_compare/accounts.ex` was 721 lines and owned
+  user provisioning/bootstrap, API-token lifecycle, and reputation persistence
+  and reads in addition to facade delegation to the existing focused
+  `UserAuth`.
 - Existing plugs, resolvers, fixtures, seeds, tests, and other contexts depend
-  only on the facade, so implementation ownership can move without changing
+  only on the facade, so implementation ownership could move without changing
   application call sites.
 - The selected characterization gate passed 112 tests on 2026-07-22. It covers
   user creation and repair, operator bootstrap and races, password/session/
   confirmation/reset behavior, API-token lifecycle and GraphQL auth, owner-
   scoped node reads, reputation, schema constraints, and seeds.
-- The row is path-disjoint from Specs, Commerce Attribution, and Ingestion.
-  It does not change the GraphQL auth contract, cookie-backed session
+- The row was path-disjoint from Specs, Commerce Attribution, and Ingestion.
+  It did not change the GraphQL auth contract, cookie-backed session
   authority, authorization policy, seed policy, or email transport scope.
 
 ## Internal Slices

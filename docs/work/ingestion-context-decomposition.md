@@ -10,32 +10,32 @@
   enrichment, reconciliation, merchant-feed-candidate GraphQL, and full
   repository gates.
 
-## Target Outcome
+## Batch Outcome
 
-`ProductCompare.Ingestion` will remain the stable application-facing context
-while import-run lifecycle, feed-candidate policy, merchant identity, and
-canonical normalized-listing persistence implementations move into focused
+`ProductCompare.Ingestion` remains the stable application-facing context while
+import-run lifecycle, feed-candidate policy, merchant identity, and canonical
+normalized-listing persistence implementations now live in focused
 internal modules with unchanged public APIs, transactions, conflicts,
 freshness, provenance, reconciliation, errors, and GraphQL behavior.
 
-## Ready Evidence
+## Pre-decomposition Evidence
 
-- `lib/product_compare/ingestion.ex` is 1,291 lines and owns four separately
-  testable responsibilities: import-run lifecycle and reconciliation,
-  merchant-feed-candidate query/review policy, merchant identity resolution,
-  and the canonical listing persistence transaction.
-- The public context is already a stable boundary used by Mix tasks, ingestion
-  jobs, resolvers, GraphQL request loaders, fixtures, and tests, so extraction
-  can preserve callers while narrowing implementation ownership.
+- Before this batch, `lib/product_compare/ingestion.ex` was 1,291 lines and
+  owned four separately testable responsibilities: import-run lifecycle and
+  reconciliation, merchant-feed-candidate query/review policy, merchant
+  identity resolution, and the canonical listing persistence transaction.
+- The public context was already a stable boundary used by Mix tasks,
+  ingestion jobs, resolvers, GraphQL request loaders, fixtures, and tests, so
+  extraction could preserve callers while narrowing implementation ownership.
 - The selected four-suite characterization gate passed 57 tests on 2026-07-22.
   It covers run completion and reconciliation, candidate filtering/ranking and
   GraphQL behavior, merchant identity conflict/freshness behavior, canonical
   GTIN persistence, enrichment/provenance, offer and price persistence, replay,
   and stale observations.
-- This structural row does not reopen deferred eBay, ingestion dashboard,
+- This structural row did not reopen deferred eBay, ingestion dashboard,
   operator, provider, credential, scheduling, or application-submission work.
-  It is path-disjoint from the Discussions, Specs, and Commerce Attribution
-  context rows because every caller continues to use its current facade.
+  It was path-disjoint from the Discussions, Specs, and Commerce Attribution
+  context rows because every caller continued to use its current facade.
 
 ## Internal Slices
 

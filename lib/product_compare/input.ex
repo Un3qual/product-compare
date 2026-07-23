@@ -15,6 +15,13 @@ defmodule ProductCompare.Input do
 
   def attr_key_present?(_attrs, _key), do: false
 
+  @spec present_upsert_fields(map() | term(), Ecto.Changeset.t(), [atom()]) :: keyword()
+  def present_upsert_fields(attrs, changeset, fields) when is_list(fields) do
+    for field <- fields,
+        attr_key_present?(attrs, field),
+        do: {field, Ecto.Changeset.get_field(changeset, field)}
+  end
+
   @spec pagination_value(keyword() | map() | term(), atom(), integer()) :: integer()
   def pagination_value(opts, key, default) when is_list(opts) do
     opts

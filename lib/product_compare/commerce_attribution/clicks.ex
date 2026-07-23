@@ -36,7 +36,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
     changeset = CommerceLink.changeset(%CommerceLink{}, attrs)
 
     update_fields =
-      present_upsert_fields(attrs, changeset, @commerce_link_upsert_fields)
+      Input.present_upsert_fields(attrs, changeset, @commerce_link_upsert_fields)
 
     Repo.insert(
       changeset,
@@ -68,7 +68,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
       attrs
       |> Map.put(:merchant_product_id, merchant_product_id)
       |> persist_tracked_click(destination)
-      |> unwrap_transaction()
     else
       :error -> {:error, :merchant_product_not_found}
       {:error, _reason} = error -> error
@@ -248,9 +247,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
     end)
   end
 
-  defp unwrap_transaction({:ok, tracked_click}), do: {:ok, tracked_click}
-  defp unwrap_transaction({:error, reason}), do: {:error, reason}
-
   defp tracked_commerce_link_attrs(destination) do
     destination
     |> commerce_link_attrs()
@@ -304,11 +300,5 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
         end
       end
     )
-  end
-
-  defp present_upsert_fields(attrs, changeset, fields) do
-    for field <- fields,
-        Input.attr_key_present?(attrs, field),
-        do: {field, Ecto.Changeset.get_field(changeset, field)}
   end
 end

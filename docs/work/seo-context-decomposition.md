@@ -61,5 +61,5 @@ query behavior, errors, controllers, and GraphQL values.
 
 ## Remaining Work
 
-None in this lane. Alerts, Catalog, and Comparison Snapshots Context
+None in this lane. Catalog, Comparison Snapshots, and Taxonomy Context
 Decomposition remain ready in the live queue.

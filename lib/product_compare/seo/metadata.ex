@@ -4,12 +4,10 @@ defmodule ProductCompare.Seo.Metadata do
   alias ProductCompare.Discussions
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompare.Seo.QualificationPolicy
   alias ProductCompare.Specs
   alias ProductCompareSchemas.Catalog.{ComparisonSnapshot, Product}
   alias ProductCompareSchemas.Pricing.Merchant
-
-  @minimum_description_length 80
-  @minimum_specification_count 2
 
   @type metadata :: %{
           canonical_path: String.t(),
@@ -52,7 +50,7 @@ defmodule ProductCompare.Seo.Metadata do
     image_url = primary_image_url(product.media)
 
     indexable =
-      length(attributes) >= @minimum_specification_count and
+      length(attributes) >= QualificationPolicy.minimum_specification_count() and
         adequate_product_copy?(product.description, image_url) and
         offer_truth.eligible_offer_count > 0
 
@@ -198,12 +196,7 @@ defmodule ProductCompare.Seo.Metadata do
     do: (field(product, :attributes) || []) != [] and (field(product, :offers) || []) != []
 
   defp adequate_product_copy?(description, image_url),
-    do: adequate_text?(description) or is_binary(image_url)
-
-  defp adequate_text?(value) when is_binary(value),
-    do: String.length(String.trim(value)) >= @minimum_description_length
-
-  defp adequate_text?(_value), do: false
+    do: QualificationPolicy.adequate_text?(description) or is_binary(image_url)
 
   defp primary_image_url(media) do
     media

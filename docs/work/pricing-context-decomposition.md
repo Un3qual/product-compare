@@ -11,23 +11,24 @@
 - Claimed: 2026-07-22 on the current detached worktree after Catalog Context
   Decomposition restored the three-ready-row floor.
 
-## Target Outcome
+## Batch Outcome
 
 `ProductCompare.Pricing` remains the stable application-facing context while
 merchant, offer, price-history, and current offer-truth read implementations
-move into focused internal modules with unchanged public APIs, transactions,
+now live in focused internal modules with unchanged public APIs, transactions,
 queries, ordering, errors, alerts, and GraphQL behavior.
 
-## Ready Evidence
+## Pre-decomposition Evidence
 
-- `lib/product_compare/pricing.ex` is 625 lines and owns four independently
-  reviewable implementation responsibilities behind one public boundary.
-- The public context is used by ingestion, alerts, SEO, recommendations,
-  snapshots, loaders, resolvers, and tests, so the facade can remain stable.
+- Before this batch, `lib/product_compare/pricing.ex` was 625 lines and owned
+  four independently reviewable implementation responsibilities behind one
+  public boundary.
+- The public context was used by ingestion, alerts, SEO, recommendations,
+  snapshots, loaders, resolvers, and tests, so the facade could remain stable.
 - The selected four-suite characterization gate passed 39 tests on 2026-07-22.
-- Existing `ProductCompare.Pricing.OfferTruth` remains the single-offer policy
-  owner; this row moves product-level reads without changing pricing policy.
-- The row is path-disjoint from Accounts, Ingestion, and SEO decomposition.
+- Existing `ProductCompare.Pricing.OfferTruth` remained the single-offer policy
+  owner; this row moved product-level reads without changing pricing policy.
+- The row was path-disjoint from Accounts, Ingestion, and SEO decomposition.
 
 ## Internal Slices
 
