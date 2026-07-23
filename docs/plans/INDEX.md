@@ -537,8 +537,8 @@ batch and should not be recreated or promoted.
   community GraphQL and Dataloader characterization gate passes 61 tests;
   schema wiring, loader keys, query budgets, visibility, authorization, Global
   IDs, moderation, payloads, and frontend policy stay unchanged.
-- Catalog Filter Metadata decomposition is a path-disjoint structural
-  successor: the stable `ProductCompare.Catalog.FilterMetadata.metadata/1`
+- Catalog Filter Metadata decomposition is complete: the stable
+  `ProductCompare.Catalog.FilterMetadata.metadata/1`
   boundary remains catalog-facing while filtered-product queries, taxonomy
   facets, selected attribute filters, and attribute aggregation move into
   focused internal modules. Its direct characterization gate passes 10 tests;

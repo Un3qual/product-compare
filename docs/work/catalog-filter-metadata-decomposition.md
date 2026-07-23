@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -59,3 +59,18 @@ ordering, selection, disabled-state, units, and result shapes.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- Completed on 2026-07-23 on the aggregate detached-worktree commit stack.
+- The stable facade is 34 lines.
+- `Query` is 23 lines, `TaxonomyFacets` is 101 lines,
+  `SelectedFilters` is 129 lines, and `AttributeFacets` is 244 lines.
+- The exact characterization gate passed 10 tests with no failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `mix ci`, and `git diff --check` passed.
+- Final `mix ci` passed 913 backend tests at 83.45% coverage and 1,507
+  frontend tests, plus every quality, duplication, type, Relay, build, and
+  bundle gate.
+- Production references to focused owners are limited to the stable facade or
+  modules inside the same implementation namespace.

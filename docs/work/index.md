@@ -1637,15 +1637,24 @@ and final `mix ci` passed 913 backend tests at 83.42% coverage, 1,507 frontend
 tests, and every queue, quality, duplication, type, Relay, build, and bundle
 gate.
 
+Catalog Filter Metadata Decomposition then completed on the current detached
+worktree. `ProductCompare.Catalog.FilterMetadata` is now a 34-line stable
+facade; `Query`, `TaxonomyFacets`, `SelectedFilters`, and `AttributeFacets`
+own filtering/counts, taxonomy facets, selected-filter normalization, and
+attribute aggregation without caller bypasses or behavior changes. The exact
+focused gate passed 10 tests, and final `mix ci` passed 913 backend tests at
+83.45% coverage, 1,507 frontend tests, and every queue, quality, duplication,
+type, Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
 
-## Ready Work
+## Completed 2026-07-23 Backend Decomposition Work
 
 ### 1. Catalog Filter Metadata Decomposition
 
-Status: ready
+Status: complete
 Lane: Catalog filter metadata decomposition
 Plan: `docs/superpowers/plans/2026-07-23-catalog-filter-metadata-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Catalog.FilterMetadata.metadata/1` remains the
@@ -1653,8 +1662,7 @@ stable catalog-facing boundary while filtered-product queries, taxonomy
 facets, selected attribute-filter normalization, and attribute-facet
 aggregation live in focused internal modules with unchanged queries, counts,
 ordering, selection, disabled-state, units, and result shapes.
-Next action: extract the four implementation responsibilities behind the
-stable metadata facade and prove direct catalog filter-metadata parity.
+Next action: none; implementation and verification are complete.
 Owned paths:
 
 - `lib/product_compare/catalog/filter_metadata.ex`
@@ -1696,6 +1704,8 @@ Exit condition: the stable metadata facade retains the exact response and
 query contract, each implementation responsibility has one focused owner, the
 exact 10-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
+
+## Ready Work
 
 ### 2. Community Submissions Decomposition
 
