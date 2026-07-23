@@ -167,7 +167,7 @@ User authentication:
 
 API tokens:
 
-- `ApiTokens.Authentication` owns secret decoding, hashing, active-token
+- `ApiTokens.Authentication` owns secret input validation, active-token lookup,
   verification, and optional last-used updates.
 - `ApiTokens.Queries` owns owner-scoped reads and status-filtered query
   construction.
