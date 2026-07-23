@@ -4,12 +4,11 @@ defmodule ProductCompare.Pricing.Merchants do
   import Ecto.Query
 
   alias ProductCompare.ChangesetErrors
-  alias ProductCompare.Pricing
   alias ProductCompare.Pricing.OfferTruth
+  alias ProductCompare.Pricing.PriceHistory
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
-  alias ProductCompareSchemas.Pricing.PricePoint
 
   @max_bigint_id 9_223_372_036_854_775_807
 
@@ -150,15 +149,8 @@ defmodule ProductCompare.Pricing.Merchants do
     }
   end
 
-  defp latest_offer_truth_prices([]), do: %{}
-
-  defp latest_offer_truth_prices(merchant_product_ids) do
-    PricePoint
-    |> Pricing.latest_prices_query(merchant_product_ids)
-    |> preload([price_point], artifact: [:source])
-    |> Repo.all()
-    |> Map.new(&{&1.merchant_product_id, &1})
-  end
+  defp latest_offer_truth_prices(merchant_product_ids),
+    do: PriceHistory.latest_offer_truth_prices(merchant_product_ids)
 
   defp merchant_attrs_with_slug(attrs) do
     name = get_filter_value(attrs, :name)
