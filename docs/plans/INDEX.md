@@ -460,6 +460,14 @@ batch and should not be recreated or promoted.
   characterization gate passes 10 tests; CJ queries, readiness, cursor and
   runner behavior, credential safety, the operator runbook, deferred operator
   scope, and product policy stay unchanged.
+- Listing Persistence decomposition is a path-disjoint structural successor:
+  the stable `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary
+  remains caller-facing while source and external identity, canonical product
+  identity, enrichment, and offer observation persistence move into focused
+  internal modules. Its ingestion, enrichment, and reconciliation
+  characterization gate passes 44 tests; transactions, writes, conflict
+  targets, freshness, identity, taxonomy, specifications, pricing, alerts,
+  reconciliation, provider behavior, and product policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

@@ -1551,17 +1551,20 @@ hierarchy milestone relocated the two existing path-scoped Dialyzer baselines
 with their unchanged `Ecto.Multi` calls. The exact focused gate passed 13
 tests, and final `mix ci` passed 909 backend tests at 83.45% coverage, 1,507
 frontend tests, and all queue, quality, type, Relay, build, and bundle gates.
-CJ Import, CJ Runs, and Catalog Resolver decomposition remain ready.
+Before claiming CJ Import Task Decomposition on 2026-07-23, the coordinator
+validated Listing Persistence Decomposition as a fourth independently
+shippable structural successor. The 840-line stable persistence boundary
+combines source and external identity, canonical product identity, enrichment,
+and offer observation persistence; its direct ingestion, enrichment, and
+reconciliation characterization gate passed 44 tests. CJ Import was therefore
+claimed while CJ Runs, Catalog Resolver, and Listing Persistence decomposition
+remain ready.
 
 ## Active Work
 
-None.
+### CJ Import Task Decomposition
 
-## Ready Work
-
-### 1. CJ Import Task Decomposition
-
-Status: ready
+Status: active
 Lane: CJ import task decomposition
 Plan: `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
 Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjImport` remains the stable
@@ -1612,7 +1615,9 @@ contract, each implementation responsibility has one focused owner, the exact
 19-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 2. CJ Runs Task Decomposition
+## Ready Work
+
+### 1. CJ Runs Task Decomposition
 
 Status: ready
 Lane: CJ runs task decomposition
@@ -1666,7 +1671,7 @@ contract, each implementation responsibility has one focused owner, the exact
 10-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 3. Catalog Resolver Decomposition
+### 2. Catalog Resolver Decomposition
 
 Status: ready
 Lane: Catalog resolver decomposition
@@ -1724,6 +1729,65 @@ Exit condition: the stable resolver retains the full schema- and test-facing
 contract, each implementation responsibility has one focused owner, the exact
 100-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
+
+### 3. Listing Persistence Decomposition
+
+Status: ready
+Lane: Listing persistence decomposition
+Plan: `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Ingestion.ListingPersistence.persist/3`
+remains the stable ingestion-facing boundary while source and external
+identity, canonical product identity, enrichment, and offer observation
+persistence live in focused internal modules with unchanged transactions,
+writes, conflicts, freshness, result shapes, and downstream policy.
+Next action: extract the four implementation responsibilities behind the
+stable persistence facade and prove direct ingestion, enrichment, and
+reconciliation parity.
+Owned paths:
+
+- `lib/product_compare/ingestion/listing_persistence.ex`
+- `lib/product_compare/ingestion/listing_persistence/artifacts.ex`
+- `lib/product_compare/ingestion/listing_persistence/products.ex`
+- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
+- `lib/product_compare/ingestion/listing_persistence/offers.ex`
+- `test/product_compare/ingestion/ingestion_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/ingestion/reconciliation_test.exs`
+- `docs/work/listing-persistence-decomposition.md`
+
+Internal slices:
+
+- Source-artifact and external-product freshness persistence.
+- Canonical product, GTIN, slug, brand, and ingested-type identity.
+- Missing copy, taxonomy mapping, media, and specification enrichment.
+- Merchant-product and price-point persistence plus alert enqueueing.
+- Stable transaction facade, reconciliation observation, and result parity.
+
+Prerequisites:
+
+- Existing `ListingPersistence.persist/3` inputs, result maps, transactions,
+  rollbacks, and errors remain authoritative.
+- Preserve hashes, conflict targets, freshness, identity, category mapping,
+  evidence counts, offer activity, price replay, alert jobs, and
+  reconciliation.
+- Keep application callers dependent only on
+  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; do not
+  change providers, schemas, migrations, catalog, taxonomy, specification,
+  pricing, alert, GraphQL, frontend, or product policy.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable transaction facade retains the full ingestion
+contract, each implementation responsibility has one focused owner, the exact
+44-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
