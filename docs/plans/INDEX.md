@@ -257,6 +257,15 @@ characterization gate passed 19 tests. The structural extraction preserves
 provider requests, durable run state, cursor behavior, candidate policy,
 credential safety, worker/resume callers, and output while remaining path-
 disjoint from Catalog, Comparison Snapshots, and Taxonomy.
+Before claiming Comparison Snapshots context decomposition, a twenty-first
+claim-floor audit promoted CJ Runs task decomposition. The 600-line stable Mix
+task combines CLI and keyword normalization, latest/history/failed reporting,
+and import/discovery resume orchestration behind `run/1`, `run_report/1`, and
+`run_resume/1`; its dedicated characterization gate passed 10 tests. The
+structural extraction preserves queries, readiness checks, cursor behavior,
+runner inputs, reports, errors, credential-safe logging, and the operator
+runbook while remaining path-disjoint from Comparison Snapshots, Taxonomy, and
+CJ Import.
 
 Implementation plan references (non-dispatch):
 
@@ -280,6 +289,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -409,6 +419,13 @@ batch and should not be recreated or promoted.
   reviewed-candidate batching move into focused internal modules. Its
   dedicated characterization gate passes 19 tests; provider requests,
   ingestion persistence, worker/resume callers, scheduling, deferred operator
+  scope, and product policy stay unchanged.
+- CJ Runs task decomposition is a path-disjoint structural successor: the
+  stable `Mix.Tasks.ProductCompare.Ingestion.CjRuns` entry point remains
+  caller-facing while option normalization, run reporting, and resume
+  orchestration move into focused internal modules. Its dedicated
+  characterization gate passes 10 tests; CJ queries, readiness, cursor and
+  runner behavior, credential safety, the operator runbook, deferred operator
   scope, and product policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent

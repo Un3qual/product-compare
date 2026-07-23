@@ -1526,15 +1526,19 @@ tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
 TypeScript, both production builds, and the bundle contract. Comparison
 Snapshots, Taxonomy, and CJ Import remain ready.
 
+Before claiming Comparison Snapshots Context Decomposition on 2026-07-23, the
+coordinator validated CJ Runs Task Decomposition as a fourth independently
+shippable structural successor. The 600-line stable Mix task combines input
+normalization, run reporting, and resume orchestration behind three public
+entry points; its dedicated characterization gate passed 10 tests. Comparison
+Snapshots was therefore claimed while Taxonomy, CJ Import, and CJ Runs remained
+ready.
+
 ## Active Work
 
-None.
+### Comparison Snapshots Context Decomposition
 
-## Ready Work
-
-### 1. Comparison Snapshots Context Decomposition
-
-Status: ready
+Status: active
 Lane: Comparison snapshots context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.ComparisonSnapshots` remains the stable
@@ -1586,7 +1590,9 @@ implementation responsibility has one focused owner, the exact 12-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Taxonomy Context Decomposition
+## Ready Work
+
+### 1. Taxonomy Context Decomposition
 
 Status: ready
 Lane: Taxonomy context decomposition
@@ -1642,7 +1648,7 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. CJ Import Task Decomposition
+### 2. CJ Import Task Decomposition
 
 Status: ready
 Lane: CJ import task decomposition
@@ -1693,6 +1699,60 @@ Verification:
 Exit condition: the stable task retains the full caller-facing and CLI
 contract, each implementation responsibility has one focused owner, the exact
 19-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
+
+### 3. CJ Runs Task Decomposition
+
+Status: ready
+Lane: CJ runs task decomposition
+Plan: `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
+Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjRuns` remains the stable
+operator entry point while option normalization, run reporting, and resume
+orchestration live in focused internal modules with unchanged CLI behavior,
+public results, queries, readiness checks, reports, errors, cursor behavior,
+and credential safety.
+Next action: extract the three implementation responsibilities behind the
+stable Mix-task facade and prove the dedicated task and runbook boundary.
+Owned paths:
+
+- `lib/mix/tasks/product_compare.ingestion.cj_runs.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_runs/options.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_runs/reports.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_runs/resume.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
+- `docs/work/cj-runs-task-decomposition.md`
+
+Internal slices:
+
+- CLI/default/report/surface normalization and bounds.
+- Latest, history, and failed-run queries plus operator-safe rendering.
+- Cursor reconstruction, import/discovery resume, safe runner execution, and
+  output.
+- Stable Mix-task facade, runbook boundary, and caller parity.
+
+Prerequisites:
+
+- Existing `CjRuns.run/1`, `run_report/1`, and `run_resume/1` inputs, results,
+  errors, and printed output remain authoritative.
+- Preserve report defaults, aliases, limits, queries, ordering, readiness,
+  counts, freshness, cursor requirements, reconstructed runner inputs,
+  exception handling, and credential-safe logs.
+- Keep the operator runbook and `CjImport.run_import/1` boundary unchanged; do
+  not change provider requests, persistence, schemas, migrations, scheduling,
+  deferred operator scope, or product policy.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable task retains the full caller-facing and CLI
+contract, each implementation responsibility has one focused owner, the exact
+10-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work

@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 - Last verified: 2026-07-22 against the direct Comparison Snapshots and
   GraphQL characterization suites.
+- Claimed: 2026-07-23 on the current detached worktree after the coordinator
+  validated CJ Runs task decomposition as a fourth path-disjoint ready row.
 
 ## Target Outcome
 
