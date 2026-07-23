@@ -5,6 +5,7 @@ defmodule ProductCompare.Discussions.Reads do
 
   alias ProductCompare.Input
   alias ProductCompare.Discussions.Reads.Legacy
+  alias ProductCompare.Discussions.Reads.PublicContent
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -32,20 +33,12 @@ defmodule ProductCompare.Discussions.Reads do
 
   @spec list_public_reviews(pos_integer(), keyword()) :: [ProductReview.t()]
   def list_public_reviews(product_id, opts \\ []) do
-    {limit, offset} = normalize_pagination(opts)
-
-    product_id
-    |> public_reviews_query()
-    |> limit(^limit)
-    |> offset(^offset)
-    |> Repo.all()
+    PublicContent.list_reviews(product_id, normalize_pagination(opts))
   end
 
   @spec public_reviews_query(pos_integer()) :: Ecto.Query.t()
   def public_reviews_query(product_id) do
-    from review in ProductReview,
-      where: review.product_id == ^product_id and review.moderation_status == :published,
-      order_by: [desc: review.inserted_at, desc: review.id]
+    PublicContent.reviews_query(product_id)
   end
 
   @spec review_summaries([pos_integer()]) :: %{
@@ -55,28 +48,7 @@ defmodule ProductCompare.Discussions.Reads do
           }
         }
   def review_summaries(product_ids) when is_list(product_ids) do
-    product_ids = product_ids |> Enum.filter(&valid_product_id?/1) |> Enum.uniq()
-
-    summaries = Map.new(product_ids, &{&1, zero_review_summary()})
-
-    if product_ids == [] do
-      summaries
-    else
-      ProductReview
-      |> where(
-        [review],
-        review.product_id in ^product_ids and review.moderation_status == :published
-      )
-      |> group_by([review], review.product_id)
-      |> select([review], {review.product_id, count(review.id), avg(review.rating)})
-      |> Repo.all()
-      |> Enum.reduce(summaries, fn {product_id, count, average}, summaries ->
-        Map.put(summaries, product_id, %{
-          count: count,
-          average_rating: average && Decimal.round(average, 2)
-        })
-      end)
-    end
+    PublicContent.review_summaries(product_ids)
   end
 
   @spec review_summary(pos_integer()) :: %{
@@ -84,29 +56,12 @@ defmodule ProductCompare.Discussions.Reads do
           average_rating: Decimal.t() | nil
         }
   def review_summary(product_id) do
-    review_summaries([product_id])
-    |> Map.get(product_id, zero_review_summary())
+    PublicContent.review_summary(product_id)
   end
 
   @spec list_public_questions(pos_integer(), keyword()) :: [ProductThread.t()]
   def list_public_questions(product_id, opts \\ []) do
-    {limit, offset} = normalize_pagination(opts)
-
-    published_posts =
-      from post in ThreadPost,
-        where: post.moderation_status == :published,
-        order_by: [asc: post.inserted_at, asc: post.id]
-
-    Repo.all(
-      from thread in ProductThread,
-        where:
-          thread.product_id == ^product_id and thread.kind == :question and
-            thread.moderation_status == :published,
-        order_by: [desc: thread.inserted_at, desc: thread.id],
-        limit: ^limit,
-        offset: ^offset,
-        preload: [posts: ^published_posts]
-    )
+    PublicContent.list_questions(product_id, normalize_pagination(opts))
   end
 
   @spec viewer_community_submissions(pos_integer(), pos_integer()) :: %{
@@ -154,19 +109,12 @@ defmodule ProductCompare.Discussions.Reads do
 
   @spec public_questions_query(pos_integer()) :: Ecto.Query.t()
   def public_questions_query(product_id) do
-    from thread in ProductThread,
-      where:
-        thread.product_id == ^product_id and thread.kind == :question and
-          thread.moderation_status == :published,
-      order_by: [desc: thread.inserted_at, desc: thread.id],
-      preload: [:accepted_post]
+    PublicContent.questions_query(product_id)
   end
 
   @spec public_answers_query(pos_integer()) :: Ecto.Query.t()
   def public_answers_query(question_id) do
-    from post in ThreadPost,
-      where: post.thread_id == ^question_id and post.moderation_status == :published,
-      order_by: [asc: post.inserted_at, asc: post.id]
+    PublicContent.answers_query(question_id)
   end
 
   @spec public_connection_pages(
@@ -195,27 +143,13 @@ defmodule ProductCompare.Discussions.Reads do
 
   @spec get_public_question(Ecto.UUID.t()) :: ProductThread.t() | nil
   def get_public_question(entropy_id) do
-    entropy_id
-    |> List.wrap()
-    |> get_public_questions()
-    |> Map.get(entropy_id)
+    PublicContent.get_question(entropy_id)
   end
 
   @spec get_public_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
   def get_public_questions(entropy_ids) when is_list(entropy_ids) do
-    Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
-      ProductThread
-      |> where(
-        [question],
-        question.entropy_id in ^validated_entropy_ids and question.kind == :question and
-          question.moderation_status == :published
-      )
-      |> preload(:accepted_post)
-      |> Repo.all()
-    end)
+    PublicContent.get_questions(entropy_ids)
   end
-
-  defp zero_review_summary, do: %{count: 0, average_rating: nil}
 
   defp valid_product_id?(product_id), do: is_integer(product_id) and product_id > 0
 
