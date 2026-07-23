@@ -6,6 +6,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
   import Ecto.Query
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport
   alias ProductCompare.Ingestion
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
@@ -31,7 +32,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
     opts = Options.normalize(opts)
 
     case Keyword.fetch!(opts, :report) do
-      "stale" -> print_stale(opts)
+      "stale" -> StaleReport.print(opts)
       "fit-gaps" -> print_fit_gaps(opts)
       "application-cohort" -> print_application_cohort(opts)
       "export" -> Mix.raise("CJ candidate CSV export is not supported")
@@ -49,41 +50,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
   end
 
   defp normalize_upper(_value), do: nil
-
-  defp print_stale(opts) do
-    candidates = stale_candidates(opts)
-
-    if Keyword.fetch!(opts, :require_fresh) and candidates != [] do
-      Mix.raise("stale CJ feed candidates found")
-    end
-
-    [
-      "provider=#{@provider} report=stale max_age_hours=#{Keyword.fetch!(opts, :max_age_hours)} stale_count=#{length(candidates)} status=#{Keyword.fetch!(opts, :status)}"
-      | Enum.map(candidates, &render_stale_candidate/1)
-    ]
-    |> Enum.join("\n")
-    |> Kernel.<>("\n")
-    |> IO.write()
-  end
-
-  defp stale_candidates(opts) do
-    cutoff =
-      DateTime.utc_now()
-      |> DateTime.add(-Keyword.fetch!(opts, :max_age_hours) * 60 * 60, :second)
-
-    MerchantFeedCandidate
-    |> where([candidate], candidate.provider == @provider)
-    |> where([candidate], candidate.last_seen_at < ^cutoff)
-    |> maybe_filter_status(Keyword.fetch!(opts, :status))
-    |> order_by([candidate],
-      asc: candidate.last_seen_at,
-      asc: candidate.advertiser_name,
-      asc: candidate.feed_name,
-      asc: candidate.id
-    )
-    |> limit(^Keyword.fetch!(opts, :limit))
-    |> Repo.all()
-  end
 
   defp print_fit_gaps(opts) do
     candidates = fit_gap_candidates(opts)
@@ -161,11 +127,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
     |> Repo.all()
   end
 
-  defp maybe_filter_status(query, "all"), do: query
-
-  defp maybe_filter_status(query, status),
-    do: where(query, [candidate], candidate.review_status == ^status)
-
   defp maybe_filter_string(query, _field, nil), do: query
 
   defp maybe_filter_string(query, field, expected),
@@ -220,22 +181,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
     Enum.reduce(analyzed, initial, fn {_candidate, gaps}, counts ->
       Enum.reduce(gaps, counts, fn gap, acc -> Map.update!(acc, gap, &(&1 + 1)) end)
     end)
-  end
-
-  defp render_stale_candidate(%MerchantFeedCandidate{} = candidate) do
-    {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, candidate.id)
-
-    [
-      {:candidate_id, candidate_id},
-      {:provider_feed_id, candidate.provider_feed_id},
-      {:advertiser_id, candidate.advertiser_id},
-      {:advertiser_name, candidate.advertiser_name},
-      {:review_status, candidate.review_status},
-      {:product_count, candidate.product_count},
-      {:last_seen_at, candidate.last_seen_at},
-      {:age_hours, age_hours(candidate.last_seen_at)}
-    ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
   end
 
   defp render_fit_gap_candidate({%MerchantFeedCandidate{} = candidate, gaps}) do
@@ -314,10 +259,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates do
 
   defp review_note_present?(note) when is_binary(note), do: String.trim(note) != ""
   defp review_note_present?(_note), do: false
-
-  defp age_hours(%DateTime{} = timestamp) do
-    DateTime.diff(DateTime.utc_now(), timestamp, :second) |> div(3600)
-  end
 
   defp format_markdown_cell(nil), do: ""
   defp format_markdown_cell(value) when is_integer(value), do: Integer.to_string(value)
