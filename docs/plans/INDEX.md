@@ -231,6 +231,13 @@ public contract while `Metadata`, `Categories`, and `Sitemaps` own the three
 planned responsibilities. Its exact characterization gate passes 13 tests,
 and full `mix ci` passes 905 backend tests at 83.56% coverage, 1,507 frontend
 tests, and all repository quality/build gates.
+Before claiming Alerts context decomposition, a nineteenth claim-floor audit
+promoted Taxonomy context decomposition. The 396-line stable facade still
+combines taxonomy registry, taxon hierarchy, use-case assignment, and
+category-alias behavior. Its direct Taxonomy and ingestion enrichment
+characterization gate passed 13 tests. The structural extraction preserves
+taxonomy, catalog, ingestion, SEO, GraphQL, and frontend policy and is
+path-disjoint from Alerts, Catalog, and Comparison Snapshots.
 
 Implementation plan references (non-dispatch):
 
@@ -252,6 +259,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -346,7 +354,7 @@ batch and should not be recreated or promoted.
   `Offers`, `PriceHistory`, and `TruthReads` own the focused implementations.
   Its direct and GraphQL characterization gate passes 39 tests; `OfferTruth`,
   pricing, alert, and ingestion policy stay unchanged.
-- SEO context decomposition is a path-disjoint structural successor: the
+- SEO context decomposition is complete: the
   stable `ProductCompare.Seo` facade remains caller-facing while metadata,
   category qualification, and sitemap behavior move into focused internal
   modules. Its direct, controller, and GraphQL characterization gate passes 13
@@ -363,6 +371,18 @@ batch and should not be recreated or promoted.
   `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
   characterization gate passes 106 tests; catalog, ingestion, taxonomy,
   GraphQL, and frontend policy stay unchanged.
+- Comparison Snapshots context decomposition is a path-disjoint structural
+  successor: the stable `ProductCompare.ComparisonSnapshots` facade remains
+  caller-facing while snapshot lifecycle, immutable evidence capture, and
+  payload hydration move into focused internal modules. Its direct and GraphQL
+  characterization gate passes 12 tests; snapshot, SEO, pricing,
+  recommendation, privacy, and frontend policy stay unchanged.
+- Taxonomy context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Taxonomy` facade remains caller-facing while taxonomy
+  registry, hierarchy, use-case assignment, and category-alias implementations
+  move into focused internal modules. Its direct Taxonomy and ingestion
+  enrichment characterization gate passes 13 tests; taxonomy, catalog,
+  ingestion, SEO, GraphQL, and frontend policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

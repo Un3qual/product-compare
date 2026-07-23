@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Claimed by: current detached worktree
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`

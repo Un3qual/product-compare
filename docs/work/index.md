@@ -1491,15 +1491,20 @@ tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
 TypeScript, both production builds, and the bundle contract. Alerts, Catalog,
 and Comparison Snapshots remain ready.
 
+Before claiming Alerts Context Decomposition on 2026-07-22, the coordinator
+validated Taxonomy Context Decomposition as a fourth independently shippable
+structural successor. Its 396-line stable facade combines taxonomy registry,
+taxon hierarchy, use-case assignment, and category-alias behavior; the direct
+Taxonomy and ingestion enrichment characterization gate passed 13 tests.
+Alerts was therefore claimed while Catalog, Comparison Snapshots, and Taxonomy
+remained ready.
+
 ## Active Work
 
-None.
+### Alerts Context Decomposition
 
-## Ready Work
-
-### 1. Alerts Context Decomposition
-
-Status: ready
+Status: active
+Claimed by: current detached worktree
 Lane: Alerts context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Alerts` remains the stable caller-facing
@@ -1552,7 +1557,9 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Catalog Context Decomposition
+## Ready Work
+
+### 1. Catalog Context Decomposition
 
 Status: ready
 Lane: Catalog context decomposition
@@ -1615,7 +1622,7 @@ implementation responsibility has one focused owner, the exact 106-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. Comparison Snapshots Context Decomposition
+### 2. Comparison Snapshots Context Decomposition
 
 Status: ready
 Lane: Comparison snapshots context decomposition
@@ -1666,6 +1673,62 @@ Verification:
 
 Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused owner, the exact 12-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 3. Taxonomy Context Decomposition
+
+Status: ready
+Lane: Taxonomy context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Taxonomy` remains the stable caller-facing
+context while taxonomy registry, taxon hierarchy, use-case assignment, and
+category-alias implementations live in focused internal modules with unchanged
+public APIs, transactions, closure behavior, queries, errors, catalog guards,
+and ingestion mapping.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct Taxonomy and ingestion enrichment parity.
+Owned paths:
+
+- `lib/product_compare/taxonomy.ex`
+- `lib/product_compare/taxonomy/taxonomies.ex`
+- `lib/product_compare/taxonomy/hierarchy.ex`
+- `lib/product_compare/taxonomy/assignments.ex`
+- `lib/product_compare/taxonomy/aliases.ex`
+- `test/product_compare/taxonomy/use_case_and_guardrail_test.exs`
+- `test/product_compare/taxonomy/taxon_closure_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `docs/work/taxonomy-context-decomposition.md`
+
+Internal slices:
+
+- Taxonomy seeding, upserts, membership checks, and reads.
+- Taxon creation, updates, moves, closure maintenance, and hierarchy reads.
+- Product use-case assignment and removal.
+- Category-path normalization, alias persistence, and type-alias resolution.
+
+Prerequisites:
+
+- Existing `ProductCompare.Taxonomy` public functions, clauses, guards,
+  defaults, typespecs, values, queries, transactions, and errors remain
+  authoritative.
+- Preserve validation, closure rows, ordering, conflict targets, assignment
+  policy, normalization, alias resolution, and catalog and ingestion behavior.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, catalog filtering, ingestion enrichment, SEO,
+  frontend contracts, or taxonomy policy.
+
+Verification:
+
+- `mix test test/product_compare/taxonomy test/product_compare/ingestion/enrichment_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
