@@ -269,7 +269,8 @@ CJ Import.
 Comparison Snapshots context decomposition is complete. The 42-line stable
 facade retains the public contract while `Lifecycle`, `Capture`, and
 `PayloadCodec` own lifecycle persistence, immutable evidence projection, and
-payload decoding. Its exact characterization gate passes 12 tests, the
+payload decoding. Legacy and partial recommendation payloads now hydrate absent
+optional fields to `nil`. Its exact characterization gate passes 14 tests, the
 application caller scan finds no facade bypasses, and full `mix ci` passes all
 repository quality, test, and build gates.
 Before claiming Taxonomy context decomposition, a twenty-second claim-floor
@@ -468,8 +469,9 @@ batch and should not be recreated or promoted.
   `ProductCompare.ComparisonSnapshots` facade remains caller-facing while
   `Lifecycle`, `Capture`, and `PayloadCodec` own snapshot lifecycle, immutable
   evidence capture, and payload hydration. Its direct and GraphQL
-  characterization gate passes 12 tests; snapshot, SEO, pricing,
-  recommendation, privacy, and frontend policy stay unchanged.
+  characterization gate passes 14 tests; absent optional recommendation fields
+  hydrate to `nil`, while snapshot, SEO, pricing, recommendation, privacy, and
+  frontend policy stay unchanged.
 - Taxonomy context decomposition is complete: the stable
   `ProductCompare.Taxonomy` facade remains caller-facing while `Taxonomies`,
   `Hierarchy`, `Assignments`, and `Aliases` own the four focused
@@ -489,9 +491,10 @@ batch and should not be recreated or promoted.
   `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
   caller-facing while `Options`, `Runner`, and `Candidates` own input
   normalization, durable single-run imports, and reviewed-candidate batching.
-  Its dedicated characterization gate passes 19 tests; provider requests,
-  ingestion persistence, worker/resume callers, scheduling, deferred operator
-  scope, and product policy stay unchanged.
+  Its dedicated characterization gate passes 21 tests; runner failures emit
+  sanitized categories and stack traces, while provider requests, ingestion
+  persistence, worker/resume callers, scheduling, deferred operator scope, and
+  product policy stay unchanged.
 - CJ Runs task decomposition is complete: the
   stable `Mix.Tasks.ProductCompare.Ingestion.CjRuns` entry point remains
   caller-facing while option normalization, run reporting, and resume

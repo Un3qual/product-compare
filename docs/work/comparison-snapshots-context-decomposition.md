@@ -27,14 +27,17 @@ queries, owner scope, payloads, errors, SEO qualification, and GraphQL values.
 - `ProductCompare.ComparisonSnapshots.Capture` (183 lines) owns ordered product
   loading and immutable product, specification, offer, merchant, and
   recommendation evidence projection.
-- `ProductCompare.ComparisonSnapshots.PayloadCodec` (133 lines) owns persisted
+- `ProductCompare.ComparisonSnapshots.PayloadCodec` (136 lines) owns persisted
   payload hydration, Decimal and DateTime restoration, and recommendation
   result decoding.
 - The facade retains `hydrate/1`; the unused internal
   `Lifecycle.hydrate/1` forwarding API identified in final review was removed.
+- Post-review hardening makes legacy and partial recommendation payloads with
+  absent optional fields hydrate to explicit `nil` values without changing
+  newly published version-1 payloads.
 - The application caller scan found zero direct references to the three
   internal owners outside the facade and internal implementation paths.
-- The exact direct and GraphQL characterization command passed 12 tests with
+- The exact direct and GraphQL characterization command passed 14 tests with
   zero failures.
 - The full contract and repository gate passed without changing schemas,
   migrations, GraphQL SDL, SEO, pricing, recommendation, privacy, frontend, or
@@ -61,7 +64,7 @@ queries, owner scope, payloads, errors, SEO qualification, and GraphQL values.
 ## Verification
 
 - `mix test test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
-  passed 12 tests with zero failures.
+  passed 14 tests with zero failures.
 - `mix typecheck` passed.
 - `mix format --check-formatted` passed.
 - `mix work_queue.validate` passed with three ready rows.

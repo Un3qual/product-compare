@@ -1537,11 +1537,12 @@ ready.
 Comparison Snapshots Context Decomposition then completed on the current
 detached worktree. `ProductCompare.ComparisonSnapshots` is now a 42-line stable
 public facade; `Lifecycle`, `Capture`, and `PayloadCodec` own the three planned
-responsibilities without caller bypasses or behavior changes. Final review
-removed one unused internal hydration forwarding API. The exact focused gate
-passed 12 tests, and final `mix ci` passed the queue, formatting, typecheck,
-quality, backend/frontend test, Relay, TypeScript, production-build, and bundle
-gates.
+responsibilities without caller bypasses. Final review removed one unused
+internal hydration forwarding API, then hardened legacy and partial
+recommendation payload hydration so absent optional fields decode to `nil`.
+The exact focused gate passes 14 tests, and final `mix ci` passes the queue,
+formatting, typecheck, quality, backend/frontend test, Relay, TypeScript,
+production-build, and bundle gates.
 
 Taxonomy Context Decomposition then completed on the current detached
 worktree. `ProductCompare.Taxonomy` is now an 88-line stable public facade;
@@ -1564,10 +1565,12 @@ CJ Import Task Decomposition then completed on the current detached worktree.
 `Mix.Tasks.ProductCompare.Ingestion.CjImport` is now a 108-line stable facade;
 `Options`, `Runner`, and `Candidates` own normalization and credential
 readiness, durable single-source imports, and reviewed-candidate batching
-without caller bypasses or behavior changes. The exact focused gate passed 19
-tests, and final `mix ci` passed the queue, formatting, typecheck, quality,
-backend/frontend test, Relay, TypeScript, production-build, and bundle gates.
-CJ Runs, Catalog Resolver, and Listing Persistence decomposition remain ready.
+without caller bypasses. Post-review hardening added secret-safe runner failure
+categories and sanitized stack traces while preserving public results. The
+exact focused gate passes 21 tests, and final `mix ci` passes the queue,
+formatting, typecheck, quality, backend/frontend test, Relay, TypeScript,
+production-build, and bundle gates. CJ Runs, Catalog Resolver, and Listing
+Persistence decomposition remain ready.
 
 Before claiming CJ Runs Task Decomposition on 2026-07-23, the coordinator
 validated CJ Candidates Task Decomposition as a fourth independently shippable

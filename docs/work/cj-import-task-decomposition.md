@@ -13,8 +13,8 @@
 `Mix.Tasks.ProductCompare.Ingestion.CjImport` remains the stable manual,
 worker, and resume entry point while option normalization, durable single-run
 imports, and reviewed-candidate batching live in focused internal modules with
-unchanged CLI behavior, public results, durable run state, candidate policy,
-reports, errors, and credential safety.
+stable CLI behavior, public results, durable run state, candidate policy,
+reports, errors, credential safety, and secret-safe runner failure diagnostics.
 
 ## Ready Evidence
 
@@ -64,11 +64,13 @@ reports, errors, and credential safety.
   presentation plus the public `run/1` / `run_import/1` boundary; `Options`
   owns CLI parsing, normalization, and readiness; `Runner` owns durable imports
   and reports; and `Candidates` owns reviewed-candidate batching.
-- Exact source sizes: facade 108 lines; `Options` 152 lines; `Runner` 213
-  lines; `Candidates` 198 lines (671 lines total across the four modules).
+- Exact source sizes: facade 108 lines; `Options` 152 lines; `Runner` 258
+  lines; `Candidates` 198 lines (716 lines total across the four modules).
+- Post-review hardening logs runner exception categories and sanitized stack
+  traces without exposing provider-controlled exception or caught values.
 - Characterization: `mix test
   test/mix/tasks/product_compare_ingestion_cj_import_test.exs` passed with
-  exactly 19 tests and 0 failures.
+  exactly 21 tests and 0 failures.
 - Full gates passed: `mix typecheck`; `mix format --check-formatted`; `mix
   work_queue.validate` (3 ready rows; rerun with the permitted local PubSub
   socket escalation after the sandbox denied the socket); `mix ci`; and `git
