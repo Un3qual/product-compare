@@ -1,18 +1,53 @@
 defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   @moduledoc false
 
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
+
   alias ProductCompare.CommerceAttribution
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.GraphQL.Loader
+  alias ProductCompareSchemas.CommerceAttribution.CommerceLink
 
   @invalid_filters_error "invalid revenue summary filters"
   @invalid_origin_message "cross-origin request rejected"
   @public_min_conversions 2
 
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
+          {:ok, map()}
+          | {:error, String.t() | GraphQLErrors.top_level_error()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def revenue_summary(
+        _parent,
+        args,
+        %{context: %{loader: %Dataloader{} = loader}} = resolution
+      ) do
+    input = Input.fetch_value(args || %{}, :input, %{}) || %{}
+
+    with {:ok, operator} <- Authorization.require_operator(resolution),
+         {:ok, filters} <- normalize_revenue_summary_input(input) do
+      source = Loader.operator_reporting_source()
+      connection_args = %{}
+      batch_key = {:revenue_summary, operator.id, filters, connection_args}
+
+      loader
+      |> Dataloader.load(source, batch_key, :root)
+      |> on_load(fn loader ->
+        loader
+        |> Dataloader.get(source, batch_key, :root)
+        |> revenue_summary_result()
+      end)
+    else
+      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
+        {:error, GraphQLErrors.authorization_error(reason)}
+
+      {:error, _reason} ->
+        {:error, @invalid_filters_error}
+    end
+  end
+
   def revenue_summary(_parent, args, resolution) do
     input = Input.fetch_value(args || %{}, :input, %{}) || %{}
 
@@ -75,16 +110,20 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
     with {:ok, input} <-
            Input.decode_optional_integer_id_field(input, :merchant_id, :merchant, "merchant"),
          {:ok, input} <-
-           Input.decode_optional_integer_id_field(input, :product_id, :product, "product") do
+           Input.decode_optional_integer_id_field(input, :product_id, :product, "product"),
+         {:ok, currency} <- normalize_revenue_currency(Input.fetch_value(input, :currency)),
+         {:ok, from} <- normalize_revenue_date(Input.fetch_value(input, :from)),
+         {:ok, network} <- normalize_revenue_network(Input.fetch_value(input, :network)),
+         {:ok, to} <- normalize_revenue_date(Input.fetch_value(input, :to)) do
       filters =
         %{
-          currency: Input.fetch_value(input, :currency),
-          from: Input.fetch_value(input, :from),
+          currency: currency,
+          from: from,
           merchant_id: Input.fetch_value(input, :merchant_id),
           min_conversions: @public_min_conversions,
-          network: Input.fetch_value(input, :network),
+          network: network,
           product_id: Input.fetch_value(input, :product_id),
-          to: Input.fetch_value(input, :to)
+          to: to
         }
         |> drop_nil_values()
 
@@ -95,6 +134,49 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttributionResolver do
   end
 
   defp normalize_revenue_summary_input(_input), do: {:error, :invalid_input}
+
+  defp normalize_revenue_currency(nil), do: {:ok, nil}
+
+  defp normalize_revenue_currency(currency) when is_binary(currency) do
+    currency = String.upcase(currency)
+
+    if String.match?(currency, ~r/^[A-Z]{3}$/),
+      do: {:ok, currency},
+      else: {:error, :invalid_currency}
+  end
+
+  defp normalize_revenue_currency(_currency), do: {:error, :invalid_currency}
+
+  defp normalize_revenue_date(nil), do: {:ok, nil}
+  defp normalize_revenue_date(%Date{} = date), do: {:ok, date}
+
+  defp normalize_revenue_date(%DateTime{} = datetime) do
+    {:ok, datetime |> DateTime.shift_zone!("Etc/UTC") |> DateTime.to_date()}
+  end
+
+  defp normalize_revenue_date(date) when is_binary(date), do: Date.from_iso8601(date)
+  defp normalize_revenue_date(_date), do: {:error, :invalid_date}
+
+  defp normalize_revenue_network(nil), do: {:ok, nil}
+
+  defp normalize_revenue_network(network) when is_atom(network) do
+    if network in CommerceLink.networks(),
+      do: {:ok, network},
+      else: {:error, :invalid_network}
+  end
+
+  defp normalize_revenue_network(network) when is_binary(network) do
+    case Enum.find(CommerceLink.networks(), &(Atom.to_string(&1) == network)) do
+      nil -> {:error, :invalid_network}
+      network -> {:ok, network}
+    end
+  end
+
+  defp normalize_revenue_network(_network), do: {:error, :invalid_network}
+
+  defp revenue_summary_result({:ok, summary}), do: graphql_summary(summary)
+  defp revenue_summary_result({:error, _reason}), do: {:error, @invalid_filters_error}
+  defp revenue_summary_result(_result), do: {:error, @invalid_filters_error}
 
   defp decode_merchant_product_id(input) when is_map(input) do
     input

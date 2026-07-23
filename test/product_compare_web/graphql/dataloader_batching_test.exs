@@ -398,6 +398,125 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end
     end
 
+    test "operator active-coupon aliases preserve values and fixed SELECT budgets as aliases grow",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+      anchor = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      records =
+        operator_active_coupon_records(
+          "#{test_name}-#{System.unique_integer([:positive])}",
+          anchor
+        )
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_active_coupon_alias_query(records, 2), %{})
+        end)
+
+      assert_operator_active_coupon_alias_values(two_response, records, 2)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_active_coupon_alias_query(records, 4), %{})
+        end)
+
+      assert_operator_active_coupon_alias_values(four_response, records, 4)
+
+      assert {operator_active_coupon_query_budget(two_queries),
+              operator_active_coupon_query_budget(four_queries)} == {1, 1}
+    end
+
+    test "operator active-coupon aliases keep merchant, observation time, and Relay page keys distinct while identical aliases coalesce",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+      anchor = DateTime.utc_now() |> DateTime.truncate(:second)
+
+      records =
+        operator_active_coupon_records(
+          "#{test_name}-#{System.unique_integer([:positive])}",
+          anchor
+        )
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_active_coupon_mixed_key_query(records), %{})
+        end)
+
+      assert_operator_active_coupon_mixed_key_values(response, records)
+      assert operator_active_coupon_query_budget(queries) == 4
+    end
+
+    test "operator revenue-summary aliases preserve values and fixed SELECT budgets as aliases grow",
+         %{conn: conn} do
+      operator = AccountsFixtures.operator_fixture()
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {two_response, two_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_alias_query(2), %{})
+        end)
+
+      assert_operator_revenue_summary_alias_values(two_response, 2)
+
+      {four_response, four_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_alias_query(4), %{})
+        end)
+
+      assert_operator_revenue_summary_alias_values(four_response, 4)
+
+      expected_budget = %{commerce_conversions: 2, commerce_click_sessions: 1}
+
+      assert {operator_revenue_summary_query_budget(two_queries),
+              operator_revenue_summary_query_budget(four_queries)} ==
+               {expected_budget, expected_budget}
+    end
+
+    test "operator revenue-summary aliases coalesce normalized inputs while distinct filters stay isolated",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+
+      merchant =
+        merchant_fixture(%{
+          name: "#{test_name} Revenue Merchant",
+          domain:
+            canonical_slug("#{test_name}-#{System.unique_integer([:positive])}-revenue") <>
+              ".example"
+        })
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, operator_revenue_summary_mixed_key_query(merchant), %{})
+        end)
+
+      assert_operator_revenue_summary_mixed_key_values(response, merchant)
+
+      assert operator_revenue_summary_query_budget(queries) == %{
+               commerce_conversions: 5,
+               commerce_click_sessions: 3
+             }
+    end
+
     test "authorized node aliases keep values and SELECT budgets fixed per schema as aliases grow",
          %{conn: conn, test: test_name} do
       owner = AccountsFixtures.operator_fixture()
@@ -1955,6 +2074,95 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
   end
 
+  defp operator_active_coupon_alias_query(records, alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        operator_active_coupon_selection(
+          "activeCoupons#{index}",
+          records.merchant,
+          records.anchor,
+          1,
+          nil
+        )
+      end)
+
+    """
+    query OperatorActiveCouponAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_active_coupon_mixed_key_query(records) do
+    """
+    query OperatorActiveCouponMixedKeys {
+      #{operator_active_coupon_selection("sameOne", records.merchant, records.anchor, 1, nil)}
+      #{operator_active_coupon_selection("sameTwo", records.merchant, records.anchor, 1, nil)}
+      #{operator_active_coupon_selection("nextPage", records.merchant, records.anchor, 1, cursor_for(0))}
+      #{operator_active_coupon_selection("alternateTime", records.merchant, records.past_anchor, 1, nil)}
+      #{operator_active_coupon_selection("alternateMerchant", records.other_merchant, records.anchor, 1, nil)}
+    }
+    """
+  end
+
+  defp operator_active_coupon_selection(alias_name, merchant, at, first, after_cursor) do
+    after_argument = if after_cursor, do: ", after: \"#{after_cursor}\"", else: ""
+
+    """
+    #{alias_name}: activeCoupons(
+      input: {
+        merchantId: "#{relay_id(:merchant, merchant.id)}"
+        at: "#{DateTime.to_iso8601(at)}"
+        first: #{first}
+        #{after_argument}
+      }
+    ) {
+      coupons {
+        edges { cursor node { id code discountType } }
+        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
+      }
+    }
+    """
+  end
+
+  defp operator_revenue_summary_alias_query(alias_count) do
+    selections =
+      Enum.map_join(1..alias_count, "\n", fn index ->
+        operator_revenue_summary_selection("revenueSummary#{index}", nil)
+      end)
+
+    """
+    query OperatorRevenueSummaryAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp operator_revenue_summary_mixed_key_query(merchant) do
+    """
+    query OperatorRevenueSummaryMixedKeys {
+      #{operator_revenue_summary_selection("sameOne", "{ currency: \"usd\" }")}
+      #{operator_revenue_summary_selection("sameTwo", "{ currency: \"USD\" }")}
+      #{operator_revenue_summary_selection("unfiltered", nil)}
+      #{operator_revenue_summary_selection("merchant", "{ merchantId: \"#{relay_id(:merchant, merchant.id)}\" }")}
+    }
+    """
+  end
+
+  defp operator_revenue_summary_selection(alias_name, input) do
+    input_argument = if input, do: "(input: #{input})", else: ""
+
+    """
+    #{alias_name}: revenueSummary#{input_argument} {
+      filters { currency from merchantId network productId to }
+      metrics {
+        averagePaidPrice clicks commissionRevenue conversions currency grossOrderValue
+      }
+      suppression { suppressed threshold }
+    }
+    """
+  end
+
   defp operator_management_field_with_invalid_connection(
          :specification_correction_moderation_queue,
          :invalid_first
@@ -2758,6 +2966,18 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Enum.count(queries, &query_targets_table?(&1, table))
   end
 
+  defp operator_active_coupon_query_budget(queries) do
+    Enum.count(queries, &query_targets_table?(&1, :coupons))
+  end
+
+  defp operator_revenue_summary_query_budget(queries) do
+    %{
+      commerce_conversions: Enum.count(queries, &query_targets_table?(&1, :commerce_conversions)),
+      commerce_click_sessions:
+        Enum.count(queries, &query_targets_table?(&1, :commerce_click_sessions))
+    }
+  end
+
   defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
   defp operator_management_mixed_key_budget(:merchant_feed_candidates), do: 4
 
@@ -2834,6 +3054,130 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end)
 
     assert response == %{"data" => expected_data}
+  end
+
+  defp assert_operator_active_coupon_alias_values(response, records, alias_count) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    expected = operator_active_coupon_page(records.first, 0, true, false)
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["activeCoupons#{index}"] == %{"coupons" => expected}
+    end)
+  end
+
+  defp assert_operator_active_coupon_mixed_key_values(response, records) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    assert data["sameOne"] == data["sameTwo"]
+
+    assert data["sameOne"] == %{
+             "coupons" => operator_active_coupon_page(records.first, 0, true, false)
+           }
+
+    assert data["nextPage"] == %{
+             "coupons" => operator_active_coupon_page(records.second, 1, false, true)
+           }
+
+    assert data["alternateTime"] == %{"coupons" => empty_connection_page()}
+
+    assert data["alternateMerchant"] == %{
+             "coupons" => operator_active_coupon_page(records.other_coupon, 0, false, false)
+           }
+  end
+
+  defp operator_active_coupon_page(coupon, cursor_index, has_next, has_previous) do
+    cursor = cursor_for(cursor_index)
+
+    %{
+      "edges" => [
+        %{
+          "cursor" => cursor,
+          "node" => %{
+            "id" => relay_id(:coupon, coupon.id),
+            "code" => coupon.code,
+            "discountType" => coupon.discount_type |> Atom.to_string() |> String.upcase()
+          }
+        }
+      ],
+      "pageInfo" => %{
+        "hasNextPage" => has_next,
+        "hasPreviousPage" => has_previous,
+        "startCursor" => cursor,
+        "endCursor" => cursor
+      }
+    }
+  end
+
+  defp empty_connection_page do
+    %{
+      "edges" => [],
+      "pageInfo" => %{
+        "hasNextPage" => false,
+        "hasPreviousPage" => false,
+        "startCursor" => nil,
+        "endCursor" => nil
+      }
+    }
+  end
+
+  defp assert_operator_revenue_summary_alias_values(response, alias_count) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    expected = empty_operator_revenue_summary()
+
+    Enum.each(1..alias_count, fn index ->
+      assert data["revenueSummary#{index}"] == expected
+    end)
+  end
+
+  defp assert_operator_revenue_summary_mixed_key_values(response, merchant) do
+    assert %{"data" => data} = response
+    refute Map.has_key?(response, "errors")
+
+    assert data["sameOne"] == data["sameTwo"]
+
+    assert data["sameOne"] ==
+             empty_operator_revenue_summary(%{"currency" => "USD"})
+
+    assert data["unfiltered"] == empty_operator_revenue_summary()
+
+    assert data["merchant"] ==
+             empty_operator_revenue_summary(%{
+               "merchantId" => relay_id(:merchant, merchant.id)
+             })
+  end
+
+  defp empty_operator_revenue_summary(filter_overrides \\ %{}) do
+    %{
+      "filters" =>
+        Map.merge(
+          %{
+            "currency" => nil,
+            "from" => nil,
+            "merchantId" => nil,
+            "network" => nil,
+            "productId" => nil,
+            "to" => nil
+          },
+          filter_overrides
+        ),
+      "metrics" => %{
+        "averagePaidPrice" => nil,
+        "clicks" => nil,
+        "commissionRevenue" => nil,
+        "conversions" => nil,
+        "currency" => nil,
+        "grossOrderValue" => nil
+      },
+      "suppression" => %{
+        "suppressed" => true,
+        "threshold" => 2
+      }
+    }
   end
 
   defp assert_operator_management_mixed_key_values(response, expected) do
@@ -4783,6 +5127,60 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp operator_active_coupon_records(prefix, anchor) do
+    merchant =
+      merchant_fixture(%{
+        name: "#{prefix} Merchant",
+        domain: canonical_slug("#{prefix}-merchant") <> ".example"
+      })
+
+    other_merchant =
+      merchant_fixture(%{
+        name: "#{prefix} Other Merchant",
+        domain: canonical_slug("#{prefix}-other-merchant") <> ".example"
+      })
+
+    {:ok, first} =
+      Affiliate.create_coupon(%{
+        merchant_id: merchant.id,
+        code: "#{prefix}-FIRST",
+        discount_type: :amount,
+        discount_value: Decimal.new("5"),
+        currency: "USD",
+        valid_from: DateTime.add(anchor, -60, :second),
+        valid_to: DateTime.add(anchor, 3_600, :second)
+      })
+
+    {:ok, second} =
+      Affiliate.create_coupon(%{
+        merchant_id: merchant.id,
+        code: "#{prefix}-SECOND",
+        discount_type: :percent,
+        discount_value: Decimal.new("10"),
+        valid_from: DateTime.add(anchor, -60, :second),
+        valid_to: DateTime.add(anchor, 7_200, :second)
+      })
+
+    {:ok, other_coupon} =
+      Affiliate.create_coupon(%{
+        merchant_id: other_merchant.id,
+        code: "#{prefix}-OTHER",
+        discount_type: :other,
+        valid_from: DateTime.add(anchor, -60, :second),
+        valid_to: DateTime.add(anchor, 3_600, :second)
+      })
+
+    %{
+      anchor: anchor,
+      past_anchor: DateTime.add(anchor, -3_600, :second),
+      merchant: merchant,
+      other_merchant: other_merchant,
+      first: first,
+      second: second,
+      other_coupon: other_coupon
+    }
   end
 
   defp comparison_root_record(prefix, index) do

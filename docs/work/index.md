@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-21
+Updated: 2026-07-22
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1319,179 +1319,281 @@ the exact focused four-suite gate passed 95 tests with 0 failures. Pre-closeout
 full `mix ci` exited 0 with 895 backend tests and 1,507 frontend tests, and the
 ExDNA unchanged gate passed. The three ready successors remain dispatchable.
 
+Before claiming Bounded Operator Reporting Root GraphQL Reads on 2026-07-22,
+the coordinator verified a fourth independently shippable structural outcome.
+The 1,285-line `ProductCompare.Discussions` context still owns read/query,
+legacy CRUD, authenticated submission/owner policy, and operator moderation
+implementations behind one stable public boundary. Discussions Context
+Decomposition was promoted after its direct context, SEO, community GraphQL,
+and Dataloader characterization gate passed 104 tests. The operator-reporting
+claim therefore leaves three complete ready rows.
+
+Bounded Operator Reporting Root GraphQL Reads then completed on the current
+detached worktree. Active-coupon aliases moved from 2/4 to 1/1 coupon SELECTs,
+and revenue-summary aliases moved from conversion/click budgets of 4/2 and 8/4
+to a fixed 2/1. Normalized identical inputs coalesce while merchant, time,
+filter, and Relay-page keys remain isolated. Direct resolver fallbacks,
+authorization, validation, pagination, suppression, populated metrics, and
+mixed-currency errors retain their prior behavior. The three ready successors
+remain dispatchable, and the loader-decomposition row now includes the
+thirteenth operator-reporting KV source.
+
+Before claiming GraphQL Request Loader Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,212-line `ProductCompare.Specs` facade still owns definition upserts, typed-
+value normalization, claim/import workflows, corrections/moderation, and read
+projections. Specs Context Decomposition was promoted after its path-disjoint
+direct consumer characterization gate passed 79 tests. The loader claim
+therefore leaves three complete ready rows.
+
+GraphQL Request Loader Decomposition then completed on the current detached
+worktree. `Loader` remains the sole resolver-facing assembly facade and stable
+source-key owner, while `AssociationSources`, `ParentSources`, and
+`RootSources` own the two Ecto and thirteen KV source implementations. The
+exact focused gate passed 222 tests, and full `mix ci` passed 902 backend tests,
+1,507 frontend tests, 83.82% coverage, ExDNA at 6/6, Dialyzer, Relay, builds,
+and the bundle budget. The three ready successors remain dispatchable.
+
+Before claiming GraphQL Schema Type Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,041-line `ProductCompare.CommerceAttribution` context still owns tracked
+click/redirect, conversion/purchase-fact, and revenue-summary implementations
+behind one stable public boundary. Commerce Attribution Context Decomposition
+was promoted after its direct context, destination-policy, redirect-controller,
+commerce-click GraphQL, and revenue GraphQL characterization gate passed 81
+tests. The schema claim therefore leaves three complete ready rows.
+
+GraphQL Schema Type Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Schema` is now a 689-line root-operation and
+runtime facade, while Common, Accounts, Commerce, Catalog, and Trust notation
+modules own all 151 declarations. Ordered selective imports preserve the
+historical Absinthe registration order and the checked-in SDL byte for byte.
+The full GraphQL gate passed 307 tests, and `mix ci` passed 902 backend tests,
+1,507 frontend tests, Relay validation, TypeScript, and both production builds.
+The three ready successors remain dispatchable.
+
+Before claiming Discussions Context Decomposition on 2026-07-22, the
+coordinator verified a fourth independently shippable structural outcome. The
+1,291-line `ProductCompare.Ingestion` facade still owns import-run lifecycle,
+merchant-feed-candidate policy, merchant identity, and canonical normalized-
+listing persistence behind one stable public boundary. Ingestion Context
+Decomposition was promoted after its direct ingestion, enrichment,
+reconciliation, and merchant-feed-candidate GraphQL characterization gate
+passed 60 tests. The Discussions claim therefore leaves three complete ready
+rows without reopening deferred provider, dashboard, or operator work.
+
+Discussions Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions` is now a 252-line stable public facade;
+`Reads`, `Crud`, `Submissions`, and `Moderation` own the four planned
+responsibilities without caller bypasses. The exact focused gate passed 108
+tests, and the final `mix ci` passed 902 backend tests at 83.77% coverage,
+1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract. The three ready
+successors remain dispatchable.
+
+Before claiming Specs Context Decomposition on 2026-07-22, the coordinator
+verified a fourth independently shippable structural outcome. The 721-line
+`ProductCompare.Accounts` facade still owns user provisioning/bootstrap,
+API-token lifecycle, and reputation behavior alongside the existing focused
+`UserAuth` owner. Accounts Context Decomposition was promoted after its direct
+Accounts, seed, API-token/session GraphQL, and authorized node characterization
+gate passed 112 tests. The Specs claim therefore leaves three complete ready
+rows without changing browser auth, authorization, seeds, or transport scope.
+
+Specs Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Specs` is now a 248-line stable public facade; `Definitions`,
+`TypedValues`, `Claims`, `Corrections`, and `Reads` own the five planned
+responsibilities without caller bypasses. The exact focused gate passed 81
+tests, including final-review regressions for invalid-changeset action parity.
+The final `mix ci` passed 904 backend tests at 83.64% coverage, 1,507 frontend
+tests, ExDNA at the unchanged 6/6 budget, Reach, Dialyzer, Relay, TypeScript,
+both production builds, and the bundle contract. The three ready successors
+remain dispatchable.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Bounded Operator Reporting Root GraphQL Reads
+### 1. Commerce Attribution Context Decomposition
 
 Status: ready
-Lane: Bounded operator reporting root GraphQL reads
-Plan: `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
-Batch outcome: identical operator-only active-coupon and revenue-summary root
-aliases reuse one authorized read per normalized input within a GraphQL
-request without changing authorization, time/filter semantics, pagination,
-suppression, metrics, errors, or schema behavior.
-Next action: route both remaining operator reporting roots through one
-authorization-keyed request source and prove semantic plus fixed-budget parity
-as identical aliases grow.
+Lane: Commerce attribution context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.CommerceAttribution` remains the stable
+caller-facing context while click/redirect, conversion/purchase-fact, and
+revenue-summary implementations live in focused internal modules with
+unchanged public APIs, transactions, destination safety, attribution conflict
+handling, query semantics, suppression, errors, and GraphQL behavior.
+Next action: extract the three implementation responsibilities behind explicit
+facade wrappers and prove direct context, controller, GraphQL, and destination-
+policy parity.
 Owned paths:
 
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
-- `lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `lib/product_compare/commerce_attribution.ex`
+- `lib/product_compare/commerce_attribution/clicks.ex`
+- `lib/product_compare/commerce_attribution/conversions.ex`
+- `lib/product_compare/commerce_attribution/revenue.ex`
+- `test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+- `test/product_compare/commerce_attribution/destination_url_test.exs`
+- `test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
+- `test/product_compare_web/graphql/commerce_click_test.exs`
 - `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/bounded-operator-reporting-root-graphql-reads.md`
+- `docs/work/commerce-attribution-context-decomposition.md`
 
 Internal slices:
 
-- Operator-authorized active-coupon connection request reuse.
-- Operator-authorized revenue-summary aggregate request reuse.
-- Growing-alias query budgets plus authorization and semantic parity.
+- Commerce-link, click-session, tracked-click, and redirect ownership.
+- Conversion attribution, replay/conflict, and purchase-fact ownership.
+- Revenue query, normalization, aggregation, and suppression ownership.
+- Public-contract, controller, GraphQL, type, and full-suite parity.
 
 Prerequisites:
 
-- Existing operator gates, input normalization, query ordering, connection
-  projection, revenue suppression, and GraphQL projections remain authoritative.
-- Every cache key includes the operator ID, field kind, normalized filters, and
-  connection arguments; omitted coupon observation time is sampled once inside
-  the request batch.
-- This row executes serially with other Loader ownership and does not reopen
-  deferred ingestion dashboard/operator UI work.
+- Existing `ProductCompare.CommerceAttribution` public functions, arities,
+  defaults, typespecs, values, and errors remain authoritative.
+- Preserve transactions, conflict targets, URL policy, attribution replay and
+  conflicts, revenue queries, date boundaries, mixed-currency errors, and
+  suppression.
+- Keep controllers, resolvers, adapters, and other contexts dependent only on
+  the facade; do not change schemas, migrations, GraphQL SDL, frontend
+  behavior, provider policy, or deferred ingestion/operator work.
 
 Verification:
 
-- `mix test test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare/commerce_attribution/destination_url_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
+- `mix ci`
 - `git diff --check`
 
-Exit condition: identical two- and four-alias sets preserve exact coupon pages,
-revenue summaries, authorization failures, validation errors, and nested values
-while each root's direct SELECT budget remains fixed.
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, the exact 81-
+test characterization gate and repository gates pass, and no caller bypasses
+the facade.
 
-### 2. GraphQL Request Loader Decomposition
+### 2. Ingestion Context Decomposition
 
 Status: ready
-Lane: GraphQL request loader decomposition
-Plan: `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
-Batch outcome: the request-scoped GraphQL loader remains one stable resolver-
-facing facade while association, parent-collection, and root-request source
-construction and callbacks live in focused modules with unchanged source keys,
-values, errors, authorization boundaries, timestamps, and query budgets.
-Next action: extract the loader's two Ecto and twelve current KV source domains
-by responsibility without changing resolver APIs or GraphQL behavior.
-`RootSources` owns the completed discovery-root constructor and callback while
-`Loader` keeps and pairs its stable discovery-root key constant.
+Lane: Ingestion context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Ingestion` remains the stable caller-facing
+context while import-run lifecycle, merchant-feed-candidate policy, merchant
+identity, and canonical normalized-listing persistence implementations live in
+focused internal modules with unchanged public APIs, transactions, conflicts,
+freshness, provenance, reconciliation, errors, and GraphQL behavior.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct ingestion, enrichment, reconciliation, and
+merchant-feed-candidate GraphQL parity.
 Owned paths:
 
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/graphql/loader/association_sources.ex`
-- `lib/product_compare_web/graphql/loader/parent_sources.ex`
-- `lib/product_compare_web/graphql/loader/root_sources.ex`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `test/product_compare_web/graphql/recommendations_test.exs`
-- `test/product_compare_web/graphql/source_artifact_query_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `test/product_compare_web/graphql/saved_comparisons_test.exs`
+- `lib/product_compare/ingestion.ex`
+- `lib/product_compare/ingestion/runs.ex`
+- `lib/product_compare/ingestion/feed_candidates.ex`
+- `lib/product_compare/ingestion/merchant_identities.ex`
+- `lib/product_compare/ingestion/listing_persistence.ex`
+- `test/product_compare/ingestion/ingestion_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/ingestion/reconciliation_test.exs`
 - `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `docs/work/graphql-request-loader-decomposition.md`
+- `docs/work/ingestion-context-decomposition.md`
 
 Internal slices:
 
-- Association and parent-collection source extraction.
-- Root-request source extraction with stable facade keys.
-- Semantic, authorization, timestamp, and fixed-budget parity.
+- Import-run lifecycle and reconciliation ownership extraction.
+- Merchant-feed-candidate query, ordering, and review ownership extraction.
+- Merchant identity resolution and freshness-safe conflict ownership.
+- Canonical normalized-listing transaction and persistence ownership.
 
 Prerequisites:
 
-- Existing Loader source keys and resolver-facing accessors remain authoritative.
-- Execute serially with every other row that owns Loader; include compatible
-  sources added before claim in the same responsibility boundary.
-- Before claim, the coordinator must refresh the explicit focused-suite list
-  if either higher-ranked Loader batch has added a source.
-- This is a behavior-preserving decomposition and does not change domain SQL,
-  public schema, or direct resolver fallbacks.
+- Existing `ProductCompare.Ingestion` public functions, arities, typespecs,
+  values, and errors remain authoritative.
+- Preserve transactions, conflict targets, freshness rules, replay,
+  reconciliation, product identity, enrichment, provenance, offer and price
+  persistence, and alert enqueueing.
+- Keep Mix tasks, jobs, resolvers, loaders, fixtures, and tests dependent only
+  on the facade; do not change schemas, migrations, GraphQL SDL, providers,
+  scheduling, product policy, or deferred ingestion/operator scope.
 
 Verification:
 
-- `mix test test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/source_artifact_query_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
 
-Exit condition: the facade only assembles sources and exposes stable keys, each
-source callback has one focused module owner, and all semantic plus query-budget
-gates pass without resolver or schema changes.
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused internal owner, the exact 60-
+test characterization gate and repository gates pass, and no caller bypasses
+the facade.
 
-### 3. GraphQL Schema Type Decomposition
+### 3. Accounts Context Decomposition
 
 Status: ready
-Lane: GraphQL schema type decomposition
-Plan: `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
-Batch outcome: the 2,004-line GraphQL schema remains one stable root-operation
-facade while its 151 type, input, enum, and interface definitions move into
-focused Absinthe notation modules with byte-for-byte SDL and unchanged runtime
-behavior.
-Next action: extract shared/account, commerce, catalog, and trust/community type
-declarations by domain while retaining root operations, context, and plugins in
-`ProductCompareWeb.Schema`.
+Lane: Accounts context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Accounts` remains the stable caller-facing
+context while user provisioning, API-token lifecycle, and reputation
+implementations live in focused internal modules alongside the existing
+`UserAuth` owner, with unchanged public APIs, auth behavior, transactions,
+locks, errors, and GraphQL behavior.
+Next action: extract the three remaining implementation responsibilities behind
+explicit facade wrappers and prove direct Accounts, seed, GraphQL auth, and
+authorized node parity.
 Owned paths:
 
-- `lib/product_compare_web/schema.ex`
-- `lib/product_compare_web/schema/types/common.ex`
-- `lib/product_compare_web/schema/types/accounts.ex`
-- `lib/product_compare_web/schema/types/commerce.ex`
-- `lib/product_compare_web/schema/types/catalog.ex`
-- `lib/product_compare_web/schema/types/trust.ex`
-- `test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `docs/work/graphql-schema-type-decomposition.md`
+- `lib/product_compare/accounts.ex`
+- `lib/product_compare/accounts/users.ex`
+- `lib/product_compare/accounts/api_tokens.ex`
+- `lib/product_compare/accounts/reputation.ex`
+- `lib/product_compare/accounts/user_auth.ex`
+- `test/product_compare/accounts/api_token_test.exs`
+- `test/product_compare/accounts/create_user_test.exs`
+- `test/product_compare/accounts/reputation_upsert_test.exs`
+- `test/product_compare/accounts/user_auth_schema_test.exs`
+- `test/product_compare/accounts/user_auth_test.exs`
+- `test/product_compare/accounts/user_email_token_test.exs`
+- `test/product_compare/accounts/user_session_token_schema_test.exs`
+- `test/product_compare/repo/seeds_test.exs`
+- `test/product_compare_web/graphql/api_token_auth_test.exs`
+- `test/product_compare_web/graphql/session_auth_test.exs`
+- `test/product_compare_web/graphql/node_query_test.exs`
+- `docs/work/accounts-context-decomposition.md`
 
 Internal slices:
 
-- Shared, account, and commerce notation-module extraction.
-- Catalog and trust/community notation-module extraction.
-- Exact SDL, module-boundary, focused GraphQL, and full-suite parity.
+- User creation, lookup, trusted bootstrap, and password-repair ownership.
+- API-token issue, authentication, query, rotation, and revocation ownership.
+- Reputation persistence and bounded read ownership.
+- Existing `UserAuth`, configured-delivery, facade, GraphQL, and seed parity.
 
 Prerequisites:
 
-- `assets/schema.graphql` and the live schema snapshot are authoritative and
-  must remain byte-for-byte unchanged.
-- Root query/mutation operations, `context/1`, and `plugins/0` remain in the
-  schema facade; only declarations move.
-- This row is path-disjoint from the completed discovery-root work and the ready
-  request-loader decomposition.
+- Existing `ProductCompare.Accounts` public functions, arities, defaults,
+  typespecs, values, and errors remain authoritative.
+- Preserve normalization, password hashes, transactions, savepoints, locks,
+  test hooks, token cryptography/defaults/filters, and reputation pagination.
+- Keep every caller dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, browser auth, authorization, seeds, or transport.
 
 Verification:
 
-- `mix test test/product_compare_web/graphql/schema_snapshot_test.exs`
-- `mix test test/product_compare_web/graphql`
+- `mix test test/product_compare/accounts test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/repo/seeds_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
 
-Exit condition: the facade owns only runtime/root-operation concerns, five
-domain notation modules own all declarations, the checked-in SDL is unchanged,
-and focused plus full GraphQL and repository gates pass.
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 112-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

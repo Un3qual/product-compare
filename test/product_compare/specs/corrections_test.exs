@@ -7,8 +7,30 @@ defmodule ProductCompare.Specs.CorrectionsTest do
   alias ProductCompare.Specs
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   describe "propose_correction/5" do
+    test "returns the claim insert action without persisting a claim or correction" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+      attribute = SpecsFixtures.attribute_fixture(%{data_type: :text})
+
+      assert {:error, %Ecto.Changeset{action: :insert}} =
+               Specs.propose_correction(
+                 product.id,
+                 attribute.id,
+                 user.id,
+                 %{value_text: %{invalid: "value"}},
+                 %{
+                   reason: "The published specification is incorrect.",
+                   explanation: "Checked against the product label."
+                 }
+               )
+
+      assert Repo.aggregate(ProductAttributeClaim, :count, :id) == 0
+      assert Repo.aggregate(SpecificationCorrection, :count, :id) == 0
+    end
+
     test "creates a pending typed user claim without changing current truth" do
       submitter = AccountsFixtures.user_fixture()
       moderator = AccountsFixtures.operator_fixture()

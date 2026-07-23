@@ -2,31 +2,51 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete on current detached worktree
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
-- Last verified: 2026-07-21 against live affiliate-workflow, commerce-revenue,
+- Last verified: 2026-07-22 against live affiliate-workflow, commerce-revenue,
   and Dataloader GraphQL suites.
 
-## Target Outcome
+## Batch Outcome
 
-Identical operator-only active-coupon and revenue-summary root aliases will
+Identical operator-only active-coupon and revenue-summary root aliases now
 reuse one authorized database read per normalized input within a GraphQL request
 without changing authorization, time/filter semantics, pagination, suppression,
 metrics, errors, or schema behavior.
 
-## Ready Evidence
+## Implementation Evidence
 
-- `AffiliateResolver.active_coupons/3` authorizes and then executes the active-
-  coupon connection query independently for every root alias.
-- `CommerceAttributionResolver.revenue_summary/3` authorizes and then executes
-  the dashboard aggregate independently for every root alias.
-- These are the remaining operator-only reporting roots. They share one
-  authorization-keyed request-reuse lifecycle, while coupon pagination and
-  revenue aggregation remain internal slices.
-- Affiliate-workflow, commerce-revenue, and Dataloader suites passed 40 tests
-  on 2026-07-21, but none proves fixed budgets as identical aliases grow.
+- `Loader.operator_reporting_source/0` exposes one request-scoped KV source
+  keyed by operator ID, field kind, normalized filters, and connection
+  arguments. Coupon keys also include merchant and explicit observation time;
+  omitted time is sampled once inside the batch callback.
+- Active-coupon identical aliases moved from two/four coupon SELECTs to one/one.
+  The mixed merchant/time/page case moved from five reads to four distinct
+  reads while preserving the first page, next page, empty historical page, and
+  alternate merchant page exactly.
+- Revenue-summary identical aliases moved from conversion/click budgets of
+  `%{commerce_conversions: 4, commerce_click_sessions: 2}` and
+  `%{commerce_conversions: 8, commerce_click_sessions: 4}` to a fixed
+  `%{commerce_conversions: 2, commerce_click_sessions: 1}`. The normalized
+  `usd`/`USD` plus unfiltered and merchant-filtered case moved from
+  `%{commerce_conversions: 6, commerce_click_sessions: 4}` to
+  `%{commerce_conversions: 5, commerce_click_sessions: 3}` distinct reads.
+- Authorization and validation still run before scheduling. Direct no-loader
+  coupon and revenue resolver characterizations pass, and tagged revenue batch
+  results preserve the stable mixed-currency GraphQL error rather than raising
+  through Dataloader.
+- Milestone commits are `716f6bcb perf: reuse operator coupon root reads` and
+  `172d1ccb perf: reuse operator revenue root reads`.
+- The final affiliate-workflow, commerce-revenue, and Dataloader gate passed 65
+  tests with zero failures. `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (`3 ready rows`), and `git diff --check` all exited
+  successfully on 2026-07-22.
+- The full `mix ci` gate exited successfully with 902 backend tests and 1,507
+  frontend tests passing, 83.79% backend coverage, clean static analysis, and
+  successful Relay validation, TypeScript checking, client/SSR builds, and
+  bundle-budget validation.
 
 ## Internal Slices
 

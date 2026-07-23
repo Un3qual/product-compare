@@ -165,6 +165,26 @@ runtime behavior with 151 type, input, enum, and interface declarations. The
 existing byte-for-byte SDL snapshot makes a domain-notation extraction
 immediately executable without choosing new product behavior. Root operations,
 context, plugins, resolver wiring, and `assets/schema.graphql` remain fixed.
+Before claiming the loader decomposition, a twelfth claim-floor audit promoted
+Specs context decomposition. The 1,212-line stable facade still combines
+definition upserts, typed-value normalization, claim/import workflows,
+corrections/moderation, and read projections. Its path-disjoint direct Specs,
+ingestion enrichment, catalog filter, and recommendation characterization gate
+passed 79 tests, making the extraction executable without new product policy.
+Before claiming Discussions context decomposition, a thirteenth claim-floor
+audit promoted Ingestion context decomposition. The 1,291-line stable facade
+still combines import-run lifecycle, merchant-feed-candidate policy, merchant
+identity, and canonical normalized-listing persistence. Its direct ingestion,
+enrichment, reconciliation, and merchant-feed-candidate GraphQL
+characterization gate passed 60 tests. The structural extraction leaves
+provider, scheduling, dashboard, operator, and product policy unchanged.
+Before claiming Specs context decomposition, a fourteenth claim-floor audit
+promoted Accounts context decomposition. The 721-line stable facade still
+combines user provisioning/bootstrap, API-token lifecycle, and reputation
+behavior alongside the existing focused `UserAuth` owner. Its direct Accounts,
+seed, API-token/session GraphQL, and authorized node characterization gate
+passed 112 tests. The extraction preserves the GraphQL auth contract,
+cookie-backed session authority, authorization, seeds, and transport scope.
 
 Implementation plan references (non-dispatch):
 
@@ -176,6 +196,11 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-21-bounded-operator-reporting-root-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-request-loader-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-graphql-schema-type-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-discussions-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-specs-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -221,12 +246,14 @@ batch and should not be recreated or promoted.
   Bounded catalog and offer-discovery root GraphQL reads is complete: products
   2/4 to 1/1, filter metadata 6/12 to 3/3, merchants 2/4 to 1/1, and merchant
   products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
-  operator reporting root GraphQL reads groups the remaining top-level active-
-  coupon and revenue-summary aliases behind one authorization-keyed request
-  source. GraphQL request loader decomposition is the remaining successor: it
-  preserves the facade and source keys while separating association,
-  parent-collection, and root-request source ownership across two Ecto and
-  twelve KV domains, including completed discovery roots. These are
+  operator reporting root GraphQL reads is complete: top-level active-coupon
+  and revenue-summary aliases now share one authorization-keyed request source.
+  GraphQL request loader decomposition is complete: the facade and source keys
+  remain stable while association, parent-collection, and root-request source
+  ownership now lives across focused modules for two Ecto and thirteen KV
+  domains, including discovery and operator-reporting roots. Its exact focused
+  gate passed 222 tests and full `mix ci` passed 902 backend tests, 1,507
+  frontend tests, ExDNA at 6/6, and Dialyzer. These are
   reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
   fact, and query-budget steps remain internal slices rather than separate
   queue rows.
@@ -234,6 +261,36 @@ batch and should not be recreated or promoted.
   the root facade stays stable while shared/account, commerce, catalog, and
   trust/community declarations move to five domain notation modules under the
   exact checked-in SDL snapshot.
+- Discussions context decomposition is a path-disjoint structural successor:
+  the stable `ProductCompare.Discussions` facade remains caller-facing while
+  read/query, legacy CRUD, authenticated submission/owner policy, and operator
+  moderation implementations move into focused internal modules. Its direct
+  discussion, SEO, community GraphQL, and Dataloader characterization gate
+  passes 104 tests.
+- Specs context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Specs` facade remains caller-facing while definition,
+  typed-value, claim/import, correction/moderation, and read implementations
+  move into focused internal modules. Its direct consumer characterization
+  gate passes 79 tests.
+- Commerce Attribution context decomposition is a path-disjoint structural
+  successor: the stable `ProductCompare.CommerceAttribution` facade remains
+  caller-facing while click/redirect, conversion/purchase-fact, and revenue
+  implementations move into focused internal modules. Its direct context,
+  destination-policy, controller, and GraphQL characterization gate passes 81
+  tests.
+- Ingestion context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Ingestion` facade remains caller-facing while
+  import-run, merchant-feed-candidate, merchant-identity, and canonical listing
+  persistence implementations move into focused internal modules. Its direct
+  and GraphQL characterization gate passes 60 tests; deferred provider,
+  dashboard, operator, scheduling, and application-submission scope stays
+  closed.
+- Accounts context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Accounts` facade remains caller-facing while user,
+  API-token, and reputation implementations move into focused internal modules
+  alongside the existing `UserAuth` owner. Its direct and GraphQL
+  characterization gate passes 112 tests; browser auth, authorization, seeds,
+  and email transport policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
