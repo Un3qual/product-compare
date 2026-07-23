@@ -1,12 +1,13 @@
 defmodule ProductCompare.Catalog.SavedComparisons do
   @moduledoc false
 
+  @dialyzer {:nowarn_function, create_saved_comparison_set: 2}
+
   import Ecto.Query
 
   alias Ecto.Multi
   alias ProductCompare.Input
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
@@ -58,19 +59,20 @@ defmodule ProductCompare.Catalog.SavedComparisons do
     )
   end
 
-  @spec get_saved_comparison_set_for_user(User.t(), binary()) :: SavedComparisonSet.t() | nil
-  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id)
-      when is_binary(entropy_id) do
+  @spec get_saved_comparison_set_for_user_id(pos_integer(), binary()) ::
+          SavedComparisonSet.t() | nil
+  def get_saved_comparison_set_for_user_id(user_id, entropy_id)
+      when is_integer(user_id) and is_binary(entropy_id) do
     user_id
-    |> get_saved_comparison_sets_for_user_id([entropy_id])
+    |> lookup_saved_comparison_sets_for_user_id([entropy_id])
     |> Map.get(entropy_id)
   end
 
-  @spec get_saved_comparison_sets_for_user(User.t(), [binary()]) ::
+  @spec get_saved_comparison_sets_for_user_id(pos_integer(), [binary()]) ::
           %{optional(binary()) => SavedComparisonSet.t() | nil}
-  def get_saved_comparison_sets_for_user(%User{id: user_id}, entropy_ids)
-      when is_list(entropy_ids) do
-    get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
+  def get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
+      when is_integer(user_id) and is_list(entropy_ids) do
+    lookup_saved_comparison_sets_for_user_id(user_id, entropy_ids)
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
@@ -96,7 +98,7 @@ defmodule ProductCompare.Catalog.SavedComparisons do
     end
   end
 
-  defp get_saved_comparison_sets_for_user_id(user_id, entropy_ids) do
+  defp lookup_saved_comparison_sets_for_user_id(user_id, entropy_ids) do
     Input.uuid_lookup_results(entropy_ids, fn validated_entropy_ids ->
       SavedComparisonSet
       |> where(

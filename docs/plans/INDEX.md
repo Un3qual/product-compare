@@ -243,6 +243,12 @@ the public contract while `WatchRules`, `MarketFacts`, `Evaluation`, and
 `Inbox` own the four planned responsibilities. Its exact characterization
 gate passes 13 tests, and full `mix ci` passes 905 backend tests at 83.53%
 coverage, 1,507 frontend tests, and all repository quality/build gates.
+Catalog context decomposition is complete. The 164-line stable facade retains
+the public contract while `Products`, `Evidence`, and `SavedComparisons` own
+the three planned responsibilities alongside unchanged `Filtering` and
+`FilterMetadata`. Its exact characterization gate passes 106 tests, and full
+`mix ci` passes 909 backend tests at 83.53% coverage, 1,507 frontend tests, and
+all repository quality/build gates.
 Before claiming Catalog context decomposition, a twentieth claim-floor audit
 promoted CJ Import task decomposition. The 627-line stable Mix task combines
 option and credential normalization, durable single-run imports, and reviewed-
@@ -378,11 +384,11 @@ batch and should not be recreated or promoted.
   market-fact, evaluation, and inbox implementations move into focused internal
   modules. Its direct and GraphQL characterization gate passes 13 tests; alert
   policy, pricing enqueueing, transports, and frontend behavior stay unchanged.
-- Catalog context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Catalog` facade remains caller-facing while
-  product/brand lifecycle, identifier/media evidence, and saved-comparison
-  implementations move into focused internal modules alongside the existing
-  `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
+- Catalog context decomposition is complete: the stable
+  `ProductCompare.Catalog` facade remains caller-facing while `Products`,
+  `Evidence`, and `SavedComparisons` own product/brand lifecycle,
+  identifier/media evidence, and saved-comparison implementations alongside
+  the existing `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
   characterization gate passes 106 tests; catalog, ingestion, taxonomy,
   GraphQL, and frontend policy stay unchanged.
 - Comparison Snapshots context decomposition is a path-disjoint structural

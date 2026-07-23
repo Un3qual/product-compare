@@ -143,16 +143,16 @@ defmodule ProductCompare.Catalog do
   Invalid UUID binaries return `nil` instead of raising.
   """
   @spec get_saved_comparison_set_for_user(User.t(), binary()) :: SavedComparisonSet.t() | nil
-  def get_saved_comparison_set_for_user(%User{} = user, entropy_id)
+  def get_saved_comparison_set_for_user(%User{id: user_id}, entropy_id)
       when is_binary(entropy_id) do
-    SavedComparisons.get_saved_comparison_set_for_user(user, entropy_id)
+    SavedComparisons.get_saved_comparison_set_for_user_id(user_id, entropy_id)
   end
 
   @spec get_saved_comparison_sets_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => SavedComparisonSet.t() | nil}
-  def get_saved_comparison_sets_for_user(%User{} = user, entropy_ids)
+  def get_saved_comparison_sets_for_user(%User{id: user_id}, entropy_ids)
       when is_list(entropy_ids) do
-    SavedComparisons.get_saved_comparison_sets_for_user(user, entropy_ids)
+    SavedComparisons.get_saved_comparison_sets_for_user_id(user_id, entropy_ids)
   end
 
   @spec delete_saved_comparison_set(pos_integer(), Ecto.UUID.t()) ::
