@@ -26,6 +26,8 @@ frontend contracts.
 - Preserve connection arguments, loader sources and keys, filter and comparison
   validation, process-local unit-symbol caching, evidence bounds, correction
   counts, authorization, global-ID handling, and mutation payloads.
+- If an unchanged path-scoped Dialyzer baseline moves with extracted code,
+  relocate only that existing entry; do not add or broaden a suppression.
 - Keep schema, type, and test callers dependent only on
   `ProductCompareWeb.Resolvers.CatalogResolver`.
 - Do not change schemas, migrations, GraphQL SDL, Relay behavior, catalog,
@@ -118,9 +120,13 @@ error payloads. The facade retains `my_saved_comparison_sets/3`,
 
 **Files:**
 
+- Modify: `.dialyzer_ignore.exs`
 - Modify: `docs/work/catalog-resolver-decomposition.md`
 
 - [ ] Run the exact 100-test characterization command recorded in the lane doc.
+- [ ] Relocate the existing catalog-resolver `MapSet.member?/2` Dialyzer
+  baseline to `catalog/input_normalization.ex` with the unchanged call; do not
+  add or broaden a suppression.
 - [ ] Run `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, `mix ci`, and `git diff --check`.
 - [ ] Confirm no schema, type, production, or test caller references

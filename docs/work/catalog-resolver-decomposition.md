@@ -2,14 +2,15 @@
 
 ## Snapshot
 
-- Status: blocked
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
   `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
 - Last verified: 2026-07-23. The characterization, type, formatting, queue,
-  caller, and diff-hygiene gates passed, but `mix ci` is blocked by an ExDNA
-  clone-budget regression in the extracted facade.
+  caller, clone, smell, and diff-hygiene gates passed. The remaining gate work
+  is the exact-path relocation of the unchanged `MapSet.member?/2` Dialyzer
+  baseline followed by a full CI rerun.
 
 ## Batch Outcome
 
@@ -49,6 +50,8 @@ values, authorization, mutation payloads, and errors.
 - Preserve connection arguments, loader sources and keys, filter and
   comparison validation, request-local cache behavior, evidence bounds,
   correction counts, authorization, global IDs, and mutation payloads.
+- Relocate only the existing path-scoped `MapSet.member?/2` Dialyzer baseline
+  with its unchanged call; do not add or broaden a suppression.
 - Keep schema, type, production, and test callers dependent only on
   `ProductCompareWeb.Resolvers.CatalogResolver`.
 - Do not change schemas, migrations, GraphQL SDL, Relay behavior, catalog,

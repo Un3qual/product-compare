@@ -1613,6 +1613,7 @@ Next action: extract the four implementation responsibilities behind explicit
 resolver-facade wrappers and prove catalog GraphQL and Dataloader parity.
 Owned paths:
 
+- `.dialyzer_ignore.exs`
 - `lib/product_compare_web/resolvers/catalog_resolver.ex`
 - `lib/product_compare_web/resolvers/catalog/discovery.ex`
 - `lib/product_compare_web/resolvers/catalog/input_normalization.ex`
@@ -1639,6 +1640,8 @@ Prerequisites:
 - Preserve connection arguments, loader sources and keys, filter and
   comparison validation, request-local cache behavior, evidence bounds,
   correction counts, authorization, global IDs, and mutation payloads.
+- Relocate only the existing path-scoped `MapSet.member?/2` Dialyzer baseline
+  with its unchanged call; do not add or broaden a suppression.
 - Keep schema, type, production, and test callers dependent only on the
   facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
   catalog, specification, taxonomy, saved-comparison, query-budget, or
