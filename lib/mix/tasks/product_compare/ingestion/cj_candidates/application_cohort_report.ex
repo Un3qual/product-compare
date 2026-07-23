@@ -3,6 +3,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
 
   import Ecto.Query
 
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -84,7 +85,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
       {:review_note_present, review_note_present?(candidate.review_note)},
       {:reviewed_at, candidate.reviewed_at}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{Output.format_value(value)}" end)
   end
 
   defp render_markdown(candidates) do
@@ -114,37 +115,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
       candidate.source_feed_type,
       if(review_note_present?(candidate.review_note), do: "present", else: "blank")
     ]
-    |> Enum.map(&format_markdown_cell/1)
+    |> Enum.map(&Output.format_markdown_cell/1)
     |> Enum.join(" | ")
     |> then(&"| #{&1} |")
   end
 
   defp review_note_present?(note) when is_binary(note), do: String.trim(note) != ""
   defp review_note_present?(_note), do: false
-
-  defp format_markdown_cell(nil), do: ""
-  defp format_markdown_cell(value) when is_integer(value), do: Integer.to_string(value)
-
-  defp format_markdown_cell(value) when is_binary(value) do
-    value
-    |> String.replace(~r/[\r\n]+/, " ")
-    |> String.replace("|", "\\|")
-  end
-
-  defp format_markdown_cell(value), do: to_string(value)
-
-  defp format_value(nil), do: ""
-  defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp format_value(value) when is_boolean(value), do: to_string(value)
-  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
-
-  defp format_value(value) when is_binary(value) do
-    if String.match?(value, ~r/\s/) do
-      inspect(value)
-    else
-      value
-    end
-  end
-
-  defp format_value(value), do: to_string(value)
 end

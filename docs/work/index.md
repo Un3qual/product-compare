@@ -1618,68 +1618,21 @@ exact focused gate passed 44 tests, and final `mix ci` passed 913 backend tests
 at 83.40% coverage, 1,507 frontend tests, and every queue, quality, type,
 Relay, build, and bundle gate.
 
+CJ Candidates Task Decomposition then completed on the current detached
+worktree. `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` is now a 36-line
+stable facade; `Options`, `StaleReport`, `FitGapReport`,
+`ApplicationCohortReport`, and `Output` own normalization, the three supported
+reports, and shared safe serialization without caller bypasses or behavior
+changes. The first full gate exposed two new exact-copy groups; the final
+cleanup restored the ExDNA budget to 6/6. The exact focused gate passed 6
+tests, and final `mix ci` passed 913 backend tests at 83.40% coverage, 1,507
+frontend tests, and every queue, quality, type, Relay, build, and bundle gate.
+
 ## Active Work
 
-### CJ Candidates Task Decomposition
+### Discussions Resolver Decomposition
 
 Status: active
-Lane: CJ candidates task decomposition
-Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
-Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` remains the
-stable operator entry point while option normalization, stale reporting,
-fit-gap reporting, and application-cohort reporting live in focused internal
-modules with unchanged CLI behavior, queries, output, errors, filtering, and
-credential safety.
-Next action: extract the four implementation responsibilities behind the
-stable Mix-task facade and prove the dedicated task and runbook boundary.
-Owned paths:
-
-- `lib/mix/tasks/product_compare.ingestion.cj_candidates.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/options.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/stale_report.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/fit_gap_report.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/application_cohort_report.ex`
-- `test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
-- `docs/work/cj-candidates-task-decomposition.md`
-
-Internal slices:
-
-- CLI/default/report/status/format normalization and bounds.
-- Stale-candidate selection, freshness validation, and safe line output.
-- Fit-gap selection, classification, aggregation, and safe line output.
-- Application-cohort filters plus line and Markdown output.
-- Stable Mix-task facade, runbook boundary, and caller parity.
-
-Prerequisites:
-
-- Existing `CjCandidates.run/1` and `run_report/1` inputs, results, errors,
-  and printed output remain authoritative.
-- Preserve report and status defaults, formats, limits, ordering, filters,
-  counts, gap order, required-result gates, Global IDs, escaping, timestamps,
-  and raw-field redaction.
-- Preserve the explicit rejection of the removed CSV export; do not change
-  provider requests, persistence, schemas, migrations, candidate review
-  policy, deferred operator scope, or product policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable task retains the full caller-facing and CLI
-contract, each implementation responsibility has one focused owner, the exact
-6-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
-
-## Ready Work
-
-### 1. Discussions Resolver Decomposition
-
-Status: ready
 Lane: Discussions resolver decomposition
 Plan: `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompareWeb.Resolvers.DiscussionsResolver` remains the
@@ -1729,7 +1682,9 @@ contract, each implementation responsibility has one focused owner, the exact
 61-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 2. Catalog Filter Metadata Decomposition
+## Ready Work
+
+### 1. Catalog Filter Metadata Decomposition
 
 Status: ready
 Lane: Catalog filter metadata decomposition
@@ -1783,7 +1738,7 @@ query contract, each implementation responsibility has one focused owner, the
 exact 10-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 3. Community Submissions Decomposition
+### 2. Community Submissions Decomposition
 
 Status: ready
 Lane: Community submissions decomposition
@@ -1838,7 +1793,7 @@ contract, each implementation responsibility has one focused owner, the exact
 25-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 4. Commerce Destination URL Decomposition
+### 3. Commerce Destination URL Decomposition
 
 Status: ready
 Lane: Commerce destination URL decomposition

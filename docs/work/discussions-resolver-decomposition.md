@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -34,6 +34,11 @@ keys, query budgets, values, authorization, mutation payloads, and errors.
   and are internal slices rather than separate queue batches.
 - The implementation paths are disjoint from Catalog Resolver, Listing
   Persistence, and CJ Candidates decomposition.
+
+## Progress Evidence
+
+- Claimed after CJ Candidates Task Decomposition completed with its exact
+  characterization and full repository gates green.
 
 ## Internal Slices
 

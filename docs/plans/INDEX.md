@@ -511,13 +511,14 @@ batch and should not be recreated or promoted.
   conflict targets, freshness, identity, taxonomy, specifications, pricing,
   alerts, reconciliation, provider behavior, and product policy stay
   unchanged.
-- CJ Candidates task decomposition is a path-disjoint structural successor:
-  the stable `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point
-  remains caller-facing while `Options`, `StaleReport`, `FitGapReport`, and
-  `ApplicationCohortReport` own normalization and the three supported reports.
-  Its dedicated characterization gate passes 6 tests; queries, filters,
-  ordering, output, Global IDs, credential safety, the rejected CSV export, the
-  operator runbook, deferred operator scope, and product policy stay unchanged.
+- CJ Candidates task decomposition is complete: the stable
+  `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point remains
+  caller-facing while `Options`, `StaleReport`, `FitGapReport`,
+  `ApplicationCohortReport`, and `Output` own normalization, the three
+  supported reports, and shared safe serialization. Its dedicated
+  characterization gate passes 6 tests; queries, filters, ordering, output,
+  Global IDs, credential safety, the rejected CSV export, the operator
+  runbook, deferred operator scope, and product policy stay unchanged.
 - Discussions Resolver decomposition is a path-disjoint structural successor:
   the stable `ProductCompareWeb.Resolvers.DiscussionsResolver` remains
   schema-facing while `Reads` owns public and viewer-scoped community reads and

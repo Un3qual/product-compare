@@ -38,9 +38,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
       max_age_hours: normalize_max_age_hours(Keyword.get(opts, :max_age_hours)),
       require_fresh: Keyword.get(opts, :require_fresh, false),
       format: normalize_format(Keyword.get(opts, :format)),
-      country: normalize_upper(Keyword.get(opts, :country)),
-      currency: normalize_upper(Keyword.get(opts, :currency)),
-      language: normalize_upper(Keyword.get(opts, :language)),
+      country: normalize_market_value(Keyword.get(opts, :country)),
+      currency: normalize_market_value(Keyword.get(opts, :currency)),
+      language: normalize_market_value(Keyword.get(opts, :language)),
       min_product_count: normalize_min_product_count(Keyword.get(opts, :min_product_count)),
       require_candidates: Keyword.get(opts, :require_candidates, false)
     ]
@@ -89,7 +89,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   defp normalize_min_product_count(_value),
     do: Mix.raise("invalid --min-product-count: expected a non-negative integer")
 
-  defp normalize_upper(value) when is_binary(value) do
+  @spec normalize_market_value(term()) :: String.t() | nil
+  def normalize_market_value(value) when is_binary(value) do
     value
     |> String.trim()
     |> String.upcase()
@@ -99,5 +100,5 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
     end
   end
 
-  defp normalize_upper(_value), do: nil
+  def normalize_market_value(_value), do: nil
 end

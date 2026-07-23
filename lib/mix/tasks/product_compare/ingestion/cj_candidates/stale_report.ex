@@ -3,6 +3,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
 
   import Ecto.Query
 
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -63,25 +64,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
       {:last_seen_at, candidate.last_seen_at},
       {:age_hours, age_hours(candidate.last_seen_at)}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{Output.format_value(value)}" end)
   end
 
   defp age_hours(%DateTime{} = timestamp) do
     DateTime.diff(DateTime.utc_now(), timestamp, :second) |> div(3600)
   end
-
-  defp format_value(nil), do: ""
-  defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp format_value(value) when is_boolean(value), do: to_string(value)
-  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
-
-  defp format_value(value) when is_binary(value) do
-    if String.match?(value, ~r/\s/) do
-      inspect(value)
-    else
-      value
-    end
-  end
-
-  defp format_value(value), do: to_string(value)
 end

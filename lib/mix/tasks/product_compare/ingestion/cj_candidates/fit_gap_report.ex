@@ -3,6 +3,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
 
   import Ecto.Query
 
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -59,9 +61,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
 
   defp compute_gaps(candidate) do
     []
-    |> maybe_add_gap(:country_not_us, normalize_upper(candidate.advertiser_country) != "US")
-    |> maybe_add_gap(:currency_not_usd, normalize_upper(candidate.currency) != "USD")
-    |> maybe_add_gap(:language_not_en, normalize_upper(candidate.language) != "EN")
+    |> maybe_add_gap(
+      :country_not_us,
+      Options.normalize_market_value(candidate.advertiser_country) != "US"
+    )
+    |> maybe_add_gap(
+      :currency_not_usd,
+      Options.normalize_market_value(candidate.currency) != "USD"
+    )
+    |> maybe_add_gap(
+      :language_not_en,
+      Options.normalize_market_value(candidate.language) != "EN"
+    )
     |> maybe_add_gap(:missing_product_count, is_nil(candidate.product_count))
     |> maybe_add_gap(:low_product_count, low_product_count?(candidate.product_count))
     |> maybe_add_gap(:missing_source_feed_type, blank?(candidate.source_feed_type))
@@ -77,18 +88,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
   defp blank?(value) when is_binary(value), do: String.trim(value) == ""
   defp blank?(nil), do: true
   defp blank?(_value), do: false
-
-  defp normalize_upper(value) when is_binary(value) do
-    value
-    |> String.trim()
-    |> String.upcase()
-    |> case do
-      "" -> nil
-      normalized -> normalized
-    end
-  end
-
-  defp normalize_upper(_value), do: nil
 
   defp aggregate_gap_counts(analyzed) do
     initial = %{
@@ -118,21 +117,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
       {:gap_count, length(gaps)},
       {:gaps, gaps |> Enum.map(&Atom.to_string/1) |> Enum.join(",")}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{Output.format_value(value)}" end)
   end
-
-  defp format_value(nil), do: ""
-  defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp format_value(value) when is_boolean(value), do: to_string(value)
-  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
-
-  defp format_value(value) when is_binary(value) do
-    if String.match?(value, ~r/\s/) do
-      inspect(value)
-    else
-      value
-    end
-  end
-
-  defp format_value(value), do: to_string(value)
 end
