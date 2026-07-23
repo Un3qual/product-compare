@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against the direct Catalog and Catalog GraphQL
-  characterization suites.
+- Last verified: 2026-07-23 at claim time against the direct Catalog and
+  Catalog GraphQL characterization suites.
 
 ## Target Outcome
 

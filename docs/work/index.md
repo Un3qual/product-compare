@@ -1508,15 +1508,19 @@ frontend tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer,
 Relay, TypeScript, both production builds, and the bundle contract. Catalog,
 Comparison Snapshots, and Taxonomy remain ready.
 
+Before claiming Catalog Context Decomposition on 2026-07-23, the coordinator
+validated CJ Import Task Decomposition as a fourth independently shippable
+structural successor. The 627-line stable Mix task combines option and
+credential normalization, durable single-run imports, and reviewed-candidate
+batching behind `run/1` and `run_import/1`; its dedicated characterization gate
+passed 19 tests. Catalog was therefore claimed while Comparison Snapshots,
+Taxonomy, and CJ Import remained ready.
+
 ## Active Work
 
-None.
+### Catalog Context Decomposition
 
-## Ready Work
-
-### 1. Catalog Context Decomposition
-
-Status: ready
+Status: active
 Lane: Catalog context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Catalog` remains the stable caller-facing
@@ -1577,7 +1581,9 @@ implementation responsibility has one focused owner, the exact 106-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Comparison Snapshots Context Decomposition
+## Ready Work
+
+### 1. Comparison Snapshots Context Decomposition
 
 Status: ready
 Lane: Comparison snapshots context decomposition
@@ -1631,7 +1637,7 @@ implementation responsibility has one focused owner, the exact 12-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. Taxonomy Context Decomposition
+### 2. Taxonomy Context Decomposition
 
 Status: ready
 Lane: Taxonomy context decomposition
@@ -1686,6 +1692,59 @@ Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
+
+### 3. CJ Import Task Decomposition
+
+Status: ready
+Lane: CJ import task decomposition
+Plan: `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
+Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjImport` remains the stable
+manual, worker, and resume entry point while option normalization, durable
+single-run imports, and reviewed-candidate batching live in focused internal
+modules with unchanged CLI behavior, public results, durable run state,
+candidate policy, reports, errors, and credential safety.
+Next action: extract the three implementation responsibilities behind the
+stable Mix-task facade and prove the dedicated task and caller boundary.
+Owned paths:
+
+- `lib/mix/tasks/product_compare.ingestion.cj_import.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_import/options.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_import/runner.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_import/candidates.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `docs/work/cj-import-task-decomposition.md`
+
+Internal slices:
+
+- CLI/default/fetch-option normalization and credential readiness.
+- Source resolution, durable run lifecycle, bounded page import, and reports.
+- Reviewed-candidate selection, deterministic batching, and aggregate results.
+- Stable facade, worker/resume caller boundary, and output parity.
+
+Prerequisites:
+
+- Existing `CjImport.run/1` and `run_import/1` inputs, results, errors, and
+  printed output remain authoritative.
+- Preserve provider requests, source resolution, durable run state, cursors,
+  reconciliation, counts, failure categories, candidate policy, and credential
+  safety.
+- Keep the Oban worker and `CjRuns` dependent only on `run_import/1`; do not
+  change persistence, schemas, migrations, scheduling, deferred operator scope,
+  or product policy.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable task retains the full caller-facing and CLI
+contract, each implementation responsibility has one focused owner, the exact
+19-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

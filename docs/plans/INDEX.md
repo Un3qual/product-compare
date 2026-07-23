@@ -243,6 +243,14 @@ the public contract while `WatchRules`, `MarketFacts`, `Evaluation`, and
 `Inbox` own the four planned responsibilities. Its exact characterization
 gate passes 13 tests, and full `mix ci` passes 905 backend tests at 83.53%
 coverage, 1,507 frontend tests, and all repository quality/build gates.
+Before claiming Catalog context decomposition, a twentieth claim-floor audit
+promoted CJ Import task decomposition. The 627-line stable Mix task combines
+option and credential normalization, durable single-run imports, and reviewed-
+candidate batching behind `run/1` and `run_import/1`; its dedicated
+characterization gate passed 19 tests. The structural extraction preserves
+provider requests, durable run state, cursor behavior, candidate policy,
+credential safety, worker/resume callers, and output while remaining path-
+disjoint from Catalog, Comparison Snapshots, and Taxonomy.
 
 Implementation plan references (non-dispatch):
 
@@ -265,6 +273,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -388,6 +397,13 @@ batch and should not be recreated or promoted.
   move into focused internal modules. Its direct Taxonomy and ingestion
   enrichment characterization gate passes 13 tests; taxonomy, catalog,
   ingestion, SEO, GraphQL, and frontend policy stay unchanged.
+- CJ Import task decomposition is a path-disjoint structural successor: the
+  stable `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
+  caller-facing while input normalization, durable single-run imports, and
+  reviewed-candidate batching move into focused internal modules. Its
+  dedicated characterization gate passes 19 tests; provider requests,
+  ingestion persistence, worker/resume callers, scheduling, deferred operator
+  scope, and product policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
