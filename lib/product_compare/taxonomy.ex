@@ -8,57 +8,16 @@ defmodule ProductCompare.Taxonomy do
   alias Ecto.Multi
   alias ProductCompare.Input
   alias ProductCompare.Repo
+  alias ProductCompare.Taxonomy.Taxonomies
   alias ProductCompareSchemas.Taxonomy.{ProductTaxon, Taxon, TaxonAlias, TaxonClosure, Taxonomy}
 
   @type closure_result :: %{taxon: Taxon.t(), depth: non_neg_integer()}
 
   @spec seed_default_taxonomies() :: {:ok, [Taxonomy.t()]} | {:error, Ecto.Changeset.t()}
-  def seed_default_taxonomies do
-    with {:ok, type} <- upsert_taxonomy(%{code: "type", name: "Type"}),
-         {:ok, use_case} <- upsert_taxonomy(%{code: "use_case", name: "Use Case"}) do
-      {:ok, [type, use_case]}
-    end
-  end
+  def seed_default_taxonomies, do: Taxonomies.seed_default_taxonomies()
 
   @spec upsert_taxonomy(map()) :: {:ok, Taxonomy.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_taxonomy(attrs) do
-    now = DateTime.utc_now()
-    changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
-    code = Input.fetch_attr(attrs, :code)
-
-    if changeset.valid? do
-      update_fields =
-        changeset.changes
-        |> Map.drop([:code])
-        |> Map.to_list()
-
-      Repo.insert(
-        changeset,
-        on_conflict: [set: update_fields ++ [updated_at: now]],
-        conflict_target: [:code],
-        returning: true
-      )
-    else
-      fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset)
-    end
-  end
-
-  defp fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset) do
-    if present?(code) and not provided?(attrs, :name) do
-      case Repo.get_by(Taxonomy, code: code) do
-        %Taxonomy{} = taxonomy -> {:ok, taxonomy}
-        nil -> {:error, changeset}
-      end
-    else
-      {:error, changeset}
-    end
-  end
-
-  defp provided?(attrs, key),
-    do: Input.attr_key_present?(attrs, key)
-
-  defp present?(value) when is_binary(value), do: String.trim(value) != ""
-  defp present?(_value), do: false
+  def upsert_taxonomy(attrs), do: Taxonomies.upsert_taxonomy(attrs)
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}
   def create_taxon(attrs) do
@@ -117,7 +76,7 @@ defmodule ProductCompare.Taxonomy do
   end
 
   @spec get_taxon_by_seo_slug(String.t()) :: Taxon.t() | nil
-  def get_taxon_by_seo_slug(slug) when is_binary(slug), do: Repo.get_by(Taxon, seo_slug: slug)
+  def get_taxon_by_seo_slug(slug) when is_binary(slug), do: Taxonomies.get_taxon_by_seo_slug(slug)
   def get_taxon_by_seo_slug(_slug), do: nil
 
   @spec move_taxon(pos_integer(), pos_integer() | nil) :: {:ok, Taxon.t()} | {:error, term()}
@@ -259,31 +218,12 @@ defmodule ProductCompare.Taxonomy do
 
   @spec ensure_taxon_in_taxonomy(pos_integer(), String.t()) ::
           {:ok, :use_case | :type} | {:error, :invalid_taxon}
-  def ensure_taxon_in_taxonomy(taxon_id, taxonomy_code) do
-    query =
-      from t in Taxon,
-        join: tx in Taxonomy,
-        on: tx.id == t.taxonomy_id,
-        where: t.id == ^taxon_id and tx.code == ^taxonomy_code,
-        select: tx.code
-
-    case Repo.one(query) do
-      nil -> {:error, :invalid_taxon}
-      "use_case" -> {:ok, :use_case}
-      "type" -> {:ok, :type}
-      _ -> {:error, :invalid_taxon}
-    end
-  end
+  def ensure_taxon_in_taxonomy(taxon_id, taxonomy_code),
+    do: Taxonomies.ensure_taxon_in_taxonomy(taxon_id, taxonomy_code)
 
   @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
   def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
-    Repo.all(
-      from taxon in Taxon,
-        join: taxonomy in Taxonomy,
-        on: taxonomy.id == taxon.taxonomy_id,
-        where: taxonomy.code == ^taxonomy_code,
-        order_by: [asc: taxon.name, asc: taxon.code, asc: taxon.id]
-    )
+    Taxonomies.list_taxons_for_taxonomy(taxonomy_code)
   end
 
   @spec list_taxon_aliases(pos_integer()) :: [TaxonAlias.t()]
