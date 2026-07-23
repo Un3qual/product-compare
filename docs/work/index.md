@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-22
+Updated: 2026-07-23
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1541,66 +1541,21 @@ responsibilities without caller bypasses or behavior changes. Final review
 removed one unused internal hydration forwarding API. The exact focused gate
 passed 12 tests, and final `mix ci` passed the queue, formatting, typecheck,
 quality, backend/frontend test, Relay, TypeScript, production-build, and bundle
-gates. Taxonomy is active; CJ Import, CJ Runs, and Catalog Resolver
-decomposition remain ready.
+gates.
+
+Taxonomy Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Taxonomy` is now an 88-line stable public facade;
+`Taxonomies`, `Hierarchy`, `Assignments`, and `Aliases` own the four planned
+responsibilities without caller bypasses or behavior changes. The final
+hierarchy milestone relocated the two existing path-scoped Dialyzer baselines
+with their unchanged `Ecto.Multi` calls. The exact focused gate passed 13
+tests, and final `mix ci` passed 909 backend tests at 83.45% coverage, 1,507
+frontend tests, and all queue, quality, type, Relay, build, and bundle gates.
+CJ Import, CJ Runs, and Catalog Resolver decomposition remain ready.
 
 ## Active Work
 
-### Taxonomy Context Decomposition
-
-Status: active
-Lane: Taxonomy context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Taxonomy` remains the stable caller-facing
-context while taxonomy registry, taxon hierarchy, use-case assignment, and
-category-alias implementations live in focused internal modules with unchanged
-public APIs, transactions, closure behavior, queries, errors, catalog guards,
-and ingestion mapping.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct Taxonomy and ingestion enrichment parity.
-Owned paths:
-
-- `lib/product_compare/taxonomy.ex`
-- `lib/product_compare/taxonomy/taxonomies.ex`
-- `lib/product_compare/taxonomy/hierarchy.ex`
-- `lib/product_compare/taxonomy/assignments.ex`
-- `lib/product_compare/taxonomy/aliases.ex`
-- `test/product_compare/taxonomy/use_case_and_guardrail_test.exs`
-- `test/product_compare/taxonomy/taxon_closure_test.exs`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `docs/work/taxonomy-context-decomposition.md`
-
-Internal slices:
-
-- Taxonomy seeding, upserts, membership checks, and reads.
-- Taxon creation, updates, moves, closure maintenance, and hierarchy reads.
-- Product use-case assignment and removal.
-- Category-path normalization, alias persistence, and type-alias resolution.
-
-Prerequisites:
-
-- Existing `ProductCompare.Taxonomy` public functions, clauses, guards,
-  defaults, typespecs, values, queries, transactions, and errors remain
-  authoritative.
-- Preserve validation, closure rows, ordering, conflict targets, assignment
-  policy, normalization, alias resolution, and catalog and ingestion behavior.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, catalog filtering, ingestion enrichment, SEO,
-  frontend contracts, or taxonomy policy.
-
-Verification:
-
-- `mix test test/product_compare/taxonomy test/product_compare/ingestion/enrichment_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 13-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 

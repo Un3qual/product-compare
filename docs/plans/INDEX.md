@@ -282,6 +282,14 @@ tests. The structural extraction preserves schema wiring, loader sources and
 keys, query budgets, filter validation, request-local unit caching,
 authorization, mutation payloads, and frontend behavior while remaining
 path-disjoint from Taxonomy, CJ Import, and CJ Runs.
+Taxonomy context decomposition is complete. The 88-line stable facade retains
+the public contract while `Taxonomies`, `Hierarchy`, `Assignments`, and
+`Aliases` own registry and reads, hierarchy and closure maintenance, use-case
+assignments, and category-alias behavior. The two existing path-scoped
+`Ecto.Multi` Dialyzer baselines moved with their unchanged hierarchy calls
+without adding or broadening a suppression. Its exact characterization gate
+passes 13 tests, and full `mix ci` passes 909 backend tests at 83.45% coverage,
+1,507 frontend tests, and all repository quality and build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -424,12 +432,12 @@ batch and should not be recreated or promoted.
   evidence capture, and payload hydration. Its direct and GraphQL
   characterization gate passes 12 tests; snapshot, SEO, pricing,
   recommendation, privacy, and frontend policy stay unchanged.
-- Taxonomy context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Taxonomy` facade remains caller-facing while taxonomy
-  registry, hierarchy, use-case assignment, and category-alias implementations
-  move into focused internal modules. Its direct Taxonomy and ingestion
-  enrichment characterization gate passes 13 tests; taxonomy, catalog,
-  ingestion, SEO, GraphQL, and frontend policy stay unchanged.
+- Taxonomy context decomposition is complete: the stable
+  `ProductCompare.Taxonomy` facade remains caller-facing while `Taxonomies`,
+  `Hierarchy`, `Assignments`, and `Aliases` own the four focused
+  implementations. Its direct Taxonomy and ingestion enrichment
+  characterization gate passes 13 tests; taxonomy, catalog, ingestion, SEO,
+  GraphQL, and frontend policy stay unchanged.
 - Catalog Resolver decomposition is a path-disjoint structural successor: the
   stable `ProductCompareWeb.Resolvers.CatalogResolver` remains schema-facing
   while discovery and input normalization, current-attribute projection, and
