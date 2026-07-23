@@ -519,14 +519,13 @@ batch and should not be recreated or promoted.
   characterization gate passes 6 tests; queries, filters, ordering, output,
   Global IDs, credential safety, the rejected CSV export, the operator
   runbook, deferred operator scope, and product policy stay unchanged.
-- Discussions Resolver decomposition is a path-disjoint structural successor:
-  the stable `ProductCompareWeb.Resolvers.DiscussionsResolver` remains
-  schema-facing while `Reads` owns public and viewer-scoped community reads and
-  `Mutations` owns authenticated input, actions, payloads, and error
-  translation. Its community GraphQL and Dataloader characterization gate
-  passes 61 tests; schema wiring, loader keys, query budgets, visibility,
-  authorization, Global IDs, moderation, payloads, and frontend policy stay
-  unchanged.
+- Discussions Resolver decomposition is complete: the stable
+  `ProductCompareWeb.Resolvers.DiscussionsResolver` remains schema-facing
+  while `Reads` owns public and viewer-scoped community reads and `Mutations`
+  owns authenticated input, actions, payloads, and error translation. Its
+  community GraphQL and Dataloader characterization gate passes 61 tests;
+  schema wiring, loader keys, query budgets, visibility, authorization, Global
+  IDs, moderation, payloads, and frontend policy stay unchanged.
 - Catalog Filter Metadata decomposition is a path-disjoint structural
   successor: the stable `ProductCompare.Catalog.FilterMetadata.metadata/1`
   boundary remains catalog-facing while filtered-product queries, taxonomy

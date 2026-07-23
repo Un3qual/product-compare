@@ -1628,59 +1628,18 @@ cleanup restored the ExDNA budget to 6/6. The exact focused gate passed 6
 tests, and final `mix ci` passed 913 backend tests at 83.40% coverage, 1,507
 frontend tests, and every queue, quality, type, Relay, build, and bundle gate.
 
+Discussions Resolver Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Resolvers.DiscussionsResolver` is now a 60-line
+stable facade; `Reads` owns public and viewer-scoped reads, while `Mutations`
+owns authenticated input, actions, payloads, and error translation without
+caller bypasses or behavior changes. The exact focused gate passed 61 tests,
+and final `mix ci` passed 913 backend tests at 83.42% coverage, 1,507 frontend
+tests, and every queue, quality, duplication, type, Relay, build, and bundle
+gate.
+
 ## Active Work
 
-### Discussions Resolver Decomposition
-
-Status: active
-Lane: Discussions resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompareWeb.Resolvers.DiscussionsResolver` remains the
-stable schema-facing resolver while public community reads and authenticated
-mutation handling live in focused internal modules with unchanged public
-callbacks, loader keys, query budgets, values, authorization, mutation
-payloads, and errors.
-Next action: extract the two implementation responsibilities behind explicit
-resolver-facade wrappers and prove community GraphQL and Dataloader parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `lib/product_compare_web/resolvers/discussions/reads.ex`
-- `lib/product_compare_web/resolvers/discussions/mutations.ex`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/discussions-resolver-decomposition.md`
-
-Internal slices:
-
-- Public and viewer-scoped read resolver ownership.
-- Authenticated mutation, input, action, payload, and error ownership.
-- Stable resolver facade, shared presentation fields, and caller parity.
-
-Prerequisites:
-
-- Existing `DiscussionsResolver` public functions, clauses, values, loader
-  tuples, results, mutation payloads, and errors remain authoritative.
-- Preserve connection arguments, loader sources and keys, public and owner
-  visibility, request batching, authorization, Global IDs, idempotency,
-  rate-limit errors, and moderation behavior.
-- Keep schema, type, production, and test callers dependent only on the
-  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
-  discussion context policy, query budgets, or frontend contracts.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains the full schema- and test-facing
-contract, each implementation responsibility has one focused owner, the exact
-61-test characterization gate and repository gates pass, and no caller
-bypasses the facade.
+None.
 
 ## Ready Work
 
