@@ -726,6 +726,27 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert log =~ "product_compare_ingestion_cj_import_test.exs"
       refute log =~ "provider-secret"
     end
+
+    test "does not trust exception-shaped caught values when classifying failures" do
+      fetcher = fn _cursor, _opts ->
+        throw(%{__exception__: true, __struct__: "provider-secret"})
+      end
+
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "kind=throw"
+      assert log =~ "reason=map"
+      refute log =~ "provider-secret"
+    end
   end
 
   describe "run/1 credential preflight" do

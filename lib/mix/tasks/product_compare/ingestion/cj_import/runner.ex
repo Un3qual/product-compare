@@ -166,7 +166,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
     end)
   end
 
-  defp failure_category(%{__exception__: true, __struct__: module}), do: inspect(module)
+  defp failure_category(%{__exception__: true, __struct__: module}) when is_atom(module),
+    do: inspect(module)
+
   defp failure_category({tag, _detail}) when is_atom(tag), do: Atom.to_string(tag)
   defp failure_category(reason) when is_atom(reason), do: Atom.to_string(reason)
   defp failure_category(reason) when is_binary(reason), do: "binary"
@@ -176,14 +178,24 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
   defp failure_category(_reason), do: "term"
 
   defp sanitize_stacktrace(stacktrace) do
-    Enum.map(stacktrace, fn
-      {module, function, args, location} when is_list(args) ->
-        {module, function, length(args), location}
+    Enum.flat_map(stacktrace, fn
+      {module, function, args, location}
+      when is_atom(module) and is_atom(function) and is_list(args) ->
+        [{module, function, length(args), sanitize_location(location)}]
 
-      entry ->
-        entry
+      {module, function, arity, location}
+      when is_atom(module) and is_atom(function) and is_integer(arity) ->
+        [{module, function, arity, sanitize_location(location)}]
+
+      _entry ->
+        []
     end)
   end
+
+  defp sanitize_location(location) when is_list(location),
+    do: Keyword.take(location, [:file, :line])
+
+  defp sanitize_location(_location), do: []
 
   defp initial_aggregate_report do
     %{
