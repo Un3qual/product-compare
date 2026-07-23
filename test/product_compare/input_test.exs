@@ -37,6 +37,27 @@ defmodule ProductCompare.InputTest do
     end
   end
 
+  describe "present_upsert_fields/3" do
+    test "returns only explicitly supplied atom or string keyed fields with cast values" do
+      changeset =
+        {%{}, %{campaign_params: :map, is_active: :boolean, network: :string}}
+        |> Ecto.Changeset.cast(
+          %{
+            "campaign_params" => %{"source" => "review"},
+            "is_active" => false,
+            "network" => "impact"
+          },
+          [:campaign_params, :is_active, :network]
+        )
+
+      assert Input.present_upsert_fields(
+               %{"campaign_params" => %{"source" => "review"}, is_active: false},
+               changeset,
+               [:network, :campaign_params, :is_active]
+             ) == [campaign_params: %{"source" => "review"}, is_active: false]
+    end
+  end
+
   describe "pagination_value/3" do
     test "reads integer and string values from keyword options" do
       assert Input.pagination_value([limit: 25], :limit, 10) == 25

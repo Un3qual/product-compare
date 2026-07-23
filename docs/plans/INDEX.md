@@ -185,6 +185,64 @@ behavior alongside the existing focused `UserAuth` owner. Its direct Accounts,
 seed, API-token/session GraphQL, and authorized node characterization gate
 passed 112 tests. The extraction preserves the GraphQL auth contract,
 cookie-backed session authority, authorization, seeds, and transport scope.
+Before claiming Ingestion context decomposition, a fifteenth claim-floor audit
+promoted Pricing context decomposition. The 625-line stable facade combines
+merchant, offer, price-history, and current offer-truth read implementations;
+its direct Pricing, merchant-detail, and GraphQL characterization gate passed
+39 tests without changing `OfferTruth` policy.
+The same claim-floor audit promoted SEO context decomposition. The 603-line
+stable facade combines metadata, category qualification, and sitemap behavior;
+its direct SEO, controller, and GraphQL characterization gate passed 13 tests.
+Both outcomes are path-disjoint from Ingestion and Accounts, and neither
+reopens deferred provider, dashboard, operator, or product-policy work.
+Before claiming Accounts context decomposition, a sixteenth claim-floor audit
+promoted Alerts context decomposition. The 543-line stable facade combines
+watch-rule lifecycle, shared market-fact projection, durable evaluation/event
+creation, and owner-scoped inbox behavior; its direct and GraphQL
+characterization gate passed 13 tests. The extraction preserves alert policy,
+price-point enqueueing, transports, resolver authorization, and frontend
+behavior while remaining path-disjoint from Accounts, Pricing, and SEO.
+Accounts context decomposition is complete. The 198-line stable facade retains
+the public contract while `Users`, `ApiTokens`, and `Reputation` own the
+remaining implementations alongside unchanged `UserAuth`. Its exact
+characterization gate passes 112 tests, and full `mix ci` passes 905 backend
+tests, 1,507 frontend tests, and all repository quality/build gates.
+Before claiming Pricing context decomposition, a seventeenth claim-floor audit
+promoted Catalog context decomposition. The 482-line stable facade still
+combines product/brand lifecycle, identifier and media evidence,
+saved-comparison lifecycle, and existing filtering entry points. Its direct and
+GraphQL characterization gate passed 106 tests. The structural extraction
+leaves catalog, ingestion, taxonomy, GraphQL, and frontend policy unchanged and
+is path-disjoint from Pricing, SEO, and Alerts.
+Pricing context decomposition is complete. The 161-line stable facade retains
+the public contract while `Merchants`, `Offers`, `PriceHistory`, and
+`TruthReads` own the four planned implementations and unchanged `OfferTruth`
+retains single-offer policy. Its exact characterization gate passes 39 tests,
+and full `mix ci` passes 905 backend tests, 1,507 frontend tests, and all
+repository quality/build gates.
+Before claiming SEO context decomposition, an eighteenth claim-floor audit
+promoted Comparison Snapshots context decomposition. The 444-line stable
+context still combines owner-scoped lifecycle, immutable evidence capture, and
+payload hydration. Its direct and GraphQL characterization gate passed 12
+tests. The extraction preserves snapshot, SEO, pricing, recommendation,
+privacy, and GraphQL policy and is path-disjoint from SEO, Alerts, and Catalog.
+SEO context decomposition is complete. The 71-line stable facade retains the
+public contract while `Metadata`, `Categories`, and `Sitemaps` own the three
+planned responsibilities. Its exact characterization gate passes 13 tests,
+and full `mix ci` passes 905 backend tests at 83.56% coverage, 1,507 frontend
+tests, and all repository quality/build gates.
+Before claiming Alerts context decomposition, a nineteenth claim-floor audit
+promoted Taxonomy context decomposition. The 396-line stable facade still
+combines taxonomy registry, taxon hierarchy, use-case assignment, and
+category-alias behavior. Its direct Taxonomy and ingestion enrichment
+characterization gate passed 13 tests. The structural extraction preserves
+taxonomy, catalog, ingestion, SEO, GraphQL, and frontend policy and is
+path-disjoint from Alerts, Catalog, and Comparison Snapshots.
+Alerts context decomposition is complete. The 73-line stable facade retains
+the public contract while `WatchRules`, `MarketFacts`, `Evaluation`, and
+`Inbox` own the four planned responsibilities. Its exact characterization
+gate passes 13 tests, and full `mix ci` passes 905 backend tests at 83.53%
+coverage, 1,507 frontend tests, and all repository quality/build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -201,6 +259,12 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -273,24 +337,57 @@ batch and should not be recreated or promoted.
   move into focused internal modules. Its direct consumer characterization
   gate passes 79 tests.
 - Commerce Attribution context decomposition is a path-disjoint structural
-  successor: the stable `ProductCompare.CommerceAttribution` facade remains
-  caller-facing while click/redirect, conversion/purchase-fact, and revenue
-  implementations move into focused internal modules. Its direct context,
-  destination-policy, controller, and GraphQL characterization gate passes 81
+  successor and is complete: the stable `ProductCompare.CommerceAttribution`
+  facade remains caller-facing while `Clicks`, `Conversions`, and `Revenue`
+  own the focused implementations. Its exact characterization gate passes 81
   tests.
-- Ingestion context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Ingestion` facade remains caller-facing while
-  import-run, merchant-feed-candidate, merchant-identity, and canonical listing
-  persistence implementations move into focused internal modules. Its direct
-  and GraphQL characterization gate passes 60 tests; deferred provider,
+- Ingestion context decomposition is complete: the stable
+  `ProductCompare.Ingestion` facade remains caller-facing while import-run,
+  merchant-feed-candidate, merchant-identity, and canonical listing persistence
+  implementations live in four focused internal modules. Its current direct
+  and GraphQL characterization gate passes 57 tests; deferred provider,
   dashboard, operator, scheduling, and application-submission scope stays
   closed.
-- Accounts context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Accounts` facade remains caller-facing while user,
-  API-token, and reputation implementations move into focused internal modules
-  alongside the existing `UserAuth` owner. Its direct and GraphQL
-  characterization gate passes 112 tests; browser auth, authorization, seeds,
-  and email transport policy stay unchanged.
+- Accounts context decomposition is complete: the stable
+  `ProductCompare.Accounts` facade remains caller-facing while `Users`,
+  `ApiTokens`, and `Reputation` own the focused implementations alongside the
+  unchanged `UserAuth` owner. Its direct and GraphQL characterization gate
+  passes 112 tests; browser auth, authorization, seeds, and email transport
+  policy stay unchanged.
+- Pricing context decomposition is complete: the stable
+  `ProductCompare.Pricing` facade remains caller-facing while `Merchants`,
+  `Offers`, `PriceHistory`, and `TruthReads` own the focused implementations.
+  Its direct and GraphQL characterization gate passes 39 tests; `OfferTruth`,
+  pricing, alert, and ingestion policy stay unchanged.
+- SEO context decomposition is complete: the
+  stable `ProductCompare.Seo` facade remains caller-facing while metadata,
+  category qualification, and sitemap behavior move into focused internal
+  modules. Its direct, controller, and GraphQL characterization gate passes 13
+  tests; qualification, route, and frontend metadata policy stay unchanged.
+- Alerts context decomposition is complete: the
+  stable `ProductCompare.Alerts` facade remains caller-facing while watch-rule,
+  market-fact, evaluation, and inbox implementations move into focused internal
+  modules. Its direct and GraphQL characterization gate passes 13 tests; alert
+  policy, pricing enqueueing, transports, and frontend behavior stay unchanged.
+- Catalog context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Catalog` facade remains caller-facing while
+  product/brand lifecycle, identifier/media evidence, and saved-comparison
+  implementations move into focused internal modules alongside the existing
+  `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
+  characterization gate passes 106 tests; catalog, ingestion, taxonomy,
+  GraphQL, and frontend policy stay unchanged.
+- Comparison Snapshots context decomposition is a path-disjoint structural
+  successor: the stable `ProductCompare.ComparisonSnapshots` facade remains
+  caller-facing while snapshot lifecycle, immutable evidence capture, and
+  payload hydration move into focused internal modules. Its direct and GraphQL
+  characterization gate passes 12 tests; snapshot, SEO, pricing,
+  recommendation, privacy, and frontend policy stay unchanged.
+- Taxonomy context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Taxonomy` facade remains caller-facing while taxonomy
+  registry, hierarchy, use-case assignment, and category-alias implementations
+  move into focused internal modules. Its direct Taxonomy and ingestion
+  enrichment characterization gate passes 13 tests; taxonomy, catalog,
+  ingestion, SEO, GraphQL, and frontend policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

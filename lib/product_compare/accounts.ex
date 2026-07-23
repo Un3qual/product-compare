@@ -3,62 +3,32 @@ defmodule ProductCompare.Accounts do
   Accounts context for users and reputation events.
   """
 
-  import Ecto.Query
-
-  alias ProductCompare.Accounts.UserAuth
-  alias ProductCompare.Input
-  alias ProductCompare.Repo
+  alias ProductCompare.Accounts.{ApiTokens, Reputation, UserAuth, Users}
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserReputation
 
-  @api_token_default_ttl_days 90
-  @api_token_prefix_length 12
-  @api_token_secret_bytes 32
-  @default_reputation_events_limit 50
-  @max_reputation_events_limit 200
-  @ensure_user_with_password_before_create_hook :ensure_user_with_password_before_create
-  @bootstrap_operator_before_create_hook :bootstrap_operator_before_create
   @deliver_user_confirmation_instructions_hook :deliver_user_confirmation_instructions
   @deliver_user_reset_password_instructions_hook :deliver_user_reset_password_instructions
 
   @spec create_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def create_user(attrs) do
-    if password_provided?(attrs) do
-      %User{}
-      |> User.registration_changeset(attrs)
-      |> insert_user()
-    else
-      attrs = ensure_hashed_password(attrs)
-
-      %User{}
-      |> User.changeset(attrs)
-      |> insert_user()
-    end
-  end
+  def create_user(attrs), do: Users.create_user(attrs)
 
   @spec register_user(map()) :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def register_user(attrs) do
-    %User{}
-    |> User.registration_changeset(attrs)
-    |> Repo.insert()
-  end
+  def register_user(attrs), do: Users.register_user(attrs)
 
   @spec get_user!(pos_integer()) :: User.t()
-  def get_user!(id), do: Repo.get!(User, id)
+  def get_user!(id), do: Users.get_user!(id)
 
   @spec get_user_by_email(String.t()) :: User.t() | nil
-  def get_user_by_email(email), do: Repo.get_by(User, email: normalize_email(email))
+  def get_user_by_email(email), do: Users.get_user_by_email(email)
 
   @doc "Updates operator access for trusted seed and bootstrap code."
   @spec set_operator_access(User.t(), boolean()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
-  def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator) do
-    user
-    |> User.operator_access_changeset(is_operator)
-    |> Repo.update()
-  end
+  def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator),
+    do: Users.set_operator_access(user, is_operator)
 
   @doc """
   Bootstraps a trusted operator account without taking over an existing account.
@@ -72,62 +42,7 @@ defmodule ProductCompare.Accounts do
           {:ok, User.t()} | {:error, :existing_non_operator | Ecto.Changeset.t()}
   def bootstrap_operator_user(email, password, reputation_points)
       when is_binary(email) and is_binary(password) and is_integer(reputation_points) do
-    normalized_email = normalize_email(email)
-
-    case Repo.transaction(fn ->
-           bootstrap_operator_user_transaction(normalized_email, password, reputation_points)
-         end) do
-      {:ok, %User{} = user} -> {:ok, user}
-      {:error, :existing_non_operator} -> {:error, :existing_non_operator}
-      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
-    end
-  end
-
-  defp bootstrap_operator_user_transaction(normalized_email, password, reputation_points) do
-    case lock_user_by_email(normalized_email) do
-      %User{is_operator: true} = operator ->
-        operator
-
-      %User{} ->
-        Repo.rollback(:existing_non_operator)
-
-      nil ->
-        run_before_user_create_hook(@bootstrap_operator_before_create_hook, normalized_email)
-
-        %User{}
-        |> User.registration_changeset(%{email: normalized_email, password: password})
-        |> Repo.insert(on_conflict: :nothing, conflict_target: [:email], returning: true)
-        |> finish_operator_bootstrap(normalized_email, reputation_points)
-    end
-  end
-
-  defp finish_operator_bootstrap({:ok, %User{id: nil}}, normalized_email, _reputation_points) do
-    case lock_user_by_email(normalized_email) do
-      %User{is_operator: true} = operator -> operator
-      %User{} -> Repo.rollback(:existing_non_operator)
-      nil -> Repo.rollback(:existing_non_operator)
-    end
-  end
-
-  defp finish_operator_bootstrap(
-         {:ok, %User{} = user},
-         _normalized_email,
-         reputation_points
-       ) do
-    with {:ok, %User{} = operator} <- set_operator_access(user, true),
-         {:ok, %UserReputation{}} <- upsert_user_reputation(operator.id, reputation_points) do
-      operator
-    else
-      {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  defp finish_operator_bootstrap(
-         {:error, %Ecto.Changeset{} = changeset},
-         _normalized_email,
-         _reputation_points
-       ) do
-    Repo.rollback(changeset)
+    Users.bootstrap_operator_user(email, password, reputation_points)
   end
 
   @doc """
@@ -142,106 +57,7 @@ defmodule ProductCompare.Accounts do
   @spec ensure_user_with_password(String.t(), String.t()) ::
           {:ok, User.t()} | {:error, Ecto.Changeset.t()}
   def ensure_user_with_password(email, password) when is_binary(email) and is_binary(password) do
-    normalized_email = normalize_email(email)
-
-    if blank_password?(password) do
-      {:error,
-       User.registration_changeset(%User{}, %{email: normalized_email, password: password})}
-    else
-      case Repo.transaction(fn ->
-             ensure_user_with_password_transaction(normalized_email, password)
-           end) do
-        {:ok, %User{} = user} ->
-          {:ok, user}
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          {:error, changeset}
-      end
-    end
-  end
-
-  defp ensure_user_with_password_transaction(normalized_email, password) do
-    case lock_user_by_email(normalized_email) do
-      nil ->
-        run_before_user_create_hook(
-          @ensure_user_with_password_before_create_hook,
-          normalized_email
-        )
-
-        case create_user(%{email: normalized_email, password: password}) do
-          {:ok, %User{} = user} ->
-            user
-
-          {:error, %Ecto.Changeset{} = changeset} ->
-            if unique_email_error?(changeset) do
-              normalized_email
-              |> lock_user_by_email()
-              |> ensure_user_password_hash(normalized_email, password)
-            else
-              Repo.rollback(changeset)
-            end
-        end
-
-      %User{} = user ->
-        ensure_user_password_hash(user, normalized_email, password)
-    end
-  end
-
-  defp ensure_user_password_hash(nil, normalized_email, password) do
-    case create_user(%{email: normalized_email, password: password}) do
-      {:ok, %User{} = user} -> user
-      {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)
-    end
-  end
-
-  defp ensure_user_password_hash(%User{} = user, normalized_email, password) do
-    if user_missing_password_hash?(user) do
-      case user
-           |> User.registration_changeset(%{email: normalized_email, password: password})
-           |> Repo.update() do
-        {:ok, %User{} = repaired_user} ->
-          repaired_user
-
-        {:error, %Ecto.Changeset{} = changeset} ->
-          Repo.rollback(changeset)
-      end
-    else
-      user
-    end
-  end
-
-  defp lock_user_by_email(email) do
-    Repo.one(
-      from user in User,
-        where: user.email == ^email,
-        lock: "FOR UPDATE"
-    )
-  end
-
-  defp unique_email_error?(%Ecto.Changeset{} = changeset) do
-    Enum.any?(changeset.errors, fn
-      {:email, {_message, options}} -> options[:constraint] == :unique
-      _other -> false
-    end)
-  end
-
-  defp normalize_email(email) when is_binary(email) do
-    User.normalize_email(email)
-  end
-
-  defp normalize_email(email) do
-    email
-    |> to_string()
-    |> User.normalize_email()
-  end
-
-  # Test-only hook for deterministically exercising create-vs-create race branches.
-  defp run_before_user_create_hook(hook_key, email) do
-    case Application.get_env(:product_compare, __MODULE__, [])
-         |> Keyword.get(hook_key) do
-      fun when is_function(fun, 1) -> fun.(email)
-      _other -> :ok
-    end
+    Users.ensure_user_with_password(email, password)
   end
 
   @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
@@ -290,10 +106,7 @@ defmodule ProductCompare.Accounts do
   @spec create_api_token(pos_integer(), map()) ::
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
           | {:error, Ecto.Changeset.t()}
-  def create_api_token(user_id, attrs \\ %{}) do
-    now = current_time()
-    issue_api_token(user_id, attrs, now)
-  end
+  def create_api_token(user_id, attrs \\ %{}), do: ApiTokens.create_api_token(user_id, attrs)
 
   @spec authenticate_api_token(String.t(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
   def authenticate_api_token(plain_text_token, opts \\ [])
@@ -303,46 +116,15 @@ defmodule ProductCompare.Accounts do
     :error
   end
 
-  def authenticate_api_token(plain_text_token, opts) do
-    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
-    token_hash = hash_api_token_secret(plain_text_token)
-
-    query =
-      from token in ApiToken,
-        join: user in assoc(token, :user),
-        where: token.token_hash == ^token_hash,
-        where: is_nil(token.revoked_at),
-        where: is_nil(token.expires_at) or token.expires_at > ^now,
-        select: {user, token}
-
-    case Repo.one(query) do
-      {user, token} ->
-        maybe_touch_api_token(token.id, now, opts)
-        {:ok, user, token}
-
-      nil ->
-        :error
-    end
-  end
+  def authenticate_api_token(plain_text_token, opts),
+    do: ApiTokens.authenticate_api_token(plain_text_token, opts)
 
   @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
-  def list_api_tokens_query(user_id, opts \\ []) do
-    now = current_time()
-    status = token_list_status_filter(opts)
-
-    from(token in ApiToken,
-      where: token.user_id == ^user_id,
-      order_by: [desc: token.inserted_at, desc: token.id]
-    )
-    |> maybe_apply_api_token_status_filter(status, now)
-  end
+  def list_api_tokens_query(user_id, opts \\ []),
+    do: ApiTokens.list_api_tokens_query(user_id, opts)
 
   @spec list_api_tokens(pos_integer(), keyword() | map()) :: [ApiToken.t()]
-  def list_api_tokens(user_id, opts \\ []) do
-    user_id
-    |> list_api_tokens_query(opts)
-    |> Repo.all()
-  end
+  def list_api_tokens(user_id, opts \\ []), do: ApiTokens.list_api_tokens(user_id, opts)
 
   @doc """
   Fetches an API token owned by a user by a raw entropy ID value.
@@ -350,36 +132,22 @@ defmodule ProductCompare.Accounts do
   Invalid UUID binaries return `nil` instead of raising.
   """
   @spec get_api_token_for_user(User.t(), binary()) :: ApiToken.t() | nil
-  def get_api_token_for_user(%User{id: user_id}, token_entropy_id)
+  def get_api_token_for_user(%User{} = user, token_entropy_id)
       when is_binary(token_entropy_id) do
-    user_id
-    |> get_api_tokens_for_user_id([token_entropy_id])
-    |> Map.get(token_entropy_id)
+    ApiTokens.get_api_token_for_user(user, token_entropy_id)
   end
 
   @spec get_api_tokens_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => ApiToken.t() | nil}
-  def get_api_tokens_for_user(%User{id: user_id}, token_entropy_ids)
+  def get_api_tokens_for_user(%User{} = user, token_entropy_ids)
       when is_list(token_entropy_ids) do
-    get_api_tokens_for_user_id(user_id, token_entropy_ids)
+    ApiTokens.get_api_tokens_for_user(user, token_entropy_ids)
   end
 
   @spec revoke_api_token(pos_integer(), Ecto.UUID.t()) ::
           {:ok, ApiToken.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def revoke_api_token(user_id, token_entropy_id) when is_binary(token_entropy_id) do
-    case Repo.get_by(ApiToken, user_id: user_id, entropy_id: token_entropy_id) do
-      nil ->
-        {:error, :not_found}
-
-      %ApiToken{revoked_at: revoked_at} = token when not is_nil(revoked_at) ->
-        {:ok, token}
-
-      %ApiToken{} = token ->
-        now = current_time()
-
-        revoke_api_token_record(token, now)
-    end
-  end
+  def revoke_api_token(user_id, token_entropy_id) when is_binary(token_entropy_id),
+    do: ApiTokens.revoke_api_token(user_id, token_entropy_id)
 
   def revoke_api_token(_user_id, _token_entropy_id), do: {:error, :not_found}
 
@@ -393,298 +161,23 @@ defmodule ProductCompare.Accounts do
           | {:error, :not_found | Ecto.Changeset.t()}
   def rotate_api_token(user_id, token_entropy_id, attrs \\ %{})
 
-  def rotate_api_token(user_id, token_entropy_id, attrs) when is_binary(token_entropy_id) do
-    now = current_time()
-
-    case Repo.transaction(fn ->
-           rotate_api_token_transaction(user_id, token_entropy_id, attrs, now)
-         end) do
-      {:ok, result} ->
-        {:ok, result}
-
-      {:error, :not_found} ->
-        {:error, :not_found}
-
-      {:error, %Ecto.Changeset{} = changeset} ->
-        {:error, changeset}
-    end
-  end
+  def rotate_api_token(user_id, token_entropy_id, attrs) when is_binary(token_entropy_id),
+    do: ApiTokens.rotate_api_token(user_id, token_entropy_id, attrs)
 
   def rotate_api_token(_user_id, _token_entropy_id, _attrs), do: {:error, :not_found}
 
   @spec upsert_user_reputation(pos_integer(), integer()) ::
           {:ok, UserReputation.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_user_reputation(user_id, points) do
-    %UserReputation{}
-    |> UserReputation.changeset(%{user_id: user_id, points: points})
-    |> Repo.insert(
-      on_conflict: [set: [points: points]],
-      conflict_target: [:user_id],
-      returning: true
-    )
-  end
+  def upsert_user_reputation(user_id, points),
+    do: Reputation.upsert_user_reputation(user_id, points)
 
   @spec add_reputation_event(pos_integer(), map()) ::
           {:ok, ReputationEvent.t()} | {:error, Ecto.Changeset.t()}
-  def add_reputation_event(user_id, attrs) do
-    %ReputationEvent{}
-    |> ReputationEvent.changeset_with_user(attrs, user_id)
-    |> Repo.insert()
-  end
+  def add_reputation_event(user_id, attrs), do: Reputation.add_reputation_event(user_id, attrs)
 
   @spec list_reputation_events(pos_integer(), keyword() | map()) :: [ReputationEvent.t()]
-  def list_reputation_events(user_id, opts \\ []) do
-    limit =
-      opts
-      |> Input.pagination_value(:limit, @default_reputation_events_limit)
-      |> Input.clamp_limit(@default_reputation_events_limit, @max_reputation_events_limit)
-
-    offset =
-      opts
-      |> Input.pagination_value(:offset, 0)
-      |> Input.clamp_non_negative(0)
-
-    Repo.all(
-      from e in ReputationEvent,
-        where: e.user_id == ^user_id,
-        order_by: [desc: e.inserted_at, desc: e.id],
-        limit: ^limit,
-        offset: ^offset
-    )
-  end
-
-  defp user_missing_password_hash?(%User{hashed_password: hashed_password}) do
-    is_nil(hashed_password) or hashed_password == "" or
-      not String.starts_with?(hashed_password, "$argon2")
-  end
-
-  # Accounts currently authenticate via API tokens. For user rows created
-  # without password input, generate a random 256-bit hex placeholder so
-  # `hashed_password` remains non-null and non-predictable.
-  defp ensure_hashed_password(attrs) when is_map(attrs) do
-    case Map.get(attrs, :hashed_password, Map.get(attrs, "hashed_password")) do
-      hashed_password when is_binary(hashed_password) and hashed_password != "" ->
-        attrs
-
-      _ ->
-        put_default_hashed_password(attrs)
-    end
-  end
-
-  defp ensure_hashed_password(_attrs), do: %{hashed_password: default_hashed_password()}
-
-  defp put_default_hashed_password(attrs) do
-    if Enum.any?(Map.keys(attrs), &is_binary/1) do
-      Map.put(attrs, "hashed_password", default_hashed_password())
-    else
-      Map.put(attrs, :hashed_password, default_hashed_password())
-    end
-  end
-
-  # Treat whitespace-only passwords as "provided" here so create_user/1 routes
-  # them through registration validation instead of silently creating a user
-  # with a placeholder hash.
-  defp password_provided?(attrs) when is_map(attrs) do
-    case Map.get(attrs, :password, Map.get(attrs, "password")) do
-      password when is_binary(password) and password != "" -> true
-      _ -> false
-    end
-  end
-
-  defp password_provided?(_attrs), do: false
-
-  defp blank_password?(password) when is_binary(password), do: String.trim(password) == ""
-  defp blank_password?(_password), do: true
-
-  defp insert_user(changeset) do
-    Repo.insert(changeset, transaction_insert_opts())
-  end
-
-  defp transaction_insert_opts do
-    if Repo.in_transaction?() do
-      [mode: :savepoint]
-    else
-      []
-    end
-  end
-
-  defp default_hashed_password do
-    :crypto.strong_rand_bytes(32)
-    |> Base.encode16(case: :lower)
-  end
-
-  defp maybe_touch_api_token(token_id, now, opts) do
-    if Keyword.get(opts, :touch_last_used?, true) do
-      from(token in ApiToken, where: token.id == ^token_id)
-      |> Repo.update_all(set: [last_used_at: now])
-    end
-
-    :ok
-  end
-
-  defp get_api_tokens_for_user_id(user_id, token_entropy_ids) do
-    Input.uuid_lookup_results(token_entropy_ids, fn entropy_ids ->
-      ApiToken
-      |> where([token], token.user_id == ^user_id and token.entropy_id in ^entropy_ids)
-      |> Repo.all()
-    end)
-  end
-
-  defp issue_api_token(user_id, attrs, now) do
-    plain_text_token = generate_api_token_secret()
-    token_hash = hash_api_token_secret(plain_text_token)
-
-    token_attrs =
-      %{
-        user_id: user_id,
-        token_prefix: token_prefix_from_hash(token_hash),
-        token_hash: token_hash,
-        expires_at: api_token_expiry(attrs, now)
-      }
-      |> maybe_put(:label, Input.fetch_attr(attrs, :label))
-
-    case %ApiToken{}
-         |> ApiToken.changeset(token_attrs)
-         |> Repo.insert(returning: true) do
-      {:ok, api_token} ->
-        {:ok, %{plain_text_token: plain_text_token, api_token: api_token}}
-
-      {:error, changeset} ->
-        {:error, changeset}
-    end
-  end
-
-  defp rotate_api_token_transaction(user_id, token_entropy_id, attrs, now) do
-    case lock_api_token_for_rotation(user_id, token_entropy_id) do
-      nil ->
-        Repo.rollback(:not_found)
-
-      %ApiToken{} = token ->
-        if api_token_active?(token, now) do
-          with {:ok, revoked_token} <- revoke_api_token_record(token, now),
-               {:ok, replacement} <-
-                 issue_api_token(user_id, merge_rotation_defaults(attrs, token), now) do
-            Map.put(replacement, :revoked_api_token, revoked_token)
-          else
-            {:error, %Ecto.Changeset{} = changeset} ->
-              Repo.rollback(changeset)
-          end
-        else
-          Repo.rollback(:not_found)
-        end
-    end
-  end
-
-  defp lock_api_token_for_rotation(user_id, token_entropy_id) do
-    from(token in ApiToken,
-      where: token.user_id == ^user_id and token.entropy_id == ^token_entropy_id,
-      lock: "FOR UPDATE"
-    )
-    |> Repo.one()
-  end
-
-  defp revoke_api_token_record(token, now) do
-    token
-    |> Ecto.Changeset.change(revoked_at: now)
-    |> Repo.update()
-  end
-
-  defp merge_rotation_defaults(attrs, token) do
-    attrs
-    |> ensure_map()
-    |> maybe_put(:label, Input.fetch_attr(attrs, :label) || token.label)
-  end
-
-  defp api_token_active?(%ApiToken{revoked_at: nil, expires_at: expires_at}, now) do
-    is_nil(expires_at) or DateTime.compare(expires_at, now) == :gt
-  end
-
-  defp api_token_active?(_token, _now), do: false
-
-  defp token_list_status_filter(opts) when is_list(opts) do
-    opts
-    |> Keyword.get(:status, :all)
-    |> normalize_api_token_status_filter()
-  end
-
-  defp token_list_status_filter(opts) when is_map(opts) do
-    opts
-    |> Input.fetch_attr(:status)
-    |> normalize_api_token_status_filter()
-  end
-
-  defp token_list_status_filter(_opts), do: :all
-
-  defp normalize_api_token_status_filter(:active), do: :active
-  defp normalize_api_token_status_filter(:revoked), do: :revoked
-  defp normalize_api_token_status_filter(:all), do: :all
-
-  defp normalize_api_token_status_filter(status) when is_binary(status) do
-    status
-    |> String.downcase()
-    |> case do
-      "active" -> :active
-      "revoked" -> :revoked
-      "all" -> :all
-      _ -> :all
-    end
-  end
-
-  defp normalize_api_token_status_filter(_status), do: :all
-
-  defp maybe_apply_api_token_status_filter(query, :all, _now), do: query
-
-  defp maybe_apply_api_token_status_filter(query, :active, now) do
-    from token in query,
-      where: is_nil(token.revoked_at),
-      where: is_nil(token.expires_at) or token.expires_at > ^now
-  end
-
-  defp maybe_apply_api_token_status_filter(query, :revoked, _now) do
-    from token in query,
-      where: not is_nil(token.revoked_at)
-  end
-
-  defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
-
-  defp api_token_expiry(attrs, now) do
-    if Input.attr_key_present?(attrs, :expires_at) do
-      explicit_api_token_expiry(Input.fetch_attr(attrs, :expires_at), now)
-    else
-      default_api_token_expiry(now)
-    end
-  end
-
-  defp explicit_api_token_expiry(nil, _now), do: nil
-
-  defp explicit_api_token_expiry(%DateTime{} = expires_at, _now),
-    do: DateTime.truncate(expires_at, :microsecond)
-
-  defp explicit_api_token_expiry(_expires_at, now), do: default_api_token_expiry(now)
-
-  defp default_api_token_expiry(now),
-    do: DateTime.add(now, api_token_default_ttl_days() * 24 * 60 * 60, :second)
-
-  defp ensure_map(attrs) when is_map(attrs), do: attrs
-  defp ensure_map(_attrs), do: %{}
-
-  defp maybe_put(map, _key, nil), do: map
-  defp maybe_put(map, key, value), do: Map.put(map, key, value)
-
-  defp api_token_default_ttl_days do
-    case Application.get_env(:product_compare, :api_token_default_ttl_days) do
-      ttl_days when is_integer(ttl_days) and ttl_days > 0 ->
-        ttl_days
-
-      _ ->
-        module_config = Application.get_env(:product_compare, __MODULE__, [])
-
-        case Keyword.get(module_config, :api_token_default_ttl_days) do
-          ttl_days when is_integer(ttl_days) and ttl_days > 0 -> ttl_days
-          _ -> @api_token_default_ttl_days
-        end
-    end
-  end
+  def list_reputation_events(user_id, opts \\ []),
+    do: Reputation.list_reputation_events(user_id, opts)
 
   # Browser auth recovery flows stay mailer-agnostic here; production delivery
   # can be injected later without changing the GraphQL contract or the token logic.
@@ -701,21 +194,5 @@ defmodule ProductCompare.Accounts do
         raise ArgumentError,
               "expected #{inspect(__MODULE__)} #{inspect(hook)} hook to be a 2-arity function, got: #{inspect(invalid)}"
     end
-  end
-
-  defp hash_api_token_secret(plain_text_token), do: :crypto.hash(:sha3_256, plain_text_token)
-
-  defp token_prefix_from_hash(token_hash) do
-    token_hash
-    |> Base.encode16(case: :lower)
-    |> binary_part(0, @api_token_prefix_length)
-  end
-
-  defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
-
-  defp generate_api_token_secret do
-    @api_token_secret_bytes
-    |> :crypto.strong_rand_bytes()
-    |> Base.url_encode64(padding: false)
   end
 end

@@ -1410,180 +1410,162 @@ tests, ExDNA at the unchanged 6/6 budget, Reach, Dialyzer, Relay, TypeScript,
 both production builds, and the bundle contract. The three ready successors
 remain dispatchable.
 
+Commerce Attribution Context Decomposition then completed on the current
+detached worktree. `ProductCompare.CommerceAttribution` is now a 55-line stable
+public facade; `Clicks`, `Conversions`, and `Revenue` own the three planned
+responsibilities without caller bypasses. The exact focused gate passed 81
+tests, and the final `mix ci` passed 905 backend tests at 83.79% coverage,
+1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract.
+
+Before claiming Ingestion Context Decomposition on 2026-07-22, the coordinator
+validated two independently shippable structural successors. The 625-line
+`ProductCompare.Pricing` facade combines merchant, offer, price-history, and
+current offer-truth reads behind one stable boundary; its direct and GraphQL
+characterization gate passed 39 tests. The 603-line `ProductCompare.Seo`
+facade combines metadata, category qualification, and sitemap behavior; its
+direct, controller, and GraphQL characterization gate passed 13 tests. The
+Ingestion claim therefore leaves Accounts, Pricing, and SEO as three complete,
+path-disjoint ready rows without promoting deferred work or micro-batches.
+
+Ingestion Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Ingestion` is now a 75-line stable public facade;
+`Runs`, `FeedCandidates`, `MerchantIdentities`, and `ListingPersistence` own
+the four planned responsibilities without caller bypasses. The live focused
+gate passed 57 tests, and the final `mix ci` passed 905 backend tests at 83.79%
+coverage, 1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer,
+Relay, TypeScript, both production builds, and the bundle contract. Accounts,
+Pricing, and SEO remain as three complete ready successors.
+
+Before claiming Accounts Context Decomposition on 2026-07-22, the coordinator
+validated a fourth independently shippable structural successor. The 543-line
+`ProductCompare.Alerts` facade combines owner-scoped watch lifecycle, shared
+market-fact projection, durable evaluation/event creation, and alert-inbox
+behavior behind one stable boundary; its direct and GraphQL characterization
+gate passed 13 tests. Alerts Context Decomposition was promoted without
+changing alert policy, price-point enqueueing, transports, resolver
+authorization, or frontend behavior. The Accounts claim therefore leaves
+Pricing, SEO, and Alerts as three complete, path-disjoint ready rows.
+
+Accounts Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Accounts` is now a 198-line stable public facade;
+`Users`, `ApiTokens`, and `Reputation` own the three remaining implementation
+responsibilities alongside the unchanged `UserAuth` owner, without caller
+bypasses. The exact focused gate passed 112 tests, and final `mix ci` passed
+905 backend tests at 83.70% coverage, 1,507 frontend tests, ExDNA at the
+unchanged 6/6 budget, Dialyzer, Relay, TypeScript, both production builds, and
+the bundle contract. Pricing, SEO, and Alerts remain ready.
+
+Before claiming Pricing Context Decomposition on 2026-07-22, the coordinator
+validated a fourth independently shippable structural successor. The 482-line
+`ProductCompare.Catalog` facade combines product and brand lifecycle, product
+identifier and media evidence, saved-comparison lifecycle, and existing
+catalog-filter entry points behind one stable boundary; its direct and GraphQL
+characterization gate passed 106 tests. Catalog Context Decomposition was
+promoted without changing catalog, filtering, ingestion, taxonomy, GraphQL, or
+frontend behavior. The Pricing claim therefore leaves SEO, Alerts, and Catalog
+as three complete, path-disjoint ready rows.
+
+Pricing Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Pricing` is now a 161-line stable public facade; `Merchants`,
+`Offers`, `PriceHistory`, and `TruthReads` own the four planned responsibilities
+while `OfferTruth` remains the unchanged single-offer policy owner. The exact
+focused gate passed 39 tests, and final `mix ci` passed 905 backend tests at
+83.61% coverage, 1,507 frontend tests, ExDNA at the unchanged 6/6 budget,
+Reach, Dialyzer, Relay, TypeScript, both production builds, and the bundle
+contract. SEO, Alerts, and Catalog remain ready.
+
+Before claiming SEO Context Decomposition on 2026-07-22, the coordinator
+validated Comparison Snapshots Context Decomposition as a fourth independently
+shippable structural successor. Its 444-line stable context combines
+owner-scoped lifecycle, immutable evidence capture, and payload hydration; the
+direct and GraphQL characterization gate passed 12 tests. SEO was therefore
+claimed while Alerts, Catalog, and Comparison Snapshots remained ready.
+
+SEO Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Seo` is now a 71-line stable public facade; `Metadata`,
+`Categories`, and `Sitemaps` own the three planned responsibilities without
+caller bypasses or policy changes. The exact focused gate passed 13 tests, and
+final `mix ci` passed 905 backend tests at 83.56% coverage, 1,507 frontend
+tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract. Alerts, Catalog,
+and Comparison Snapshots remain ready.
+
+Before claiming Alerts Context Decomposition on 2026-07-22, the coordinator
+validated Taxonomy Context Decomposition as a fourth independently shippable
+structural successor. Its 396-line stable facade combines taxonomy registry,
+taxon hierarchy, use-case assignment, and category-alias behavior; the direct
+Taxonomy and ingestion enrichment characterization gate passed 13 tests.
+Alerts was therefore claimed while Catalog, Comparison Snapshots, and Taxonomy
+remained ready.
+
+Alerts Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Alerts` is now a 73-line stable public facade; `WatchRules`,
+`MarketFacts`, `Evaluation`, and `Inbox` own the four planned responsibilities
+without caller bypasses or behavior changes. The exact focused gate passed 13
+tests, and final `mix ci` passed 905 backend tests at 83.53% coverage, 1,507
+frontend tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer,
+Relay, TypeScript, both production builds, and the bundle contract. Catalog,
+Comparison Snapshots, and Taxonomy remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Commerce Attribution Context Decomposition
+### 1. Catalog Context Decomposition
 
 Status: ready
-Lane: Commerce attribution context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-commerce-attribution-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.CommerceAttribution` remains the stable
-caller-facing context while click/redirect, conversion/purchase-fact, and
-revenue-summary implementations live in focused internal modules with
-unchanged public APIs, transactions, destination safety, attribution conflict
-handling, query semantics, suppression, errors, and GraphQL behavior.
+Lane: Catalog context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Catalog` remains the stable caller-facing
+context while product/brand lifecycle, product evidence, and saved-comparison
+implementations live in focused internal modules with unchanged public APIs,
+transactions, queries, ordering, errors, owner scope, filtering, and GraphQL
+behavior.
 Next action: extract the three implementation responsibilities behind explicit
-facade wrappers and prove direct context, controller, GraphQL, and destination-
-policy parity.
+facade wrappers, preserve the existing focused filter owners, and prove direct
+Catalog and GraphQL parity.
 Owned paths:
 
-- `lib/product_compare/commerce_attribution.ex`
-- `lib/product_compare/commerce_attribution/clicks.ex`
-- `lib/product_compare/commerce_attribution/conversions.ex`
-- `lib/product_compare/commerce_attribution/revenue.ex`
-- `test/product_compare/commerce_attribution/commerce_attribution_test.exs`
-- `test/product_compare/commerce_attribution/destination_url_test.exs`
-- `test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
-- `test/product_compare_web/graphql/commerce_click_test.exs`
-- `test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
-- `docs/work/commerce-attribution-context-decomposition.md`
-
-Internal slices:
-
-- Commerce-link, click-session, tracked-click, and redirect ownership.
-- Conversion attribution, replay/conflict, and purchase-fact ownership.
-- Revenue query, normalization, aggregation, and suppression ownership.
-- Public-contract, controller, GraphQL, type, and full-suite parity.
-
-Prerequisites:
-
-- Existing `ProductCompare.CommerceAttribution` public functions, arities,
-  defaults, typespecs, values, and errors remain authoritative.
-- Preserve transactions, conflict targets, URL policy, attribution replay and
-  conflicts, revenue queries, date boundaries, mixed-currency errors, and
-  suppression.
-- Keep controllers, resolvers, adapters, and other contexts dependent only on
-  the facade; do not change schemas, migrations, GraphQL SDL, frontend
-  behavior, provider policy, or deferred ingestion/operator work.
-
-Verification:
-
-- `mix test test/product_compare/commerce_attribution/commerce_attribution_test.exs test/product_compare/commerce_attribution/destination_url_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs test/product_compare_web/graphql/commerce_revenue_summary_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused internal owner, the exact 81-
-test characterization gate and repository gates pass, and no caller bypasses
-the facade.
-
-### 2. Ingestion Context Decomposition
-
-Status: ready
-Lane: Ingestion context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-ingestion-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Ingestion` remains the stable caller-facing
-context while import-run lifecycle, merchant-feed-candidate policy, merchant
-identity, and canonical normalized-listing persistence implementations live in
-focused internal modules with unchanged public APIs, transactions, conflicts,
-freshness, provenance, reconciliation, errors, and GraphQL behavior.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct ingestion, enrichment, reconciliation, and
-merchant-feed-candidate GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/ingestion.ex`
-- `lib/product_compare/ingestion/runs.ex`
-- `lib/product_compare/ingestion/feed_candidates.ex`
-- `lib/product_compare/ingestion/merchant_identities.ex`
-- `lib/product_compare/ingestion/listing_persistence.ex`
-- `test/product_compare/ingestion/ingestion_test.exs`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `test/product_compare/ingestion/reconciliation_test.exs`
-- `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `docs/work/ingestion-context-decomposition.md`
-
-Internal slices:
-
-- Import-run lifecycle and reconciliation ownership extraction.
-- Merchant-feed-candidate query, ordering, and review ownership extraction.
-- Merchant identity resolution and freshness-safe conflict ownership.
-- Canonical normalized-listing transaction and persistence ownership.
-
-Prerequisites:
-
-- Existing `ProductCompare.Ingestion` public functions, arities, typespecs,
-  values, and errors remain authoritative.
-- Preserve transactions, conflict targets, freshness rules, replay,
-  reconciliation, product identity, enrichment, provenance, offer and price
-  persistence, and alert enqueueing.
-- Keep Mix tasks, jobs, resolvers, loaders, fixtures, and tests dependent only
-  on the facade; do not change schemas, migrations, GraphQL SDL, providers,
-  scheduling, product policy, or deferred ingestion/operator scope.
-
-Verification:
-
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused internal owner, the exact 60-
-test characterization gate and repository gates pass, and no caller bypasses
-the facade.
-
-### 3. Accounts Context Decomposition
-
-Status: ready
-Lane: Accounts context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Accounts` remains the stable caller-facing
-context while user provisioning, API-token lifecycle, and reputation
-implementations live in focused internal modules alongside the existing
-`UserAuth` owner, with unchanged public APIs, auth behavior, transactions,
-locks, errors, and GraphQL behavior.
-Next action: extract the three remaining implementation responsibilities behind
-explicit facade wrappers and prove direct Accounts, seed, GraphQL auth, and
-authorized node parity.
-Owned paths:
-
-- `lib/product_compare/accounts.ex`
-- `lib/product_compare/accounts/users.ex`
-- `lib/product_compare/accounts/api_tokens.ex`
-- `lib/product_compare/accounts/reputation.ex`
-- `lib/product_compare/accounts/user_auth.ex`
-- `test/product_compare/accounts/api_token_test.exs`
-- `test/product_compare/accounts/create_user_test.exs`
-- `test/product_compare/accounts/reputation_upsert_test.exs`
-- `test/product_compare/accounts/user_auth_schema_test.exs`
-- `test/product_compare/accounts/user_auth_test.exs`
-- `test/product_compare/accounts/user_email_token_test.exs`
-- `test/product_compare/accounts/user_session_token_schema_test.exs`
-- `test/product_compare/repo/seeds_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `test/product_compare_web/graphql/session_auth_test.exs`
+- `lib/product_compare/catalog.ex`
+- `lib/product_compare/catalog/products.ex`
+- `lib/product_compare/catalog/evidence.ex`
+- `lib/product_compare/catalog/saved_comparisons.ex`
+- `lib/product_compare/catalog/filtering.ex`
+- `lib/product_compare/catalog/filter_metadata.ex`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `test/product_compare/catalog/filtering_regression_test.exs`
+- `test/product_compare/catalog/gtin_test.exs`
+- `test/product_compare/catalog/product_lookup_test.exs`
+- `test/product_compare/catalog/saved_comparison_set_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+- `test/product_compare_web/graphql/saved_comparisons_test.exs`
 - `test/product_compare_web/graphql/node_query_test.exs`
-- `docs/work/accounts-context-decomposition.md`
+- `docs/work/catalog-context-decomposition.md`
 
 Internal slices:
 
-- User creation, lookup, trusted bootstrap, and password-repair ownership.
-- API-token issue, authentication, query, rotation, and revocation ownership.
-- Reputation persistence and bounded read ownership.
-- Existing `UserAuth`, configured-delivery, facade, GraphQL, and seed parity.
+- Product and brand persistence, validation, slug identity, and read ownership.
+- Product identifier and media persistence and read ownership.
+- Owner-scoped saved-comparison lifecycle and query ownership.
+- Existing filtering and metadata facade parity.
 
 Prerequisites:
 
-- Existing `ProductCompare.Accounts` public functions, arities, defaults,
-  typespecs, values, and errors remain authoritative.
-- Preserve normalization, password hashes, transactions, savepoints, locks,
-  test hooks, token cryptography/defaults/filters, and reputation pagination.
-- Keep every caller dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, browser auth, authorization, seeds, or transport.
+- Existing `ProductCompare.Catalog` public functions, guards, typespecs,
+  values, exceptions, and errors remain authoritative.
+- Preserve conflict targets, validation, ordering, filters, transactions,
+  preloads, owner scope, entropy-ID handling, and historical slug behavior.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, frontend contracts, ingestion, taxonomy policy, or
+  product behavior.
 
 Verification:
 
-- `mix test test/product_compare/accounts test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/repo/seeds_test.exs`
+- `mix test test/product_compare/catalog test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/node_query_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
@@ -1591,7 +1573,117 @@ Verification:
 - `git diff --check`
 
 Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 112-test
+implementation responsibility has one focused owner, the exact 106-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 2. Comparison Snapshots Context Decomposition
+
+Status: ready
+Lane: Comparison snapshots context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.ComparisonSnapshots` remains the stable
+caller-facing context while snapshot lifecycle, immutable evidence capture,
+and payload hydration live in focused internal modules with unchanged public
+APIs, queries, owner scope, payloads, errors, SEO qualification, and GraphQL
+values.
+Next action: extract the three implementation responsibilities behind explicit
+facade wrappers and prove direct context and GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/comparison_snapshots.ex`
+- `lib/product_compare/comparison_snapshots/lifecycle.ex`
+- `lib/product_compare/comparison_snapshots/capture.ex`
+- `lib/product_compare/comparison_snapshots/payload_codec.ex`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `docs/work/comparison-snapshots-context-decomposition.md`
+
+Internal slices:
+
+- Owner-scoped publication, public reads, active queries, and revocation.
+- Immutable product, specification, offer, merchant, and recommendation fact
+  capture.
+- Stored payload hydration and domain-value decoding.
+
+Prerequisites:
+
+- Existing `ProductCompare.ComparisonSnapshots` public functions, clauses,
+  guards, defaults, typespecs, values, queries, and errors remain authoritative.
+- Preserve token validation and entropy, owner scope, ordering, revocation,
+  evidence values, excerpt bounds, decimals, timestamps, hydration, and SEO
+  qualification.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, SEO, pricing, recommendations, frontend contracts,
+  privacy, or snapshot versioning.
+
+Verification:
+
+- `mix test test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 12-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 3. Taxonomy Context Decomposition
+
+Status: ready
+Lane: Taxonomy context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Taxonomy` remains the stable caller-facing
+context while taxonomy registry, taxon hierarchy, use-case assignment, and
+category-alias implementations live in focused internal modules with unchanged
+public APIs, transactions, closure behavior, queries, errors, catalog guards,
+and ingestion mapping.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct Taxonomy and ingestion enrichment parity.
+Owned paths:
+
+- `lib/product_compare/taxonomy.ex`
+- `lib/product_compare/taxonomy/taxonomies.ex`
+- `lib/product_compare/taxonomy/hierarchy.ex`
+- `lib/product_compare/taxonomy/assignments.ex`
+- `lib/product_compare/taxonomy/aliases.ex`
+- `test/product_compare/taxonomy/use_case_and_guardrail_test.exs`
+- `test/product_compare/taxonomy/taxon_closure_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `docs/work/taxonomy-context-decomposition.md`
+
+Internal slices:
+
+- Taxonomy seeding, upserts, membership checks, and reads.
+- Taxon creation, updates, moves, closure maintenance, and hierarchy reads.
+- Product use-case assignment and removal.
+- Category-path normalization, alias persistence, and type-alias resolution.
+
+Prerequisites:
+
+- Existing `ProductCompare.Taxonomy` public functions, clauses, guards,
+  defaults, typespecs, values, queries, transactions, and errors remain
+  authoritative.
+- Preserve validation, closure rows, ordering, conflict targets, assignment
+  policy, normalization, alias resolution, and catalog and ingestion behavior.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, catalog filtering, ingestion enrichment, SEO,
+  frontend contracts, or taxonomy policy.
+
+Verification:
+
+- `mix test test/product_compare/taxonomy test/product_compare/ingestion/enrichment_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
