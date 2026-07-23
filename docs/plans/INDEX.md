@@ -220,6 +220,12 @@ the public contract while `Merchants`, `Offers`, `PriceHistory`, and
 retains single-offer policy. Its exact characterization gate passes 39 tests,
 and full `mix ci` passes 905 backend tests, 1,507 frontend tests, and all
 repository quality/build gates.
+Before claiming SEO context decomposition, an eighteenth claim-floor audit
+promoted Comparison Snapshots context decomposition. The 444-line stable
+context still combines owner-scoped lifecycle, immutable evidence capture, and
+payload hydration. Its direct and GraphQL characterization gate passed 12
+tests. The extraction preserves snapshot, SEO, pricing, recommendation,
+privacy, and GraphQL policy and is path-disjoint from SEO, Alerts, and Catalog.
 
 Implementation plan references (non-dispatch):
 
@@ -240,6 +246,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`

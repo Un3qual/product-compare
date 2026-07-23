@@ -1477,13 +1477,10 @@ contract. SEO, Alerts, and Catalog remain ready.
 
 ## Active Work
 
-None.
+### SEO Context Decomposition
 
-## Ready Work
-
-### 1. SEO Context Decomposition
-
-Status: ready
+Status: active
+Claimed by: current detached worktree
 Lane: SEO context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Seo` remains the stable caller-facing context
@@ -1533,7 +1530,9 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Alerts Context Decomposition
+## Ready Work
+
+### 1. Alerts Context Decomposition
 
 Status: ready
 Lane: Alerts context decomposition
@@ -1588,7 +1587,7 @@ implementation responsibility has one focused owner, the exact 13-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. Catalog Context Decomposition
+### 2. Catalog Context Decomposition
 
 Status: ready
 Lane: Catalog context decomposition
@@ -1648,6 +1647,60 @@ Verification:
 
 Exit condition: the facade retains the full caller-facing contract, each
 implementation responsibility has one focused owner, the exact 106-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 3. Comparison Snapshots Context Decomposition
+
+Status: ready
+Lane: Comparison snapshots context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.ComparisonSnapshots` remains the stable
+caller-facing context while snapshot lifecycle, immutable evidence capture,
+and payload hydration live in focused internal modules with unchanged public
+APIs, queries, owner scope, payloads, errors, SEO qualification, and GraphQL
+values.
+Next action: extract the three implementation responsibilities behind explicit
+facade wrappers and prove direct context and GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/comparison_snapshots.ex`
+- `lib/product_compare/comparison_snapshots/lifecycle.ex`
+- `lib/product_compare/comparison_snapshots/capture.ex`
+- `lib/product_compare/comparison_snapshots/payload_codec.ex`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `docs/work/comparison-snapshots-context-decomposition.md`
+
+Internal slices:
+
+- Owner-scoped publication, public reads, active queries, and revocation.
+- Immutable product, specification, offer, merchant, and recommendation fact
+  capture.
+- Stored payload hydration and domain-value decoding.
+
+Prerequisites:
+
+- Existing `ProductCompare.ComparisonSnapshots` public functions, clauses,
+  guards, defaults, typespecs, values, queries, and errors remain authoritative.
+- Preserve token validation and entropy, owner scope, ordering, revocation,
+  evidence values, excerpt bounds, decimals, timestamps, hydration, and SEO
+  qualification.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, SEO, pricing, recommendations, frontend contracts,
+  privacy, or snapshot versioning.
+
+Verification:
+
+- `mix test test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 12-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
