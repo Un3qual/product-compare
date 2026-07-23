@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
 - Last verified: 2026-07-22 against direct Accounts, seeds, API-token/session
   GraphQL, and authorized node characterization suites.
+- Claimed: 2026-07-22 on the current detached worktree after Alerts Context
+  Decomposition restored the three-ready-row floor.
 
 ## Target Outcome
 

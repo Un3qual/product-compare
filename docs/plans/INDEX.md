@@ -195,6 +195,13 @@ stable facade combines metadata, category qualification, and sitemap behavior;
 its direct SEO, controller, and GraphQL characterization gate passed 13 tests.
 Both outcomes are path-disjoint from Ingestion and Accounts, and neither
 reopens deferred provider, dashboard, operator, or product-policy work.
+Before claiming Accounts context decomposition, a sixteenth claim-floor audit
+promoted Alerts context decomposition. The 543-line stable facade combines
+watch-rule lifecycle, shared market-fact projection, durable evaluation/event
+creation, and owner-scoped inbox behavior; its direct and GraphQL
+characterization gate passed 13 tests. The extraction preserves alert policy,
+price-point enqueueing, transports, resolver authorization, and frontend
+behavior while remaining path-disjoint from Accounts, Pricing, and SEO.
 
 Implementation plan references (non-dispatch):
 
@@ -213,6 +220,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -312,6 +320,11 @@ batch and should not be recreated or promoted.
   category qualification, and sitemap behavior move into focused internal
   modules. Its direct, controller, and GraphQL characterization gate passes 13
   tests; qualification, route, and frontend metadata policy stay unchanged.
+- Alerts context decomposition is a path-disjoint structural successor: the
+  stable `ProductCompare.Alerts` facade remains caller-facing while watch-rule,
+  market-fact, evaluation, and inbox implementations move into focused internal
+  modules. Its direct and GraphQL characterization gate passes 13 tests; alert
+  policy, pricing enqueueing, transports, and frontend behavior stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

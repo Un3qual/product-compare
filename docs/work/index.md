@@ -1437,15 +1437,21 @@ coverage, 1,507 frontend tests, ExDNA at the unchanged 6/6 budget, Dialyzer,
 Relay, TypeScript, both production builds, and the bundle contract. Accounts,
 Pricing, and SEO remain as three complete ready successors.
 
+Before claiming Accounts Context Decomposition on 2026-07-22, the coordinator
+validated a fourth independently shippable structural successor. The 543-line
+`ProductCompare.Alerts` facade combines owner-scoped watch lifecycle, shared
+market-fact projection, durable evaluation/event creation, and alert-inbox
+behavior behind one stable boundary; its direct and GraphQL characterization
+gate passed 13 tests. Alerts Context Decomposition was promoted without
+changing alert policy, price-point enqueueing, transports, resolver
+authorization, or frontend behavior. The Accounts claim therefore leaves
+Pricing, SEO, and Alerts as three complete, path-disjoint ready rows.
+
 ## Active Work
 
-None.
+### Accounts Context Decomposition
 
-## Ready Work
-
-### 1. Accounts Context Decomposition
-
-Status: ready
+Status: active
 Lane: Accounts context decomposition
 Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Accounts` remains the stable caller-facing
@@ -1506,7 +1512,9 @@ implementation responsibility has one focused owner, the exact 112-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 2. Pricing Context Decomposition
+## Ready Work
+
+### 1. Pricing Context Decomposition
 
 Status: ready
 Lane: Pricing context decomposition
@@ -1561,7 +1569,7 @@ implementation responsibility has one focused owner, the exact 39-test
 characterization gate and repository gates pass, and no caller bypasses the
 facade.
 
-### 3. SEO Context Decomposition
+### 2. SEO Context Decomposition
 
 Status: ready
 Lane: SEO context decomposition
@@ -1602,6 +1610,61 @@ Prerequisites:
 Verification:
 
 - `mix test test/product_compare/seo_test.exs test/product_compare_web/controllers/seo_controller_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the facade retains the full caller-facing contract, each
+implementation responsibility has one focused owner, the exact 13-test
+characterization gate and repository gates pass, and no caller bypasses the
+facade.
+
+### 3. Alerts Context Decomposition
+
+Status: ready
+Lane: Alerts context decomposition
+Plan: `docs/superpowers/plans/2026-07-22-alerts-context-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Alerts` remains the stable caller-facing
+context while watch-rule lifecycle, market-fact projection, durable evaluation,
+and alert-inbox implementations live in focused internal modules with unchanged
+public APIs, policy, transactions, locks, events, errors, jobs, and GraphQL
+behavior.
+Next action: extract the four implementation responsibilities behind explicit
+facade wrappers and prove direct Alerts and GraphQL parity.
+Owned paths:
+
+- `lib/product_compare/alerts.ex`
+- `lib/product_compare/alerts/watch_rules.ex`
+- `lib/product_compare/alerts/market_facts.ex`
+- `lib/product_compare/alerts/evaluation.ex`
+- `lib/product_compare/alerts/inbox.ex`
+- `test/product_compare/alerts/alerts_test.exs`
+- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
+- `docs/work/alerts-context-decomposition.md`
+
+Internal slices:
+
+- Watch lifecycle, validation, normalization, and query ownership.
+- Product- and listing-scoped current market-fact ownership.
+- Durable evaluation, transitions, events, delivery attempts, and retries.
+- Owner-scoped alert inbox query and read-state ownership.
+
+Prerequisites:
+
+- Existing `ProductCompare.Alerts` public functions, defaults, guards,
+  typespecs, values, and errors remain authoritative.
+- Preserve owner scope, queries, ordering, preloads, fact eligibility,
+  transactions, locks, cooldowns, replay suppression, partial failures, retry
+  behavior, delivery attempts, and query bounds.
+- Keep callers dependent only on the facade; do not change schemas,
+  migrations, GraphQL SDL, resolver authorization, Oban worker behavior,
+  pricing policy, frontend contracts, or transports.
+
+Verification:
+
+- `mix test test/product_compare/alerts/alerts_test.exs test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
