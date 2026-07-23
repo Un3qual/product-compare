@@ -7,8 +7,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   import Ecto.Query
 
+  alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Options
   alias ProductCompare.Ingestion
-  alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
   alias ProductCompare.Repo
@@ -16,15 +16,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   alias ProductCompareSchemas.Specs.Source
 
   @shortdoc "Imports one manual CJ shopping product page"
-  @credential_requirements [
-    {"CJ_API_TOKEN", :api_token},
-    {"CJ_ACCOUNT_ID", :company_id}
-  ]
   @fetch_failure_summary "fetch_failed"
 
   @impl Mix.Task
   def run(argv) do
-    opts = parse_argv(argv)
+    opts = Options.parse_argv(argv)
     check_credentials? = Keyword.get(opts, :check_credentials, false)
 
     unless check_credentials? do
@@ -55,7 +51,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   defp do_run_import(opts) do
     cond do
       Keyword.get(opts, :check_credentials, false) ->
-        {:ok, credential_report(opts)}
+        {:ok, Options.credential_report(opts)}
 
       candidate_import_requested?(opts) ->
         import_candidates(opts)
@@ -68,8 +64,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   defp do_import(opts) do
     fetcher = Keyword.get(opts, :fetcher, &ProductParser.fetch_batch/2)
     cursor = Keyword.get(opts, :cursor)
-    fetch_opts = fetch_opts(opts)
-    pages = page_count(opts)
+    fetch_opts = Options.fetch_opts(opts)
+    pages = Options.page_count(opts)
 
     with {:ok, source} <- import_source(opts),
          {:ok, import_run} <-
@@ -96,80 +92,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
             {:error, finalization_reason} -> {:error, finalization_reason}
           end
       end
-    end
-  end
-
-  defp parse_argv(argv) do
-    {opts, _args, _invalid} =
-      OptionParser.parse(argv,
-        switches: [
-          currency: :string,
-          complete_scope: :boolean,
-          keywords: :string,
-          limit: :integer,
-          offset: :integer,
-          pages: :integer,
-          serviceable_area: :string,
-          check_credentials: :boolean,
-          require_ready: :boolean,
-          provider_feed_id: :keep,
-          from_candidates: :boolean,
-          review_status: :string,
-          candidate_limit: :integer
-        ]
-      )
-
-    opts
-    |> parse_optional_keywords()
-    |> Keyword.put_new(:limit, 25)
-    |> Keyword.put_new(:cursor, Keyword.get(opts, :offset))
-    |> Keyword.put_new(:currency, "USD")
-    |> Keyword.put_new(:complete_scope, false)
-    |> Keyword.put_new(:pages, 1)
-    |> Keyword.put_new(:check_credentials, false)
-    |> Keyword.put_new(:require_ready, false)
-    |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
-    |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
-  end
-
-  defp parse_keywords(value) do
-    value
-    |> String.split(",", trim: true)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> case do
-      [] -> ["shoe"]
-      keywords -> keywords
-    end
-  end
-
-  defp parse_optional_keywords(opts) do
-    if Keyword.has_key?(opts, :keywords) do
-      Keyword.update!(opts, :keywords, &parse_keywords/1)
-    else
-      opts
-    end
-  end
-
-  defp fetch_opts(opts) do
-    [
-      ad_ids: normalize_ids(Keyword.get(opts, :ad_ids, Keyword.get(opts, :provider_feed_id))),
-      currency: Keyword.get(opts, :currency, "USD"),
-      keywords: Keyword.get(opts, :keywords, ["shoe"]),
-      limit: Keyword.get(opts, :limit, 25),
-      merchant_feed_candidate_id: Keyword.get(opts, :merchant_feed_candidate_id),
-      partner_ids:
-        normalize_ids(Keyword.get(opts, :partner_ids, Keyword.get(opts, :advertiser_ids))),
-      provider_feed_id: Keyword.get(opts, :provider_feed_id),
-      feed_name: Keyword.get(opts, :feed_name),
-      serviceable_areas: Keyword.get(opts, :serviceable_areas, ["US"])
-    ]
-  end
-
-  defp page_count(opts) do
-    case Keyword.get(opts, :pages, 1) do
-      value when is_integer(value) and value > 0 -> value
-      _invalid -> 1
     end
   end
 
@@ -347,7 +269,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
         opts,
         :provider_feed_ids,
         [],
-        &normalize_provider_feed_id_list!/1
+        &Options.normalize_provider_feed_id_list!/1
       )
 
     candidates = import_candidates_query(opts) |> Repo.all()
@@ -383,7 +305,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       asc: candidate.feed_name,
       asc: candidate.id
     )
-    |> limit(^candidate_limit(provider_feed_ids, Keyword.get(opts, :candidate_limit)))
+    |> limit(^Options.candidate_limit(provider_feed_ids, Keyword.get(opts, :candidate_limit)))
     |> preload(:source)
   end
 
@@ -396,7 +318,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   defp maybe_filter_review_status(query, [_first | _rest], _review_status), do: query
 
   defp maybe_filter_review_status(query, [], review_status) do
-    status = normalize_review_status(review_status || "shortlisted")
+    status = Options.normalize_review_status(review_status || "shortlisted")
 
     where(query, [candidate], candidate.review_status == ^status)
   end
@@ -404,7 +326,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   defp missing_provider_feed_ids(candidates, opts) do
     matched_feed_ids =
       candidates
-      |> Enum.map(&normalize_string(&1.provider_feed_id))
+      |> Enum.map(&Options.normalize_string(&1.provider_feed_id))
       |> Enum.reject(&is_nil/1)
       |> MapSet.new()
 
@@ -412,17 +334,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     |> Keyword.get(:provider_feed_ids, [])
     |> Enum.reject(&MapSet.member?(matched_feed_ids, &1))
   end
-
-  defp normalize_review_status(status) when status in ~w(pending shortlisted dismissed),
-    do: status
-
-  defp normalize_review_status(status), do: Mix.raise("invalid review status: #{status}")
-
-  defp candidate_limit([_first | _rest] = provider_feed_ids, _candidate_limit),
-    do: length(provider_feed_ids)
-
-  defp candidate_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
-  defp candidate_limit([], _value), do: 10
 
   defp initial_candidate_report(candidate_count) do
     initial_aggregate_report()
@@ -463,7 +374,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp candidate_import_opts(%MerchantFeedCandidate{} = candidate, opts) do
-    case normalize_string(candidate.provider_feed_id) do
+    case Options.normalize_string(candidate.provider_feed_id) do
       nil ->
         :skip
 
@@ -472,10 +383,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
          opts
          |> Keyword.put(:source, candidate.source)
          |> Keyword.put(:ad_ids, [provider_feed_id])
-         |> Keyword.put(:partner_ids, List.wrap(normalize_string(candidate.advertiser_id)))
+         |> Keyword.put(
+           :partner_ids,
+           List.wrap(Options.normalize_string(candidate.advertiser_id))
+         )
          |> Keyword.put(
            :currency,
-           normalize_string(candidate.currency) || Keyword.get(opts, :currency, "USD")
+           Options.normalize_string(candidate.currency) || Keyword.get(opts, :currency, "USD")
          )
          |> Keyword.put(:keywords, Keyword.get(opts, :keywords, nil))
          |> Keyword.put(:merchant_feed_candidate_id, candidate.id)
@@ -525,74 +439,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
       )
     end
   end
-
-  defp normalize_provider_feed_ids(opts) do
-    opts
-    |> Keyword.get_values(:provider_feed_id)
-    |> Enum.flat_map(&List.wrap/1)
-    |> Enum.concat(List.wrap(Keyword.get(opts, :provider_feed_ids, [])))
-    |> normalize_provider_feed_id_list!()
-  end
-
-  defp normalize_provider_feed_id_list!(values) do
-    values
-    |> List.wrap()
-    |> Enum.flat_map(&List.wrap/1)
-    |> Enum.map(&IdNormalizer.normalize_id/1)
-    |> reject_blank_provider_feed_ids!()
-    |> Enum.uniq()
-  end
-
-  defp reject_blank_provider_feed_ids!(ids) do
-    if Enum.any?(ids, &is_nil/1) do
-      Mix.raise("invalid --provider-feed-id: expected a non-empty CJ feed id")
-    end
-
-    ids
-  end
-
-  defp normalize_ids(value) do
-    value
-    |> IdNormalizer.normalize_ids()
-    |> case do
-      nil -> nil
-      values -> values
-    end
-    |> maybe_uniq_ids()
-  end
-
-  defp maybe_uniq_ids(nil), do: nil
-  defp maybe_uniq_ids(values), do: Enum.uniq(values)
-
-  defp normalize_string(value), do: IdNormalizer.normalize_id(value)
-
-  defp credential_report(opts) do
-    missing_required =
-      @credential_requirements
-      |> Enum.reject(fn {env_var, opt_key} -> credential_present?(opts, env_var, opt_key) end)
-      |> Enum.map(fn {env_var, _opt_key} -> env_var end)
-
-    %{
-      provider: "cj",
-      surface: "shoppingProducts",
-      ready: missing_required == [],
-      missing_required: missing_required
-    }
-  end
-
-  defp credential_present?(opts, env_var, opt_key) do
-    opts
-    |> Keyword.get(opt_key)
-    |> blank_to_nil()
-    |> case do
-      nil -> env_var |> System.get_env() |> blank_to_nil()
-      value -> value
-    end
-    |> is_nil()
-    |> Kernel.not()
-  end
-
-  defp blank_to_nil(value), do: IdNormalizer.blank_to_nil(value)
 
   defp print_report(report) do
     IO.puts(
