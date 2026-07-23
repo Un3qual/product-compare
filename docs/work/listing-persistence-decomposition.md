@@ -49,6 +49,11 @@ shapes, and downstream policy.
   `ListingPersistence.Enrichment`.
 - The exact ingestion and enrichment slice passed 36 tests on 2026-07-23
   after the enrichment extraction.
+- Merchant-product conflict-safe upserts, price-point replay and freshness,
+  stock projection, and alert enqueueing now live in
+  `ListingPersistence.Offers`.
+- The exact ingestion characterization slice passed 32 tests on 2026-07-23
+  after the offer extraction.
 
 ## Internal Slices
 
