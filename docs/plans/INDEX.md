@@ -316,6 +316,15 @@ loader sources and keys, query budgets, public and owner visibility,
 authorization, Global IDs, mutation payloads, moderation, and frontend
 behavior while remaining path-disjoint from Catalog Resolver, Listing
 Persistence, and CJ Candidates.
+Catalog Resolver decomposition is complete. The 65-line stable facade retains
+all schema- and type-facing callbacks while `Discovery`,
+`InputNormalization`, `CurrentAttributes`, and `SavedComparisons` own the four
+planned implementations. Full-gate follow-up consolidated redundant facade
+clauses and moved one existing path-scoped Dialyzer baseline with its unchanged
+`MapSet.member?/2` call. Its exact characterization gate passes 100 tests, the
+caller scan finds no internal-owner bypasses, and full `mix ci` passes 909
+backend tests, 1,507 frontend tests, and all repository quality and build
+gates.
 
 Implementation plan references (non-dispatch):
 
@@ -467,10 +476,11 @@ batch and should not be recreated or promoted.
   implementations. Its direct Taxonomy and ingestion enrichment
   characterization gate passes 13 tests; taxonomy, catalog, ingestion, SEO,
   GraphQL, and frontend policy stay unchanged.
-- Catalog Resolver decomposition is a path-disjoint structural successor: the
+- Catalog Resolver decomposition is complete: the
   stable `ProductCompareWeb.Resolvers.CatalogResolver` remains schema-facing
-  while discovery and input normalization, current-attribute projection, and
-  saved-comparison resolution move into focused internal modules. Its catalog,
+  while `Discovery`, `InputNormalization`, `CurrentAttributes`, and
+  `SavedComparisons` own discovery, normalization, current-attribute
+  projection, and saved-comparison resolution. Its catalog,
   filter-metadata, saved-comparison, specification-correction, and Dataloader
   characterization gate passes 100 tests; schema wiring, loader keys, query
   budgets, validation, authorization, payloads, and frontend policy stay

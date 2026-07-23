@@ -25,7 +25,7 @@
    "Type mismatch in call without opaque term in to_string."},
   {"lib/product_compare_web/plugs/require_same_origin.ex",
    "Type mismatch in call with opaque term in normalize_default_port."},
-  {"lib/product_compare_web/resolvers/catalog_resolver.ex",
+  {"lib/product_compare_web/resolvers/catalog/input_normalization.ex",
    "Type mismatch in call without opaque term in member?."},
   {"lib/product_compare_web/runtime_config.ex",
    "Type mismatch in call without opaque term in to_string."},

@@ -1596,70 +1596,20 @@ characterization gate passed 61 tests. Catalog Resolver was therefore claimed
 while Listing Persistence, CJ Candidates, and Discussions Resolver
 decomposition remain ready.
 
+Catalog Resolver Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Resolvers.CatalogResolver` is now a 65-line
+stable facade; `Discovery`, `InputNormalization`, `CurrentAttributes`, and
+`SavedComparisons` own the four planned responsibilities without caller
+bypasses or behavior changes. Full-gate follow-up consolidated redundant
+facade clauses and moved one existing path-scoped Dialyzer baseline with its
+unchanged `MapSet.member?/2` call. The exact focused gate passed 100 tests, and
+final `mix ci` passed 909 backend tests, 1,507 frontend tests, and every queue,
+quality, type, Relay, build, and bundle gate. Listing Persistence, CJ
+Candidates, and Discussions Resolver decomposition remain ready.
+
 ## Active Work
 
-### Catalog Resolver Decomposition
-
-Status: active
-Owner: current detached worktree at `ca7df33b`
-Lane: Catalog resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompareWeb.Resolvers.CatalogResolver` remains the
-stable schema-facing resolver while catalog discovery and input normalization,
-current-attribute projection, and saved-comparison behavior live in focused
-internal modules with unchanged public callbacks, loader keys, query budgets,
-values, authorization, mutation payloads, and errors.
-Next action: extract the four implementation responsibilities behind explicit
-resolver-facade wrappers and prove catalog GraphQL and Dataloader parity.
-Owned paths:
-
-- `.dialyzer_ignore.exs`
-- `lib/product_compare_web/resolvers/catalog_resolver.ex`
-- `lib/product_compare_web/resolvers/catalog/discovery.ex`
-- `lib/product_compare_web/resolvers/catalog/input_normalization.ex`
-- `lib/product_compare_web/resolvers/catalog/current_attributes.ex`
-- `lib/product_compare_web/resolvers/catalog/saved_comparisons.ex`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-- `test/product_compare_web/graphql/saved_comparisons_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/catalog-resolver-decomposition.md`
-
-Internal slices:
-
-- Catalog discovery resolver ownership.
-- Catalog resolver input normalization ownership.
-- Current-attribute loading and projection ownership.
-- Saved-comparison resolver ownership.
-
-Prerequisites:
-
-- Existing `CatalogResolver` public functions, clauses, typespecs, values,
-  loader tuples, results, and errors remain authoritative.
-- Preserve connection arguments, loader sources and keys, filter and
-  comparison validation, request-local cache behavior, evidence bounds,
-  correction counts, authorization, global IDs, and mutation payloads.
-- Relocate only the existing path-scoped `MapSet.member?/2` Dialyzer baseline
-  with its unchanged call; do not add or broaden a suppression.
-- Keep schema, type, production, and test callers dependent only on the
-  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
-  catalog, specification, taxonomy, saved-comparison, query-budget, or
-  frontend policy.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains the full schema- and test-facing
-contract, each implementation responsibility has one focused owner, the exact
-100-test characterization gate and repository gates pass, and no caller
-bypasses the facade.
+None.
 
 ## Ready Work
 

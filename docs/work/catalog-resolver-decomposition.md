@@ -2,15 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
   `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
-- Last verified: 2026-07-23. The characterization, type, formatting, queue,
-  caller, clone, smell, and diff-hygiene gates passed. The remaining gate work
-  is the exact-path relocation of the unchanged `MapSet.member?/2` Dialyzer
-  baseline followed by a full CI rerun.
+- Last verified: 2026-07-23 with the exact 100-test characterization gate,
+  typechecking, formatting, Dialyzer, full `mix ci`, caller-boundary scan, and
+  diff hygiene green.
 
 ## Batch Outcome
 
@@ -20,7 +19,7 @@ current-attribute projection, and saved-comparison behavior move into focused
 internal modules with unchanged public callbacks, loader keys, query budgets,
 values, authorization, mutation payloads, and errors.
 
-## Ready Evidence
+## Pre-decomposition Evidence
 
 - `lib/product_compare_web/resolvers/catalog_resolver.ex` is 720 lines and owns
   four concrete responsibilities: discovery resolution, input normalization,
@@ -66,32 +65,37 @@ values, authorization, mutation payloads, and errors.
 - `mix ci`
 - `git diff --check`
 
-## Gate Evidence
+## Completion Evidence
 
-- Ownership is complete but the lane is not complete: the stable 80-line
-  `CatalogResolver` facade retains every public GraphQL callback and delegates
-  discovery to the 107-line `Discovery`, input/filter normalization to the
-  256-line `InputNormalization`, current-attribute loading and projection to
-  the 224-line `CurrentAttributes`, and saved-comparison reads and mutations
-  to the 155-line `SavedComparisons` (822 lines across the five modules).
-- The exact characterization command passed 100 tests with 0 failures on
-  2026-07-23:
-  `mix test test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`.
-- `mix typecheck` and `mix format --check-formatted` passed. `mix
-  work_queue.validate` passed with 3 ready rows after the required local
-  Mix.PubSub socket escalation. `git diff --check` passed.
-- A repository caller scan of `lib` and `test`, excluding only the facade and
-  the four internal owners, found no direct reference to
+- Ownership is complete: the stable 65-line `CatalogResolver` facade retains
+  every public GraphQL callback and the request cache-clear boundary;
+  `Discovery` is 107 lines and owns catalog discovery and filter metadata;
+  `InputNormalization` is 256 lines and owns comparison-slug and filter
+  normalization; `CurrentAttributes` is 224 lines and owns Dataloader-backed
+  loading and projection; and `SavedComparisons` is 155 lines and owns
+  owner-scoped reads and mutations. The five modules total 807 lines.
+- The exact five-file characterization command passed 100 tests with 0
+  failures on 2026-07-23. `mix typecheck`, `mix format --check-formatted`, and
+  `git diff --check` passed. `mix work_queue.validate` passed with 3 ready
+  rows after the required local Mix.PubSub socket escalation.
+- `mix dialyzer` passed with the historical 11 skipped warnings and 8
+  unnecessary skips. The existing path-scoped `member?/2` baseline entry moved
+  unchanged from `catalog_resolver.ex` to `input_normalization.ex` with the
+  identical warning text, because the unchanged call moved with the extracted
+  implementation.
+- Full `mix ci` passed: Credo found no issues across 352 source files; ExDNA
+  remained at the configured 6/6 clone budget; cross-function detection found
+  no issues with 33 baseline findings suppressed; Dialyzer passed; 909 backend
+  tests passed with 0 failures at 83.44% total coverage; Relay and TypeScript
+  validation passed; 105 frontend test files and 1,507 tests passed; client
+  and SSR production builds passed; and the client-bundle contract passed at
+  182,164 gzip bytes against its 200,000-byte budget.
+- The CI output retained non-failing baseline diagnostics: six ExDNA clone
+  groups within budget, 33 suppressed cross-function findings, expected test
+  warning logs from failure-path fixtures, and Vite's existing large-chunk
+  advisory for the 596,440-byte raw client chunk. None failed the gate.
+- A caller scan of `lib` and `test`, excluding only the facade and four
+  implementation owners, found no direct reference to
   `Resolvers.Catalog.Discovery`, `InputNormalization`, `CurrentAttributes`, or
-  `SavedComparisons`. Schema, type, production, and test callers therefore
-  remain on `ProductCompareWeb.Resolvers.CatalogResolver`.
-- `mix ci` did not reach its test/build stages: ExDNA reports 7 clone groups
-  against a configured budget of 6. The budget-exceeding group is the
-  74-node duplicate between the facade's loader and non-loader clauses for
-  `product/3`, `comparison_products/3`, and `products/3` (lines 12 and 26).
-  The other six reported groups are within the configured budget. Credo found
-  no issues before ExDNA stopped the gate; there were no compiler, type, or
-  formatting warnings.
-- This gate intentionally makes no production or test change. The owner must
-  remove the facade duplication or otherwise restore the configured ExDNA
-  budget, then rerun the full gate before the snapshot can be marked complete.
+  `SavedComparisons`. Schema, type, production, and test callers remain on
+  `ProductCompareWeb.Resolvers.CatalogResolver`.
