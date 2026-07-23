@@ -306,6 +306,16 @@ orchestration. Full-gate follow-up removed one private trivial forwarding
 helper. Its exact characterization gate passes 10 tests, the caller scan finds
 no internal-owner bypasses, and full `mix ci` passes 909 backend tests, 1,507
 frontend tests, and all repository quality and build gates.
+Before claiming Catalog Resolver decomposition, a twenty-fourth claim-floor
+audit promoted Discussions Resolver decomposition. The 378-line stable
+GraphQL resolver combines public and viewer-scoped community reads with
+authenticated mutation input, action, payload, and error handling behind its
+schema-facing callbacks. Its community GraphQL and Dataloader characterization
+gate passed 61 tests. The structural extraction preserves schema wiring,
+loader sources and keys, query budgets, public and owner visibility,
+authorization, Global IDs, mutation payloads, moderation, and frontend
+behavior while remaining path-disjoint from Catalog Resolver, Listing
+Persistence, and CJ Candidates.
 
 Implementation plan references (non-dispatch):
 
@@ -333,6 +343,7 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -493,6 +504,14 @@ batch and should not be recreated or promoted.
   Its dedicated characterization gate passes 6 tests; queries, filters,
   ordering, output, Global IDs, credential safety, the rejected CSV export, the
   operator runbook, deferred operator scope, and product policy stay unchanged.
+- Discussions Resolver decomposition is a path-disjoint structural successor:
+  the stable `ProductCompareWeb.Resolvers.DiscussionsResolver` remains
+  schema-facing while `Reads` owns public and viewer-scoped community reads and
+  `Mutations` owns authenticated input, actions, payloads, and error
+  translation. Its community GraphQL and Dataloader characterization gate
+  passes 61 tests; schema wiring, loader keys, query budgets, visibility,
+  authorization, Global IDs, moderation, payloads, and frontend policy stay
+  unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

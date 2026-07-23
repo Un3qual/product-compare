@@ -1587,15 +1587,21 @@ tests, 1,507 frontend tests, and every queue, quality, type, Relay, build, and
 bundle gate. Catalog Resolver, Listing Persistence, and CJ Candidates
 decomposition remain ready.
 
+Before claiming Catalog Resolver Decomposition on 2026-07-23, the coordinator
+validated Discussions Resolver Decomposition as a fourth independently
+shippable structural successor. The 378-line stable GraphQL resolver combines
+public and viewer-scoped community reads with authenticated mutation input,
+action, payload, and error handling; its community GraphQL and Dataloader
+characterization gate passed 61 tests. Catalog Resolver was therefore claimed
+while Listing Persistence, CJ Candidates, and Discussions Resolver
+decomposition remain ready.
+
 ## Active Work
 
-None.
+### Catalog Resolver Decomposition
 
-## Ready Work
-
-### 1. Catalog Resolver Decomposition
-
-Status: ready
+Status: active
+Owner: current detached worktree at `ca7df33b`
 Lane: Catalog resolver decomposition
 Plan: `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompareWeb.Resolvers.CatalogResolver` remains the
@@ -1652,7 +1658,9 @@ contract, each implementation responsibility has one focused owner, the exact
 100-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 2. Listing Persistence Decomposition
+## Ready Work
+
+### 1. Listing Persistence Decomposition
 
 Status: ready
 Lane: Listing persistence decomposition
@@ -1711,7 +1719,7 @@ contract, each implementation responsibility has one focused owner, the exact
 44-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 3. CJ Candidates Task Decomposition
+### 2. CJ Candidates Task Decomposition
 
 Status: ready
 Lane: CJ candidates task decomposition
@@ -1765,6 +1773,58 @@ Exit condition: the stable task retains the full caller-facing and CLI
 contract, each implementation responsibility has one focused owner, the exact
 6-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
+
+### 3. Discussions Resolver Decomposition
+
+Status: ready
+Lane: Discussions resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompareWeb.Resolvers.DiscussionsResolver` remains the
+stable schema-facing resolver while public community reads and authenticated
+mutation handling live in focused internal modules with unchanged public
+callbacks, loader keys, query budgets, values, authorization, mutation
+payloads, and errors.
+Next action: extract the two implementation responsibilities behind explicit
+resolver-facade wrappers and prove community GraphQL and Dataloader parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/discussions/reads.ex`
+- `lib/product_compare_web/resolvers/discussions/mutations.ex`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/discussions-resolver-decomposition.md`
+
+Internal slices:
+
+- Public and viewer-scoped read resolver ownership.
+- Authenticated mutation, input, action, payload, and error ownership.
+- Stable resolver facade, shared presentation fields, and caller parity.
+
+Prerequisites:
+
+- Existing `DiscussionsResolver` public functions, clauses, values, loader
+  tuples, results, mutation payloads, and errors remain authoritative.
+- Preserve connection arguments, loader sources and keys, public and owner
+  visibility, request batching, authorization, Global IDs, idempotency,
+  rate-limit errors, and moderation behavior.
+- Keep schema, type, production, and test callers dependent only on the
+  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
+  discussion context policy, query budgets, or frontend contracts.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains the full schema- and test-facing
+contract, each implementation responsibility has one focused owner, the exact
+61-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
