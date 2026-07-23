@@ -1466,62 +1466,18 @@ promoted without changing catalog, filtering, ingestion, taxonomy, GraphQL, or
 frontend behavior. The Pricing claim therefore leaves SEO, Alerts, and Catalog
 as three complete, path-disjoint ready rows.
 
+Pricing Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Pricing` is now a 161-line stable public facade; `Merchants`,
+`Offers`, `PriceHistory`, and `TruthReads` own the four planned responsibilities
+while `OfferTruth` remains the unchanged single-offer policy owner. The exact
+focused gate passed 39 tests, and final `mix ci` passed 905 backend tests at
+83.61% coverage, 1,507 frontend tests, ExDNA at the unchanged 6/6 budget,
+Reach, Dialyzer, Relay, TypeScript, both production builds, and the bundle
+contract. SEO, Alerts, and Catalog remain ready.
+
 ## Active Work
 
-### Pricing Context Decomposition
-
-Status: active
-Lane: Pricing context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Pricing` remains the stable caller-facing
-context while merchant, offer, price-history, and current offer-truth read
-implementations live in focused internal modules with unchanged public APIs,
-transactions, queries, ordering, errors, alerts, and GraphQL behavior.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct Pricing, merchant-detail, and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/pricing.ex`
-- `lib/product_compare/pricing/merchants.ex`
-- `lib/product_compare/pricing/offers.ex`
-- `lib/product_compare/pricing/price_history.ex`
-- `lib/product_compare/pricing/truth_reads.ex`
-- `lib/product_compare/pricing/offer_truth.ex`
-- `test/product_compare/pricing/pricing_test.exs`
-- `test/product_compare/pricing/merchant_detail_test.exs`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `docs/work/pricing-context-decomposition.md`
-
-Internal slices:
-
-- Merchant persistence, identity, listing, and detail ownership.
-- Merchant-product persistence, query, read, and page ownership.
-- Price-point transaction, latest-price, and history ownership.
-- Product-level current offer-truth read ownership.
-
-Prerequisites:
-
-- Existing `ProductCompare.Pricing` public functions, defaults, guards,
-  typespecs, values, exceptions, and errors remain authoritative.
-- Preserve conflict targets, filters, ordering, Relay windows, preloads,
-  transaction and alert atomicity, price tie breaking, and offer-truth policy.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, frontend contracts, ingestion, or alerts policy.
-
-Verification:
-
-- `mix test test/product_compare/pricing/pricing_test.exs test/product_compare/pricing/merchant_detail_test.exs test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 39-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 

@@ -114,7 +114,7 @@ defmodule ProductCompare.Pricing.Merchants do
     latest_by_offer =
       merchant_products
       |> Enum.map(& &1.id)
-      |> latest_offer_truth_prices()
+      |> PriceHistory.latest_offer_truth_prices()
 
     products_by_merchant = Enum.group_by(merchant_products, & &1.merchant_id)
 
@@ -148,9 +148,6 @@ defmodule ProductCompare.Pricing.Merchants do
       }
     }
   end
-
-  defp latest_offer_truth_prices(merchant_product_ids),
-    do: PriceHistory.latest_offer_truth_prices(merchant_product_ids)
 
   defp merchant_attrs_with_slug(attrs) do
     name = get_filter_value(attrs, :name)

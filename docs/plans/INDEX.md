@@ -214,6 +214,12 @@ saved-comparison lifecycle, and existing filtering entry points. Its direct and
 GraphQL characterization gate passed 106 tests. The structural extraction
 leaves catalog, ingestion, taxonomy, GraphQL, and frontend policy unchanged and
 is path-disjoint from Pricing, SEO, and Alerts.
+Pricing context decomposition is complete. The 161-line stable facade retains
+the public contract while `Merchants`, `Offers`, `PriceHistory`, and
+`TruthReads` own the four planned implementations and unchanged `OfferTruth`
+retains single-offer policy. Its exact characterization gate passes 39 tests,
+and full `mix ci` passes 905 backend tests, 1,507 frontend tests, and all
+repository quality/build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -323,11 +329,11 @@ batch and should not be recreated or promoted.
   unchanged `UserAuth` owner. Its direct and GraphQL characterization gate
   passes 112 tests; browser auth, authorization, seeds, and email transport
   policy stay unchanged.
-- Pricing context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Pricing` facade remains caller-facing while merchant,
-  offer, price-history, and product-level offer-truth reads move into focused
-  internal modules. Its direct and GraphQL characterization gate passes 39
-  tests; pricing, alert, and ingestion policy stay unchanged.
+- Pricing context decomposition is complete: the stable
+  `ProductCompare.Pricing` facade remains caller-facing while `Merchants`,
+  `Offers`, `PriceHistory`, and `TruthReads` own the focused implementations.
+  Its direct and GraphQL characterization gate passes 39 tests; `OfferTruth`,
+  pricing, alert, and ingestion policy stay unchanged.
 - SEO context decomposition is a path-disjoint structural successor: the
   stable `ProductCompare.Seo` facade remains caller-facing while metadata,
   category qualification, and sitemap behavior move into focused internal

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-pricing-context-decomposition-implementation-plan.md`
@@ -53,3 +53,26 @@ queries, ordering, errors, alerts, and GraphQL behavior.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- Completed: 2026-07-22 on the current detached worktree.
+- `ProductCompare.Pricing` is now a 161-line stable facade. `Merchants` owns
+  merchant persistence, identity, listing, and detail projection; `Offers`
+  owns merchant-product persistence, filtering, reads, and parent pages;
+  `PriceHistory` owns price-point transactions, alert enqueueing, latest-price
+  reads, history queries, and pages; and `TruthReads` owns product-level
+  current offer truth. `OfferTruth` remains the unchanged single-offer policy
+  owner.
+- A public-function comparison against the pre-refactor facade found the same
+  caller-facing functions, defaults, guards, and clauses. A source scan found
+  no application caller using `Pricing.Merchants`, `Pricing.Offers`,
+  `Pricing.PriceHistory`, or `Pricing.TruthReads` directly.
+- The exact four-suite characterization gate passed 39 tests with 0 failures
+  after extraction. `mix typecheck` and `mix format --check-formatted` passed.
+- Full `mix ci` passed 905 backend tests with 83.61% coverage, 1,507 frontend
+  tests across 105 files, Credo with no issues, Reach with no new findings,
+  ExDNA at the unchanged 6/6 budget, Dialyzer, Relay validation, TypeScript,
+  client and SSR builds, and the client-bundle contract.
+- `mix work_queue.validate` and `git diff --check` passed at closeout with SEO,
+  Alerts, and Catalog retained as the three ready successors.
