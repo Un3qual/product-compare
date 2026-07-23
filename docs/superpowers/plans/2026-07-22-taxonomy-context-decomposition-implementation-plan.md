@@ -57,6 +57,7 @@ signatures.
 
 - Create: `lib/product_compare/taxonomy/hierarchy.ex`
 - Modify: `lib/product_compare/taxonomy.ex`
+- Modify: `.dialyzer_ignore.exs`
 - Test: `test/product_compare/taxonomy/taxon_closure_test.exs`
 
 **Interfaces:** `ProductCompare.Taxonomy.Hierarchy` owns taxon creation,
@@ -69,6 +70,9 @@ and cycle validation. The facade retains the existing hierarchy entry points.
   closure row, ordering, or rollback reason.
 - [ ] Add explicit facade wrappers preserving typespecs, arguments, results,
   and errors.
+- [ ] Relocate the two existing path-scoped `Ecto.Multi` opaque-term Dialyzer
+  baselines from the facade path to the hierarchy owner without changing their
+  warning text or adding new suppressions.
 - [ ] Re-run both characterization paths and confirm creation, closure depths,
   subtree moves, ordering, and cycle rejection remain unchanged.
 - [ ] Commit with message `refactor: isolate taxonomy hierarchy ownership`.

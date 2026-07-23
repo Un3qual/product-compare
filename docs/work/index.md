@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-22
+Updated: 2026-07-23
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1508,184 +1508,279 @@ frontend tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer,
 Relay, TypeScript, both production builds, and the bundle contract. Catalog,
 Comparison Snapshots, and Taxonomy remain ready.
 
+Before claiming Catalog Context Decomposition on 2026-07-23, the coordinator
+validated CJ Import Task Decomposition as a fourth independently shippable
+structural successor. The 627-line stable Mix task combines option and
+credential normalization, durable single-run imports, and reviewed-candidate
+batching behind `run/1` and `run_import/1`; its dedicated characterization gate
+passed 19 tests. Catalog was therefore claimed while Comparison Snapshots,
+Taxonomy, and CJ Import remained ready.
+
+Catalog Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Catalog` is now a 164-line stable public facade; `Products`,
+`Evidence`, and `SavedComparisons` own the three planned responsibilities
+alongside the unchanged `Filtering` and `FilterMetadata` owners, without caller
+bypasses or behavior changes. The exact focused gate passed 106 tests, and
+final `mix ci` passed 909 backend tests at 83.53% coverage, 1,507 frontend
+tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract. Comparison
+Snapshots, Taxonomy, and CJ Import remain ready.
+
+Before claiming Comparison Snapshots Context Decomposition on 2026-07-23, the
+coordinator validated CJ Runs Task Decomposition as a fourth independently
+shippable structural successor. The 600-line stable Mix task combines input
+normalization, run reporting, and resume orchestration behind three public
+entry points; its dedicated characterization gate passed 10 tests. Comparison
+Snapshots was therefore claimed while Taxonomy, CJ Import, and CJ Runs remained
+ready.
+
+Comparison Snapshots Context Decomposition then completed on the current
+detached worktree. `ProductCompare.ComparisonSnapshots` is now a 42-line stable
+public facade; `Lifecycle`, `Capture`, and `PayloadCodec` own the three planned
+responsibilities without caller bypasses. Final review removed one unused
+internal hydration forwarding API, then hardened legacy and partial
+recommendation payload hydration so absent optional fields decode to `nil`.
+The exact focused gate passes 14 tests, and final `mix ci` passes the queue,
+formatting, typecheck, quality, backend/frontend test, Relay, TypeScript,
+production-build, and bundle gates.
+
+Taxonomy Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Taxonomy` is now an 88-line stable public facade;
+`Taxonomies`, `Hierarchy`, `Assignments`, and `Aliases` own the four planned
+responsibilities without caller bypasses or behavior changes. The final
+hierarchy milestone relocated the two existing path-scoped Dialyzer baselines
+with their unchanged `Ecto.Multi` calls. The exact focused gate passed 13
+tests, and final `mix ci` passed 909 backend tests at 83.45% coverage, 1,507
+frontend tests, and all queue, quality, type, Relay, build, and bundle gates.
+Before claiming CJ Import Task Decomposition on 2026-07-23, the coordinator
+validated Listing Persistence Decomposition as a fourth independently
+shippable structural successor. The 840-line stable persistence boundary
+combines source and external identity, canonical product identity, enrichment,
+and offer observation persistence; its direct ingestion, enrichment, and
+reconciliation characterization gate passed 44 tests. CJ Import was therefore
+claimed while CJ Runs, Catalog Resolver, and Listing Persistence decomposition
+remain ready.
+
+CJ Import Task Decomposition then completed on the current detached worktree.
+`Mix.Tasks.ProductCompare.Ingestion.CjImport` is now a 108-line stable facade;
+`Options`, `Runner`, and `Candidates` own normalization and credential
+readiness, durable single-source imports, and reviewed-candidate batching
+without caller bypasses. Post-review hardening added secret-safe runner failure
+categories and sanitized stack traces while preserving public results. The
+exact focused gate passes 21 tests, and final `mix ci` passes the queue,
+formatting, typecheck, quality, backend/frontend test, Relay, TypeScript,
+production-build, and bundle gates. CJ Runs, Catalog Resolver, and Listing
+Persistence decomposition remain ready.
+
+Before claiming CJ Runs Task Decomposition on 2026-07-23, the coordinator
+validated CJ Candidates Task Decomposition as a fourth independently shippable
+structural successor. The 430-line stable Mix task combines option
+normalization, stale reporting, fit-gap reporting, and application-cohort
+reporting; its dedicated characterization gate passed 6 tests. CJ Runs was
+therefore claimed while Catalog Resolver, Listing Persistence, and CJ
+Candidates decomposition remain ready.
+
+CJ Runs Task Decomposition then completed on the current detached worktree.
+`Mix.Tasks.ProductCompare.Ingestion.CjRuns` is now a 33-line stable facade;
+`Options`, `Reports`, and `Resume` own normalization, operator-safe reporting,
+and import/discovery resume orchestration without caller bypasses or behavior
+changes. Full-gate follow-up removed one private trivial forwarding helper.
+The exact focused gate passed 10 tests, and final `mix ci` passed 909 backend
+tests, 1,507 frontend tests, and every queue, quality, type, Relay, build, and
+bundle gate. Catalog Resolver, Listing Persistence, and CJ Candidates
+decomposition remain ready.
+
+Before claiming Catalog Resolver Decomposition on 2026-07-23, the coordinator
+validated Discussions Resolver Decomposition as a fourth independently
+shippable structural successor. The 378-line stable GraphQL resolver combines
+public and viewer-scoped community reads with authenticated mutation input,
+action, payload, and error handling; its community GraphQL and Dataloader
+characterization gate passed 61 tests. Catalog Resolver was therefore claimed
+while Listing Persistence, CJ Candidates, and Discussions Resolver
+decomposition remain ready.
+
+Catalog Resolver Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Resolvers.CatalogResolver` is now a 65-line
+stable facade; `Discovery`, `InputNormalization`, `CurrentAttributes`, and
+`SavedComparisons` own the four planned responsibilities without caller
+bypasses or behavior changes. Full-gate follow-up consolidated redundant
+facade clauses and moved one existing path-scoped Dialyzer baseline with its
+unchanged `MapSet.member?/2` call. The exact focused gate passed 100 tests, and
+final `mix ci` passed 909 backend tests, 1,507 frontend tests, and every queue,
+quality, type, Relay, build, and bundle gate. Listing Persistence, CJ
+Candidates, and Discussions Resolver decomposition remain ready.
+
 ## Active Work
 
 None.
 
 ## Ready Work
 
-### 1. Catalog Context Decomposition
+### 1. Listing Persistence Decomposition
 
 Status: ready
-Lane: Catalog context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Catalog` remains the stable caller-facing
-context while product/brand lifecycle, product evidence, and saved-comparison
-implementations live in focused internal modules with unchanged public APIs,
-transactions, queries, ordering, errors, owner scope, filtering, and GraphQL
-behavior.
-Next action: extract the three implementation responsibilities behind explicit
-facade wrappers, preserve the existing focused filter owners, and prove direct
-Catalog and GraphQL parity.
+Lane: Listing persistence decomposition
+Plan: `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Ingestion.ListingPersistence.persist/3`
+remains the stable ingestion-facing boundary while source and external
+identity, canonical product identity, enrichment, and offer observation
+persistence live in focused internal modules with unchanged transactions,
+writes, conflicts, freshness, result shapes, and downstream policy.
+Next action: extract the four implementation responsibilities behind the
+stable persistence facade and prove direct ingestion, enrichment, and
+reconciliation parity.
 Owned paths:
 
-- `lib/product_compare/catalog.ex`
-- `lib/product_compare/catalog/products.ex`
-- `lib/product_compare/catalog/evidence.ex`
-- `lib/product_compare/catalog/saved_comparisons.ex`
-- `lib/product_compare/catalog/filtering.ex`
-- `lib/product_compare/catalog/filter_metadata.ex`
-- `test/product_compare/catalog/filter_metadata_test.exs`
-- `test/product_compare/catalog/filtering_regression_test.exs`
-- `test/product_compare/catalog/gtin_test.exs`
-- `test/product_compare/catalog/product_lookup_test.exs`
-- `test/product_compare/catalog/saved_comparison_set_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-- `test/product_compare_web/graphql/saved_comparisons_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `docs/work/catalog-context-decomposition.md`
-
-Internal slices:
-
-- Product and brand persistence, validation, slug identity, and read ownership.
-- Product identifier and media persistence and read ownership.
-- Owner-scoped saved-comparison lifecycle and query ownership.
-- Existing filtering and metadata facade parity.
-
-Prerequisites:
-
-- Existing `ProductCompare.Catalog` public functions, guards, typespecs,
-  values, exceptions, and errors remain authoritative.
-- Preserve conflict targets, validation, ordering, filters, transactions,
-  preloads, owner scope, entropy-ID handling, and historical slug behavior.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, frontend contracts, ingestion, taxonomy policy, or
-  product behavior.
-
-Verification:
-
-- `mix test test/product_compare/catalog test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/saved_comparisons_test.exs test/product_compare_web/graphql/node_query_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 106-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
-
-### 2. Comparison Snapshots Context Decomposition
-
-Status: ready
-Lane: Comparison snapshots context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.ComparisonSnapshots` remains the stable
-caller-facing context while snapshot lifecycle, immutable evidence capture,
-and payload hydration live in focused internal modules with unchanged public
-APIs, queries, owner scope, payloads, errors, SEO qualification, and GraphQL
-values.
-Next action: extract the three implementation responsibilities behind explicit
-facade wrappers and prove direct context and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/comparison_snapshots.ex`
-- `lib/product_compare/comparison_snapshots/lifecycle.ex`
-- `lib/product_compare/comparison_snapshots/capture.ex`
-- `lib/product_compare/comparison_snapshots/payload_codec.ex`
-- `test/product_compare/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `docs/work/comparison-snapshots-context-decomposition.md`
-
-Internal slices:
-
-- Owner-scoped publication, public reads, active queries, and revocation.
-- Immutable product, specification, offer, merchant, and recommendation fact
-  capture.
-- Stored payload hydration and domain-value decoding.
-
-Prerequisites:
-
-- Existing `ProductCompare.ComparisonSnapshots` public functions, clauses,
-  guards, defaults, typespecs, values, queries, and errors remain authoritative.
-- Preserve token validation and entropy, owner scope, ordering, revocation,
-  evidence values, excerpt bounds, decimals, timestamps, hydration, and SEO
-  qualification.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, SEO, pricing, recommendations, frontend contracts,
-  privacy, or snapshot versioning.
-
-Verification:
-
-- `mix test test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 12-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
-
-### 3. Taxonomy Context Decomposition
-
-Status: ready
-Lane: Taxonomy context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Taxonomy` remains the stable caller-facing
-context while taxonomy registry, taxon hierarchy, use-case assignment, and
-category-alias implementations live in focused internal modules with unchanged
-public APIs, transactions, closure behavior, queries, errors, catalog guards,
-and ingestion mapping.
-Next action: extract the four implementation responsibilities behind explicit
-facade wrappers and prove direct Taxonomy and ingestion enrichment parity.
-Owned paths:
-
-- `lib/product_compare/taxonomy.ex`
-- `lib/product_compare/taxonomy/taxonomies.ex`
-- `lib/product_compare/taxonomy/hierarchy.ex`
-- `lib/product_compare/taxonomy/assignments.ex`
-- `lib/product_compare/taxonomy/aliases.ex`
-- `test/product_compare/taxonomy/use_case_and_guardrail_test.exs`
-- `test/product_compare/taxonomy/taxon_closure_test.exs`
+- `lib/product_compare/ingestion/listing_persistence.ex`
+- `lib/product_compare/ingestion/listing_persistence/artifacts.ex`
+- `lib/product_compare/ingestion/listing_persistence/products.ex`
+- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
+- `lib/product_compare/ingestion/listing_persistence/offers.ex`
+- `test/product_compare/ingestion/ingestion_test.exs`
 - `test/product_compare/ingestion/enrichment_test.exs`
-- `docs/work/taxonomy-context-decomposition.md`
+- `test/product_compare/ingestion/reconciliation_test.exs`
+- `docs/work/listing-persistence-decomposition.md`
 
 Internal slices:
 
-- Taxonomy seeding, upserts, membership checks, and reads.
-- Taxon creation, updates, moves, closure maintenance, and hierarchy reads.
-- Product use-case assignment and removal.
-- Category-path normalization, alias persistence, and type-alias resolution.
+- Source-artifact and external-product freshness persistence.
+- Canonical product, GTIN, slug, brand, and ingested-type identity.
+- Missing copy, taxonomy mapping, media, and specification enrichment.
+- Merchant-product and price-point persistence plus alert enqueueing.
+- Stable transaction facade, reconciliation observation, and result parity.
 
 Prerequisites:
 
-- Existing `ProductCompare.Taxonomy` public functions, clauses, guards,
-  defaults, typespecs, values, queries, transactions, and errors remain
-  authoritative.
-- Preserve validation, closure rows, ordering, conflict targets, assignment
-  policy, normalization, alias resolution, and catalog and ingestion behavior.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, catalog filtering, ingestion enrichment, SEO,
-  frontend contracts, or taxonomy policy.
+- Existing `ListingPersistence.persist/3` inputs, result maps, transactions,
+  rollbacks, and errors remain authoritative.
+- Preserve hashes, conflict targets, freshness, identity, category mapping,
+  evidence counts, offer activity, price replay, alert jobs, and
+  reconciliation.
+- Keep application callers dependent only on
+  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; do not
+  change providers, schemas, migrations, catalog, taxonomy, specification,
+  pricing, alert, GraphQL, frontend, or product policy.
 
 Verification:
 
-- `mix test test/product_compare/taxonomy test/product_compare/ingestion/enrichment_test.exs`
+- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
 
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 13-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+Exit condition: the stable transaction facade retains the full ingestion
+contract, each implementation responsibility has one focused owner, the exact
+44-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
+
+### 2. CJ Candidates Task Decomposition
+
+Status: ready
+Lane: CJ candidates task decomposition
+Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
+Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` remains the
+stable operator entry point while option normalization, stale reporting,
+fit-gap reporting, and application-cohort reporting live in focused internal
+modules with unchanged CLI behavior, queries, output, errors, filtering, and
+credential safety.
+Next action: extract the four implementation responsibilities behind the
+stable Mix-task facade and prove the dedicated task and runbook boundary.
+Owned paths:
+
+- `lib/mix/tasks/product_compare.ingestion.cj_candidates.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/options.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/stale_report.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/fit_gap_report.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/application_cohort_report.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+- `docs/work/cj-candidates-task-decomposition.md`
+
+Internal slices:
+
+- CLI/default/report/status/format normalization and bounds.
+- Stale-candidate selection, freshness validation, and safe line output.
+- Fit-gap selection, classification, aggregation, and safe line output.
+- Application-cohort filters plus line and Markdown output.
+- Stable Mix-task facade, runbook boundary, and caller parity.
+
+Prerequisites:
+
+- Existing `CjCandidates.run/1` and `run_report/1` inputs, results, errors,
+  and printed output remain authoritative.
+- Preserve report and status defaults, formats, limits, ordering, filters,
+  counts, gap order, required-result gates, Global IDs, escaping, timestamps,
+  and raw-field redaction.
+- Preserve the explicit rejection of the removed CSV export; do not change
+  provider requests, persistence, schemas, migrations, candidate review
+  policy, deferred operator scope, or product policy.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable task retains the full caller-facing and CLI
+contract, each implementation responsibility has one focused owner, the exact
+6-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
+
+### 3. Discussions Resolver Decomposition
+
+Status: ready
+Lane: Discussions resolver decomposition
+Plan: `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompareWeb.Resolvers.DiscussionsResolver` remains the
+stable schema-facing resolver while public community reads and authenticated
+mutation handling live in focused internal modules with unchanged public
+callbacks, loader keys, query budgets, values, authorization, mutation
+payloads, and errors.
+Next action: extract the two implementation responsibilities behind explicit
+resolver-facade wrappers and prove community GraphQL and Dataloader parity.
+Owned paths:
+
+- `lib/product_compare_web/resolvers/discussions_resolver.ex`
+- `lib/product_compare_web/resolvers/discussions/reads.ex`
+- `lib/product_compare_web/resolvers/discussions/mutations.ex`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `docs/work/discussions-resolver-decomposition.md`
+
+Internal slices:
+
+- Public and viewer-scoped read resolver ownership.
+- Authenticated mutation, input, action, payload, and error ownership.
+- Stable resolver facade, shared presentation fields, and caller parity.
+
+Prerequisites:
+
+- Existing `DiscussionsResolver` public functions, clauses, values, loader
+  tuples, results, mutation payloads, and errors remain authoritative.
+- Preserve connection arguments, loader sources and keys, public and owner
+  visibility, request batching, authorization, Global IDs, idempotency,
+  rate-limit errors, and moderation behavior.
+- Keep schema, type, production, and test callers dependent only on the
+  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
+  discussion context policy, query budgets, or frontend contracts.
+
+Verification:
+
+- `mix test test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable resolver retains the full schema- and test-facing
+contract, each implementation responsibility has one focused owner, the exact
+61-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

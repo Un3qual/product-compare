@@ -26,6 +26,42 @@ defmodule ProductCompare.ComparisonSnapshotsTest do
     refute Ecto.Changeset.get_change(changeset, :search_qualified)
   end
 
+  test "hydrates payloads whose recommendation is absent" do
+    snapshot =
+      ComparisonSnapshots.hydrate(%ComparisonSnapshot{
+        payload: %{"version" => 1, "products" => []}
+      })
+
+    assert snapshot.payload.recommendation == %{
+             algorithm_version: nil,
+             currency: nil,
+             evaluated_at: nil,
+             missing_inputs: nil,
+             profile: nil,
+             rankings: [],
+             status: nil,
+             winner_product_id: nil
+           }
+  end
+
+  test "hydrates recommendation payloads whose evaluated timestamp is absent" do
+    snapshot =
+      ComparisonSnapshots.hydrate(%ComparisonSnapshot{
+        payload: %{
+          "version" => 1,
+          "products" => [],
+          "recommendation" => %{
+            "profile" => "best_value",
+            "status" => "insufficient_evidence"
+          }
+        }
+      })
+
+    assert snapshot.payload.recommendation.profile == :best_value
+    assert snapshot.payload.recommendation.status == :insufficient_evidence
+    assert snapshot.payload.recommendation.evaluated_at == nil
+  end
+
   test "publishes ordered immutable facts behind a high-entropy public token" do
     owner = AccountsFixtures.user_fixture()
     {first, first_point} = product_with_price("First camera", "120")

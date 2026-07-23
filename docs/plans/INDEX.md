@@ -243,6 +243,89 @@ the public contract while `WatchRules`, `MarketFacts`, `Evaluation`, and
 `Inbox` own the four planned responsibilities. Its exact characterization
 gate passes 13 tests, and full `mix ci` passes 905 backend tests at 83.53%
 coverage, 1,507 frontend tests, and all repository quality/build gates.
+Catalog context decomposition is complete. The 164-line stable facade retains
+the public contract while `Products`, `Evidence`, and `SavedComparisons` own
+the three planned responsibilities alongside unchanged `Filtering` and
+`FilterMetadata`. Its exact characterization gate passes 106 tests, and full
+`mix ci` passes 909 backend tests at 83.53% coverage, 1,507 frontend tests, and
+all repository quality/build gates.
+Before claiming Catalog context decomposition, a twentieth claim-floor audit
+promoted CJ Import task decomposition. The 627-line stable Mix task combines
+option and credential normalization, durable single-run imports, and reviewed-
+candidate batching behind `run/1` and `run_import/1`; its dedicated
+characterization gate passed 19 tests. The structural extraction preserves
+provider requests, durable run state, cursor behavior, candidate policy,
+credential safety, worker/resume callers, and output while remaining path-
+disjoint from Catalog, Comparison Snapshots, and Taxonomy.
+Before claiming Comparison Snapshots context decomposition, a twenty-first
+claim-floor audit promoted CJ Runs task decomposition. The 600-line stable Mix
+task combines CLI and keyword normalization, latest/history/failed reporting,
+and import/discovery resume orchestration behind `run/1`, `run_report/1`, and
+`run_resume/1`; its dedicated characterization gate passed 10 tests. The
+structural extraction preserves queries, readiness checks, cursor behavior,
+runner inputs, reports, errors, credential-safe logging, and the operator
+runbook while remaining path-disjoint from Comparison Snapshots, Taxonomy, and
+CJ Import.
+Comparison Snapshots context decomposition is complete. The 42-line stable
+facade retains the public contract while `Lifecycle`, `Capture`, and
+`PayloadCodec` own lifecycle persistence, immutable evidence projection, and
+payload decoding. Legacy and partial recommendation payloads now hydrate absent
+optional fields to `nil`. Its exact characterization gate passes 14 tests, the
+application caller scan finds no facade bypasses, and full `mix ci` passes all
+repository quality, test, and build gates.
+Before claiming Taxonomy context decomposition, a twenty-second claim-floor
+audit promoted Catalog Resolver decomposition. The 720-line stable GraphQL
+resolver combines catalog discovery, input normalization, current-attribute
+projection, and saved-comparison behavior behind eight public resolver
+callbacks. Its catalog, filter-metadata, saved-comparison,
+specification-correction, and Dataloader characterization gate passed 100
+tests. The structural extraction preserves schema wiring, loader sources and
+keys, query budgets, filter validation, request-local unit caching,
+authorization, mutation payloads, and frontend behavior while remaining
+path-disjoint from Taxonomy, CJ Import, and CJ Runs.
+Taxonomy context decomposition is complete. The 88-line stable facade retains
+the public contract while `Taxonomies`, `Hierarchy`, `Assignments`, and
+`Aliases` own registry and reads, hierarchy and closure maintenance, use-case
+assignments, and category-alias behavior. The two existing path-scoped
+`Ecto.Multi` Dialyzer baselines moved with their unchanged hierarchy calls
+without adding or broadening a suppression. Its exact characterization gate
+passes 13 tests, and full `mix ci` passes 909 backend tests at 83.45% coverage,
+1,507 frontend tests, and all repository quality and build gates.
+Before claiming CJ Runs task decomposition, a twenty-third claim-floor audit
+promoted CJ Candidates task decomposition. The 430-line stable Mix task
+combines CLI and keyword normalization, stale reporting, fit-gap reporting,
+and application-cohort reporting behind `run/1` and `run_report/1`; its
+dedicated characterization gate passed 6 tests. The structural extraction
+preserves queries, filters, ordering, output, required-result gates, Global ID
+projection, credential safety, the rejected CSV export, and the operator
+runbook while remaining path-disjoint from CJ Runs, Catalog Resolver, and
+Listing Persistence.
+CJ Runs task decomposition is complete. The 33-line stable facade retains the
+three public entry points while `Options`, `Reports`, and `Resume` own parsing
+and normalization, operator-safe run reporting, and import/discovery resume
+orchestration. Full-gate follow-up removed one private trivial forwarding
+helper. Its exact characterization gate passes 10 tests, the caller scan finds
+no internal-owner bypasses, and full `mix ci` passes 909 backend tests, 1,507
+frontend tests, and all repository quality and build gates.
+Before claiming Catalog Resolver decomposition, a twenty-fourth claim-floor
+audit promoted Discussions Resolver decomposition. The 378-line stable
+GraphQL resolver combines public and viewer-scoped community reads with
+authenticated mutation input, action, payload, and error handling behind its
+schema-facing callbacks. Its community GraphQL and Dataloader characterization
+gate passed 61 tests. The structural extraction preserves schema wiring,
+loader sources and keys, query budgets, public and owner visibility,
+authorization, Global IDs, mutation payloads, moderation, and frontend
+behavior while remaining path-disjoint from Catalog Resolver, Listing
+Persistence, and CJ Candidates.
+Catalog Resolver decomposition is complete. The 65-line stable facade retains
+all schema- and type-facing callbacks while `Discovery`,
+`InputNormalization`, `CurrentAttributes`, and `SavedComparisons` own the four
+planned implementations. Full-gate follow-up consolidated redundant facade
+clauses and moved one existing path-scoped Dialyzer baseline with its unchanged
+`MapSet.member?/2` call. Its exact characterization gate passes 100 tests, the
+caller scan finds no internal-owner bypasses, and full `mix ci` passes 909
+backend tests, 1,507 frontend tests, and all repository quality and build
+gates.
 
 Implementation plan references (non-dispatch):
 
@@ -265,6 +348,12 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-22-catalog-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-22-taxonomy-context-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -369,25 +458,73 @@ batch and should not be recreated or promoted.
   market-fact, evaluation, and inbox implementations move into focused internal
   modules. Its direct and GraphQL characterization gate passes 13 tests; alert
   policy, pricing enqueueing, transports, and frontend behavior stay unchanged.
-- Catalog context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Catalog` facade remains caller-facing while
-  product/brand lifecycle, identifier/media evidence, and saved-comparison
-  implementations move into focused internal modules alongside the existing
-  `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
+- Catalog context decomposition is complete: the stable
+  `ProductCompare.Catalog` facade remains caller-facing while `Products`,
+  `Evidence`, and `SavedComparisons` own product/brand lifecycle,
+  identifier/media evidence, and saved-comparison implementations alongside
+  the existing `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
   characterization gate passes 106 tests; catalog, ingestion, taxonomy,
   GraphQL, and frontend policy stay unchanged.
-- Comparison Snapshots context decomposition is a path-disjoint structural
-  successor: the stable `ProductCompare.ComparisonSnapshots` facade remains
-  caller-facing while snapshot lifecycle, immutable evidence capture, and
-  payload hydration move into focused internal modules. Its direct and GraphQL
-  characterization gate passes 12 tests; snapshot, SEO, pricing,
-  recommendation, privacy, and frontend policy stay unchanged.
-- Taxonomy context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Taxonomy` facade remains caller-facing while taxonomy
-  registry, hierarchy, use-case assignment, and category-alias implementations
-  move into focused internal modules. Its direct Taxonomy and ingestion
-  enrichment characterization gate passes 13 tests; taxonomy, catalog,
-  ingestion, SEO, GraphQL, and frontend policy stay unchanged.
+- Comparison Snapshots context decomposition is complete: the stable
+  `ProductCompare.ComparisonSnapshots` facade remains caller-facing while
+  `Lifecycle`, `Capture`, and `PayloadCodec` own snapshot lifecycle, immutable
+  evidence capture, and payload hydration. Its direct and GraphQL
+  characterization gate passes 14 tests; absent optional recommendation fields
+  hydrate to `nil`, while snapshot, SEO, pricing, recommendation, privacy, and
+  frontend policy stay unchanged.
+- Taxonomy context decomposition is complete: the stable
+  `ProductCompare.Taxonomy` facade remains caller-facing while `Taxonomies`,
+  `Hierarchy`, `Assignments`, and `Aliases` own the four focused
+  implementations. Its direct Taxonomy and ingestion enrichment
+  characterization gate passes 13 tests; taxonomy, catalog, ingestion, SEO,
+  GraphQL, and frontend policy stay unchanged.
+- Catalog Resolver decomposition is complete: the
+  stable `ProductCompareWeb.Resolvers.CatalogResolver` remains schema-facing
+  while `Discovery`, `InputNormalization`, `CurrentAttributes`, and
+  `SavedComparisons` own discovery, normalization, current-attribute
+  projection, and saved-comparison resolution. Its catalog,
+  filter-metadata, saved-comparison, specification-correction, and Dataloader
+  characterization gate passes 100 tests; schema wiring, loader keys, query
+  budgets, validation, authorization, payloads, and frontend policy stay
+  unchanged.
+- CJ Import task decomposition is complete: the stable
+  `Mix.Tasks.ProductCompare.Ingestion.CjImport` entry point remains
+  caller-facing while `Options`, `Runner`, and `Candidates` own input
+  normalization, durable single-run imports, and reviewed-candidate batching.
+  Its dedicated characterization gate passes 21 tests; runner failures emit
+  sanitized categories and stack traces, while provider requests, ingestion
+  persistence, worker/resume callers, scheduling, deferred operator scope, and
+  product policy stay unchanged.
+- CJ Runs task decomposition is complete: the
+  stable `Mix.Tasks.ProductCompare.Ingestion.CjRuns` entry point remains
+  caller-facing while option normalization, run reporting, and resume
+  orchestration move into focused internal modules. Its dedicated
+  characterization gate passes 10 tests; CJ queries, readiness, cursor and
+  runner behavior, credential safety, the operator runbook, deferred operator
+  scope, and product policy stay unchanged.
+- Listing Persistence decomposition is a path-disjoint structural successor:
+  the stable `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary
+  remains caller-facing while source and external identity, canonical product
+  identity, enrichment, and offer observation persistence move into focused
+  internal modules. Its ingestion, enrichment, and reconciliation
+  characterization gate passes 44 tests; transactions, writes, conflict
+  targets, freshness, identity, taxonomy, specifications, pricing, alerts,
+  reconciliation, provider behavior, and product policy stay unchanged.
+- CJ Candidates task decomposition is a path-disjoint structural successor:
+  the stable `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point
+  remains caller-facing while `Options`, `StaleReport`, `FitGapReport`, and
+  `ApplicationCohortReport` own normalization and the three supported reports.
+  Its dedicated characterization gate passes 6 tests; queries, filters,
+  ordering, output, Global IDs, credential safety, the rejected CSV export, the
+  operator runbook, deferred operator scope, and product policy stay unchanged.
+- Discussions Resolver decomposition is a path-disjoint structural successor:
+  the stable `ProductCompareWeb.Resolvers.DiscussionsResolver` remains
+  schema-facing while `Reads` owns public and viewer-scoped community reads and
+  `Mutations` owns authenticated input, actions, payloads, and error
+  translation. Its community GraphQL and Dataloader characterization gate
+  passes 61 tests; schema wiring, loader keys, query budgets, visibility,
+  authorization, Global IDs, moderation, payloads, and frontend policy stay
+  unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

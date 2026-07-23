@@ -2,6 +2,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
   use ProductCompare.DataCase, async: false
 
   import ExUnit.CaptureIO
+  import ExUnit.CaptureLog
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Repo
@@ -672,16 +673,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "marks the import run failed when the page fetch raises after the run starts" do
       fetcher = fn _cursor, _opts ->
-        raise "provider secret should not be persisted"
+        raise "provider secret should not be logged"
       end
 
-      assert {:error, :runner_exception} =
-               CjImport.run_import(
-                 fetcher: fetcher,
-                 keywords: ["shoe"],
-                 limit: 1,
-                 print_report: false
-               )
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "CJ product import runner failed"
+      assert log =~ "kind=error"
+      assert log =~ "reason=RuntimeError"
+      assert log =~ "product_compare_ingestion_cj_import_test.exs"
+      refute log =~ "provider secret should not be logged"
 
       assert %ImportRun{
                status: "failed",
@@ -692,6 +702,50 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_persisted: 0,
                records_failed: 0
              } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
+
+    test "logs caught page-fetch failures before returning runner_exception" do
+      fetcher = fn _cursor, _opts ->
+        throw({:fetch_failed, %{authorization: "Bearer provider-secret"}})
+      end
+
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "CJ product import runner failed"
+      assert log =~ "kind=throw"
+      assert log =~ "reason=fetch_failed"
+      assert log =~ "product_compare_ingestion_cj_import_test.exs"
+      refute log =~ "provider-secret"
+    end
+
+    test "does not trust exception-shaped caught values when classifying failures" do
+      fetcher = fn _cursor, _opts ->
+        throw(%{__exception__: true, __struct__: "provider-secret"})
+      end
+
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "kind=throw"
+      assert log =~ "reason=map"
+      refute log =~ "provider-secret"
     end
   end
 

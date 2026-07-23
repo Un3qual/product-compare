@@ -3,222 +3,39 @@ defmodule ProductCompare.Taxonomy do
   Taxonomy context for hard type taxonomy and soft use-case tags.
   """
 
-  import Ecto.Query
-
-  alias Ecto.Multi
-  alias ProductCompare.Input
-  alias ProductCompare.Repo
-  alias ProductCompareSchemas.Taxonomy.{ProductTaxon, Taxon, TaxonAlias, TaxonClosure, Taxonomy}
+  alias ProductCompare.Taxonomy.Aliases
+  alias ProductCompare.Taxonomy.Assignments
+  alias ProductCompare.Taxonomy.Hierarchy
+  alias ProductCompare.Taxonomy.Taxonomies
+  alias ProductCompareSchemas.Taxonomy.{ProductTaxon, Taxon, TaxonAlias, Taxonomy}
 
   @type closure_result :: %{taxon: Taxon.t(), depth: non_neg_integer()}
 
   @spec seed_default_taxonomies() :: {:ok, [Taxonomy.t()]} | {:error, Ecto.Changeset.t()}
-  def seed_default_taxonomies do
-    with {:ok, type} <- upsert_taxonomy(%{code: "type", name: "Type"}),
-         {:ok, use_case} <- upsert_taxonomy(%{code: "use_case", name: "Use Case"}) do
-      {:ok, [type, use_case]}
-    end
-  end
+  def seed_default_taxonomies, do: Taxonomies.seed_default_taxonomies()
 
   @spec upsert_taxonomy(map()) :: {:ok, Taxonomy.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_taxonomy(attrs) do
-    now = DateTime.utc_now()
-    changeset = Taxonomy.changeset(%Taxonomy{}, attrs)
-    code = Input.fetch_attr(attrs, :code)
-
-    if changeset.valid? do
-      update_fields =
-        changeset.changes
-        |> Map.drop([:code])
-        |> Map.to_list()
-
-      Repo.insert(
-        changeset,
-        on_conflict: [set: update_fields ++ [updated_at: now]],
-        conflict_target: [:code],
-        returning: true
-      )
-    else
-      fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset)
-    end
-  end
-
-  defp fetch_existing_taxonomy_for_code_only_attrs(attrs, code, changeset) do
-    if present?(code) and not provided?(attrs, :name) do
-      case Repo.get_by(Taxonomy, code: code) do
-        %Taxonomy{} = taxonomy -> {:ok, taxonomy}
-        nil -> {:error, changeset}
-      end
-    else
-      {:error, changeset}
-    end
-  end
-
-  defp provided?(attrs, key),
-    do: Input.attr_key_present?(attrs, key)
-
-  defp present?(value) when is_binary(value), do: String.trim(value) != ""
-  defp present?(_value), do: false
+  def upsert_taxonomy(attrs), do: Taxonomies.upsert_taxonomy(attrs)
 
   @spec create_taxon(map()) :: {:ok, Taxon.t()} | {:error, term()}
-  def create_taxon(attrs) do
-    parent_id = Input.fetch_attr(attrs, :parent_id)
-    taxonomy_id = Input.fetch_attr(attrs, :taxonomy_id)
-
-    with :ok <- validate_parent_taxonomy(parent_id, taxonomy_id) do
-      now = DateTime.utc_now()
-
-      Multi.new()
-      |> Multi.insert(:taxon, Taxon.changeset(%Taxon{}, attrs))
-      |> Multi.run(:closure_rows, fn repo, %{taxon: taxon} ->
-        self_row = %{ancestor_id: taxon.id, descendant_id: taxon.id, depth: 0, inserted_at: now}
-
-        parent_rows =
-          if parent_id do
-            Repo.all(
-              from c in TaxonClosure,
-                where: c.descendant_id == ^parent_id,
-                select: {c.ancestor_id, c.depth}
-            )
-            |> Enum.map(fn {ancestor_id, depth} ->
-              %{
-                ancestor_id: ancestor_id,
-                descendant_id: taxon.id,
-                depth: depth + 1,
-                inserted_at: now
-              }
-            end)
-          else
-            []
-          end
-
-        rows = [self_row | parent_rows]
-        {count, _} = repo.insert_all(TaxonClosure, rows)
-
-        if count >= 1 do
-          {:ok, rows}
-        else
-          {:error, :closure_insert_failed}
-        end
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{taxon: taxon}} -> {:ok, taxon}
-        {:error, _step, reason, _changes} -> {:error, reason}
-      end
-    end
-  end
+  def create_taxon(attrs), do: Hierarchy.create_taxon(attrs)
 
   @spec update_taxon(Taxon.t(), map()) :: {:ok, Taxon.t()} | {:error, Ecto.Changeset.t()}
-  def update_taxon(%Taxon{} = taxon, attrs) when is_map(attrs) do
-    taxon
-    |> Taxon.changeset(attrs)
-    |> Repo.update()
-  end
+  def update_taxon(%Taxon{} = taxon, attrs) when is_map(attrs),
+    do: Hierarchy.update_taxon(taxon, attrs)
 
   @spec get_taxon_by_seo_slug(String.t()) :: Taxon.t() | nil
-  def get_taxon_by_seo_slug(slug) when is_binary(slug), do: Repo.get_by(Taxon, seo_slug: slug)
+  def get_taxon_by_seo_slug(slug) when is_binary(slug), do: Taxonomies.get_taxon_by_seo_slug(slug)
   def get_taxon_by_seo_slug(_slug), do: nil
 
   @spec move_taxon(pos_integer(), pos_integer() | nil) :: {:ok, Taxon.t()} | {:error, term()}
-  def move_taxon(taxon_id, new_parent_id) do
-    with {:ok, taxon} <- fetch_taxon(taxon_id),
-         :ok <- validate_move_target(taxon, new_parent_id),
-         :ok <- ensure_not_cycle(taxon_id, new_parent_id) do
-      now = DateTime.utc_now()
-
-      Multi.new()
-      |> Multi.update(:taxon, Taxon.changeset(taxon, %{parent_id: new_parent_id}))
-      |> Multi.run(:subtree, fn repo, _changes ->
-        subtree =
-          repo.all(
-            from c in TaxonClosure,
-              where: c.ancestor_id == ^taxon_id,
-              select: %{descendant_id: c.descendant_id, depth: c.depth}
-          )
-
-        {:ok, subtree}
-      end)
-      |> Multi.run(:old_ancestors, fn repo, %{subtree: subtree} ->
-        subtree_ids = Enum.map(subtree, & &1.descendant_id)
-
-        old_ancestor_ids =
-          repo.all(
-            from c in TaxonClosure,
-              where: c.descendant_id == ^taxon_id and c.ancestor_id not in ^subtree_ids,
-              select: c.ancestor_id
-          )
-
-        {:ok, old_ancestor_ids}
-      end)
-      |> Multi.run(:remove_old_paths, fn repo,
-                                         %{subtree: subtree, old_ancestors: old_ancestor_ids} ->
-        subtree_ids = Enum.map(subtree, & &1.descendant_id)
-
-        repo.delete_all(
-          from c in TaxonClosure,
-            where: c.descendant_id in ^subtree_ids and c.ancestor_id in ^old_ancestor_ids
-        )
-
-        {:ok, :deleted}
-      end)
-      |> Multi.run(:insert_new_paths, fn repo, %{subtree: subtree} ->
-        if is_nil(new_parent_id) do
-          {:ok, []}
-        else
-          new_ancestors =
-            repo.all(
-              from c in TaxonClosure,
-                where: c.descendant_id == ^new_parent_id,
-                select: %{ancestor_id: c.ancestor_id, depth: c.depth}
-            )
-
-          rows =
-            for ancestor <- new_ancestors,
-                subtree_item <- subtree do
-              %{
-                ancestor_id: ancestor.ancestor_id,
-                descendant_id: subtree_item.descendant_id,
-                depth: ancestor.depth + subtree_item.depth + 1,
-                inserted_at: now
-              }
-            end
-
-          repo.insert_all(TaxonClosure, rows, on_conflict: :nothing)
-          {:ok, rows}
-        end
-      end)
-      |> Repo.transaction()
-      |> case do
-        {:ok, %{taxon: moved_taxon}} -> {:ok, moved_taxon}
-        {:error, _step, reason, _changes} -> {:error, reason}
-      end
-    end
-  end
+  def move_taxon(taxon_id, new_parent_id), do: Hierarchy.move_taxon(taxon_id, new_parent_id)
 
   @spec list_descendants(pos_integer()) :: [closure_result()]
-  def list_descendants(taxon_id) do
-    Repo.all(
-      from c in TaxonClosure,
-        join: t in Taxon,
-        on: t.id == c.descendant_id,
-        where: c.ancestor_id == ^taxon_id and c.depth > 0,
-        order_by: [asc: c.depth, asc: t.name],
-        select: %{taxon: t, depth: c.depth}
-    )
-  end
+  def list_descendants(taxon_id), do: Hierarchy.list_descendants(taxon_id)
 
   @spec list_ancestors(pos_integer()) :: [closure_result()]
-  def list_ancestors(taxon_id) do
-    Repo.all(
-      from c in TaxonClosure,
-        join: t in Taxon,
-        on: t.id == c.ancestor_id,
-        where: c.descendant_id == ^taxon_id and c.depth > 0,
-        order_by: [asc: c.depth, asc: t.name],
-        select: %{taxon: t, depth: c.depth}
-    )
-  end
+  def list_ancestors(taxon_id), do: Hierarchy.list_ancestors(taxon_id)
 
   @spec assign_use_case(
           pos_integer(),
@@ -229,168 +46,43 @@ defmodule ProductCompare.Taxonomy do
         ) ::
           {:ok, ProductTaxon.t()} | {:error, term()}
   def assign_use_case(product_id, use_case_taxon_id, created_by, source_type, confidence \\ nil) do
-    with {:ok, :use_case} <- ensure_taxon_in_taxonomy(use_case_taxon_id, "use_case") do
-      %ProductTaxon{}
-      |> ProductTaxon.changeset(%{
-        product_id: product_id,
-        taxon_id: use_case_taxon_id,
-        created_by: created_by,
-        source_type: source_type,
-        confidence: confidence
-      })
-      |> Repo.insert(
-        on_conflict: {:replace, [:source_type, :confidence, :created_by, :inserted_at]},
-        conflict_target: [:product_id, :taxon_id],
-        returning: true
-      )
-    end
-  end
-
-  @spec unassign_use_case(pos_integer(), pos_integer()) :: {:ok, non_neg_integer()}
-  def unassign_use_case(product_id, use_case_taxon_id) do
-    {count, _} =
-      Repo.delete_all(
-        from pt in ProductTaxon,
-          where: pt.product_id == ^product_id and pt.taxon_id == ^use_case_taxon_id
-      )
-
-    {:ok, count}
-  end
-
-  @spec ensure_taxon_in_taxonomy(pos_integer(), String.t()) ::
-          {:ok, :use_case | :type} | {:error, :invalid_taxon}
-  def ensure_taxon_in_taxonomy(taxon_id, taxonomy_code) do
-    query =
-      from t in Taxon,
-        join: tx in Taxonomy,
-        on: tx.id == t.taxonomy_id,
-        where: t.id == ^taxon_id and tx.code == ^taxonomy_code,
-        select: tx.code
-
-    case Repo.one(query) do
-      nil -> {:error, :invalid_taxon}
-      "use_case" -> {:ok, :use_case}
-      "type" -> {:ok, :type}
-      _ -> {:error, :invalid_taxon}
-    end
-  end
-
-  @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
-  def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
-    Repo.all(
-      from taxon in Taxon,
-        join: taxonomy in Taxonomy,
-        on: taxonomy.id == taxon.taxonomy_id,
-        where: taxonomy.code == ^taxonomy_code,
-        order_by: [asc: taxon.name, asc: taxon.code, asc: taxon.id]
+    Assignments.assign_use_case(
+      product_id,
+      use_case_taxon_id,
+      created_by,
+      source_type,
+      confidence
     )
   end
 
-  @spec list_taxon_aliases(pos_integer()) :: [TaxonAlias.t()]
-  def list_taxon_aliases(taxon_id) do
-    Repo.all(from ta in TaxonAlias, where: ta.taxon_id == ^taxon_id, order_by: [asc: ta.alias])
+  @spec unassign_use_case(pos_integer(), pos_integer()) :: {:ok, non_neg_integer()}
+  def unassign_use_case(product_id, use_case_taxon_id),
+    do: Assignments.unassign_use_case(product_id, use_case_taxon_id)
+
+  @spec ensure_taxon_in_taxonomy(pos_integer(), String.t()) ::
+          {:ok, :use_case | :type} | {:error, :invalid_taxon}
+  def ensure_taxon_in_taxonomy(taxon_id, taxonomy_code),
+    do: Taxonomies.ensure_taxon_in_taxonomy(taxon_id, taxonomy_code)
+
+  @spec list_taxons_for_taxonomy(String.t()) :: [Taxon.t()]
+  def list_taxons_for_taxonomy(taxonomy_code) when is_binary(taxonomy_code) do
+    Taxonomies.list_taxons_for_taxonomy(taxonomy_code)
   end
+
+  @spec list_taxon_aliases(pos_integer()) :: [TaxonAlias.t()]
+  def list_taxon_aliases(taxon_id), do: Aliases.list_taxon_aliases(taxon_id)
 
   @spec normalize_category_path([String.t()] | String.t()) :: String.t() | nil
-  def normalize_category_path(path) when is_binary(path) do
-    path
-    |> String.split(">", trim: true)
-    |> normalize_category_path()
-  end
+  def normalize_category_path(path) when is_binary(path),
+    do: Aliases.normalize_category_path(path)
 
-  def normalize_category_path(path) when is_list(path) do
-    path
-    |> Enum.filter(&is_binary/1)
-    |> Enum.map(&String.trim/1)
-    |> Enum.reject(&(&1 == ""))
-    |> Enum.join(" > ")
-    |> String.downcase()
-    |> case do
-      "" -> nil
-      normalized -> normalized
-    end
-  end
-
+  def normalize_category_path(path) when is_list(path), do: Aliases.normalize_category_path(path)
   def normalize_category_path(_path), do: nil
 
   @spec upsert_taxon_alias(pos_integer(), [String.t()] | String.t()) ::
           {:ok, TaxonAlias.t()} | {:error, Ecto.Changeset.t() | :invalid_category_path}
-  def upsert_taxon_alias(taxon_id, path) do
-    case normalize_category_path(path) do
-      nil ->
-        {:error, :invalid_category_path}
-
-      normalized_path ->
-        %TaxonAlias{}
-        |> TaxonAlias.changeset(%{taxon_id: taxon_id, alias: normalized_path})
-        |> Repo.insert(
-          on_conflict: {:replace, [:taxon_id]},
-          conflict_target: [:alias],
-          returning: true
-        )
-    end
-  end
+  def upsert_taxon_alias(taxon_id, path), do: Aliases.upsert_taxon_alias(taxon_id, path)
 
   @spec resolve_type_alias([String.t()] | String.t()) :: Taxon.t() | nil
-  def resolve_type_alias(path) do
-    case normalize_category_path(path) do
-      nil ->
-        nil
-
-      normalized_path ->
-        Repo.one(
-          from taxon_alias in TaxonAlias,
-            join: taxon in Taxon,
-            on: taxon.id == taxon_alias.taxon_id,
-            join: taxonomy in Taxonomy,
-            on: taxonomy.id == taxon.taxonomy_id,
-            where: taxon_alias.alias == ^normalized_path and taxonomy.code == "type",
-            select: taxon
-        )
-    end
-  end
-
-  defp fetch_taxon(taxon_id) do
-    case Repo.get(Taxon, taxon_id) do
-      nil -> {:error, :taxon_not_found}
-      taxon -> {:ok, taxon}
-    end
-  end
-
-  defp validate_parent_taxonomy(nil, _taxonomy_id), do: :ok
-
-  defp validate_parent_taxonomy(parent_id, taxonomy_id) do
-    with {:ok, normalized_taxonomy_id} <- Input.normalize_integer_id(taxonomy_id) do
-      case Repo.get(Taxon, parent_id) do
-        nil -> {:error, :parent_not_found}
-        %Taxon{taxonomy_id: ^normalized_taxonomy_id} -> :ok
-        _ -> {:error, :parent_taxonomy_mismatch}
-      end
-    else
-      :error -> {:error, :parent_taxonomy_mismatch}
-    end
-  end
-
-  defp validate_move_target(_taxon, nil), do: :ok
-
-  defp validate_move_target(%Taxon{taxonomy_id: taxonomy_id}, new_parent_id) do
-    case Repo.get(Taxon, new_parent_id) do
-      nil -> {:error, :new_parent_not_found}
-      %Taxon{taxonomy_id: ^taxonomy_id} -> :ok
-      _ -> {:error, :parent_taxonomy_mismatch}
-    end
-  end
-
-  defp ensure_not_cycle(_taxon_id, nil), do: :ok
-
-  defp ensure_not_cycle(taxon_id, taxon_id), do: {:error, :cycle_detected}
-
-  defp ensure_not_cycle(taxon_id, new_parent_id) do
-    query =
-      from c in TaxonClosure,
-        where: c.ancestor_id == ^taxon_id and c.descendant_id == ^new_parent_id and c.depth > 0,
-        select: c.id
-
-    if Repo.exists?(query), do: {:error, :cycle_detected}, else: :ok
-  end
+  def resolve_type_alias(path), do: Aliases.resolve_type_alias(path)
 end
