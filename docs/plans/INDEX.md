@@ -290,6 +290,15 @@ assignments, and category-alias behavior. The two existing path-scoped
 without adding or broadening a suppression. Its exact characterization gate
 passes 13 tests, and full `mix ci` passes 909 backend tests at 83.45% coverage,
 1,507 frontend tests, and all repository quality and build gates.
+Before claiming CJ Runs task decomposition, a twenty-third claim-floor audit
+promoted CJ Candidates task decomposition. The 430-line stable Mix task
+combines CLI and keyword normalization, stale reporting, fit-gap reporting,
+and application-cohort reporting behind `run/1` and `run_report/1`; its
+dedicated characterization gate passed 6 tests. The structural extraction
+preserves queries, filters, ordering, output, required-result gates, Global ID
+projection, credential safety, the rejected CSV export, and the operator
+runbook while remaining path-disjoint from CJ Runs, Catalog Resolver, and
+Listing Persistence.
 
 Implementation plan references (non-dispatch):
 
@@ -315,6 +324,8 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-cj-import-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-catalog-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -468,6 +479,13 @@ batch and should not be recreated or promoted.
   characterization gate passes 44 tests; transactions, writes, conflict
   targets, freshness, identity, taxonomy, specifications, pricing, alerts,
   reconciliation, provider behavior, and product policy stay unchanged.
+- CJ Candidates task decomposition is a path-disjoint structural successor:
+  the stable `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point
+  remains caller-facing while `Options`, `StaleReport`, `FitGapReport`, and
+  `ApplicationCohortReport` own normalization and the three supported reports.
+  Its dedicated characterization gate passes 6 tests; queries, filters,
+  ordering, output, Global IDs, credential safety, the rejected CSV export, the
+  operator runbook, deferred operator scope, and product policy stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

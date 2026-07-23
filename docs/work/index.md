@@ -1569,15 +1569,19 @@ tests, and final `mix ci` passed the queue, formatting, typecheck, quality,
 backend/frontend test, Relay, TypeScript, production-build, and bundle gates.
 CJ Runs, Catalog Resolver, and Listing Persistence decomposition remain ready.
 
+Before claiming CJ Runs Task Decomposition on 2026-07-23, the coordinator
+validated CJ Candidates Task Decomposition as a fourth independently shippable
+structural successor. The 430-line stable Mix task combines option
+normalization, stale reporting, fit-gap reporting, and application-cohort
+reporting; its dedicated characterization gate passed 6 tests. CJ Runs was
+therefore claimed while Catalog Resolver, Listing Persistence, and CJ
+Candidates decomposition remain ready.
+
 ## Active Work
 
-None.
+### CJ Runs Task Decomposition
 
-## Ready Work
-
-### 1. CJ Runs Task Decomposition
-
-Status: ready
+Status: active
 Lane: CJ runs task decomposition
 Plan: `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
 Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjRuns` remains the stable
@@ -1629,7 +1633,9 @@ contract, each implementation responsibility has one focused owner, the exact
 10-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 2. Catalog Resolver Decomposition
+## Ready Work
+
+### 1. Catalog Resolver Decomposition
 
 Status: ready
 Lane: Catalog resolver decomposition
@@ -1688,7 +1694,7 @@ contract, each implementation responsibility has one focused owner, the exact
 100-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 3. Listing Persistence Decomposition
+### 2. Listing Persistence Decomposition
 
 Status: ready
 Lane: Listing persistence decomposition
@@ -1745,6 +1751,61 @@ Verification:
 Exit condition: the stable transaction facade retains the full ingestion
 contract, each implementation responsibility has one focused owner, the exact
 44-test characterization gate and repository gates pass, and no external
+caller bypasses the facade.
+
+### 3. CJ Candidates Task Decomposition
+
+Status: ready
+Lane: CJ candidates task decomposition
+Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
+Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` remains the
+stable operator entry point while option normalization, stale reporting,
+fit-gap reporting, and application-cohort reporting live in focused internal
+modules with unchanged CLI behavior, queries, output, errors, filtering, and
+credential safety.
+Next action: extract the four implementation responsibilities behind the
+stable Mix-task facade and prove the dedicated task and runbook boundary.
+Owned paths:
+
+- `lib/mix/tasks/product_compare.ingestion.cj_candidates.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/options.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/stale_report.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/fit_gap_report.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/application_cohort_report.ex`
+- `test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+- `docs/work/cj-candidates-task-decomposition.md`
+
+Internal slices:
+
+- CLI/default/report/status/format normalization and bounds.
+- Stale-candidate selection, freshness validation, and safe line output.
+- Fit-gap selection, classification, aggregation, and safe line output.
+- Application-cohort filters plus line and Markdown output.
+- Stable Mix-task facade, runbook boundary, and caller parity.
+
+Prerequisites:
+
+- Existing `CjCandidates.run/1` and `run_report/1` inputs, results, errors,
+  and printed output remain authoritative.
+- Preserve report and status defaults, formats, limits, ordering, filters,
+  counts, gap order, required-result gates, Global IDs, escaping, timestamps,
+  and raw-field redaction.
+- Preserve the explicit rejection of the removed CSV export; do not change
+  provider requests, persistence, schemas, migrations, candidate review
+  policy, deferred operator scope, or product policy.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable task retains the full caller-facing and CLI
+contract, each implementation responsibility has one focused owner, the exact
+6-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
 ## Completed 2026-07-20 Cross-Stack Work
