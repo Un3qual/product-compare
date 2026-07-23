@@ -2,20 +2,20 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
-- Last verified: 2026-07-22 against direct Accounts, seeds, API-token/session
-  GraphQL, and authorized node characterization suites.
-- Claimed: 2026-07-22 on the current detached worktree after Alerts Context
-  Decomposition restored the three-ready-row floor.
+- Last verified: 2026-07-22 with the exact 112-test characterization gate,
+  typechecking, formatting, Dialyzer, full `mix ci`, and diff hygiene green.
+- Completed: 2026-07-22 on the current detached worktree after Alerts Context
+  Decomposition restored the three-ready-row floor for the claim.
 
-## Target Outcome
+## Batch Outcome
 
-`ProductCompare.Accounts` will remain the stable application-facing context
-while user provisioning, API-token lifecycle, and reputation implementations
-move into focused internal modules alongside the existing `UserAuth` owner,
+`ProductCompare.Accounts` remains the stable 198-line application-facing
+context. User provisioning, API-token lifecycle, and reputation implementations
+now live in focused internal modules alongside the existing `UserAuth` owner,
 with unchanged public APIs, auth behavior, transactions, locks, errors, and
 GraphQL behavior.
 
@@ -60,3 +60,30 @@ GraphQL behavior.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- `ProductCompare.Accounts` is a 198-line facade retaining the full historical
+  public function, arity, default, guard, typespec, value, and error contract.
+- `ProductCompare.Accounts.Users` is 266 lines and owns user creation,
+  registration, lookup, trusted operator bootstrap, password repair,
+  normalization, savepoints, locks, and deterministic create-race hooks.
+- `ProductCompare.Accounts.ApiTokens` is 324 lines and owns token issue,
+  authentication, status-filtered reads, owner lookups, entropy and hashing,
+  expiry defaults, last-used updates, rotation, revocation, transactions, and
+  locks.
+- `ProductCompare.Accounts.Reputation` is 54 lines and owns reputation upsert,
+  event creation, and bounded ordered event reads. The existing 389-line
+  `UserAuth` owner remains unchanged.
+- The exact characterization command passed 112 tests with 0 failures. The
+  focused user, token, and reputation milestones passed 18, 52, and 1 tests.
+- `mix typecheck`, `mix format --check-formatted`, and `mix dialyzer` passed.
+  Two pre-existing facade-path Dialyzer suppressions moved to function-local
+  annotations so the defensive fallback clauses remain behaviorally intact.
+- Full `mix ci` passed Credo, Reach, ExDNA at the unchanged 6/6 budget,
+  Dialyzer, 905 backend tests at 83.70% coverage, all 1,507 frontend tests,
+  Relay validation, TypeScript, client and SSR production builds, and the
+  client-bundle contract.
+- The internal-owner caller scan found no application bypass outside the
+  facade and internal modules. `mix work_queue.validate` retains three ready
+  rows, and `git diff --check` is clean.

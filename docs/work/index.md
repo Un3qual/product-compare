@@ -1447,70 +1447,18 @@ changing alert policy, price-point enqueueing, transports, resolver
 authorization, or frontend behavior. The Accounts claim therefore leaves
 Pricing, SEO, and Alerts as three complete, path-disjoint ready rows.
 
+Accounts Context Decomposition then completed on the current detached
+worktree. `ProductCompare.Accounts` is now a 198-line stable public facade;
+`Users`, `ApiTokens`, and `Reputation` own the three remaining implementation
+responsibilities alongside the unchanged `UserAuth` owner, without caller
+bypasses. The exact focused gate passed 112 tests, and final `mix ci` passed
+905 backend tests at 83.70% coverage, 1,507 frontend tests, ExDNA at the
+unchanged 6/6 budget, Dialyzer, Relay, TypeScript, both production builds, and
+the bundle contract. Pricing, SEO, and Alerts remain ready.
+
 ## Active Work
 
-### Accounts Context Decomposition
-
-Status: active
-Lane: Accounts context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-accounts-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Accounts` remains the stable caller-facing
-context while user provisioning, API-token lifecycle, and reputation
-implementations live in focused internal modules alongside the existing
-`UserAuth` owner, with unchanged public APIs, auth behavior, transactions,
-locks, errors, and GraphQL behavior.
-Next action: extract the three remaining implementation responsibilities behind
-explicit facade wrappers and prove direct Accounts, seed, GraphQL auth, and
-authorized node parity.
-Owned paths:
-
-- `lib/product_compare/accounts.ex`
-- `lib/product_compare/accounts/users.ex`
-- `lib/product_compare/accounts/api_tokens.ex`
-- `lib/product_compare/accounts/reputation.ex`
-- `lib/product_compare/accounts/user_auth.ex`
-- `test/product_compare/accounts/api_token_test.exs`
-- `test/product_compare/accounts/create_user_test.exs`
-- `test/product_compare/accounts/reputation_upsert_test.exs`
-- `test/product_compare/accounts/user_auth_schema_test.exs`
-- `test/product_compare/accounts/user_auth_test.exs`
-- `test/product_compare/accounts/user_email_token_test.exs`
-- `test/product_compare/accounts/user_session_token_schema_test.exs`
-- `test/product_compare/repo/seeds_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `test/product_compare_web/graphql/session_auth_test.exs`
-- `test/product_compare_web/graphql/node_query_test.exs`
-- `docs/work/accounts-context-decomposition.md`
-
-Internal slices:
-
-- User creation, lookup, trusted bootstrap, and password-repair ownership.
-- API-token issue, authentication, query, rotation, and revocation ownership.
-- Reputation persistence and bounded read ownership.
-- Existing `UserAuth`, configured-delivery, facade, GraphQL, and seed parity.
-
-Prerequisites:
-
-- Existing `ProductCompare.Accounts` public functions, arities, defaults,
-  typespecs, values, and errors remain authoritative.
-- Preserve normalization, password hashes, transactions, savepoints, locks,
-  test hooks, token cryptography/defaults/filters, and reputation pagination.
-- Keep every caller dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, browser auth, authorization, seeds, or transport.
-
-Verification:
-
-- `mix test test/product_compare/accounts test/product_compare_web/graphql/api_token_auth_test.exs test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/node_query_test.exs test/product_compare/repo/seeds_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 112-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 

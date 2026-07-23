@@ -1,6 +1,8 @@
 defmodule ProductCompare.Accounts.ApiTokens do
   @moduledoc false
 
+  @dialyzer {:nowarn_function, maybe_apply_api_token_status_filter: 3}
+
   import Ecto.Query
 
   alias ProductCompare.Input

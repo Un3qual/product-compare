@@ -3,18 +3,12 @@ defmodule ProductCompare.Accounts do
   Accounts context for users and reputation events.
   """
 
-  import Ecto.Query
-
-  alias ProductCompare.Accounts.{ApiTokens, UserAuth, Users}
-  alias ProductCompare.Input
-  alias ProductCompare.Repo
+  alias ProductCompare.Accounts.{ApiTokens, Reputation, UserAuth, Users}
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.ReputationEvent
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserReputation
 
-  @default_reputation_events_limit 50
-  @max_reputation_events_limit 200
   @deliver_user_confirmation_instructions_hook :deliver_user_confirmation_instructions
   @deliver_user_reset_password_instructions_hook :deliver_user_reset_password_instructions
 
@@ -174,44 +168,16 @@ defmodule ProductCompare.Accounts do
 
   @spec upsert_user_reputation(pos_integer(), integer()) ::
           {:ok, UserReputation.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_user_reputation(user_id, points) do
-    %UserReputation{}
-    |> UserReputation.changeset(%{user_id: user_id, points: points})
-    |> Repo.insert(
-      on_conflict: [set: [points: points]],
-      conflict_target: [:user_id],
-      returning: true
-    )
-  end
+  def upsert_user_reputation(user_id, points),
+    do: Reputation.upsert_user_reputation(user_id, points)
 
   @spec add_reputation_event(pos_integer(), map()) ::
           {:ok, ReputationEvent.t()} | {:error, Ecto.Changeset.t()}
-  def add_reputation_event(user_id, attrs) do
-    %ReputationEvent{}
-    |> ReputationEvent.changeset_with_user(attrs, user_id)
-    |> Repo.insert()
-  end
+  def add_reputation_event(user_id, attrs), do: Reputation.add_reputation_event(user_id, attrs)
 
   @spec list_reputation_events(pos_integer(), keyword() | map()) :: [ReputationEvent.t()]
-  def list_reputation_events(user_id, opts \\ []) do
-    limit =
-      opts
-      |> Input.pagination_value(:limit, @default_reputation_events_limit)
-      |> Input.clamp_limit(@default_reputation_events_limit, @max_reputation_events_limit)
-
-    offset =
-      opts
-      |> Input.pagination_value(:offset, 0)
-      |> Input.clamp_non_negative(0)
-
-    Repo.all(
-      from e in ReputationEvent,
-        where: e.user_id == ^user_id,
-        order_by: [desc: e.inserted_at, desc: e.id],
-        limit: ^limit,
-        offset: ^offset
-    )
-  end
+  def list_reputation_events(user_id, opts \\ []),
+    do: Reputation.list_reputation_events(user_id, opts)
 
   # Browser auth recovery flows stay mailer-agnostic here; production delivery
   # can be injected later without changing the GraphQL contract or the token logic.

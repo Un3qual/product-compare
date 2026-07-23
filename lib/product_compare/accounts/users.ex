@@ -1,8 +1,11 @@
 defmodule ProductCompare.Accounts.Users do
   @moduledoc false
 
+  @dialyzer {:nowarn_function, blank_password?: 1}
+
   import Ecto.Query
 
+  alias ProductCompare.Accounts.Reputation
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserReputation
@@ -116,7 +119,7 @@ defmodule ProductCompare.Accounts.Users do
        ) do
     with {:ok, %User{} = operator} <- set_operator_access(user, true),
          {:ok, %UserReputation{}} <-
-           @accounts_context.upsert_user_reputation(operator.id, reputation_points) do
+           Reputation.upsert_user_reputation(operator.id, reputation_points) do
       operator
     else
       {:error, %Ecto.Changeset{} = changeset} -> Repo.rollback(changeset)

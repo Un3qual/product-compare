@@ -202,6 +202,11 @@ creation, and owner-scoped inbox behavior; its direct and GraphQL
 characterization gate passed 13 tests. The extraction preserves alert policy,
 price-point enqueueing, transports, resolver authorization, and frontend
 behavior while remaining path-disjoint from Accounts, Pricing, and SEO.
+Accounts context decomposition is complete. The 198-line stable facade retains
+the public contract while `Users`, `ApiTokens`, and `Reputation` own the
+remaining implementations alongside unchanged `UserAuth`. Its exact
+characterization gate passes 112 tests, and full `mix ci` passes 905 backend
+tests, 1,507 frontend tests, and all repository quality/build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -304,12 +309,12 @@ batch and should not be recreated or promoted.
   and GraphQL characterization gate passes 57 tests; deferred provider,
   dashboard, operator, scheduling, and application-submission scope stays
   closed.
-- Accounts context decomposition is a path-disjoint structural successor: the
-  stable `ProductCompare.Accounts` facade remains caller-facing while user,
-  API-token, and reputation implementations move into focused internal modules
-  alongside the existing `UserAuth` owner. Its direct and GraphQL
-  characterization gate passes 112 tests; browser auth, authorization, seeds,
-  and email transport policy stay unchanged.
+- Accounts context decomposition is complete: the stable
+  `ProductCompare.Accounts` facade remains caller-facing while `Users`,
+  `ApiTokens`, and `Reputation` own the focused implementations alongside the
+  unchanged `UserAuth` owner. Its direct and GraphQL characterization gate
+  passes 112 tests; browser auth, authorization, seeds, and email transport
+  policy stay unchanged.
 - Pricing context decomposition is a path-disjoint structural successor: the
   stable `ProductCompare.Pricing` facade remains caller-facing while merchant,
   offer, price-history, and product-level offer-truth reads move into focused
