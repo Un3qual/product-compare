@@ -44,6 +44,11 @@ shapes, and downstream policy.
   `ListingPersistence.Products`.
 - The exact ingestion characterization slice passed 32 tests on 2026-07-23
   after the product-identity extraction.
+- Missing canonical copy, exact taxonomy mapping and candidate capture, media,
+  and typed specification evidence now live in
+  `ListingPersistence.Enrichment`.
+- The exact ingestion and enrichment slice passed 36 tests on 2026-07-23
+  after the enrichment extraction.
 
 ## Internal Slices
 
