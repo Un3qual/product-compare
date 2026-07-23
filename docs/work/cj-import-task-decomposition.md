@@ -60,12 +60,12 @@ reports, errors, and credential safety.
 
 ## Final Contract And Lane Gate (2026-07-23)
 
-- Ownership is complete: the stable `CjImport` facade owns CLI parsing and the
-  public `run/1` / `run_import/1` boundary; `Options` owns normalization and
-  readiness, `Runner` owns durable imports and reports, and `Candidates` owns
-  reviewed-candidate batching.
-- Exact source sizes: facade 108 lines; `Options` 161 lines; `Runner` 213
-  lines; `Candidates` 187 lines (669 lines total across the four modules).
+- Ownership is complete: the stable `CjImport` facade owns CLI execution and
+  presentation plus the public `run/1` / `run_import/1` boundary; `Options`
+  owns CLI parsing, normalization, and readiness; `Runner` owns durable imports
+  and reports; and `Candidates` owns reviewed-candidate batching.
+- Exact source sizes: facade 108 lines; `Options` 152 lines; `Runner` 213
+  lines; `Candidates` 198 lines (671 lines total across the four modules).
 - Characterization: `mix test
   test/mix/tasks/product_compare_ingestion_cj_import_test.exs` passed with
   exactly 19 tests and 0 failures.

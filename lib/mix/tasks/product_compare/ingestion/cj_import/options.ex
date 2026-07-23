@@ -72,15 +72,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     |> Enum.uniq()
   end
 
-  def normalize_review_status(status) when status in ~w(pending shortlisted dismissed), do: status
-  def normalize_review_status(status), do: Mix.raise("invalid review status: #{status}")
-
-  def candidate_limit([_first | _rest] = provider_feed_ids, _candidate_limit),
-    do: length(provider_feed_ids)
-
-  def candidate_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
-  def candidate_limit([], _value), do: 10
-
   def normalize_string(value), do: IdNormalizer.normalize_id(value)
 
   def credential_report(opts) do

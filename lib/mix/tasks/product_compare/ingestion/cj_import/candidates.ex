@@ -55,7 +55,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Candidates do
       asc: candidate.feed_name,
       asc: candidate.id
     )
-    |> limit(^Options.candidate_limit(provider_feed_ids, Keyword.get(opts, :candidate_limit)))
+    |> limit(^candidate_limit(provider_feed_ids, Keyword.get(opts, :candidate_limit)))
     |> preload(:source)
   end
 
@@ -68,10 +68,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Candidates do
   defp maybe_filter_review_status(query, [_first | _rest], _review_status), do: query
 
   defp maybe_filter_review_status(query, [], review_status) do
-    status = Options.normalize_review_status(review_status || "shortlisted")
+    status = normalize_review_status(review_status || "shortlisted")
 
     where(query, [candidate], candidate.review_status == ^status)
   end
+
+  defp normalize_review_status(status) when status in ~w(pending shortlisted dismissed),
+    do: status
+
+  defp normalize_review_status(status), do: Mix.raise("invalid review status: #{status}")
+
+  defp candidate_limit([_first | _rest] = provider_feed_ids, _candidate_limit),
+    do: length(provider_feed_ids)
+
+  defp candidate_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
+  defp candidate_limit([], _value), do: 10
 
   defp missing_provider_feed_ids(candidates, opts) do
     matched_feed_ids =
