@@ -4,6 +4,7 @@ defmodule ProductCompare.Discussions.Reads do
   import Ecto.Query
 
   alias ProductCompare.Input
+  alias ProductCompare.Discussions.Reads.Legacy
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -16,31 +17,17 @@ defmodule ProductCompare.Discussions.Reads do
 
   @spec list_threads_for_product(pos_integer(), keyword() | map()) :: [ProductThread.t()]
   def list_threads_for_product(product_id, opts \\ []) do
-    ProductThread
-    |> where([thread], thread.product_id == ^product_id)
-    |> order_by([thread], desc: thread.inserted_at, desc: thread.id)
-    |> paginated_results(opts)
+    Legacy.list_threads_for_product(product_id, normalize_pagination(opts))
   end
 
   @spec list_posts_for_thread(pos_integer(), keyword() | map()) :: [ThreadPost.t()]
   def list_posts_for_thread(thread_id, opts \\ []) do
-    ThreadPost
-    |> where([post], post.thread_id == ^thread_id)
-    |> order_by([post], asc: post.inserted_at, asc: post.id)
-    |> paginated_results(opts)
+    Legacy.list_posts_for_thread(thread_id, normalize_pagination(opts))
   end
 
   @spec list_reviews_for_product(pos_integer(), keyword() | map()) :: [ProductReview.t()]
   def list_reviews_for_product(product_id, opts \\ []) do
-    {limit, offset} = normalize_pagination(opts)
-
-    Repo.all(
-      from r in ProductReview,
-        where: r.product_id == ^product_id,
-        order_by: [desc: r.inserted_at, desc: r.id],
-        limit: ^limit,
-        offset: ^offset
-    )
+    Legacy.list_reviews_for_product(product_id, normalize_pagination(opts))
   end
 
   @spec list_public_reviews(pos_integer(), keyword()) :: [ProductReview.t()]
@@ -246,15 +233,6 @@ defmodule ProductCompare.Discussions.Reads do
       |> Input.clamp_non_negative(0)
 
     {limit, offset}
-  end
-
-  defp paginated_results(query, opts) do
-    {limit, offset} = normalize_pagination(opts)
-
-    query
-    |> limit(^limit)
-    |> offset(^offset)
-    |> Repo.all()
   end
 
   defp owner_review_submissions(user_id, product_ids) do
