@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -32,6 +32,13 @@ shapes, and downstream policy.
   rather than separate queue batches.
 - The implementation paths are disjoint from CJ Import, CJ Runs, and Catalog
   Resolver decomposition.
+
+## Progress Evidence
+
+- Source-artifact hashing and replay, external-product freshness and
+  attachment, and stale product and merchant-product reads now live in
+  `ListingPersistence.Artifacts`.
+- The exact ingestion and reconciliation slice passed 40 tests on 2026-07-23.
 
 ## Internal Slices
 

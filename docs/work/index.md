@@ -1612,13 +1612,9 @@ Candidates, and Discussions Resolver decomposition remain ready.
 
 ## Active Work
 
-None.
+### Listing Persistence Decomposition
 
-## Ready Work
-
-### 1. Listing Persistence Decomposition
-
-Status: ready
+Status: active
 Lane: Listing persistence decomposition
 Plan: `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
 Batch outcome: `ProductCompare.Ingestion.ListingPersistence.persist/3`
@@ -1675,7 +1671,9 @@ contract, each implementation responsibility has one focused owner, the exact
 44-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 2. CJ Candidates Task Decomposition
+## Ready Work
+
+### 1. CJ Candidates Task Decomposition
 
 Status: ready
 Lane: CJ candidates task decomposition
@@ -1730,7 +1728,7 @@ contract, each implementation responsibility has one focused owner, the exact
 6-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 3. Discussions Resolver Decomposition
+### 2. Discussions Resolver Decomposition
 
 Status: ready
 Lane: Discussions resolver decomposition
@@ -1782,7 +1780,7 @@ contract, each implementation responsibility has one focused owner, the exact
 61-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 4. Catalog Filter Metadata Decomposition
+### 3. Catalog Filter Metadata Decomposition
 
 Status: ready
 Lane: Catalog filter metadata decomposition
@@ -1836,7 +1834,7 @@ query contract, each implementation responsibility has one focused owner, the
 exact 10-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 5. Community Submissions Decomposition
+### 4. Community Submissions Decomposition
 
 Status: ready
 Lane: Community submissions decomposition
@@ -1891,7 +1889,7 @@ contract, each implementation responsibility has one focused owner, the exact
 25-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 6. Commerce Destination URL Decomposition
+### 5. Commerce Destination URL Decomposition
 
 Status: ready
 Lane: Commerce destination URL decomposition
