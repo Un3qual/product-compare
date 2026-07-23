@@ -160,8 +160,28 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
 
   defp log_runner_failure(kind, reason, stacktrace) do
     Logger.error(fn ->
-      "CJ product import runner failed\n" <>
-        Exception.format(kind, reason, stacktrace)
+      "CJ product import runner failed " <>
+        "kind=#{kind} reason=#{failure_category(reason)}\n" <>
+        Exception.format_stacktrace(sanitize_stacktrace(stacktrace))
+    end)
+  end
+
+  defp failure_category(%{__exception__: true, __struct__: module}), do: inspect(module)
+  defp failure_category({tag, _detail}) when is_atom(tag), do: Atom.to_string(tag)
+  defp failure_category(reason) when is_atom(reason), do: Atom.to_string(reason)
+  defp failure_category(reason) when is_binary(reason), do: "binary"
+  defp failure_category(reason) when is_list(reason), do: "list"
+  defp failure_category(reason) when is_map(reason), do: "map"
+  defp failure_category(reason) when is_tuple(reason), do: "tuple"
+  defp failure_category(_reason), do: "term"
+
+  defp sanitize_stacktrace(stacktrace) do
+    Enum.map(stacktrace, fn
+      {module, function, args, location} when is_list(args) ->
+        {module, function, length(args), location}
+
+      entry ->
+        entry
     end)
   end
 

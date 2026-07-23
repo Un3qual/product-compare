@@ -673,7 +673,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "marks the import run failed when the page fetch raises after the run starts" do
       fetcher = fn _cursor, _opts ->
-        raise "intentional CJ import fetch failure"
+        raise "provider secret should not be logged"
       end
 
       log =
@@ -688,8 +688,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert log =~ "CJ product import runner failed"
-      assert log =~ "RuntimeError"
-      assert log =~ "intentional CJ import fetch failure"
+      assert log =~ "kind=error"
+      assert log =~ "reason=RuntimeError"
+      assert log =~ "product_compare_ingestion_cj_import_test.exs"
+      refute log =~ "provider secret should not be logged"
 
       assert %ImportRun{
                status: "failed",
@@ -703,7 +705,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
     end
 
     test "logs caught page-fetch failures before returning runner_exception" do
-      fetcher = fn _cursor, _opts -> throw({:fetch_failed, :from_runner}) end
+      fetcher = fn _cursor, _opts ->
+        throw({:fetch_failed, %{authorization: "Bearer provider-secret"}})
+      end
 
       log =
         capture_log(fn ->
@@ -717,8 +721,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         end)
 
       assert log =~ "CJ product import runner failed"
-      assert log =~ "throw"
-      assert log =~ "{:fetch_failed, :from_runner}"
+      assert log =~ "kind=throw"
+      assert log =~ "reason=fetch_failed"
+      assert log =~ "product_compare_ingestion_cj_import_test.exs"
+      refute log =~ "provider-secret"
     end
   end
 
