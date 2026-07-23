@@ -299,6 +299,13 @@ preserves queries, filters, ordering, output, required-result gates, Global ID
 projection, credential safety, the rejected CSV export, and the operator
 runbook while remaining path-disjoint from CJ Runs, Catalog Resolver, and
 Listing Persistence.
+CJ Runs task decomposition is complete. The 33-line stable facade retains the
+three public entry points while `Options`, `Reports`, and `Resume` own parsing
+and normalization, operator-safe run reporting, and import/discovery resume
+orchestration. Full-gate follow-up removed one private trivial forwarding
+helper. Its exact characterization gate passes 10 tests, the caller scan finds
+no internal-owner bypasses, and full `mix ci` passes 909 backend tests, 1,507
+frontend tests, and all repository quality and build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -464,7 +471,7 @@ batch and should not be recreated or promoted.
   Its dedicated characterization gate passes 19 tests; provider requests,
   ingestion persistence, worker/resume callers, scheduling, deferred operator
   scope, and product policy stay unchanged.
-- CJ Runs task decomposition is a path-disjoint structural successor: the
+- CJ Runs task decomposition is complete: the
   stable `Mix.Tasks.ProductCompare.Ingestion.CjRuns` entry point remains
   caller-facing while option normalization, run reporting, and resume
   orchestration move into focused internal modules. Its dedicated

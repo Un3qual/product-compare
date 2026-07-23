@@ -1577,61 +1577,19 @@ reporting; its dedicated characterization gate passed 6 tests. CJ Runs was
 therefore claimed while Catalog Resolver, Listing Persistence, and CJ
 Candidates decomposition remain ready.
 
+CJ Runs Task Decomposition then completed on the current detached worktree.
+`Mix.Tasks.ProductCompare.Ingestion.CjRuns` is now a 33-line stable facade;
+`Options`, `Reports`, and `Resume` own normalization, operator-safe reporting,
+and import/discovery resume orchestration without caller bypasses or behavior
+changes. Full-gate follow-up removed one private trivial forwarding helper.
+The exact focused gate passed 10 tests, and final `mix ci` passed 909 backend
+tests, 1,507 frontend tests, and every queue, quality, type, Relay, build, and
+bundle gate. Catalog Resolver, Listing Persistence, and CJ Candidates
+decomposition remain ready.
+
 ## Active Work
 
-### CJ Runs Task Decomposition
-
-Status: active
-Lane: CJ runs task decomposition
-Plan: `docs/superpowers/plans/2026-07-23-cj-runs-task-decomposition-implementation-plan.md`
-Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjRuns` remains the stable
-operator entry point while option normalization, run reporting, and resume
-orchestration live in focused internal modules with unchanged CLI behavior,
-public results, queries, readiness checks, reports, errors, cursor behavior,
-and credential safety.
-Next action: extract the three implementation responsibilities behind the
-stable Mix-task facade and prove the dedicated task and runbook boundary.
-Owned paths:
-
-- `lib/mix/tasks/product_compare.ingestion.cj_runs.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_runs/options.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_runs/reports.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_runs/resume.ex`
-- `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
-- `docs/work/cj-runs-task-decomposition.md`
-
-Internal slices:
-
-- CLI/default/report/surface normalization and bounds.
-- Latest, history, and failed-run queries plus operator-safe rendering.
-- Cursor reconstruction, import/discovery resume, safe runner execution, and
-  output.
-- Stable Mix-task facade, runbook boundary, and caller parity.
-
-Prerequisites:
-
-- Existing `CjRuns.run/1`, `run_report/1`, and `run_resume/1` inputs, results,
-  errors, and printed output remain authoritative.
-- Preserve report defaults, aliases, limits, queries, ordering, readiness,
-  counts, freshness, cursor requirements, reconstructed runner inputs,
-  exception handling, and credential-safe logs.
-- Keep the operator runbook and `CjImport.run_import/1` boundary unchanged; do
-  not change provider requests, persistence, schemas, migrations, scheduling,
-  deferred operator scope, or product policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable task retains the full caller-facing and CLI
-contract, each implementation responsibility has one focused owner, the exact
-10-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
+None.
 
 ## Ready Work
 
