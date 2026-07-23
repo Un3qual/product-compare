@@ -6,6 +6,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   import Ecto.Query
 
   alias ProductCompare.Catalog.FilterMetadata.Query
+  alias ProductCompare.Catalog.FilterMetadata.SelectedFilters
   alias ProductCompare.Catalog.FilterMetadata.TaxonomyFacets
   alias ProductCompare.Repo
   alias ProductCompare.Specs
@@ -38,7 +39,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp numeric_filters(filters) do
     attributes = Specs.list_filterable_attributes([:numeric])
-    selected_filters = selected_numeric_filters_by_attribute(filters)
+    selected_filters = SelectedFilters.numeric(filters)
 
     ranges =
       aggregate_by_selected_attribute(
@@ -73,7 +74,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp boolean_filters(filters) do
     attributes = Specs.list_filterable_attributes([:bool])
-    selected_filters = selected_boolean_filters_by_attribute(filters)
+    selected_filters = SelectedFilters.boolean(filters)
 
     counts_by_attribute =
       aggregate_by_selected_attribute(
@@ -104,7 +105,7 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   defp enum_filters(filters) do
     attributes = Specs.list_filterable_attributes([:enum])
-    selected_filters = selected_enum_filters_by_attribute(filters)
+    selected_filters = SelectedFilters.enum(filters)
 
     counts_by_attribute =
       aggregate_by_selected_attribute(
@@ -252,129 +253,6 @@ defmodule ProductCompare.Catalog.FilterMetadata do
         selected: selected,
         disabled: disabled?(count, selected)
       }
-    end)
-  end
-
-  defp selected_numeric_filters_by_attribute(filters) do
-    filters
-    |> Map.get(:numeric, [])
-    |> Enum.reduce(%{}, fn filter, acc ->
-      case normalize_selected_numeric_filter(filter) do
-        nil ->
-          acc
-
-        normalized_filter ->
-          attribute_id = Map.fetch!(normalized_filter, :attribute_id)
-
-          Map.update(
-            acc,
-            attribute_id,
-            normalized_filter,
-            &merge_numeric_filters(&1, normalized_filter)
-          )
-      end
-    end)
-  end
-
-  defp normalize_selected_numeric_filter(filter) do
-    with {:ok, attribute_id} <- Map.fetch(filter, :attribute_id) do
-      normalized_filter =
-        [:min, :max]
-        |> Enum.reduce(%{attribute_id: attribute_id}, fn key, acc ->
-          case normalize_numeric_bound(Map.get(filter, key)) do
-            {:ok, value} -> Map.put(acc, key, value)
-            :error -> acc
-          end
-        end)
-
-      if map_size(normalized_filter) > 1, do: normalized_filter
-    else
-      :error -> nil
-    end
-  end
-
-  defp selected_boolean_filters_by_attribute(filters) do
-    filters
-    |> Map.get(:booleans, [])
-    |> Enum.reduce(%{}, fn filter, acc ->
-      attribute_id = Map.fetch!(filter, :attribute_id)
-      Map.update(acc, attribute_id, filter, &merge_boolean_filters(&1, filter))
-    end)
-  end
-
-  defp merge_numeric_filters(existing_filter, next_filter) do
-    %{
-      attribute_id: Map.fetch!(existing_filter, :attribute_id),
-      min: merge_numeric_min(Map.get(existing_filter, :min), Map.get(next_filter, :min)),
-      max: merge_numeric_max(Map.get(existing_filter, :max), Map.get(next_filter, :max))
-    }
-  end
-
-  defp merge_numeric_min(nil, value), do: value
-  defp merge_numeric_min(value, nil), do: value
-
-  defp merge_numeric_min(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
-      :lt -> next_value
-      _comparison -> existing_value
-    end
-  end
-
-  defp merge_numeric_max(nil, value), do: value
-  defp merge_numeric_max(value, nil), do: value
-
-  defp merge_numeric_max(existing_value, next_value) do
-    case Decimal.compare(decimal_for_compare(existing_value), decimal_for_compare(next_value)) do
-      :gt -> next_value
-      _comparison -> existing_value
-    end
-  end
-
-  defp decimal_for_compare(value) do
-    {:ok, decimal} = normalize_numeric_bound(value)
-    decimal
-  end
-
-  defp normalize_numeric_bound(nil), do: :error
-  defp normalize_numeric_bound(%Decimal{} = value), do: {:ok, value}
-  defp normalize_numeric_bound(value) when is_integer(value), do: {:ok, Decimal.new(value)}
-  defp normalize_numeric_bound(value) when is_float(value), do: {:ok, Decimal.from_float(value)}
-
-  defp normalize_numeric_bound(value) when is_binary(value) do
-    case Decimal.parse(value) do
-      {decimal, ""} -> {:ok, decimal}
-      _invalid -> :error
-    end
-  end
-
-  defp normalize_numeric_bound(_value), do: :error
-
-  defp merge_boolean_filters(existing_filter, next_filter) do
-    existing_value = Map.get(existing_filter, :value)
-    next_value = Map.get(next_filter, :value)
-
-    cond do
-      is_nil(existing_value) ->
-        existing_filter
-
-      existing_value == next_value ->
-        existing_filter
-
-      true ->
-        %{attribute_id: Map.fetch!(existing_filter, :attribute_id), value: nil}
-    end
-  end
-
-  defp selected_enum_filters_by_attribute(filters) do
-    filters
-    |> Map.get(:enums, [])
-    |> Enum.reduce(%{}, fn filter, acc ->
-      Map.update(
-        acc,
-        Map.fetch!(filter, :attribute_id),
-        MapSet.new([Map.fetch!(filter, :enum_option_id)]),
-        &MapSet.put(&1, Map.fetch!(filter, :enum_option_id))
-      )
     end)
   end
 
