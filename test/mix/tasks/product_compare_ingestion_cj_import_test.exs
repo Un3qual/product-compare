@@ -2,6 +2,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
   use ProductCompare.DataCase, async: false
 
   import ExUnit.CaptureIO
+  import ExUnit.CaptureLog
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias ProductCompare.Repo
@@ -672,16 +673,23 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "marks the import run failed when the page fetch raises after the run starts" do
       fetcher = fn _cursor, _opts ->
-        raise "provider secret should not be persisted"
+        raise "intentional CJ import fetch failure"
       end
 
-      assert {:error, :runner_exception} =
-               CjImport.run_import(
-                 fetcher: fetcher,
-                 keywords: ["shoe"],
-                 limit: 1,
-                 print_report: false
-               )
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "CJ product import runner failed"
+      assert log =~ "RuntimeError"
+      assert log =~ "intentional CJ import fetch failure"
 
       assert %ImportRun{
                status: "failed",
@@ -692,6 +700,25 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_persisted: 0,
                records_failed: 0
              } = Repo.get_by!(ImportRun, surface: "shoppingProducts")
+    end
+
+    test "logs caught page-fetch failures before returning runner_exception" do
+      fetcher = fn _cursor, _opts -> throw({:fetch_failed, :from_runner}) end
+
+      log =
+        capture_log(fn ->
+          assert {:error, :runner_exception} =
+                   CjImport.run_import(
+                     fetcher: fetcher,
+                     keywords: ["shoe"],
+                     limit: 1,
+                     print_report: false
+                   )
+        end)
+
+      assert log =~ "CJ product import runner failed"
+      assert log =~ "throw"
+      assert log =~ "{:fetch_failed, :from_runner}"
     end
   end
 

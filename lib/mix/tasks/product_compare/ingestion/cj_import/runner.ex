@@ -1,6 +1,8 @@
 defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
   @moduledoc false
 
+  require Logger
+
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Options
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
@@ -147,9 +149,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
         {:error, reason}
     end
   rescue
-    _exception -> {:error, :runner_exception}
+    exception ->
+      log_runner_failure(:error, exception, __STACKTRACE__)
+      {:error, :runner_exception}
   catch
-    _kind, _reason -> {:error, :runner_exception}
+    kind, reason ->
+      log_runner_failure(kind, reason, __STACKTRACE__)
+      {:error, :runner_exception}
+  end
+
+  defp log_runner_failure(kind, reason, stacktrace) do
+    Logger.error(fn ->
+      "CJ product import runner failed\n" <>
+        Exception.format(kind, reason, stacktrace)
+    end)
   end
 
   defp initial_aggregate_report do

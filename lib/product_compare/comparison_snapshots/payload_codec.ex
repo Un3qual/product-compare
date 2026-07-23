@@ -109,6 +109,7 @@ defmodule ProductCompare.ComparisonSnapshots.PayloadCodec do
   defp decode_decimal(%Decimal{} = value), do: value
   defp decode_decimal(value) when is_binary(value), do: Decimal.new(value)
 
+  defp decode_datetime(nil), do: nil
   defp decode_datetime(%DateTime{} = value), do: value
 
   defp decode_datetime(value) when is_binary(value) do
@@ -116,11 +117,13 @@ defmodule ProductCompare.ComparisonSnapshots.PayloadCodec do
     datetime
   end
 
+  defp decode_recommendation_profile(nil), do: nil
   defp decode_recommendation_profile(:lowest_current_cost), do: :lowest_current_cost
   defp decode_recommendation_profile(:best_value), do: :best_value
   defp decode_recommendation_profile("lowest_current_cost"), do: :lowest_current_cost
   defp decode_recommendation_profile("best_value"), do: :best_value
 
+  defp decode_recommendation_status(nil), do: nil
   defp decode_recommendation_status(:winner), do: :winner
   defp decode_recommendation_status(:tie), do: :tie
   defp decode_recommendation_status(:insufficient_evidence), do: :insufficient_evidence
