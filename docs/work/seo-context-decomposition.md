@@ -2,30 +2,35 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
 - Last verified: 2026-07-22 against the direct SEO, SEO controller, and SEO
   GraphQL characterization suites.
 
-## Target Outcome
+## Batch Outcome
 
 `ProductCompare.Seo` remains the stable application-facing context while
-metadata, category qualification, and sitemap implementations move into
+metadata, category qualification, and sitemap implementations now live in
 focused internal modules with unchanged public APIs, qualification policy,
 query behavior, errors, controllers, and GraphQL values.
 
-## Ready Evidence
+## Completion Evidence
 
-- `lib/product_compare/seo.ex` is 603 lines and owns metadata/structured data,
-  category qualification/pages, and bounded sitemap generation.
-- Controllers, resolvers, loaders, snapshots, and tests already use the stable
-  context boundary, so extraction does not require caller changes.
-- The selected three-suite characterization gate passed 13 tests on 2026-07-22.
-- Metadata, category qualification, and sitemap generation share one SEO
-  acceptance boundary and remain internal slices rather than micro-batches.
-- The row is path-disjoint from Accounts, Ingestion, and Pricing decomposition.
+- `lib/product_compare/seo.ex` is a 71-line facade retaining the original
+  caller-facing functions, defaults, guards, typespecs, values, and errors.
+- `ProductCompare.Seo.Metadata` owns product, merchant, category, and snapshot
+  metadata, structured data, shared copy rules, and snapshot qualification.
+- `ProductCompare.Seo.Categories` owns category reads, descendant-product
+  qualification, counts, ordering, and bounded parent-scoped pages.
+- `ProductCompare.Seo.Sitemaps` owns bounded product, merchant, category, and
+  public-comparison sitemap dispatch and queries.
+- A source scan found no application caller referencing the three internal
+  owners; controllers, resolvers, loaders, and snapshots still use the facade.
+- The first full CI run exposed one new ExDNA clone in the repeated public and
+  internal page-validation heads. Keeping validation at the facade and passing
+  normalized page values internally restored the unchanged 6/6 clone budget.
 
 ## Internal Slices
 
@@ -45,9 +50,16 @@ query behavior, errors, controllers, and GraphQL values.
 
 ## Verification
 
-- `mix test test/product_compare/seo_test.exs test/product_compare_web/controllers/seo_controller_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
+- Exact characterization gate: 13 tests, 0 failures.
+- `mix typecheck`: passed.
+- `mix format --check-formatted`: passed.
+- `mix work_queue.validate`: passed with 3 ready rows.
+- `mix ci`: passed Credo with 0 issues, Reach with no new findings, ExDNA at
+  6/6, Dialyzer, 905 backend tests at 83.56% coverage, 1,507 frontend tests,
+  Relay validation, TypeScript, client and SSR builds, and the bundle contract.
+- `git diff --check`: passed.
+
+## Remaining Work
+
+None in this lane. Alerts, Catalog, and Comparison Snapshots Context
+Decomposition remain ready in the live queue.

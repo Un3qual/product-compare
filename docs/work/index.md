@@ -1475,60 +1475,25 @@ focused gate passed 39 tests, and final `mix ci` passed 905 backend tests at
 Reach, Dialyzer, Relay, TypeScript, both production builds, and the bundle
 contract. SEO, Alerts, and Catalog remain ready.
 
+Before claiming SEO Context Decomposition on 2026-07-22, the coordinator
+validated Comparison Snapshots Context Decomposition as a fourth independently
+shippable structural successor. Its 444-line stable context combines
+owner-scoped lifecycle, immutable evidence capture, and payload hydration; the
+direct and GraphQL characterization gate passed 12 tests. SEO was therefore
+claimed while Alerts, Catalog, and Comparison Snapshots remained ready.
+
+SEO Context Decomposition then completed on the current detached worktree.
+`ProductCompare.Seo` is now a 71-line stable public facade; `Metadata`,
+`Categories`, and `Sitemaps` own the three planned responsibilities without
+caller bypasses or policy changes. The exact focused gate passed 13 tests, and
+final `mix ci` passed 905 backend tests at 83.56% coverage, 1,507 frontend
+tests, Credo, Reach, ExDNA at the unchanged 6/6 budget, Dialyzer, Relay,
+TypeScript, both production builds, and the bundle contract. Alerts, Catalog,
+and Comparison Snapshots remain ready.
+
 ## Active Work
 
-### SEO Context Decomposition
-
-Status: active
-Claimed by: current detached worktree
-Lane: SEO context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-seo-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Seo` remains the stable caller-facing context
-while metadata, category qualification, and sitemap implementations live in
-focused internal modules with unchanged public APIs, qualification policy,
-query behavior, errors, controllers, and GraphQL values.
-Next action: extract the three implementation responsibilities behind explicit
-facade wrappers and prove direct SEO, controller, and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/seo.ex`
-- `lib/product_compare/seo/metadata.ex`
-- `lib/product_compare/seo/categories.ex`
-- `lib/product_compare/seo/sitemaps.ex`
-- `test/product_compare/seo_test.exs`
-- `test/product_compare_web/controllers/seo_controller_test.exs`
-- `test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `docs/work/seo-context-decomposition.md`
-
-Internal slices:
-
-- Product, merchant, category, and snapshot metadata ownership.
-- Category lookup, qualification, counts, ordering, and page ownership.
-- Bounded sitemap dispatch, query, and entry ownership.
-
-Prerequisites:
-
-- Existing `ProductCompare.Seo` public functions, defaults, typespecs, values,
-  map shapes, and errors remain authoritative.
-- Preserve metadata copy, canonical paths, structured data, qualification,
-  ordering, Relay windows, sitemap bounds, and omission policy.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, controller routes, frontend metadata, or product
-  policy.
-
-Verification:
-
-- `mix test test/product_compare/seo_test.exs test/product_compare_web/controllers/seo_controller_test.exs test/product_compare_web/graphql/seo_surfaces_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 13-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 
