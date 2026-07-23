@@ -266,6 +266,12 @@ structural extraction preserves queries, readiness checks, cursor behavior,
 runner inputs, reports, errors, credential-safe logging, and the operator
 runbook while remaining path-disjoint from Comparison Snapshots, Taxonomy, and
 CJ Import.
+Comparison Snapshots context decomposition is complete. The 42-line stable
+facade retains the public contract while `Lifecycle`, `Capture`, and
+`PayloadCodec` own lifecycle persistence, immutable evidence projection, and
+payload decoding. Its exact characterization gate passes 12 tests, the
+application caller scan finds no facade bypasses, and full `mix ci` passes all
+repository quality, test, and build gates.
 
 Implementation plan references (non-dispatch):
 
@@ -401,10 +407,10 @@ batch and should not be recreated or promoted.
   the existing `Filtering` and `FilterMetadata` owners. Its direct and GraphQL
   characterization gate passes 106 tests; catalog, ingestion, taxonomy,
   GraphQL, and frontend policy stay unchanged.
-- Comparison Snapshots context decomposition is a path-disjoint structural
-  successor: the stable `ProductCompare.ComparisonSnapshots` facade remains
-  caller-facing while snapshot lifecycle, immutable evidence capture, and
-  payload hydration move into focused internal modules. Its direct and GraphQL
+- Comparison Snapshots context decomposition is complete: the stable
+  `ProductCompare.ComparisonSnapshots` facade remains caller-facing while
+  `Lifecycle`, `Capture`, and `PayloadCodec` own snapshot lifecycle, immutable
+  evidence capture, and payload hydration. Its direct and GraphQL
   characterization gate passes 12 tests; snapshot, SEO, pricing,
   recommendation, privacy, and frontend policy stay unchanged.
 - Taxonomy context decomposition is a path-disjoint structural successor: the

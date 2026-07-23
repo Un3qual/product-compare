@@ -1534,61 +1534,18 @@ entry points; its dedicated characterization gate passed 10 tests. Comparison
 Snapshots was therefore claimed while Taxonomy, CJ Import, and CJ Runs remained
 ready.
 
+Comparison Snapshots Context Decomposition then completed on the current
+detached worktree. `ProductCompare.ComparisonSnapshots` is now a 42-line stable
+public facade; `Lifecycle`, `Capture`, and `PayloadCodec` own the three planned
+responsibilities without caller bypasses or behavior changes. Final review
+removed one unused internal hydration forwarding API. The exact focused gate
+passed 12 tests, and final `mix ci` passed the queue, formatting, typecheck,
+quality, backend/frontend test, Relay, TypeScript, production-build, and bundle
+gates. Taxonomy, CJ Import, and CJ Runs remain ready.
+
 ## Active Work
 
-### Comparison Snapshots Context Decomposition
-
-Status: active
-Lane: Comparison snapshots context decomposition
-Plan: `docs/superpowers/plans/2026-07-22-comparison-snapshots-context-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.ComparisonSnapshots` remains the stable
-caller-facing context while snapshot lifecycle, immutable evidence capture,
-and payload hydration live in focused internal modules with unchanged public
-APIs, queries, owner scope, payloads, errors, SEO qualification, and GraphQL
-values.
-Next action: extract the three implementation responsibilities behind explicit
-facade wrappers and prove direct context and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/comparison_snapshots.ex`
-- `lib/product_compare/comparison_snapshots/lifecycle.ex`
-- `lib/product_compare/comparison_snapshots/capture.ex`
-- `lib/product_compare/comparison_snapshots/payload_codec.ex`
-- `test/product_compare/comparison_snapshots_test.exs`
-- `test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `docs/work/comparison-snapshots-context-decomposition.md`
-
-Internal slices:
-
-- Owner-scoped publication, public reads, active queries, and revocation.
-- Immutable product, specification, offer, merchant, and recommendation fact
-  capture.
-- Stored payload hydration and domain-value decoding.
-
-Prerequisites:
-
-- Existing `ProductCompare.ComparisonSnapshots` public functions, clauses,
-  guards, defaults, typespecs, values, queries, and errors remain authoritative.
-- Preserve token validation and entropy, owner scope, ordering, revocation,
-  evidence values, excerpt bounds, decimals, timestamps, hydration, and SEO
-  qualification.
-- Keep callers dependent only on the facade; do not change schemas,
-  migrations, GraphQL SDL, SEO, pricing, recommendations, frontend contracts,
-  privacy, or snapshot versioning.
-
-Verification:
-
-- `mix test test/product_compare/comparison_snapshots_test.exs test/product_compare_web/graphql/comparison_snapshots_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the facade retains the full caller-facing contract, each
-implementation responsibility has one focused owner, the exact 12-test
-characterization gate and repository gates pass, and no caller bypasses the
-facade.
+None.
 
 ## Ready Work
 

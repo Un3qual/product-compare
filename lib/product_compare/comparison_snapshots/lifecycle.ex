@@ -130,10 +130,4 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
   end
 
   defp map_snapshot(error), do: error
-
-  @spec hydrate(ComparisonSnapshot.t() | nil) :: ComparisonSnapshot.t() | nil
-  def hydrate(nil), do: PayloadCodec.hydrate(nil)
-
-  def hydrate(%ComparisonSnapshot{} = snapshot),
-    do: PayloadCodec.hydrate(snapshot)
 end
