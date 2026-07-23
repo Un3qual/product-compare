@@ -1782,6 +1782,169 @@ contract, each implementation responsibility has one focused owner, the exact
 61-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
+### 4. Catalog Filter Metadata Decomposition
+
+Status: ready
+Lane: Catalog filter metadata decomposition
+Plan: `docs/superpowers/plans/2026-07-23-catalog-filter-metadata-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Catalog.FilterMetadata.metadata/1` remains the
+stable catalog-facing boundary while filtered-product queries, taxonomy
+facets, selected attribute-filter normalization, and attribute-facet
+aggregation live in focused internal modules with unchanged queries, counts,
+ordering, selection, disabled-state, units, and result shapes.
+Next action: extract the four implementation responsibilities behind the
+stable metadata facade and prove direct catalog filter-metadata parity.
+Owned paths:
+
+- `lib/product_compare/catalog/filter_metadata.ex`
+- `lib/product_compare/catalog/filter_metadata/query.ex`
+- `lib/product_compare/catalog/filter_metadata/taxonomy_facets.ex`
+- `lib/product_compare/catalog/filter_metadata/selected_filters.ex`
+- `lib/product_compare/catalog/filter_metadata/attribute_facets.ex`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `docs/work/catalog-filter-metadata-decomposition.md`
+
+Internal slices:
+
+- Filtered-product query construction and result count.
+- Primary-type and use-case taxonomy facet counts and presentation.
+- Selected numeric, boolean, and enum filter normalization.
+- Numeric ranges, boolean counts, enum counts, and facet presentation.
+- Stable metadata facade and exact result parity.
+
+Prerequisites:
+
+- Existing `metadata/1` results, non-map fallback, ordering, selection,
+  disabled-state, unit, and empty-facet behavior remain authoritative.
+- Preserve omitted-group queries, accepted-current-claim selection, taxonomy
+  closure semantics, distinct counts, and query budgets.
+- Keep production callers dependent only on `ProductCompare.Catalog` and the
+  stable metadata facade; do not change schemas, migrations, filter inputs,
+  catalog, taxonomy, specification, GraphQL, Relay, or frontend policy.
+
+Verification:
+
+- `mix test test/product_compare/catalog/filter_metadata_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable metadata facade retains the exact response and
+query contract, each implementation responsibility has one focused owner, the
+exact 10-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
+
+### 5. Community Submissions Decomposition
+
+Status: ready
+Lane: Community submissions decomposition
+Plan: `docs/superpowers/plans/2026-07-23-community-submissions-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Discussions.Submissions` remains the stable
+discussion-context boundary while idempotent creation, owner lifecycle
+actions, reporting, and shared write-limit persistence live in focused
+internal modules with unchanged transactions, ownership, moderation lifecycle,
+idempotency, limits, values, and errors.
+Next action: extract the four implementation responsibilities behind the
+stable submissions facade and prove direct community-trust parity.
+Owned paths:
+
+- `lib/product_compare/discussions/submissions.ex`
+- `lib/product_compare/discussions/submissions/write_limits.ex`
+- `lib/product_compare/discussions/submissions/creates.ex`
+- `lib/product_compare/discussions/submissions/owner_actions.ex`
+- `lib/product_compare/discussions/submissions/reports.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `docs/work/community-submissions-decomposition.md`
+
+Internal slices:
+
+- Review, question, and answer creation plus idempotent receipts.
+- Owner update and retained-removal lifecycle.
+- Attributable duplicate-safe reporting.
+- Transactional UTC-hour write-limit accounting.
+- Stable submissions facade and exact result parity.
+
+Prerequisites:
+
+- Existing stable functions, arguments, results, changesets, atoms,
+  transactions, locks, and rollbacks remain authoritative.
+- Preserve Global UUID targets, idempotency digests and conflicts, ownership,
+  moderation reset, accepted-answer cleanup, report deduplication, and
+  committed-only UTC-hour counters.
+- Keep `ProductCompare.Discussions` as the only production caller; do not
+  change schemas, migrations, limits, authorization, moderation, GraphQL,
+  Relay, or frontend policy.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable submissions facade retains the full caller-facing
+contract, each implementation responsibility has one focused owner, the exact
+25-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
+
+### 6. Commerce Destination URL Decomposition
+
+Status: ready
+Lane: Commerce destination URL decomposition
+Plan: `docs/superpowers/plans/2026-07-23-commerce-destination-url-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1`
+remains the stable
+commerce-safety boundary while browser-compatible URI parsing and hostname
+canonicalization, public-address policy, and RFC 3492 encoding live in focused
+internal modules with unchanged accepted and rejected destinations.
+Next action: extract the three implementation responsibilities behind the
+stable predicate and prove destination and commerce-attribution parity.
+Owned paths:
+
+- `lib/product_compare/commerce_attribution/destination_url.ex`
+- `lib/product_compare/commerce_attribution/destination_url/parser.ex`
+- `lib/product_compare/commerce_attribution/destination_url/address_policy.ex`
+- `lib/product_compare/commerce_attribution/destination_url/punycode.ex`
+- `test/product_compare/commerce_attribution/destination_url_test.exs`
+- `test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+- `docs/work/commerce-destination-url-decomposition.md`
+
+Internal slices:
+
+- Browser-compatible HTTP(S) URI and authority parsing.
+- IDNA separator, percent-decoding, NFKC, and hostname canonicalization.
+- IPv4, IPv6, mapped-address, localhost, and reserved-range policy.
+- RFC 3492 punycode encoding.
+- Stable predicate and schema compatibility parity.
+
+Prerequisites:
+
+- Existing `valid?/1` accepted/rejected values, backslash handling, userinfo
+  rejection, port bounds, IDNA normalization, IP parsing, reserved ranges, and
+  malformed-input behavior remain authoritative.
+- Preserve the current non-goal: no full UTS 46 IDNA mapping layer.
+- Keep schema and production callers dependent only on the stable predicate;
+  do not add DNS/network resolution, dependencies, schemas, migrations,
+  commerce policy, GraphQL, controllers, or frontend behavior.
+
+Verification:
+
+- `mix test test/product_compare/commerce_attribution/destination_url_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable predicate retains the exact destination-safety
+contract, each implementation responsibility has one focused owner, the exact
+57-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
+
 ## Completed 2026-07-20 Cross-Stack Work
 
 ### 1. Durable Ingestion Recurrence

@@ -525,6 +525,29 @@ batch and should not be recreated or promoted.
   passes 61 tests; schema wiring, loader keys, query budgets, visibility,
   authorization, Global IDs, moderation, payloads, and frontend policy stay
   unchanged.
+- Catalog Filter Metadata decomposition is a path-disjoint structural
+  successor: the stable `ProductCompare.Catalog.FilterMetadata.metadata/1`
+  boundary remains catalog-facing while filtered-product queries, taxonomy
+  facets, selected attribute filters, and attribute aggregation move into
+  focused internal modules. Its direct characterization gate passes 10 tests;
+  query behavior, counts, ordering, units, selection, catalog policy, GraphQL,
+  Relay, and frontend behavior stay unchanged.
+- Community Submissions decomposition is a path-disjoint structural successor:
+  the stable `ProductCompare.Discussions.Submissions` boundary remains
+  discussion-context-facing while creation and idempotency, owner lifecycle,
+  reporting, and write-limit persistence move into focused internal modules.
+  Its direct community-trust characterization gate passes 25 tests;
+  transactions, ownership, moderation, idempotency, limits, GraphQL, Relay, and
+  frontend behavior stay unchanged.
+- Commerce Destination URL decomposition is a path-disjoint structural
+  successor: the stable
+  `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1` predicate
+  remains caller-facing while URI and authority parsing, hostname
+  canonicalization, public-address policy, and RFC 3492 encoding move into
+  focused internal modules. Its direct destination and commerce-attribution
+  characterization gate passes 57 tests; accepted destinations, rejected
+  destinations, schemas, commerce policy, controllers, GraphQL, and frontend
+  behavior stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active
