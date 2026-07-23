@@ -6,15 +6,11 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   import Ecto.Query
 
   alias ProductCompare.Catalog.FilterMetadata.Query
+  alias ProductCompare.Catalog.FilterMetadata.TaxonomyFacets
   alias ProductCompare.Repo
   alias ProductCompare.Specs
-  alias ProductCompare.Taxonomy
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
-  alias ProductCompareSchemas.Taxonomy.ProductTaxon
-  alias ProductCompareSchemas.Taxonomy.Taxon
-  alias ProductCompareSchemas.Taxonomy.TaxonClosure
-  alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   @type filter_group ::
           nil
@@ -26,10 +22,12 @@ defmodule ProductCompare.Catalog.FilterMetadata do
 
   @spec metadata(map()) :: map()
   def metadata(filters) when is_map(filters) do
+    taxonomy_facets = TaxonomyFacets.build(filters)
+
     %{
       result_count: Query.result_count(filters),
-      type_options: type_options(filters),
-      use_case_options: use_case_options(filters),
+      type_options: taxonomy_facets.type_options,
+      use_case_options: taxonomy_facets.use_case_options,
       numeric_filters: numeric_filters(filters),
       boolean_filters: boolean_filters(filters),
       enum_filters: enum_filters(filters)
@@ -37,48 +35,6 @@ defmodule ProductCompare.Catalog.FilterMetadata do
   end
 
   def metadata(_filters), do: metadata(%{})
-
-  defp type_options(filters) do
-    selected_id = Map.get(filters, :primary_type_taxon_id)
-    counts = primary_type_counts(filters)
-
-    "type"
-    |> Taxonomy.list_taxons_for_taxonomy()
-    |> Enum.map(fn taxon ->
-      selected = taxon.id == selected_id
-      count = Map.get(counts, taxon.id, 0)
-
-      %{
-        id: taxon.id,
-        id_type: :taxon,
-        label: taxon.name,
-        count: count,
-        selected: selected,
-        disabled: disabled?(count, selected)
-      }
-    end)
-  end
-
-  defp use_case_options(filters) do
-    selected_ids = filters |> Map.get(:use_case_taxon_ids, []) |> MapSet.new()
-    counts = use_case_counts(filters)
-
-    "use_case"
-    |> Taxonomy.list_taxons_for_taxonomy()
-    |> Enum.map(fn taxon ->
-      selected = MapSet.member?(selected_ids, taxon.id)
-      count = Map.get(counts, taxon.id, 0)
-
-      %{
-        id: taxon.id,
-        id_type: :taxon,
-        label: taxon.name,
-        count: count,
-        selected: selected,
-        disabled: disabled?(count, selected)
-      }
-    end)
-  end
 
   defp numeric_filters(filters) do
     attributes = Specs.list_filterable_attributes([:numeric])
@@ -180,41 +136,6 @@ defmodule ProductCompare.Catalog.FilterMetadata do
       end
     end)
     |> Enum.reject(&is_nil/1)
-  end
-
-  defp primary_type_counts(filters) do
-    filters
-    |> Query.filtered_products(:primary_type)
-    |> then(fn query ->
-      Repo.all(
-        from product in subquery(query),
-          join: closure in TaxonClosure,
-          on: closure.descendant_id == product.primary_type_taxon_id,
-          group_by: closure.ancestor_id,
-          select: {closure.ancestor_id, count(product.id, :distinct)}
-      )
-    end)
-    |> Map.new()
-  end
-
-  defp use_case_counts(filters) do
-    filtered_query = Query.filtered_products(filters, :use_case)
-
-    Repo.all(
-      from product_taxon in ProductTaxon,
-        join: product in subquery(filtered_query),
-        on: product.id == product_taxon.product_id,
-        join: taxon in Taxon,
-        on: taxon.id == product_taxon.taxon_id,
-        join: taxonomy in TaxonomySchema,
-        on: taxonomy.id == taxon.taxonomy_id,
-        join: closure in TaxonClosure,
-        on: closure.descendant_id == product_taxon.taxon_id,
-        where: taxonomy.code == "use_case",
-        group_by: closure.ancestor_id,
-        select: {closure.ancestor_id, count(product_taxon.product_id, :distinct)}
-    )
-    |> Map.new()
   end
 
   defp aggregate_by_selected_attribute(
