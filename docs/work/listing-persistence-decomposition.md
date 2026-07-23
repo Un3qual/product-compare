@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -54,6 +54,17 @@ shapes, and downstream policy.
   `ListingPersistence.Offers`.
 - The exact ingestion characterization slice passed 32 tests on 2026-07-23
   after the offer extraction.
+- The stable facade is now 115 lines. `Artifacts` is 205 lines, `Products` is
+  259 lines, `Enrichment` is 175 lines, and `Offers` is 163 lines.
+- Application and test callers still use
+  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; no caller
+  bypasses the facade to reference a focused owner.
+- The exact final characterization gate passed 44 tests on 2026-07-23.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `git diff --check`, and `mix ci` all passed on
+  2026-07-23. The full gate passed 913 backend tests at 83.40% coverage, 1,507
+  frontend tests, Relay validation, TypeScript, client and SSR production
+  builds, and the client-bundle budget.
 
 ## Internal Slices
 

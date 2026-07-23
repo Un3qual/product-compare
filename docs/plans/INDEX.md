@@ -502,14 +502,15 @@ batch and should not be recreated or promoted.
   characterization gate passes 10 tests; CJ queries, readiness, cursor and
   runner behavior, credential safety, the operator runbook, deferred operator
   scope, and product policy stay unchanged.
-- Listing Persistence decomposition is a path-disjoint structural successor:
-  the stable `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary
-  remains caller-facing while source and external identity, canonical product
-  identity, enrichment, and offer observation persistence move into focused
-  internal modules. Its ingestion, enrichment, and reconciliation
-  characterization gate passes 44 tests; transactions, writes, conflict
-  targets, freshness, identity, taxonomy, specifications, pricing, alerts,
-  reconciliation, provider behavior, and product policy stay unchanged.
+- Listing Persistence decomposition is complete: the stable
+  `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary remains
+  caller-facing while `Artifacts`, `Products`, `Enrichment`, and `Offers` own
+  source and external identity, canonical product identity, enrichment, and
+  offer observation persistence. Its ingestion, enrichment, and
+  reconciliation characterization gate passes 44 tests; transactions, writes,
+  conflict targets, freshness, identity, taxonomy, specifications, pricing,
+  alerts, reconciliation, provider behavior, and product policy stay
+  unchanged.
 - CJ Candidates task decomposition is a path-disjoint structural successor:
   the stable `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point
   remains caller-facing while `Options`, `StaleReport`, `FitGapReport`, and

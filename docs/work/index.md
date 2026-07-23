@@ -1610,72 +1610,19 @@ final `mix ci` passed 909 backend tests, 1,507 frontend tests, and every queue,
 quality, type, Relay, build, and bundle gate. Listing Persistence, CJ
 Candidates, and Discussions Resolver decomposition remain ready.
 
+Listing Persistence Decomposition then completed on the current detached
+worktree. `ProductCompare.Ingestion.ListingPersistence` is now a 115-line
+stable facade; `Artifacts`, `Products`, `Enrichment`, and `Offers` own the four
+planned responsibilities without caller bypasses or behavior changes. The
+exact focused gate passed 44 tests, and final `mix ci` passed 913 backend tests
+at 83.40% coverage, 1,507 frontend tests, and every queue, quality, type,
+Relay, build, and bundle gate.
+
 ## Active Work
 
-### Listing Persistence Decomposition
+### CJ Candidates Task Decomposition
 
 Status: active
-Lane: Listing persistence decomposition
-Plan: `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Ingestion.ListingPersistence.persist/3`
-remains the stable ingestion-facing boundary while source and external
-identity, canonical product identity, enrichment, and offer observation
-persistence live in focused internal modules with unchanged transactions,
-writes, conflicts, freshness, result shapes, and downstream policy.
-Next action: extract the four implementation responsibilities behind the
-stable persistence facade and prove direct ingestion, enrichment, and
-reconciliation parity.
-Owned paths:
-
-- `lib/product_compare/ingestion/listing_persistence.ex`
-- `lib/product_compare/ingestion/listing_persistence/artifacts.ex`
-- `lib/product_compare/ingestion/listing_persistence/products.ex`
-- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
-- `lib/product_compare/ingestion/listing_persistence/offers.ex`
-- `test/product_compare/ingestion/ingestion_test.exs`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `test/product_compare/ingestion/reconciliation_test.exs`
-- `docs/work/listing-persistence-decomposition.md`
-
-Internal slices:
-
-- Source-artifact and external-product freshness persistence.
-- Canonical product, GTIN, slug, brand, and ingested-type identity.
-- Missing copy, taxonomy mapping, media, and specification enrichment.
-- Merchant-product and price-point persistence plus alert enqueueing.
-- Stable transaction facade, reconciliation observation, and result parity.
-
-Prerequisites:
-
-- Existing `ListingPersistence.persist/3` inputs, result maps, transactions,
-  rollbacks, and errors remain authoritative.
-- Preserve hashes, conflict targets, freshness, identity, category mapping,
-  evidence counts, offer activity, price replay, alert jobs, and
-  reconciliation.
-- Keep application callers dependent only on
-  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; do not
-  change providers, schemas, migrations, catalog, taxonomy, specification,
-  pricing, alert, GraphQL, frontend, or product policy.
-
-Verification:
-
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable transaction facade retains the full ingestion
-contract, each implementation responsibility has one focused owner, the exact
-44-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
-
-## Ready Work
-
-### 1. CJ Candidates Task Decomposition
-
-Status: ready
 Lane: CJ candidates task decomposition
 Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
 Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` remains the
@@ -1728,7 +1675,9 @@ contract, each implementation responsibility has one focused owner, the exact
 6-test characterization gate and repository gates pass, and no external
 caller bypasses the facade.
 
-### 2. Discussions Resolver Decomposition
+## Ready Work
+
+### 1. Discussions Resolver Decomposition
 
 Status: ready
 Lane: Discussions resolver decomposition
@@ -1780,7 +1729,7 @@ contract, each implementation responsibility has one focused owner, the exact
 61-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 3. Catalog Filter Metadata Decomposition
+### 2. Catalog Filter Metadata Decomposition
 
 Status: ready
 Lane: Catalog filter metadata decomposition
@@ -1834,7 +1783,7 @@ query contract, each implementation responsibility has one focused owner, the
 exact 10-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 4. Community Submissions Decomposition
+### 3. Community Submissions Decomposition
 
 Status: ready
 Lane: Community submissions decomposition
@@ -1889,7 +1838,7 @@ contract, each implementation responsibility has one focused owner, the exact
 25-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-### 5. Commerce Destination URL Decomposition
+### 4. Commerce Destination URL Decomposition
 
 Status: ready
 Lane: Commerce destination URL decomposition

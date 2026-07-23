@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P4
 - Dispatch source of truth: `docs/work/index.md`
 - Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
@@ -28,6 +28,11 @@ safety.
   Persistence decomposition.
 - This structural row does not reopen the rejected CSV export, provider,
   persistence, dashboard, operator-product, or product-policy work.
+
+## Progress Evidence
+
+- Claimed after Listing Persistence Decomposition completed with its exact
+  characterization and full repository gates green.
 
 ## Internal Slices
 
