@@ -4,15 +4,13 @@ defmodule ProductCompare.Discussions.Submissions do
   import Ecto.Query
 
   alias ProductCompare.Discussions.Moderation
+  alias ProductCompare.Discussions.Submissions.WriteLimits
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
-  alias ProductCompareSchemas.Discussions.CommunityWriteWindow
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
-
-  @default_write_limits [review: 5, question: 10, answer: 30, report: 30]
 
   @spec submit_review(pos_integer(), pos_integer(), map(), String.t()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t() | atom()}
@@ -115,7 +113,7 @@ defmodule ProductCompare.Discussions.Submissions do
       transaction_result(fn ->
         if report_exists?(reporter_id, type, record.id), do: Repo.rollback(:already_reported)
 
-        increment_write_window!(reporter_id, :report)
+        WriteLimits.increment!(reporter_id, :report)
 
         changeset =
           CommunityReport.changeset(
@@ -172,7 +170,7 @@ defmodule ProductCompare.Discussions.Submissions do
 
           nil ->
             :ok = before_insert.()
-            increment_write_window!(user_id, mutation_kind)
+            WriteLimits.increment!(user_id, mutation_kind)
             inserted_content = insert_or_rollback(changeset)
             content = Repo.get!(inserted_content.__struct__, inserted_content.id)
 
@@ -229,7 +227,7 @@ defmodule ProductCompare.Discussions.Submissions do
 
       changeset = owned_update_changeset(:answer, answer, attrs)
       ensure_valid!(changeset)
-      increment_write_window!(user_id, :answer)
+      WriteLimits.increment!(user_id, :answer)
       updated_answer = update_or_rollback(changeset)
       clear_accepted_answer!(question, answer)
       updated_answer
@@ -242,7 +240,7 @@ defmodule ProductCompare.Discussions.Submissions do
 
     changeset = owned_update_changeset(:review, review, attrs)
     ensure_valid!(changeset)
-    increment_write_window!(user_id, :review)
+    WriteLimits.increment!(user_id, :review)
     update_or_rollback(changeset)
   end
 
@@ -252,7 +250,7 @@ defmodule ProductCompare.Discussions.Submissions do
 
     changeset = owned_update_changeset(:question, question, attrs)
     ensure_valid!(changeset)
-    increment_write_window!(user_id, :question)
+    WriteLimits.increment!(user_id, :question)
 
     changeset
     |> Ecto.Changeset.change(accepted_post_id: nil)
@@ -368,60 +366,6 @@ defmodule ProductCompare.Discussions.Submissions do
   end
 
   defp clear_accepted_answer!(_question, _answer), do: :ok
-
-  defp increment_write_window!(user_id, action_kind) do
-    window_started_at = utc_hour(DateTime.utc_now())
-    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
-
-    %CommunityWriteWindow{}
-    |> CommunityWriteWindow.changeset(%{
-      user_id: user_id,
-      action_kind: action_kind,
-      window_started_at: window_started_at,
-      count: 0
-    })
-    |> Repo.insert!(
-      on_conflict: :nothing,
-      conflict_target: [:user_id, :action_kind, :window_started_at]
-    )
-
-    window =
-      Repo.one!(
-        from window in CommunityWriteWindow,
-          where: window.user_id == ^user_id,
-          where: window.action_kind == ^action_kind,
-          where: window.window_started_at == ^window_started_at,
-          lock: "FOR UPDATE"
-      )
-
-    if window.count >= community_write_limit(action_kind), do: Repo.rollback(:rate_limited)
-
-    window
-    |> Ecto.Changeset.change(count: window.count + 1, updated_at: now)
-    |> Repo.update!()
-
-    :ok
-  end
-
-  defp utc_hour(datetime) do
-    datetime
-    |> DateTime.to_unix(:second)
-    |> div(3600)
-    |> Kernel.*(3600)
-    |> DateTime.from_unix!(:second)
-  end
-
-  defp community_write_limit(action_kind) do
-    configured_limits =
-      :product_compare
-      |> Application.get_env(ProductCompare.Discussions, [])
-      |> Keyword.get(:community_write_limits, @default_write_limits)
-
-    case Keyword.get(configured_limits, action_kind) do
-      limit when is_integer(limit) and limit >= 0 -> limit
-      _invalid -> Keyword.fetch!(@default_write_limits, action_kind)
-    end
-  end
 
   defp report_exists?(reporter_id, :review, content_id),
     do:
