@@ -5,6 +5,7 @@ defmodule ProductCompare.Accounts.ApiTokens do
 
   import Ecto.Query
 
+  alias ProductCompare.Accounts.ApiTokens.Authentication
   alias ProductCompare.Accounts.ApiTokens.Secrets
   alias ProductCompare.Input
   alias ProductCompare.Repo
@@ -27,30 +28,11 @@ defmodule ProductCompare.Accounts.ApiTokens do
 
   def authenticate_api_token(plain_text_token, _opts)
       when not is_binary(plain_text_token) or plain_text_token == "" do
-    :error
+    Authentication.authenticate(plain_text_token, [])
   end
 
-  def authenticate_api_token(plain_text_token, opts) do
-    now = current_time()
-    token_hash = Secrets.hash(plain_text_token)
-
-    query =
-      from token in ApiToken,
-        join: user in assoc(token, :user),
-        where: token.token_hash == ^token_hash,
-        where: is_nil(token.revoked_at),
-        where: is_nil(token.expires_at) or token.expires_at > ^now,
-        select: {user, token}
-
-    case Repo.one(query) do
-      {user, token} ->
-        maybe_touch_api_token(token.id, now, opts)
-        {:ok, user, token}
-
-      nil ->
-        :error
-    end
-  end
+  def authenticate_api_token(plain_text_token, opts),
+    do: Authentication.authenticate(plain_text_token, opts)
 
   @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
   def list_api_tokens_query(user_id, opts \\ []) do
@@ -131,15 +113,6 @@ defmodule ProductCompare.Accounts.ApiTokens do
   end
 
   def rotate_api_token(_user_id, _token_entropy_id, _attrs), do: {:error, :not_found}
-
-  defp maybe_touch_api_token(token_id, now, opts) do
-    if Keyword.get(opts, :touch_last_used?, true) do
-      from(token in ApiToken, where: token.id == ^token_id)
-      |> Repo.update_all(set: [last_used_at: now])
-    end
-
-    :ok
-  end
 
   defp get_api_tokens_for_user_id(user_id, token_entropy_ids) do
     Input.uuid_lookup_results(token_entropy_ids, fn entropy_ids ->
