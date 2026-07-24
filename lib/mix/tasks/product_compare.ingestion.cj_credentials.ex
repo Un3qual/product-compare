@@ -69,8 +69,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCredentials do
       {:missing_required, Enum.join(missing_required, ",")},
       {:optional_present, Enum.join(optional_present, ",")}
     ]
-    |> Enum.map(fn {key, value} -> "#{key}=#{value}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn {key, value} -> "#{key}=#{value}" end)
     |> Kernel.<>("\n")
   end
 end

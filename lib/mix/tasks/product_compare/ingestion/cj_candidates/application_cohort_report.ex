@@ -89,17 +89,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
   end
 
   defp render_markdown(candidates) do
-    [
-      "# CJ Application Cohort",
-      "",
-      "count=#{length(candidates)}",
-      "",
-      "| Candidate | Advertiser | Advertiser ID | Country | Currency | Language | Feed | Products | Feed Type | Review Note |",
-      "| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |"
-      | Enum.map(candidates, &render_markdown_row/1)
-    ]
-    |> Enum.join("\n")
-    |> Kernel.<>("\n")
+    header =
+      [
+        "# CJ Application Cohort",
+        "",
+        "count=#{length(candidates)}",
+        "",
+        "| Candidate | Advertiser | Advertiser ID | Country | Currency | Language | Feed | Products | Feed Type | Review Note |",
+        "| --- | --- | --- | --- | --- | --- | --- | ---: | --- | --- |"
+      ]
+      |> Enum.join("\n")
+
+    case candidates do
+      [] -> header <> "\n"
+      _ -> header <> "\n" <> Enum.map_join(candidates, "\n", &render_markdown_row/1) <> "\n"
+    end
   end
 
   defp render_markdown_row(%MerchantFeedCandidate{} = candidate) do
@@ -115,8 +119,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
       candidate.source_feed_type,
       if(review_note_present?(candidate.review_note), do: "present", else: "blank")
     ]
-    |> Enum.map(&Output.format_markdown_cell/1)
-    |> Enum.join(" | ")
+    |> Enum.map_join(" | ", &Output.format_markdown_cell/1)
     |> then(&"| #{&1} |")
   end
 

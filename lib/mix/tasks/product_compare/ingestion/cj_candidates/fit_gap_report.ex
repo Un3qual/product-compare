@@ -115,7 +115,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
       {:review_status, candidate.review_status},
       {:product_count, candidate.product_count},
       {:gap_count, length(gaps)},
-      {:gaps, gaps |> Enum.map(&Atom.to_string/1) |> Enum.join(",")}
+      {:gaps, Enum.map_join(gaps, ",", &Atom.to_string/1)}
     ]
     |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{Output.format_value(value)}" end)
   end

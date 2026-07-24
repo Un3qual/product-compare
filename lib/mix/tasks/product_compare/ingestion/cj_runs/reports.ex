@@ -210,8 +210,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
 
   defp render_key_value_lines(fields) do
     fields
-    |> Enum.map(fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
     |> Kernel.<>("\n")
   end
 end

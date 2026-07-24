@@ -166,12 +166,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
   defp review_attrs(%{status: status}), do: %{review_status: status}
 
   defp render_report(candidates, opts, updated_count) do
-    [
-      render_summary(candidates, opts, updated_count)
-      | Enum.map(candidates, &render_candidate/1)
-    ]
-    |> Enum.join("\n")
-    |> Kernel.<>("\n")
+    summary = render_summary(candidates, opts, updated_count)
+
+    case candidates do
+      [] -> summary <> "\n"
+      _ -> summary <> "\n" <> Enum.map_join(candidates, "\n", &render_candidate/1) <> "\n"
+    end
   end
 
   defp render_summary(candidates, opts, updated_count) do
@@ -187,8 +187,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
       {:status, opts.status},
       {:note_present, opts.note_present}
     ]
-    |> Enum.map(fn {key, value} -> "#{key}=#{format_value(value)}" end)
-    |> Enum.join(" ")
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
   end
 
   defp render_candidate(%MerchantFeedCandidate{} = candidate) do
@@ -199,8 +198,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidateReviewBatch do
       {:provider_feed_id, candidate.provider_feed_id},
       {:review_status, candidate.review_status}
     ]
-    |> Enum.map(fn {key, value} -> "#{key}=#{format_value(value)}" end)
-    |> Enum.join(" ")
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
   end
 
   defp format_review_error(%Ecto.Changeset{} = changeset), do: inspect(changeset.errors)
