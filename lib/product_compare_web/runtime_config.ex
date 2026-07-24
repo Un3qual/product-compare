@@ -65,10 +65,8 @@ defmodule ProductCompareWeb.RuntimeConfig do
         else
           trimmed
           |> String.trim_trailing("/")
-          |> String.split("/", parts: 2)
-          |> hd()
-          |> String.split(":", parts: 2)
-          |> hd()
+          |> then(&URI.parse("//" <> &1))
+          |> Map.get(:host)
         end
     end
   end
