@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: current detached worktree
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:

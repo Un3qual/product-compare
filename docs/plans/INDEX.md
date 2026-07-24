@@ -377,6 +377,14 @@ Their design and implementation plans are source-backed by the current
 six-clone report, the 11 skipped/eight unnecessary Dialyzer result, and the
 file-backed queue validator's missing reference checks.
 
+The user then claimed those three outcomes plus Reach baseline reconciliation
+for serial execution. Fresh 2026-07-24 evidence promoted strict Credo
+enforcement, coverage-contract hardening, and Logger-level test isolation as
+the three ready reserves: strict Credo reports two otherwise-unenforced
+narrator docs, full coverage is 83.74% against a 69% floor with two uncovered
+first-party Mix entry points, and two ingestion tests mutate the global Logger
+level while concurrent CI emits debug output.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
@@ -418,6 +426,10 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-reach-baseline-reconciliation-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-strict-credo-enforcement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-coverage-contract-hardening-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-logger-level-test-isolation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
