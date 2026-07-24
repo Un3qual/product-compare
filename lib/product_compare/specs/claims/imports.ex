@@ -5,7 +5,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
 
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
-  alias ProductCompare.Specs.Claims
+  alias ProductCompare.Specs.Claims.Moderation
   alias ProductCompare.Specs.TypedValues
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ClaimEvidence
@@ -188,7 +188,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
   defp truncate_excerpt(_value), do: nil
 
   defp maybe_select_imported_claim(%ProductAttributeClaim{status: :accepted} = claim, true) do
-    case Claims.select_current_claim(claim.product_id, claim.attribute_id, claim.id, nil) do
+    case Moderation.select_current(claim.product_id, claim.attribute_id, claim.id, nil) do
       {:ok, _current} -> {:ok, claim}
       {:error, reason} -> {:error, reason}
     end
