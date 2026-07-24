@@ -2003,14 +2003,14 @@ references fail deterministically while the live queue passes.
 
 ### 14. Reach Baseline Reconciliation
 
-Status: active
+Status: complete
 Lane: Reach baseline reconciliation
 Plan: `docs/superpowers/plans/2026-07-24-reach-baseline-reconciliation-implementation-plan.md`
 Batch outcome: actionable eager, redundant, string-building, and private-
 forwarder findings are removed, while the regenerated baseline documents only
 intentional stable map shapes and broad failure-containment boundaries.
-Next action: clear the actionable findings, regenerate the baseline from the
-current tree, and record every intentionally retained finding.
+Next action: complete; the 23 actionable findings are removed and the 11
+retained boundary findings are current and justified.
 Owned paths:
 
 - `.reach-baseline.json`

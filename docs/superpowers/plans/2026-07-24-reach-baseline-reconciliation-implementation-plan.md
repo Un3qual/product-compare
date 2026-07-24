@@ -48,18 +48,18 @@ and are captured in a freshly generated baseline.
 - Produces: identical results using direct pattern heads, `match?/2`,
   `Enum.slice/3`, and non-redundant standard-library calls.
 
-- [ ] Run `mix reach.check --smells --strict`; verify the named suboptimal and
+- [x] Run `mix reach.check --smells --strict`; verify the named suboptimal and
   eager findings fail the red gate.
-- [ ] Replace boolean `case` expressions with exact `match?/2` expressions,
+- [x] Replace boolean `case` expressions with exact `match?/2` expressions,
   split empty-string and `:operator` literals into function-head patterns,
   replace `Keyword.get(opts, :keywords, nil)` with
   `Keyword.get(opts, :keywords)`, remove the empty separator from
   `Enum.map_join/2`, and replace `Enum.drop/2 |> Enum.take/2` with
   `Enum.slice/3`.
-- [ ] Run the Accounts, Catalog, GraphQL connection, and loader suites named
+- [x] Run the Accounts, Catalog, GraphQL connection, and loader suites named
   above; expect zero failures.
-- [ ] Re-run strict unsuppressed Reach; verify those findings are absent.
-- [ ] Commit with message `refactor: clear mechanical reach findings`.
+- [x] Re-run strict unsuppressed Reach; verify those findings are absent.
+- [x] Commit with message `refactor: clear mechanical reach findings`.
 
 ## Task 2: CLI Rendering Findings
 
@@ -83,17 +83,17 @@ and are captured in a freshly generated baseline.
 - Produces: the exact existing text through `Enum.map_join/3` or bounded
   iodata composition rather than eager intermediate lists.
 
-- [ ] Extend existing output assertions only where a separator or terminal
+- [x] Extend existing output assertions only where a separator or terminal
   newline is not already covered.
-- [ ] Run the focused Mix-task suites and confirm the new assertions fail if
+- [x] Run the focused Mix-task suites and confirm the new assertions fail if
   separators or the terminal newline are intentionally changed.
-- [ ] Replace each `Enum.map/2 |> Enum.join/1` chain and embedded mapped row list
+- [x] Replace each `Enum.map/2 |> Enum.join/1` chain and embedded mapped row list
   with one-pass rendering while retaining the exact text contract.
-- [ ] Run the focused Mix-task suites; expect zero failures and byte-identical
+- [x] Run the focused Mix-task suites; expect zero failures and byte-identical
   output assertions.
-- [ ] Run strict unsuppressed Reach and verify the eager and string-building
+- [x] Run strict unsuppressed Reach and verify the eager and string-building
   findings are absent.
-- [ ] Commit with message `refactor: stream reach-clean cli rendering`.
+- [x] Commit with message `refactor: stream reach-clean cli rendering`.
 
 ## Task 3: Private Forwarders
 
@@ -110,13 +110,13 @@ and are captured in a freshly generated baseline.
   `IdNormalizer.blank_to_nil/1`.
 - Produces: unchanged results with direct private-owner calls.
 
-- [ ] Run the two focused suites; record the green behavior baseline.
-- [ ] Replace the two private same-argument forwarding helpers with direct
+- [x] Run the two focused suites; record the green behavior baseline.
+- [x] Replace the two private same-argument forwarding helpers with direct
   calls at their existing call sites and remove only the unused helpers.
-- [ ] Run the focused suites; expect zero failures.
-- [ ] Run strict unsuppressed Reach and verify both trivial-forwarder findings
+- [x] Run the focused suites; expect zero failures.
+- [x] Run strict unsuppressed Reach and verify both trivial-forwarder findings
   are absent.
-- [ ] Commit with message `refactor: remove private reach forwarders`.
+- [x] Commit with message `refactor: remove private reach forwarders`.
 
 ## Task 4: Current Baseline And Repository Gate
 
@@ -130,13 +130,13 @@ and are captured in a freshly generated baseline.
 - Produces: a current Reach baseline containing only intentional repeated-map
   and catch-all failure-containment findings.
 
-- [ ] Run `mix reach.check --smells --write-baseline .reach-baseline.json` after
+- [x] Run `mix reach.check --smells --write-baseline .reach-baseline.json` after
   all actionable findings are absent.
-- [ ] Inspect every generated entry and remove or fix any eager, redundant,
+- [x] Inspect every generated entry and remove or fix any eager, redundant,
   string-building, or trivial-forwarder finding rather than retaining it.
-- [ ] Run `mix reach.check --smells --strict --baseline
+- [x] Run `mix reach.check --smells --strict --baseline
   .reach-baseline.json`; expect exit status zero and an exact retained count
   recorded in the lane doc.
-- [ ] Run the focused suites, `mix format --check-formatted`, `mix typecheck`,
+- [x] Run the focused suites, `mix format --check-formatted`, `mix typecheck`,
   `mix work_queue.validate`, `mix ci`, and `git diff --check`.
-- [ ] Commit with message `chore: reconcile reach baseline`.
+- [x] Commit with message `chore: reconcile reach baseline`.

@@ -406,6 +406,13 @@ implementation-plan contract. Its 12 focused tests and the live three-row queue
 gate pass, and full `mix ci` passes 921 backend tests at 83.80% coverage plus
 1,507 frontend tests.
 
+Reach baseline reconciliation is complete. Mechanical expression cleanup,
+one-pass CLI rendering, and direct owner calls removed 23 actionable findings.
+The regenerated baseline contains only 4 fixed boundary maps and 7 deliberate
+failure-containment rescues. Strict baseline-backed Reach passes with those 11
+documented suppressions, and full `mix ci` passes 921 backend tests at 83.73%
+coverage plus 1,507 frontend tests.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
