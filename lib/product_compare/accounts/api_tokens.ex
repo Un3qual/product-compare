@@ -5,6 +5,7 @@ defmodule ProductCompare.Accounts.ApiTokens do
 
   import Ecto.Query
 
+  alias ProductCompare.Accounts.ApiTokens.Secrets
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
@@ -12,8 +13,6 @@ defmodule ProductCompare.Accounts.ApiTokens do
 
   @accounts_context ProductCompare.Accounts
   @api_token_default_ttl_days 90
-  @api_token_prefix_length 12
-  @api_token_secret_bytes 32
 
   @spec create_api_token(pos_integer(), map()) ::
           {:ok, %{plain_text_token: String.t(), api_token: ApiToken.t()}}
@@ -33,7 +32,7 @@ defmodule ProductCompare.Accounts.ApiTokens do
 
   def authenticate_api_token(plain_text_token, opts) do
     now = current_time()
-    token_hash = hash_api_token_secret(plain_text_token)
+    token_hash = Secrets.hash(plain_text_token)
 
     query =
       from token in ApiToken,
@@ -151,13 +150,13 @@ defmodule ProductCompare.Accounts.ApiTokens do
   end
 
   defp issue_api_token(user_id, attrs, now) do
-    plain_text_token = generate_api_token_secret()
-    token_hash = hash_api_token_secret(plain_text_token)
+    plain_text_token = Secrets.generate()
+    token_hash = Secrets.hash(plain_text_token)
 
     token_attrs =
       %{
         user_id: user_id,
-        token_prefix: token_prefix_from_hash(token_hash),
+        token_prefix: Secrets.prefix(token_hash),
         token_hash: token_hash,
         expires_at: api_token_expiry(attrs, now)
       }
@@ -306,19 +305,5 @@ defmodule ProductCompare.Accounts.ApiTokens do
     end
   end
 
-  defp hash_api_token_secret(plain_text_token), do: :crypto.hash(:sha3_256, plain_text_token)
-
-  defp token_prefix_from_hash(token_hash) do
-    token_hash
-    |> Base.encode16(case: :lower)
-    |> binary_part(0, @api_token_prefix_length)
-  end
-
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
-
-  defp generate_api_token_secret do
-    @api_token_secret_bytes
-    |> :crypto.strong_rand_bytes()
-    |> Base.url_encode64(padding: false)
-  end
 end
