@@ -1722,6 +1722,15 @@ query budgets, and final `mix ci` passed 913 backend tests at 83.64% coverage,
 1,507 frontend tests, and every queue, quality, duplication, type, Relay,
 build, and bundle gate.
 
+Alerts Resolver Decomposition then completed on the current detached worktree.
+`AlertsResolver` is now a 31-line schema-facing facade;
+`Resolvers.Alerts.Reads`, `WatchMutations`, and `EventMutations` own
+owner-scoped connections, price-watch lifecycle actions, and the alert-event
+action without schema bypasses. The exact Alerts and GraphQL gate passed 13
+tests, and final `mix ci` passed 913 backend tests at 83.65% coverage, 1,507
+frontend tests, and every queue, quality, duplication, type, Relay, build, and
+bundle gate.
+
 ## Active Work
 
 None.
@@ -1839,54 +1848,6 @@ contract, each implementation responsibility has one focused owner, the exact
 bypasses the facade.
 
 ## Ready Work
-
-### 10. Alerts Resolver Decomposition
-
-Status: ready
-Lane: Alerts resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-alerts-resolver-decomposition-implementation-plan.md`
-Batch outcome: `AlertsResolver` remains schema-facing while owner-scoped
-reads, watch lifecycle actions, and event actions live in focused owners with
-unchanged callbacks and payloads.
-Next action: extract read, watch-mutation, and event-mutation owners and prove
-direct Alerts and GraphQL alert parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/alerts_resolver.ex`
-- `lib/product_compare_web/resolvers/alerts/reads.ex`
-- `lib/product_compare_web/resolvers/alerts/watch_mutations.ex`
-- `lib/product_compare_web/resolvers/alerts/event_mutations.ex`
-- `test/product_compare/alerts/`
-- `test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `docs/work/alerts-resolver-decomposition.md`
-
-Internal slices:
-
-- Owner-scoped watch and event connections.
-- Price-watch create, update, and delete actions.
-- Alert-event read and dismiss actions.
-- Stable resolver wrappers and schema-call parity.
-
-Prerequisites:
-
-- Preserve every callback, clause, owner check, Global ID rule, connection
-  argument, value, payload, and error.
-- Keep schema files dependent only on `AlertsResolver`.
-- Do not change Alerts behavior, schemas, migrations, GraphQL SDL, Relay, or
-  frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/alerts test/product_compare_web/graphql/price_watches_and_alerts_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains exact read and mutation behavior,
-focused owners hold all three responsibilities, all named gates pass, and
-schema callers do not bypass the facade.
 
 ### 11. Actionable ExDNA Clone Retirement
 

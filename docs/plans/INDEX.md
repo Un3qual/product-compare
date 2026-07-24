@@ -357,6 +357,11 @@ evidence owners. The exact focused gate passes 82 tests including existing
 query budgets, schema scans find no owner bypasses, and full `mix ci` passes
 913 backend tests at 83.64% coverage, 1,507 frontend tests, and all repository
 quality and build gates.
+Alerts Resolver decomposition is complete. `AlertsResolver` is a 31-line
+schema-facing facade over 58-line read, 129-line watch-mutation, and 39-line
+event-mutation owners. The exact focused gate passes 13 tests, schema scans
+find no owner bypasses, and full `mix ci` passes 913 backend tests at 83.65%
+coverage, 1,507 frontend tests, and all repository quality and build gates.
 
 The post-decomposition audit confirmed the fixed stop boundary and promoted
 three non-filler quality successors: actionable ExDNA clone retirement,

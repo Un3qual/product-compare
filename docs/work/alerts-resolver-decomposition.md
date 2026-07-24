@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -16,11 +16,19 @@
 lifecycle actions, and event actions live in focused owners with unchanged
 callbacks and payloads.
 
-## Ready Evidence
+## Completion Evidence
 
-- The 202-line resolver combines three concrete responsibilities.
-- Existing Alerts suites characterize owner scope, Global IDs, filters,
-  pagination, lifecycle values, payloads, and errors.
+- The former 202-line resolver is now a 31-line schema-facing facade.
+- `Resolvers.Alerts.Reads` owns the two owner-scoped connections in 58 lines.
+- `Resolvers.Alerts.WatchMutations` owns price-watch create, update, and delete
+  behavior in 129 lines.
+- `Resolvers.Alerts.EventMutations` owns the alert-event action in 39 lines.
+- Schema callers still reference only `AlertsResolver`; no schema caller
+  bypasses the facade.
+- The focused Alerts domain and GraphQL gate passed 13 tests.
+- Full `mix ci` passed 913 backend tests at 83.65% coverage, 1,507 frontend
+  tests, and all queue, quality, duplication, type, Relay, build, and bundle
+  gates.
 
 ## Internal Slices
 
