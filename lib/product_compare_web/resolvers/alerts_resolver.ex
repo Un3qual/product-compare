@@ -3,47 +3,18 @@ defmodule ProductCompareWeb.Resolvers.AlertsResolver do
 
   alias ProductCompare.Alerts
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.AuthorizedConnection
-  alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
+  alias ProductCompareWeb.Resolvers.Alerts.Reads
 
   @spec my_price_watches(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()} | {:error, term()}
-  def my_price_watches(_parent, args, %{
-        context: %{current_user: user, loader: %Dataloader{} = loader}
-      }) do
-    load_alert_connection(loader, user, args, :price_watches, %{
-      enabled: Input.fetch_value(args, :enabled)
-    })
-  end
-
-  def my_price_watches(_parent, args, %{context: %{current_user: user}}) do
-    user.id
-    |> Alerts.list_watch_rules_query(enabled: Input.fetch_value(args, :enabled))
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
-  end
-
-  def my_price_watches(_parent, _args, _resolution),
-    do: {:error, GraphQLErrors.unauthenticated()}
+  def my_price_watches(parent, args, resolution),
+    do: Reads.my_price_watches(parent, args, resolution)
 
   @spec my_alert_events(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()} | {:error, term()}
-  def my_alert_events(_parent, args, %{
-        context: %{current_user: user, loader: %Dataloader{} = loader}
-      }) do
-    load_alert_connection(loader, user, args, :alert_events, %{
-      unread_only: Input.fetch_value(args, :unread_only, false)
-    })
-  end
-
-  def my_alert_events(_parent, args, %{context: %{current_user: user}}) do
-    user.id
-    |> Alerts.list_alert_events_query(unread_only: Input.fetch_value(args, :unread_only, false))
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
-  end
-
-  def my_alert_events(_parent, _args, _resolution),
-    do: {:error, GraphQLErrors.unauthenticated()}
+  def my_alert_events(parent, args, resolution),
+    do: Reads.my_alert_events(parent, args, resolution)
 
   @spec create_price_watch(any(), %{input: map()}, Absinthe.Resolution.t()) :: {:ok, map()}
   def create_price_watch(_parent, %{input: input}, %{context: %{current_user: user}}) do
@@ -150,16 +121,6 @@ defmodule ProductCompareWeb.Resolvers.AlertsResolver do
       {:ok, id} -> {:ok, id}
       :error -> {:error, {:invalid_id, camelize(field)}}
     end
-  end
-
-  defp load_alert_connection(loader, user, args, collection_kind, filters) do
-    AuthorizedConnection.load_owner(
-      loader,
-      user,
-      collection_kind,
-      filters,
-      Input.connection_args(args)
-    )
   end
 
   defp decode_optional_integer_id(input, field, type) do
