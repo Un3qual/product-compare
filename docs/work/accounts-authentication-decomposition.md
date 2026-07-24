@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -42,9 +42,30 @@ live in focused internal owners.
 
 ## Verification
 
-- `mix test test/product_compare/accounts test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
+- Focused gate:
+  `mix test test/product_compare/accounts
+  test/product_compare_web/graphql/session_auth_test.exs
+  test/product_compare_web/graphql/api_token_auth_test.exs`
+  passed 87 tests with 0 failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed.
+- `mix ci` passed 913 backend tests at 83.48% coverage, 1,507 frontend
+  tests, and every queue, quality, duplication, type, Relay, build, and
+  bundle gate.
+
+## Completion Evidence
+
+- `UserAuth`, `ApiTokens`, and `AuthResolver` are now 69-, 66-, and 87-line
+  stable facades.
+- User-auth owners are 37 lines (`Credentials`), 135 lines (`Sessions`), and
+  211 lines (`EmailTokens`).
+- API-token owners are 23 lines (`Secrets`), 49 lines (`Authentication`),
+  95 lines (`Queries`), and 167 lines (`Lifecycle`).
+- GraphQL owners are 159 lines (`AccountActions`) and 153 lines
+  (`Resolvers.Auth.ApiTokens`).
+- Caller scans found no internal-owner bypasses outside the owned namespaces;
+  schema files still reference only `AuthResolver`.
+- Phoenix cookie sessions, trusted-origin checks, constant-time credential
+  fallbacks, stale-auth locking, email-token rollback and test-hook lookup,
+  API-token entropy/hash/expiry/owner scope, and every GraphQL payload remain
+  unchanged.

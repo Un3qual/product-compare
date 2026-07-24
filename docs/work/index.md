@@ -1685,6 +1685,15 @@ focused gate passed 81 tests, and final `mix ci` passed 913 backend tests at
 83.50% coverage, 1,507 frontend tests, and every queue, quality, duplication,
 type, Relay, build, and bundle gate.
 
+Accounts Authentication Decomposition then completed on the current detached
+worktree. `UserAuth`, `ApiTokens`, and `AuthResolver` are now 69-, 66-, and
+87-line stable facades. Nine focused owners hold credential, persisted
+session, email-token, API-token secret/authentication/query/lifecycle, and
+GraphQL account/API-token behavior without caller or schema bypasses. The
+exact focused gate passed 87 tests, and final `mix ci` passed 913 backend
+tests at 83.48% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1802,65 +1811,6 @@ contract, each implementation responsibility has one focused owner, the exact
 bypasses the facade.
 
 ## Ready Work
-
-### 5. Accounts Authentication Decomposition
-
-Status: ready
-Lane: Accounts authentication decomposition
-Plan: `docs/superpowers/plans/2026-07-23-accounts-authentication-decomposition-implementation-plan.md`
-Batch outcome: the existing Accounts, `UserAuth`, `ApiTokens`, and
-schema-facing `AuthResolver` contracts remain stable while credential,
-persisted-token, email-token, API-token, account-action, and API-token resolver
-implementations live in focused internal modules.
-Next action: extract authentication internals behind the three stable facades
-and prove direct Accounts and GraphQL auth parity.
-Owned paths:
-
-- `lib/product_compare/accounts/user_auth.ex`
-- `lib/product_compare/accounts/user_auth/credentials.ex`
-- `lib/product_compare/accounts/user_auth/sessions.ex`
-- `lib/product_compare/accounts/user_auth/email_tokens.ex`
-- `lib/product_compare/accounts/api_tokens.ex`
-- `lib/product_compare/accounts/api_tokens/secrets.ex`
-- `lib/product_compare/accounts/api_tokens/authentication.ex`
-- `lib/product_compare/accounts/api_tokens/queries.ex`
-- `lib/product_compare/accounts/api_tokens/lifecycle.ex`
-- `lib/product_compare_web/resolvers/auth_resolver.ex`
-- `lib/product_compare_web/resolvers/auth/account_actions.ex`
-- `lib/product_compare_web/resolvers/auth/api_tokens.ex`
-- `test/product_compare/accounts/`
-- `test/product_compare_web/graphql/session_auth_test.exs`
-- `test/product_compare_web/graphql/api_token_auth_test.exs`
-- `docs/work/accounts-authentication-decomposition.md`
-
-Internal slices:
-
-- Password credential verification, persisted sessions, and email tokens.
-- API-token secrets, authentication, reads, and lifecycle.
-- GraphQL account and API-token actions.
-- Stable facades and caller-path parity.
-
-Prerequisites:
-
-- Preserve every public function, default, guard, value, error, transaction,
-  lock, payload, origin check, expiry, delivery hook, and owner scope.
-- Keep Phoenix cookie-backed sessions authoritative and test hooks configured
-  under `ProductCompare.Accounts.UserAuth`.
-- Do not change schemas, migrations, GraphQL SDL, auth policy, email
-  transport, Relay, or frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/accounts test/product_compare_web/graphql/session_auth_test.exs test/product_compare_web/graphql/api_token_auth_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: all stable authentication facades retain exact behavior,
-focused owners hold each implementation responsibility, direct and GraphQL
-gates pass, and callers remain on the Accounts and resolver boundaries.
 
 ### 6. Specifications Internals Decomposition
 

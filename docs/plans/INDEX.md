@@ -334,6 +334,12 @@ authorization, redirects, and GraphQL payloads. The exact focused gate passes
 81 tests, caller scans find no facade bypasses, and full `mix ci` passes 913
 backend tests at 83.50% coverage, 1,507 frontend tests, and all repository
 quality and build gates.
+Accounts Authentication decomposition is complete. `UserAuth`, `ApiTokens`,
+and `AuthResolver` are 69-, 66-, and 87-line stable facades over nine focused
+credential, user-token, API-token, and GraphQL owners. The exact focused gate
+passes 87 tests, caller scans find no internal-owner or schema bypasses, and
+full `mix ci` passes 913 backend tests at 83.48% coverage, 1,507 frontend
+tests, and all repository quality and build gates.
 
 Implementation plan references (non-dispatch):
 
