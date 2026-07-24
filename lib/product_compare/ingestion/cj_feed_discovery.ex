@@ -21,7 +21,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
     fetch_opts = fetch_opts(opts)
     pages = page_count(opts)
 
-    with {:ok, source} <- fetch_source(),
+    with {:ok, source} <- SourceResolver.fetch_source(),
          {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
@@ -212,10 +212,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
     else
       _invalid -> nil
     end
-  end
-
-  defp fetch_source do
-    SourceResolver.fetch_source()
   end
 
   defp report_result(%{failed: 0} = report), do: {:ok, report}
