@@ -32,7 +32,7 @@ defmodule ProductCompare.Catalog.FilterMetadata.AttributeFacets do
         filters,
         Enum.map(attributes, & &1.id),
         Map.keys(selected_filters),
-        &numeric_ranges/3,
+        &numeric_ranges/2,
         :numeric
       )
 
@@ -67,7 +67,7 @@ defmodule ProductCompare.Catalog.FilterMetadata.AttributeFacets do
         filters,
         Enum.map(attributes, & &1.id),
         Map.keys(selected_filters),
-        &boolean_counts/3,
+        &boolean_counts/2,
         :booleans
       )
 
@@ -98,7 +98,7 @@ defmodule ProductCompare.Catalog.FilterMetadata.AttributeFacets do
         filters,
         Enum.map(attributes, & &1.id),
         Map.keys(selected_filters),
-        &enum_option_counts/3,
+        &enum_option_counts/2,
         :enums
       )
 
@@ -137,57 +137,57 @@ defmodule ProductCompare.Catalog.FilterMetadata.AttributeFacets do
     selected_attribute_ids =
       selected_attribute_ids
       |> Enum.filter(&MapSet.member?(filterable_attribute_ids, &1))
-      |> MapSet.new()
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    selected_attribute_id_set = MapSet.new(selected_attribute_ids)
 
     unselected_attribute_ids =
-      Enum.reject(attribute_ids, &MapSet.member?(selected_attribute_ids, &1))
+      Enum.reject(attribute_ids, &MapSet.member?(selected_attribute_id_set, &1))
 
-    batched_results = aggregator.(filters, unselected_attribute_ids, nil)
+    unselected_group =
+      case unselected_attribute_ids do
+        [] -> []
+        ids -> [{ids, nil}]
+      end
 
-    Enum.reduce(selected_attribute_ids, batched_results, fn attribute_id, acc ->
-      filters
-      |> aggregator.([attribute_id], {key, attribute_id})
-      |> Map.merge(acc, fn _key, selected_value, _existing_value -> selected_value end)
-    end)
+    selected_groups =
+      Enum.map(selected_attribute_ids, &{[&1], {key, &1}})
+
+    aggregator.(filters, unselected_group ++ selected_groups)
   end
 
-  defp numeric_ranges(_filters, [], _omitted_group), do: %{}
+  defp numeric_ranges(_filters, []), do: %{}
 
-  defp numeric_ranges(filters, attribute_ids, omitted_group) do
-    filtered_query = Query.filtered_products(filters, omitted_group)
-
-    Repo.all(
-      from current in ProductAttributeCurrent,
-        join: claim in ProductAttributeClaim,
-        on: claim.id == current.claim_id,
-        join: product in subquery(filtered_query),
-        on: product.id == current.product_id,
-        where: current.attribute_id in ^attribute_ids,
-        where: claim.attribute_id in ^attribute_ids,
-        where: claim.attribute_id == current.attribute_id,
-        group_by: current.attribute_id,
-        select: {current.attribute_id, min(claim.value_num_base), max(claim.value_num_base)}
-    )
+  defp numeric_ranges(filters, groups) do
+    groups
+    |> Enum.map(fn {attribute_ids, omitted_group} ->
+      numeric_ranges_query(filters, attribute_ids, omitted_group)
+    end)
+    |> union_all_queries()
+    |> Repo.all()
     |> Map.new(fn {attribute_id, min, max} -> {attribute_id, %{min: min, max: max}} end)
   end
 
-  defp boolean_counts(_filters, [], _omitted_group), do: %{}
-
-  defp boolean_counts(filters, attribute_ids, omitted_group) do
-    filtered_query = Query.filtered_products(filters, omitted_group)
-
-    Repo.all(
-      from current in ProductAttributeCurrent,
-        join: claim in ProductAttributeClaim,
-        on: claim.id == current.claim_id,
-        join: product in subquery(filtered_query),
-        on: product.id == current.product_id,
-        where: current.attribute_id in ^attribute_ids,
-        where: claim.attribute_id in ^attribute_ids,
-        where: claim.attribute_id == current.attribute_id,
-        group_by: [current.attribute_id, claim.value_bool],
-        select: {current.attribute_id, claim.value_bool, count(current.product_id)}
+  defp numeric_ranges_query(filters, attribute_ids, omitted_group) do
+    filters
+    |> attribute_claim_query(attribute_ids, omitted_group)
+    |> group_by([current, _claim, _product], current.attribute_id)
+    |> select(
+      [current, claim, _product],
+      {current.attribute_id, min(claim.value_num_base), max(claim.value_num_base)}
     )
+  end
+
+  defp boolean_counts(_filters, []), do: %{}
+
+  defp boolean_counts(filters, groups) do
+    groups
+    |> Enum.map(fn {attribute_ids, omitted_group} ->
+      boolean_counts_query(filters, attribute_ids, omitted_group)
+    end)
+    |> union_all_queries()
+    |> Repo.all()
     |> Enum.reduce(%{}, fn {attribute_id, value, count}, acc ->
       key = if value, do: :true_count, else: :false_count
       default_counts = Map.put(%{true_count: 0, false_count: 0}, key, count)
@@ -195,27 +195,58 @@ defmodule ProductCompare.Catalog.FilterMetadata.AttributeFacets do
     end)
   end
 
-  defp enum_option_counts(_filters, [], _omitted_group), do: %{}
-
-  defp enum_option_counts(filters, attribute_ids, omitted_group) do
-    filtered_query = Query.filtered_products(filters, omitted_group)
-
-    Repo.all(
-      from current in ProductAttributeCurrent,
-        join: claim in ProductAttributeClaim,
-        on: claim.id == current.claim_id,
-        join: product in subquery(filtered_query),
-        on: product.id == current.product_id,
-        where: current.attribute_id in ^attribute_ids,
-        where: claim.attribute_id in ^attribute_ids,
-        where: claim.attribute_id == current.attribute_id,
-        group_by: [current.attribute_id, claim.enum_option_id],
-        select: {current.attribute_id, claim.enum_option_id, count(current.product_id)}
+  defp boolean_counts_query(filters, attribute_ids, omitted_group) do
+    filters
+    |> attribute_claim_query(attribute_ids, omitted_group)
+    |> group_by([current, claim, _product], [current.attribute_id, claim.value_bool])
+    |> select(
+      [current, claim, _product],
+      {current.attribute_id, claim.value_bool, count(current.product_id)}
     )
+  end
+
+  defp enum_option_counts(_filters, []), do: %{}
+
+  defp enum_option_counts(filters, groups) do
+    groups
+    |> Enum.map(fn {attribute_ids, omitted_group} ->
+      enum_option_counts_query(filters, attribute_ids, omitted_group)
+    end)
+    |> union_all_queries()
+    |> Repo.all()
     |> Enum.reduce(%{}, fn {attribute_id, enum_option_id, count}, acc ->
       Map.update(acc, attribute_id, %{enum_option_id => count}, fn counts ->
         Map.put(counts, enum_option_id, count)
       end)
+    end)
+  end
+
+  defp enum_option_counts_query(filters, attribute_ids, omitted_group) do
+    filters
+    |> attribute_claim_query(attribute_ids, omitted_group)
+    |> group_by([current, claim, _product], [current.attribute_id, claim.enum_option_id])
+    |> select(
+      [current, claim, _product],
+      {current.attribute_id, claim.enum_option_id, count(current.product_id)}
+    )
+  end
+
+  defp attribute_claim_query(filters, attribute_ids, omitted_group) do
+    filtered_query = Query.filtered_products(filters, omitted_group)
+
+    from current in ProductAttributeCurrent,
+      join: claim in ProductAttributeClaim,
+      on: claim.id == current.claim_id,
+      join: product in subquery(filtered_query),
+      on: product.id == current.product_id,
+      where: current.attribute_id in ^attribute_ids,
+      where: claim.attribute_id in ^attribute_ids,
+      where: claim.attribute_id == current.attribute_id
+  end
+
+  defp union_all_queries([query | queries]) do
+    Enum.reduce(queries, query, fn next_query, unioned_query ->
+      union_all(unioned_query, ^next_query)
     end)
   end
 

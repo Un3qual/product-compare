@@ -28,8 +28,13 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
     filters
     |> Map.get(:booleans, [])
     |> Enum.reduce(%{}, fn filter, acc ->
-      attribute_id = Map.fetch!(filter, :attribute_id)
-      Map.update(acc, attribute_id, filter, &merge_boolean_filters(&1, filter))
+      case Map.fetch(filter, :attribute_id) do
+        {:ok, attribute_id} ->
+          Map.update(acc, attribute_id, filter, &merge_boolean_filters(&1, filter))
+
+        :error ->
+          acc
+      end
     end)
   end
 
@@ -38,12 +43,17 @@ defmodule ProductCompare.Catalog.FilterMetadata.SelectedFilters do
     filters
     |> Map.get(:enums, [])
     |> Enum.reduce(%{}, fn filter, acc ->
-      Map.update(
-        acc,
-        Map.fetch!(filter, :attribute_id),
-        MapSet.new([Map.fetch!(filter, :enum_option_id)]),
-        &MapSet.put(&1, Map.fetch!(filter, :enum_option_id))
-      )
+      with {:ok, attribute_id} <- Map.fetch(filter, :attribute_id),
+           {:ok, enum_option_id} <- Map.fetch(filter, :enum_option_id) do
+        Map.update(
+          acc,
+          attribute_id,
+          MapSet.new([enum_option_id]),
+          &MapSet.put(&1, enum_option_id)
+        )
+      else
+        :error -> acc
+      end
     end)
   end
 

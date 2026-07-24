@@ -1,8 +1,6 @@
 defmodule ProductCompare.Accounts.ApiTokens.Queries do
   @moduledoc false
 
-  @dialyzer {:nowarn_function, maybe_apply_api_token_status_filter: 3}
-
   import Ecto.Query
 
   alias ProductCompare.Input
@@ -88,8 +86,6 @@ defmodule ProductCompare.Accounts.ApiTokens.Queries do
     from token in query,
       where: not is_nil(token.revoked_at)
   end
-
-  defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)
 end

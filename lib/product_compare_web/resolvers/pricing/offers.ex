@@ -68,6 +68,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
   @spec latest_price(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Pricing.PricePoint.t() | nil}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
   def latest_price(%{id: merchant_product_id}, _args, %{context: %{loader: loader}})
       when is_integer(merchant_product_id) do
     loader
