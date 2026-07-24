@@ -3,6 +3,7 @@ defmodule ProductCompare.Specs.Claims do
 
   import Ecto.Query
 
+  alias ProductCompare.Specs.Claims.Proposals
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
   alias ProductCompare.Specs.TypedValues
@@ -17,38 +18,7 @@ defmodule ProductCompare.Specs.Claims do
                                       "(fingerprint) WHERE fingerprint IS NOT NULL"}
 
   def propose_claim(product_id, attribute_id, typed_value, provenance) do
-    with {:ok, attribute} <- fetch_attribute(attribute_id),
-         {:ok, normalized_value} <- TypedValues.normalize(attribute, typed_value) do
-      attrs =
-        normalized_value
-        |> Map.merge(%{
-          product_id: product_id,
-          attribute_id: attribute_id,
-          source_type: Map.get(provenance, :source_type, :user),
-          status: :proposed,
-          created_by: Map.get(provenance, :created_by),
-          confidence: Map.get(provenance, :confidence)
-        })
-
-      changeset = ProductAttributeClaim.changeset(%ProductAttributeClaim{}, attrs)
-
-      if changeset.valid? do
-        Repo.transaction(fn ->
-          with {:ok, claim} <- Repo.insert(changeset),
-               {:ok, _evidence} <- maybe_insert_evidence(Repo, claim, provenance) do
-            claim
-          else
-            {:error, reason} -> Repo.rollback(reason)
-          end
-        end)
-        |> case do
-          {:ok, claim} -> {:ok, claim}
-          {:error, reason} -> {:error, reason}
-        end
-      else
-        Ecto.Changeset.apply_action(changeset, :insert)
-      end
-    end
+    Proposals.propose(product_id, attribute_id, typed_value, provenance)
   end
 
   def import_observation(
@@ -170,13 +140,6 @@ defmodule ProductCompare.Specs.Claims do
       conflict_target: [:product_id, :attribute_id],
       returning: true
     )
-  end
-
-  defp fetch_attribute(attribute_id) do
-    case Repo.get(Attribute, attribute_id) do
-      nil -> {:error, :attribute_not_found}
-      attribute -> {:ok, attribute}
-    end
   end
 
   defp ensure_observation_type(%Attribute{data_type: data_type}, %{data_type: data_type}), do: :ok
@@ -333,24 +296,6 @@ defmodule ProductCompare.Specs.Claims do
 
       %ProductAttributeClaim{} ->
         {:error, :invalid_status_transition}
-    end
-  end
-
-  defp maybe_insert_evidence(repo, claim, provenance) do
-    case Map.get(provenance, :artifact_id) do
-      nil ->
-        {:ok, :no_evidence}
-
-      artifact_id ->
-        evidence_attrs = %{
-          claim_id: claim.id,
-          artifact_id: artifact_id,
-          excerpt: Map.get(provenance, :excerpt)
-        }
-
-        %ClaimEvidence{}
-        |> ClaimEvidence.changeset(evidence_attrs)
-        |> repo.insert(on_conflict: :nothing)
     end
   end
 end
