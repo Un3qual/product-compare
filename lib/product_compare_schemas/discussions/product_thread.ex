@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Discussions.ProductThread do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Discussions.ModerationChangeset
+
   @type t :: %__MODULE__{}
 
   schema "product_threads" do
@@ -43,13 +45,6 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
   end
 
   def moderation_changeset(thread, status, moderator_id, note, now) do
-    thread
-    |> change(
-      moderation_status: status,
-      moderation_note: note,
-      moderated_by: moderator_id,
-      moderated_at: now
-    )
-    |> validate_inclusion(:moderation_status, [:published, :hidden, :rejected])
+    ModerationChangeset.change(thread, status, moderator_id, note, now)
   end
 end
