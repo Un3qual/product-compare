@@ -1703,6 +1703,16 @@ exact focused gate passed 88 tests, and final `mix ci` passed 913 backend tests
 at 83.59% coverage, 1,507 frontend tests, and every queue, quality,
 duplication, type, Relay, build, and bundle gate.
 
+Affiliate Resolver Decomposition then completed on the current detached
+worktree. `AffiliateResolver` is now a 38-line schema-facing facade;
+`Resolvers.Affiliate.Reads` and `Resolvers.Affiliate.Mutations` own active
+coupon reads and the four operator mutation workflows without schema bypasses.
+The exact focused gate passed 24 tests, and final `mix ci` passed 913 backend
+tests at 83.61% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate. The required successor audit
+confirmed the decomposition stop boundary and promoted three source-backed
+quality outcomes instead of recursively splitting focused pipelines.
+
 ## Active Work
 
 None.
@@ -1821,52 +1831,6 @@ bypasses the facade.
 
 ## Ready Work
 
-### 8. Affiliate Resolver Decomposition
-
-Status: ready
-Lane: Affiliate resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
-Batch outcome: `AffiliateResolver` remains schema-facing while active-coupon
-reads and operator mutations live in focused owners with unchanged callback,
-authorization, payload, and error behavior.
-Next action: extract read and mutation owners and prove direct Affiliate and
-GraphQL workflow parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/affiliate_resolver.ex`
-- `lib/product_compare_web/resolvers/affiliate/reads.ex`
-- `lib/product_compare_web/resolvers/affiliate/mutations.ex`
-- `test/product_compare/affiliate/`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `docs/work/affiliate-resolver-decomposition.md`
-
-Internal slices:
-
-- Public, nested, and operator-scoped coupon reads.
-- Network, program, link, and coupon mutations.
-- Stable resolver wrappers and schema-call parity.
-
-Prerequisites:
-
-- Preserve every callback, clause, result, authorization decision, Global ID
-  rule, connection argument, payload, and error.
-- Keep schema files dependent only on `AffiliateResolver`.
-- Do not change Affiliate behavior, schemas, migrations, GraphQL SDL, Relay,
-  or frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/affiliate test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains its full schema contract, read and
-mutation owners are focused, all named gates pass, and schema callers do not
-bypass the facade.
-
 ### 9. Pricing Resolver Decomposition
 
 Status: ready
@@ -1962,6 +1926,132 @@ Verification:
 Exit condition: the stable resolver retains exact read and mutation behavior,
 focused owners hold all three responsibilities, all named gates pass, and
 schema callers do not bypass the facade.
+
+### 11. Actionable ExDNA Clone Retirement
+
+Status: ready
+Lane: Actionable ExDNA clone retirement
+Plan: `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
+Batch outcome: three genuinely shared CJ-worker, CJ-run formatting, and
+discussion-moderation behaviors gain concrete owners, and the enforced clone
+budget falls from six to three without generic frameworks.
+Next action: extract the three shared responsibilities, preserve their public
+boundaries, and enforce the reduced budget.
+Owned paths:
+
+- `lib/product_compare/ingestion/jobs/`
+- `lib/mix/tasks/product_compare/ingestion/cj_runs/`
+- `lib/product_compare_schemas/discussions/`
+- `test/product_compare/ingestion/jobs/`
+- `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
+- `test/product_compare/discussions/`
+- `mix.exs`
+- `docs/work/actionable-exdna-clone-retirement.md`
+
+Internal slices:
+
+- Shared durable CJ worker execution mechanics.
+- Shared CJ run value serialization.
+- Shared discussion moderation changesets.
+- Reduced ExDNA enforcement and retained-near-match evidence.
+
+Prerequisites:
+
+- Preserve Oban, output, schema, changeset, and moderation behavior.
+- Do not abstract the remaining coincidental near matches.
+
+Verification:
+
+- `mix test test/product_compare/ingestion/jobs test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/product_compare/discussions`
+- `mix ex_dna --max-clones 3`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the three actionable shared behaviors have focused owners,
+their direct suites pass, and the full repository gate enforces at most three
+clones.
+
+### 12. Dialyzer Suppression Retirement
+
+Status: ready
+Lane: Dialyzer suppression retirement
+Plan: `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
+Batch outcome: stale and reachable Dialyzer suppressions are removed while
+public runtime behavior and useful type precision remain unchanged.
+Next action: remove the eight stale skips, fix the 11 suppressed findings at
+their owning boundaries, and run Dialyzer without an ignore file.
+Owned paths:
+
+- `.dialyzer_ignore.exs`
+- `lib/product_compare/`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare_web/`
+- `test/product_compare/`
+- `test/product_compare_web/`
+- `test/support/conn_case.ex`
+- `mix.exs`
+- `docs/work/dialyzer-suppression-retirement.md`
+
+Internal slices:
+
+- Stale suppression removal.
+- Context and schema type corrections.
+- Plug, resolver-input, runtime-config, and test-support type corrections.
+- Unsuppressed Dialyzer enforcement.
+
+Prerequisites:
+
+- Preserve all public functions, guards, results, changesets, and errors.
+- Do not use broad `term()` types or replacement ignores to silence findings.
+
+Verification:
+
+- `mix dialyzer`
+- Affected context and web suites in the linked implementation plan.
+- `mix ci`
+- `git diff --check`
+
+Exit condition: Dialyzer reports zero errors, skipped findings, and unnecessary
+skips without weakening public contracts.
+
+### 13. Work-Queue Plan Reference Integrity
+
+Status: ready
+Lane: Work-queue plan reference integrity
+Plan: `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
+Batch outcome: file-backed queue validation proves every ready row references
+an existing, repository-contained, structurally executable implementation
+plan.
+Next action: parse safe plan paths and validate their existence and required
+plan markers without adding filesystem behavior to the pure Markdown API.
+Owned paths:
+
+- `lib/product_compare/work_queue/validator.ex`
+- `test/product_compare/work_queue/validator_test.exs`
+- `docs/work/operating-model.md`
+- `docs/work/work-queue-plan-reference-integrity.md`
+
+Internal slices:
+
+- Safe ready-row plan-path parsing.
+- Repository-root containment and file existence.
+- Implementation-plan contract validation.
+- Operating-model and error-message evidence.
+
+Prerequisites:
+
+- Preserve current queue-depth and row-completeness validation.
+- Do not require planned owned paths to exist before implementation.
+
+Verification:
+
+- `mix test test/product_compare/work_queue/validator_test.exs`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: missing, escaping, ambiguous, and incomplete ready-plan
+references fail deterministically while the live queue passes.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

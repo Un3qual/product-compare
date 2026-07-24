@@ -346,6 +346,18 @@ over eight focused read, claim-workflow, and GraphQL owners. The exact focused
 gate passes 88 tests, caller scans find no application, internal-owner, or
 schema bypasses, and full `mix ci` passes 913 backend tests at 83.59% coverage,
 1,507 frontend tests, and all repository quality and build gates.
+Affiliate Resolver decomposition is complete. `AffiliateResolver` is a
+38-line schema-facing facade over 123-line read and 195-line mutation owners.
+The exact focused gate passes 24 tests, schema scans find no owner bypasses,
+and full `mix ci` passes 913 backend tests at 83.61% coverage, 1,507 frontend
+tests, and all repository quality and build gates.
+
+The post-decomposition audit confirmed the fixed stop boundary and promoted
+three non-filler quality successors: actionable ExDNA clone retirement,
+Dialyzer suppression retirement, and work-queue plan-reference integrity.
+Their design and implementation plans are source-backed by the current
+six-clone report, the 11 skipped/eight unnecessary Dialyzer result, and the
+file-backed queue validator's missing reference checks.
 
 Implementation plan references (non-dispatch):
 
@@ -385,6 +397,9 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-pricing-resolver-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-alerts-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`

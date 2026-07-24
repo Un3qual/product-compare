@@ -2,25 +2,31 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
   `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
-- Last verified: 2026-07-23 against direct Affiliate and GraphQL workflow
-  characterization paths.
+- Last verified: 2026-07-23 with 24 focused tests and the full repository gate.
 
 ## Target Outcome
 
 `AffiliateResolver` remains schema-facing while active-coupon reads and
 operator mutations live in focused owners with unchanged callback behavior.
 
-## Ready Evidence
+## Completion Evidence
 
-- The 310-line resolver combines public/nested reads, operator reads, and four
-  mutation workflows.
-- Existing Affiliate suites characterize authorization, Global IDs,
-  Dataloader paths, payloads, and errors.
+- `AffiliateResolver` is a 38-line schema-facing facade.
+- `Resolvers.Affiliate.Reads` owns public nested and operator-scoped active
+  coupon connections in 123 lines.
+- `Resolvers.Affiliate.Mutations` owns the four operator mutation workflows,
+  ID normalization, and payload errors in 195 lines.
+- Schema files still reference only `AffiliateResolver`; the focused owners
+  are used only by that facade and their own namespace.
+- The exact direct/GraphQL gate passed 24 tests with 0 failures.
+- Full `mix ci` passed 913 backend tests at 83.61% coverage, 1,507 frontend
+  tests, and every queue, format, compile, Credo, six-clone ExDNA, Reach,
+  Dialyzer, Relay, type, build, and bundle gate.
 
 ## Internal Slices
 
