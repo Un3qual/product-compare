@@ -1694,6 +1694,15 @@ exact focused gate passed 87 tests, and final `mix ci` passed 913 backend
 tests at 83.48% coverage, 1,507 frontend tests, and every queue, quality,
 duplication, type, Relay, build, and bundle gate.
 
+Specifications Internals Decomposition then completed on the current detached
+worktree. `Specs.Reads`, `Specs.Claims`, and `SpecsResolver` are now 75-, 32-,
+and 77-line stable facades. Eight focused owners hold source-artifact,
+current-attribute, reference-data, proposal, import, moderation, GraphQL read,
+and GraphQL correction behavior without application or schema bypasses. The
+exact focused gate passed 88 tests, and final `mix ci` passed 913 backend tests
+at 83.59% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1811,64 +1820,6 @@ contract, each implementation responsibility has one focused owner, the exact
 bypasses the facade.
 
 ## Ready Work
-
-### 6. Specifications Internals Decomposition
-
-Status: ready
-Lane: Specifications internals decomposition
-Plan: `docs/superpowers/plans/2026-07-23-specifications-internals-decomposition-implementation-plan.md`
-Batch outcome: `Specs.Reads`, `Specs.Claims`, and `SpecsResolver` remain stable
-facades while artifact, current-attribute, reference-data, claim-workflow, and
-resolver implementations live in focused owners with unchanged contracts.
-Next action: extract read, claim, and resolver owners and prove direct Specs,
-consumer, and GraphQL correction parity.
-Owned paths:
-
-- `lib/product_compare/specs/reads.ex`
-- `lib/product_compare/specs/reads/artifacts.ex`
-- `lib/product_compare/specs/reads/current_attributes.ex`
-- `lib/product_compare/specs/reads/reference_data.ex`
-- `lib/product_compare/specs/claims.ex`
-- `lib/product_compare/specs/claims/proposals.ex`
-- `lib/product_compare/specs/claims/imports.ex`
-- `lib/product_compare/specs/claims/moderation.ex`
-- `lib/product_compare_web/resolvers/specs_resolver.ex`
-- `lib/product_compare_web/resolvers/specs/reads.ex`
-- `lib/product_compare_web/resolvers/specs/corrections.ex`
-- `test/product_compare/specs/`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `test/product_compare/catalog/filter_metadata_test.exs`
-- `test/product_compare/recommendations_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `docs/work/specifications-internals-decomposition.md`
-
-Internal slices:
-
-- Artifact, current-attribute, and reference-data reads.
-- Proposal, import, and moderation/current-selection claim workflows.
-- GraphQL reads and correction actions.
-- Stable facades and caller-path parity.
-
-Prerequisites:
-
-- Preserve every function, default, guard, result, error, query, order,
-  preload, budget, transaction, lock, typed value, fingerprint, and Global ID.
-- Keep `ProductCompare.Specs` as the only application-facing context.
-- Do not change schemas, migrations, GraphQL SDL, domain policy, ingestion,
-  Relay, or frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the three stable facades retain exact read, claim, and
-resolver behavior, focused owners hold each responsibility, and all direct
-and consumer gates pass without caller bypasses.
 
 ### 8. Affiliate Resolver Decomposition
 

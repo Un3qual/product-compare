@@ -340,6 +340,12 @@ credential, user-token, API-token, and GraphQL owners. The exact focused gate
 passes 87 tests, caller scans find no internal-owner or schema bypasses, and
 full `mix ci` passes 913 backend tests at 83.48% coverage, 1,507 frontend
 tests, and all repository quality and build gates.
+Specifications Internals decomposition is complete. `Specs.Reads`,
+`Specs.Claims`, and `SpecsResolver` are 75-, 32-, and 77-line stable facades
+over eight focused read, claim-workflow, and GraphQL owners. The exact focused
+gate passes 88 tests, caller scans find no application, internal-owner, or
+schema bypasses, and full `mix ci` passes 913 backend tests at 83.59% coverage,
+1,507 frontend tests, and all repository quality and build gates.
 
 Implementation plan references (non-dispatch):
 

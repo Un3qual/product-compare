@@ -2,13 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
   `docs/superpowers/plans/2026-07-23-specifications-internals-decomposition-implementation-plan.md`
-- Last verified: 2026-07-23 against direct Specs, catalog, recommendation,
-  enrichment, and GraphQL correction characterization paths.
+- Last verified: 2026-07-23 with 88 focused tests and the full repository gate.
 
 ## Target Outcome
 
@@ -16,12 +15,22 @@
 artifact, current-attribute, reference-data, claim-workflow, and resolver
 implementations live in focused owners with exact contract parity.
 
-## Ready Evidence
+## Completion Evidence
 
-- The three facades are 377, 356, and 273 lines and each combines distinct
-  read, workflow, or resolver responsibilities.
-- Existing direct and consumer suites characterize typed values, selection,
-  evidence, ordering, replay, moderation, and GraphQL behavior.
+- `Specs.Reads`, `Specs.Claims`, and `SpecsResolver` are 75-, 32-, and
+  77-line stable facades.
+- `Artifacts`, `CurrentAttributes`, and `ReferenceData` own source-artifact,
+  accepted-current-attribute, and reference-data reads.
+- `Proposals`, `Imports`, and `Moderation` own user proposals, replay-safe
+  imported observations, moderation, and current-claim selection.
+- Resolver `Reads` and `Corrections` own GraphQL read and correction behavior.
+- Application callers still use `ProductCompare.Specs`; schema fields still
+  use `SpecsResolver`; focused owners are not bypassed outside their
+  implementation namespaces.
+- The exact focused gate passed 88 tests with 0 failures.
+- Full `mix ci` passed 913 backend tests at 83.59% coverage, 1,507 frontend
+  tests, and every queue, format, compile, Credo, six-clone ExDNA, Reach,
+  Dialyzer, Relay, type, build, and bundle gate.
 
 ## Internal Slices
 
@@ -39,7 +48,7 @@ implementations live in focused owners with exact contract parity.
 
 ## Verification
 
-- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs`
+- `mix test test/product_compare/specs test/product_compare/ingestion/enrichment_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare/catalog/filtering_regression_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs`
 - `mix typecheck`
 - `mix format --check-formatted`
 - `mix work_queue.validate`
