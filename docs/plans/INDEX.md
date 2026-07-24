@@ -399,6 +399,13 @@ default ignore file is deleted; Dialyzer reports zero errors, skipped findings,
 or unnecessary skips, and full `mix ci` passes 916 backend tests at 83.75%
 coverage plus 1,507 frontend tests.
 
+Work-queue plan-reference integrity is complete. Pure validation now rejects
+unsafe or ambiguous ready-row plan syntax without touching the filesystem;
+file-backed validation proves repository containment, file existence, and the
+implementation-plan contract. Its 12 focused tests and the live three-row queue
+gate pass, and full `mix ci` passes 921 backend tests at 83.80% coverage plus
+1,507 frontend tests.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`

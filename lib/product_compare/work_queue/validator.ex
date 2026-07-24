@@ -168,9 +168,8 @@ defmodule ProductCompare.WorkQueue.Validator do
       {~r/^(?:##|###) Task(?:[ \t]+\d+)?(?:[ \t]*:|[ \t]+\S)/m,
        "#{prefix} is missing a Task heading"}
     ]
-    |> Enum.flat_map(fn {pattern, error} ->
-      if Regex.match?(pattern, plan), do: [], else: [error]
-    end)
+    |> Enum.reject(fn {pattern, _error} -> Regex.match?(pattern, plan) end)
+    |> Enum.map(fn {_pattern, error} -> error end)
   end
 
   defp ready_section(markdown) do

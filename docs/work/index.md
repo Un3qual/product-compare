@@ -1964,14 +1964,14 @@ skips without weakening public contracts.
 
 ### 13. Work-Queue Plan Reference Integrity
 
-Status: active
+Status: complete
 Lane: Work-queue plan reference integrity
 Plan: `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
 Batch outcome: file-backed queue validation proves every ready row references
 an existing, repository-contained, structurally executable implementation
 plan.
-Next action: parse safe plan paths and validate their existence and required
-plan markers without adding filesystem behavior to the pure Markdown API.
+Next action: complete; pure validation checks safe plan-path syntax and
+file-backed validation proves containment, existence, and plan structure.
 Owned paths:
 
 - `lib/product_compare/work_queue/validator.ex`
