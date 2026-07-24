@@ -63,7 +63,7 @@ and errors.
 
 - Completed on 2026-07-23 on the aggregate detached-worktree commit stack.
 - The stable facade is 47 lines.
-- `WriteLimits` is 65 lines, `Creates` is 183 lines, `OwnerActions` is 178
+- `WriteLimits` is 66 lines, `Creates` is 183 lines, `OwnerActions` is 178
   lines, and `Reports` is 74 lines.
 - The existing `ProductCompare.Discussions.Moderation` boundary owns the
   cross-content entropy lookup shared by creation replay and reporting; this

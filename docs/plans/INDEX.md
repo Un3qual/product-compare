@@ -362,6 +362,13 @@ schema-facing facade over 58-line read, 129-line watch-mutation, and 39-line
 event-mutation owners. The exact focused gate passes 13 tests, schema scans
 find no owner bypasses, and full `mix ci` passes 913 backend tests at 83.65%
 coverage, 1,507 frontend tests, and all repository quality and build gates.
+The aggregate Backend Decomposition completion audit is also complete. All 17
+stable facades retain their exact pre-program public name-and-arity sets, all
+52 extracted owners have only stable-facade or same-namespace Mix xref
+callers, and tests do not bypass those boundaries. The anti-slop pass removed
+three config-key-only owner dependency edges while preserving the established
+application config keys; no extracted owner remains in the xref cycle report.
+The fixed stop boundary remained intact.
 
 The post-decomposition audit confirmed the fixed stop boundary and promoted
 three non-filler quality successors: actionable ExDNA clone retirement,

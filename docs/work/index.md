@@ -1731,6 +1731,17 @@ tests, and final `mix ci` passed 913 backend tests at 83.65% coverage, 1,507
 frontend tests, and every queue, quality, duplication, type, Relay, build, and
 bundle gate.
 
+The complete Backend Decomposition program then passed its aggregate ownership
+and anti-slop audit. All 17 retained facades expose the exact public
+name-and-arity sets from pre-program commit `3d21e5ba`; Mix xref reports every
+one of the 52 extracted owners is called only by its stable facade or another
+owner in the same implementation namespace, and the test tree contains no
+direct owner references. Three config-key-only dependency edges introduced by
+extraction were removed without changing their established application config
+keys; none of the new owners participates in the remaining pre-existing xref
+cycles. The explicit decomposition stop boundary held, and the live queue
+retains the three source-backed quality successors.
+
 ## Active Work
 
 None.
