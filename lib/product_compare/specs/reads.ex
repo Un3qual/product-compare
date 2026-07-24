@@ -3,6 +3,7 @@ defmodule ProductCompare.Specs.Reads do
 
   import Ecto.Query
 
+  alias ProductCompare.Specs.Reads.Artifacts
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.Attribute
@@ -16,33 +17,12 @@ defmodule ProductCompare.Specs.Reads do
   defguardp valid_id_guard(id) when is_integer(id) and id > 0 and id <= @max_bigint_id
 
   @spec get_source_artifact(term()) :: SourceArtifact.t() | nil
-  def get_source_artifact(id) when valid_id_guard(id) do
-    [id]
-    |> get_source_artifacts()
-    |> Map.fetch!(id)
-  end
+  def get_source_artifact(id) when valid_id_guard(id), do: Artifacts.get(id)
 
   def get_source_artifact(_id), do: nil
 
   @spec get_source_artifacts([term()]) :: %{optional(pos_integer()) => SourceArtifact.t() | nil}
-  def get_source_artifacts(ids) when is_list(ids) do
-    ids = ids |> Enum.filter(&valid_id?/1) |> Enum.uniq()
-
-    artifacts =
-      case ids do
-        [] ->
-          %{}
-
-        _ ->
-          SourceArtifact
-          |> where([artifact], artifact.id in ^ids)
-          |> preload(:source)
-          |> Repo.all()
-          |> Map.new(&{&1.id, &1})
-      end
-
-    Map.new(ids, &{&1, Map.get(artifacts, &1)})
-  end
+  def get_source_artifacts(ids) when is_list(ids), do: Artifacts.get_many(ids)
 
   @spec list_current_attributes_for_products([pos_integer()]) :: %{
           optional(pos_integer()) => [map()]
