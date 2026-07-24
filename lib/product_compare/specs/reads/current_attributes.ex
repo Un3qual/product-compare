@@ -133,7 +133,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
 
   defp taxon_attribute_metadata_by_attribute_id(_attribute_ids, _taxon_id), do: %{}
 
-  defp normalize_ids(ids), do: ids |> Enum.filter(&valid_id?/1) |> Enum.uniq()
+  defp normalize_ids(ids), do: ids |> MapSet.new() |> Enum.filter(&valid_id?/1)
   defp valid_id?(id), do: is_integer(id) and id > 0 and id <= @max_bigint_id
 
   defp current_attribute_sort_key(%{attribute: attribute, taxon_attribute: taxon_attribute}) do
