@@ -4,14 +4,9 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl do
   URL, hostname, IP-address, IDNA, and punycode policy.
   """
 
+  alias ProductCompare.CommerceAttribution.DestinationUrl.Punycode
+
   @documentation_ipv4_ranges MapSet.new(["192.0.2", "198.51.100", "203.0.113"])
-  @punycode_base 36
-  @punycode_tmin 1
-  @punycode_tmax 26
-  @punycode_skew 38
-  @punycode_damp 700
-  @punycode_initial_bias 72
-  @punycode_initial_n 128
   @idna_dot_separators [<<0x3002::utf8>>, <<0xFF0E::utf8>>, <<0xFF61::utf8>>]
 
   @spec valid?(term()) :: boolean()
@@ -128,7 +123,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl do
     if ascii_label?(label) do
       {:ok, label}
     else
-      {:ok, "xn--" <> punycode_encode(label)}
+      {:ok, "xn--" <> Punycode.encode(label)}
     end
   rescue
     ArgumentError -> :error
@@ -293,136 +288,4 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl do
   defp high_word_low_word_to_ipv4(high_word, low_word) do
     {div(high_word, 256), rem(high_word, 256), div(low_word, 256), rem(low_word, 256)}
   end
-
-  # RFC 3492 ASCII encoding for Unicode host labels before existing label validation.
-  # This is not a full UTS #46/IDNA mapping layer.
-  defp punycode_encode(label) do
-    codepoints = String.to_charlist(label)
-    basic_codepoints = Enum.filter(codepoints, &(&1 < 128))
-    encoded = Enum.map_join(basic_codepoints, &<<&1::utf8>>)
-    basic_count = length(basic_codepoints)
-
-    encoded =
-      if basic_count > 0 do
-        encoded <> "-"
-      else
-        encoded
-      end
-
-    encode_punycode_codepoints(
-      codepoints,
-      length(codepoints),
-      basic_count,
-      @punycode_initial_n,
-      0,
-      @punycode_initial_bias,
-      encoded
-    )
-  end
-
-  defp encode_punycode_codepoints(
-         codepoints,
-         input_length,
-         handled_count,
-         n,
-         delta,
-         bias,
-         encoded
-       )
-       when handled_count < input_length do
-    m = codepoints |> Enum.filter(&(&1 >= n)) |> Enum.min()
-    delta = delta + (m - n) * (handled_count + 1)
-
-    {handled_count, delta, bias, encoded} =
-      Enum.reduce(codepoints, {handled_count, delta, bias, encoded}, fn codepoint,
-                                                                        {handled_count, delta,
-                                                                         bias, encoded} ->
-        cond do
-          codepoint < m ->
-            {handled_count, delta + 1, bias, encoded}
-
-          codepoint == m ->
-            encoded = encode_punycode_delta(delta, bias, encoded)
-
-            bias =
-              adapt_punycode_bias(
-                delta,
-                handled_count + 1,
-                handled_count == basic_count(codepoints)
-              )
-
-            {handled_count + 1, 0, bias, encoded}
-
-          true ->
-            {handled_count, delta, bias, encoded}
-        end
-      end)
-
-    encode_punycode_codepoints(
-      codepoints,
-      input_length,
-      handled_count,
-      m + 1,
-      delta + 1,
-      bias,
-      encoded
-    )
-  end
-
-  defp encode_punycode_codepoints(
-         _codepoints,
-         _input_length,
-         _handled_count,
-         _n,
-         _delta,
-         _bias,
-         encoded
-       ),
-       do: encoded
-
-  defp basic_count(codepoints), do: Enum.count(codepoints, &(&1 < 128))
-
-  defp encode_punycode_delta(delta, bias, encoded),
-    do: encode_punycode_delta(delta, @punycode_base, bias, encoded)
-
-  defp encode_punycode_delta(q, k, bias, encoded) do
-    t = punycode_threshold(k, bias)
-
-    if q < t do
-      encoded <> punycode_digit(q)
-    else
-      digit = t + rem(q - t, @punycode_base - t)
-      q = div(q - t, @punycode_base - t)
-
-      encode_punycode_delta(q, k + @punycode_base, bias, encoded <> punycode_digit(digit))
-    end
-  end
-
-  defp punycode_threshold(k, bias) when k <= bias + @punycode_tmin, do: @punycode_tmin
-  defp punycode_threshold(k, bias) when k >= bias + @punycode_tmax, do: @punycode_tmax
-  defp punycode_threshold(k, bias), do: k - bias
-
-  defp punycode_digit(value) when value in 0..25, do: <<?a + value>>
-  defp punycode_digit(value), do: <<?0 + value - 26>>
-
-  defp adapt_punycode_bias(delta, numpoints, first_time?) do
-    delta =
-      if first_time? do
-        div(delta, @punycode_damp)
-      else
-        div(delta, 2)
-      end
-
-    delta = delta + div(delta, numpoints)
-
-    {k, delta} = reduce_punycode_bias_delta(delta, 0)
-    k + div((@punycode_base - @punycode_tmin + 1) * delta, delta + @punycode_skew)
-  end
-
-  defp reduce_punycode_bias_delta(delta, k)
-       when delta > div((@punycode_base - @punycode_tmin) * @punycode_tmax, 2) do
-    reduce_punycode_bias_delta(div(delta, @punycode_base - @punycode_tmin), k + @punycode_base)
-  end
-
-  defp reduce_punycode_bias_delta(delta, k), do: {k, delta}
 end
