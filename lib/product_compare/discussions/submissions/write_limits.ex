@@ -7,6 +7,7 @@ defmodule ProductCompare.Discussions.Submissions.WriteLimits do
   alias ProductCompareSchemas.Discussions.CommunityWriteWindow
 
   @default_limits [review: 5, question: 10, answer: 30, report: 30]
+  @discussions_config :"Elixir.ProductCompare.Discussions"
 
   @spec increment!(pos_integer(), :review | :question | :answer | :report) :: :ok
   def increment!(user_id, action_kind) do
@@ -54,7 +55,7 @@ defmodule ProductCompare.Discussions.Submissions.WriteLimits do
   defp write_limit(action_kind) do
     configured_limits =
       :product_compare
-      |> Application.get_env(ProductCompare.Discussions, [])
+      |> Application.get_env(@discussions_config, [])
       |> Keyword.get(:community_write_limits, @default_limits)
 
     case Keyword.get(configured_limits, action_kind) do

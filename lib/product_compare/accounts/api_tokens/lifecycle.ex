@@ -8,7 +8,7 @@ defmodule ProductCompare.Accounts.ApiTokens.Lifecycle do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
 
-  @accounts_context ProductCompare.Accounts
+  @accounts_config :"Elixir.ProductCompare.Accounts"
   @api_token_default_ttl_days 90
 
   @spec create(pos_integer(), map()) ::
@@ -154,7 +154,7 @@ defmodule ProductCompare.Accounts.ApiTokens.Lifecycle do
         ttl_days
 
       _ ->
-        module_config = Application.get_env(:product_compare, @accounts_context, [])
+        module_config = Application.get_env(:product_compare, @accounts_config, [])
 
         case Keyword.get(module_config, :api_token_default_ttl_days) do
           ttl_days when is_integer(ttl_days) and ttl_days > 0 -> ttl_days

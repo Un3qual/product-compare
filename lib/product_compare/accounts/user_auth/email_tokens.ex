@@ -14,7 +14,7 @@ defmodule ProductCompare.Accounts.UserAuth.EmailTokens do
   @confirm_validity_in_days 7
   @reset_password_context "reset_password"
   @reset_password_validity_in_days 1
-  @user_auth_config ProductCompare.Accounts.UserAuth
+  @user_auth_config :"Elixir.ProductCompare.Accounts.UserAuth"
 
   @spec deliver_confirmation_instructions(User.t(), (String.t() -> any())) :: :ok
   def deliver_confirmation_instructions(%User{} = user, delivery_fun)
