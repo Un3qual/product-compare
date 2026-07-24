@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport
   alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.Options
+  alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.ValueFormatter
   alias ProductCompare.Ingestion.CJFeedDiscovery
   alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.MixTasks.CliOptions
@@ -232,7 +233,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
 
   defp format_runner_context(fields) do
     fields
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
   end
 
   defp render_import_resume(runner_opts, report) do
@@ -248,7 +249,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
       {:failed, report_value(report, :failed, 0)},
       {:next_cursor, report_value(report, :next_cursor, nil)}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
   end
 
   defp render_discovery_resume(runner_opts, report) do
@@ -263,7 +264,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
       {:failed, report_value(report, :failed, 0)},
       {:next_cursor, report_value(report, :next_cursor, nil)}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
   end
 
   defp report_value(report, key, default) when is_map(report) do
@@ -271,11 +272,4 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Resume do
   end
 
   defp report_value(_report, _key, default), do: default
-
-  defp format_value(nil), do: ""
-  defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp format_value(value) when is_boolean(value), do: to_string(value)
-  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
-  defp format_value(value) when is_binary(value), do: String.replace(value, ~r/[\r\n]+/, " ")
-  defp format_value(value), do: to_string(value)
 end
