@@ -5,6 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Options
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJRunCompletion
   alias ProductCompare.Ingestion.Sources.CJ.ProductParser
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
   alias ProductCompareSchemas.Specs.Source
@@ -75,30 +76,21 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner do
   defp put_query_field(query, key, value), do: Map.put(query, key, value)
 
   defp complete_import_run(import_run, report, next_cursor) do
-    status = if report.failed == 0, do: "succeeded", else: "failed"
+    CJRunCompletion.complete(import_run, run_counts(report), next_cursor)
+  end
 
-    Ingestion.complete_import_run(import_run, %{
-      status: status,
-      cursor_end: next_cursor,
+  defp fail_import_run(import_run, report, next_cursor) do
+    CJRunCompletion.fail(import_run, run_counts(report), next_cursor, @fetch_failure_summary)
+  end
+
+  defp run_counts(report) do
+    %{
       pages_fetched: report.pages_fetched,
       records_fetched: report.fetched,
       records_normalized: report.normalized,
       records_persisted: report.persisted,
       records_failed: report.failed
-    })
-  end
-
-  defp fail_import_run(import_run, report, next_cursor) do
-    Ingestion.complete_import_run(import_run, %{
-      error_summary: @fetch_failure_summary,
-      status: "failed",
-      cursor_end: next_cursor,
-      pages_fetched: report.pages_fetched,
-      records_failed: report.failed,
-      records_fetched: report.fetched,
-      records_normalized: report.normalized,
-      records_persisted: report.persisted
-    })
+    }
   end
 
   defp serviceable_areas_for_query(fetch_opts) do
