@@ -12,6 +12,7 @@ defmodule ProductCompare.Accounts.UserAuth do
   import Ecto.Query
   require Logger
 
+  alias ProductCompare.Accounts.UserAuth.Credentials
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserSessionToken
@@ -28,15 +29,11 @@ defmodule ProductCompare.Accounts.UserAuth do
   @spec authenticate_user_by_email_and_password(String.t(), String.t()) :: User.t() | nil
   def authenticate_user_by_email_and_password(email, password)
       when is_binary(email) and is_binary(password) do
-    email
-    |> User.normalize_email()
-    |> fetch_user_for_auth()
-    |> verify_password(password)
+    Credentials.authenticate_user_by_email_and_password(email, password)
   end
 
   def authenticate_user_by_email_and_password(_email, _password) do
-    Argon2.no_user_verify()
-    nil
+    Credentials.authenticate_user_by_email_and_password(nil, nil)
   end
 
   @spec generate_user_session_token(User.t()) :: String.t() | nil
@@ -167,23 +164,6 @@ defmodule ProductCompare.Accounts.UserAuth do
   end
 
   def reset_user_password(_token, _attrs), do: {:error, :invalid_token}
-
-  defp fetch_user_for_auth(email), do: Repo.get_by(User, email: email)
-
-  defp verify_password(%User{hashed_password: hashed_password} = user, password)
-       when is_binary(hashed_password) and hashed_password != "" do
-    if String.starts_with?(hashed_password, "$argon2") do
-      if Argon2.verify_pass(password, hashed_password), do: user, else: nil
-    else
-      Argon2.no_user_verify()
-      nil
-    end
-  end
-
-  defp verify_password(_user, _password) do
-    Argon2.no_user_verify()
-    nil
-  end
 
   defp get_user_by_email_token(token, context) do
     with {:ok, raw_token} <- decode_token(token) do
