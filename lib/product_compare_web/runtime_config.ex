@@ -39,7 +39,13 @@ defmodule ProductCompareWeb.RuntimeConfig do
         host
       end
 
-    URI.to_string(%URI{scheme: "https", host: frontend_host})
+    "https://" <> origin_host(frontend_host)
+  end
+
+  defp origin_host("[" <> _rest = host), do: host
+
+  defp origin_host(host) do
+    if String.contains?(host, ":"), do: "[#{host}]", else: host
   end
 
   defp normalize_host(nil), do: nil
@@ -59,10 +65,8 @@ defmodule ProductCompareWeb.RuntimeConfig do
         else
           trimmed
           |> String.trim_trailing("/")
-          |> String.split("/", parts: 2)
-          |> hd()
-          |> String.split(":", parts: 2)
-          |> hd()
+          |> then(&URI.parse("//" <> &1))
+          |> Map.get(:host)
         end
     end
   end

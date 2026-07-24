@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Discussions.ProductReview do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Discussions.ModerationChangeset
+
   @type t :: %__MODULE__{}
 
   schema "product_reviews" do
@@ -26,14 +28,7 @@ defmodule ProductCompareSchemas.Discussions.ProductReview do
   end
 
   def moderation_changeset(review, status, moderator_id, note, now) do
-    review
-    |> change(
-      moderation_status: status,
-      moderation_note: note,
-      moderated_by: moderator_id,
-      moderated_at: now
-    )
-    |> validate_inclusion(:moderation_status, [:published, :hidden, :rejected])
+    ModerationChangeset.change(review, status, moderator_id, note, now)
   end
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()

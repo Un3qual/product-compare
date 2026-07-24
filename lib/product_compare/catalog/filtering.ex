@@ -118,10 +118,10 @@ defmodule ProductCompare.Catalog.Filtering do
     filters
     |> Map.get(key, [])
     |> Enum.reject(fn filter ->
-      case Input.normalize_integer_id(fetch_value(filter, :attribute_id)) do
-        {:ok, ^attribute_id} -> true
-        _ -> false
-      end
+      match?(
+        {:ok, ^attribute_id},
+        Input.normalize_integer_id(fetch_value(filter, :attribute_id))
+      )
     end)
   end
 

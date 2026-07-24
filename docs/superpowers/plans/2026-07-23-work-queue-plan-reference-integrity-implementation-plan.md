@@ -40,14 +40,15 @@ plan header, goal, constraints, and task markers.
   a private ready-row projection containing row index and the exact `Plan:`
   code-span path while retaining the existing `validate/1` result.
 
-- [ ] Add pure-validator cases for missing code spans, absolute paths, and
+- [x] Add pure-validator cases for missing code spans, absolute paths, and
   traversal paths; expect deterministic row-indexed failures.
-- [ ] Parse only one backticked `docs/**/*.md` path from each ready row and
+- [x] Parse only one backticked `docs/**/*.md` path from each ready row and
   reject ambiguous values.
-- [ ] Run
-  `mix test test/product_compare/work_queue/validator_test.exs`; expect all
-  cases to pass.
-- [ ] Commit with message `refactor: parse ready queue plan references`.
+- [x] Run
+  `mix test test/product_compare/work_queue/validator_test.exs`; all 12 cases
+  pass.
+- [x] Commit the parsing and file-backed contract together in
+  `feat: validate ready queue plan contracts`.
 
 ## Task 2: Validate Referenced Plan Contracts
 
@@ -63,14 +64,14 @@ plan header, goal, constraints, and task markers.
 - A valid plan contains an implementation-plan H1, `**Goal:**`,
   `## Global Constraints`, and at least one `## Task` or `### Task` heading.
 
-- [ ] Use a temporary repository-shaped directory in tests with a queue file
+- [x] Use a temporary repository-shaped directory in tests with a queue file
   and plan fixtures for valid, missing, escaping, and incomplete references.
-- [ ] Resolve paths relative to the repository containing `docs/work/index.md`;
+- [x] Resolve paths relative to the repository containing `docs/work/index.md`;
   verify the expanded path stays under that root before reading it.
-- [ ] Preserve `validate/1` as filesystem-free and aggregate all reference
+- [x] Preserve `validate/1` as filesystem-free and aggregate all reference
   errors in ready-row order.
-- [ ] Run the validator suite; expect all cases to pass.
-- [ ] Commit with message `feat: validate ready queue plan contracts`.
+- [x] Run the validator suite; all 12 cases pass.
+- [x] Commit with message `feat: validate ready queue plan contracts`.
 
 ## Task 3: Repository Gate And Evidence
 
@@ -83,9 +84,10 @@ plan header, goal, constraints, and task markers.
 
 - Produces: documented file-backed queue reference validation.
 
-- [ ] Add the new invariant and remediation message to the operating model.
-- [ ] Run `mix test test/product_compare/work_queue/validator_test.exs`.
-- [ ] Run `mix work_queue.validate`, `mix format --check-formatted`,
+- [x] Add the new invariant and remediation message to the operating model.
+- [x] Run `mix test test/product_compare/work_queue/validator_test.exs`; all
+  12 tests pass.
+- [x] Run `mix work_queue.validate`, `mix format --check-formatted`,
   `mix typecheck`, `mix ci`, and `git diff --check`.
-- [ ] Record exact test and gate evidence in the lane doc.
+- [x] Record exact test and gate evidence in the lane doc.
 - [ ] Commit with message `docs: record queue plan reference integrity`.

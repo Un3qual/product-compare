@@ -4,6 +4,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
   import Ecto.Query
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.Options
+  alias Mix.Tasks.ProductCompare.Ingestion.CjRuns.ValueFormatter
   alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -87,7 +88,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
         {:count, length(runs)}
       ]
       |> maybe_add_candidate_count(surface)
-      |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+      |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
 
     ([header] ++ Enum.map(runs, &render_run/1))
     |> Enum.join("\n")
@@ -181,7 +182,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
       {:records_failed, run.records_failed},
       {:error_summary, sanitized_error_summary(run)}
     ]
-    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{format_value(value)}" end)
+    |> Enum.map_join(" ", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
   end
 
   defp maybe_add_candidate_count(fields, @discovery_surface),
@@ -209,15 +210,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
 
   defp render_key_value_lines(fields) do
     fields
-    |> Enum.map(fn {key, value} -> "#{key}=#{format_value(value)}" end)
-    |> Enum.join("\n")
+    |> Enum.map_join("\n", fn {key, value} -> "#{key}=#{ValueFormatter.format(value)}" end)
     |> Kernel.<>("\n")
   end
-
-  defp format_value(nil), do: ""
-  defp format_value(%DateTime{} = value), do: DateTime.to_iso8601(value)
-  defp format_value(value) when is_boolean(value), do: to_string(value)
-  defp format_value(value) when is_integer(value), do: Integer.to_string(value)
-  defp format_value(value) when is_binary(value), do: String.replace(value, ~r/[\r\n]+/, " ")
-  defp format_value(value), do: to_string(value)
 end

@@ -4,6 +4,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
   """
 
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJRunCompletion
   alias ProductCompare.Ingestion.Sources.CJ.Client
   alias ProductCompare.Ingestion.Sources.CJ.SourceResolver
 
@@ -20,7 +21,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
     fetch_opts = fetch_opts(opts)
     pages = page_count(opts)
 
-    with {:ok, source} <- fetch_source(),
+    with {:ok, source} <- SourceResolver.fetch_source(),
          {:ok, import_run} <- start_import_run(source, cursor, fetch_opts, pages) do
       case fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
         {:ok, report, next_cursor} ->
@@ -66,30 +67,21 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
   end
 
   defp complete_import_run(import_run, report, next_cursor) do
-    status = if report.failed == 0, do: "succeeded", else: "failed"
-
-    Ingestion.complete_import_run(import_run, %{
-      status: status,
-      cursor_end: next_cursor,
-      pages_fetched: report.pages_fetched,
-      records_fetched: report.feeds_fetched,
-      records_normalized: 0,
-      records_persisted: report.candidates_persisted,
-      records_failed: report.failed
-    })
+    CJRunCompletion.complete(import_run, run_counts(report), next_cursor)
   end
 
   defp fail_import_run(import_run, report, next_cursor) do
-    Ingestion.complete_import_run(import_run, %{
-      error_summary: @fetch_failure_summary,
-      status: "failed",
-      cursor_end: next_cursor,
+    CJRunCompletion.fail(import_run, run_counts(report), next_cursor, @fetch_failure_summary)
+  end
+
+  defp run_counts(report) do
+    %{
       pages_fetched: report.pages_fetched,
       records_fetched: report.feeds_fetched,
       records_normalized: 0,
       records_persisted: report.candidates_persisted,
       records_failed: report.failed
-    })
+    }
   end
 
   defp fetch_pages(source, fetcher, cursor, fetch_opts, pages) do
@@ -220,10 +212,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscovery do
     else
       _invalid -> nil
     end
-  end
-
-  defp fetch_source do
-    SourceResolver.fetch_source()
   end
 
   defp report_result(%{failed: 0} = report), do: {:ok, report}

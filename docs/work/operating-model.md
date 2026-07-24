@@ -42,6 +42,14 @@ If any answer is missing, the row is not `ready`.
 `mix work_queue.validate` enforces the complete handoff, including a non-empty
 `Batch outcome` and at least one `Internal slices` item.
 
+Each ready row's `Plan:` must be exactly one backticked, repository-relative
+`docs/**/*.md` path with no `..` traversal. File-backed validation additionally
+requires that file to exist under the repository root and contain an
+implementation-plan H1, a non-empty `**Goal:**`, `## Global Constraints`, and
+at least one Task heading. A row that fails this check is not executable:
+correct the reference or complete the plan contract before marking the row
+`ready`; do not remove the reference or weaken the row to bypass validation.
+
 ## Batch And Slice Granularity
 
 A queue row is the smallest independently shippable outcome that deserves its

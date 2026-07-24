@@ -40,7 +40,7 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-23
+Updated: 2026-07-24
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -1742,9 +1742,21 @@ keys; none of the new owners participates in the remaining pre-existing xref
 cycles. The explicit decomposition stop boundary held, and the live queue
 retains the three source-backed quality successors.
 
+On 2026-07-24, the user claimed those three outcomes plus Reach baseline
+reconciliation for serial execution. Fresh baseline CI passed 916 backend and
+1,507 frontend tests. Unsuppressed Reach reported 34 current findings, strict
+Credo reported two narrator-documentation findings, full coverage was 83.74%
+against a 69% floor, and two ingestion tests were confirmed to mutate the
+global Logger level. Reach joined the active program, while strict Credo
+enforcement, coverage-contract hardening, and Logger-level test isolation were
+promoted as three non-overlapping ready reserves.
+
 ## Active Work
 
-None.
+The user claimed all four post-decomposition quality outcomes for serial
+execution on the current detached worktree. Their complete contracts are
+listed under `Active Quality Program`. Three source-verified, non-overlapping
+reserve rows remain ready.
 
 ## Completed 2026-07-23 Backend Decomposition Work
 
@@ -1858,24 +1870,27 @@ contract, each implementation responsibility has one focused owner, the exact
 25-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
 
-## Ready Work
+## Active Quality Program
 
 ### 11. Actionable ExDNA Clone Retirement
 
-Status: ready
+Status: complete
 Lane: Actionable ExDNA clone retirement
 Plan: `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
-Batch outcome: three genuinely shared CJ-worker, CJ-run formatting, and
+Batch outcome: three genuinely shared CJ import-run, CJ-run formatting, and
 discussion-moderation behaviors gain concrete owners, and the enforced clone
 budget falls from six to three without generic frameworks.
-Next action: extract the three shared responsibilities, preserve their public
-boundaries, and enforce the reduced budget.
+Next action: complete; the three shared responsibilities are extracted and the
+repository now enforces the three-clone budget.
 Owned paths:
 
-- `lib/product_compare/ingestion/jobs/`
+- `lib/product_compare/ingestion/cj_run_completion.ex`
+- `lib/product_compare/ingestion/cj_feed_discovery.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_import/runner.ex`
 - `lib/mix/tasks/product_compare/ingestion/cj_runs/`
 - `lib/product_compare_schemas/discussions/`
-- `test/product_compare/ingestion/jobs/`
+- `test/product_compare/ingestion/cj_feed_discovery_test.exs`
+- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
 - `test/product_compare/discussions/`
 - `mix.exs`
@@ -1883,7 +1898,7 @@ Owned paths:
 
 Internal slices:
 
-- Shared durable CJ worker execution mechanics.
+- Shared CJ import-run completion contract.
 - Shared CJ run value serialization.
 - Shared discussion moderation changesets.
 - Reduced ExDNA enforcement and retained-near-match evidence.
@@ -1906,13 +1921,13 @@ clones.
 
 ### 12. Dialyzer Suppression Retirement
 
-Status: ready
+Status: complete
 Lane: Dialyzer suppression retirement
 Plan: `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
 Batch outcome: stale and reachable Dialyzer suppressions are removed while
 public runtime behavior and useful type precision remain unchanged.
-Next action: remove the eight stale skips, fix the 11 suppressed findings at
-their owning boundaries, and run Dialyzer without an ignore file.
+Next action: complete; Dialyzer runs without an ignore file and reports zero
+errors, skipped findings, or unnecessary skips.
 Owned paths:
 
 - `.dialyzer_ignore.exs`
@@ -1949,14 +1964,14 @@ skips without weakening public contracts.
 
 ### 13. Work-Queue Plan Reference Integrity
 
-Status: ready
+Status: complete
 Lane: Work-queue plan reference integrity
 Plan: `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
 Batch outcome: file-backed queue validation proves every ready row references
 an existing, repository-contained, structurally executable implementation
 plan.
-Next action: parse safe plan paths and validate their existence and required
-plan markers without adding filesystem behavior to the pure Markdown API.
+Next action: complete; pure validation checks safe plan-path syntax and
+file-backed validation proves containment, existence, and plan structure.
 Owned paths:
 
 - `lib/product_compare/work_queue/validator.ex`
@@ -1985,6 +2000,164 @@ Verification:
 
 Exit condition: missing, escaping, ambiguous, and incomplete ready-plan
 references fail deterministically while the live queue passes.
+
+### 14. Reach Baseline Reconciliation
+
+Status: complete
+Lane: Reach baseline reconciliation
+Plan: `docs/superpowers/plans/2026-07-24-reach-baseline-reconciliation-implementation-plan.md`
+Batch outcome: actionable eager, redundant, string-building, and private-
+forwarder findings are removed, while the regenerated baseline documents only
+intentional stable map shapes and broad failure-containment boundaries.
+Next action: complete; the 23 actionable findings are removed and the 11
+retained boundary findings are current and justified.
+Owned paths:
+
+- `.reach-baseline.json`
+- `lib/mix/tasks/`
+- `lib/product_compare/`
+- `lib/product_compare_web/`
+- `test/mix/tasks/`
+- `test/product_compare/`
+- `test/product_compare_web/`
+- `docs/work/reach-baseline-reconciliation.md`
+
+Internal slices:
+
+- Mechanical expression findings.
+- CLI rendering findings.
+- Private same-argument forwarders.
+- Current intentional baseline and strict enforcement.
+
+Prerequisites:
+
+- Preserve CLI text, public behavior, queries, maps, and failure containment.
+- Do not introduce speculative structs or narrow deliberate catch-all
+  boundaries to satisfy advisory findings.
+
+Verification:
+
+- `mix reach.check --smells --strict --baseline .reach-baseline.json`
+- Focused suites named in the implementation plan.
+- `mix ci`
+- `git diff --check`
+
+Exit condition: every actionable current finding is removed, every retained
+finding has current ownership and a concrete rationale, strict baseline-backed
+Reach passes, and the full repository gate passes.
+
+## Ready Work
+
+### 15. Strict Credo Enforcement
+
+Status: ready
+Lane: Strict Credo enforcement
+Plan: `docs/superpowers/plans/2026-07-24-strict-credo-enforcement-implementation-plan.md`
+Batch outcome: the normal repository Credo gate enforces strict readability
+checks and the two test-support modules document repository-specific contracts
+instead of narrating their names.
+Next action: replace the two narrator docs and enable strict mode in the
+existing Credo configuration.
+Owned paths:
+
+- `.credo.exs`
+- `test/support/conn_case.ex`
+- `test/support/data_case.ex`
+- `docs/work/strict-credo-enforcement.md`
+
+Internal slices:
+
+- Purposeful ConnCase and DataCase documentation.
+- Strict Credo configuration and repository gate.
+
+Prerequisites:
+
+- Preserve all test-support runtime behavior and imports.
+- Keep the existing Credo and ExSlop check set.
+
+Verification:
+
+- `mix credo --all`
+- `mix quality`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: strict Credo reports zero findings through the normal quality
+alias and full CI passes.
+
+### 16. Coverage Contract Hardening
+
+Status: ready
+Lane: Coverage contract hardening
+Plan: `docs/superpowers/plans/2026-07-24-coverage-contract-hardening-implementation-plan.md`
+Batch outcome: the backend coverage gate enforces an 82% floor and directly
+exercises the two currently uncovered first-party Mix entry points.
+Next action: add behavior coverage for the queue and attribute-claim validation
+tasks, then ratchet the threshold after a fresh full report.
+Owned paths:
+
+- `mix.exs`
+- `test/mix/tasks/work_queue_validate_test.exs`
+- `test/mix/tasks/product_attribute_claims_validate_backfill_task_test.exs`
+- `docs/work/coverage-contract-hardening.md`
+
+Internal slices:
+
+- Work-queue task output and usage behavior.
+- Attribute-claim validation task dry-run and invalid-option behavior.
+- Coverage-floor enforcement.
+
+Prerequisites:
+
+- Preserve task text, errors, dry-run behavior, and database safety.
+- Do not use source-string assertions or exclude first-party modules.
+
+Verification:
+
+- New direct Mix-task suites.
+- `mix test --cover`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: both entry points have direct behavior coverage, total coverage
+remains above 82%, and the full repository gate enforces that floor.
+
+### 17. Logger-Level Test Isolation
+
+Status: ready
+Lane: Logger-level test isolation
+Plan: `docs/superpowers/plans/2026-07-24-logger-level-test-isolation-implementation-plan.md`
+Batch outcome: ingestion logging-policy tests use process-local Logger
+overrides and no longer leak a temporary global debug level into concurrent
+tests.
+Next action: replace global Logger configuration in the two affected tests
+with process-local setup and cleanup while preserving the logging-policy proof.
+Owned paths:
+
+- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
+- `test/product_compare/ingestion/cj_feed_discovery_test.exs`
+- `docs/work/logger-level-test-isolation.md`
+
+Internal slices:
+
+- Import-task process-local Logger proof.
+- Feed-discovery process-local Logger proof.
+- Focused and aggregate output verification.
+
+Prerequisites:
+
+- Preserve production logging and warning assertions.
+- Keep the proof that ingestion functions do not alter caller logging policy.
+
+Verification:
+
+- `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/product_compare/ingestion/cj_feed_discovery_test.exs`
+- `mix test`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the focused suites pass with process-local overrides, full
+tests no longer emit concurrent debug leakage from these cases, and CI passes.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

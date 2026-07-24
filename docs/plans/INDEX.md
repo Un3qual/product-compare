@@ -377,6 +377,42 @@ Their design and implementation plans are source-backed by the current
 six-clone report, the 11 skipped/eight unnecessary Dialyzer result, and the
 file-backed queue validator's missing reference checks.
 
+The user then claimed those three outcomes plus Reach baseline reconciliation
+for serial execution. Fresh 2026-07-24 evidence promoted strict Credo
+enforcement, coverage-contract hardening, and Logger-level test isolation as
+the three ready reserves: strict Credo reports two otherwise-unenforced
+narrator docs, full coverage is 83.74% against a 69% floor with two uncovered
+first-party Mix entry points, and two ingestion tests mutate the global Logger
+level while concurrent CI emits debug output.
+
+Actionable ExDNA clone retirement is complete. Shared CJ import-run completion,
+CJ Runs value formatting, and discussion moderation changesets now have focused
+owners. The attempted worker abstraction was rejected because it did not remove
+the complete-facade near match without macro ceremony. The enforced budget is
+now 3/3, focused tests pass, and full `mix ci` passes 916 backend tests at
+83.76% coverage plus 1,507 frontend tests.
+
+Dialyzer suppression retirement is complete. Eight stale filters were removed
+before the 11 reachable findings were corrected at their parser, Specs,
+taxonomy, session, origin, runtime-config, and test-support boundaries. The
+default ignore file is deleted; Dialyzer reports zero errors, skipped findings,
+or unnecessary skips, and full `mix ci` passes 916 backend tests at 83.75%
+coverage plus 1,507 frontend tests.
+
+Work-queue plan-reference integrity is complete. Pure validation now rejects
+unsafe or ambiguous ready-row plan syntax without touching the filesystem;
+file-backed validation proves repository containment, file existence, and the
+implementation-plan contract. Its 12 focused tests and the live three-row queue
+gate pass, and full `mix ci` passes 921 backend tests at 83.80% coverage plus
+1,507 frontend tests.
+
+Reach baseline reconciliation is complete. Mechanical expression cleanup,
+one-pass CLI rendering, and direct owner calls removed 23 actionable findings.
+The regenerated baseline contains only 4 fixed boundary maps and 7 deliberate
+failure-containment rescues. Strict baseline-backed Reach passes with those 11
+documented suppressions, and full `mix ci` passes 921 backend tests at 83.73%
+coverage plus 1,507 frontend tests.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
@@ -418,6 +454,10 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-reach-baseline-reconciliation-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-strict-credo-enforcement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-coverage-contract-hardening-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-24-logger-level-test-isolation-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`

@@ -201,8 +201,7 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfill do
   defp validate_cli!(invalid) do
     invalid_flags =
       invalid
-      |> Enum.map(fn {flag, _value} -> "--#{flag}" end)
-      |> Enum.join(", ")
+      |> Enum.map_join(", ", fn {flag, _value} -> "--#{flag}" end)
 
     Mix.raise("Unknown or invalid options: #{invalid_flags}")
   end

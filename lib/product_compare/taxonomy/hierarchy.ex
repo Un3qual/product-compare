@@ -3,7 +3,6 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
 
   import Ecto.Query
 
-  alias Ecto.Multi
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
@@ -15,43 +14,19 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
     with :ok <- validate_parent_taxonomy(parent_id, taxonomy_id) do
       now = DateTime.utc_now()
 
-      Multi.new()
-      |> Multi.insert(:taxon, Taxon.changeset(%Taxon{}, attrs))
-      |> Multi.run(:closure_rows, fn repo, %{taxon: taxon} ->
-        self_row = %{ancestor_id: taxon.id, descendant_id: taxon.id, depth: 0, inserted_at: now}
+      Repo.transaction(fn ->
+        case Repo.insert(Taxon.changeset(%Taxon{}, attrs)) do
+          {:ok, taxon} ->
+            insert_closure_rows(taxon, parent_id, now)
+            taxon
 
-        parent_rows =
-          if parent_id do
-            Repo.all(
-              from c in TaxonClosure,
-                where: c.descendant_id == ^parent_id,
-                select: {c.ancestor_id, c.depth}
-            )
-            |> Enum.map(fn {ancestor_id, depth} ->
-              %{
-                ancestor_id: ancestor_id,
-                descendant_id: taxon.id,
-                depth: depth + 1,
-                inserted_at: now
-              }
-            end)
-          else
-            []
-          end
-
-        rows = [self_row | parent_rows]
-        {count, _} = repo.insert_all(TaxonClosure, rows)
-
-        if count >= 1 do
-          {:ok, rows}
-        else
-          {:error, :closure_insert_failed}
+          {:error, changeset} ->
+            Repo.rollback(changeset)
         end
       end)
-      |> Repo.transaction()
       |> case do
-        {:ok, %{taxon: taxon}} -> {:ok, taxon}
-        {:error, _step, reason, _changes} -> {:error, reason}
+        {:ok, taxon} -> {:ok, taxon}
+        {:error, reason} -> {:error, reason}
       end
     end
   end
@@ -68,73 +43,100 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
          :ok <- ensure_not_cycle(taxon_id, new_parent_id) do
       now = DateTime.utc_now()
 
-      Multi.new()
-      |> Multi.update(:taxon, Taxon.changeset(taxon, %{parent_id: new_parent_id}))
-      |> Multi.run(:subtree, fn repo, _changes ->
-        subtree =
-          repo.all(
-            from c in TaxonClosure,
-              where: c.ancestor_id == ^taxon_id,
-              select: %{descendant_id: c.descendant_id, depth: c.depth}
-          )
-
-        {:ok, subtree}
-      end)
-      |> Multi.run(:old_ancestors, fn repo, %{subtree: subtree} ->
-        subtree_ids = Enum.map(subtree, & &1.descendant_id)
-
-        old_ancestor_ids =
-          repo.all(
-            from c in TaxonClosure,
-              where: c.descendant_id == ^taxon_id and c.ancestor_id not in ^subtree_ids,
-              select: c.ancestor_id
-          )
-
-        {:ok, old_ancestor_ids}
-      end)
-      |> Multi.run(:remove_old_paths, fn repo,
-                                         %{subtree: subtree, old_ancestors: old_ancestor_ids} ->
-        subtree_ids = Enum.map(subtree, & &1.descendant_id)
-
-        repo.delete_all(
-          from c in TaxonClosure,
-            where: c.descendant_id in ^subtree_ids and c.ancestor_id in ^old_ancestor_ids
-        )
-
-        {:ok, :deleted}
-      end)
-      |> Multi.run(:insert_new_paths, fn repo, %{subtree: subtree} ->
-        if is_nil(new_parent_id) do
-          {:ok, []}
-        else
-          new_ancestors =
-            repo.all(
-              from c in TaxonClosure,
-                where: c.descendant_id == ^new_parent_id,
-                select: %{ancestor_id: c.ancestor_id, depth: c.depth}
-            )
-
-          rows =
-            for ancestor <- new_ancestors,
-                subtree_item <- subtree do
-              %{
-                ancestor_id: ancestor.ancestor_id,
-                descendant_id: subtree_item.descendant_id,
-                depth: ancestor.depth + subtree_item.depth + 1,
-                inserted_at: now
-              }
-            end
-
-          repo.insert_all(TaxonClosure, rows, on_conflict: :nothing)
-          {:ok, rows}
-        end
-      end)
-      |> Repo.transaction()
+      Repo.transaction(fn -> move_taxon_transaction(taxon, taxon_id, new_parent_id, now) end)
       |> case do
-        {:ok, %{taxon: moved_taxon}} -> {:ok, moved_taxon}
-        {:error, _step, reason, _changes} -> {:error, reason}
+        {:ok, moved_taxon} -> {:ok, moved_taxon}
+        {:error, reason} -> {:error, reason}
       end
     end
+  end
+
+  defp insert_closure_rows(taxon, parent_id, now) do
+    self_row = %{ancestor_id: taxon.id, descendant_id: taxon.id, depth: 0, inserted_at: now}
+
+    parent_rows =
+      if parent_id do
+        Repo.all(
+          from c in TaxonClosure,
+            where: c.descendant_id == ^parent_id,
+            select: {c.ancestor_id, c.depth}
+        )
+        |> Enum.map(fn {ancestor_id, depth} ->
+          %{
+            ancestor_id: ancestor_id,
+            descendant_id: taxon.id,
+            depth: depth + 1,
+            inserted_at: now
+          }
+        end)
+      else
+        []
+      end
+
+    {count, _} = Repo.insert_all(TaxonClosure, [self_row | parent_rows])
+
+    if count < 1, do: Repo.rollback(:closure_insert_failed)
+  end
+
+  defp move_taxon_transaction(taxon, taxon_id, new_parent_id, now) do
+    case Repo.update(Taxon.changeset(taxon, %{parent_id: new_parent_id})) do
+      {:ok, moved_taxon} ->
+        subtree = subtree(taxon_id)
+        remove_old_paths(taxon_id, subtree)
+        insert_new_paths(new_parent_id, subtree, now)
+        moved_taxon
+
+      {:error, changeset} ->
+        Repo.rollback(changeset)
+    end
+  end
+
+  defp subtree(taxon_id) do
+    Repo.all(
+      from c in TaxonClosure,
+        where: c.ancestor_id == ^taxon_id,
+        select: %{descendant_id: c.descendant_id, depth: c.depth}
+    )
+  end
+
+  defp remove_old_paths(taxon_id, subtree) do
+    subtree_ids = Enum.map(subtree, & &1.descendant_id)
+
+    old_ancestor_ids =
+      Repo.all(
+        from c in TaxonClosure,
+          where: c.descendant_id == ^taxon_id and c.ancestor_id not in ^subtree_ids,
+          select: c.ancestor_id
+      )
+
+    Repo.delete_all(
+      from c in TaxonClosure,
+        where: c.descendant_id in ^subtree_ids and c.ancestor_id in ^old_ancestor_ids
+    )
+  end
+
+  defp insert_new_paths(nil, _subtree, _now), do: :ok
+
+  defp insert_new_paths(new_parent_id, subtree, now) do
+    new_ancestors =
+      Repo.all(
+        from c in TaxonClosure,
+          where: c.descendant_id == ^new_parent_id,
+          select: %{ancestor_id: c.ancestor_id, depth: c.depth}
+      )
+
+    rows =
+      for ancestor <- new_ancestors,
+          subtree_item <- subtree do
+        %{
+          ancestor_id: ancestor.ancestor_id,
+          descendant_id: subtree_item.descendant_id,
+          depth: ancestor.depth + subtree_item.depth + 1,
+          inserted_at: now
+        }
+      end
+
+    Repo.insert_all(TaxonClosure, rows, on_conflict: :nothing)
   end
 
   def list_descendants(taxon_id) do

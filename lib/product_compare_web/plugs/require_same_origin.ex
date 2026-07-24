@@ -97,13 +97,7 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
     scheme = Keyword.get(url_config, :scheme, Atom.to_string(conn.scheme))
     port = Keyword.get(url_config, :port, conn.port)
 
-    %URI{
-      scheme: scheme,
-      host: conn.host,
-      port: port
-    }
-    |> normalize_default_port()
-    |> URI.to_string()
+    format_origin(scheme, conn.host, port)
   end
 
   defp normalize_origin(nil), do: nil
@@ -118,14 +112,8 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
       %URI{host: nil} ->
         nil
 
-      uri ->
-        uri
-        |> Map.put(:path, nil)
-        |> Map.put(:query, nil)
-        |> Map.put(:fragment, nil)
-        |> Map.put(:userinfo, nil)
-        |> normalize_default_port()
-        |> URI.to_string()
+      %URI{scheme: scheme, host: host, port: port} ->
+        format_origin(scheme, host, port)
     end
   end
 
@@ -135,7 +123,11 @@ defmodule ProductCompareWeb.Plugs.RequireSameOrigin do
     |> Keyword.get(:url, [])
   end
 
-  defp normalize_default_port(%URI{scheme: "http", port: 80} = uri), do: %{uri | port: nil}
-  defp normalize_default_port(%URI{scheme: "https", port: 443} = uri), do: %{uri | port: nil}
-  defp normalize_default_port(uri), do: uri
+  defp format_origin(scheme, host, port) do
+    host = if String.contains?(host, ":"), do: "[#{host}]", else: host
+    port = if URI.default_port(scheme) == port, do: nil, else: port
+    port_suffix = if port, do: ":#{port}", else: ""
+
+    "#{scheme}://#{host}#{port_suffix}"
+  end
 end

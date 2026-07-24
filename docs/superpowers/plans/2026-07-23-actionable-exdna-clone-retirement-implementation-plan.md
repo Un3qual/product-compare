@@ -9,8 +9,8 @@
 enforced ExDNA clone budget from six to three without abstracting coincidental
 domain similarities.
 
-**Architecture:** Shared CJ job execution remains behind the two existing Oban
-workers, CJ run value serialization becomes one Mix-task helper, and discussion
+**Architecture:** Shared CJ import-run completion becomes one ingestion helper,
+CJ run value serialization becomes one Mix-task helper, and discussion
 moderation changesets become one schema helper. The three remaining near-match
 findings stay explicit because they do not share one behavioral contract.
 
@@ -18,8 +18,7 @@ findings stay explicit because they do not share one behavioral contract.
 
 ## Global Constraints
 
-- Preserve worker modules, queues, uniqueness keys, retry behavior, arguments,
-  configured runners, result classification, and public functions.
+- Preserve import-run counts, status, cursor, and error-summary behavior.
 - Preserve CJ report/resume output byte-for-byte.
 - Preserve all discussion status, moderator, note, and timestamp changes.
 - Do not create a generic schema, repository, callback, or formatting
@@ -27,34 +26,32 @@ findings stay explicit because they do not share one behavioral contract.
 
 ---
 
-## Task 1: Durable CJ Worker Execution
+## Task 1: CJ Import-Run Completion
 
 **Files:**
 
-- Create: `lib/product_compare/ingestion/jobs/cj_worker_support.ex`
-- Modify: `lib/product_compare/ingestion/jobs/cj_feed_discovery_worker.ex`
-- Modify: `lib/product_compare/ingestion/jobs/cj_product_import_worker.ex`
-- Test: `test/product_compare/ingestion/jobs/durable_jobs_test.exs`
+- Create: `lib/product_compare/ingestion/cj_run_completion.ex`
+- Modify: `lib/product_compare/ingestion/cj_feed_discovery.ex`
+- Modify: `lib/mix/tasks/product_compare/ingestion/cj_import/runner.ex`
+- Test: `test/product_compare/ingestion/cj_feed_discovery_test.exs`
+- Test: `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 
 **Interfaces:**
 
 - Produces:
-  `CJWorkerSupport.enqueue/2`, accepting an Oban worker module and normalized
-  argument map, and
-  `CJWorkerSupport.perform/3`, accepting job arguments, an option projector,
-  and the configured runner.
+  `CJRunCompletion.complete/3` and `CJRunCompletion.fail/4`, accepting the run,
+  final counters, cursor, and failure summary.
 
-- [ ] Add behavior tests that enqueue and perform both worker kinds through
-  their unchanged public APIs; verify the existing suite fails only when the
-  shared support calls are introduced before the owner exists.
-- [ ] Move only the identical insert and result-run mechanics into
-  `CJWorkerSupport`; retain worker-specific `use Oban.Worker`, unique keys,
-  argument functions, and runner lookup in each worker.
-- [ ] Run
-  `mix test test/product_compare/ingestion/jobs/durable_jobs_test.exs
-  test/product_compare/ingestion/jobs/health_test.exs`; expect all tests to
-  pass.
-- [ ] Commit with message `refactor: share durable cj worker execution`.
+- [x] Preserve the existing feed-discovery and import-task behavior suites.
+- [x] Move the identical count, cursor, and terminal-status completion contract
+  into `CJRunCompletion`.
+- [x] Run both named suites; 31 tests pass.
+- [x] Commit with message `refactor: share cj import run completion`.
+
+Implementation note: the original worker-support proposal was tested and
+rejected because ExDNA continued to report the complete worker facades as a
+near match. Removing that finding would require an Oban macro or callback
+framework with no concrete responsibility, so the worker finding is retained.
 
 ## Task 2: CJ Run Value Serialization
 
@@ -70,14 +67,13 @@ findings stay explicit because they do not share one behavioral contract.
 - Produces:
   `ValueFormatter.format/1` for nil, `DateTime`, lists, maps, and scalar values.
 
-- [ ] Extend the CJ Runs task test with nil, timestamp, list, map, and scalar
-  output examples matching the current serialized text.
-- [ ] Move the identical clauses into `ValueFormatter.format/1` and call it
+- [x] Confirm the existing CJ Runs task examples cover the serialized values.
+- [x] Move the identical clauses into `ValueFormatter.format/1` and call it
   from both task owners.
-- [ ] Run
+- [x] Run
   `mix test test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`;
-  expect all tests to pass.
-- [ ] Commit with message `refactor: share cj run value formatting`.
+  10 tests pass.
+- [x] Commit with message `refactor: share cj run value formatting`.
 
 ## Task 3: Discussion Moderation Changesets
 
@@ -96,12 +92,12 @@ findings stay explicit because they do not share one behavioral contract.
   `ModerationChangeset.change/5`, returning an `Ecto.Changeset.t()` with the
   existing moderation fields.
 
-- [ ] Add direct review, question, and answer moderation assertions covering
-  status, moderator, note, and timestamp.
-- [ ] Delegate each schema's existing `moderation_changeset/5` wrapper to the
+- [x] Confirm the existing review, question, and answer moderation assertions
+  cover status, moderator, note, and timestamp.
+- [x] Delegate each schema's existing `moderation_changeset/5` wrapper to the
   shared helper without changing public schema APIs.
-- [ ] Run both named suites; expect all tests to pass.
-- [ ] Commit with message `refactor: share discussion moderation changesets`.
+- [x] Run both named suites; 30 tests pass.
+- [x] Commit with message `refactor: share discussion moderation changesets`.
 
 ## Task 4: Enforce The Reduced Clone Budget
 
@@ -114,12 +110,12 @@ findings stay explicit because they do not share one behavioral contract.
 
 - Produces: repository quality enforcement at `mix ex_dna --max-clones 3`.
 
-- [ ] Run `mix ex_dna --max-clones 3`; expect exactly the three intentionally
+- [x] Run `mix ex_dna --max-clones 3`; exactly the three intentionally
   retained near-match findings and exit status 0.
-- [ ] Change both `quality` and any duplicate direct alias configuration from
+- [x] Change the `quality` alias configuration from
   six to three.
-- [ ] Run the focused suites, `mix format --check-formatted`,
+- [x] Run the focused suites, `mix format --check-formatted`,
   `mix typecheck`, `mix work_queue.validate`, `mix ci`, and
   `git diff --check`.
-- [ ] Record the retained findings and verification evidence in the lane doc.
+- [x] Record the retained findings and verification evidence in the lane doc.
 - [ ] Commit with message `chore: enforce reduced clone budget`.

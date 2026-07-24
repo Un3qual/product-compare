@@ -164,7 +164,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Candidates do
            :currency,
            Options.normalize_string(candidate.currency) || Keyword.get(opts, :currency, "USD")
          )
-         |> Keyword.put(:keywords, Keyword.get(opts, :keywords, nil))
+         |> Keyword.put(:keywords, Keyword.get(opts, :keywords))
          |> Keyword.put(:merchant_feed_candidate_id, candidate.id)
          |> Keyword.put(:provider_feed_id, provider_feed_id)
          |> Keyword.put(:feed_name, candidate.feed_name)

@@ -139,14 +139,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
   defp credential_present?(opts, env_var, opt_key) do
     opts
     |> Keyword.get(opt_key)
-    |> blank_to_nil()
+    |> IdNormalizer.blank_to_nil()
     |> case do
-      nil -> env_var |> System.get_env() |> blank_to_nil()
+      nil -> env_var |> System.get_env() |> IdNormalizer.blank_to_nil()
       value -> value
     end
     |> is_nil()
     |> Kernel.not()
   end
-
-  defp blank_to_nil(value), do: IdNormalizer.blank_to_nil(value)
 end

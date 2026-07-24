@@ -90,6 +90,123 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert Enum.any?(errors, &String.contains?(&1, "empty-state language"))
   end
 
+  test "requires one backticked repository-relative docs plan path per ready row" do
+    cases = [
+      {"Plan: docs/plans/candidate-1.md",
+       "ready row 1 Plan: must be exactly one backticked `docs/**/*.md` path"},
+      {"Plan: `/docs/plans/candidate-1.md`",
+       "ready row 1 Plan: must be exactly one backticked `docs/**/*.md` path"},
+      {"Plan: `docs/plans/../../outside.md`",
+       "ready row 1 Plan: path cannot contain `..` traversal"},
+      {"Plan: `docs/plans/candidate-1.md` `docs/plans/other.md`",
+       "ready row 1 Plan: must be exactly one backticked `docs/**/*.md` path"}
+    ]
+
+    for {invalid_line, expected_error} <- cases do
+      markdown =
+        String.replace(
+          queue_with_rows(3),
+          "Plan: `docs/plans/candidate-1.md`",
+          invalid_line,
+          global: false
+        )
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert expected_error in errors
+    end
+  end
+
+  test "rejects duplicate Plan fields in one ready row" do
+    markdown =
+      String.replace(
+        queue_with_rows(3),
+        "Plan: `docs/plans/candidate-1.md`",
+        """
+        Plan: `docs/plans/candidate-1.md`
+        Plan: `docs/plans/candidate-duplicate.md`
+        """,
+        global: false
+      )
+
+    assert {:error, errors} = Validator.validate(markdown)
+
+    assert "ready row 1 Plan: must be exactly one backticked `docs/**/*.md` path" in errors
+  end
+
+  @tag :tmp_dir
+  test "file-backed validation accepts repository-contained executable plans", %{tmp_dir: tmp_dir} do
+    queue_path = write_repository(tmp_dir, queue_with_rows(3))
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate_file(queue_path, tmp_dir)
+  end
+
+  @tag :tmp_dir
+  test "file-backed validation resolves plans from an explicit repository root", %{
+    tmp_dir: tmp_dir
+  } do
+    queue_path =
+      write_repository(tmp_dir, queue_with_rows(3), queue_path: "review-inputs/queue.md")
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate_file(queue_path, tmp_dir)
+  end
+
+  @tag :tmp_dir
+  test "file-backed validation reports missing plans in ready-row order", %{tmp_dir: tmp_dir} do
+    queue_path = write_repository(tmp_dir, queue_with_rows(3), skip_plans: [1, 3])
+
+    assert {:error, errors} = Validator.validate_file(queue_path, tmp_dir)
+
+    assert errors == [
+             "ready row 1 Plan: file does not exist: docs/plans/candidate-1.md",
+             "ready row 3 Plan: file does not exist: docs/plans/candidate-3.md"
+           ]
+  end
+
+  @tag :tmp_dir
+  test "file-backed validation reports incomplete plan contracts", %{tmp_dir: tmp_dir} do
+    queue_path =
+      write_repository(tmp_dir, queue_with_rows(3),
+        plan_overrides: %{2 => "# Candidate 2 Notes\n"}
+      )
+
+    assert {:error, errors} = Validator.validate_file(queue_path, tmp_dir)
+
+    assert errors == [
+             "ready row 2 Plan: docs/plans/candidate-2.md is missing an implementation-plan H1",
+             "ready row 2 Plan: docs/plans/candidate-2.md is missing **Goal:**",
+             "ready row 2 Plan: docs/plans/candidate-2.md is missing ## Global Constraints",
+             "ready row 2 Plan: docs/plans/candidate-2.md is missing a Task heading"
+           ]
+  end
+
+  @tag :tmp_dir
+  test "file-backed validation rejects plan symlinks that escape the repository", %{
+    tmp_dir: tmp_dir
+  } do
+    repository_root = Path.join(tmp_dir, "repository")
+    queue_path = write_repository(repository_root, queue_with_rows(3))
+    external_plan_path = Path.join(tmp_dir, "external-plan.md")
+    linked_plan_path = Path.join(repository_root, "docs/plans/candidate-1.md")
+
+    File.write!(external_plan_path, valid_plan(1))
+    File.rm!(linked_plan_path)
+    File.ln_s!(external_plan_path, linked_plan_path)
+
+    assert {:error, errors} = Validator.validate_file(queue_path, repository_root)
+
+    assert errors == [
+             "ready row 1 Plan: path escapes the repository: docs/plans/candidate-1.md"
+           ]
+  end
+
+  @tag :tmp_dir
+  test "pure validation never reads referenced plan files", %{tmp_dir: tmp_dir} do
+    queue_path = write_repository(tmp_dir, queue_with_rows(3), skip_plans: [1, 2, 3])
+    markdown = File.read!(queue_path)
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
+  end
+
   defp queue_with_rows(count) do
     rows =
       1..count
@@ -121,6 +238,39 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
     #{rows}
     ## Active Work
+    """
+  end
+
+  defp write_repository(tmp_dir, queue, opts \\ []) do
+    queue_path = Path.join(tmp_dir, Keyword.get(opts, :queue_path, "docs/work/index.md"))
+    File.mkdir_p!(Path.dirname(queue_path))
+    File.write!(queue_path, queue)
+
+    skipped = Keyword.get(opts, :skip_plans, [])
+    overrides = Keyword.get(opts, :plan_overrides, %{})
+
+    for index <- 1..3, index not in skipped do
+      plan_path = Path.join(tmp_dir, "docs/plans/candidate-#{index}.md")
+      File.mkdir_p!(Path.dirname(plan_path))
+      File.write!(plan_path, Map.get(overrides, index, valid_plan(index)))
+    end
+
+    queue_path
+  end
+
+  defp valid_plan(index) do
+    """
+    # Candidate #{index} Implementation Plan
+
+    **Goal:** Ship candidate #{index}.
+
+    ## Global Constraints
+
+    - Preserve existing behavior.
+
+    ## Task 1: Implement Candidate #{index}
+
+    - [ ] Complete the candidate.
     """
   end
 end

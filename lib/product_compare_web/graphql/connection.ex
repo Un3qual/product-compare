@@ -33,10 +33,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
       first = fetch_limit - 1
       total_count = length(items)
 
-      page_items =
-        items
-        |> Enum.drop(offset)
-        |> Enum.take(first)
+      page_items = Enum.slice(items, offset, first)
 
       {:ok, project_connection(page_items, offset, total_count > offset + length(page_items))}
     end

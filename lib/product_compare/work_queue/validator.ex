@@ -35,30 +35,131 @@ defmodule ProductCompare.WorkQueue.Validator do
     ~r/shortage of validated candidates/i
   ]
 
-  @spec validate_file(Path.t()) ::
+  @spec validate_file(Path.t(), Path.t()) ::
           {:ok, %{ready_count: pos_integer()}} | {:error, [String.t()]}
-  def validate_file(path) do
-    path
-    |> File.read!()
-    |> validate()
+  def validate_file(path, repository_root) do
+    markdown = File.read!(path)
+
+    validate_ready_section(markdown, fn rows ->
+      plan_reference_errors(rows) ++ file_plan_errors(rows, repository_root)
+    end)
   end
 
   @spec validate(String.t()) ::
           {:ok, %{ready_count: pos_integer()}} | {:error, [String.t()]}
   def validate(markdown) when is_binary(markdown) do
+    validate_ready_section(markdown, &plan_reference_errors/1)
+  end
+
+  defp validate_ready_section(markdown, additional_errors) do
     with {:ok, ready_section} <- ready_section(markdown) do
       rows = ready_rows(ready_section)
 
       errors =
         ready_count_errors(rows) ++
           incomplete_row_errors(rows) ++
-          empty_state_errors(ready_section)
+          empty_state_errors(ready_section) ++
+          additional_errors.(rows)
 
       case errors do
         [] -> {:ok, %{ready_count: length(rows)}}
         _ -> {:error, errors}
       end
     end
+  end
+
+  defp plan_reference_errors(rows) do
+    rows
+    |> Enum.with_index(1)
+    |> Enum.flat_map(fn {row, index} ->
+      case plan_path(row, index) do
+        {:ok, _path} -> []
+        {:error, error} -> [error]
+        :missing -> []
+      end
+    end)
+  end
+
+  defp plan_path(row, index) do
+    case Regex.scan(~r/^Plan:[ \t]*(?<value>[^\r\n]*)$/m, row, capture: :all_names) do
+      [[value]] when value != "" ->
+        parse_plan_path(String.trim(value), index)
+
+      [[_empty]] ->
+        :missing
+
+      [] ->
+        :missing
+
+      _multiple ->
+        invalid_plan_path(index)
+    end
+  end
+
+  defp parse_plan_path(value, index) do
+    case Regex.run(~r/^`(?<path>[^`]+)`$/, value, capture: :all_names) do
+      [path] ->
+        cond do
+          ".." in Path.split(path) ->
+            {:error, "ready row #{index} Plan: path cannot contain `..` traversal"}
+
+          Path.type(path) == :relative and Regex.match?(~r{\Adocs/(?:[^/]+/)*[^/]+\.md\z}, path) ->
+            {:ok, path}
+
+          true ->
+            invalid_plan_path(index)
+        end
+
+      _ ->
+        invalid_plan_path(index)
+    end
+  end
+
+  defp invalid_plan_path(index) do
+    {:error, "ready row #{index} Plan: must be exactly one backticked `docs/**/*.md` path"}
+  end
+
+  defp file_plan_errors(rows, repository_root) do
+    repository_root = Path.expand(repository_root)
+
+    rows
+    |> Enum.with_index(1)
+    |> Enum.flat_map(fn {row, index} ->
+      case plan_path(row, index) do
+        {:ok, relative_path} ->
+          validate_plan_file(repository_root, relative_path, index)
+
+        _invalid_or_missing ->
+          []
+      end
+    end)
+  end
+
+  defp validate_plan_file(repository_root, relative_path, index) do
+    case Path.safe_relative(relative_path, repository_root) do
+      {:ok, safe_relative_path} ->
+        case File.read(Path.join(repository_root, safe_relative_path)) do
+          {:ok, plan} -> plan_contract_errors(plan, relative_path, index)
+          {:error, _reason} -> ["ready row #{index} Plan: file does not exist: #{relative_path}"]
+        end
+
+      :error ->
+        ["ready row #{index} Plan: path escapes the repository: #{relative_path}"]
+    end
+  end
+
+  defp plan_contract_errors(plan, relative_path, index) do
+    prefix = "ready row #{index} Plan: #{relative_path}"
+
+    [
+      {~r/^# .+Implementation Plan[ \t]*$/m, "#{prefix} is missing an implementation-plan H1"},
+      {~r/^\*\*Goal:\*\*[ \t]*\S/m, "#{prefix} is missing **Goal:**"},
+      {~r/^## Global Constraints[ \t]*$/m, "#{prefix} is missing ## Global Constraints"},
+      {~r/^(?:##|###) Task(?:[ \t]+\d+)?(?:[ \t]*:|[ \t]+\S)/m,
+       "#{prefix} is missing a Task heading"}
+    ]
+    |> Enum.reject(fn {pattern, _error} -> Regex.match?(pattern, plan) end)
+    |> Enum.map(fn {_pattern, error} -> error end)
   end
 
   defp ready_section(markdown) do

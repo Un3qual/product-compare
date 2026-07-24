@@ -241,10 +241,10 @@ defmodule ProductCompare.Accounts.Users do
   end
 
   defp password_provided?(attrs) when is_map(attrs) do
-    case Map.get(attrs, :password, Map.get(attrs, "password")) do
-      password when is_binary(password) and password != "" -> true
-      _ -> false
-    end
+    match?(
+      password when is_binary(password) and password != "",
+      Map.get(attrs, :password, Map.get(attrs, "password"))
+    )
   end
 
   defp password_provided?(_attrs), do: false
