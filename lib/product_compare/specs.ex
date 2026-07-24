@@ -194,7 +194,9 @@ defmodule ProductCompare.Specs do
     Reads.filterable_enum_option_pairs(attribute_ids, enum_option_ids)
   end
 
-  def filterable_enum_option_pairs(_attribute_ids, _enum_option_ids), do: MapSet.new()
+  def filterable_enum_option_pairs(_attribute_ids, _enum_option_ids) do
+    Reads.filterable_enum_option_pairs([], [])
+  end
 
   @spec enum_option_belongs_to_attribute?(term(), term()) :: boolean()
   def enum_option_belongs_to_attribute?(attribute_id, enum_option_id)

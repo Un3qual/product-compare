@@ -91,7 +91,6 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ProductParser do
       {:ok, observed_at}
     else
       {:error, _reason} = error -> error
-      _ -> mapping_error(:invalid_datetime, field)
     end
   end
 
