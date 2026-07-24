@@ -3,19 +3,17 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
 
   import Ecto.Query
 
+  alias ProductCompare.CommerceAttribution.Revenue.Filters
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
-  alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @revenue_statuses [:approved, :paid]
-  @max_bigint_id 9_223_372_036_854_775_807
-
   @spec dashboard_revenue_summary(map() | keyword()) :: map()
   def dashboard_revenue_summary(opts \\ %{}) do
-    filters = normalize_revenue_filters(opts)
+    filters = Filters.normalize(opts)
 
     metrics =
       filters
@@ -25,7 +23,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
     {metrics, suppressed?} = maybe_suppress_metrics(metrics, filters.min_conversions)
 
     %{
-      "filters" => dashboard_filters(filters),
+      "filters" => Filters.for_dashboard(filters),
       "metrics" => metrics,
       "suppression" => %{
         "suppressed" => suppressed?,
@@ -37,21 +35,21 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
   @spec merchant_revenue_summary(pos_integer(), map() | keyword()) :: map()
   def merchant_revenue_summary(merchant_id, opts \\ %{}) do
     opts
-    |> put_revenue_filter(:merchant_id, merchant_id)
+    |> Filters.put(:merchant_id, merchant_id)
     |> dashboard_revenue_summary()
   end
 
   @spec product_revenue_summary(pos_integer(), map() | keyword()) :: map()
   def product_revenue_summary(product_id, opts \\ %{}) do
     opts
-    |> put_revenue_filter(:product_id, product_id)
+    |> Filters.put(:product_id, product_id)
     |> dashboard_revenue_summary()
   end
 
   @spec network_revenue_summary(atom() | String.t(), map() | keyword()) :: map()
   def network_revenue_summary(network, opts \\ %{}) do
     opts
-    |> put_revenue_filter(:network, network)
+    |> Filters.put(:network, network)
     |> dashboard_revenue_summary()
   end
 
@@ -195,7 +193,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
   defp maybe_where_conversion_from(query, nil), do: query
 
   defp maybe_where_conversion_from(query, from_date) do
-    from_datetime = date_start_datetime(from_date)
+    from_datetime = Filters.start_datetime(from_date)
 
     where(
       query,
@@ -208,7 +206,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
   defp maybe_where_conversion_to(query, nil), do: query
 
   defp maybe_where_conversion_to(query, to_date) do
-    to_datetime = date_exclusive_end_datetime(to_date)
+    to_datetime = Filters.exclusive_end_datetime(to_date)
 
     where(
       query,
@@ -251,7 +249,8 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
   defp maybe_where_click_from(query, nil), do: query
 
   defp maybe_where_click_from(query, from_date),
-    do: where(query, [session: session], session.inserted_at >= ^date_start_datetime(from_date))
+    do:
+      where(query, [session: session], session.inserted_at >= ^Filters.start_datetime(from_date))
 
   defp maybe_where_click_to(query, nil), do: query
 
@@ -260,7 +259,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
       where(
         query,
         [session: session],
-        session.inserted_at < ^date_exclusive_end_datetime(to_date)
+        session.inserted_at < ^Filters.exclusive_end_datetime(to_date)
       )
 
   defp maybe_suppress_metrics(metrics, min_conversions) when min_conversions > 0 do
@@ -272,136 +271,6 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
   end
 
   defp maybe_suppress_metrics(metrics, _min_conversions), do: {metrics, false}
-
-  defp dashboard_filters(filters) do
-    %{
-      "currency" => filters.currency,
-      "from" => date_string(filters.from),
-      "merchant_id" => filters.merchant_id,
-      "network" => network_string(filters.network),
-      "product_id" => filters.product_id,
-      "to" => date_string(filters.to)
-    }
-  end
-
-  defp normalize_revenue_filters(opts) do
-    %{
-      currency: normalize_currency(get_revenue_filter(opts, :currency)),
-      from: normalize_date(get_revenue_filter(opts, :from)),
-      merchant_id: normalize_dimension_id(get_revenue_filter(opts, :merchant_id), :merchant_id),
-      min_conversions: normalize_min_conversions(get_revenue_filter(opts, :min_conversions)),
-      network: normalize_network(get_revenue_filter(opts, :network)),
-      product_id: normalize_dimension_id(get_revenue_filter(opts, :product_id), :product_id),
-      to: normalize_date(get_revenue_filter(opts, :to))
-    }
-  end
-
-  defp get_revenue_filter(opts, key) when is_list(opts), do: Keyword.get(opts, key)
-
-  defp get_revenue_filter(opts, key) when is_map(opts),
-    do: Map.get(opts, key, Map.get(opts, Atom.to_string(key)))
-
-  defp get_revenue_filter(_opts, _key), do: nil
-
-  defp put_revenue_filter(opts, key, value) when is_list(opts), do: Keyword.put(opts, key, value)
-  defp put_revenue_filter(opts, key, value) when is_map(opts), do: Map.put(opts, key, value)
-  defp put_revenue_filter(_opts, key, value), do: %{key => value}
-
-  defp normalize_date(nil), do: nil
-  defp normalize_date(%Date{} = date), do: date
-
-  defp normalize_date(%DateTime{} = datetime) do
-    datetime
-    |> DateTime.shift_zone!("Etc/UTC")
-    |> DateTime.to_date()
-  end
-
-  defp normalize_date(date) when is_binary(date) do
-    case Date.from_iso8601(date) do
-      {:ok, date} -> date
-      {:error, _reason} -> raise ArgumentError, "invalid revenue summary date"
-    end
-  end
-
-  defp normalize_min_conversions(nil), do: 0
-  defp normalize_min_conversions(value) when is_integer(value) and value >= 0, do: value
-
-  defp normalize_min_conversions(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {integer, ""} when integer >= 0 -> integer
-      _invalid -> raise ArgumentError, "invalid revenue summary suppression threshold"
-    end
-  end
-
-  defp normalize_min_conversions(_value),
-    do: raise(ArgumentError, "invalid revenue summary suppression threshold")
-
-  defp normalize_dimension_id(nil, _field), do: nil
-
-  defp normalize_dimension_id(value, _field)
-       when is_integer(value) and value > 0 and value <= @max_bigint_id,
-       do: value
-
-  defp normalize_dimension_id(value, field) when is_binary(value) do
-    case Integer.parse(value) do
-      {integer, ""} when integer > 0 and integer <= @max_bigint_id -> integer
-      _invalid -> raise_invalid_dimension_id!(field)
-    end
-  end
-
-  defp normalize_dimension_id(_value, field), do: raise_invalid_dimension_id!(field)
-
-  defp raise_invalid_dimension_id!(field),
-    do: raise(ArgumentError, "invalid revenue summary #{field}")
-
-  defp normalize_currency(nil), do: nil
-
-  defp normalize_currency(currency) when is_binary(currency) do
-    currency = String.upcase(currency)
-
-    if String.match?(currency, ~r/^[A-Z]{3}$/) do
-      currency
-    else
-      raise ArgumentError, "invalid revenue summary currency"
-    end
-  end
-
-  defp normalize_currency(_currency), do: raise(ArgumentError, "invalid revenue summary currency")
-
-  defp normalize_network(nil), do: nil
-
-  defp normalize_network(network) when is_atom(network) do
-    if network in CommerceLink.networks() do
-      network
-    else
-      raise ArgumentError, "invalid revenue summary network"
-    end
-  end
-
-  defp normalize_network(network) when is_binary(network) do
-    network =
-      Enum.find(CommerceLink.networks(), fn supported_network ->
-        Atom.to_string(supported_network) == network
-      end)
-
-    network || raise ArgumentError, "invalid revenue summary network"
-  end
-
-  defp normalize_network(_network), do: raise(ArgumentError, "invalid revenue summary network")
-
-  defp date_start_datetime(%Date{} = date), do: DateTime.new!(date, ~T[00:00:00], "Etc/UTC")
-
-  defp date_exclusive_end_datetime(%Date{} = date) do
-    date
-    |> Date.add(1)
-    |> DateTime.new!(~T[00:00:00], "Etc/UTC")
-  end
-
-  defp date_string(nil), do: nil
-  defp date_string(%Date{} = date), do: Date.to_iso8601(date)
-
-  defp network_string(nil), do: nil
-  defp network_string(network), do: Atom.to_string(network)
 
   defp money_string(nil), do: "0.00"
 
