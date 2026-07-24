@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -46,3 +46,19 @@ public connections live in focused owners without behavior changes.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- Completed on 2026-07-23 on the aggregate detached-worktree commit stack.
+- The stable facade is 130 lines.
+- `Legacy` is 47 lines, `PublicContent` is 127 lines,
+  `ViewerSubmissions` is 148 lines, and `Connections` is 103 lines.
+- The focused direct, GraphQL, and Dataloader gate passed 98 tests with no
+  failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `mix ci`, and `git diff --check` passed.
+- Final `mix ci` passed 913 backend tests at 83.47% coverage and 1,507
+  frontend tests, plus every quality, duplication, type, Relay, build, and
+  bundle gate.
+- Production references to focused owners are limited to the stable Reads
+  facade.

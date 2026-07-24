@@ -551,6 +551,13 @@ batch and should not be recreated or promoted.
   Its direct community-trust characterization gate passes 25 tests;
   transactions, ownership, moderation, idempotency, limits, GraphQL, Relay, and
   frontend behavior stay unchanged.
+- Community Reads decomposition is complete: the stable
+  `ProductCompare.Discussions.Reads` facade remains Discussions-internal while
+  `Legacy`, `PublicContent`, `ViewerSubmissions`, and `Connections` own the
+  four planned read responsibilities. Its direct, GraphQL, and Dataloader
+  characterization gate passes 98 tests; visibility, pagination, ordering,
+  preloads, query budgets, moderation, Relay, and frontend behavior stay
+  unchanged.
 - Commerce Destination URL decomposition is a path-disjoint structural
   successor: the stable
   `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1` predicate

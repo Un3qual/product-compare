@@ -1656,6 +1656,15 @@ passed 25 tests, and final `mix ci` passed 913 backend tests, 1,507 frontend
 tests, and every queue, quality, duplication, type, Relay, build, and bundle
 gate.
 
+Community Reads Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions.Reads` is now a 130-line stable facade;
+`Legacy`, `PublicContent`, `ViewerSubmissions`, and `Connections` own direct
+lists, published content, owner-private projections, and bounded public
+connection queries without caller bypasses or behavior changes. The focused
+direct, GraphQL, and Dataloader gate passed 98 tests, and final `mix ci` passed
+913 backend tests at 83.47% coverage, 1,507 frontend tests, and every queue,
+quality, duplication, type, Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1827,58 +1836,6 @@ Exit condition: the stable predicate retains the exact destination-safety
 contract, each implementation responsibility has one focused owner, the exact
 57-test characterization gate and repository gates pass, and no caller
 bypasses the facade.
-
-### 4. Community Reads Decomposition
-
-Status: ready
-Lane: Community reads decomposition
-Plan: `docs/superpowers/plans/2026-07-23-community-reads-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Discussions.Reads` remains the stable
-Discussions-internal read facade while legacy lists, public content, viewer
-submissions, and bounded public connections live in focused internal modules
-with unchanged behavior.
-Next action: extract the four read responsibilities and prove direct,
-community GraphQL, and Dataloader parity.
-Owned paths:
-
-- `lib/product_compare/discussions/reads.ex`
-- `lib/product_compare/discussions/reads/legacy.ex`
-- `lib/product_compare/discussions/reads/public_content.ex`
-- `lib/product_compare/discussions/reads/viewer_submissions.ex`
-- `lib/product_compare/discussions/reads/connections.ex`
-- `test/product_compare/discussions/`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_test.exs`
-- `docs/work/community-reads-decomposition.md`
-
-Internal slices:
-
-- Legacy thread, post, and review lists.
-- Published review and Q&A projections.
-- Viewer-owned submission projections.
-- Bounded public connections.
-- Stable facade and pagination normalization.
-
-Prerequisites:
-
-- Preserve every current function, default, guard, result, query, ordering,
-  preload, visibility rule, limit, and query budget.
-- Keep `ProductCompare.Discussions` as the only production caller.
-- Do not change schemas, migrations, moderation, GraphQL, loaders, Relay, or
-  frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/discussions test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable read facade retains its full contract, all four
-responsibilities have focused owners, direct and GraphQL gates pass, and no
-production caller bypasses the Discussions context.
 
 ### 5. Accounts Authentication Decomposition
 
