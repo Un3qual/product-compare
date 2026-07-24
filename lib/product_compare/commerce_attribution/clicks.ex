@@ -4,6 +4,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
   import Ecto.Query
 
   alias ProductCompare.Input
+  alias ProductCompare.CommerceAttribution.Clicks.Links
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
@@ -20,31 +21,10 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
     "impact" => :impact,
     "rakuten" => :rakuten
   }
-  @commerce_link_upsert_fields [
-    :network,
-    :campaign_params,
-    :backfilled_from_affiliate_links,
-    :is_active
-  ]
-  @commerce_link_conflict_target {:unsafe_fragment,
-                                  "(destination_url, COALESCE(affiliate_program_id, 0), merchant_id, link_type)"}
   @click_id_query_keys MapSet.new(~w(ClickId clickId click_id subId subid sub_id))
 
   @spec upsert_commerce_link(map()) :: {:ok, CommerceLink.t()} | {:error, Ecto.Changeset.t()}
-  def upsert_commerce_link(attrs) do
-    now = DateTime.utc_now()
-    changeset = CommerceLink.changeset(%CommerceLink{}, attrs)
-
-    update_fields =
-      Input.present_upsert_fields(attrs, changeset, @commerce_link_upsert_fields)
-
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: @commerce_link_conflict_target,
-      returning: true
-    )
-  end
+  def upsert_commerce_link(attrs), do: Links.upsert(attrs)
 
   @spec create_click_session(map()) ::
           {:ok, CommerceClickSession.t()} | {:error, Ecto.Changeset.t()}
@@ -232,8 +212,8 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
 
   defp persist_tracked_click(attrs, destination) do
     Repo.transaction(fn ->
-      with {:ok, commerce_link} <- upsert_commerce_link(tracked_commerce_link_attrs(destination)),
-           :ok <- ensure_commerce_link_active(commerce_link),
+      with {:ok, commerce_link} <- upsert_commerce_link(Links.tracked_attrs(destination)),
+           :ok <- Links.ensure_active(commerce_link),
            {:ok, click_session} <-
              create_click_session(click_session_attrs(attrs, commerce_link.id)) do
         %{
@@ -245,33 +225,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks do
         {:error, reason} -> Repo.rollback(reason)
       end
     end)
-  end
-
-  defp tracked_commerce_link_attrs(destination) do
-    destination
-    |> commerce_link_attrs()
-    |> Map.delete(:is_active)
-    |> drop_nil_tracked_network()
-  end
-
-  defp drop_nil_tracked_network(%{network: nil} = attrs), do: Map.delete(attrs, :network)
-  defp drop_nil_tracked_network(attrs), do: attrs
-
-  defp ensure_commerce_link_active(%CommerceLink{is_active: true}), do: :ok
-
-  defp ensure_commerce_link_active(%CommerceLink{is_active: false}),
-    do: {:error, :merchant_product_not_found}
-
-  defp commerce_link_attrs(destination) do
-    %{
-      merchant_id: destination.merchant_id,
-      affiliate_program_id: destination.affiliate_program_id,
-      destination_url: destination.destination_url,
-      link_type: destination.link_type,
-      network: destination.network,
-      backfilled_from_affiliate_links: destination.backfilled_from_affiliate_links,
-      is_active: true
-    }
   end
 
   defp click_session_attrs(attrs, commerce_link_id) do
