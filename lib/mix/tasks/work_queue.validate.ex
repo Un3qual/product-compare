@@ -10,7 +10,7 @@ defmodule Mix.Tasks.WorkQueue.Validate do
   def run(args) do
     path = queue_path!(args)
 
-    case Validator.validate_file(path) do
+    case Validator.validate_file(path, File.cwd!()) do
       {:ok, %{ready_count: ready_count}} ->
         Mix.shell().info("work queue valid: #{ready_count} ready rows")
 

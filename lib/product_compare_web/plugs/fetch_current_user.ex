@@ -25,8 +25,11 @@ defmodule ProductCompareWeb.Plugs.FetchCurrentUser do
             current_user -> assign(conn, :current_user, current_user)
           end
 
-        _missing_or_invalid_token ->
+        nil ->
           conn
+
+        _invalid_token ->
+          delete_session(conn, :user_token)
       end
     end
   end

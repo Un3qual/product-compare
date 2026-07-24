@@ -22,6 +22,12 @@ defmodule ProductCompareWeb.RuntimeConfigTest do
            ]
   end
 
+  test "default_trusted_origins/2 preserves IPv6 URI syntax in prod" do
+    assert RuntimeConfig.default_trusted_origins(:prod, "https://[::1]:4000") == [
+             "https://[::1]"
+           ]
+  end
+
   test "public_site_url!/1 requires an explicit canonical origin" do
     assert_raise ArgumentError, ~r/PUBLIC_SITE_URL/, fn ->
       RuntimeConfig.public_site_url!(nil)

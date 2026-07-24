@@ -39,7 +39,13 @@ defmodule ProductCompareWeb.RuntimeConfig do
         host
       end
 
-    "https://" <> frontend_host
+    "https://" <> origin_host(frontend_host)
+  end
+
+  defp origin_host("[" <> _rest = host), do: host
+
+  defp origin_host(host) do
+    if String.contains?(host, ":"), do: "[#{host}]", else: host
   end
 
   defp normalize_host(nil), do: nil

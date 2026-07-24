@@ -35,13 +35,13 @@ defmodule ProductCompare.WorkQueue.Validator do
     ~r/shortage of validated candidates/i
   ]
 
-  @spec validate_file(Path.t()) ::
+  @spec validate_file(Path.t(), Path.t()) ::
           {:ok, %{ready_count: pos_integer()}} | {:error, [String.t()]}
-  def validate_file(path) do
+  def validate_file(path, repository_root) do
     markdown = File.read!(path)
 
     validate_ready_section(markdown, fn rows ->
-      plan_reference_errors(rows) ++ file_plan_errors(rows, path)
+      plan_reference_errors(rows) ++ file_plan_errors(rows, repository_root)
     end)
   end
 
@@ -81,15 +81,18 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp plan_path(row, index) do
-    case Regex.run(~r/^Plan:[ \t]*(?<value>[^\r\n]*)$/m, row, capture: :all_names) do
-      [value] when value != "" ->
+    case Regex.scan(~r/^Plan:[ \t]*(?<value>[^\r\n]*)$/m, row, capture: :all_names) do
+      [[value]] when value != "" ->
         parse_plan_path(String.trim(value), index)
 
-      [_empty] ->
+      [[_empty]] ->
         :missing
 
-      nil ->
+      [] ->
         :missing
+
+      _multiple ->
+        invalid_plan_path(index)
     end
   end
 
@@ -116,13 +119,8 @@ defmodule ProductCompare.WorkQueue.Validator do
     {:error, "ready row #{index} Plan: must be exactly one backticked `docs/**/*.md` path"}
   end
 
-  defp file_plan_errors(rows, queue_path) do
-    repository_root =
-      queue_path
-      |> Path.expand()
-      |> Path.dirname()
-      |> Path.join("../..")
-      |> Path.expand()
+  defp file_plan_errors(rows, repository_root) do
+    repository_root = Path.expand(repository_root)
 
     rows
     |> Enum.with_index(1)
@@ -138,23 +136,15 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp validate_plan_file(repository_root, relative_path, index) do
-    expanded_path = Path.expand(relative_path, repository_root)
+    case Path.safe_relative(relative_path, repository_root) do
+      {:ok, safe_relative_path} ->
+        case File.read(Path.join(repository_root, safe_relative_path)) do
+          {:ok, plan} -> plan_contract_errors(plan, relative_path, index)
+          {:error, _reason} -> ["ready row #{index} Plan: file does not exist: #{relative_path}"]
+        end
 
-    if contained_path?(expanded_path, repository_root) do
-      case File.read(expanded_path) do
-        {:ok, plan} -> plan_contract_errors(plan, relative_path, index)
-        {:error, _reason} -> ["ready row #{index} Plan: file does not exist: #{relative_path}"]
-      end
-    else
-      ["ready row #{index} Plan: path escapes the repository: #{relative_path}"]
-    end
-  end
-
-  defp contained_path?(path, repository_root) do
-    case Path.relative_to(path, repository_root) do
-      ".." -> false
-      "../" <> _rest -> false
-      relative -> Path.type(relative) == :relative
+      :error ->
+        ["ready row #{index} Plan: path escapes the repository: #{relative_path}"]
     end
   end
 
