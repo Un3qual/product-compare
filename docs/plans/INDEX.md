@@ -385,6 +385,13 @@ narrator docs, full coverage is 83.74% against a 69% floor with two uncovered
 first-party Mix entry points, and two ingestion tests mutate the global Logger
 level while concurrent CI emits debug output.
 
+Actionable ExDNA clone retirement is complete. Shared CJ import-run completion,
+CJ Runs value formatting, and discussion moderation changesets now have focused
+owners. The attempted worker abstraction was rejected because it did not remove
+the complete-facade near match without macro ceremony. The enforced budget is
+now 3/3, focused tests pass, and full `mix ci` passes 916 backend tests at
+83.76% coverage plus 1,507 frontend tests.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`

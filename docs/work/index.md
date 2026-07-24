@@ -1874,20 +1874,23 @@ bypasses the facade.
 
 ### 11. Actionable ExDNA Clone Retirement
 
-Status: active
+Status: complete
 Lane: Actionable ExDNA clone retirement
 Plan: `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
-Batch outcome: three genuinely shared CJ-worker, CJ-run formatting, and
+Batch outcome: three genuinely shared CJ import-run, CJ-run formatting, and
 discussion-moderation behaviors gain concrete owners, and the enforced clone
 budget falls from six to three without generic frameworks.
-Next action: extract the three shared responsibilities, preserve their public
-boundaries, and enforce the reduced budget.
+Next action: complete; the three shared responsibilities are extracted and the
+repository now enforces the three-clone budget.
 Owned paths:
 
-- `lib/product_compare/ingestion/jobs/`
+- `lib/product_compare/ingestion/cj_run_completion.ex`
+- `lib/product_compare/ingestion/cj_feed_discovery.ex`
+- `lib/mix/tasks/product_compare/ingestion/cj_import/runner.ex`
 - `lib/mix/tasks/product_compare/ingestion/cj_runs/`
 - `lib/product_compare_schemas/discussions/`
-- `test/product_compare/ingestion/jobs/`
+- `test/product_compare/ingestion/cj_feed_discovery_test.exs`
+- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
 - `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
 - `test/product_compare/discussions/`
 - `mix.exs`
@@ -1895,7 +1898,7 @@ Owned paths:
 
 Internal slices:
 
-- Shared durable CJ worker execution mechanics.
+- Shared CJ import-run completion contract.
 - Shared CJ run value serialization.
 - Shared discussion moderation changesets.
 - Reduced ExDNA enforcement and retained-near-match evidence.

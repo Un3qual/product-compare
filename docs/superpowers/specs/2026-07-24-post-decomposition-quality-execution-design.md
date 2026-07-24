@@ -34,11 +34,11 @@ CSV-export scope remains closed.
 
 ### Actionable ExDNA Clone Retirement
 
-One support owner holds the identical durable-CJ-worker enqueue/perform
-mechanics, one formatter holds identical CJ-run rendering, and one schema
-helper holds identical moderation changesets. The two worker modules retain
-their Oban configuration, unique keys, argument projection, and runner lookup.
-The remaining three near matches stay explicit.
+One support owner holds the identical CJ import-run completion contract, one
+formatter holds identical CJ-run rendering, and one schema helper holds
+identical moderation changesets. The durable worker near match remains
+explicit: its shared facade shape does not justify an Oban macro or callback
+framework. The remaining three near matches stay explicit.
 
 ### Dialyzer Suppression Retirement
 
