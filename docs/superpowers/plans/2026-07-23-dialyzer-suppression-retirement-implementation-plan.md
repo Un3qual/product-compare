@@ -36,43 +36,36 @@ findings.
 - Produces: an ignore file containing only findings emitted by a fresh
   `mix dialyzer` run.
 
-- [ ] Run `mix dialyzer`; capture the reported 11 skipped findings and eight
+- [x] Run `mix dialyzer`; capture the reported 11 skipped findings and eight
   unnecessary skips.
-- [ ] Remove only entries identified as unnecessary by that run.
-- [ ] Re-run `mix dialyzer`; expect no unnecessary-skip diagnostics and the
+- [x] Remove only entries identified as unnecessary by that run.
+- [x] Re-run `mix dialyzer`; no unnecessary-skip diagnostics and the
   same reachable warning set.
-- [ ] Commit with message `chore: remove stale dialyzer suppressions`.
+- [x] Commit with message `chore: remove stale dialyzer suppressions`.
 
 ## Task 2: Context And Schema Type Corrections
 
 **Files:**
 
-- Modify: `lib/product_compare/accounts.ex`
-- Modify: `lib/product_compare/catalog.ex`
-- Modify: `lib/product_compare/ingestion.ex`
 - Modify: `lib/product_compare/ingestion/sources/cj/product_parser.ex`
 - Modify: `lib/product_compare/specs.ex`
 - Modify: `lib/product_compare/taxonomy/hierarchy.ex`
-- Modify: `lib/product_compare_schemas/discussions/thread_post.ex`
-- Test: `test/product_compare/accounts/`
-- Test: `test/product_compare/catalog/`
-- Test: `test/product_compare/ingestion/`
-- Test: `test/product_compare/specs/`
-- Test: `test/product_compare/taxonomy/`
-- Test: `test/product_compare/discussions/thread_post_validation_test.exs`
+- Test: `test/product_compare/ingestion/sources/cj/product_parser_test.exs`
+- Test: `test/product_compare/specs/read_helpers_test.exs`
+- Test: `test/product_compare/taxonomy/taxon_closure_test.exs`
 
 **Interfaces:**
 
 - Produces: reachable clauses and specs whose success types agree with the
   existing runtime contracts.
 
-- [ ] Add or extend behavior tests for every clause that Dialyzer identifies
-  as unreachable before changing its pattern or spec.
-- [ ] Correct the owning pattern/spec or convert opaque collection operations
+- [x] Confirm the existing behavior tests cover the affected parser, enum
+  option, and taxonomy transaction contracts.
+- [x] Correct the owning pattern/spec or convert opaque collection operations
   to their public API; do not broaden accepted inputs.
-- [ ] Run all named context suites and `mix dialyzer`; expect the context and
-  schema findings to be absent.
-- [ ] Commit with message `fix: align context types with runtime contracts`.
+- [x] Run all named context suites and `mix dialyzer`; 15 focused tests pass
+  and the context/schema findings are absent.
+- [x] Commit with message `fix: align context types with runtime contracts`.
 
 ## Task 3: Web Boundary Type Corrections
 
@@ -80,43 +73,40 @@ findings.
 
 - Modify: `lib/product_compare_web/plugs/fetch_current_user.ex`
 - Modify: `lib/product_compare_web/plugs/require_same_origin.ex`
-- Modify: `lib/product_compare_web/resolvers/catalog/input_normalization.ex`
 - Modify: `lib/product_compare_web/runtime_config.ex`
 - Modify: `test/support/conn_case.ex`
 - Test: `test/product_compare_web/runtime_config_test.exs`
-- Test: `test/product_compare_web/plugs/`
-- Test: `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
+- Test: `test/product_compare_web/graphql/session_auth_test.exs`
+- Test: `test/product_compare_web/plugs/put_absinthe_context_test.exs`
 
 **Interfaces:**
 
 - Produces: explicit string/port, authorization, and opaque-membership
   boundaries accepted by Dialyzer.
 
-- [ ] Characterize the currently accepted config values, origin ports,
+- [x] Characterize the currently accepted config values, origin ports,
   authenticated-user states, and catalog enum selections.
-- [ ] Normalize values once at their ingress and retain the existing external
+- [x] Normalize values once at their ingress and retain the existing external
   errors and fallbacks.
-- [ ] Run the named web suites and `mix dialyzer`; expect no web-boundary
-  findings.
-- [ ] Commit with message `fix: align web boundary types with runtime inputs`.
+- [x] Run the named web suites and `mix dialyzer`; 33 focused tests pass and
+  no web-boundary findings remain.
+- [x] Commit with message `fix: align web boundary types with runtime inputs`.
 
 ## Task 4: Remove The Ignore File
 
 **Files:**
 
 - Delete: `.dialyzer_ignore.exs`
-- Modify: `mix.exs`
 - Modify: `docs/work/dialyzer-suppression-retirement.md`
 
 **Interfaces:**
 
 - Produces: an unsuppressed `mix dialyzer` gate with zero findings.
 
-- [ ] Remove the ignore-file option or default-file dependency after the last
-  finding is fixed.
-- [ ] Run `mix dialyzer`; expect zero errors, zero skipped findings, and zero
+- [x] Remove the default ignore file after the last finding is fixed.
+- [x] Run `mix dialyzer`; zero errors, zero skipped findings, and zero
   unnecessary skips.
-- [ ] Run `mix format --check-formatted`, `mix typecheck`,
+- [x] Run `mix format --check-formatted`, `mix typecheck`,
   `mix work_queue.validate`, `mix ci`, and `git diff --check`.
-- [ ] Record the final warning count and focused-test evidence.
+- [x] Record the final warning count and focused-test evidence.
 - [ ] Commit with message `chore: enforce unsuppressed dialyzer`.

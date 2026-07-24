@@ -392,6 +392,13 @@ the complete-facade near match without macro ceremony. The enforced budget is
 now 3/3, focused tests pass, and full `mix ci` passes 916 backend tests at
 83.76% coverage plus 1,507 frontend tests.
 
+Dialyzer suppression retirement is complete. Eight stale filters were removed
+before the 11 reachable findings were corrected at their parser, Specs,
+taxonomy, session, origin, runtime-config, and test-support boundaries. The
+default ignore file is deleted; Dialyzer reports zero errors, skipped findings,
+or unnecessary skips, and full `mix ci` passes 916 backend tests at 83.75%
+coverage plus 1,507 frontend tests.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`

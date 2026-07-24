@@ -1921,13 +1921,13 @@ clones.
 
 ### 12. Dialyzer Suppression Retirement
 
-Status: active
+Status: complete
 Lane: Dialyzer suppression retirement
 Plan: `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
 Batch outcome: stale and reachable Dialyzer suppressions are removed while
 public runtime behavior and useful type precision remain unchanged.
-Next action: remove the eight stale skips, fix the 11 suppressed findings at
-their owning boundaries, and run Dialyzer without an ignore file.
+Next action: complete; Dialyzer runs without an ignore file and reports zero
+errors, skipped findings, or unnecessary skips.
 Owned paths:
 
 - `.dialyzer_ignore.exs`
