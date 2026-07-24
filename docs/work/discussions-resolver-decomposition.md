@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -34,6 +34,30 @@ keys, query budgets, values, authorization, mutation payloads, and errors.
   and are internal slices rather than separate queue batches.
 - The implementation paths are disjoint from Catalog Resolver, Listing
   Persistence, and CJ Candidates decomposition.
+
+## Progress Evidence
+
+- Claimed after CJ Candidates Task Decomposition completed with its exact
+  characterization and full repository gates green.
+- Review summaries, public review/question/answer connections,
+  viewer-community submissions, public question lookup, and their
+  Dataloader/direct-query branches now live in `Discussions.Reads`.
+- Review, question, and answer creation; owner lifecycle actions; answer
+  acceptance; reporting; moderation; Global ID decoding; payloads; and error
+  translation now live in `Discussions.Mutations`.
+- The stable resolver facade is now 60 lines and retains all schema-facing
+  callbacks plus body, author-label, and viewer-capability presentation.
+  `Reads` is 122 lines and `Mutations` is 244 lines.
+- Schema, type, production, and test callers still reference only
+  `ProductCompareWeb.Resolvers.DiscussionsResolver`; no caller bypasses the
+  facade to reference `Reads` or `Mutations`.
+- The exact final characterization gate passed 61 tests on 2026-07-23.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `mix ex_dna --max-clones 6`,
+  `git diff --check`, and `mix ci` all passed on 2026-07-23. The full gate
+  passed 913 backend tests at 83.42% coverage, 1,507 frontend tests, Relay
+  validation, TypeScript, client and SSR production builds, and the
+  client-bundle budget.
 
 ## Internal Slices
 

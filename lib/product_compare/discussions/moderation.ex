@@ -69,6 +69,16 @@ defmodule ProductCompare.Discussions.Moderation do
     end
   end
 
+  @doc false
+  def record_by_type_and_entropy(:review, entropy_id),
+    do: record_by_entropy(ProductReview, entropy_id)
+
+  def record_by_type_and_entropy(:question, entropy_id),
+    do: record_by_entropy(ProductThread, entropy_id)
+
+  def record_by_type_and_entropy(:answer, entropy_id),
+    do: record_by_entropy(ThreadPost, entropy_id)
+
   defp moderate_record(:answer, entropy_id, status, moderator_id, note, now) do
     transaction_result(fn ->
       with_locked_answer(entropy_id, fn answer, question ->

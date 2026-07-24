@@ -326,6 +326,56 @@ clauses and moved one existing path-scoped Dialyzer baseline with its unchanged
 caller scan finds no internal-owner bypasses, and full `mix ci` passes 909
 backend tests, 1,507 frontend tests, and all repository quality and build
 gates.
+Commerce Attribution Internals decomposition is complete. The stable click,
+conversion, revenue, and schema-facing resolver facades are 29, 16, 34, and
+18 lines. Their twelve focused owners preserve all public boundaries,
+transactions, attribution conflicts, revenue query and suppression behavior,
+authorization, redirects, and GraphQL payloads. The exact focused gate passes
+81 tests, caller scans find no facade bypasses, and full `mix ci` passes 913
+backend tests at 83.50% coverage, 1,507 frontend tests, and all repository
+quality and build gates.
+Accounts Authentication decomposition is complete. `UserAuth`, `ApiTokens`,
+and `AuthResolver` are 69-, 66-, and 87-line stable facades over nine focused
+credential, user-token, API-token, and GraphQL owners. The exact focused gate
+passes 87 tests, caller scans find no internal-owner or schema bypasses, and
+full `mix ci` passes 913 backend tests at 83.48% coverage, 1,507 frontend
+tests, and all repository quality and build gates.
+Specifications Internals decomposition is complete. `Specs.Reads`,
+`Specs.Claims`, and `SpecsResolver` are 75-, 32-, and 77-line stable facades
+over eight focused read, claim-workflow, and GraphQL owners. The exact focused
+gate passes 88 tests, caller scans find no application, internal-owner, or
+schema bypasses, and full `mix ci` passes 913 backend tests at 83.59% coverage,
+1,507 frontend tests, and all repository quality and build gates.
+Affiliate Resolver decomposition is complete. `AffiliateResolver` is a
+38-line schema-facing facade over 123-line read and 195-line mutation owners.
+The exact focused gate passes 24 tests, schema scans find no owner bypasses,
+and full `mix ci` passes 913 backend tests at 83.61% coverage, 1,507 frontend
+tests, and all repository quality and build gates.
+Pricing Resolver decomposition is complete. `PricingResolver` is a 50-line
+schema-facing facade over 93-line merchant, 162-line offer, and 23-line
+evidence owners. The exact focused gate passes 82 tests including existing
+query budgets, schema scans find no owner bypasses, and full `mix ci` passes
+913 backend tests at 83.64% coverage, 1,507 frontend tests, and all repository
+quality and build gates.
+Alerts Resolver decomposition is complete. `AlertsResolver` is a 31-line
+schema-facing facade over 58-line read, 129-line watch-mutation, and 39-line
+event-mutation owners. The exact focused gate passes 13 tests, schema scans
+find no owner bypasses, and full `mix ci` passes 913 backend tests at 83.65%
+coverage, 1,507 frontend tests, and all repository quality and build gates.
+The aggregate Backend Decomposition completion audit is also complete. All 17
+stable facades retain their exact pre-program public name-and-arity sets, all
+52 extracted owners have only stable-facade or same-namespace Mix xref
+callers, and tests do not bypass those boundaries. The anti-slop pass removed
+three config-key-only owner dependency edges while preserving the established
+application config keys; no extracted owner remains in the xref cycle report.
+The fixed stop boundary remained intact.
+
+The post-decomposition audit confirmed the fixed stop boundary and promoted
+three non-filler quality successors: actionable ExDNA clone retirement,
+Dialyzer suppression retirement, and work-queue plan-reference integrity.
+Their design and implementation plans are source-backed by the current
+six-clone report, the 11 skipped/eight unnecessary Dialyzer result, and the
+file-backed queue validator's missing reference checks.
 
 Implementation plan references (non-dispatch):
 
@@ -354,6 +404,20 @@ Implementation plan references (non-dispatch):
 - `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-backend-decomposition-completion-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-catalog-filter-metadata-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-community-submissions-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-commerce-destination-url-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-community-reads-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-accounts-authentication-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-specifications-internals-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-commerce-attribution-internals-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-affiliate-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-pricing-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-alerts-resolver-decomposition-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
+- `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-product-trust-and-discovery-program.md`
 - `docs/superpowers/plans/2026-07-13-canonical-product-identity-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-13-specification-provenance-read-contract-implementation-plan.md`
@@ -502,29 +566,59 @@ batch and should not be recreated or promoted.
   characterization gate passes 10 tests; CJ queries, readiness, cursor and
   runner behavior, credential safety, the operator runbook, deferred operator
   scope, and product policy stay unchanged.
-- Listing Persistence decomposition is a path-disjoint structural successor:
-  the stable `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary
-  remains caller-facing while source and external identity, canonical product
-  identity, enrichment, and offer observation persistence move into focused
-  internal modules. Its ingestion, enrichment, and reconciliation
-  characterization gate passes 44 tests; transactions, writes, conflict
-  targets, freshness, identity, taxonomy, specifications, pricing, alerts,
-  reconciliation, provider behavior, and product policy stay unchanged.
-- CJ Candidates task decomposition is a path-disjoint structural successor:
-  the stable `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point
-  remains caller-facing while `Options`, `StaleReport`, `FitGapReport`, and
-  `ApplicationCohortReport` own normalization and the three supported reports.
-  Its dedicated characterization gate passes 6 tests; queries, filters,
-  ordering, output, Global IDs, credential safety, the rejected CSV export, the
-  operator runbook, deferred operator scope, and product policy stay unchanged.
-- Discussions Resolver decomposition is a path-disjoint structural successor:
-  the stable `ProductCompareWeb.Resolvers.DiscussionsResolver` remains
-  schema-facing while `Reads` owns public and viewer-scoped community reads and
-  `Mutations` owns authenticated input, actions, payloads, and error
-  translation. Its community GraphQL and Dataloader characterization gate
-  passes 61 tests; schema wiring, loader keys, query budgets, visibility,
-  authorization, Global IDs, moderation, payloads, and frontend policy stay
+- Listing Persistence decomposition is complete: the stable
+  `ProductCompare.Ingestion.ListingPersistence.persist/3` boundary remains
+  caller-facing while `Artifacts`, `Products`, `Enrichment`, and `Offers` own
+  source and external identity, canonical product identity, enrichment, and
+  offer observation persistence. Its ingestion, enrichment, and
+  reconciliation characterization gate passes 44 tests; transactions, writes,
+  conflict targets, freshness, identity, taxonomy, specifications, pricing,
+  alerts, reconciliation, provider behavior, and product policy stay
   unchanged.
+- CJ Candidates task decomposition is complete: the stable
+  `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` entry point remains
+  caller-facing while `Options`, `StaleReport`, `FitGapReport`,
+  `ApplicationCohortReport`, and `Output` own normalization, the three
+  supported reports, and shared safe serialization. Its dedicated
+  characterization gate passes 6 tests; queries, filters, ordering, output,
+  Global IDs, credential safety, the rejected CSV export, the operator
+  runbook, deferred operator scope, and product policy stay unchanged.
+- Discussions Resolver decomposition is complete: the stable
+  `ProductCompareWeb.Resolvers.DiscussionsResolver` remains schema-facing
+  while `Reads` owns public and viewer-scoped community reads and `Mutations`
+  owns authenticated input, actions, payloads, and error translation. Its
+  community GraphQL and Dataloader characterization gate passes 61 tests;
+  schema wiring, loader keys, query budgets, visibility, authorization, Global
+  IDs, moderation, payloads, and frontend policy stay unchanged.
+- Catalog Filter Metadata decomposition is complete: the stable
+  `ProductCompare.Catalog.FilterMetadata.metadata/1`
+  boundary remains catalog-facing while filtered-product queries, taxonomy
+  facets, selected attribute filters, and attribute aggregation move into
+  focused internal modules. Its direct characterization gate passes 10 tests;
+  query behavior, counts, ordering, units, selection, catalog policy, GraphQL,
+  Relay, and frontend behavior stay unchanged.
+- Community Submissions decomposition is complete: the stable
+  `ProductCompare.Discussions.Submissions` boundary remains
+  discussion-context-facing while creation and idempotency, owner lifecycle,
+  reporting, and write-limit persistence move into focused internal modules.
+  Its direct community-trust characterization gate passes 25 tests;
+  transactions, ownership, moderation, idempotency, limits, GraphQL, Relay, and
+  frontend behavior stay unchanged.
+- Community Reads decomposition is complete: the stable
+  `ProductCompare.Discussions.Reads` facade remains Discussions-internal while
+  `Legacy`, `PublicContent`, `ViewerSubmissions`, and `Connections` own the
+  four planned read responsibilities. Its direct, GraphQL, and Dataloader
+  characterization gate passes 98 tests; visibility, pagination, ordering,
+  preloads, query budgets, moderation, Relay, and frontend behavior stay
+  unchanged.
+- Commerce Destination URL decomposition is complete: the stable
+  `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1` predicate
+  remains caller-facing while URI and authority parsing, hostname
+  canonicalization, public-address policy, and RFC 3492 encoding move into
+  focused internal modules. Its direct destination and commerce-attribution
+  characterization gate passes 57 tests; accepted destinations, rejected
+  destinations, schemas, commerce policy, controllers, GraphQL, and frontend
+  behavior stay unchanged.
 - Completed cross-stack program: the seven domain-oriented outcomes completed
   through the 2026-07-20 design and their lane docs. The 2026-07-18 coherent
   frontend plan is retained as superseded grouping evidence, not an active

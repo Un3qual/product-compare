@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -32,6 +32,39 @@ shapes, and downstream policy.
   rather than separate queue batches.
 - The implementation paths are disjoint from CJ Import, CJ Runs, and Catalog
   Resolver decomposition.
+
+## Progress Evidence
+
+- Source-artifact hashing and replay, external-product freshness and
+  attachment, and stale product and merchant-product reads now live in
+  `ListingPersistence.Artifacts`.
+- The exact ingestion and reconciliation slice passed 40 tests on 2026-07-23.
+- Canonical product identity, validated GTIN attachment, slug collision
+  handling, brand creation, and the ingested-type fallback now live in
+  `ListingPersistence.Products`.
+- The exact ingestion characterization slice passed 32 tests on 2026-07-23
+  after the product-identity extraction.
+- Missing canonical copy, exact taxonomy mapping and candidate capture, media,
+  and typed specification evidence now live in
+  `ListingPersistence.Enrichment`.
+- The exact ingestion and enrichment slice passed 36 tests on 2026-07-23
+  after the enrichment extraction.
+- Merchant-product conflict-safe upserts, price-point replay and freshness,
+  stock projection, and alert enqueueing now live in
+  `ListingPersistence.Offers`.
+- The exact ingestion characterization slice passed 32 tests on 2026-07-23
+  after the offer extraction.
+- The stable facade is now 115 lines. `Artifacts` is 205 lines, `Products` is
+  259 lines, `Enrichment` is 175 lines, and `Offers` is 163 lines.
+- Application and test callers still use
+  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; no caller
+  bypasses the facade to reference a focused owner.
+- The exact final characterization gate passed 44 tests on 2026-07-23.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, `git diff --check`, and `mix ci` all passed on
+  2026-07-23. The full gate passed 913 backend tests at 83.40% coverage, 1,507
+  frontend tests, Relay validation, TypeScript, client and SSR production
+  builds, and the client-bundle budget.
 
 ## Internal Slices
 

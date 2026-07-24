@@ -1610,177 +1610,381 @@ final `mix ci` passed 909 backend tests, 1,507 frontend tests, and every queue,
 quality, type, Relay, build, and bundle gate. Listing Persistence, CJ
 Candidates, and Discussions Resolver decomposition remain ready.
 
+Listing Persistence Decomposition then completed on the current detached
+worktree. `ProductCompare.Ingestion.ListingPersistence` is now a 115-line
+stable facade; `Artifacts`, `Products`, `Enrichment`, and `Offers` own the four
+planned responsibilities without caller bypasses or behavior changes. The
+exact focused gate passed 44 tests, and final `mix ci` passed 913 backend tests
+at 83.40% coverage, 1,507 frontend tests, and every queue, quality, type,
+Relay, build, and bundle gate.
+
+CJ Candidates Task Decomposition then completed on the current detached
+worktree. `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` is now a 36-line
+stable facade; `Options`, `StaleReport`, `FitGapReport`,
+`ApplicationCohortReport`, and `Output` own normalization, the three supported
+reports, and shared safe serialization without caller bypasses or behavior
+changes. The first full gate exposed two new exact-copy groups; the final
+cleanup restored the ExDNA budget to 6/6. The exact focused gate passed 6
+tests, and final `mix ci` passed 913 backend tests at 83.40% coverage, 1,507
+frontend tests, and every queue, quality, type, Relay, build, and bundle gate.
+
+Discussions Resolver Decomposition then completed on the current detached
+worktree. `ProductCompareWeb.Resolvers.DiscussionsResolver` is now a 60-line
+stable facade; `Reads` owns public and viewer-scoped reads, while `Mutations`
+owns authenticated input, actions, payloads, and error translation without
+caller bypasses or behavior changes. The exact focused gate passed 61 tests,
+and final `mix ci` passed 913 backend tests at 83.42% coverage, 1,507 frontend
+tests, and every queue, quality, duplication, type, Relay, build, and bundle
+gate.
+
+Catalog Filter Metadata Decomposition then completed on the current detached
+worktree. `ProductCompare.Catalog.FilterMetadata` is now a 34-line stable
+facade; `Query`, `TaxonomyFacets`, `SelectedFilters`, and `AttributeFacets`
+own filtering/counts, taxonomy facets, selected-filter normalization, and
+attribute aggregation without caller bypasses or behavior changes. The exact
+focused gate passed 10 tests, and final `mix ci` passed 913 backend tests at
+83.45% coverage, 1,507 frontend tests, and every queue, quality, duplication,
+type, Relay, build, and bundle gate.
+
+Community Submissions Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions.Submissions` is now a 47-line stable
+facade; `WriteLimits`, `Creates`, `OwnerActions`, and `Reports` own
+transactional rate limits, idempotent creation, retained owner lifecycle, and
+duplicate-safe reports. The existing `Moderation` boundary now owns the shared
+cross-content entropy lookup instead of duplicating it. The exact focused gate
+passed 25 tests, and final `mix ci` passed 913 backend tests, 1,507 frontend
+tests, and every queue, quality, duplication, type, Relay, build, and bundle
+gate.
+
+Community Reads Decomposition then completed on the current detached
+worktree. `ProductCompare.Discussions.Reads` is now a 130-line stable facade;
+`Legacy`, `PublicContent`, `ViewerSubmissions`, and `Connections` own direct
+lists, published content, owner-private projections, and bounded public
+connection queries without caller bypasses or behavior changes. The focused
+direct, GraphQL, and Dataloader gate passed 98 tests, and final `mix ci` passed
+913 backend tests at 83.47% coverage, 1,507 frontend tests, and every queue,
+quality, duplication, type, Relay, build, and bundle gate.
+
+Commerce Destination URL Decomposition then completed on the current detached
+worktree. `ProductCompare.CommerceAttribution.DestinationUrl` is now a
+20-line stable predicate facade; `Parser`, `AddressPolicy`, and `Punycode` own
+browser-compatible parsing/canonicalization, public-address policy, and RFC
+3492 encoding without caller bypasses or behavior changes. The exact focused
+gate passed 57 tests. After one isolated scheduler timing miss passed
+independently, the clean `mix ci` rerun passed 913 backend tests at 83.47%
+coverage, 1,507 frontend tests, and every queue, quality, duplication, type,
+Relay, build, and bundle gate.
+
+Commerce Attribution Internals Decomposition then completed on the current
+detached worktree. `Clicks`, `Conversions`, `Revenue`, and
+`CommerceAttributionResolver` are now 29-, 16-, 34-, and 18-line stable
+facades. Twelve focused owners hold link, destination, session, redirect,
+conversion attribution and persistence, purchase facts, revenue filtering,
+aggregation and projection, and GraphQL read and mutation behavior. The exact
+focused gate passed 81 tests, and final `mix ci` passed 913 backend tests at
+83.50% coverage, 1,507 frontend tests, and every queue, quality, duplication,
+type, Relay, build, and bundle gate.
+
+Accounts Authentication Decomposition then completed on the current detached
+worktree. `UserAuth`, `ApiTokens`, and `AuthResolver` are now 69-, 66-, and
+87-line stable facades. Nine focused owners hold credential, persisted
+session, email-token, API-token secret/authentication/query/lifecycle, and
+GraphQL account/API-token behavior without caller or schema bypasses. The
+exact focused gate passed 87 tests, and final `mix ci` passed 913 backend
+tests at 83.48% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate.
+
+Specifications Internals Decomposition then completed on the current detached
+worktree. `Specs.Reads`, `Specs.Claims`, and `SpecsResolver` are now 75-, 32-,
+and 77-line stable facades. Eight focused owners hold source-artifact,
+current-attribute, reference-data, proposal, import, moderation, GraphQL read,
+and GraphQL correction behavior without application or schema bypasses. The
+exact focused gate passed 88 tests, and final `mix ci` passed 913 backend tests
+at 83.59% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate.
+
+Affiliate Resolver Decomposition then completed on the current detached
+worktree. `AffiliateResolver` is now a 38-line schema-facing facade;
+`Resolvers.Affiliate.Reads` and `Resolvers.Affiliate.Mutations` own active
+coupon reads and the four operator mutation workflows without schema bypasses.
+The exact focused gate passed 24 tests, and final `mix ci` passed 913 backend
+tests at 83.61% coverage, 1,507 frontend tests, and every queue, quality,
+duplication, type, Relay, build, and bundle gate. The required successor audit
+confirmed the decomposition stop boundary and promoted three source-backed
+quality outcomes instead of recursively splitting focused pipelines.
+
+Pricing Resolver Decomposition then completed on the current detached
+worktree. `PricingResolver` is now a 50-line schema-facing facade;
+`Resolvers.Pricing.Merchants`, `Offers`, and `Evidence` own merchant,
+offer/price, and source-artifact reads without schema bypasses. The exact
+context, GraphQL, and Dataloader gate passed 82 tests, including the unchanged
+query budgets, and final `mix ci` passed 913 backend tests at 83.64% coverage,
+1,507 frontend tests, and every queue, quality, duplication, type, Relay,
+build, and bundle gate.
+
+Alerts Resolver Decomposition then completed on the current detached worktree.
+`AlertsResolver` is now a 31-line schema-facing facade;
+`Resolvers.Alerts.Reads`, `WatchMutations`, and `EventMutations` own
+owner-scoped connections, price-watch lifecycle actions, and the alert-event
+action without schema bypasses. The exact Alerts and GraphQL gate passed 13
+tests, and final `mix ci` passed 913 backend tests at 83.65% coverage, 1,507
+frontend tests, and every queue, quality, duplication, type, Relay, build, and
+bundle gate.
+
+The complete Backend Decomposition program then passed its aggregate ownership
+and anti-slop audit. All 17 retained facades expose the exact public
+name-and-arity sets from pre-program commit `3d21e5ba`; Mix xref reports every
+one of the 52 extracted owners is called only by its stable facade or another
+owner in the same implementation namespace, and the test tree contains no
+direct owner references. Three config-key-only dependency edges introduced by
+extraction were removed without changing their established application config
+keys; none of the new owners participates in the remaining pre-existing xref
+cycles. The explicit decomposition stop boundary held, and the live queue
+retains the three source-backed quality successors.
+
 ## Active Work
 
 None.
 
+## Completed 2026-07-23 Backend Decomposition Work
+
+### 1. Catalog Filter Metadata Decomposition
+
+Status: complete
+Lane: Catalog filter metadata decomposition
+Plan: `docs/superpowers/plans/2026-07-23-catalog-filter-metadata-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Catalog.FilterMetadata.metadata/1` remains the
+stable catalog-facing boundary while filtered-product queries, taxonomy
+facets, selected attribute-filter normalization, and attribute-facet
+aggregation live in focused internal modules with unchanged queries, counts,
+ordering, selection, disabled-state, units, and result shapes.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `lib/product_compare/catalog/filter_metadata.ex`
+- `lib/product_compare/catalog/filter_metadata/query.ex`
+- `lib/product_compare/catalog/filter_metadata/taxonomy_facets.ex`
+- `lib/product_compare/catalog/filter_metadata/selected_filters.ex`
+- `lib/product_compare/catalog/filter_metadata/attribute_facets.ex`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `docs/work/catalog-filter-metadata-decomposition.md`
+
+Internal slices:
+
+- Filtered-product query construction and result count.
+- Primary-type and use-case taxonomy facet counts and presentation.
+- Selected numeric, boolean, and enum filter normalization.
+- Numeric ranges, boolean counts, enum counts, and facet presentation.
+- Stable metadata facade and exact result parity.
+
+Prerequisites:
+
+- Existing `metadata/1` results, non-map fallback, ordering, selection,
+  disabled-state, unit, and empty-facet behavior remain authoritative.
+- Preserve omitted-group queries, accepted-current-claim selection, taxonomy
+  closure semantics, distinct counts, and query budgets.
+- Keep production callers dependent only on `ProductCompare.Catalog` and the
+  stable metadata facade; do not change schemas, migrations, filter inputs,
+  catalog, taxonomy, specification, GraphQL, Relay, or frontend policy.
+
+Verification:
+
+- `mix test test/product_compare/catalog/filter_metadata_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable metadata facade retains the exact response and
+query contract, each implementation responsibility has one focused owner, the
+exact 10-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
+
+## Completed 2026-07-23 Backend Decomposition Work (continued)
+
+### 2. Community Submissions Decomposition
+
+Status: complete
+Lane: Community submissions decomposition
+Plan: `docs/superpowers/plans/2026-07-23-community-submissions-decomposition-implementation-plan.md`
+Batch outcome: `ProductCompare.Discussions.Submissions` remains the stable
+discussion-context boundary while idempotent creation, owner lifecycle
+actions, reporting, and shared write-limit persistence live in focused
+internal modules with unchanged transactions, ownership, moderation lifecycle,
+idempotency, limits, values, and errors.
+Next action: none; implementation and verification are complete.
+Owned paths:
+
+- `lib/product_compare/discussions/submissions.ex`
+- `lib/product_compare/discussions/submissions/write_limits.ex`
+- `lib/product_compare/discussions/submissions/creates.ex`
+- `lib/product_compare/discussions/submissions/owner_actions.ex`
+- `lib/product_compare/discussions/submissions/reports.ex`
+- `lib/product_compare/discussions/moderation.ex`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `docs/work/community-submissions-decomposition.md`
+
+Internal slices:
+
+- Review, question, and answer creation plus idempotent receipts.
+- Owner update and retained-removal lifecycle.
+- Attributable duplicate-safe reporting.
+- Transactional UTC-hour write-limit accounting.
+- Stable submissions facade and exact result parity.
+
+Prerequisites:
+
+- Existing stable functions, arguments, results, changesets, atoms,
+  transactions, locks, and rollbacks remain authoritative.
+- Preserve Global UUID targets, idempotency digests and conflicts, ownership,
+  moderation reset, accepted-answer cleanup, report deduplication, and
+  committed-only UTC-hour counters.
+- Keep `ProductCompare.Discussions` as the only production caller; do not
+  change schemas, migrations, limits, authorization, moderation, GraphQL,
+  Relay, or frontend policy.
+
+Verification:
+
+- `mix test test/product_compare/discussions/community_trust_test.exs`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the stable submissions facade retains the full caller-facing
+contract, each implementation responsibility has one focused owner, the exact
+25-test characterization gate and repository gates pass, and no caller
+bypasses the facade.
+
 ## Ready Work
 
-### 1. Listing Persistence Decomposition
+### 11. Actionable ExDNA Clone Retirement
 
 Status: ready
-Lane: Listing persistence decomposition
-Plan: `docs/superpowers/plans/2026-07-23-listing-persistence-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.Ingestion.ListingPersistence.persist/3`
-remains the stable ingestion-facing boundary while source and external
-identity, canonical product identity, enrichment, and offer observation
-persistence live in focused internal modules with unchanged transactions,
-writes, conflicts, freshness, result shapes, and downstream policy.
-Next action: extract the four implementation responsibilities behind the
-stable persistence facade and prove direct ingestion, enrichment, and
-reconciliation parity.
+Lane: Actionable ExDNA clone retirement
+Plan: `docs/superpowers/plans/2026-07-23-actionable-exdna-clone-retirement-implementation-plan.md`
+Batch outcome: three genuinely shared CJ-worker, CJ-run formatting, and
+discussion-moderation behaviors gain concrete owners, and the enforced clone
+budget falls from six to three without generic frameworks.
+Next action: extract the three shared responsibilities, preserve their public
+boundaries, and enforce the reduced budget.
 Owned paths:
 
-- `lib/product_compare/ingestion/listing_persistence.ex`
-- `lib/product_compare/ingestion/listing_persistence/artifacts.ex`
-- `lib/product_compare/ingestion/listing_persistence/products.ex`
-- `lib/product_compare/ingestion/listing_persistence/enrichment.ex`
-- `lib/product_compare/ingestion/listing_persistence/offers.ex`
-- `test/product_compare/ingestion/ingestion_test.exs`
-- `test/product_compare/ingestion/enrichment_test.exs`
-- `test/product_compare/ingestion/reconciliation_test.exs`
-- `docs/work/listing-persistence-decomposition.md`
+- `lib/product_compare/ingestion/jobs/`
+- `lib/mix/tasks/product_compare/ingestion/cj_runs/`
+- `lib/product_compare_schemas/discussions/`
+- `test/product_compare/ingestion/jobs/`
+- `test/mix/tasks/product_compare_ingestion_cj_runs_test.exs`
+- `test/product_compare/discussions/`
+- `mix.exs`
+- `docs/work/actionable-exdna-clone-retirement.md`
 
 Internal slices:
 
-- Source-artifact and external-product freshness persistence.
-- Canonical product, GTIN, slug, brand, and ingested-type identity.
-- Missing copy, taxonomy mapping, media, and specification enrichment.
-- Merchant-product and price-point persistence plus alert enqueueing.
-- Stable transaction facade, reconciliation observation, and result parity.
+- Shared durable CJ worker execution mechanics.
+- Shared CJ run value serialization.
+- Shared discussion moderation changesets.
+- Reduced ExDNA enforcement and retained-near-match evidence.
 
 Prerequisites:
 
-- Existing `ListingPersistence.persist/3` inputs, result maps, transactions,
-  rollbacks, and errors remain authoritative.
-- Preserve hashes, conflict targets, freshness, identity, category mapping,
-  evidence counts, offer activity, price replay, alert jobs, and
-  reconciliation.
-- Keep application callers dependent only on
-  `ProductCompare.Ingestion.persist_normalized_listing/2` and `/3`; do not
-  change providers, schemas, migrations, catalog, taxonomy, specification,
-  pricing, alert, GraphQL, frontend, or product policy.
+- Preserve Oban, output, schema, changeset, and moderation behavior.
+- Do not abstract the remaining coincidental near matches.
 
 Verification:
 
-- `mix test test/product_compare/ingestion/ingestion_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/reconciliation_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
+- `mix test test/product_compare/ingestion/jobs test/mix/tasks/product_compare_ingestion_cj_runs_test.exs test/product_compare/discussions`
+- `mix ex_dna --max-clones 3`
+- `mix ci`
+- `git diff --check`
+
+Exit condition: the three actionable shared behaviors have focused owners,
+their direct suites pass, and the full repository gate enforces at most three
+clones.
+
+### 12. Dialyzer Suppression Retirement
+
+Status: ready
+Lane: Dialyzer suppression retirement
+Plan: `docs/superpowers/plans/2026-07-23-dialyzer-suppression-retirement-implementation-plan.md`
+Batch outcome: stale and reachable Dialyzer suppressions are removed while
+public runtime behavior and useful type precision remain unchanged.
+Next action: remove the eight stale skips, fix the 11 suppressed findings at
+their owning boundaries, and run Dialyzer without an ignore file.
+Owned paths:
+
+- `.dialyzer_ignore.exs`
+- `lib/product_compare/`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare_web/`
+- `test/product_compare/`
+- `test/product_compare_web/`
+- `test/support/conn_case.ex`
+- `mix.exs`
+- `docs/work/dialyzer-suppression-retirement.md`
+
+Internal slices:
+
+- Stale suppression removal.
+- Context and schema type corrections.
+- Plug, resolver-input, runtime-config, and test-support type corrections.
+- Unsuppressed Dialyzer enforcement.
+
+Prerequisites:
+
+- Preserve all public functions, guards, results, changesets, and errors.
+- Do not use broad `term()` types or replacement ignores to silence findings.
+
+Verification:
+
+- `mix dialyzer`
+- Affected context and web suites in the linked implementation plan.
+- `mix ci`
+- `git diff --check`
+
+Exit condition: Dialyzer reports zero errors, skipped findings, and unnecessary
+skips without weakening public contracts.
+
+### 13. Work-Queue Plan Reference Integrity
+
+Status: ready
+Lane: Work-queue plan reference integrity
+Plan: `docs/superpowers/plans/2026-07-23-work-queue-plan-reference-integrity-implementation-plan.md`
+Batch outcome: file-backed queue validation proves every ready row references
+an existing, repository-contained, structurally executable implementation
+plan.
+Next action: parse safe plan paths and validate their existence and required
+plan markers without adding filesystem behavior to the pure Markdown API.
+Owned paths:
+
+- `lib/product_compare/work_queue/validator.ex`
+- `test/product_compare/work_queue/validator_test.exs`
+- `docs/work/operating-model.md`
+- `docs/work/work-queue-plan-reference-integrity.md`
+
+Internal slices:
+
+- Safe ready-row plan-path parsing.
+- Repository-root containment and file existence.
+- Implementation-plan contract validation.
+- Operating-model and error-message evidence.
+
+Prerequisites:
+
+- Preserve current queue-depth and row-completeness validation.
+- Do not require planned owned paths to exist before implementation.
+
+Verification:
+
+- `mix test test/product_compare/work_queue/validator_test.exs`
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
 
-Exit condition: the stable transaction facade retains the full ingestion
-contract, each implementation responsibility has one focused owner, the exact
-44-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
-
-### 2. CJ Candidates Task Decomposition
-
-Status: ready
-Lane: CJ candidates task decomposition
-Plan: `docs/superpowers/plans/2026-07-23-cj-candidates-task-decomposition-implementation-plan.md`
-Batch outcome: `Mix.Tasks.ProductCompare.Ingestion.CjCandidates` remains the
-stable operator entry point while option normalization, stale reporting,
-fit-gap reporting, and application-cohort reporting live in focused internal
-modules with unchanged CLI behavior, queries, output, errors, filtering, and
-credential safety.
-Next action: extract the four implementation responsibilities behind the
-stable Mix-task facade and prove the dedicated task and runbook boundary.
-Owned paths:
-
-- `lib/mix/tasks/product_compare.ingestion.cj_candidates.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/options.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/stale_report.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/fit_gap_report.ex`
-- `lib/mix/tasks/product_compare/ingestion/cj_candidates/application_cohort_report.ex`
-- `test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
-- `docs/work/cj-candidates-task-decomposition.md`
-
-Internal slices:
-
-- CLI/default/report/status/format normalization and bounds.
-- Stale-candidate selection, freshness validation, and safe line output.
-- Fit-gap selection, classification, aggregation, and safe line output.
-- Application-cohort filters plus line and Markdown output.
-- Stable Mix-task facade, runbook boundary, and caller parity.
-
-Prerequisites:
-
-- Existing `CjCandidates.run/1` and `run_report/1` inputs, results, errors,
-  and printed output remain authoritative.
-- Preserve report and status defaults, formats, limits, ordering, filters,
-  counts, gap order, required-result gates, Global IDs, escaping, timestamps,
-  and raw-field redaction.
-- Preserve the explicit rejection of the removed CSV export; do not change
-  provider requests, persistence, schemas, migrations, candidate review
-  policy, deferred operator scope, or product policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable task retains the full caller-facing and CLI
-contract, each implementation responsibility has one focused owner, the exact
-6-test characterization gate and repository gates pass, and no external
-caller bypasses the facade.
-
-### 3. Discussions Resolver Decomposition
-
-Status: ready
-Lane: Discussions resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-discussions-resolver-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompareWeb.Resolvers.DiscussionsResolver` remains the
-stable schema-facing resolver while public community reads and authenticated
-mutation handling live in focused internal modules with unchanged public
-callbacks, loader keys, query budgets, values, authorization, mutation
-payloads, and errors.
-Next action: extract the two implementation responsibilities behind explicit
-resolver-facade wrappers and prove community GraphQL and Dataloader parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/discussions_resolver.ex`
-- `lib/product_compare_web/resolvers/discussions/reads.ex`
-- `lib/product_compare_web/resolvers/discussions/mutations.ex`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `docs/work/discussions-resolver-decomposition.md`
-
-Internal slices:
-
-- Public and viewer-scoped read resolver ownership.
-- Authenticated mutation, input, action, payload, and error ownership.
-- Stable resolver facade, shared presentation fields, and caller parity.
-
-Prerequisites:
-
-- Existing `DiscussionsResolver` public functions, clauses, values, loader
-  tuples, results, mutation payloads, and errors remain authoritative.
-- Preserve connection arguments, loader sources and keys, public and owner
-  visibility, request batching, authorization, Global IDs, idempotency,
-  rate-limit errors, and moderation behavior.
-- Keep schema, type, production, and test callers dependent only on the
-  facade; do not change schemas, migrations, GraphQL SDL, Relay behavior,
-  discussion context policy, query budgets, or frontend contracts.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/community_content_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains the full schema- and test-facing
-contract, each implementation responsibility has one focused owner, the exact
-61-test characterization gate and repository gates pass, and no caller
-bypasses the facade.
+Exit condition: missing, escaping, ambiguous, and incomplete ready-plan
+references fail deterministically while the live queue passes.
 
 ## Completed 2026-07-20 Cross-Stack Work
 

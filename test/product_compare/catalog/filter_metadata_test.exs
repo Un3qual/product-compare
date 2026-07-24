@@ -735,6 +735,76 @@ defmodule ProductCompare.Catalog.FilterMetadataTest do
       assert Decimal.equal?(size_range.min, Decimal.new("27"))
       assert Decimal.equal?(size_range.max, Decimal.new("32"))
     end
+
+    test "ignores malformed selected boolean filters" do
+      metadata =
+        Catalog.product_filter_metadata(%{
+          booleans: [%{value: true}]
+        })
+
+      assert metadata.boolean_filters == []
+      assert metadata.result_count == 0
+    end
+
+    test "ignores malformed selected enum filters" do
+      Enum.each(
+        [
+          %{enum_option_id: 1},
+          %{attribute_id: 1}
+        ],
+        fn malformed_filter ->
+          metadata =
+            Catalog.product_filter_metadata(%{
+              enums: [malformed_filter]
+            })
+
+          assert metadata.enum_filters == []
+          assert metadata.result_count == 0
+        end
+      )
+    end
+
+    test "batches selected attribute facet aggregation into one query per type" do
+      {first_attribute, unit} = numeric_attribute_with_unit_fixture()
+
+      second_attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("filter-meta-batched-second"),
+          display_name: "Second Batched Attribute",
+          data_type: :numeric,
+          dimension_id: unit.dimension_id,
+          is_filterable: true
+        })
+
+      third_attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: unique_code("filter-meta-batched-third"),
+          display_name: "Third Batched Attribute",
+          data_type: :numeric,
+          dimension_id: unit.dimension_id,
+          is_filterable: true
+        })
+
+      {_initial_metadata, initial_queries} =
+        capture_select_queries(fn ->
+          Catalog.product_filter_metadata(%{
+            numeric: [%{attribute_id: first_attribute.id, min: Decimal.new("1")}]
+          })
+        end)
+
+      {_grown_metadata, grown_queries} =
+        capture_select_queries(fn ->
+          Catalog.product_filter_metadata(%{
+            numeric:
+              Enum.map(
+                [first_attribute, second_attribute, third_attribute],
+                &%{attribute_id: &1.id, min: Decimal.new("1")}
+              )
+          })
+        end)
+
+      assert length(grown_queries) == length(initial_queries)
+    end
   end
 
   defp option_by_id(options, id) do
