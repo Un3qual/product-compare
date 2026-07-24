@@ -351,6 +351,12 @@ Affiliate Resolver decomposition is complete. `AffiliateResolver` is a
 The exact focused gate passes 24 tests, schema scans find no owner bypasses,
 and full `mix ci` passes 913 backend tests at 83.61% coverage, 1,507 frontend
 tests, and all repository quality and build gates.
+Pricing Resolver decomposition is complete. `PricingResolver` is a 50-line
+schema-facing facade over 93-line merchant, 162-line offer, and 23-line
+evidence owners. The exact focused gate passes 82 tests including existing
+query budgets, schema scans find no owner bypasses, and full `mix ci` passes
+913 backend tests at 83.64% coverage, 1,507 frontend tests, and all repository
+quality and build gates.
 
 The post-decomposition audit confirmed the fixed stop boundary and promoted
 three non-filler quality successors: actionable ExDNA clone retirement,

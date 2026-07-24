@@ -1713,6 +1713,15 @@ duplication, type, Relay, build, and bundle gate. The required successor audit
 confirmed the decomposition stop boundary and promoted three source-backed
 quality outcomes instead of recursively splitting focused pipelines.
 
+Pricing Resolver Decomposition then completed on the current detached
+worktree. `PricingResolver` is now a 50-line schema-facing facade;
+`Resolvers.Pricing.Merchants`, `Offers`, and `Evidence` own merchant,
+offer/price, and source-artifact reads without schema bypasses. The exact
+context, GraphQL, and Dataloader gate passed 82 tests, including the unchanged
+query budgets, and final `mix ci` passed 913 backend tests at 83.64% coverage,
+1,507 frontend tests, and every queue, quality, duplication, type, Relay,
+build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1830,54 +1839,6 @@ contract, each implementation responsibility has one focused owner, the exact
 bypasses the facade.
 
 ## Ready Work
-
-### 9. Pricing Resolver Decomposition
-
-Status: ready
-Lane: Pricing resolver decomposition
-Plan: `docs/superpowers/plans/2026-07-23-pricing-resolver-decomposition-implementation-plan.md`
-Batch outcome: `PricingResolver` remains schema-facing while merchant, offer,
-and evidence reads live in focused owners with unchanged callbacks, queries,
-pagination, and errors.
-Next action: extract merchant, offer, and evidence owners and prove pricing
-query and merchant-detail parity.
-Owned paths:
-
-- `lib/product_compare_web/resolvers/pricing_resolver.ex`
-- `lib/product_compare_web/resolvers/pricing/merchants.ex`
-- `lib/product_compare_web/resolvers/pricing/offers.ex`
-- `lib/product_compare_web/resolvers/pricing/evidence.ex`
-- `test/product_compare_web/graphql/pricing_queries_test.exs`
-- `test/product_compare_web/graphql/merchant_detail_test.exs`
-- `docs/work/pricing-resolver-decomposition.md`
-
-Internal slices:
-
-- Merchant collections, detail, summaries, and scoped offers.
-- Product and merchant-product offers, price facts, truth, and history.
-- Source-artifact evidence resolution.
-- Stable resolver wrappers and schema-call parity.
-
-Prerequisites:
-
-- Preserve every callback, clause, result, order, filter, pagination rule,
-  loader key, direct fallback, query budget, and invalid-ID error.
-- Keep schema files dependent only on `PricingResolver`.
-- Do not change Pricing or Specs behavior, schemas, migrations, GraphQL SDL,
-  Relay, or frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare_web/graphql/pricing_queries_test.exs test/product_compare_web/graphql/merchant_detail_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable resolver retains exact merchant, offer, and
-evidence behavior, focused owners hold each responsibility, all named gates
-pass, and schema callers do not bypass the facade.
 
 ### 10. Alerts Resolver Decomposition
 
