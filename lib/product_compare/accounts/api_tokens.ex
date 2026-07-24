@@ -1,11 +1,10 @@
 defmodule ProductCompare.Accounts.ApiTokens do
   @moduledoc false
 
-  @dialyzer {:nowarn_function, maybe_apply_api_token_status_filter: 3}
-
   import Ecto.Query
 
   alias ProductCompare.Accounts.ApiTokens.Authentication
+  alias ProductCompare.Accounts.ApiTokens.Queries
   alias ProductCompare.Accounts.ApiTokens.Secrets
   alias ProductCompare.Input
   alias ProductCompare.Repo
@@ -35,37 +34,22 @@ defmodule ProductCompare.Accounts.ApiTokens do
     do: Authentication.authenticate(plain_text_token, opts)
 
   @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
-  def list_api_tokens_query(user_id, opts \\ []) do
-    now = current_time()
-    status = token_list_status_filter(opts)
-
-    from(token in ApiToken,
-      where: token.user_id == ^user_id,
-      order_by: [desc: token.inserted_at, desc: token.id]
-    )
-    |> maybe_apply_api_token_status_filter(status, now)
-  end
+  def list_api_tokens_query(user_id, opts \\ []), do: Queries.list_query(user_id, opts)
 
   @spec list_api_tokens(pos_integer(), keyword() | map()) :: [ApiToken.t()]
-  def list_api_tokens(user_id, opts \\ []) do
-    user_id
-    |> list_api_tokens_query(opts)
-    |> Repo.all()
-  end
+  def list_api_tokens(user_id, opts \\ []), do: Queries.list(user_id, opts)
 
   @spec get_api_token_for_user(User.t(), binary()) :: ApiToken.t() | nil
   def get_api_token_for_user(%User{id: user_id}, token_entropy_id)
       when is_binary(token_entropy_id) do
-    user_id
-    |> get_api_tokens_for_user_id([token_entropy_id])
-    |> Map.get(token_entropy_id)
+    Queries.get_for_user(user_id, token_entropy_id)
   end
 
   @spec get_api_tokens_for_user(User.t(), [binary()]) ::
           %{optional(binary()) => ApiToken.t() | nil}
   def get_api_tokens_for_user(%User{id: user_id}, token_entropy_ids)
       when is_list(token_entropy_ids) do
-    get_api_tokens_for_user_id(user_id, token_entropy_ids)
+    Queries.get_many_for_user(user_id, token_entropy_ids)
   end
 
   @spec revoke_api_token(pos_integer(), Ecto.UUID.t()) ::
@@ -113,14 +97,6 @@ defmodule ProductCompare.Accounts.ApiTokens do
   end
 
   def rotate_api_token(_user_id, _token_entropy_id, _attrs), do: {:error, :not_found}
-
-  defp get_api_tokens_for_user_id(user_id, token_entropy_ids) do
-    Input.uuid_lookup_results(token_entropy_ids, fn entropy_ids ->
-      ApiToken
-      |> where([token], token.user_id == ^user_id and token.entropy_id in ^entropy_ids)
-      |> Repo.all()
-    end)
-  end
 
   defp issue_api_token(user_id, attrs, now) do
     plain_text_token = Secrets.generate()
@@ -192,52 +168,6 @@ defmodule ProductCompare.Accounts.ApiTokens do
   end
 
   defp api_token_active?(_token, _now), do: false
-
-  defp token_list_status_filter(opts) when is_list(opts) do
-    opts
-    |> Keyword.get(:status, :all)
-    |> normalize_api_token_status_filter()
-  end
-
-  defp token_list_status_filter(opts) when is_map(opts) do
-    opts
-    |> Input.fetch_attr(:status)
-    |> normalize_api_token_status_filter()
-  end
-
-  defp token_list_status_filter(_opts), do: :all
-
-  defp normalize_api_token_status_filter(:active), do: :active
-  defp normalize_api_token_status_filter(:revoked), do: :revoked
-  defp normalize_api_token_status_filter(:all), do: :all
-
-  defp normalize_api_token_status_filter(status) when is_binary(status) do
-    status
-    |> String.downcase()
-    |> case do
-      "active" -> :active
-      "revoked" -> :revoked
-      "all" -> :all
-      _ -> :all
-    end
-  end
-
-  defp normalize_api_token_status_filter(_status), do: :all
-
-  defp maybe_apply_api_token_status_filter(query, :all, _now), do: query
-
-  defp maybe_apply_api_token_status_filter(query, :active, now) do
-    from token in query,
-      where: is_nil(token.revoked_at),
-      where: is_nil(token.expires_at) or token.expires_at > ^now
-  end
-
-  defp maybe_apply_api_token_status_filter(query, :revoked, _now) do
-    from token in query,
-      where: not is_nil(token.revoked_at)
-  end
-
-  defp maybe_apply_api_token_status_filter(query, _status, _now), do: query
 
   defp api_token_expiry(attrs, now) do
     if Input.attr_key_present?(attrs, :expires_at) do
