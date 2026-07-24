@@ -9,10 +9,8 @@ defmodule ProductCompare.Accounts.ApiTokens.Authentication do
   alias ProductCompareSchemas.Accounts.User
 
   @spec authenticate(any(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
-  def authenticate(plain_text_token, _opts)
-      when not is_binary(plain_text_token) or plain_text_token == "" do
-    :error
-  end
+  def authenticate("", _opts), do: :error
+  def authenticate(plain_text_token, _opts) when not is_binary(plain_text_token), do: :error
 
   def authenticate(plain_text_token, opts) do
     now = current_time()

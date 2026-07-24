@@ -241,12 +241,12 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   end
 
   defp authorized_connection_batch(
-         {:operator, kind, operator_id, role, filters, connection_args},
+         {:operator, kind, operator_id, :operator, filters, connection_args},
          requests
        )
        when kind in [:specification_correction_moderation_queue, :merchant_feed_candidates] and
-              is_integer(operator_id) and operator_id > 0 and role == :operator and
-              is_map(filters) and is_map(connection_args) do
+              is_integer(operator_id) and operator_id > 0 and is_map(filters) and
+              is_map(connection_args) do
     result =
       kind
       |> authorized_operator_connection_query(filters)

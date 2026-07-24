@@ -112,7 +112,7 @@ defmodule ProductCompareWeb.GraphQL.Errors do
   defp camelize_field(field) when is_binary(field) do
     case String.split(field, "_") do
       [single] -> single
-      [first | rest] -> first <> Enum.map_join(rest, "", &String.capitalize/1)
+      [first | rest] -> first <> Enum.map_join(rest, &String.capitalize/1)
     end
   end
 

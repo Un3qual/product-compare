@@ -111,10 +111,10 @@ defmodule ProductCompare.Accounts do
   @spec authenticate_api_token(String.t(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
   def authenticate_api_token(plain_text_token, opts \\ [])
 
-  def authenticate_api_token(plain_text_token, _opts)
-      when not is_binary(plain_text_token) or plain_text_token == "" do
-    :error
-  end
+  def authenticate_api_token("", _opts), do: :error
+
+  def authenticate_api_token(plain_text_token, _opts) when not is_binary(plain_text_token),
+    do: :error
 
   def authenticate_api_token(plain_text_token, opts),
     do: ApiTokens.authenticate_api_token(plain_text_token, opts)
