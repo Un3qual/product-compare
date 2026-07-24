@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P3
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -58,3 +58,19 @@ internal modules with unchanged accepted and rejected destinations.
 - `mix work_queue.validate`
 - `mix ci`
 - `git diff --check`
+
+## Completion Evidence
+
+- Completed on 2026-07-23 on the aggregate detached-worktree commit stack.
+- The stable predicate facade is 20 lines.
+- `Parser` is 122 lines, `AddressPolicy` is 157 lines, and `Punycode` is 126
+  lines.
+- The exact characterization gate passed 57 tests with no failures.
+- One full-gate run encountered an isolated 250-millisecond scheduler timing
+  miss; that 9-test scheduler suite immediately passed independently.
+- The clean `mix ci` rerun passed 913 backend tests at 83.47% coverage and
+  1,507 frontend tests, plus every quality, duplication, type, Relay, build,
+  and bundle gate.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed.
+- Schema and production callers continue to use only the stable predicate.

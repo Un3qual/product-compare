@@ -558,8 +558,7 @@ batch and should not be recreated or promoted.
   characterization gate passes 98 tests; visibility, pagination, ordering,
   preloads, query budgets, moderation, Relay, and frontend behavior stay
   unchanged.
-- Commerce Destination URL decomposition is a path-disjoint structural
-  successor: the stable
+- Commerce Destination URL decomposition is complete: the stable
   `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1` predicate
   remains caller-facing while URI and authority parsing, hostname
   canonicalization, public-address policy, and RFC 3492 encoding move into

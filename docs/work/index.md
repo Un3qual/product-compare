@@ -1665,6 +1665,16 @@ direct, GraphQL, and Dataloader gate passed 98 tests, and final `mix ci` passed
 913 backend tests at 83.47% coverage, 1,507 frontend tests, and every queue,
 quality, duplication, type, Relay, build, and bundle gate.
 
+Commerce Destination URL Decomposition then completed on the current detached
+worktree. `ProductCompare.CommerceAttribution.DestinationUrl` is now a
+20-line stable predicate facade; `Parser`, `AddressPolicy`, and `Punycode` own
+browser-compatible parsing/canonicalization, public-address policy, and RFC
+3492 encoding without caller bypasses or behavior changes. The exact focused
+gate passed 57 tests. After one isolated scheduler timing miss passed
+independently, the clean `mix ci` rerun passed 913 backend tests at 83.47%
+coverage, 1,507 frontend tests, and every queue, quality, duplication, type,
+Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1782,60 +1792,6 @@ contract, each implementation responsibility has one focused owner, the exact
 bypasses the facade.
 
 ## Ready Work
-
-### 3. Commerce Destination URL Decomposition
-
-Status: ready
-Lane: Commerce destination URL decomposition
-Plan: `docs/superpowers/plans/2026-07-23-commerce-destination-url-decomposition-implementation-plan.md`
-Batch outcome: `ProductCompare.CommerceAttribution.DestinationUrl.valid?/1`
-remains the stable
-commerce-safety boundary while browser-compatible URI parsing and hostname
-canonicalization, public-address policy, and RFC 3492 encoding live in focused
-internal modules with unchanged accepted and rejected destinations.
-Next action: extract the three implementation responsibilities behind the
-stable predicate and prove destination and commerce-attribution parity.
-Owned paths:
-
-- `lib/product_compare/commerce_attribution/destination_url.ex`
-- `lib/product_compare/commerce_attribution/destination_url/parser.ex`
-- `lib/product_compare/commerce_attribution/destination_url/address_policy.ex`
-- `lib/product_compare/commerce_attribution/destination_url/punycode.ex`
-- `test/product_compare/commerce_attribution/destination_url_test.exs`
-- `test/product_compare/commerce_attribution/commerce_attribution_test.exs`
-- `docs/work/commerce-destination-url-decomposition.md`
-
-Internal slices:
-
-- Browser-compatible HTTP(S) URI and authority parsing.
-- IDNA separator, percent-decoding, NFKC, and hostname canonicalization.
-- IPv4, IPv6, mapped-address, localhost, and reserved-range policy.
-- RFC 3492 punycode encoding.
-- Stable predicate and schema compatibility parity.
-
-Prerequisites:
-
-- Existing `valid?/1` accepted/rejected values, backslash handling, userinfo
-  rejection, port bounds, IDNA normalization, IP parsing, reserved ranges, and
-  malformed-input behavior remain authoritative.
-- Preserve the current non-goal: no full UTS 46 IDNA mapping layer.
-- Keep schema and production callers dependent only on the stable predicate;
-  do not add DNS/network resolution, dependencies, schemas, migrations,
-  commerce policy, GraphQL, controllers, or frontend behavior.
-
-Verification:
-
-- `mix test test/product_compare/commerce_attribution/destination_url_test.exs test/product_compare/commerce_attribution/commerce_attribution_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the stable predicate retains the exact destination-safety
-contract, each implementation responsibility has one focused owner, the exact
-57-test characterization gate and repository gates pass, and no caller
-bypasses the facade.
 
 ### 5. Accounts Authentication Decomposition
 
