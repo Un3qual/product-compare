@@ -326,6 +326,14 @@ clauses and moved one existing path-scoped Dialyzer baseline with its unchanged
 caller scan finds no internal-owner bypasses, and full `mix ci` passes 909
 backend tests, 1,507 frontend tests, and all repository quality and build
 gates.
+Commerce Attribution Internals decomposition is complete. The stable click,
+conversion, revenue, and schema-facing resolver facades are 29, 16, 34, and
+18 lines. Their twelve focused owners preserve all public boundaries,
+transactions, attribution conflicts, revenue query and suppression behavior,
+authorization, redirects, and GraphQL payloads. The exact focused gate passes
+81 tests, caller scans find no facade bypasses, and full `mix ci` passes 913
+backend tests at 83.50% coverage, 1,507 frontend tests, and all repository
+quality and build gates.
 
 Implementation plan references (non-dispatch):
 

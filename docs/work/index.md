@@ -1675,6 +1675,16 @@ independently, the clean `mix ci` rerun passed 913 backend tests at 83.47%
 coverage, 1,507 frontend tests, and every queue, quality, duplication, type,
 Relay, build, and bundle gate.
 
+Commerce Attribution Internals Decomposition then completed on the current
+detached worktree. `Clicks`, `Conversions`, `Revenue`, and
+`CommerceAttributionResolver` are now 29-, 16-, 34-, and 18-line stable
+facades. Twelve focused owners hold link, destination, session, redirect,
+conversion attribution and persistence, purchase facts, revenue filtering,
+aggregation and projection, and GraphQL read and mutation behavior. The exact
+focused gate passed 81 tests, and final `mix ci` passed 913 backend tests at
+83.50% coverage, 1,507 frontend tests, and every queue, quality, duplication,
+type, Relay, build, and bundle gate.
+
 ## Active Work
 
 None.
@@ -1909,62 +1919,6 @@ Verification:
 Exit condition: the three stable facades retain exact read, claim, and
 resolver behavior, focused owners hold each responsibility, and all direct
 and consumer gates pass without caller bypasses.
-
-### 7. Commerce Attribution Internals Decomposition
-
-Status: ready
-Lane: Commerce attribution internals decomposition
-Plan: `docs/superpowers/plans/2026-07-23-commerce-attribution-internals-decomposition-implementation-plan.md`
-Batch outcome: `Clicks`, `Conversions`, `Revenue`, and
-`CommerceAttributionResolver` remain stable facades while their link,
-destination, session, redirect, attribution, persistence, purchase-fact,
-revenue, and resolver workflows live in focused internal modules.
-Next action: after Destination URL completion, extract the commerce workflow
-owners and prove direct, controller, and GraphQL parity.
-Owned paths:
-
-- `lib/product_compare/commerce_attribution/clicks.ex`
-- `lib/product_compare/commerce_attribution/clicks/`
-- `lib/product_compare/commerce_attribution/conversions.ex`
-- `lib/product_compare/commerce_attribution/conversions/`
-- `lib/product_compare/commerce_attribution/revenue.ex`
-- `lib/product_compare/commerce_attribution/revenue/`
-- `lib/product_compare_web/resolvers/commerce_attribution_resolver.ex`
-- `lib/product_compare_web/resolvers/commerce_attribution/`
-- `test/product_compare/commerce_attribution/`
-- `test/product_compare_web/controllers/commerce_click_controller_test.exs`
-- `test/product_compare_web/graphql/commerce_attribution_test.exs`
-- `docs/work/commerce-attribution-internals-decomposition.md`
-
-Internal slices:
-
-- Commerce links, destinations, click sessions, and redirects.
-- Conversion attribution, persistence, and purchase facts.
-- Revenue filters, aggregation, and projection.
-- GraphQL reads and mutations.
-- Stable facades and caller-path parity.
-
-Prerequisites:
-
-- Complete Commerce Destination URL decomposition first.
-- Preserve every public function, value, error, conflict, transaction,
-  destination, redirect, attribution dimension, query, suppression rule, and
-  GraphQL payload.
-- Do not change schemas, migrations, providers, GraphQL SDL, controllers,
-  Relay, frontend behavior, or product policy.
-
-Verification:
-
-- `mix test test/product_compare/commerce_attribution test/product_compare_web/controllers/commerce_click_controller_test.exs test/product_compare_web/graphql/commerce_attribution_test.exs`
-- `mix typecheck`
-- `mix format --check-formatted`
-- `mix work_queue.validate`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: all four stable commerce facades retain exact behavior,
-focused owners hold each responsibility, all named gates pass, and callers
-remain on the public context and schema-facing resolver.
 
 ### 8. Affiliate Resolver Decomposition
 
