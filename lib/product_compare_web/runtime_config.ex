@@ -39,7 +39,7 @@ defmodule ProductCompareWeb.RuntimeConfig do
         host
       end
 
-    URI.to_string(%URI{scheme: "https", host: frontend_host})
+    "https://" <> frontend_host
   end
 
   defp normalize_host(nil), do: nil

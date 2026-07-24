@@ -18,14 +18,15 @@ defmodule ProductCompareWeb.Plugs.FetchCurrentUser do
     if same_origin_session_only?(opts) and not RequireSameOrigin.trusted_request_origin?(conn) do
       conn
     else
-      user_token = get_session(conn, :user_token)
+      case get_session(conn, :user_token) do
+        user_token when is_binary(user_token) ->
+          case Accounts.get_user_by_session_token(user_token) do
+            nil -> delete_session(conn, :user_token)
+            current_user -> assign(conn, :current_user, current_user)
+          end
 
-      case Accounts.get_user_by_session_token(user_token) do
-        nil ->
-          if user_token, do: delete_session(conn, :user_token), else: conn
-
-        current_user ->
-          assign(conn, :current_user, current_user)
+        _missing_or_invalid_token ->
+          conn
       end
     end
   end

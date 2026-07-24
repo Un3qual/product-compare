@@ -61,7 +61,10 @@ defmodule ProductCompareWeb.ConnCase do
   end
 
   def put_req_header_same_origin(conn) do
-    Plug.Conn.put_req_header(conn, "origin", request_origin(conn))
+    [request_origin | _trusted_origins] =
+      ProductCompareWeb.Plugs.RequireSameOrigin.allowed_origins(conn)
+
+    Plug.Conn.put_req_header(conn, "origin", request_origin)
   end
 
   def relay_id(type, local_id) when is_atom(type) do
@@ -80,15 +83,4 @@ defmodule ProductCompareWeb.ConnCase do
 
     Plug.Conn.put_req_header(conn, "authorization", "Bearer #{token}")
   end
-
-  defp request_origin(conn) do
-    scheme = Atom.to_string(conn.scheme)
-
-    %URI{scheme: scheme, host: conn.host, port: normalize_port(conn.scheme, conn.port)}
-    |> URI.to_string()
-  end
-
-  defp normalize_port(:http, 80), do: nil
-  defp normalize_port(:https, 443), do: nil
-  defp normalize_port(_scheme, port), do: port
 end
