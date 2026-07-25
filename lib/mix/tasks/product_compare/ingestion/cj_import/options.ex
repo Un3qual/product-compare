@@ -1,6 +1,7 @@
 defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
   @moduledoc false
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
 
   @credential_requirements [
@@ -9,9 +10,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
   ]
 
   def parse_argv(argv) do
-    {opts, _args, _invalid} =
+    {opts, args, invalid} =
       OptionParser.parse(argv,
-        switches: [
+        strict: [
           currency: :string,
           complete_scope: :boolean,
           keywords: :string,
@@ -22,11 +23,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
           check_credentials: :boolean,
           require_ready: :boolean,
           provider_feed_id: :keep,
-          from_candidates: :boolean,
-          review_status: :string,
-          candidate_limit: :integer
+          from_programs: :boolean,
+          stage: :keep,
+          feed_limit: :integer
         ]
       )
+
+    validate_argv!(args, invalid)
 
     opts
     |> parse_optional_keywords()
@@ -39,6 +42,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     |> Keyword.put_new(:require_ready, false)
     |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
     |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
+    |> Keyword.put(:program_stages, normalize_program_stages!(Keyword.get_values(opts, :stage)))
   end
 
   def fetch_opts(opts) do
@@ -74,6 +78,34 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   def normalize_string(value), do: IdNormalizer.normalize_id(value)
 
+  def normalize_program_stages!(values) do
+    pursued_stages = CJPrograms.pursued_stages()
+
+    stages =
+      values
+      |> List.wrap()
+      |> Enum.flat_map(&List.wrap/1)
+      |> Enum.map(&normalize_string/1)
+      |> Enum.reject(&is_nil/1)
+      |> Enum.uniq()
+
+    case Enum.find(stages, &(&1 not in pursued_stages)) do
+      nil ->
+        if(stages == [], do: pursued_stages, else: stages)
+
+      invalid_stage ->
+        Mix.raise(
+          "invalid --stage: #{inspect(invalid_stage)}; expected one of #{Enum.join(pursued_stages, ", ")}"
+        )
+    end
+  end
+
+  def program_stages!(opts) do
+    opts
+    |> Keyword.get(:program_stages, Keyword.get_values(opts, :stage))
+    |> normalize_program_stages!()
+  end
+
   def credential_report(opts) do
     missing_required =
       @credential_requirements
@@ -98,6 +130,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       keywords -> keywords
     end
   end
+
+  defp validate_argv!([argument | _rest], _invalid) do
+    Mix.raise("unexpected argument: #{argument}")
+  end
+
+  defp validate_argv!([], [{option, _value} | _rest]) do
+    Mix.raise("unsupported option: #{option}")
+  end
+
+  defp validate_argv!([], []), do: :ok
 
   defp parse_optional_keywords(opts) do
     if Keyword.has_key?(opts, :keywords) do
