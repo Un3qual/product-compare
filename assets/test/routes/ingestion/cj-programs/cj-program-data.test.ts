@@ -1,8 +1,8 @@
 import {
   buildUpdateCJProgramInput,
+  formatCJDateTime,
   cjProgramStageLabel,
   cjProgramWarningCopy,
-  formatCJProgramLastChanged,
   formatCJProgramName,
   formatFeedProductCount
 } from "../../../../src/routes/ingestion/cj-programs/cj-program-data";
@@ -179,27 +179,27 @@ test("renders factual program and feed details without inventing fit signals", (
   expect(formatFeedProductCount(null)).toBe("Product count unavailable");
   expect(formatFeedProductCount(1)).toBe("1 product");
   expect(formatFeedProductCount(2)).toBe("2 products");
-  expect(formatCJProgramLastChanged("2026-07-20T10:00:00.000000Z")).toBe(
+  expect(formatCJDateTime("2026-07-20T10:00:00.000000Z")).toBe(
     "Jul 20, 2026, 10:00 AM"
   );
-  expect(formatCJProgramLastChanged("not-a-date")).toBe("");
+  expect(formatCJDateTime("not-a-date")).toBe("");
 });
 
-test("maps warning codes to their underlying missing information", () => {
+test("maps mixed-feed warning codes to truthful any-feed copy", () => {
   expect(cjProgramWarningCopy("MISSING_ADVERTISER_NAME")).toBe(
-    "Advertiser name is unavailable."
+    "At least one observed feed is missing an advertiser name."
   );
   expect(cjProgramWarningCopy("MISSING_PRODUCT_COUNT")).toBe(
-    "Product count is unavailable."
+    "At least one observed feed has no positive product count."
   );
   expect(cjProgramWarningCopy("NON_US_MARKET")).toBe(
-    "No observed feed is in the US market."
+    "At least one observed feed is not marked for the US market."
   );
   expect(cjProgramWarningCopy("NON_USD_CURRENCY")).toBe(
-    "No observed feed uses USD."
+    "At least one observed feed is not marked with USD currency."
   );
   expect(cjProgramWarningCopy("NON_ENGLISH_LANGUAGE")).toBe(
-    "No observed feed is in English."
+    "At least one observed feed is not marked as English."
   );
   expect(cjProgramWarningCopy("UNKNOWN")).toBeNull();
 });

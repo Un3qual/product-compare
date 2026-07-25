@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation, usePreloadedQuery, useQueryLoader } from "react-relay";
@@ -197,19 +198,26 @@ test("each CJ program row exposes every lifecycle stage and saves its trimmed no
   });
 });
 
-test("an in-flight CJ program update disables only that program row", () => {
-  mockedUseMutation
-    .mockReturnValueOnce([commitUpdateMutationMock, true])
-    .mockReturnValue([commitUpdateMutationMock, false]);
+test("an in-flight CJ program update shows row-local saving state and leaves another row interactive", async () => {
+  mockedUseMutation.mockImplementation(useInFlightMutationMock as never);
 
   renderCJProgramsRoute();
 
-  expect(screen.getByLabelText("Stage for New Merchant")).toBeDisabled();
-  expect(screen.getByLabelText("Note for New Merchant")).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Save New Merchant" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+
+  await waitFor(() => {
+    expect(commitUpdateMutationMock).toHaveBeenCalledTimes(1);
+    expect(rowFor("New Merchant").getByText("Saving...")).toBeVisible();
+    expect(rowElementFor("New Merchant")).toHaveAttribute("aria-busy", "true");
+  });
+
+  expect(rowFor("New Merchant").getByLabelText("Stage for New Merchant")).toBeDisabled();
+  expect(rowFor("New Merchant").getByLabelText("Note for New Merchant")).toBeDisabled();
+  expect(rowFor("New Merchant").getByRole("button", { name: "Save New Merchant" })).toBeDisabled();
   expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
   expect(screen.getByLabelText("Note for Considering Merchant")).toBeEnabled();
   expect(screen.getByRole("button", { name: "Save Considering Merchant" })).toBeEnabled();
+  expect(rowElementFor("Considering Merchant")).not.toHaveAttribute("aria-busy", "true");
 });
 
 test("CJ program mutation feedback remains with the row that saved", async () => {
@@ -275,11 +283,29 @@ test("CJ program rows show factual advertiser details and plain warning copy", (
   expect(row.getByText("Last changed Jul 20, 2026, 10:00 AM")).toBeInTheDocument();
   const warnings = row.getByRole("list", { name: "Warnings for New Merchant" });
 
-  expect(within(warnings).getByText("Advertiser name is unavailable.")).toBeInTheDocument();
-  expect(within(warnings).getByText("Product count is unavailable.")).toBeInTheDocument();
-  expect(within(warnings).getByText("No observed feed is in the US market.")).toBeInTheDocument();
-  expect(within(warnings).getByText("No observed feed uses USD.")).toBeInTheDocument();
-  expect(within(warnings).getByText("No observed feed is in English.")).toBeInTheDocument();
+  expect(
+    within(warnings).getByText(
+      "At least one observed feed is missing an advertiser name."
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(warnings).getByText(
+      "At least one observed feed has no positive product count."
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(warnings).getByText(
+      "At least one observed feed is not marked for the US market."
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(warnings).getByText(
+      "At least one observed feed is not marked with USD currency."
+    )
+  ).toBeInTheDocument();
+  expect(
+    within(warnings).getByText("At least one observed feed is not marked as English.")
+  ).toBeInTheDocument();
   expect(screen.queryByText(/Fit score/i)).not.toBeInTheDocument();
 });
 
@@ -366,6 +392,10 @@ test("expanded CJ program rows render bounded feed facts and replace only their 
   const feedList = screen.getByRole("list", { name: "Feeds for New Merchant" });
 
   expect(within(feedList).getByText("Trail Shopping")).toBeInTheDocument();
+  expect(within(feedList).getByText("Provider feed ID trail-shopping")).toBeInTheDocument();
+  expect(
+    within(feedList).getByText("Last seen Jul 20, 2026, 10:00 AM")
+  ).toBeInTheDocument();
   expect(within(feedList).getByText("5000 products")).toBeInTheDocument();
   expect(within(feedList).getByText("US")).toBeInTheDocument();
   expect(within(feedList).getByText("USD")).toBeInTheDocument();
@@ -410,8 +440,13 @@ test("program and unmatched feed pagination keep their independent cursors", () 
     "/ingestion/cj-programs?first=25&after=program-cursor-7&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current"
   );
   expect(screen.getByRole("heading", { name: "Unmatched feeds" })).toBeInTheDocument();
-  expect(screen.getByText("Unmatched Outlet Feed")).toBeInTheDocument();
-  expect(screen.getByText("250 products")).toBeInTheDocument();
+  const unmatchedFeed = rowElementFor("Unmatched Outlet Feed");
+
+  expect(within(unmatchedFeed).getByText("Provider feed ID unmatched-outlet")).toBeInTheDocument();
+  expect(
+    within(unmatchedFeed).getByText("Last seen Jul 20, 2026, 10:00 AM")
+  ).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("250 products")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "First unmatched feeds" })).toHaveAttribute(
     "href",
     "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13"
@@ -486,13 +521,29 @@ function renderCJProgramsRoute() {
 }
 
 function rowFor(name: string) {
+  return within(rowElementFor(name));
+}
+
+function rowElementFor(name: string) {
   const row = screen.getByRole("heading", { name }).closest("li");
 
   if (!row) {
-    throw new Error(`Could not find CJ program row for ${name}.`);
+    throw new Error(`Could not find row for ${name}.`);
   }
 
-  return within(row);
+  return row;
+}
+
+function useInFlightMutationMock() {
+  const [isInFlight, setIsInFlight] = useState(false);
+
+  return [
+    (config: unknown) => {
+      setIsInFlight(true);
+      commitUpdateMutationMock(config);
+    },
+    isInFlight
+  ] as const;
 }
 
 function buildReadyLoaderData(

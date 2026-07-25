@@ -112,8 +112,8 @@
     diff hygiene are recorded in the Task 8 report.
   - `mix test` over the twelve lifecycle, migration, import/readiness, and
     GraphQL contract files passed 138 tests; `mix test --cover` passed;
-    `mix frontend_check` passed all 104 frontend files and 1,485 tests; and
-    the client bundle contract remained 182,234 gzip bytes against its
+    `mix frontend_check` passed all 104 frontend files and 1,486 tests; and
+    the client bundle contract passed at 182,240 gzip bytes against its
     unchanged 200,000-byte budget.
   - The one-time 2026-07-25 reserve-floor waiver remains limited to the exact
     `Ready Work requires at least 3 complete rows; found 0` result from queue

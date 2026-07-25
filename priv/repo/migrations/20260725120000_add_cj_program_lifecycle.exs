@@ -36,7 +36,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
            grouped.advertiser_id,
            grouped.stage,
            notes.review_note,
-           grouped.changed_at,
+           COALESCE(notes.changed_at, grouped.fallback_changed_at),
            NOW(),
            NOW()
     FROM (
@@ -47,7 +47,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
                WHEN bool_and(review_status = 'dismissed') THEN 'not_pursuing'
                ELSE 'new'
              END AS stage,
-             COALESCE(MAX(reviewed_at), NOW()) AS changed_at
+             COALESCE(MAX(reviewed_at), NOW()) AS fallback_changed_at
       FROM #{feeds}
       WHERE provider = 'cj'
         AND NULLIF(BTRIM(advertiser_id), '') IS NOT NULL
@@ -57,11 +57,13 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
       SELECT DISTINCT ON (source_id, BTRIM(advertiser_id))
              source_id,
              BTRIM(advertiser_id) AS advertiser_id,
-             review_note
+             review_note,
+             reviewed_at AS changed_at
       FROM #{feeds}
       WHERE provider = 'cj'
         AND NULLIF(BTRIM(advertiser_id), '') IS NOT NULL
         AND NULLIF(BTRIM(review_note), '') IS NOT NULL
+        AND reviewed_at IS NOT NULL
       ORDER BY source_id, BTRIM(advertiser_id), reviewed_at DESC NULLS LAST, id DESC
     ) AS notes
       ON notes.source_id = grouped.source_id

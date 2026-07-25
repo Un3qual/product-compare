@@ -35,17 +35,14 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
       |> Map.put_new(:last_seen_at, DateTime.utc_now())
       |> Map.put_new(:raw_metadata, %{})
 
-    case Repo.transaction(fn ->
-           with {:ok, cj_program_id} <- cj_program_id(source_id, attrs),
-                {:ok, candidate} <- upsert_candidate(attrs, cj_program_id) do
-             candidate
-           else
-             {:error, reason} -> Repo.rollback(reason)
-           end
-         end) do
-      {:ok, candidate} -> {:ok, candidate}
-      {:error, reason} -> {:error, reason}
-    end
+    Repo.transaction(fn ->
+      with {:ok, cj_program_id} <- cj_program_id(source_id, attrs),
+           {:ok, candidate} <- upsert_candidate(attrs, cj_program_id) do
+        candidate
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @spec list_merchant_feed_candidates(Source.t()) :: [MerchantFeedCandidate.t()]

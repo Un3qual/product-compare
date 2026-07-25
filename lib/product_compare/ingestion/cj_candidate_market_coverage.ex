@@ -15,8 +15,6 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @provider "cj"
-  @program_stages ~w(new considering selected applied accepted not_pursuing declined)
-  @stage_keys Map.new(@program_stages, &{&1, String.to_atom(&1)})
   @stages [
     :new,
     :considering,
@@ -27,6 +25,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
     :declined,
     :unmatched
   ]
+  @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @dimensions [:advertiser_country, :currency, :language, :source_feed_type]
 
   @type stage_counts :: %{

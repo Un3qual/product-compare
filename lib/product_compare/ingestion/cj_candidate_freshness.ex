@@ -16,8 +16,6 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   @provider "cj"
   @default_fresh_hours 48
   @default_stale_hours 168
-  @program_stages ~w(new considering selected applied accepted not_pursuing declined)
-  @stage_keys Map.new(@program_stages, &{&1, String.to_atom(&1)})
   @stages [
     :new,
     :considering,
@@ -28,6 +26,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
     :declined,
     :unmatched
   ]
+  @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @buckets [:fresh, :aging, :stale]
   @bucket_keys Map.new(@buckets, &{Atom.to_string(&1), &1})
 

@@ -4,7 +4,7 @@ import { create, props } from "@stylexjs/stylex";
 import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { CJProgramRow } from "./CJProgramRow";
-import { formatFeedProductCount } from "./cj-program-data";
+import { formatCJDateTime, formatFeedProductCount } from "./cj-program-data";
 import {
   buildCJProgramPaginationData,
   type CJProgramsPagination
@@ -113,8 +113,10 @@ export function CJProgramList({
           <ul aria-label="Unmatched CJ feeds" {...props(styles.list)}>
             {data.unmatchedCjFeeds.edges.map(({ node: feed }) => (
               <li key={feed.id} {...props(styles.feed)}>
-                <h3 {...props(styles.feedTitle)}>{feed.feedName ?? feed.providerFeedId}</h3>
+                <h3 {...props(styles.feedTitle)}>{feed.feedName ?? "Unnamed feed"}</h3>
                 <p {...props(styles.facts)}>
+                  <span>Provider feed ID {feed.providerFeedId}</span>
+                  <span>Last seen {formatCJDateTime(feed.lastSeenAt)}</span>
                   <span>{formatFeedProductCount(feed.productCount)}</span>
                   {feed.advertiserName ? <span>{feed.advertiserName}</span> : null}
                   {feed.advertiserCountry ? <span>{feed.advertiserCountry}</span> : null}

@@ -26,15 +26,15 @@ export function cjProgramStageLabel(stage: string | null | undefined) {
 export function cjProgramWarningCopy(code: string | null | undefined) {
   switch (code) {
     case "MISSING_ADVERTISER_NAME":
-      return "Advertiser name is unavailable.";
+      return "At least one observed feed is missing an advertiser name.";
     case "MISSING_PRODUCT_COUNT":
-      return "Product count is unavailable.";
+      return "At least one observed feed has no positive product count.";
     case "NON_US_MARKET":
-      return "No observed feed is in the US market.";
+      return "At least one observed feed is not marked for the US market.";
     case "NON_USD_CURRENCY":
-      return "No observed feed uses USD.";
+      return "At least one observed feed is not marked with USD currency.";
     case "NON_ENGLISH_LANGUAGE":
-      return "No observed feed is in English.";
+      return "At least one observed feed is not marked as English.";
     default:
       return null;
   }
@@ -58,7 +58,7 @@ export function formatFeedProductCount(productCount: number | null | undefined) 
   return productCount === 1 ? "1 product" : `${productCount} products`;
 }
 
-export function formatCJProgramLastChanged(value: string | null | undefined) {
+export function formatCJDateTime(value: string | null | undefined) {
   const date = parseGraphQLDateTime(value);
 
   return date ? formatProductDateTime(date) : "";

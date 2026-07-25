@@ -70,6 +70,32 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     end)
   end
 
+  test "up uses the selected nonblank note review time as the program change time" do
+    with_legacy_schema(fn prefix ->
+      note_reviewed_at = ~U[2026-07-25 12:00:00.000000Z]
+      blank_note_reviewed_at = ~U[2026-07-25 13:00:00.000000Z]
+
+      insert_legacy_cj_row(prefix, %{
+        advertiser_id: "adv-note-time",
+        review_note: "Keep this note",
+        reviewed_at: note_reviewed_at
+      })
+
+      insert_legacy_cj_row(prefix, %{
+        advertiser_id: "adv-note-time",
+        review_note: "   ",
+        reviewed_at: blank_note_reviewed_at
+      })
+
+      assert :ok = migrate_up(prefix)
+
+      assert program_note_and_changed_at(prefix, "adv-note-time") == [
+               "Keep this note",
+               DateTime.to_naive(note_reviewed_at)
+             ]
+    end)
+  end
+
   test "down restores legacy review fields and maps each lifecycle stage back to a review status" do
     with_legacy_schema(fn prefix ->
       seed_legacy_cj_rows(prefix)
@@ -94,6 +120,22 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
       assert column_exists?(prefix, "merchant_feed_candidates", "review_status")
       refute table_exists?(prefix, "cj_programs")
     end)
+  end
+
+  defp insert_legacy_cj_row(prefix, row) do
+    MigrationRepo.query!(
+      """
+      INSERT INTO "#{prefix}"."merchant_feed_candidates"
+        (source_id, provider, advertiser_id, review_status, review_note, reviewed_at)
+      VALUES (1, 'cj', $1, $2, $3, $4)
+      """,
+      [
+        row.advertiser_id,
+        Map.get(row, :review_status, "pending"),
+        Map.get(row, :review_note),
+        Map.get(row, :reviewed_at)
+      ]
+    )
   end
 
   defp with_legacy_schema(fun) do
@@ -283,6 +325,20 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
       )
 
     note
+  end
+
+  defp program_note_and_changed_at(prefix, advertiser_id) do
+    %{rows: [[note, changed_at]]} =
+      MigrationRepo.query!(
+        """
+        SELECT note, changed_at
+        FROM "#{prefix}"."cj_programs"
+        WHERE advertiser_id = $1
+        """,
+        [advertiser_id]
+      )
+
+    [note, changed_at]
   end
 
   defp column_exists?(prefix, table, column) do

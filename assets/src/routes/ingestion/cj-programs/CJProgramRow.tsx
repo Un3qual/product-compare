@@ -24,9 +24,9 @@ import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   buildUpdateCJProgramInput,
+  formatCJDateTime,
   cjProgramStageLabel,
   cjProgramWarningCopy,
-  formatCJProgramLastChanged,
   formatCJProgramName,
   formatFeedProductCount
 } from "./cj-program-data";
@@ -157,7 +157,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const warnings = program.warningCodes
     .map(cjProgramWarningCopy)
     .filter((warning) => warning !== null);
-  const lastChanged = formatCJProgramLastChanged(program.lastChanged);
+  const lastChanged = formatCJDateTime(program.lastChanged);
 
   useEffect(() => disposeFeedQuery, [disposeFeedQuery]);
 
@@ -203,7 +203,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   };
 
   return (
-    <li {...props(styles.item)}>
+    <li aria-busy={isUpdateInFlight} {...props(styles.item)}>
       <header {...props(styles.header)}>
         <div>
           <h2 {...props(styles.title)}>{programName}</h2>
@@ -258,7 +258,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
           onClick={handleSave}
           type="button"
         >
-          Save
+          {isUpdateInFlight ? "Saving..." : "Save"}
         </Button>
       </div>
       {feedback ? <p role="status">{feedback}</p> : null}
@@ -340,8 +340,10 @@ function CJProgramFeeds({
         <ul aria-label={`Feeds for ${programName}`} {...props(styles.feedList)}>
           {feeds.edges.map(({ node: feed }) => (
             <li key={feed.id} {...props(styles.feed)}>
-              <h3 {...props(styles.feedTitle)}>{feed.feedName ?? feed.providerFeedId}</h3>
+              <h3 {...props(styles.feedTitle)}>{feed.feedName ?? "Unnamed feed"}</h3>
               <p {...props(styles.feedFacts)}>
+                <span>Provider feed ID {feed.providerFeedId}</span>
+                <span>Last seen {formatCJDateTime(feed.lastSeenAt)}</span>
                 <span>{formatFeedProductCount(feed.productCount)}</span>
                 {feed.advertiserCountry ? <span>{feed.advertiserCountry}</span> : null}
                 {feed.currency ? <span>{feed.currency}</span> : null}

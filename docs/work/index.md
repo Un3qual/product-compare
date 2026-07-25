@@ -2077,10 +2077,10 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-Dispatch proceeds with the active CJ Program Lifecycle batch under the user's
-explicit 2026-07-25 one-time reserve-floor waiver. Database, API, frontend,
-deferred, and speculative slices are not represented as independent reserve
-rows.
+Ready-row count: 0. The CJ Program Lifecycle batch is complete. Fresh
+source-backed candidate validation requires a new product or quality decision.
+The validator remains unchanged under the approved one-time waiver:
+`Ready Work requires at least 3 complete rows; found 0`.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
