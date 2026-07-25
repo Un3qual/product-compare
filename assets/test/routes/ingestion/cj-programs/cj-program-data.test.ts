@@ -201,7 +201,13 @@ test("maps warning codes to their underlying missing information", () => {
   expect(cjProgramWarningCopy("NON_ENGLISH_LANGUAGE")).toBe(
     "No observed feed is in English."
   );
-  expect(cjProgramWarningCopy("UNKNOWN" as never)).toBeNull();
+  expect(cjProgramWarningCopy("UNKNOWN")).toBeNull();
+});
+
+test("does not relabel future or unknown Relay enum values as New", () => {
+  expect(cjProgramStageLabel("%future added value")).toBeNull();
+  expect(cjProgramStageLabel("RETIRED")).toBeNull();
+  expect(cjProgramWarningCopy("%future added value")).toBeNull();
 });
 
 test("builds a mutation input from the directly selected stage and trimmed note", () => {

@@ -2,14 +2,7 @@ import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { formatProductDateTime } from "../../product-formatting";
 import type { CJProgramStage } from "./pagination";
 
-export type CJProgramWarningCode =
-  | "MISSING_ADVERTISER_NAME"
-  | "MISSING_PRODUCT_COUNT"
-  | "NON_US_MARKET"
-  | "NON_USD_CURRENCY"
-  | "NON_ENGLISH_LANGUAGE";
-
-export function cjProgramStageLabel(stage: CJProgramStage) {
+export function cjProgramStageLabel(stage: string | null | undefined) {
   switch (stage) {
     case "CONSIDERING":
       return "Considering";
@@ -24,12 +17,13 @@ export function cjProgramStageLabel(stage: CJProgramStage) {
     case "DECLINED":
       return "Declined";
     case "NEW":
-    default:
       return "New";
+    default:
+      return null;
   }
 }
 
-export function cjProgramWarningCopy(code: CJProgramWarningCode) {
+export function cjProgramWarningCopy(code: string | null | undefined) {
   switch (code) {
     case "MISSING_ADVERTISER_NAME":
       return "Advertiser name is unavailable.";
