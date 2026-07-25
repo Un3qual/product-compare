@@ -43,6 +43,32 @@ defmodule ProductCompare.Ingestion.CJProgramSchemaTest do
     assert %{stage: ["is invalid"]} = errors_on(changeset)
   end
 
+  test "identity changeset rejects a blank advertiser identity" do
+    changeset =
+      CJProgram.changeset(%CJProgram{}, %{
+        source_id: 1,
+        advertiser_id: " ",
+        stage: "new",
+        changed_at: @changed_at
+      })
+
+    refute changeset.valid?
+    assert %{advertiser_id: [_error]} = errors_on(changeset)
+  end
+
+  test "identity changeset requires the caller to trim advertiser identity" do
+    changeset =
+      CJProgram.changeset(%CJProgram{}, %{
+        source_id: 1,
+        advertiser_id: " adv-untrimmed ",
+        stage: "new",
+        changed_at: @changed_at
+      })
+
+    refute changeset.valid?
+    assert %{advertiser_id: [_error]} = errors_on(changeset)
+  end
+
   test "lifecycle changeset accepts every program stage" do
     for stage <- @stages do
       changeset =

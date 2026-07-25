@@ -25,6 +25,7 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
     |> cast(attrs, [:source_id, :advertiser_id, :stage, :note, :changed_at])
     |> require_stage_attribute(attrs)
     |> validate_required([:source_id, :advertiser_id, :stage, :changed_at])
+    |> validate_trimmed_advertiser_id()
     |> validate_inclusion(:stage, @stages)
     |> unique_constraint([:source_id, :advertiser_id], name: :cj_programs_source_advertiser_uq)
     |> foreign_key_constraint(:source_id)
@@ -46,5 +47,17 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
     else
       add_error(changeset, :stage, "can't be blank", validation: :required)
     end
+  end
+
+  defp validate_trimmed_advertiser_id(changeset) do
+    validate_change(changeset, :advertiser_id, fn :advertiser_id, advertiser_id ->
+      trimmed_advertiser_id = String.trim(advertiser_id)
+
+      cond do
+        trimmed_advertiser_id == "" -> [advertiser_id: "can't be blank"]
+        trimmed_advertiser_id != advertiser_id -> [advertiser_id: "must be trimmed"]
+        true -> []
+      end
+    end)
   end
 end
