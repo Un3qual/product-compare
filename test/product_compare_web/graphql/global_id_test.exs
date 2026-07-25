@@ -13,10 +13,10 @@ defmodule ProductCompareWeb.GraphQL.GlobalIdTest do
                Base.encode64("ProductAttributeClaim:123")
     end
 
-    test "encodes CJ program entropy UUIDs with the dedicated CjProgram type" do
+    test "encodes CJ program entropy UUIDs with the GraphQL CJProgram type" do
       entropy_id = Ecto.UUID.generate()
 
-      assert GlobalId.encode(:cj_program, entropy_id) == Base.encode64("CjProgram:#{entropy_id}")
+      assert GlobalId.encode(:cj_program, entropy_id) == Base.encode64("CJProgram:#{entropy_id}")
 
       assert GlobalId.decode_uuid(GlobalId.encode(:cj_program, entropy_id), :cj_program) ==
                {:ok, entropy_id}

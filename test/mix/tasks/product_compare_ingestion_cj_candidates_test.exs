@@ -121,6 +121,40 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
       refute output =~ "candidate_id=#{selected_id}"
     end
 
+    test "fit gaps include unmatched feeds when requested" do
+      source = source_fixture()
+
+      linked =
+        candidate_fixture(source, %{
+          advertiser_id: "adv-linked-gap",
+          provider_feed_id: "feed-linked-gap"
+        })
+
+      unmatched =
+        candidate_fixture(source, %{
+          advertiser_id: "   ",
+          provider_feed_id: "feed-unmatched-gap"
+        })
+
+      output =
+        capture_io(fn ->
+          CjCandidates.run([
+            "--report",
+            "fit-gaps",
+            "--include-unmatched",
+            "--limit",
+            "2"
+          ])
+        end)
+
+      {:ok, linked_id} = GlobalId.encode_required(:merchant_feed_candidate, linked.id)
+      {:ok, unmatched_id} = GlobalId.encode_required(:merchant_feed_candidate, unmatched.id)
+
+      assert output =~ "candidate_count=2"
+      assert output =~ "candidate_id=#{linked_id}"
+      assert output =~ "candidate_id=#{unmatched_id}"
+    end
+
     test "application cohort reports selected program state and factual warnings only" do
       source = source_fixture()
       changed_at = ~U[2026-07-25 16:00:00.000000Z]

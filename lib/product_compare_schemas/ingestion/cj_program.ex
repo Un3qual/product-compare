@@ -38,6 +38,7 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
   def changeset(program, attrs) do
     program
     |> cast(attrs, [:source_id, :advertiser_id, :stage, :note, :changed_at])
+    |> update_change(:note, &blank_to_nil/1)
     |> require_stage_attribute(attrs)
     |> validate_required([:source_id, :advertiser_id, :stage, :changed_at])
     |> validate_trimmed_advertiser_id()

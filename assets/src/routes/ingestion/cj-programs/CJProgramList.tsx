@@ -70,7 +70,7 @@ export function CJProgramList({
       {data.cjPrograms.edges.length > 0 ? (
         <ul aria-label="CJ programs" {...props(styles.list)}>
           {data.cjPrograms.edges.map(({ node: program }) => (
-            <CJProgramRow key={program.id} program={program} />
+            <CJProgramRow key={`${program.id}:${program.lastChanged}`} program={program} />
           ))}
         </ul>
       ) : (

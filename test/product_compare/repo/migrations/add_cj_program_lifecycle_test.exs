@@ -121,6 +121,21 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     end)
   end
 
+  test "up refuses to discard reviewed CJ feeds that have no advertiser identity" do
+    with_legacy_schema(fn prefix ->
+      insert_legacy_cj_row(prefix, %{
+        advertiser_id: "   ",
+        review_status: "shortlisted",
+        review_note: "Resolve the missing advertiser before migration",
+        reviewed_at: ~U[2026-07-25 15:00:00.000000Z]
+      })
+
+      assert_raise Postgrex.Error, ~r/reviewed CJ feeds without advertiser IDs/, fn ->
+        migrate_up(prefix)
+      end
+    end)
+  end
+
   test "down restores legacy review fields and maps each lifecycle stage back to a review status" do
     with_legacy_schema(fn prefix ->
       seed_legacy_cj_rows(prefix)
@@ -225,7 +240,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
         review_note: "higher feed ID note",
         reviewed_at: reviewed_at
       },
-      %{advertiser_id: " ", review_status: "shortlisted"}
+      %{advertiser_id: " ", review_status: "pending"}
     ]
 
     Enum.each(rows, fn row ->

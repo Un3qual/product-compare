@@ -157,7 +157,8 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
         input: {
           id: program.id,
           stage,
-          note: note.trim() || null
+          note: note.trim() || null,
+          expectedChangedAt: program.lastChanged
         }
       },
       onCompleted(response) {
@@ -165,6 +166,10 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
         const errors = payload.errors ?? [];
 
         if (errors.length > 0) {
+          if (errors.some((error) => error.code === "CONFLICT")) {
+            revalidator.revalidate();
+          }
+
           setFeedback(errors.map((error) => error.message).join(" "));
           return;
         }

@@ -68,6 +68,20 @@ defmodule ProductCompare.Ingestion.CJProgramSchemaTest do
     assert %{advertiser_id: [_error]} = errors_on(changeset)
   end
 
+  test "identity changeset stores blank notes as nil" do
+    changeset =
+      CJProgram.changeset(%CJProgram{}, %{
+        source_id: 1,
+        advertiser_id: "adv-blank-note",
+        stage: "new",
+        note: "   ",
+        changed_at: @changed_at
+      })
+
+    assert changeset.valid?
+    assert Ecto.Changeset.get_field(changeset, :note) == nil
+  end
+
   test "lifecycle changeset accepts every program stage" do
     for stage <- CJProgram.stages() do
       changeset =

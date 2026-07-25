@@ -41,9 +41,27 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
   end
 
   defp candidates(opts) do
-    CJPrograms.list_feeds_query(stage: Options.query_stage(opts))
-    |> limit(^Keyword.fetch!(opts, :limit))
-    |> Repo.all()
+    limit = Keyword.fetch!(opts, :limit)
+
+    linked =
+      CJPrograms.list_feeds_query(stage: Options.query_stage(opts))
+      |> limit(^limit)
+      |> Repo.all()
+
+    unmatched =
+      if Keyword.fetch!(opts, :include_unmatched) do
+        CJPrograms.list_unmatched_feeds_query()
+        |> limit(^limit)
+        |> Repo.all()
+      else
+        []
+      end
+
+    (linked ++ unmatched)
+    |> Enum.sort_by(fn candidate ->
+      {-DateTime.to_unix(candidate.last_seen_at, :microsecond), candidate.id}
+    end)
+    |> Enum.take(limit)
   end
 
   defp compute_gaps(candidate) do

@@ -154,6 +154,44 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
              )
   end
 
+  test "invalid lifecycle values are rejected even when casting produces no changes" do
+    source = source_fixture()
+    program = cj_program_fixture(source)
+
+    assert {:error, changeset} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: %{"invalid" => "value"}},
+               ~U[2026-07-25 17:30:00.000000Z]
+             )
+
+    assert {"is invalid", _metadata} = changeset.errors[:stage]
+  end
+
+  test "expected change time prevents stale lifecycle updates" do
+    source = source_fixture()
+    program = cj_program_fixture(source)
+    original_changed_at = program.changed_at
+    first_change_at = ~U[2026-07-25 17:45:00.000000Z]
+
+    assert {:ok, %CJProgram{stage: "applied", changed_at: ^first_change_at}} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: "applied", expected_changed_at: original_changed_at},
+               first_change_at
+             )
+
+    assert {:error, :stale} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: "declined", expected_changed_at: original_changed_at},
+               ~U[2026-07-25 17:50:00.000000Z]
+             )
+
+    assert %CJProgram{stage: "applied", changed_at: ^first_change_at} =
+             Repo.get!(CJProgram, program.id)
+  end
+
   test "invalid stages and missing entropy IDs make no change" do
     source = source_fixture()
     program = cj_program_fixture(source)

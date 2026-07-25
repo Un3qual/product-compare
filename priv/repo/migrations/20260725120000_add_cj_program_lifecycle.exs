@@ -5,6 +5,27 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
     programs = qualified_table(:cj_programs)
     feeds = qualified_table(:merchant_feed_candidates)
 
+    execute("""
+    DO $$
+    BEGIN
+      IF EXISTS (
+        SELECT 1
+        FROM #{feeds}
+        WHERE provider = 'cj'
+          AND NULLIF(BTRIM(advertiser_id), '') IS NULL
+          AND (
+            review_status <> 'pending'
+            OR NULLIF(BTRIM(review_note), '') IS NOT NULL
+            OR reviewed_at IS NOT NULL
+          )
+      ) THEN
+        RAISE EXCEPTION
+          'cannot migrate reviewed CJ feeds without advertiser IDs';
+      END IF;
+    END
+    $$;
+    """)
+
     create table(:cj_programs) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
 

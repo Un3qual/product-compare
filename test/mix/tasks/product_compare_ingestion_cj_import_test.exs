@@ -397,7 +397,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         Options.parse_argv([
           "--from-programs",
           "--stage",
-          "selected",
+          " Selected ",
           "--stage",
           "accepted",
           "--feed-limit",

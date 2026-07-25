@@ -133,7 +133,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverageTest do
                    %{bucket: "unknown", candidate_count: 1}
                  ]
                }
-             } = summary = CJCandidateMarketCoverage.summary([])
+             } = summary = CJCandidateMarketCoverage.summary()
 
       assert_safe_summary(summary)
     end

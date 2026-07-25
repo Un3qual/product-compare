@@ -55,10 +55,13 @@ leak a temporary global debug level into concurrent tests.
 
 ## Verification Concern
 
-- A standalone `mix test` run failed outside this task's owned test area:
+- An earlier standalone `mix test` command, with its own random seed and before
+  the later aggregate and coverage verification runs, failed outside this
+  task's owned test area:
   `928 tests, 3 failures`. `test/product_compare/catalog/filtering_regression_test.exs`
   also reproduces the same three query-plan assertions (boolean, enum, and
   numeric filters); PostgreSQL chose `pacur_product_attr_uq` instead of the
   expected `pac_bool_filter_idx`, `pac_enum_filter_idx`, and
-  `pac_numeric_filter_idx`. The pre-waiver aggregate `mix ci` test/coverage
-  gate passed.
+  `pac_numeric_filter_idx`. The later pre-waiver aggregate `mix ci`
+  test/coverage gate passed; these are separate executions, not conflicting
+  results from one run.

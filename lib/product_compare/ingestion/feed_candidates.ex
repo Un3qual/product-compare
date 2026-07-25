@@ -24,6 +24,7 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
     :cj_program_id,
     :updated_at
   ]
+  @replace_fields_without_identity @replace_fields -- [:advertiser_id, :cj_program_id]
 
   @spec upsert_merchant_feed_candidate(Source.t(), map()) ::
           {:ok, MerchantFeedCandidate.t()} | {:error, Ecto.Changeset.t()}
@@ -36,8 +37,8 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
       |> Map.put_new(:raw_metadata, %{})
 
     Repo.transaction(fn ->
-      with {:ok, cj_program_id} <- cj_program_id(source_id, attrs),
-           {:ok, candidate} <- upsert_candidate(attrs, cj_program_id) do
+      with {:ok, cj_program_link} <- cj_program_link(source_id, attrs),
+           {:ok, candidate} <- upsert_candidate(attrs, cj_program_link) do
         candidate
       else
         {:error, reason} -> Repo.rollback(reason)
@@ -64,24 +65,34 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
     |> order_candidates(Map.get(opts, :sort, :name_asc))
   end
 
-  defp cj_program_id(source_id, attrs) do
+  defp cj_program_link(source_id, attrs) do
     if attr(attrs, :provider) == "cj" do
       case CJPrograms.ensure_in_transaction(source_id, attr(attrs, :advertiser_id)) do
         {:ok, program} ->
-          {:ok, program.id}
+          {:ok, {:replace, program.id}}
 
         {:error, :blank_advertiser_id} ->
-          {:ok, nil}
+          {:ok, :preserve}
 
         {:error, reason} ->
           {:error, reason}
       end
     else
-      {:ok, nil}
+      {:ok, {:replace, nil}}
     end
   end
 
-  defp upsert_candidate(attrs, cj_program_id) do
+  defp upsert_candidate(attrs, :preserve) do
+    %MerchantFeedCandidate{}
+    |> MerchantFeedCandidate.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: {:replace, @replace_fields_without_identity},
+      conflict_target: [:source_id, :provider_feed_id],
+      returning: true
+    )
+  end
+
+  defp upsert_candidate(attrs, {:replace, cj_program_id}) do
     %MerchantFeedCandidate{}
     |> MerchantFeedCandidate.changeset(Map.put(attrs, :cj_program_id, cj_program_id))
     |> Repo.insert(

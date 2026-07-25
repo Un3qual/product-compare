@@ -48,8 +48,8 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
           }
         }
 
-  @spec summary(keyword() | map() | term()) :: summary()
-  def summary(_opts \\ []) do
+  @spec summary() :: summary()
+  def summary do
     base_query = base_query()
 
     %{

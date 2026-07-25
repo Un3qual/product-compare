@@ -335,6 +335,7 @@ input UpdateCjProgramInput {
   id: ID!
   stage: CJProgramStage!
   note: String
+  expectedChangedAt: DateTime!
 }
 
 input ProductNumericFilterInput {

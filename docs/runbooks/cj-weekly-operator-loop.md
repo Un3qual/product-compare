@@ -45,7 +45,7 @@ bounded run, require scheduled readiness:
 mix product_compare.ingestion.cj_readiness_gate \
   --max-discovery-age-hours 48 \
   --max-import-age-hours 48 \
-  --min-candidates 1 \
+  --min-pursued-programs 1 \
   --require-scheduled \
   --require-ready
 ```
@@ -67,7 +67,7 @@ account-manager automation, credential persistence, or CSV export.
 2. Check persisted readiness and recent successful discovery/import state:
 
    ```sh
-   mix product_compare.ingestion.cj_readiness_gate --max-discovery-age-hours 168 --max-import-age-hours 168 --min-candidates 1 --require-ready
+   mix product_compare.ingestion.cj_readiness_gate --max-discovery-age-hours 168 --max-import-age-hours 168 --min-pursued-programs 1 --require-ready
    ```
 
 3. Review the latest discovery and import runs:

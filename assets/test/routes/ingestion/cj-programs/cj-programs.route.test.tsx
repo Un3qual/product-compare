@@ -185,12 +185,50 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
           input: {
             id: "program-1",
             stage: "DECLINED",
-            note: "Not a fit now"
+            note: "Not a fit now",
+            expectedChangedAt: "2026-07-20T10:00:00.000000Z"
           }
         }
       })
     );
   });
+});
+
+test("CJ program rows adopt refreshed lifecycle state instead of retaining a stale draft", () => {
+  const initialData = buildCJProgramsData();
+  mockedUsePreloadedQuery.mockReturnValue(initialData);
+
+  const view = renderCJProgramsRoute();
+
+  fireEvent.change(screen.getByLabelText("Stage for New Merchant"), {
+    target: { value: "DECLINED" }
+  });
+  fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
+    target: { value: "Local draft" }
+  });
+
+  const refreshedData = buildCJProgramsData();
+  const refreshedProgram = refreshedData.cjPrograms.edges[0]?.node;
+
+  if (!refreshedProgram) {
+    throw new Error("Expected a CJ program fixture.");
+  }
+
+  Object.assign(refreshedProgram, {
+    stage: "APPLIED",
+    note: "Server note",
+    lastChanged: "2026-07-20T11:00:00.000000Z"
+  });
+  mockedUsePreloadedQuery.mockReturnValue(refreshedData);
+
+  view.rerender(
+    <MemoryRouter>
+      <CJProgramsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByLabelText("Stage for New Merchant")).toHaveValue("APPLIED");
+  expect(screen.getByLabelText("Note for New Merchant")).toHaveValue("Server note");
 });
 
 test("an in-flight CJ program update shows row-local saving state and leaves another row interactive", async () => {
@@ -257,6 +295,35 @@ test("CJ program payload errors remain with the row that failed", async () => {
       "stage is unavailable"
     );
     expect(rowFor("Considering Merchant").queryByRole("status")).not.toBeInTheDocument();
+  });
+});
+
+test("a stale CJ program response reloads server state", async () => {
+  commitUpdateMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        updateCjProgram: {
+          errors: [
+            {
+              code: "CONFLICT",
+              field: null,
+              message: "program changed since it was loaded"
+            }
+          ]
+        }
+      },
+      null
+    );
+  });
+
+  renderCJProgramsRoute();
+  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+
+  await waitFor(() => {
+    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
+      "program changed since it was loaded"
+    );
+    expect(revalidateMock).toHaveBeenCalledTimes(1);
   });
 });
 

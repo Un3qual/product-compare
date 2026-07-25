@@ -45,7 +45,7 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     affiliate_program: "AffiliateProgram",
     affiliate_link: "AffiliateLink",
     coupon: "Coupon",
-    cj_program: "CjProgram",
+    cj_program: "CJProgram",
     merchant_feed_candidate: "MerchantFeedCandidate",
     merchant: "Merchant",
     merchant_product: "MerchantProduct",

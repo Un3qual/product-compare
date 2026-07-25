@@ -25,7 +25,10 @@ first-party Mix entry points that previously lacked direct coverage.
 
 ## Verification
 
-- `mix test --cover` — 931 tests, 0 failures; 84.05% total coverage.
+- The later authoritative full coverage command, `mix test --cover`, ran 931
+  tests with 0 failures and reported 84.05% total coverage. It is separate
+  from the earlier 928-test standalone command recorded in
+  `docs/work/logger-level-test-isolation.md`.
 - The pre-waiver `mix ci` run passed backend static analysis, Dialyzer,
   coverage, Relay/type/unit, client/SSR builds, and the bundle contract. No
   standalone catalog EXPLAIN-plan failure occurred. That run preceded final

@@ -104,6 +104,7 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     field :id, non_null(:id)
     field :stage, non_null(:cj_program_stage)
     field :note, :string
+    field :expected_changed_at, non_null(:datetime)
   end
 
   object :upsert_affiliate_network_payload do
@@ -350,14 +351,14 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     end
 
     field :advertiser_id, non_null(:string)
-    field :advertiser_name, :string
+    field :advertiser_name, :string, resolve: &IngestionResolver.cj_program_advertiser_name/3
     field :stage, non_null(:cj_program_stage)
     field :note, :string
 
     field :last_changed, non_null(:datetime),
       resolve: fn program, _, _ -> {:ok, program.changed_at} end
 
-    field :feed_count, :integer
+    field :feed_count, :integer, resolve: &IngestionResolver.cj_program_feed_count/3
 
     field :warning_codes, non_null(list_of(non_null(:cj_program_warning_code))),
       resolve: &IngestionResolver.cj_program_warning_codes/3

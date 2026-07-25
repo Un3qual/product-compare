@@ -275,7 +275,7 @@ defmodule ProductCompare.IngestionTest do
       first_seen_at = ~U[2026-06-04 20:00:00Z]
       later_seen_at = ~U[2026-06-04 21:00:00Z]
 
-      assert {:ok, %MerchantFeedCandidate{id: candidate_id}} =
+      assert {:ok, %MerchantFeedCandidate{id: candidate_id, cj_program_id: original_program_id}} =
                Ingestion.upsert_merchant_feed_candidate(source, %{
                  advertiser_country: "US",
                  advertiser_id: "adv-1",
@@ -328,13 +328,55 @@ defmodule ProductCompare.IngestionTest do
 
       assert updated_candidate.feed_name == "US Shopping Updated"
       assert updated_candidate.product_count == 12
-      assert is_integer(updated_candidate.cj_program_id)
+      assert is_integer(original_program_id)
+      assert updated_candidate.cj_program_id == original_program_id
       assert DateTime.compare(updated_candidate.last_seen_at, later_seen_at) == :eq
 
       assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 2
 
       assert [%MerchantFeedCandidate{id: ^candidate_id, feed_name: "US Shopping Updated"}] =
                Ingestion.list_merchant_feed_candidates(source)
+    end
+
+    test "a partial CJ refresh preserves its existing advertiser identity and program link" do
+      source = source_fixture()
+
+      assert {:ok,
+              %MerchantFeedCandidate{
+                id: candidate_id,
+                advertiser_id: "adv-preserved",
+                cj_program_id: program_id
+              }} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_id: "adv-preserved",
+                 provider: "cj",
+                 provider_feed_id: "feed-partial-refresh"
+               })
+
+      assert {:ok,
+              %MerchantFeedCandidate{
+                id: ^candidate_id,
+                advertiser_id: "adv-preserved",
+                cj_program_id: ^program_id
+              }} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 feed_name: "Refreshed without advertiser identity",
+                 provider: "cj",
+                 provider_feed_id: "feed-partial-refresh"
+               })
+
+      assert {:ok,
+              %MerchantFeedCandidate{
+                id: ^candidate_id,
+                advertiser_id: "adv-preserved",
+                cj_program_id: ^program_id
+              }} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_id: "   ",
+                 feed_name: "Refreshed with blank advertiser identity",
+                 provider: "cj",
+                 provider_feed_id: "feed-partial-refresh"
+               })
     end
 
     test "merchant feed candidate connection query includes a unique pagination tiebreaker" do

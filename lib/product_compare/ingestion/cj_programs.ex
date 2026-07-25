@@ -112,28 +112,31 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     Repo.get_by(CJProgram, entropy_id: entropy_id)
   end
 
+  @spec get_summary(pos_integer()) :: CJProgram.t() | nil
+  def get_summary(program_id) when is_integer(program_id) and program_id > 0 do
+    list_query()
+    |> where([program], program.id == ^program_id)
+    |> Repo.one()
+  end
+
   @spec update_lifecycle(Ecto.UUID.t(), map()) ::
-          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+          {:ok, CJProgram.t()} | {:error, :not_found | :stale | Ecto.Changeset.t()}
   def update_lifecycle(entropy_id, attrs) do
     update_lifecycle(entropy_id, attrs, DateTime.utc_now())
   end
 
   @spec update_lifecycle(Ecto.UUID.t(), map(), DateTime.t()) ::
-          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+          {:ok, CJProgram.t()} | {:error, :not_found | :stale | Ecto.Changeset.t()}
   def update_lifecycle(entropy_id, attrs, now) when is_binary(entropy_id) and is_map(attrs) do
     case get_by_entropy_id(entropy_id) do
       nil ->
         {:error, :not_found}
 
       %CJProgram{} = program ->
-        changeset = CJProgram.lifecycle_changeset(program, attrs)
-
-        if changeset.changes == %{} do
-          {:ok, program}
-        else
-          changeset
-          |> Ecto.Changeset.put_change(:changed_at, now)
-          |> Repo.update()
+        with :ok <- ensure_expected_change_time(program, attrs) do
+          program
+          |> CJProgram.lifecycle_changeset(drop_expected_change_time(attrs))
+          |> persist_lifecycle_update(program, now)
         end
     end
   end
@@ -209,8 +212,49 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   defp fetch_conflicted_program(result, _source_id, _advertiser_id), do: result
 
+  defp ensure_expected_change_time(program, attrs) do
+    case attr(attrs, :expected_changed_at) do
+      nil ->
+        :ok
+
+      %DateTime{} = expected_changed_at ->
+        if DateTime.compare(program.changed_at, expected_changed_at) == :eq,
+          do: :ok,
+          else: {:error, :stale}
+
+      _invalid ->
+        {:error, :stale}
+    end
+  end
+
+  defp drop_expected_change_time(attrs) do
+    Map.drop(attrs, [:expected_changed_at, "expected_changed_at"])
+  end
+
+  defp persist_lifecycle_update(%Ecto.Changeset{valid?: false} = changeset, _program, _now),
+    do: {:error, changeset}
+
+  defp persist_lifecycle_update(%Ecto.Changeset{changes: changes}, program, _now)
+       when map_size(changes) == 0,
+       do: {:ok, program}
+
+  defp persist_lifecycle_update(changeset, _program, now) do
+    changeset
+    |> Ecto.Changeset.optimistic_lock(:changed_at, fn _current -> now end)
+    |> Repo.update(stale_error_field: :changed_at, stale_error_message: "has changed")
+    |> normalize_stale_update()
+  end
+
+  defp normalize_stale_update({:error, %Ecto.Changeset{} = changeset} = result) do
+    if Keyword.has_key?(changeset.errors, :changed_at), do: {:error, :stale}, else: result
+  end
+
+  defp normalize_stale_update(result), do: result
+
   defp normalize_advertiser_id(value) when is_binary(value), do: blank_to_nil(value)
   defp normalize_advertiser_id(_value), do: nil
+
+  defp attr(attrs, key), do: Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
 
   defp blank_to_nil(value) when is_binary(value) do
     case String.trim(value) do

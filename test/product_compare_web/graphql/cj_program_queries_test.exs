@@ -8,6 +8,8 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
 
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
+  alias ProductCompareWeb.Resolvers.IngestionResolver
+  alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Ingestion.CJProgram
 
   describe "/api/graphql CJ program lifecycle" do
@@ -219,6 +221,39 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 1
     end
 
+    test "cjProgram hydrates its singular advertiser name and feed count", %{conn: conn} do
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "singular-summary",
+          "Older Merchant Name",
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z],
+          last_seen_at: ~U[2026-07-20 09:00:00.000000Z]
+        )
+
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "singular-summary",
+        advertiser_name: "Current Merchant Name",
+        last_seen_at: ~U[2026-07-20 11:00:00.000000Z],
+        provider_feed_id: "singular-summary-newer"
+      })
+
+      assert %{
+               "data" => %{
+                 "cjProgram" => %{
+                   "advertiserName" => "Current Merchant Name",
+                   "feedCount" => 2
+                 }
+               }
+             } =
+               graphql(operator_conn(conn), cj_program_summary_query(), %{
+                 "id" => relay_id(:cj_program, program.entropy_id)
+               })
+    end
+
     test "warning queries run only when warningCodes is selected", %{conn: conn} do
       source = source_fixture()
 
@@ -245,7 +280,11 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       {mutation_response, mutation_queries} =
         capture_select_queries(fn ->
           graphql(conn, update_cj_program_mutation(), %{
-            "input" => %{"id" => program_id, "stage" => "APPLIED"}
+            "input" => %{
+              "id" => program_id,
+              "stage" => "APPLIED",
+              "expectedChangedAt" => DateTime.to_iso8601(program.changed_at)
+            }
           })
         end)
 
@@ -285,7 +324,8 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
           graphql(operator_conn(conn), update_cj_program_warnings_mutation(), %{
             "input" => %{
               "id" => relay_id(:cj_program, program.entropy_id),
-              "stage" => "APPLIED"
+              "stage" => "APPLIED",
+              "expectedChangedAt" => DateTime.to_iso8601(program.changed_at)
             }
           })
         end)
@@ -411,10 +451,82 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
                }
              } =
                graphql(conn, update_cj_program_mutation(), %{
-                 "input" => %{"id" => program_id, "stage" => "DECLINED", "note" => "   "}
+                 "input" => %{
+                   "id" => program_id,
+                   "stage" => "DECLINED",
+                   "note" => "   ",
+                   "expectedChangedAt" => DateTime.to_iso8601(program.changed_at)
+                 }
                })
 
       assert %CJProgram{stage: "declined", note: nil} = Repo.get!(CJProgram, program.id)
+    end
+
+    test "updateCjProgram rejects a stale lifecycle snapshot without overwriting it", %{
+      conn: conn
+    } do
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "stale-update",
+          "Stale Update Merchant",
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z]
+        )
+
+      conn = operator_conn(conn)
+      program_id = relay_id(:cj_program, program.entropy_id)
+      expected_changed_at = DateTime.to_iso8601(program.changed_at)
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "errors" => []
+                 }
+               }
+             } =
+               graphql(conn, update_cj_program_mutation(), %{
+                 "input" => %{
+                   "id" => program_id,
+                   "stage" => "APPLIED",
+                   "expectedChangedAt" => expected_changed_at
+                 }
+               })
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "CONFLICT",
+                       "message" => "program changed since it was loaded"
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, update_cj_program_mutation(), %{
+                 "input" => %{
+                   "id" => program_id,
+                   "stage" => "DECLINED",
+                   "expectedChangedAt" => expected_changed_at
+                 }
+               })
+
+      assert %CJProgram{stage: "applied"} = Repo.get!(CJProgram, program.id)
+    end
+
+    test "update_cj_program returns an input error for authorized malformed direct calls" do
+      resolution = %{context: %{current_user: %User{is_operator: true}}}
+
+      assert {:ok,
+              %{
+                program: nil,
+                errors: [%{code: "INVALID_INPUT", message: "invalid program input"}]
+              }} = IngestionResolver.update_cj_program(nil, %{}, resolution)
     end
 
     test "updateCjProgram returns typed errors for malformed, wrong-type, and missing program IDs",
@@ -472,7 +584,12 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       {response, queries} =
         capture_select_queries(fn ->
           graphql(conn, update_cj_program_mutation(), %{
-            "input" => %{"id" => variables["id"], "stage" => "DECLINED", "note" => "nope"}
+            "input" => %{
+              "id" => variables["id"],
+              "stage" => "DECLINED",
+              "note" => "nope",
+              "expectedChangedAt" => DateTime.to_iso8601(program.changed_at)
+            }
           })
         end)
 
@@ -567,7 +684,11 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
              }
            } =
              graphql(conn, update_cj_program_mutation(), %{
-               "input" => %{"id" => id, "stage" => "SELECTED"}
+               "input" => %{
+                 "id" => id,
+                 "stage" => "SELECTED",
+                 "expectedChangedAt" => "2026-07-20T10:00:00.000000Z"
+               }
              })
   end
 
@@ -604,6 +725,14 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
     """
     query CJProgram($id: ID!) {
       cjProgram(id: $id) { id }
+    }
+    """
+  end
+
+  defp cj_program_summary_query do
+    """
+    query CJProgramSummary($id: ID!) {
+      cjProgram(id: $id) { advertiserName feedCount }
     }
     """
   end

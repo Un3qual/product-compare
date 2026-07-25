@@ -7,8 +7,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
 

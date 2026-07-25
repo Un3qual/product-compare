@@ -49,13 +49,16 @@ defmodule ProductCompare.Ingestion do
   @spec get_cj_program_by_entropy_id(Ecto.UUID.t()) :: CJProgram.t() | nil
   def get_cj_program_by_entropy_id(entropy_id), do: CJPrograms.get_by_entropy_id(entropy_id)
 
+  @spec get_cj_program_summary(pos_integer()) :: CJProgram.t() | nil
+  def get_cj_program_summary(program_id), do: CJPrograms.get_summary(program_id)
+
   @spec update_cj_program_lifecycle(Ecto.UUID.t(), map()) ::
-          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+          {:ok, CJProgram.t()} | {:error, :not_found | :stale | Ecto.Changeset.t()}
   def update_cj_program_lifecycle(entropy_id, attrs),
     do: CJPrograms.update_lifecycle(entropy_id, attrs)
 
   @spec update_cj_program_lifecycle(Ecto.UUID.t(), map(), DateTime.t()) ::
-          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+          {:ok, CJProgram.t()} | {:error, :not_found | :stale | Ecto.Changeset.t()}
   def update_cj_program_lifecycle(entropy_id, attrs, now),
     do: CJPrograms.update_lifecycle(entropy_id, attrs, now)
 

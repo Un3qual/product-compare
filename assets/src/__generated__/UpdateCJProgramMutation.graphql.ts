@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e9a9b4bd78c6046ea4daf230c9d2b713>>
+ * @generated SignedSource<<01e0eb1143ad17e2aef0b02d77445311>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,6 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
 export type UpdateCjProgramInput = {
+  expectedChangedAt: any;
   id: string;
   note?: string | null | undefined;
   stage: CJProgramStage;

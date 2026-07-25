@@ -32,7 +32,7 @@ defmodule Mix.Tasks.ProductAttributeClaims.ValidateBackfillTest do
     claim_snapshot = persisted_claim_snapshot!(claim.id)
     claim_count = Repo.aggregate(ProductAttributeClaim, :count, :id)
 
-    assert_raise Mix.Error, "Unknown or invalid options: ----write", fn ->
+    assert_raise Mix.Error, "Unknown or invalid options: --write", fn ->
       run_task(["--write"])
     end
 

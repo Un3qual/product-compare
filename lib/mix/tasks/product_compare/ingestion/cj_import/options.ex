@@ -95,6 +95,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       |> Enum.flat_map(&List.wrap/1)
       |> Enum.map(&normalize_string/1)
       |> Enum.reject(&is_nil/1)
+      |> Enum.map(&String.downcase/1)
       |> Enum.uniq()
 
     case Enum.find(stages, &(&1 not in pursued_stages)) do

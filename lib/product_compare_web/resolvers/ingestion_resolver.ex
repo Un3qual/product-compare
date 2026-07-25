@@ -43,6 +43,28 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
     end
   end
 
+  @spec cj_program_advertiser_name(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, String.t() | nil}
+  def cj_program_advertiser_name(%{advertiser_name: advertiser_name}, _args, _resolution)
+      when is_binary(advertiser_name) do
+    {:ok, advertiser_name}
+  end
+
+  def cj_program_advertiser_name(program, _args, _resolution) do
+    {:ok, summary_field(program, :advertiser_name)}
+  end
+
+  @spec cj_program_feed_count(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, non_neg_integer() | nil}
+  def cj_program_feed_count(%{feed_count: feed_count}, _args, _resolution)
+      when is_integer(feed_count) do
+    {:ok, feed_count}
+  end
+
+  def cj_program_feed_count(program, _args, _resolution) do
+    {:ok, summary_field(program, :feed_count)}
+  end
+
   @spec cj_program_warning_codes(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, [String.t()]}
   def cj_program_warning_codes(%{warning_codes: warning_codes}, _args, _resolution)
@@ -110,14 +132,22 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
       {:error, :not_found} ->
         {:ok, program_error_payload("NOT_FOUND", "program not found")}
 
+      {:error, :stale} ->
+        {:ok, program_error_payload("CONFLICT", "program changed since it was loaded")}
+
       {:error, %Ecto.Changeset{} = changeset} ->
         {:ok, %{program: nil, errors: GraphQLErrors.changeset_mutation_errors(changeset)}}
     end
   end
 
   def update_cj_program(_parent, _args, resolution) do
-    {:error, reason} = Authorization.require_operator(resolution)
-    {:ok, program_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
+    case Authorization.require_operator(resolution) do
+      {:error, reason} ->
+        {:ok, program_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
+
+      {:ok, _operator} ->
+        {:ok, program_error_payload("INVALID_INPUT", "invalid program input")}
+    end
   end
 
   defp program_query_options(args) do
@@ -151,13 +181,20 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
 
   defp lifecycle_attrs(input) do
     input
-    |> Input.take([:stage, :note])
+    |> Input.take([:stage, :note, :expected_changed_at])
     |> Map.update(:stage, nil, &normalize_stage/1)
   end
 
   defp normalize_stage(nil), do: nil
   defp normalize_stage(stage) when is_atom(stage), do: Atom.to_string(stage)
   defp normalize_stage(stage), do: stage
+
+  defp summary_field(%{id: program_id}, field) do
+    case Ingestion.get_cj_program_summary(program_id) do
+      nil -> nil
+      summary -> Map.get(summary, field)
+    end
+  end
 
   defp program_error_payload(code, message, field \\ nil) do
     program_error_payload(GraphQLErrors.mutation_error(code, message, field))
