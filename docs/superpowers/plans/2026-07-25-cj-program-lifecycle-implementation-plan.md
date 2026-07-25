@@ -433,6 +433,7 @@ git commit -m "feat: link CJ feeds to program lifecycle"
 - Modify: `lib/product_compare/ingestion/cj_programs.ex`
 - Create: `lib/product_compare/ingestion/cj_program_warnings.ex`
 - Modify: `lib/product_compare/ingestion.ex`
+- Modify: `lib/product_compare/ingestion/feed_candidates.ex`
 - Delete: `lib/product_compare/ingestion/cj_candidate_cohort.ex`
 - Delete: `lib/product_compare/ingestion/cj_application_readiness.ex`
 - Delete: `lib/product_compare/ingestion/fit_score.ex`
@@ -555,6 +556,11 @@ their dedicated tests. Move the still-valid factual warning behavior into
 `CJProgramWarnings`; do not leave compatibility functions that speak in
 pending/shortlisted/dismissed vocabulary.
 
+On 2026-07-25, the user approved adding `FeedCandidates` to this task after
+the mandated `FitScore` deletion prevented even the focused Task 3 suite from
+compiling. Remove only its obsolete `FitScore` import/calls here; do not add a
+compatibility shim or broaden the candidate read model.
+
 - [ ] **Step 7: Run focused reads and commit**
 
 Run:
@@ -566,7 +572,7 @@ mix test test/product_compare/ingestion/cj_programs_test.exs test/product_compar
 Expected: PASS.
 
 ```bash
-git add lib/product_compare/ingestion/cj_programs.ex lib/product_compare/ingestion/cj_program_warnings.ex lib/product_compare/ingestion.ex lib/product_compare/ingestion/cj_candidate_cohort.ex lib/product_compare/ingestion/cj_application_readiness.ex lib/product_compare/ingestion/fit_score.ex test/product_compare/ingestion/cj_programs_test.exs test/product_compare/ingestion/cj_program_warnings_test.exs test/product_compare/ingestion/cj_candidate_cohort_test.exs test/product_compare/ingestion/cj_application_readiness_test.exs test/product_compare/ingestion/fit_score_test.exs
+git add lib/product_compare/ingestion/cj_programs.ex lib/product_compare/ingestion/cj_program_warnings.ex lib/product_compare/ingestion.ex lib/product_compare/ingestion/feed_candidates.ex lib/product_compare/ingestion/cj_candidate_cohort.ex lib/product_compare/ingestion/cj_application_readiness.ex lib/product_compare/ingestion/fit_score.ex test/product_compare/ingestion/cj_programs_test.exs test/product_compare/ingestion/cj_program_warnings_test.exs test/product_compare/ingestion/cj_candidate_cohort_test.exs test/product_compare/ingestion/cj_application_readiness_test.exs test/product_compare/ingestion/fit_score_test.exs
 git commit -m "feat: query CJ programs and warnings"
 ```
 
