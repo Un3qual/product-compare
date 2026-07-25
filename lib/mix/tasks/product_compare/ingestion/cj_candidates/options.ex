@@ -49,6 +49,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
     ]
   end
 
+  @spec query_stage(keyword()) :: String.t() | nil
+  def query_stage(opts) do
+    case Keyword.fetch!(opts, :stage) do
+      "all" -> nil
+      stage -> stage
+    end
+  end
+
   defp normalize_report(nil), do: @default_report
 
   defp normalize_report(report) when report in ~w(stale fit-gaps application-cohort export),

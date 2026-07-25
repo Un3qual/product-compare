@@ -8,7 +8,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @provider "cj"
-  @stage_keys Map.new(CJProgram.stages(), &{&1, String.to_existing_atom(&1)})
+  @stage_keys CJProgram.stage_keys()
   @safe_feed_fields [
     :id,
     :entropy_id,
@@ -218,6 +218,4 @@ defmodule ProductCompare.Ingestion.CJPrograms do
       trimmed -> trimmed
     end
   end
-
-  defp blank_to_nil(value), do: value
 end

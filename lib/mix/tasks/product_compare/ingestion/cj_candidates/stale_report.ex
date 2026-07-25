@@ -3,6 +3,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
 
   import Ecto.Query
 
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
   alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
@@ -53,7 +54,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
   end
 
   defp linked_stale_candidates(opts, cutoff) do
-    CJPrograms.list_feeds_query(stage: Keyword.fetch!(opts, :stage))
+    CJPrograms.list_feeds_query(stage: Options.query_stage(opts))
     |> where([candidate], candidate.last_seen_at < ^cutoff)
     |> exclude(:order_by)
     |> order_by([candidate],

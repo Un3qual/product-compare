@@ -41,7 +41,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
   end
 
   defp candidates(opts) do
-    CJPrograms.list_feeds_query(stage: Keyword.fetch!(opts, :stage))
+    CJPrograms.list_feeds_query(stage: Options.query_stage(opts))
     |> limit(^Keyword.fetch!(opts, :limit))
     |> Repo.all()
   end

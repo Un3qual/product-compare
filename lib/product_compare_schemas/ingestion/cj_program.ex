@@ -2,10 +2,22 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
   use ProductCompareSchemas.Schema, :relational
 
   @type t :: %__MODULE__{}
-  @stages ~w(new considering selected applied accepted not_pursuing declined)
+  @stage_keys %{
+    "new" => :new,
+    "considering" => :considering,
+    "selected" => :selected,
+    "applied" => :applied,
+    "accepted" => :accepted,
+    "not_pursuing" => :not_pursuing,
+    "declined" => :declined
+  }
+  @stages Map.keys(@stage_keys)
 
   @spec stages() :: [String.t()]
   def stages, do: @stages
+
+  @spec stage_keys() :: %{required(String.t()) => atom()}
+  def stage_keys, do: @stage_keys
 
   schema "cj_programs" do
     field :entropy_id, Ecto.UUID
