@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a0deef982aed81ce42f837ef6a17410f>>
+ * @generated SignedSource<<9a17eb12d13f0c37de192d51d5b69ac7>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,33 +9,35 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type MerchantFeedCandidateReviewStatus = "DISMISSED" | "PENDING" | "SHORTLISTED" | "%future added value";
-export type ReviewMerchantFeedCandidateInput = {
+export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
+export type CJProgramWarningCode = "MISSING_ADVERTISER_NAME" | "MISSING_PRODUCT_COUNT" | "NON_ENGLISH_LANGUAGE" | "NON_USD_CURRENCY" | "NON_US_MARKET" | "%future added value";
+export type UpdateCjProgramInput = {
   id: string;
   note?: string | null | undefined;
-  status: MerchantFeedCandidateReviewStatus;
+  stage: CJProgramStage;
 };
-export type ReviewMerchantFeedCandidateMutation$variables = {
-  input: ReviewMerchantFeedCandidateInput;
+export type UpdateCJProgramMutation$variables = {
+  input: UpdateCjProgramInput;
 };
-export type ReviewMerchantFeedCandidateMutation$data = {
-  readonly reviewMerchantFeedCandidate: {
-    readonly candidate: {
-      readonly id: string;
-      readonly reviewNote: string | null | undefined;
-      readonly reviewStatus: MerchantFeedCandidateReviewStatus;
-      readonly reviewedAt: any | null | undefined;
-    } | null | undefined;
+export type UpdateCJProgramMutation$data = {
+  readonly updateCjProgram: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
+    readonly program: {
+      readonly id: string;
+      readonly lastChanged: any;
+      readonly note: string | null | undefined;
+      readonly stage: CJProgramStage;
+      readonly warningCodes: ReadonlyArray<CJProgramWarningCode>;
+    } | null | undefined;
   };
 };
-export type ReviewMerchantFeedCandidateMutation = {
-  response: ReviewMerchantFeedCandidateMutation$data;
-  variables: ReviewMerchantFeedCandidateMutation$variables;
+export type UpdateCJProgramMutation = {
+  response: UpdateCJProgramMutation$data;
+  variables: UpdateCJProgramMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -56,17 +58,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ReviewMerchantFeedCandidatePayload",
+    "concreteType": "UpdateCjProgramPayload",
     "kind": "LinkedField",
-    "name": "reviewMerchantFeedCandidate",
+    "name": "updateCjProgram",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "MerchantFeedCandidate",
+        "concreteType": "CJProgram",
         "kind": "LinkedField",
-        "name": "candidate",
+        "name": "program",
         "plural": false,
         "selections": [
           {
@@ -80,21 +82,28 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "reviewStatus",
+            "name": "stage",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "reviewNote",
+            "name": "note",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "reviewedAt",
+            "name": "lastChanged",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "warningCodes",
             "storageKey": null
           }
         ],
@@ -141,7 +150,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ReviewMerchantFeedCandidateMutation",
+    "name": "UpdateCJProgramMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -150,20 +159,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ReviewMerchantFeedCandidateMutation",
+    "name": "UpdateCJProgramMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "c47f9eb57890b2430c9010fc40a0e118",
+    "cacheID": "56f07a6bb4e6fbfd155dd6931a3adeae",
     "id": null,
     "metadata": {},
-    "name": "ReviewMerchantFeedCandidateMutation",
+    "name": "UpdateCJProgramMutation",
     "operationKind": "mutation",
-    "text": "mutation ReviewMerchantFeedCandidateMutation(\n  $input: ReviewMerchantFeedCandidateInput!\n) {\n  reviewMerchantFeedCandidate(input: $input) {\n    candidate {\n      id\n      reviewStatus\n      reviewNote\n      reviewedAt\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation UpdateCJProgramMutation(\n  $input: UpdateCjProgramInput!\n) {\n  updateCjProgram(input: $input) {\n    program {\n      id\n      stage\n      note\n      lastChanged\n      warningCodes\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "fd604445072f88eaa60961950fe54c48";
+(node as any).hash = "cc61ba50f040848b44acfda0b38a770b";
 
 export default node;
