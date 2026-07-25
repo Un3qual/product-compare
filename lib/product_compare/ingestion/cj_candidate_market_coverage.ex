@@ -15,7 +15,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @provider "cj"
-  @stages Enum.map(CJProgram.stages(), &String.to_atom/1) ++ [:unmatched]
+  @stages Enum.map(CJProgram.stages(), &String.to_existing_atom/1) ++ [:unmatched]
   @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @dimensions [:advertiser_country, :currency, :language, :source_feed_type]
 
