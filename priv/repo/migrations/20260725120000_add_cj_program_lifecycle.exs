@@ -63,7 +63,6 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
       WHERE provider = 'cj'
         AND NULLIF(BTRIM(advertiser_id), '') IS NOT NULL
         AND NULLIF(BTRIM(review_note), '') IS NOT NULL
-        AND reviewed_at IS NOT NULL
       ORDER BY source_id, BTRIM(advertiser_id), reviewed_at DESC NULLS LAST, id DESC
     ) AS notes
       ON notes.source_id = grouped.source_id

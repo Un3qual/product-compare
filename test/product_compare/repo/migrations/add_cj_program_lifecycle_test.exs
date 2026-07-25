@@ -96,6 +96,31 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     end)
   end
 
+  test "up preserves an unreviewed nonblank note and uses the grouped change-time fallback" do
+    with_legacy_schema(fn prefix ->
+      fallback_reviewed_at = ~U[2026-07-25 14:00:00.000000Z]
+
+      insert_legacy_cj_row(prefix, %{
+        advertiser_id: "adv-unreviewed-note",
+        review_note: "Legacy note without a review time",
+        reviewed_at: nil
+      })
+
+      insert_legacy_cj_row(prefix, %{
+        advertiser_id: "adv-unreviewed-note",
+        review_note: "   ",
+        reviewed_at: fallback_reviewed_at
+      })
+
+      assert :ok = migrate_up(prefix)
+
+      assert program_note_and_changed_at(prefix, "adv-unreviewed-note") == [
+               "Legacy note without a review time",
+               DateTime.to_naive(fallback_reviewed_at)
+             ]
+    end)
+  end
+
   test "down restores legacy review fields and maps each lifecycle stage back to a review status" do
     with_legacy_schema(fn prefix ->
       seed_legacy_cj_rows(prefix)
