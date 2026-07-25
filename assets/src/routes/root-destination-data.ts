@@ -41,7 +41,7 @@ const AUTHENTICATED_DESTINATIONS = [
 const OPERATOR_DESTINATIONS = [
   { label: "Affiliate setup", to: "/affiliate/setup" },
   { label: "Revenue preview", to: "/commerce/revenue" },
-  { label: "Feed candidates", to: "/ingestion/feed-candidates" }
+  { label: "CJ programs", to: "/ingestion/cj-programs" }
 ] as const satisfies readonly RootDestination[];
 
 const SHOPPER_DESTINATIONS = [

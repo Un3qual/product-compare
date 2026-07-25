@@ -2,14 +2,17 @@
 
 ## Snapshot
 
-- Status: active (CJ program lifecycle)
+- Status: complete (CJ program lifecycle)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: `CJ Program Lifecycle` in `docs/work/index.md`.
-- Last verified: 2026-07-25 baseline queue check; the only failure is the
-  explicitly waived zero-ready-row reserve count.
-- Last documentation refresh: 2026-07-25 after the user approved the unified
-  CJ programs page and one-time reserve-floor waiver.
+- Live queue row: none; the completed lifecycle batch is recorded in
+  `docs/work/index.md` and the next dispatch requires a new product or quality
+  decision.
+- Last verified: 2026-07-25 CJ program lifecycle completion matrix. The only
+  permitted non-green result is the explicitly waived zero-ready-row reserve
+  count from `mix work_queue.validate` and `mix ci`.
+- Last documentation refresh: 2026-07-25 after unified CJ programs completion
+  and queue closeout.
 - Last plan refresh: 2026-07-25 for the CJ program lifecycle design and
   implementation plan.
 - Historical context:
@@ -18,7 +21,7 @@
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Active implementation plans:
+- Completed implementation plans:
   - `docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
   - Design:
     `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
@@ -72,9 +75,9 @@
     source-scoped advertiser program can be placed directly in any lifecycle
     stage, while keeping feeds as observed facts and unmatched feeds visible.
 
-## Active Batch
+## CJ Program Lifecycle Completion Evidence
 
-- Status: active
+- Status: complete on 2026-07-25
 - Batch: CJ Program Lifecycle
 - Decision:
   - One page at `/ingestion/cj-programs` manages every program stage; the old
@@ -93,9 +96,28 @@
   - The validator remains unchanged. Its exact zero-ready-row failure is the
     only waived gate; formatting, types, quality, coverage, frontend checks,
     focused tests, reviews, and diff hygiene remain required.
-- Internal slices:
-  - Schema/backfill; lifecycle/discovery; queries/warnings; reports;
-    imports/readiness; GraphQL; Relay loading; unified React page and closeout.
+- Delivered:
+  - One canonical `/ingestion/cj-programs` operator workspace now owns durable
+    program stage and note updates, global lifecycle summary counts, bounded
+    row-local observed-feed inspection, and independently paged unmatched
+    feeds. The legacy `/ingestion/feed-candidates` route redirects to it.
+  - Program lifecycle state is authoritative across discovery, reports,
+    imports, readiness, GraphQL, Relay loading, and the React workspace;
+    discovery does not overwrite a program stage or note.
+  - Legacy feed-level review UI, helpers, and tests are removed. Historical
+    documentation remains as historical evidence only.
+- Verification:
+  - Task-focused backend and frontend tests, Relay validation, frontend
+    typecheck, backend formatting/types/quality/coverage, frontend check, and
+    diff hygiene are recorded in the Task 8 report.
+  - `mix test` over the twelve lifecycle, migration, import/readiness, and
+    GraphQL contract files passed 138 tests; `mix test --cover` passed;
+    `mix frontend_check` passed all 104 frontend files and 1,485 tests; and
+    the client bundle contract remained 182,234 gzip bytes against its
+    unchanged 200,000-byte budget.
+  - The one-time 2026-07-25 reserve-floor waiver remains limited to the exact
+    `Ready Work requires at least 3 complete rows; found 0` result from queue
+    validation and aggregate CI. It does not waive another failure.
 
 ## Research Summary
 

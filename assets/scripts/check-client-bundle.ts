@@ -28,11 +28,11 @@ const requiredDynamicRoutes = [
     "src/routes/affiliate/setup/loader.ts",
     "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"
   ],
-  ["feed candidates screen", "src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx"],
+  ["CJ programs screen", "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"],
   [
-    "feed candidates loader",
-    "src/routes/ingestion/feed-candidates/loader.ts",
-    "src/routes/ingestion/feed-candidates/FeedCandidatesRoute.tsx"
+    "CJ programs loader",
+    "src/routes/ingestion/cj-programs/loader.ts",
+    "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"
   ],
   ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
   [

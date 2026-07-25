@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 import type { HydrationState, RouteObject, ShouldRevalidateFunctionArgs } from "react-router-dom";
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, redirect } from "react-router-dom";
 import type { Environment } from "relay-runtime";
 import { createRelayRouterContext } from "./relay/route-preload";
 import { RouteErrorBoundary } from "./routes/compare/RouteErrorBoundary";
@@ -164,24 +164,32 @@ export const routes: RouteObject[] = [
         })
       },
       {
-        path: "ingestion/feed-candidates",
+        path: "ingestion/cj-programs",
         handle: routeMetadata(
-          "CJ feed candidates | Product Compare",
-          "Review CJ feed candidates before importing products and offers."
+          "CJ programs | Product Compare",
+          "Manage CJ advertiser programs through their lifecycle and inspect their observed feeds."
         ),
         errorElement: (
-          <RouteErrorBoundary resourceName="feed candidates" title="CJ feed candidates" />
+          <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />
         ),
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ FeedCandidatesRoute }, { feedCandidatesLoader }] = await Promise.all([
-            import("./routes/ingestion/feed-candidates/FeedCandidatesRoute"),
-            import("./routes/ingestion/feed-candidates/loader")
+          const [{ CJProgramsRoute }, { cjProgramsLoader }] = await Promise.all([
+            import("./routes/ingestion/cj-programs/CJProgramsRoute"),
+            import("./routes/ingestion/cj-programs/loader")
           ]);
           return {
-            Component: FeedCandidatesRoute,
-            loader: feedCandidatesLoader
+            Component: CJProgramsRoute,
+            loader: cjProgramsLoader
           };
         })
+      },
+      {
+        path: "ingestion/feed-candidates",
+        handle: routeMetadata(
+          "CJ programs | Product Compare",
+          "Manage CJ advertiser programs through their lifecycle and inspect their observed feeds."
+        ),
+        loader: () => redirect("/ingestion/cj-programs")
       },
       {
         path: "compare",

@@ -1774,72 +1774,18 @@ advertiser program directly in any lifecycle stage. A fresh audit found this
 to be one coherent cross-stack outcome rather than separate database, API, and
 frontend batches, and found no two additional source-backed outcomes that
 could truthfully restore the reserve floor. The user explicitly approved a
-one-time waiver for this batch. The validator remains unchanged, so its exact
-zero-ready-row failure is recorded as waived while every other CI component
-remains mandatory.
+one-time waiver for this batch.
 
-## Active Work
-
-### 1. CJ Program Lifecycle
-
-Status: active
-Lane: Product data scraping
-Plan:
-`docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
-Design:
-`docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
-Batch outcome: one operator-only **CJ programs** page owns the lifecycle for
-each source-scoped advertiser program, allows direct movement among New,
-Considering, Selected, Applied, Accepted, Not pursuing, and Declined, groups
-its feeds, and keeps unmatched feeds visible without retaining parallel
-feed-level review state.
-Next action: implement the eight internal slices serially with task-scoped
-review after each slice.
-Owned paths:
-
-- Every production, test, generated, migration, runbook, architecture, work,
-  and plan path named under Tasks 1-8 of the linked implementation plan.
-- Coordinator-owned paths explicitly included for this outcome:
-  `docs/work/index.md`, `docs/work/product-data-scraping.md`,
-  `docs/plans/INDEX.md`, and `ARCHITECTURE.md`.
-
-Internal slices:
-
-- Durable program schema and legacy backfill.
-- Program lifecycle and discovery linking.
-- Program queries, counts, warnings, and feed pages.
-- Stage-based candidate reports.
-- Program-based imports and readiness.
-- Operator-only GraphQL API.
-- Relay queries, URL state, and loader.
-- Unified React page, route replacement, durable docs, and final verification.
-
-Prerequisites:
-
-- The user approved the lifecycle vocabulary, direct any-stage movement, one
-  program per trimmed advertiser ID within a source, and one unified page.
-- The user explicitly approved a one-time exception to the three-ready reserve
-  rule for this batch after the coordinator found no truthful reserve rows.
-- No eBay fallback, Tier-3 scraping, application submission, live CJ request,
-  credential storage, provider payload exposure, or CSV export is included.
-
-Verification:
-
-- Task-focused backend and frontend tests from the linked plan.
-- `mix format --check-formatted`
-- `mix typecheck`
-- `mix quality`
-- `mix test --cover`
-- `mix frontend_check`
-- `git diff --check`
-- `mix work_queue.validate` and `mix ci` must fail only with
-  `Ready Work requires at least 3 complete rows; found 0` while this explicit
-  waiver is active; any other failure is blocking.
-
-Exit condition: program lifecycle is durable and authoritative across
-discovery, reports, imports, readiness, GraphQL, and the React page; legacy
-feed review state and UI are gone; all non-waived verification passes; review
-findings are resolved; and the queue is advanced truthfully without filler.
+The CJ Program Lifecycle completed on 2026-07-25. Its canonical
+`/ingestion/cj-programs` workspace now owns durable program lifecycle updates,
+bounded observed-feed inspection, and unmatched-feed pagination; the legacy
+feed-candidate route redirects there. The previous feed-level review UI and
+state are no longer active. The validator remains unchanged, and its exact
+`Ready Work requires at least 3 complete rows; found 0` result is the sole
+waived outcome. The queue has no ready implementation rows: the next truthful
+dispatch boundary is a new product or quality decision, followed by fresh
+source-backed candidate validation. No deferred catalog item is promoted by
+this closeout.
 
 ## Completed 2026-07-23 Backend Decomposition Work
 

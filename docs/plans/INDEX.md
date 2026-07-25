@@ -14,14 +14,14 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-Start at `docs/work/index.md` for live dispatch status and ownership. The
-active CJ Program Lifecycle outcome is implemented from
-`docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`.
-It replaces per-feed review with one program-level lifecycle page and proceeds
-under the user's explicit one-time 2026-07-25 reserve-floor waiver. The prior
-operator-page deferral is reversed only for this concrete non-secret page;
-eBay fallback, application submission, Tier-3 scraping, and CSV export remain
-out of scope.
+Start at `docs/work/index.md` for live dispatch status and ownership. The CJ
+Program Lifecycle outcome from
+`docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
+completed under the user's explicit one-time 2026-07-25 reserve-floor waiver.
+It replaced per-feed review with one program-level lifecycle page. The queue
+now has no ready rows: the next dispatch requires a new product or quality
+decision, not a catalog candidate treated as active work. eBay fallback,
+application submission, Tier-3 scraping, and CSV export remain out of scope.
 
 The 2026-06-29 usable-product batch, the product filtering and in-depth comparison
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
@@ -494,7 +494,7 @@ batch and should not be recreated or promoted.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
-| partially reopened | Ingestion dashboard and operator pages | The 2026-07-25 decision reopened only the unified CJ programs lifecycle page. Any different dashboard or operator page still requires a separate product decision and concrete non-secret outcome. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
+| deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
 ## Planned Follow-Up Groups
 

@@ -26,8 +26,8 @@
 - `/merchants` now ships a Relay-backed merchant discovery route with cursor pagination, empty/error states, and navigation entry points.
 - `/affiliate/setup` now ships a Relay-backed affiliate setup route with merchant choices, authenticated network/program/link/coupon mutation forms, typed payload errors, and navigation entry points.
 - `/offers` now ships a Relay-backed offer discovery route for the existing top-level `merchantProducts(input:)` contract, with browse-card and root navigation entry points, visible merchant quick filters, and first-party tracked merchant actions.
-- `/ingestion/feed-candidates` now ships a Relay-backed CJ feed-candidate review route with cursor pagination plus controls for pending, shortlisted, and dismissed review status.
-- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, `/offers`, and `/ingestion/feed-candidates` now use Relay query or mutation APIs with SSR store hydration.
+- `/ingestion/cj-programs` now ships a Relay-backed CJ program-lifecycle workspace: operators can update each source-scoped advertiser program's stage and note, inspect its bounded observed feeds, and page unmatched observed feeds independently. `/ingestion/feed-candidates` redirects to that canonical route.
+- Browser auth, `/products`, `/products/:slug`, `/compare`, `/compare/saved`, `/account/api-tokens`, `/commerce/revenue`, `/merchants`, `/affiliate/setup`, `/offers`, and `/ingestion/cj-programs` now use Relay query or mutation APIs with SSR store hydration.
 - Relay-backed route loaders receive the request-scoped Relay environment through React Router context and fail fast when that wiring invariant is missing.
 - In-scope Relay pagination now rejects blank and repeated cursors across public,
   comparison, community, account, and setup surfaces.
@@ -66,7 +66,7 @@
   offer/price decision-helper rows, and a persistent URL-backed compare tray
   across browse and product detail routes.
 - CJ/Awin source-field mapping remains deferred pending additional account docs or sample payloads beyond the validated first CJ manual connector path.
-- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, persisted merchant feed candidates, and durable candidate review status.
+- Product data ingestion now has a CJ-first synchronous pilot boundary, source-agnostic `ProductCompare.Ingestion` scaffold, merchant source identity persistence, fixture parser tests, manual product/feed discovery tasks, run metadata, and durable advertiser-program lifecycle state. Discovery preserves that lifecycle state while feeds remain observed facts.
 
 ## Next Planned Slice
 

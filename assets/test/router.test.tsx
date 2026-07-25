@@ -9,6 +9,8 @@ import { LogoutRoute } from "../src/routes/auth/LogoutRoute";
 import { RouteErrorBoundary } from "../src/routes/compare/RouteErrorBoundary";
 import { RevenueSummaryRoute } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { revenueSummaryLoader } from "../src/routes/commerce/revenue/loader";
+import { CJProgramsRoute } from "../src/routes/ingestion/cj-programs/CJProgramsRoute";
+import { cjProgramsLoader } from "../src/routes/ingestion/cj-programs/loader";
 import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirectoryRoute";
 import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
 import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
@@ -106,6 +108,38 @@ test("affiliate setup navigation lazily resolves its screen and loader", async (
   expect(affiliateSetupRoute.errorElement).toEqual(
     <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
   );
+});
+
+test("CJ programs navigation lazily resolves its screen and loader", async () => {
+  const cjProgramsRoute = findRoute("ingestion/cj-programs");
+  const resolvedRoute = await resolveLazyRoute(cjProgramsRoute);
+
+  expect(resolvedRoute).toEqual(
+    expect.objectContaining({
+      Component: CJProgramsRoute,
+      loader: cjProgramsLoader
+    })
+  );
+  expect(cjProgramsRoute.errorElement).toEqual(
+    <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />
+  );
+});
+
+test("legacy feed candidate navigation redirects to CJ programs", async () => {
+  const legacyRoute = findRoute("ingestion/feed-candidates");
+
+  if (typeof legacyRoute.loader !== "function") {
+    throw new Error("Legacy feed candidate route is missing its redirect loader.");
+  }
+
+  const response = await legacyRoute.loader({} as never);
+
+  expect(response).toBeInstanceOf(Response);
+  if (!(response instanceof Response)) {
+    throw new Error("Legacy feed candidate route did not return a redirect response.");
+  }
+  expect(response.status).toBe(302);
+  expect(response.headers.get("Location")).toBe("/ingestion/cj-programs");
 });
 
 test("offer discovery navigation lazily resolves its screen and loader", async () => {
@@ -208,6 +242,10 @@ test("every non-root screen is absent from the initial route graph", () => {
   );
 
   for (const route of nonRootRoutes) {
+    if (route.path === "ingestion/feed-candidates") {
+      continue;
+    }
+
     expect(route.lazy, route.path).toEqual(expect.any(Function));
     expect(route, route.path).not.toHaveProperty("element");
     expect(route, route.path).not.toHaveProperty("Component");

@@ -51,6 +51,17 @@ declare module "react-relay" {
     preloadedQuery: PreloadedQuery<TQuery>
   ): TQuery["response"];
 
+  export function useQueryLoader<TQuery extends OperationType>(
+    query: GraphQLTaggedNode
+  ): [
+    PreloadedQuery<TQuery> | null,
+    (
+      variables: TQuery["variables"],
+      options?: LoadQueryOptions
+    ) => void,
+    () => void
+  ];
+
   export function useLazyLoadQuery<TQuery extends OperationType>(
     query: GraphQLTaggedNode,
     variables: TQuery["variables"],

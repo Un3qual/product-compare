@@ -55,12 +55,12 @@ test("operators gain operator routes after authenticated destinations", () => {
     "/account/api-tokens",
     "/affiliate/setup",
     "/commerce/revenue",
-    "/ingestion/feed-candidates"
+    "/ingestion/cj-programs"
   ]);
   expect(paths(data.home.secondary.destinations).slice(-3)).toEqual([
     "/affiliate/setup",
     "/commerce/revenue",
-    "/ingestion/feed-candidates"
+    "/ingestion/cj-programs"
   ]);
 });
 
