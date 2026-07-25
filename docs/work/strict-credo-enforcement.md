@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: completed
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:

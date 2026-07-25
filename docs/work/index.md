@@ -1751,12 +1751,26 @@ global Logger level. Reach joined the active program, while strict Credo
 enforcement, coverage-contract hardening, and Logger-level test isolation were
 promoted as three non-overlapping ready reserves.
 
+The three quality reserves completed on 2026-07-24. Ingestion logging-policy
+tests now use process-local Logger overrides and preserve caller policy, the
+backend coverage contract is 82% with direct Mix-task behavior coverage, and
+the normal Credo gate is strict with purposeful ConnCase and DataCase
+documentation. The final aggregate implementation gate passed 931 backend
+tests, 1,507 frontend tests, and every queue, quality, type, Relay, build, and
+bundle check while the three rows were still available to the validator.
+
+Before execution, a fresh coordinator audit found no additional coherent,
+source-backed implementation candidates: the remaining catalog choices were
+deferred or rejected, and the completed decomposition program had reached its
+explicit stop boundary. The user explicitly approved a one-time waiver of the
+three-ready-reserve claim rule so these final three rows could execute without
+inventing filler or reopening deferred scope. With their completion, the queue
+has no ready implementation rows and requires a new product or quality
+direction.
+
 ## Active Work
 
-The user claimed all four post-decomposition quality outcomes for serial
-execution on the current detached worktree. Their complete contracts are
-listed under `Active Quality Program`. Three source-verified, non-overlapping
-reserve rows remain ready.
+None. The post-decomposition quality program is complete.
 
 ## Completed 2026-07-23 Backend Decomposition Work
 
@@ -2048,116 +2062,9 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-### 15. Strict Credo Enforcement
-
-Status: ready
-Lane: Strict Credo enforcement
-Plan: `docs/superpowers/plans/2026-07-24-strict-credo-enforcement-implementation-plan.md`
-Batch outcome: the normal repository Credo gate enforces strict readability
-checks and the two test-support modules document repository-specific contracts
-instead of narrating their names.
-Next action: replace the two narrator docs and enable strict mode in the
-existing Credo configuration.
-Owned paths:
-
-- `.credo.exs`
-- `test/support/conn_case.ex`
-- `test/support/data_case.ex`
-- `docs/work/strict-credo-enforcement.md`
-
-Internal slices:
-
-- Purposeful ConnCase and DataCase documentation.
-- Strict Credo configuration and repository gate.
-
-Prerequisites:
-
-- Preserve all test-support runtime behavior and imports.
-- Keep the existing Credo and ExSlop check set.
-
-Verification:
-
-- `mix credo --all`
-- `mix quality`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: strict Credo reports zero findings through the normal quality
-alias and full CI passes.
-
-### 16. Coverage Contract Hardening
-
-Status: ready
-Lane: Coverage contract hardening
-Plan: `docs/superpowers/plans/2026-07-24-coverage-contract-hardening-implementation-plan.md`
-Batch outcome: the backend coverage gate enforces an 82% floor and directly
-exercises the two currently uncovered first-party Mix entry points.
-Next action: add behavior coverage for the queue and attribute-claim validation
-tasks, then ratchet the threshold after a fresh full report.
-Owned paths:
-
-- `mix.exs`
-- `test/mix/tasks/work_queue_validate_test.exs`
-- `test/mix/tasks/product_attribute_claims_validate_backfill_task_test.exs`
-- `docs/work/coverage-contract-hardening.md`
-
-Internal slices:
-
-- Work-queue task output and usage behavior.
-- Attribute-claim validation task dry-run and invalid-option behavior.
-- Coverage-floor enforcement.
-
-Prerequisites:
-
-- Preserve task text, errors, dry-run behavior, and database safety.
-- Do not use source-string assertions or exclude first-party modules.
-
-Verification:
-
-- New direct Mix-task suites.
-- `mix test --cover`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: both entry points have direct behavior coverage, total coverage
-remains above 82%, and the full repository gate enforces that floor.
-
-### 17. Logger-Level Test Isolation
-
-Status: ready
-Lane: Logger-level test isolation
-Plan: `docs/superpowers/plans/2026-07-24-logger-level-test-isolation-implementation-plan.md`
-Batch outcome: ingestion logging-policy tests use process-local Logger
-overrides and no longer leak a temporary global debug level into concurrent
-tests.
-Next action: replace global Logger configuration in the two affected tests
-with process-local setup and cleanup while preserving the logging-policy proof.
-Owned paths:
-
-- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-- `test/product_compare/ingestion/cj_feed_discovery_test.exs`
-- `docs/work/logger-level-test-isolation.md`
-
-Internal slices:
-
-- Import-task process-local Logger proof.
-- Feed-discovery process-local Logger proof.
-- Focused and aggregate output verification.
-
-Prerequisites:
-
-- Preserve production logging and warning assertions.
-- Keep the proof that ingestion functions do not alter caller logging policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/product_compare/ingestion/cj_feed_discovery_test.exs`
-- `mix test`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the focused suites pass with process-local overrides, full
-tests no longer emit concurrent debug leakage from these cases, and CI passes.
+Dispatch is paused under the user-approved one-time reserve-floor waiver. The
+successor audit and required coordinator decision are recorded under
+`Needs Decision Work`.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
@@ -2544,7 +2451,27 @@ another row.
 
 ## Needs Decision Work
 
-None. Shopper decision confidence was selected on 2026-07-09.
+### Post-Quality Program Direction
+
+Status: needs_decision
+
+Decision needed: select a concrete product outcome or authorize a new
+quality/reliability objective backed by fresh diagnostic evidence.
+
+Current evidence:
+
+- Strict Credo enforcement, coverage-contract hardening, and Logger-level test
+  isolation are complete.
+- A fresh successor audit found no additional independently shippable,
+  source-backed candidate after the decomposition stop boundary.
+- eBay fallback and ingestion dashboard/operator work remain deferred by
+  product decision.
+- CJ candidate CSV export remains rejected.
+
+Exit condition: a product decision or fresh diagnostic validates at least one
+coherent implementation outcome; the coordinator then promotes every useful,
+non-overlapping candidate and restores the ready floor before ordinary
+dispatch resumes.
 
 ## Blocked Work
 

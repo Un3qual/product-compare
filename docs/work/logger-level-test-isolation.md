@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Dispatch source of truth: `docs/work/index.md`
 - Plan:
@@ -31,17 +31,18 @@ leak a temporary global debug level into concurrent tests.
 ## Implementation Evidence
 
 - Replaced the two test-global `Logger.configure(level: :debug)` calls with
-  `Logger.put_process_level(self(), :debug)` and `on_exit` cleanup through
-  `Logger.delete_process_level(self())`.
+  `Logger.put_process_level(self(), :debug)` and test-process `after` cleanup
+  through `Logger.delete_process_level(self())`.
 - Each fetcher now proves it sees `Logger.get_process_level(self()) == :debug`;
-  the tests also prove `Logger.level/0` remains the caller's original global
+  after each ingestion call, the tests prove the process-local override
+  remains `:debug` and `Logger.level/0` remains the caller's original global
   policy.
 - RED: `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/product_compare/ingestion/cj_feed_discovery_test.exs`
   (seed `890418`) failed as expected under the previous global configuration:
   both fetchers reported `{:logger_level, nil}` where process-local `:debug`
   was required. The run also emitted the concurrent SQL debug output this batch
   removes.
-- GREEN: the same focused command (seed `40988`) passed with `31 tests,
+- GREEN: the final focused command (seed `509997`) passed with `31 tests,
   0 failures` and no leaked SQL/debug output.
 - `mix ci` passed (exit `0`): work queue validation, formatting, compilation,
   Credo, ExDNA (within its `3/3` clone budget), Reach, Dialyzer (`0` errors),
