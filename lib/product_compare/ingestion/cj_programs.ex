@@ -8,18 +8,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @provider "cj"
-  @stages ~w(new considering selected applied accepted not_pursuing declined)
-  @stage_keys %{
-    "new" => :new,
-    "considering" => :considering,
-    "selected" => :selected,
-    "applied" => :applied,
-    "accepted" => :accepted,
-    "not_pursuing" => :not_pursuing,
-    "declined" => :declined
-  }
-  @sorts [:name_asc, :last_changed_desc, :feed_count_desc]
-  @sort_keys Map.new(@sorts, &{Atom.to_string(&1), &1})
+  @stage_keys Map.new(CJProgram.stages(), &{&1, String.to_atom(&1)})
   @safe_feed_fields [
     :id,
     :entropy_id,
@@ -41,9 +30,8 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     :updated_at
   ]
 
-  @spec list_query(keyword() | map()) :: Ecto.Query.t()
+  @spec list_query(keyword()) :: Ecto.Query.t()
   def list_query(opts \\ []) do
-    opts = normalize_opts(opts)
     latest_name = latest_name_query()
     feed_count = feed_count_query()
 
@@ -56,8 +44,8 @@ defmodule ProductCompare.Ingestion.CJPrograms do
       advertiser_name: coalesce(name.advertiser_name, program.advertiser_id),
       feed_count: coalesce(count.feed_count, 0)
     })
-    |> maybe_filter_program_stage(normalize_stage(option(opts, :stage)))
-    |> order_programs(normalize_sort(option(opts, :sort)))
+    |> maybe_filter_program_stage(Keyword.get(opts, :stage))
+    |> order_programs(Keyword.get(opts, :sort, :name_asc))
   end
 
   @spec stage_counts() :: %{required(atom()) => non_neg_integer()}
@@ -74,14 +62,12 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     end)
   end
 
-  @spec list_feeds_query(keyword() | map()) :: Ecto.Query.t()
+  @spec list_feeds_query(keyword()) :: Ecto.Query.t()
   def list_feeds_query(opts \\ []) do
-    opts = normalize_opts(opts)
-
     MerchantFeedCandidate
     |> linked_cj_feed_query()
-    |> maybe_filter_program_id(option(opts, :program_id))
-    |> maybe_filter_feed_stage(normalize_stage(option(opts, :stage)))
+    |> maybe_filter_program_id(Keyword.get(opts, :program_id))
+    |> maybe_filter_feed_stage(Keyword.get(opts, :stage))
     |> safe_feed_select()
     |> order_by([feed], desc: feed.last_seen_at, asc: feed.id)
   end
@@ -140,7 +126,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
         {:error, :not_found}
 
       %CJProgram{} = program ->
-        changeset = CJProgram.lifecycle_changeset(program, normalize_lifecycle_attrs(attrs))
+        changeset = CJProgram.lifecycle_changeset(program, attrs)
 
         if changeset.changes == %{} do
           {:ok, program}
@@ -215,31 +201,6 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     )
   end
 
-  defp normalize_opts(opts) when is_list(opts) do
-    if Keyword.keyword?(opts), do: Map.new(opts), else: %{}
-  end
-
-  defp normalize_opts(opts) when is_map(opts), do: opts
-  defp normalize_opts(_opts), do: %{}
-
-  defp option(opts, key), do: Map.get(opts, key, Map.get(opts, Atom.to_string(key)))
-
-  defp normalize_stage(stage) when stage in @stages, do: stage
-
-  defp normalize_stage(stage) when is_atom(stage) do
-    stage
-    |> Atom.to_string()
-    |> normalize_stage()
-  end
-
-  defp normalize_stage(_stage), do: nil
-
-  defp normalize_sort(sort) when sort in @sorts, do: sort
-
-  defp normalize_sort(sort) when is_binary(sort), do: Map.get(@sort_keys, sort, :name_asc)
-
-  defp normalize_sort(_sort), do: :name_asc
-
   defp empty_stage_counts, do: Map.new(@stage_keys, fn {_stage, key} -> {key, 0} end)
 
   defp fetch_conflicted_program({:ok, %CJProgram{id: nil}}, source_id, advertiser_id) do
@@ -247,36 +208,6 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   end
 
   defp fetch_conflicted_program(result, _source_id, _advertiser_id), do: result
-
-  defp normalize_lifecycle_attrs(attrs) do
-    %{}
-    |> put_attr(attrs, :stage)
-    |> put_attr(attrs, :note)
-    |> normalize_note()
-  end
-
-  defp put_attr(normalized_attrs, attrs, key) do
-    string_key = Atom.to_string(key)
-
-    cond do
-      Map.has_key?(attrs, key) ->
-        Map.put(normalized_attrs, key, Map.fetch!(attrs, key))
-
-      Map.has_key?(attrs, string_key) ->
-        Map.put(normalized_attrs, key, Map.fetch!(attrs, string_key))
-
-      true ->
-        normalized_attrs
-    end
-  end
-
-  defp normalize_note(attrs) do
-    if Map.has_key?(attrs, :note) do
-      Map.update!(attrs, :note, &blank_to_nil/1)
-    else
-      attrs
-    end
-  end
 
   defp normalize_advertiser_id(value) when is_binary(value), do: blank_to_nil(value)
   defp normalize_advertiser_id(_value), do: nil

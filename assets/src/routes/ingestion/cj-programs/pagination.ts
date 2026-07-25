@@ -1,22 +1,14 @@
 import { nextRelayPageCursor } from "../../relay-pagination";
+import {
+  CJ_PROGRAM_SORTS,
+  CJ_PROGRAM_STAGES,
+  type CJProgramSort,
+  type CJProgramStage
+} from "./cj-program-data";
 
 const DEFAULT_PROGRAM_PAGE_SIZE = 20;
 const DEFAULT_UNMATCHED_PAGE_SIZE = 10;
 const MAX_PAGE_SIZE = 50;
-
-export type CJProgramStage =
-  | "NEW"
-  | "CONSIDERING"
-  | "SELECTED"
-  | "APPLIED"
-  | "ACCEPTED"
-  | "NOT_PURSUING"
-  | "DECLINED";
-
-export type CJProgramSort =
-  | "NAME_ASC"
-  | "LAST_CHANGED_DESC"
-  | "FEED_COUNT_DESC";
 
 export interface CJProgramsPagination {
   first: number;
@@ -48,38 +40,14 @@ export function cjProgramsPaginationFromUrl(url: URL): CJProgramsPagination {
 }
 
 export function cjProgramStageToUrlParam(stage: CJProgramStage) {
-  switch (stage) {
-    case "CONSIDERING":
-      return "considering";
-    case "SELECTED":
-      return "selected";
-    case "APPLIED":
-      return "applied";
-    case "ACCEPTED":
-      return "accepted";
-    case "NOT_PURSUING":
-      return "not_pursuing";
-    case "DECLINED":
-      return "declined";
-    case "NEW":
-    default:
-      return "new";
-  }
+  return CJ_PROGRAM_STAGES.find(({ value }) => value === stage)?.urlValue ?? "new";
 }
 
 export function cjProgramSortToUrlParam(sort: CJProgramSort) {
-  switch (sort) {
-    case "LAST_CHANGED_DESC":
-      return "last_changed_desc";
-    case "FEED_COUNT_DESC":
-      return "feed_count_desc";
-    case "NAME_ASC":
-    default:
-      return "name_asc";
-  }
+  return CJ_PROGRAM_SORTS.find(({ value }) => value === sort)?.urlValue ?? "name_asc";
 }
 
-export function cjProgramsPath(pagination: Readonly<CJProgramsPagination>) {
+function cjProgramsPath(pagination: Readonly<CJProgramsPagination>) {
   const params = new URLSearchParams();
 
   params.set("first", String(pagination.first));
@@ -100,17 +68,6 @@ export function cjProgramsPath(pagination: Readonly<CJProgramsPagination>) {
   }
 
   return `/ingestion/cj-programs?${params.toString()}`;
-}
-
-export function cjProgramFilterPath(
-  pagination: Readonly<CJProgramsPagination>,
-  filters: Pick<CJProgramsPagination, "stage" | "sort">
-) {
-  return cjProgramsPath({
-    ...pagination,
-    ...filters,
-    after: null
-  });
 }
 
 export function buildCJProgramPaginationData(
@@ -170,34 +127,11 @@ function normalizeCursor(value: string | null) {
 }
 
 function normalizeStage(value: string | null): CJProgramStage | null {
-  switch (value?.trim().toLowerCase()) {
-    case "new":
-      return "NEW";
-    case "considering":
-      return "CONSIDERING";
-    case "selected":
-      return "SELECTED";
-    case "applied":
-      return "APPLIED";
-    case "accepted":
-      return "ACCEPTED";
-    case "not_pursuing":
-      return "NOT_PURSUING";
-    case "declined":
-      return "DECLINED";
-    default:
-      return null;
-  }
+  const normalized = value?.trim().toLowerCase();
+  return CJ_PROGRAM_STAGES.find(({ urlValue }) => urlValue === normalized)?.value ?? null;
 }
 
 function normalizeSort(value: string | null): CJProgramSort {
-  switch (value?.trim().toLowerCase()) {
-    case "last_changed_desc":
-      return "LAST_CHANGED_DESC";
-    case "feed_count_desc":
-      return "FEED_COUNT_DESC";
-    case "name_asc":
-    default:
-      return "NAME_ASC";
-  }
+  const normalized = value?.trim().toLowerCase();
+  return CJ_PROGRAM_SORTS.find(({ urlValue }) => urlValue === normalized)?.value ?? "NAME_ASC";
 }

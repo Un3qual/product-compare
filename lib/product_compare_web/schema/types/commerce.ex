@@ -358,7 +358,9 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
       resolve: fn program, _, _ -> {:ok, program.changed_at} end
 
     field :feed_count, :integer
-    field :warning_codes, non_null(list_of(non_null(:cj_program_warning_code)))
+
+    field :warning_codes, non_null(list_of(non_null(:cj_program_warning_code))),
+      resolve: &IngestionResolver.cj_program_warning_codes/3
 
     field :feeds, non_null(:merchant_feed_candidate_connection) do
       arg(:first, :integer)

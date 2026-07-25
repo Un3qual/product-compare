@@ -3,8 +3,9 @@ import { Pagination } from "../../../ui/components/navigation/Pagination";
 import { create, props } from "@stylexjs/stylex";
 import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { CJFeedRow } from "./CJFeedRow";
 import { CJProgramRow } from "./CJProgramRow";
-import { formatCJDateTime, formatFeedProductCount } from "./cj-program-data";
+import { CJ_PROGRAM_STAGES } from "./cj-program-data";
 import {
   buildCJProgramPaginationData,
   type CJProgramsPagination
@@ -37,24 +38,6 @@ const styles = create({
   sectionTitle: {
     margin: 0
   },
-  feed: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
-    display: "grid",
-    gap: "0.25rem",
-    paddingBlockEnd: "0.75rem"
-  },
-  feedTitle: {
-    margin: 0
-  },
-  facts: {
-    color: tokens.textSecondary,
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.35rem 0.75rem",
-    margin: 0
-  }
 });
 
 export function CJProgramList({
@@ -78,15 +61,10 @@ export function CJProgramList({
   return (
     <div {...props(styles.content)}>
       <SummaryStrip
-        items={[
-          { label: "New", value: data.cjProgramStageCounts.new },
-          { label: "Considering", value: data.cjProgramStageCounts.considering },
-          { label: "Selected", value: data.cjProgramStageCounts.selected },
-          { label: "Applied", value: data.cjProgramStageCounts.applied },
-          { label: "Accepted", value: data.cjProgramStageCounts.accepted },
-          { label: "Not pursuing", value: data.cjProgramStageCounts.notPursuing },
-          { label: "Declined", value: data.cjProgramStageCounts.declined }
-        ]}
+        items={CJ_PROGRAM_STAGES.map(({ countKey, label }) => ({
+          label,
+          value: data.cjProgramStageCounts[countKey]
+        }))}
         label="CJ program lifecycle summary"
       />
       {data.cjPrograms.edges.length > 0 ? (
@@ -112,19 +90,7 @@ export function CJProgramList({
         {data.unmatchedCjFeeds.edges.length > 0 ? (
           <ul aria-label="Unmatched CJ feeds" {...props(styles.list)}>
             {data.unmatchedCjFeeds.edges.map(({ node: feed }) => (
-              <li key={feed.id} {...props(styles.feed)}>
-                <h3 {...props(styles.feedTitle)}>{feed.feedName ?? "Unnamed feed"}</h3>
-                <p {...props(styles.facts)}>
-                  <span>Provider feed ID {feed.providerFeedId}</span>
-                  <span>Last seen {formatCJDateTime(feed.lastSeenAt)}</span>
-                  <span>{formatFeedProductCount(feed.productCount)}</span>
-                  {feed.advertiserName ? <span>{feed.advertiserName}</span> : null}
-                  {feed.advertiserCountry ? <span>{feed.advertiserCountry}</span> : null}
-                  {feed.currency ? <span>{feed.currency}</span> : null}
-                  {feed.language ? <span>{feed.language}</span> : null}
-                  {feed.sourceFeedType ? <span>{feed.sourceFeedType}</span> : null}
-                </p>
-              </li>
+              <CJFeedRow feed={feed} key={feed.id} showAdvertiserName />
             ))}
           </ul>
         ) : (

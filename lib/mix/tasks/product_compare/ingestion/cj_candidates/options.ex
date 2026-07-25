@@ -2,8 +2,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   @moduledoc false
 
   alias ProductCompare.MixTasks.CliOptions
+  alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @allowed_stages ~w(new considering selected applied accepted not_pursuing declined all)
+  @allowed_stages CJProgram.stages() ++ ["all"]
   @default_limit 25
   @max_limit 100
   @default_max_age_hours 168

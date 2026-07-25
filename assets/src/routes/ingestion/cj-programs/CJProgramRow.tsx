@@ -23,26 +23,16 @@ import {
 import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
-  buildUpdateCJProgramInput,
-  formatCJDateTime,
+  CJ_PROGRAM_STAGES,
   cjProgramStageLabel,
   cjProgramWarningCopy,
-  formatCJProgramName,
-  formatFeedProductCount
+  formatCJDateTime,
+  isCJProgramStage,
+  type CJProgramStage
 } from "./cj-program-data";
-import type { CJProgramStage } from "./pagination";
+import { CJFeedRow } from "./CJFeedRow";
 
 type CJProgram = CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"];
-
-const stages = [
-  ["NEW", "New"],
-  ["CONSIDERING", "Considering"],
-  ["SELECTED", "Selected"],
-  ["APPLIED", "Applied"],
-  ["ACCEPTED", "Accepted"],
-  ["NOT_PURSUING", "Not pursuing"],
-  ["DECLINED", "Declined"]
-] as const satisfies readonly [CJProgramStage, string][];
 
 const styles = create({
   item: {
@@ -110,24 +100,6 @@ const styles = create({
     margin: 0,
     padding: 0
   },
-  feed: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
-    display: "grid",
-    gap: "0.25rem",
-    paddingBlockEnd: "0.65rem"
-  },
-  feedTitle: {
-    margin: 0
-  },
-  feedFacts: {
-    color: tokens.textSecondary,
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.35rem 0.75rem",
-    margin: 0
-  },
   feedActions: {
     display: "flex",
     flexWrap: "wrap",
@@ -136,7 +108,7 @@ const styles = create({
 });
 
 export function CJProgramRow({ program }: { program: CJProgram }) {
-  const programName = formatCJProgramName(program);
+  const programName = program.advertiserName ?? program.advertiserId;
   const [stage, setStage] = useState<CJProgramStage | null>(
     isCJProgramStage(program.stage) ? program.stage : null
   );
@@ -182,7 +154,11 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
     setFeedback("");
     commitUpdate({
       variables: {
-        input: buildUpdateCJProgramInput(program.id, stage, note)
+        input: {
+          id: program.id,
+          stage,
+          note: note.trim() || null
+        }
       },
       onCompleted(response) {
         const payload = response.updateCjProgram;
@@ -237,7 +213,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
             value={stage ?? ""}
           >
             {stage ? null : <option value="">Stage unavailable</option>}
-            {stages.map(([value, label]) => (
+            {CJ_PROGRAM_STAGES.map(({ label, value }) => (
               <option key={value} value={value}>
                 {label}
               </option>
@@ -339,18 +315,7 @@ function CJProgramFeeds({
       {feeds.edges.length > 0 ? (
         <ul aria-label={`Feeds for ${programName}`} {...props(styles.feedList)}>
           {feeds.edges.map(({ node: feed }) => (
-            <li key={feed.id} {...props(styles.feed)}>
-              <h3 {...props(styles.feedTitle)}>{feed.feedName ?? "Unnamed feed"}</h3>
-              <p {...props(styles.feedFacts)}>
-                <span>Provider feed ID {feed.providerFeedId}</span>
-                <span>Last seen {formatCJDateTime(feed.lastSeenAt)}</span>
-                <span>{formatFeedProductCount(feed.productCount)}</span>
-                {feed.advertiserCountry ? <span>{feed.advertiserCountry}</span> : null}
-                {feed.currency ? <span>{feed.currency}</span> : null}
-                {feed.language ? <span>{feed.language}</span> : null}
-                {feed.sourceFeedType ? <span>{feed.sourceFeedType}</span> : null}
-              </p>
-            </li>
+            <CJFeedRow feed={feed} key={feed.id} />
           ))}
         </ul>
       ) : (
@@ -389,8 +354,4 @@ function formatFeedCount(feedCount: number | null | undefined) {
   }
 
   return feedCount === 1 ? "1 feed" : `${feedCount} feeds`;
-}
-
-function isCJProgramStage(stage: string): stage is CJProgramStage {
-  return stages.some(([value]) => value === stage);
 }

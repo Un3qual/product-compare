@@ -33,7 +33,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   def cj_program(_parent, %{id: id}, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution),
          {:ok, entropy_id} <- decode_program_id(id) do
-      {:ok, entropy_id |> Ingestion.get_cj_program_by_entropy_id() |> decorate_warning_codes()}
+      {:ok, Ingestion.get_cj_program_by_entropy_id(entropy_id)}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
         {:error, GraphQLErrors.authorization_error(reason)}
@@ -41,6 +41,22 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
       {:error, :invalid_id} ->
         {:error, "invalid program id"}
     end
+  end
+
+  @spec cj_program_warning_codes(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, [String.t()]}
+  def cj_program_warning_codes(%{warning_codes: warning_codes}, _args, _resolution)
+      when is_list(warning_codes) do
+    {:ok, warning_codes}
+  end
+
+  def cj_program_warning_codes(%{id: program_id}, _args, _resolution) do
+    warning_codes =
+      [program_id]
+      |> Ingestion.cj_program_warnings()
+      |> Map.get(program_id, [])
+
+    {:ok, warning_codes}
   end
 
   @spec cj_program_stage_counts(any(), map(), Absinthe.Resolution.t()) ::
@@ -83,7 +99,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
          {:ok, entropy_id} <- decode_program_id(Input.fetch_value(input, :id)),
          {:ok, program} <-
            Ingestion.update_cj_program_lifecycle(entropy_id, lifecycle_attrs(input)) do
-      {:ok, %{program: decorate_warning_codes(program), errors: []}}
+      {:ok, %{program: program, errors: []}}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
         {:ok, program_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
@@ -124,17 +140,6 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
     end)
   end
 
-  defp decorate_warning_codes(nil), do: nil
-
-  defp decorate_warning_codes(program) do
-    warning_codes =
-      [program.id]
-      |> Ingestion.cj_program_warnings()
-      |> Map.get(program.id, [])
-
-    Map.put(program, :warning_codes, warning_codes)
-  end
-
   defp decode_program_id(value) when is_binary(value) do
     case GlobalId.decode_uuid(value, :cj_program) do
       {:ok, entropy_id} -> {:ok, entropy_id}
@@ -150,6 +155,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
     |> Map.update(:stage, nil, &normalize_stage/1)
   end
 
+  defp normalize_stage(nil), do: nil
   defp normalize_stage(stage) when is_atom(stage), do: Atom.to_string(stage)
   defp normalize_stage(stage), do: stage
 

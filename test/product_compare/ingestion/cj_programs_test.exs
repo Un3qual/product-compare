@@ -10,16 +10,6 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @direct_stage_pairs [
-    {"declined", "new"},
-    {"accepted", "considering"},
-    {"not_pursuing", "selected"},
-    {"declined", "applied"},
-    {"not_pursuing", "accepted"},
-    {"accepted", "not_pursuing"},
-    {"applied", "declined"}
-  ]
-
   test "two CJ feeds with one trimmed advertiser ID share one program" do
     source = source_fixture()
 
@@ -131,19 +121,16 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
              Repo.get!(CJProgram, updated_program.id)
   end
 
-  test "every allowed stage can be selected directly" do
+  test "lifecycle updates do not impose an artificial stage sequence" do
     source = source_fixture()
+    program = source |> cj_program_fixture() |> persist_stage("accepted")
 
-    for {current_stage, target_stage} <- @direct_stage_pairs do
-      program = source |> cj_program_fixture() |> persist_stage(current_stage)
-
-      assert {:ok, %CJProgram{stage: ^target_stage}} =
-               CJPrograms.update_lifecycle(
-                 program.entropy_id,
-                 %{stage: target_stage, note: "Decision for #{target_stage}"},
-                 ~U[2026-07-25 15:00:00.000000Z]
-               )
-    end
+    assert {:ok, %CJProgram{stage: "considering"}} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: "considering", note: "Reconsidering"},
+               ~U[2026-07-25 15:00:00.000000Z]
+             )
   end
 
   test "blank notes become nil and unchanged saves preserve changed_at" do
@@ -230,7 +217,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
   test "program stage filtering accepts only stored lifecycle stages" do
     source = source_fixture()
-    {new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
+    {_new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
     {selected_program, _selected_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
 
     persist_stage(selected_program, "selected")
@@ -242,11 +229,15 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
     assert selected_id == selected_program.id
 
-    assert Enum.sort([new_program.id, selected_program.id]) ==
+    assert [] =
              CJPrograms.list_query(stage: "paused")
              |> Repo.all()
              |> Enum.map(& &1.id)
-             |> Enum.sort()
+
+    assert [] =
+             CJPrograms.list_feeds_query(stage: "paused")
+             |> Repo.all()
+             |> Enum.map(& &1.id)
   end
 
   test "program name uses the newest nonblank feed name with a feed ID tie break and advertiser fallback" do
@@ -453,9 +444,9 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     program
     |> CJProgram.lifecycle_changeset(%{
       stage: stage,
-      note: "Existing decision for #{stage}",
-      changed_at: changed_at
+      note: "Existing decision for #{stage}"
     })
+    |> Ecto.Changeset.put_change(:changed_at, changed_at)
     |> Repo.update!()
   end
 

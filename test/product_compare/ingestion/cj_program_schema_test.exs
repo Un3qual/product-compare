@@ -3,7 +3,6 @@ defmodule ProductCompare.Ingestion.CJProgramSchemaTest do
 
   alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @stages ~w(new considering selected applied accepted not_pursuing declined)
   @changed_at ~U[2026-07-25 12:00:00.000000Z]
 
   test "identity changeset requires source, caller-trimmed advertiser identity, stage, and change time" do
@@ -70,12 +69,11 @@ defmodule ProductCompare.Ingestion.CJProgramSchemaTest do
   end
 
   test "lifecycle changeset accepts every program stage" do
-    for stage <- @stages do
+    for stage <- CJProgram.stages() do
       changeset =
-        CJProgram.lifecycle_changeset(%CJProgram{}, %{
+        CJProgram.lifecycle_changeset(%CJProgram{changed_at: @changed_at}, %{
           stage: stage,
-          note: "Decision for #{stage}",
-          changed_at: @changed_at
+          note: "Decision for #{stage}"
         })
 
       assert changeset.valid?
@@ -85,10 +83,7 @@ defmodule ProductCompare.Ingestion.CJProgramSchemaTest do
 
   test "lifecycle changeset rejects an unknown program stage" do
     changeset =
-      CJProgram.lifecycle_changeset(%CJProgram{}, %{
-        stage: "paused",
-        changed_at: @changed_at
-      })
+      CJProgram.lifecycle_changeset(%CJProgram{changed_at: @changed_at}, %{stage: "paused"})
 
     refute changeset.valid?
     assert %{stage: ["is invalid"]} = errors_on(changeset)

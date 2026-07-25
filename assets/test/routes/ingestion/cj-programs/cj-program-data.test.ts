@@ -1,31 +1,19 @@
 import {
-  buildUpdateCJProgramInput,
-  formatCJDateTime,
+  CJ_PROGRAM_STAGES,
   cjProgramStageLabel,
   cjProgramWarningCopy,
-  formatCJProgramName,
+  formatCJDateTime,
   formatFeedProductCount
 } from "../../../../src/routes/ingestion/cj-programs/cj-program-data";
 import {
   buildCJProgramPaginationData,
-  cjProgramFilterPath,
   cjProgramStageToUrlParam,
   cjProgramsPaginationFromUrl
 } from "../../../../src/routes/ingestion/cj-programs/pagination";
 
-const STAGES = [
-  ["NEW", "new"],
-  ["CONSIDERING", "considering"],
-  ["SELECTED", "selected"],
-  ["APPLIED", "applied"],
-  ["ACCEPTED", "accepted"],
-  ["NOT_PURSUING", "not_pursuing"],
-  ["DECLINED", "declined"]
-] as const;
-
-test.each(STAGES)(
-  "normalizes the %s program stage from its %s URL value",
-  (stage, urlValue) => {
+test.each(CJ_PROGRAM_STAGES)(
+  "normalizes the $value program stage from its $urlValue URL value",
+  ({ label, urlValue, value }) => {
     expect(
       cjProgramsPaginationFromUrl(
         new URL(`https://app.example.test/ingestion/cj-programs?stage=${urlValue}`)
@@ -33,23 +21,13 @@ test.each(STAGES)(
     ).toEqual({
       first: 20,
       after: null,
-      stage,
+      stage: value,
       sort: "NAME_ASC",
       unmatchedFirst: 10,
       unmatchedAfter: null
     });
-    expect(cjProgramStageToUrlParam(stage)).toBe(urlValue);
-    expect(cjProgramStageLabel(stage)).toBe(
-      {
-        NEW: "New",
-        CONSIDERING: "Considering",
-        SELECTED: "Selected",
-        APPLIED: "Applied",
-        ACCEPTED: "Accepted",
-        NOT_PURSUING: "Not pursuing",
-        DECLINED: "Declined"
-      }[stage]
-    );
+    expect(cjProgramStageToUrlParam(value)).toBe(urlValue);
+    expect(cjProgramStageLabel(value)).toBe(label);
   }
 );
 
@@ -124,24 +102,6 @@ test("builds independent program and unmatched pagination links without dropping
   });
 });
 
-test("resets only the program cursor when stage or sort controls change", () => {
-  expect(
-    cjProgramFilterPath(
-      {
-        first: 25,
-        after: "program-current",
-        stage: "APPLIED",
-        sort: "NAME_ASC",
-        unmatchedFirst: 13,
-        unmatchedAfter: "unmatched-current"
-      },
-      { stage: "ACCEPTED", sort: "LAST_CHANGED_DESC" }
-    )
-  ).toBe(
-    "/ingestion/cj-programs?first=25&stage=accepted&sort=last_changed_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current"
-  );
-});
-
 test("does not build a next link that repeats either connection cursor", () => {
   const pagination = {
     first: 20,
@@ -172,10 +132,6 @@ test("does not build a next link that repeats either connection cursor", () => {
 });
 
 test("renders factual program and feed details without inventing fit signals", () => {
-  expect(formatCJProgramName({ advertiserId: "trail", advertiserName: "Trail Merchant" })).toBe(
-    "Trail Merchant"
-  );
-  expect(formatCJProgramName({ advertiserId: "trail", advertiserName: null })).toBe("trail");
   expect(formatFeedProductCount(null)).toBe("Product count unavailable");
   expect(formatFeedProductCount(1)).toBe("1 product");
   expect(formatFeedProductCount(2)).toBe("2 products");
@@ -208,19 +164,4 @@ test("does not relabel future or unknown Relay enum values as New", () => {
   expect(cjProgramStageLabel("%future added value")).toBeNull();
   expect(cjProgramStageLabel("RETIRED")).toBeNull();
   expect(cjProgramWarningCopy("%future added value")).toBeNull();
-});
-
-test("builds a mutation input from the directly selected stage and trimmed note", () => {
-  expect(buildUpdateCJProgramInput("Q2pQcm9ncmFtOjE=", "DECLINED", "  Not a fit now  ")).toEqual(
-    {
-      id: "Q2pQcm9ncmFtOjE=",
-      stage: "DECLINED",
-      note: "Not a fit now"
-    }
-  );
-  expect(buildUpdateCJProgramInput("Q2pQcm9ncmFtOjE=", "ACCEPTED", "   ")).toEqual({
-    id: "Q2pQcm9ncmFtOjE=",
-    stage: "ACCEPTED",
-    note: null
-  });
 });

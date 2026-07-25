@@ -59,13 +59,13 @@ defmodule ProductCompare.Ingestion do
   def update_cj_program_lifecycle(entropy_id, attrs, now),
     do: CJPrograms.update_lifecycle(entropy_id, attrs, now)
 
-  @spec list_cj_programs_query(keyword() | map()) :: Ecto.Query.t()
+  @spec list_cj_programs_query(keyword()) :: Ecto.Query.t()
   def list_cj_programs_query(opts \\ []), do: CJPrograms.list_query(opts)
 
   @spec cj_program_stage_counts() :: %{required(atom()) => non_neg_integer()}
   def cj_program_stage_counts, do: CJPrograms.stage_counts()
 
-  @spec list_cj_program_feeds_query(keyword() | map()) :: Ecto.Query.t()
+  @spec list_cj_program_feeds_query(keyword()) :: Ecto.Query.t()
   def list_cj_program_feeds_query(opts \\ []), do: CJPrograms.list_feeds_query(opts)
 
   @spec list_unmatched_cj_program_feeds_query() :: Ecto.Query.t()

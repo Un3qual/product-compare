@@ -4,6 +4,9 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
   @type t :: %__MODULE__{}
   @stages ~w(new considering selected applied accepted not_pursuing declined)
 
+  @spec stages() :: [String.t()]
+  def stages, do: @stages
+
   schema "cj_programs" do
     field :entropy_id, Ecto.UUID
     field :advertiser_id, :string
@@ -12,7 +15,7 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
     field :changed_at, :utc_datetime_usec
     field :advertiser_name, :string, virtual: true
     field :feed_count, :integer, virtual: true
-    field :warning_codes, {:array, :string}, virtual: true, default: []
+    field :warning_codes, {:array, :string}, virtual: true
 
     belongs_to :source, ProductCompareSchemas.Specs.Source
     has_many :feeds, ProductCompareSchemas.Ingestion.MerchantFeedCandidate
@@ -35,7 +38,8 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
   @spec lifecycle_changeset(t(), map()) :: Ecto.Changeset.t()
   def lifecycle_changeset(program, attrs) do
     program
-    |> cast(attrs, [:stage, :note, :changed_at])
+    |> cast(attrs, [:stage, :note])
+    |> update_change(:note, &blank_to_nil/1)
     |> validate_required([:stage, :changed_at])
     |> validate_inclusion(:stage, @stages)
     |> check_constraint(:stage, name: :cj_programs_stage_chk)
@@ -60,4 +64,13 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
       end
     end)
   end
+
+  defp blank_to_nil(value) when is_binary(value) do
+    case String.trim(value) do
+      "" -> nil
+      trimmed -> trimmed
+    end
+  end
+
+  defp blank_to_nil(value), do: value
 end

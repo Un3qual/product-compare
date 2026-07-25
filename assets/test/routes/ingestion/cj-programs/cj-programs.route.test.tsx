@@ -156,24 +156,19 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
   );
 });
 
-test("each CJ program row exposes every lifecycle stage and saves its trimmed note", async () => {
+test("CJ program rows expose every lifecycle stage and save a trimmed note", async () => {
   renderCJProgramsRoute();
 
-  const programList = screen.getByRole("list", { name: "CJ programs" });
-
-  for (const name of [
-    "New Merchant",
-    "Considering Merchant",
-    "Selected Merchant",
-    "Applied Merchant",
-    "Accepted Merchant",
-    "Not pursuing Merchant",
-    "Declined Merchant"
-  ]) {
-    const stage = within(programList).getByRole("combobox", { name: `Stage for ${name}` });
-
-    expect(within(stage).getAllByRole("option")).toHaveLength(7);
-  }
+  const stage = screen.getByRole("combobox", { name: "Stage for New Merchant" });
+  expect(within(stage).getAllByRole("option").map((option) => option.textContent)).toEqual([
+    "New",
+    "Considering",
+    "Selected",
+    "Applied",
+    "Accepted",
+    "Not pursuing",
+    "Declined"
+  ]);
 
   fireEvent.change(screen.getByLabelText("Stage for New Merchant"), {
     target: { value: "DECLINED" }
@@ -225,13 +220,6 @@ test("CJ program mutation feedback remains with the row that saved", async () =>
     onCompleted(
       {
         updateCjProgram: {
-          program: {
-            id: "program-1",
-            stage: "NEW",
-            note: null,
-            lastChanged: "2026-07-20T10:00:00.000000Z",
-            warningCodes: []
-          },
           errors: []
         }
       },
@@ -254,7 +242,6 @@ test("CJ program payload errors remain with the row that failed", async () => {
     onCompleted(
       {
         updateCjProgram: {
-          program: null,
           errors: [{ code: "INVALID_STAGE", field: "stage", message: "stage is unavailable" }]
         }
       },

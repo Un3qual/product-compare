@@ -42,15 +42,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp do_run_import(opts) do
-    cond do
-      Keyword.get(opts, :check_credentials, false) ->
-        {:ok, Options.credential_report(opts)}
+    if Keyword.get(opts, :check_credentials, false) do
+      {:ok, Options.credential_report(opts)}
+    else
+      opts = Options.normalize_program_import_opts!(opts)
 
-      Programs.requested?(opts) ->
+      if Programs.requested?(opts) do
         import_program_feeds(opts)
-
-      true ->
+      else
         do_import(opts)
+      end
     end
   end
 

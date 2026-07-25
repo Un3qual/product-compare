@@ -16,16 +16,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   @provider "cj"
   @default_fresh_hours 48
   @default_stale_hours 168
-  @stages [
-    :new,
-    :considering,
-    :selected,
-    :applied,
-    :accepted,
-    :not_pursuing,
-    :declined,
-    :unmatched
-  ]
+  @stages Enum.map(CJProgram.stages(), &String.to_atom/1) ++ [:unmatched]
   @stage_keys Map.new(@stages, &{Atom.to_string(&1), &1})
   @buckets [:fresh, :aging, :stale]
   @bucket_keys Map.new(@buckets, &{Atom.to_string(&1), &1})

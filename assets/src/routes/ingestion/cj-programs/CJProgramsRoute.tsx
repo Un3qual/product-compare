@@ -14,6 +14,7 @@ import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { CJProgramList } from "./CJProgramList";
+import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
 import {
   cjProgramSortToUrlParam,
   cjProgramStageToUrlParam,
@@ -107,21 +108,21 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
         <span {...props(styles.label)}>Stage</span>
         <select defaultValue={stageValue} name="stage">
           <option value="">All stages</option>
-          <option value="new">New</option>
-          <option value="considering">Considering</option>
-          <option value="selected">Selected</option>
-          <option value="applied">Applied</option>
-          <option value="accepted">Accepted</option>
-          <option value="not_pursuing">Not pursuing</option>
-          <option value="declined">Declined</option>
+          {CJ_PROGRAM_STAGES.map(({ label, urlValue }) => (
+            <option key={urlValue} value={urlValue}>
+              {label}
+            </option>
+          ))}
         </select>
       </label>
       <label {...props(styles.field)}>
         <span {...props(styles.label)}>Sort programs</span>
         <select defaultValue={sortValue} name="sort">
-          <option value="name_asc">Name</option>
-          <option value="last_changed_desc">Last changed</option>
-          <option value="feed_count_desc">Feed count</option>
+          {CJ_PROGRAM_SORTS.map(({ label, urlValue }) => (
+            <option key={urlValue} value={urlValue}>
+              {label}
+            </option>
+          ))}
         </select>
       </label>
       <Button type="submit">Apply</Button>

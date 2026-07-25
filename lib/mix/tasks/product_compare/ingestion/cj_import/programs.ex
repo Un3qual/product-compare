@@ -11,17 +11,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
 
   def requested?(opts) do
     Keyword.get(opts, :from_programs, false) ||
-      opts
-      |> provider_feed_ids()
-      |> Enum.any?()
+      opts |> Keyword.fetch!(:provider_feed_ids) |> Enum.any?()
   end
 
   def run(opts) do
-    opts =
-      opts
-      |> Keyword.put(:provider_feed_ids, provider_feed_ids(opts))
-      |> Keyword.put(:program_stages, Options.program_stages!(opts))
-
     feeds = import_feeds_query(opts) |> Repo.all()
 
     case missing_provider_feed_ids(feeds, opts) do
@@ -33,7 +26,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
             &import_feed(&1, &2, opts)
           )
 
-        {feed_report_result(report, opts), report}
+        {feed_report_result(report), report}
 
       missing_feed_ids ->
         report = initial_feed_report(length(feeds))
@@ -77,14 +70,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
 
   defp feed_limit([], value) when is_integer(value) and value > 0, do: min(value, 50)
   defp feed_limit([], _value), do: 10
-
-  defp provider_feed_ids(opts) do
-    opts
-    |> Keyword.get(:provider_feed_ids, [])
-    |> List.wrap()
-    |> Enum.concat(Keyword.get_values(opts, :provider_feed_id))
-    |> Options.normalize_provider_feed_id_list!()
-  end
 
   defp missing_provider_feed_ids(feeds, opts) do
     matched_feed_ids =
@@ -180,16 +165,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
     |> Map.update!(:pages_fetched, &(&1 + Map.get(import_report, :pages_fetched, 0)))
   end
 
-  defp feed_report_result(%{feed_count: 0} = report, opts) do
-    case Keyword.get(opts, :provider_feed_ids, []) do
-      [] -> {:ok, report}
-      provider_feed_ids -> {:error, {:provider_feeds_not_found, provider_feed_ids}}
-    end
-  end
+  defp feed_report_result(%{feed_failures: 0, failed: 0} = report), do: {:ok, report}
 
-  defp feed_report_result(%{feed_failures: 0, failed: 0} = report, _opts), do: {:ok, report}
-
-  defp feed_report_result(report, _opts), do: {:error, {:feed_import_failures, report}}
+  defp feed_report_result(report), do: {:error, {:feed_import_failures, report}}
 
   defp report_result(%{failed: 0} = report), do: {:ok, report}
   defp report_result(report), do: {:error, {:row_failures, report}}

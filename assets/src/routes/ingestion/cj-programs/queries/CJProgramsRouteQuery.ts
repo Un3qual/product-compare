@@ -20,7 +20,6 @@ export default graphql`
     }
     cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) {
       edges {
-        cursor
         node {
           id
           advertiserId
@@ -40,12 +39,9 @@ export default graphql`
     }
     unmatchedCjFeeds(first: $unmatchedFirst, after: $unmatchedAfter) {
       edges {
-        cursor
         node {
           id
-          provider
           providerFeedId
-          advertiserId
           advertiserName
           advertiserCountry
           sourceFeedType
@@ -53,7 +49,6 @@ export default graphql`
           language
           feedName
           productCount
-          providerLastUpdatedAt
           lastSeenAt
         }
       }

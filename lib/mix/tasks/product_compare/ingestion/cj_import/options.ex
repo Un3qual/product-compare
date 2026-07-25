@@ -41,8 +41,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     |> Keyword.put_new(:check_credentials, false)
     |> Keyword.put_new(:require_ready, false)
     |> Keyword.put_new(:serviceable_areas, Keyword.get(opts, :serviceable_area, "US"))
+  end
+
+  def normalize_program_import_opts!(opts) do
+    program_stages = Keyword.get(opts, :program_stages, Keyword.get_values(opts, :stage))
+
+    opts
+    |> Keyword.delete(:provider_feed_id)
+    |> Keyword.delete(:stage)
     |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
-    |> Keyword.put(:program_stages, normalize_program_stages!(Keyword.get_values(opts, :stage)))
+    |> Keyword.put(:program_stages, normalize_program_stages!(program_stages))
   end
 
   def fetch_opts(opts) do
@@ -67,7 +75,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     end
   end
 
-  def normalize_provider_feed_id_list!(values) do
+  defp normalize_provider_feed_id_list!(values) do
     values
     |> List.wrap()
     |> Enum.flat_map(&List.wrap/1)
@@ -78,7 +86,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   def normalize_string(value), do: IdNormalizer.normalize_id(value)
 
-  def normalize_program_stages!(values) do
+  defp normalize_program_stages!(values) do
     pursued_stages = CJPrograms.pursued_stages()
 
     stages =
@@ -98,12 +106,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
           "invalid --stage: #{inspect(invalid_stage)}; expected one of #{Enum.join(pursued_stages, ", ")}"
         )
     end
-  end
-
-  def program_stages!(opts) do
-    opts
-    |> Keyword.get(:program_stages, Keyword.get_values(opts, :stage))
-    |> normalize_program_stages!()
   end
 
   def credential_report(opts) do

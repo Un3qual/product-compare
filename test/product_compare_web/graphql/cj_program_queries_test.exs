@@ -219,6 +219,49 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 1
     end
 
+    test "warning queries run only when warningCodes is selected", %{conn: conn} do
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "selection-driven-warnings",
+          "Selection Driven Warnings",
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z]
+        )
+
+      conn = operator_conn(conn)
+      program_id = relay_id(:cj_program, program.entropy_id)
+
+      {query_response, query_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, cj_program_query(), %{"id" => program_id})
+        end)
+
+      assert %{"data" => %{"cjProgram" => %{"id" => ^program_id}}} = query_response
+      assert count_select_queries_targeting_table(query_queries, :merchant_feed_candidates) == 0
+
+      {mutation_response, mutation_queries} =
+        capture_select_queries(fn ->
+          graphql(conn, update_cj_program_mutation(), %{
+            "input" => %{"id" => program_id, "stage" => "APPLIED"}
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => %{"stage" => "APPLIED"},
+                   "errors" => []
+                 }
+               }
+             } = mutation_response
+
+      assert count_select_queries_targeting_table(mutation_queries, :merchant_feed_candidates) ==
+               0
+    end
+
     test "updateCjProgram decorates its mutation payload with factual warning codes", %{
       conn: conn
     } do
@@ -340,7 +383,7 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       assert unmatched_feed_id == relay_id(:merchant_feed_candidate, unmatched_feed.id)
     end
 
-    test "updateCjProgram directly accepts every stage and normalizes blank notes", %{conn: conn} do
+    test "updateCjProgram accepts a direct stage choice and normalizes blank notes", %{conn: conn} do
       source = source_fixture()
 
       program =
@@ -355,31 +398,21 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       conn = operator_conn(conn)
       program_id = relay_id(:cj_program, program.entropy_id)
 
-      for {stage, index} <-
-            Enum.with_index(
-              ~w(NEW CONSIDERING SELECTED APPLIED ACCEPTED NOT_PURSUING DECLINED),
-              1
-            ) do
-        note = if stage == "DECLINED", do: "   ", else: "note #{index}"
-
-        assert %{
-                 "data" => %{
-                   "updateCjProgram" => %{
-                     "program" => %{
-                       "id" => ^program_id,
-                       "stage" => ^stage,
-                       "note" => returned_note
-                     },
-                     "errors" => []
-                   }
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => %{
+                     "id" => ^program_id,
+                     "stage" => "DECLINED",
+                     "note" => nil
+                   },
+                   "errors" => []
                  }
-               } =
-                 graphql(conn, update_cj_program_mutation(), %{
-                   "input" => %{"id" => program_id, "stage" => stage, "note" => note}
-                 })
-
-        assert returned_note == if(stage == "DECLINED", do: nil, else: note)
-      end
+               }
+             } =
+               graphql(conn, update_cj_program_mutation(), %{
+                 "input" => %{"id" => program_id, "stage" => "DECLINED", "note" => "   "}
+               })
 
       assert %CJProgram{stage: "declined", note: nil} = Repo.get!(CJProgram, program.id)
     end

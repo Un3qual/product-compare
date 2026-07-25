@@ -66,20 +66,20 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
 
   defp cj_program_id(source_id, attrs) do
     if attr(attrs, :provider) == "cj" do
-      case normalize_advertiser_id(attr(attrs, :advertiser_id)) do
-        nil ->
+      case CJPrograms.ensure_in_transaction(source_id, attr(attrs, :advertiser_id)) do
+        {:ok, program} ->
+          {:ok, program.id}
+
+        {:error, :blank_advertiser_id} ->
           {:ok, nil}
 
-        advertiser_id ->
-          CJPrograms.ensure_in_transaction(source_id, advertiser_id) |> program_id()
+        {:error, reason} ->
+          {:error, reason}
       end
     else
       {:ok, nil}
     end
   end
-
-  defp program_id({:ok, %{} = program}), do: {:ok, program.id}
-  defp program_id({:error, reason}), do: {:error, reason}
 
   defp upsert_candidate(attrs, cj_program_id) do
     %MerchantFeedCandidate{}
@@ -123,13 +123,4 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   defp attr(attrs, key) do
     Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
   end
-
-  defp normalize_advertiser_id(value) when is_binary(value) do
-    case String.trim(value) do
-      "" -> nil
-      trimmed -> trimmed
-    end
-  end
-
-  defp normalize_advertiser_id(_value), do: nil
 end

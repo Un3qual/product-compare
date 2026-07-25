@@ -1,26 +1,46 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { formatProductDateTime } from "../../product-formatting";
-import type { CJProgramStage } from "./pagination";
+
+export const CJ_PROGRAM_STAGES = [
+  { countKey: "new", label: "New", urlValue: "new", value: "NEW" },
+  {
+    countKey: "considering",
+    label: "Considering",
+    urlValue: "considering",
+    value: "CONSIDERING"
+  },
+  { countKey: "selected", label: "Selected", urlValue: "selected", value: "SELECTED" },
+  { countKey: "applied", label: "Applied", urlValue: "applied", value: "APPLIED" },
+  { countKey: "accepted", label: "Accepted", urlValue: "accepted", value: "ACCEPTED" },
+  {
+    countKey: "notPursuing",
+    label: "Not pursuing",
+    urlValue: "not_pursuing",
+    value: "NOT_PURSUING"
+  },
+  { countKey: "declined", label: "Declined", urlValue: "declined", value: "DECLINED" }
+] as const;
+
+export type CJProgramStage = (typeof CJ_PROGRAM_STAGES)[number]["value"];
+
+export const CJ_PROGRAM_SORTS = [
+  { label: "Name", urlValue: "name_asc", value: "NAME_ASC" },
+  {
+    label: "Last changed",
+    urlValue: "last_changed_desc",
+    value: "LAST_CHANGED_DESC"
+  },
+  { label: "Feed count", urlValue: "feed_count_desc", value: "FEED_COUNT_DESC" }
+] as const;
+
+export type CJProgramSort = (typeof CJ_PROGRAM_SORTS)[number]["value"];
 
 export function cjProgramStageLabel(stage: string | null | undefined) {
-  switch (stage) {
-    case "CONSIDERING":
-      return "Considering";
-    case "SELECTED":
-      return "Selected";
-    case "APPLIED":
-      return "Applied";
-    case "ACCEPTED":
-      return "Accepted";
-    case "NOT_PURSUING":
-      return "Not pursuing";
-    case "DECLINED":
-      return "Declined";
-    case "NEW":
-      return "New";
-    default:
-      return null;
-  }
+  return CJ_PROGRAM_STAGES.find(({ value }) => value === stage)?.label ?? null;
+}
+
+export function isCJProgramStage(stage: string): stage is CJProgramStage {
+  return CJ_PROGRAM_STAGES.some(({ value }) => value === stage);
 }
 
 export function cjProgramWarningCopy(code: string | null | undefined) {
@@ -40,16 +60,6 @@ export function cjProgramWarningCopy(code: string | null | undefined) {
   }
 }
 
-export function formatCJProgramName({
-  advertiserId,
-  advertiserName
-}: {
-  readonly advertiserId: string;
-  readonly advertiserName: string | null | undefined;
-}) {
-  return advertiserName ?? advertiserId;
-}
-
 export function formatFeedProductCount(productCount: number | null | undefined) {
   if (typeof productCount !== "number") {
     return "Product count unavailable";
@@ -62,18 +72,4 @@ export function formatCJDateTime(value: string | null | undefined) {
   const date = parseGraphQLDateTime(value);
 
   return date ? formatProductDateTime(date) : "";
-}
-
-export function buildUpdateCJProgramInput(
-  id: string,
-  stage: CJProgramStage,
-  currentNote: string | null | undefined
-) {
-  const note = currentNote?.trim();
-
-  return {
-    id,
-    stage,
-    note: note || null
-  };
 }
