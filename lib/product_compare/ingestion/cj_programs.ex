@@ -1,8 +1,101 @@
 defmodule ProductCompare.Ingestion.CJPrograms do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+
+  @provider "cj"
+  @stages ~w(new considering selected applied accepted not_pursuing declined)
+  @stage_keys %{
+    "new" => :new,
+    "considering" => :considering,
+    "selected" => :selected,
+    "applied" => :applied,
+    "accepted" => :accepted,
+    "not_pursuing" => :not_pursuing,
+    "declined" => :declined
+  }
+  @sorts [:name_asc, :last_changed_desc, :feed_count_desc]
+  @sort_keys Map.new(@sorts, &{Atom.to_string(&1), &1})
+  @safe_feed_fields [
+    :id,
+    :entropy_id,
+    :provider,
+    :provider_feed_id,
+    :advertiser_id,
+    :advertiser_name,
+    :advertiser_country,
+    :source_feed_type,
+    :currency,
+    :language,
+    :feed_name,
+    :product_count,
+    :provider_last_updated_at,
+    :last_seen_at,
+    :source_id,
+    :cj_program_id,
+    :inserted_at,
+    :updated_at
+  ]
+
+  @spec list_query(keyword() | map()) :: Ecto.Query.t()
+  def list_query(opts \\ []) do
+    opts = normalize_opts(opts)
+    latest_name = latest_name_query()
+    feed_count = feed_count_query()
+
+    CJProgram
+    |> join(:left, [program], name in subquery(latest_name), on: name.cj_program_id == program.id)
+    |> join(:left, [program, _name], count in subquery(feed_count),
+      on: count.cj_program_id == program.id
+    )
+    |> select_merge([program, name, count], %{
+      advertiser_name: coalesce(name.advertiser_name, program.advertiser_id),
+      feed_count: coalesce(count.feed_count, 0)
+    })
+    |> maybe_filter_program_stage(normalize_stage(option(opts, :stage)))
+    |> order_programs(normalize_sort(option(opts, :sort)))
+  end
+
+  @spec stage_counts() :: %{required(atom()) => non_neg_integer()}
+  def stage_counts do
+    CJProgram
+    |> group_by([program], program.stage)
+    |> select([program], {program.stage, count(program.id)})
+    |> Repo.all()
+    |> Enum.reduce(empty_stage_counts(), fn {stage, count}, counts ->
+      case Map.fetch(@stage_keys, stage) do
+        {:ok, stage_key} -> Map.put(counts, stage_key, count)
+        :error -> counts
+      end
+    end)
+  end
+
+  @spec list_feeds_query(keyword() | map()) :: Ecto.Query.t()
+  def list_feeds_query(opts \\ []) do
+    opts = normalize_opts(opts)
+
+    MerchantFeedCandidate
+    |> linked_cj_feed_query()
+    |> maybe_filter_program_id(option(opts, :program_id))
+    |> maybe_filter_feed_stage(normalize_stage(option(opts, :stage)))
+    |> safe_feed_select()
+    |> order_by([feed], desc: feed.last_seen_at, asc: feed.id)
+  end
+
+  @spec list_unmatched_feeds_query() :: Ecto.Query.t()
+  def list_unmatched_feeds_query do
+    MerchantFeedCandidate
+    |> where([feed], feed.provider == @provider and is_nil(feed.cj_program_id))
+    |> safe_feed_select()
+    |> order_by([feed], desc: feed.last_seen_at, asc: feed.id)
+  end
+
+  @spec pursued_stages() :: [String.t()]
+  def pursued_stages, do: ["selected", "applied", "accepted"]
 
   @spec ensure_in_transaction(pos_integer(), String.t() | nil) ::
           {:ok, CJProgram.t()} | {:error, :blank_advertiser_id | Ecto.Changeset.t()}
@@ -58,6 +151,96 @@ defmodule ProductCompare.Ingestion.CJPrograms do
         end
     end
   end
+
+  defp latest_name_query do
+    MerchantFeedCandidate
+    |> where([feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+    |> where([feed], not is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name)))
+    |> distinct([feed], feed.cj_program_id)
+    |> order_by([feed], asc: feed.cj_program_id, desc: feed.last_seen_at, desc: feed.id)
+    |> select([feed], %{
+      cj_program_id: feed.cj_program_id,
+      advertiser_name: feed.advertiser_name
+    })
+  end
+
+  defp feed_count_query do
+    MerchantFeedCandidate
+    |> where([feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+    |> group_by([feed], feed.cj_program_id)
+    |> select([feed], %{cj_program_id: feed.cj_program_id, feed_count: count(feed.id)})
+  end
+
+  defp linked_cj_feed_query(query) do
+    where(query, [feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+  end
+
+  defp safe_feed_select(query) do
+    select(query, [feed], struct(feed, ^@safe_feed_fields))
+  end
+
+  defp maybe_filter_program_stage(query, nil), do: query
+
+  defp maybe_filter_program_stage(query, stage) do
+    where(query, [program], program.stage == ^stage)
+  end
+
+  defp maybe_filter_program_id(query, program_id)
+       when is_integer(program_id) and program_id > 0 do
+    where(query, [feed], feed.cj_program_id == ^program_id)
+  end
+
+  defp maybe_filter_program_id(query, _program_id), do: query
+
+  defp maybe_filter_feed_stage(query, nil), do: query
+
+  defp maybe_filter_feed_stage(query, stage) do
+    join(query, :inner, [feed], program in CJProgram,
+      on: program.id == feed.cj_program_id and program.stage == ^stage
+    )
+  end
+
+  defp order_programs(query, :last_changed_desc) do
+    order_by(query, [program], desc: program.changed_at, asc: program.id)
+  end
+
+  defp order_programs(query, :feed_count_desc) do
+    order_by(query, [program, _name, count], desc: coalesce(count.feed_count, 0), asc: program.id)
+  end
+
+  defp order_programs(query, :name_asc) do
+    order_by(query, [program, name],
+      asc: coalesce(name.advertiser_name, program.advertiser_id),
+      asc: program.id
+    )
+  end
+
+  defp normalize_opts(opts) when is_list(opts) do
+    if Keyword.keyword?(opts), do: Map.new(opts), else: %{}
+  end
+
+  defp normalize_opts(opts) when is_map(opts), do: opts
+  defp normalize_opts(_opts), do: %{}
+
+  defp option(opts, key), do: Map.get(opts, key, Map.get(opts, Atom.to_string(key)))
+
+  defp normalize_stage(stage) when stage in @stages, do: stage
+
+  defp normalize_stage(stage) when is_atom(stage) do
+    stage
+    |> Atom.to_string()
+    |> normalize_stage()
+  end
+
+  defp normalize_stage(_stage), do: nil
+
+  defp normalize_sort(sort) when sort in @sorts, do: sort
+
+  defp normalize_sort(sort) when is_binary(sort), do: Map.get(@sort_keys, sort, :name_asc)
+
+  defp normalize_sort(_sort), do: :name_asc
+
+  defp empty_stage_counts, do: Map.new(@stage_keys, fn {_stage, key} -> {key, 0} end)
 
   defp fetch_conflicted_program({:ok, %CJProgram{id: nil}}, source_id, advertiser_id) do
     {:ok, Repo.get_by!(CJProgram, source_id: source_id, advertiser_id: advertiser_id)}

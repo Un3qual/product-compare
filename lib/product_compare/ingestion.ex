@@ -4,6 +4,7 @@ defmodule ProductCompare.Ingestion do
   """
 
   alias ProductCompare.Ingestion.CJPrograms
+  alias ProductCompare.Ingestion.CJProgramWarnings
   alias ProductCompare.Ingestion.FeedCandidates
   alias ProductCompare.Ingestion.ListingPersistence
   alias ProductCompare.Ingestion.MerchantIdentities
@@ -57,6 +58,21 @@ defmodule ProductCompare.Ingestion do
           {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def update_cj_program_lifecycle(entropy_id, attrs, now),
     do: CJPrograms.update_lifecycle(entropy_id, attrs, now)
+
+  @spec list_cj_programs_query(keyword() | map()) :: Ecto.Query.t()
+  def list_cj_programs_query(opts \\ []), do: CJPrograms.list_query(opts)
+
+  @spec cj_program_stage_counts() :: %{required(atom()) => non_neg_integer()}
+  def cj_program_stage_counts, do: CJPrograms.stage_counts()
+
+  @spec list_cj_program_feeds_query(keyword() | map()) :: Ecto.Query.t()
+  def list_cj_program_feeds_query(opts \\ []), do: CJPrograms.list_feeds_query(opts)
+
+  @spec list_unmatched_cj_program_feeds_query() :: Ecto.Query.t()
+  def list_unmatched_cj_program_feeds_query, do: CJPrograms.list_unmatched_feeds_query()
+
+  @spec cj_program_warnings([term()]) :: %{optional(pos_integer()) => [String.t()]}
+  def cj_program_warnings(program_ids), do: CJProgramWarnings.by_program_ids(program_ids)
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}

@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.CJProgramsTest do
   use ProductCompare.DataCase, async: true
 
+  import Ecto.Query, only: [limit: 2]
+
   import ProductCompare.Fixtures.CJIngestionFixtures
 
   alias ProductCompare.Ingestion
@@ -201,13 +203,264 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     assert is_nil(Repo.get_by(CJProgram, source_id: source.id, advertiser_id: "adv-rolled-back"))
   end
 
+  test "stage counts include every lifecycle stage and cover programs beyond the current page" do
+    source = source_fixture()
+    {new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
+    {selected_program, _selected_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
+
+    persist_stage(selected_program, "selected")
+
+    assert [_one_program] =
+             CJPrograms.list_query(sort: :name_asc)
+             |> limit(1)
+             |> Repo.all()
+
+    assert CJPrograms.stage_counts() == %{
+             new: 1,
+             considering: 0,
+             selected: 1,
+             applied: 0,
+             accepted: 0,
+             not_pursuing: 0,
+             declined: 0
+           }
+
+    assert new_program.id != selected_program.id
+  end
+
+  test "program stage filtering accepts only stored lifecycle stages" do
+    source = source_fixture()
+    {new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
+    {selected_program, _selected_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
+
+    persist_stage(selected_program, "selected")
+
+    assert [selected_id] =
+             CJPrograms.list_query(stage: "selected")
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+
+    assert selected_id == selected_program.id
+
+    assert Enum.sort([new_program.id, selected_program.id]) ==
+             CJPrograms.list_query(stage: "paused")
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+             |> Enum.sort()
+  end
+
+  test "program name uses the newest nonblank feed name with a feed ID tie break and advertiser fallback" do
+    source = source_fixture()
+
+    {named_program, _first_feed} =
+      program_with_feed(source, %{
+        advertiser_id: "name-winner",
+        advertiser_name: "Alpha name",
+        last_seen_at: ~U[2026-07-25 10:00:00.000000Z]
+      })
+
+    _second_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "name-winner",
+        advertiser_name: "Bravo name",
+        last_seen_at: ~U[2026-07-25 10:00:00.000000Z]
+      })
+
+    _newest_blank_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "name-winner",
+        advertiser_name: "   ",
+        last_seen_at: ~U[2026-07-25 11:00:00.000000Z]
+      })
+
+    {fallback_program, _fallback_feed} =
+      program_with_feed(source, %{
+        advertiser_id: "advertiser-id-fallback",
+        advertiser_name: " ",
+        last_seen_at: ~U[2026-07-25 12:00:00.000000Z]
+      })
+
+    programs_by_id =
+      CJPrograms.list_query()
+      |> Repo.all()
+      |> Map.new(&{&1.id, &1})
+
+    assert programs_by_id[named_program.id].advertiser_name == "Bravo name"
+    assert programs_by_id[fallback_program.id].advertiser_name == "advertiser-id-fallback"
+  end
+
+  test "name sorting uses the program ID as its final ascending tie break" do
+    source = source_fixture()
+    {first_program, _first_feed} = program_with_feed(source, %{advertiser_name: "Same name"})
+    {second_program, _second_feed} = program_with_feed(source, %{advertiser_name: "Same name"})
+
+    assert Enum.sort([first_program.id, second_program.id]) ==
+             CJPrograms.list_query(sort: :name_asc)
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+  end
+
+  test "last changed sorting uses the program ID as its final ascending tie break" do
+    source = source_fixture()
+    {first_program, _first_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
+    {second_program, _second_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
+    {newest_program, _newest_feed} = program_with_feed(source, %{advertiser_name: "Charlie"})
+
+    tie_time = ~U[2026-07-25 12:00:00.000000Z]
+    persist_stage(first_program, "considering", tie_time)
+    persist_stage(second_program, "considering", tie_time)
+    persist_stage(newest_program, "considering", ~U[2026-07-25 13:00:00.000000Z])
+
+    assert [newest_id | tied_ids] =
+             CJPrograms.list_query(sort: :last_changed_desc)
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+
+    assert newest_id == newest_program.id
+    assert tied_ids == Enum.sort([first_program.id, second_program.id])
+  end
+
+  test "feed count sorting uses the program ID as its final ascending tie break" do
+    source = source_fixture()
+    {first_program, _first_feed} = program_with_feed(source, %{advertiser_id: "first"})
+    {second_program, _second_feed} = program_with_feed(source, %{advertiser_id: "second"})
+    {largest_program, _largest_feed} = program_with_feed(source, %{advertiser_id: "largest"})
+
+    Enum.each(["first", "second"], fn advertiser_id ->
+      merchant_feed_candidate_fixture(source, %{advertiser_id: advertiser_id})
+    end)
+
+    Enum.each(1..2, fn feed_number ->
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "largest",
+        provider_feed_id: "largest-extra-#{feed_number}"
+      })
+    end)
+
+    assert [largest_id | tied_ids] =
+             CJPrograms.list_query(sort: :feed_count_desc)
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+
+    assert largest_id == largest_program.id
+    assert tied_ids == Enum.sort([first_program.id, second_program.id])
+
+    feed_counts =
+      CJPrograms.list_query()
+      |> Repo.all()
+      |> Map.new(&{&1.id, &1.feed_count})
+
+    assert feed_counts[first_program.id] == 2
+    assert feed_counts[second_program.id] == 2
+    assert feed_counts[largest_program.id] == 3
+  end
+
+  test "feed queries filter linked CJ feeds by program and stage without aggregating product counts" do
+    source = source_fixture()
+
+    {selected_program, first_feed} =
+      program_with_feed(source, %{
+        advertiser_id: "selected",
+        last_seen_at: ~U[2026-07-25 09:00:00.000000Z],
+        product_count: 7
+      })
+
+    second_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "selected",
+        last_seen_at: ~U[2026-07-25 10:00:00.000000Z],
+        product_count: 11
+      })
+
+    {other_program, _other_feed} =
+      program_with_feed(source, %{
+        advertiser_id: "other",
+        last_seen_at: ~U[2026-07-25 11:00:00.000000Z],
+        product_count: 99
+      })
+
+    persist_stage(selected_program, "selected")
+
+    assert [{second_feed.id, 11}, {first_feed.id, 7}] ==
+             CJPrograms.list_feeds_query(program_id: selected_program.id)
+             |> Repo.all()
+             |> Enum.map(&{&1.id, &1.product_count})
+
+    assert [{second_feed.id, 11}, {first_feed.id, 7}] ==
+             CJPrograms.list_feeds_query(stage: "selected")
+             |> Repo.all()
+             |> Enum.map(&{&1.id, &1.product_count})
+
+    assert other_program.id != selected_program.id
+  end
+
+  test "feed ordering breaks equal last-seen times by feed ID ascending" do
+    source = source_fixture()
+
+    {program, first_feed} =
+      program_with_feed(source, %{
+        advertiser_id: "feed-order",
+        last_seen_at: ~U[2026-07-25 12:00:00.000000Z]
+      })
+
+    second_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "feed-order",
+        last_seen_at: ~U[2026-07-25 12:00:00.000000Z]
+      })
+
+    assert Enum.sort([first_feed.id, second_feed.id]) ==
+             CJPrograms.list_feeds_query(program_id: program.id)
+             |> Repo.all()
+             |> Enum.map(& &1.id)
+  end
+
+  test "unmatched feed queries exclude linked and non-CJ feeds and do not return raw metadata" do
+    source = source_fixture()
+    {_linked_program, _linked_feed} = program_with_feed(source, %{advertiser_id: "linked"})
+
+    unmatched_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "   ",
+        provider_feed_id: "unmatched",
+        raw_metadata: %{"tracking_token" => "not-for-read-models"}
+      })
+
+    _non_cj_feed =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: "impact",
+        provider: "impact",
+        provider_feed_id: "non-cj"
+      })
+
+    assert [%{id: unmatched_id, raw_metadata: raw_metadata}] =
+             CJPrograms.list_unmatched_feeds_query()
+             |> Repo.all()
+
+    assert unmatched_id == unmatched_feed.id
+    assert raw_metadata in [nil, %{}]
+  end
+
+  test "pursued stages are the selected application lifecycle" do
+    assert CJPrograms.pursued_stages() == ["selected", "applied", "accepted"]
+  end
+
   defp persist_stage(program, stage) do
+    persist_stage(program, stage, ~U[2026-07-25 13:00:00.000000Z])
+  end
+
+  defp persist_stage(program, stage, changed_at) do
     program
     |> CJProgram.lifecycle_changeset(%{
       stage: stage,
       note: "Existing decision for #{stage}",
-      changed_at: ~U[2026-07-25 13:00:00.000000Z]
+      changed_at: changed_at
     })
     |> Repo.update!()
+  end
+
+  defp program_with_feed(source, attrs) do
+    feed = merchant_feed_candidate_fixture(source, attrs)
+    {Repo.get!(CJProgram, feed.cj_program_id), feed}
   end
 end

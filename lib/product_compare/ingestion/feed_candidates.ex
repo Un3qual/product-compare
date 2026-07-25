@@ -2,7 +2,6 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   @moduledoc false
 
   import Ecto.Query
-  import ProductCompare.Ingestion.FitScore, only: [merchant_feed_candidate_fit_score: 1]
 
   alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
@@ -107,17 +106,6 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
 
   defp order_candidates(query, :last_seen_desc) do
     order_by(query, [candidate],
-      desc: candidate.last_seen_at,
-      asc: candidate.advertiser_name,
-      asc: candidate.feed_name,
-      asc: candidate.provider_feed_id,
-      asc: candidate.id
-    )
-  end
-
-  defp order_candidates(query, :fit_score_desc) do
-    order_by(query, [candidate],
-      desc: merchant_feed_candidate_fit_score(candidate),
       desc: candidate.last_seen_at,
       asc: candidate.advertiser_name,
       asc: candidate.feed_name,
