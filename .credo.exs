@@ -7,7 +7,7 @@
         excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
       },
       plugins: [{ExSlop, []}],
-      strict: false,
+      strict: true,
       parse_timeout: 5_000,
       color: true,
       checks: %{
