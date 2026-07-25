@@ -1,6 +1,8 @@
 defmodule ProductCompare.Fixtures.CJIngestionFixtures do
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
@@ -40,9 +42,6 @@ defmodule ProductCompare.Fixtures.CJIngestionFixtures do
           provider_feed_id: "feed-#{suffix}",
           provider_last_updated_at: ~U[2026-07-01 18:00:00Z],
           raw_metadata: %{},
-          review_note: nil,
-          review_status: "pending",
-          reviewed_at: nil,
           source_feed_type: "SHOPPING"
         },
         attrs
@@ -52,6 +51,35 @@ defmodule ProductCompare.Fixtures.CJIngestionFixtures do
       Ingestion.upsert_merchant_feed_candidate(source, attrs)
 
     candidate
+  end
+
+  def cj_program_fixture(source, attrs \\ %{}) do
+    suffix = System.unique_integer([:positive])
+    advertiser_id = Map.get(attrs, :advertiser_id, "adv-#{suffix}")
+
+    candidate =
+      merchant_feed_candidate_fixture(source, %{
+        advertiser_id: advertiser_id,
+        provider_feed_id: "program-feed-#{suffix}"
+      })
+
+    program = Repo.get!(CJProgram, candidate.cj_program_id)
+
+    if Map.has_key?(attrs, :stage) or Map.has_key?(attrs, :note) do
+      {:ok, program} =
+        CJPrograms.update_lifecycle(
+          program.entropy_id,
+          %{
+            stage: Map.get(attrs, :stage, program.stage),
+            note: Map.get(attrs, :note, program.note)
+          },
+          Map.get(attrs, :changed_at, DateTime.utc_now())
+        )
+
+      program
+    else
+      program
+    end
   end
 
   def import_run_fixture(source, attrs \\ %{}) do

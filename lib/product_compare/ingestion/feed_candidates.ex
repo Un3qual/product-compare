@@ -4,6 +4,7 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   import Ecto.Query
   import ProductCompare.Ingestion.FitScore, only: [merchant_feed_candidate_fit_score: 1]
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
@@ -21,6 +22,7 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
     :provider_last_updated_at,
     :raw_metadata,
     :last_seen_at,
+    :cj_program_id,
     :updated_at
   ]
 
@@ -34,13 +36,17 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
       |> Map.put_new(:last_seen_at, DateTime.utc_now())
       |> Map.put_new(:raw_metadata, %{})
 
-    %MerchantFeedCandidate{}
-    |> MerchantFeedCandidate.changeset(attrs)
-    |> Repo.insert(
-      on_conflict: {:replace, @replace_fields},
-      conflict_target: [:source_id, :provider_feed_id],
-      returning: true
-    )
+    case Repo.transaction(fn ->
+           with {:ok, cj_program_id} <- cj_program_id(source_id, attrs),
+                {:ok, candidate} <- upsert_candidate(attrs, cj_program_id) do
+             candidate
+           else
+             {:error, reason} -> Repo.rollback(reason)
+           end
+         end) do
+      {:ok, candidate} -> {:ok, candidate}
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @spec list_merchant_feed_candidates(Source.t()) :: [MerchantFeedCandidate.t()]
@@ -59,36 +65,35 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
     opts = Map.new(opts)
 
     MerchantFeedCandidate
-    |> maybe_filter_review_status(Map.get(opts, :review_status))
     |> order_candidates(Map.get(opts, :sort, :name_asc))
   end
 
-  @spec review_merchant_feed_candidate(integer(), map()) ::
-          {:ok, MerchantFeedCandidate.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def review_merchant_feed_candidate(candidate_id, attrs)
-      when is_integer(candidate_id) and is_map(attrs) do
-    case Repo.get(MerchantFeedCandidate, candidate_id) do
-      nil ->
-        {:error, :not_found}
+  defp cj_program_id(source_id, attrs) do
+    if attr(attrs, :provider) == "cj" do
+      case normalize_advertiser_id(attr(attrs, :advertiser_id)) do
+        nil ->
+          {:ok, nil}
 
-      %MerchantFeedCandidate{} = candidate ->
-        attrs =
-          attrs
-          |> normalize_review_attrs()
-          |> Map.put(:reviewed_at, DateTime.utc_now())
-
-        candidate
-        |> MerchantFeedCandidate.review_changeset(attrs)
-        |> Repo.update()
+        advertiser_id ->
+          CJPrograms.ensure_in_transaction(source_id, advertiser_id) |> program_id()
+      end
+    else
+      {:ok, nil}
     end
   end
 
-  defp maybe_filter_review_status(query, status)
-       when status in ["pending", "shortlisted", "dismissed"] do
-    where(query, [candidate], candidate.review_status == ^status)
-  end
+  defp program_id({:ok, %{} = program}), do: {:ok, program.id}
+  defp program_id({:error, reason}), do: {:error, reason}
 
-  defp maybe_filter_review_status(query, _status), do: query
+  defp upsert_candidate(attrs, cj_program_id) do
+    %MerchantFeedCandidate{}
+    |> MerchantFeedCandidate.changeset(Map.put(attrs, :cj_program_id, cj_program_id))
+    |> Repo.insert(
+      on_conflict: {:replace, @replace_fields},
+      conflict_target: [:source_id, :provider_feed_id],
+      returning: true
+    )
+  end
 
   defp order_candidates(query, :product_count_desc) do
     order_by(query, [candidate],
@@ -130,42 +135,16 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
     )
   end
 
-  defp normalize_review_attrs(attrs) when is_map(attrs) do
-    %{}
-    |> put_review_attr(attrs, :review_status)
-    |> put_review_attr(attrs, :review_note)
-    |> normalize_review_note()
+  defp attr(attrs, key) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
   end
 
-  defp put_review_attr(normalized_attrs, attrs, key) do
-    string_key = Atom.to_string(key)
-
-    cond do
-      Map.has_key?(attrs, key) ->
-        Map.put(normalized_attrs, key, Map.fetch!(attrs, key))
-
-      Map.has_key?(attrs, string_key) ->
-        Map.put(normalized_attrs, key, Map.fetch!(attrs, string_key))
-
-      true ->
-        normalized_attrs
-    end
-  end
-
-  defp normalize_review_note(attrs) do
-    if Map.has_key?(attrs, :review_note) do
-      Map.update!(attrs, :review_note, &blank_to_nil/1)
-    else
-      attrs
-    end
-  end
-
-  defp blank_to_nil(value) when is_binary(value) do
+  defp normalize_advertiser_id(value) when is_binary(value) do
     case String.trim(value) do
       "" -> nil
       trimmed -> trimmed
     end
   end
 
-  defp blank_to_nil(value), do: value
+  defp normalize_advertiser_id(_value), do: nil
 end

@@ -3,6 +3,7 @@ defmodule ProductCompare.Ingestion do
   Product data ingestion context.
   """
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Ingestion.FeedCandidates
   alias ProductCompare.Ingestion.ListingPersistence
   alias ProductCompare.Ingestion.MerchantIdentities
@@ -10,6 +11,7 @@ defmodule ProductCompare.Ingestion do
   alias ProductCompare.Ingestion.Runs
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -43,11 +45,18 @@ defmodule ProductCompare.Ingestion do
   def list_merchant_feed_candidates_query(opts),
     do: FeedCandidates.list_merchant_feed_candidates_query(opts)
 
-  @spec review_merchant_feed_candidate(integer(), map()) ::
-          {:ok, MerchantFeedCandidate.t()} | {:error, :not_found | Ecto.Changeset.t()}
-  def review_merchant_feed_candidate(candidate_id, attrs)
-      when is_integer(candidate_id) and is_map(attrs),
-      do: FeedCandidates.review_merchant_feed_candidate(candidate_id, attrs)
+  @spec get_cj_program_by_entropy_id(Ecto.UUID.t()) :: CJProgram.t() | nil
+  def get_cj_program_by_entropy_id(entropy_id), do: CJPrograms.get_by_entropy_id(entropy_id)
+
+  @spec update_cj_program_lifecycle(Ecto.UUID.t(), map()) ::
+          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def update_cj_program_lifecycle(entropy_id, attrs),
+    do: CJPrograms.update_lifecycle(entropy_id, attrs)
+
+  @spec update_cj_program_lifecycle(Ecto.UUID.t(), map(), DateTime.t()) ::
+          {:ok, CJProgram.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def update_cj_program_lifecycle(entropy_id, attrs, now),
+    do: CJPrograms.update_lifecycle(entropy_id, attrs, now)
 
   @spec resolve_merchant_identity(Source.t(), NormalizedListing.t()) ::
           {:ok, MerchantSourceIdentity.t()} | {:error, term()}
