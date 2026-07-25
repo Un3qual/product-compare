@@ -84,6 +84,15 @@ Every other CI component must pass directly. Any different queue-validation
 failure or any failure in formatting, types, quality, tests, frontend checks,
 or diff hygiene remains a blocker.
 
+After Task 1 review exposed a sequencing contradiction, the user ruled on
+2026-07-25 that the staged task boundaries govern. Tasks 1-5 use their focused
+behavior gates while legacy consumers assigned to later tasks still make the
+aggregate compile/full suite red. Task 6 must restore
+`mix compile --warnings-as-errors` and the full backend suite before frontend
+work proceeds. Do not restore feed-level review compatibility or expand an
+earlier task across later owned paths merely to make an intermediate aggregate
+gate green.
+
 ---
 
 ### Task 1: Durable Program Schema And Legacy Backfill
@@ -278,7 +287,10 @@ mix test test/product_compare/repo/migrations/add_cj_program_lifecycle_test.exs 
 mix compile --warnings-as-errors
 ```
 
-Expected: PASS.
+Expected: the focused suite passes. Under the user's approved staged-gate
+ruling, compile remains red only for legacy review consumers owned by Tasks
+2-6; any different warning or error is blocking. Task 6 restores the aggregate
+compile gate.
 
 - [ ] **Step 6: Commit the schema milestone**
 
