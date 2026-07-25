@@ -132,6 +132,10 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const lastChanged = formatCJDateTime(program.lastChanged);
 
   useEffect(() => disposeFeedQuery, [disposeFeedQuery]);
+  useEffect(() => {
+    setStage(isCJProgramStage(program.stage) ? program.stage : null);
+    setNote(program.note ?? "");
+  }, [program.lastChanged, program.note, program.stage]);
 
   const loadFeedPage = (after: string | null) => {
     setFeedAfter(after);

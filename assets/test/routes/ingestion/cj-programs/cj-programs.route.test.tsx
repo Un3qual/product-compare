@@ -194,9 +194,19 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
   });
 });
 
-test("CJ program rows adopt refreshed lifecycle state instead of retaining a stale draft", () => {
+test("CJ program rows adopt refreshed lifecycle fields without discarding row feedback or expanded feeds", async () => {
   const initialData = buildCJProgramsData();
   mockedUsePreloadedQuery.mockReturnValue(initialData);
+  commitUpdateMutationMock.mockImplementation(({ onCompleted }) => {
+    onCompleted(
+      {
+        updateCjProgram: {
+          errors: []
+        }
+      },
+      null
+    );
+  });
 
   const view = renderCJProgramsRoute();
 
@@ -205,6 +215,14 @@ test("CJ program rows adopt refreshed lifecycle state instead of retaining a sta
   });
   fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
     target: { value: "Local draft" }
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
+  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+
+  await waitFor(() => {
+    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
+      "New Merchant saved."
+    );
   });
 
   const refreshedData = buildCJProgramsData();
@@ -229,6 +247,12 @@ test("CJ program rows adopt refreshed lifecycle state instead of retaining a sta
 
   expect(screen.getByLabelText("Stage for New Merchant")).toHaveValue("APPLIED");
   expect(screen.getByLabelText("Note for New Merchant")).toHaveValue("Server note");
+  expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
+    "New Merchant saved."
+  );
+  expect(
+    screen.getByRole("button", { name: "Hide feeds for New Merchant" })
+  ).toBeInTheDocument();
 });
 
 test("an in-flight CJ program update shows row-local saving state and leaves another row interactive", async () => {
@@ -508,6 +532,48 @@ test("program and unmatched feed pagination keep their independent cursors", () 
   expect(screen.getByRole("link", { name: "Next unmatched feeds" })).toHaveAttribute(
     "href",
     "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-cursor-next"
+  );
+});
+
+test("CJ program lifecycle controls follow refreshed pagination after history navigation", () => {
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      stage: "SELECTED",
+      sort: "FEED_COUNT_DESC",
+      unmatchedFirst: 10,
+      unmatchedAfter: null
+    })
+  );
+
+  const view = renderCJProgramsRoute();
+
+  expect(screen.getByRole("combobox", { name: "Stage" })).toHaveValue("selected");
+  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue(
+    "feed_count_desc"
+  );
+
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyLoaderData({
+      first: 20,
+      after: null,
+      stage: "APPLIED",
+      sort: "LAST_CHANGED_DESC",
+      unmatchedFirst: 10,
+      unmatchedAfter: null
+    })
+  );
+
+  view.rerender(
+    <MemoryRouter>
+      <CJProgramsRoute />
+    </MemoryRouter>
+  );
+
+  expect(screen.getByRole("combobox", { name: "Stage" })).toHaveValue("applied");
+  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue(
+    "last_changed_desc"
   );
 });
 

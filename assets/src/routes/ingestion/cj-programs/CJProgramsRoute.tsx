@@ -106,7 +106,7 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
       ) : null}
       <label {...props(styles.field)}>
         <span {...props(styles.label)}>Stage</span>
-        <select defaultValue={stageValue} name="stage">
+        <select defaultValue={stageValue} key={stageValue} name="stage">
           <option value="">All stages</option>
           {CJ_PROGRAM_STAGES.map(({ label, urlValue }) => (
             <option key={urlValue} value={urlValue}>
@@ -117,7 +117,7 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
       </label>
       <label {...props(styles.field)}>
         <span {...props(styles.label)}>Sort programs</span>
-        <select defaultValue={sortValue} name="sort">
+        <select defaultValue={sortValue} key={sortValue} name="sort">
           {CJ_PROGRAM_SORTS.map(({ label, urlValue }) => (
             <option key={urlValue} value={urlValue}>
               {label}
