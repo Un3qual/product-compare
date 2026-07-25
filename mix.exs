@@ -10,7 +10,7 @@ defmodule ProductCompare.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      test_coverage: [summary: [threshold: 69]],
+      test_coverage: [summary: [threshold: 82]],
       dialyzer: [plt_add_apps: [:mix, :ex_unit]],
       listeners: [Phoenix.CodeReloader]
     ]
