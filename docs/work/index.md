@@ -1768,9 +1768,78 @@ inventing filler or reopening deferred scope. With their completion, the queue
 has no ready implementation rows and requires a new product or quality
 direction.
 
+On 2026-07-25, the user selected the CJ program lifecycle as the next product
+direction after clarifying that one page must let an operator place any
+advertiser program directly in any lifecycle stage. A fresh audit found this
+to be one coherent cross-stack outcome rather than separate database, API, and
+frontend batches, and found no two additional source-backed outcomes that
+could truthfully restore the reserve floor. The user explicitly approved a
+one-time waiver for this batch. The validator remains unchanged, so its exact
+zero-ready-row failure is recorded as waived while every other CI component
+remains mandatory.
+
 ## Active Work
 
-None. The post-decomposition quality program is complete.
+### 1. CJ Program Lifecycle
+
+Status: active
+Lane: Product data scraping
+Plan:
+`docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
+Design:
+`docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
+Batch outcome: one operator-only **CJ programs** page owns the lifecycle for
+each source-scoped advertiser program, allows direct movement among New,
+Considering, Selected, Applied, Accepted, Not pursuing, and Declined, groups
+its feeds, and keeps unmatched feeds visible without retaining parallel
+feed-level review state.
+Next action: implement the eight internal slices serially with task-scoped
+review after each slice.
+Owned paths:
+
+- Every production, test, generated, migration, runbook, architecture, work,
+  and plan path named under Tasks 1-8 of the linked implementation plan.
+- Coordinator-owned paths explicitly included for this outcome:
+  `docs/work/index.md`, `docs/work/product-data-scraping.md`,
+  `docs/plans/INDEX.md`, and `ARCHITECTURE.md`.
+
+Internal slices:
+
+- Durable program schema and legacy backfill.
+- Program lifecycle and discovery linking.
+- Program queries, counts, warnings, and feed pages.
+- Stage-based candidate reports.
+- Program-based imports and readiness.
+- Operator-only GraphQL API.
+- Relay queries, URL state, and loader.
+- Unified React page, route replacement, durable docs, and final verification.
+
+Prerequisites:
+
+- The user approved the lifecycle vocabulary, direct any-stage movement, one
+  program per trimmed advertiser ID within a source, and one unified page.
+- The user explicitly approved a one-time exception to the three-ready reserve
+  rule for this batch after the coordinator found no truthful reserve rows.
+- No eBay fallback, Tier-3 scraping, application submission, live CJ request,
+  credential storage, provider payload exposure, or CSV export is included.
+
+Verification:
+
+- Task-focused backend and frontend tests from the linked plan.
+- `mix format --check-formatted`
+- `mix typecheck`
+- `mix quality`
+- `mix test --cover`
+- `mix frontend_check`
+- `git diff --check`
+- `mix work_queue.validate` and `mix ci` must fail only with
+  `Ready Work requires at least 3 complete rows; found 0` while this explicit
+  waiver is active; any other failure is blocking.
+
+Exit condition: program lifecycle is durable and authoritative across
+discovery, reports, imports, readiness, GraphQL, and the React page; legacy
+feed review state and UI are gone; all non-waived verification passes; review
+findings are resolved; and the queue is advanced truthfully without filler.
 
 ## Completed 2026-07-23 Backend Decomposition Work
 
@@ -2062,9 +2131,10 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-Dispatch is paused under the user-approved one-time reserve-floor waiver. The
-successor audit and required coordinator decision are recorded under
-`Needs Decision Work`.
+Dispatch proceeds with the active CJ Program Lifecycle batch under the user's
+explicit 2026-07-25 one-time reserve-floor waiver. Database, API, frontend,
+deferred, and speculative slices are not represented as independent reserve
+rows.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
@@ -2451,27 +2521,10 @@ another row.
 
 ## Needs Decision Work
 
-### Post-Quality Program Direction
-
-Status: needs_decision
-
-Decision needed: select a concrete product outcome or authorize a new
-quality/reliability objective backed by fresh diagnostic evidence.
-
-Current evidence:
-
-- Strict Credo enforcement, coverage-contract hardening, and Logger-level test
-  isolation are complete.
-- A fresh successor audit found no additional independently shippable,
-  source-backed candidate after the decomposition stop boundary.
-- eBay fallback and ingestion dashboard/operator work remain deferred by
-  product decision.
-- CJ candidate CSV export remains rejected.
-
-Exit condition: a product decision or fresh diagnostic validates at least one
-coherent implementation outcome; the coordinator then promotes every useful,
-non-overlapping candidate and restores the ready floor before ordinary
-dispatch resumes.
+None. The prior Post-Quality Program Direction decision was resolved on
+2026-07-25 when the user selected and approved the CJ Program Lifecycle
+outcome. eBay fallback, Tier-3 scraping, application submission, and CJ
+candidate CSV export remain outside this decision.
 
 ## Blocked Work
 

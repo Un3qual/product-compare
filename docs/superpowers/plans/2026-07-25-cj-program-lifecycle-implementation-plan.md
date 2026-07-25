@@ -62,22 +62,27 @@ ExUnit, Vitest, and Testing Library.
 
 ## Dispatch Prerequisite
 
-The live queue currently has no `ready` implementation rows. This plan
-validates one coherent outcome and does not manufacture database, GraphQL, and
-frontend micro-batches to satisfy the reserve floor.
+The live queue has no `ready` implementation rows. This plan validates one
+coherent outcome and does not manufacture database, GraphQL, and frontend
+micro-batches to satisfy the reserve floor.
 
-Before Task 1 starts, the coordinator must do one of the following in
-`docs/work/index.md`:
+On 2026-07-25, the user selected this product direction and explicitly approved
+a one-time waiver of the three-ready reserve rule for this batch. The
+coordinator records the complete CJ outcome as `active`, links this plan, owns
+every path named below (including the coordinator docs), and treats the tasks
+as internal slices.
 
-1. promote this outcome plus at least two other independently shippable,
-   source-backed outcomes; or
-2. record the user's explicit waiver of the three-ready reserve rule for this
-   batch.
+The waiver does not weaken `ProductCompare.WorkQueue.Validator`. While this
+batch is active, `mix work_queue.validate` and therefore aggregate `mix ci`
+are expected to fail only with:
 
-The resulting CJ row must link this plan, own every path named below (including
-the coordinator docs), list the tasks as internal slices, and pass
-`mix work_queue.validate`. No production task starts while the row remains
-`needs_decision`.
+```text
+Ready Work requires at least 3 complete rows; found 0
+```
+
+Every other CI component must pass directly. Any different queue-validation
+failure or any failure in formatting, types, quality, tests, frontend checks,
+or diff hygiene remains a blocker.
 
 ---
 
@@ -1216,7 +1221,7 @@ bun run relay:check
 
 Expected: PASS.
 
-- [ ] **Step 8: Update durable docs and run the aggregate gate**
+- [ ] **Step 8: Update durable docs and run the verification gates**
 
 Update `ARCHITECTURE.md` with the program/feed ownership boundary. Record the
 batch implementation and exact verification in
@@ -1228,13 +1233,20 @@ Run:
 ```bash
 mix format --check-formatted
 mix typecheck
+mix quality
 mix test test/product_compare/repo/migrations/add_cj_program_lifecycle_test.exs test/product_compare/ingestion/cj_programs_test.exs test/product_compare/ingestion/cj_program_warnings_test.exs test/product_compare/ingestion/cj_candidate_freshness_test.exs test/product_compare/ingestion/cj_candidate_market_coverage_test.exs test/mix/tasks/product_compare_ingestion_cj_candidates_test.exs test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/mix/tasks/product_compare_ingestion_cj_readiness_gate_test.exs test/product_compare_web/graphql/cj_program_queries_test.exs test/product_compare_web/graphql/global_id_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs
+mix test --cover
+mix frontend_check
+mix work_queue.validate
 mix ci
 git diff --check
 ```
 
-Expected: every command exits 0; schema and Relay snapshots are current; the
-queue validator reflects the approved reserve decision.
+Expected: formatting, types, quality, focused tests, full coverage, frontend
+checks, and diff hygiene exit 0; schema and Relay snapshots are current.
+`mix work_queue.validate` and `mix ci` fail only with the exact approved
+zero-ready-row message above. The final evidence records both the passing
+component gates and that narrow waived failure.
 
 - [ ] **Step 9: Run an anti-slop diff review**
 

@@ -2,15 +2,16 @@
 
 ## Snapshot
 
-- Status: done (CJ scheduled-readiness contract)
+- Status: active (CJ program lifecycle)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed during coordinator close-out.
-- Last verified: 2026-07-11 against effective scheduler configuration and the
-  focused CJ readiness suite.
-- Last documentation refresh: 2026-07-10 after scheduled-readiness verification
-- Last plan refresh: 2026-07-02 after moving the CJ read-model and weekly
-  operator runbook plans to completed status
+- Live queue row: `CJ Program Lifecycle` in `docs/work/index.md`.
+- Last verified: 2026-07-25 baseline queue check; the only failure is the
+  explicitly waived zero-ready-row reserve count.
+- Last documentation refresh: 2026-07-25 after the user approved the unified
+  CJ programs page and one-time reserve-floor waiver.
+- Last plan refresh: 2026-07-25 for the CJ program lifecycle design and
+  implementation plan.
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
@@ -18,7 +19,9 @@
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
 - Active implementation plans:
-  - None.
+  - `docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
+  - Design:
+    `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
 - Recently completed implementation plans:
   - `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
@@ -65,7 +68,34 @@
   - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
 - Objective:
-  - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched through approved provider surfaces, and how it lands in existing Catalog/Pricing models.
+  - Replace feed-by-feed CJ review with one operator-only page where every
+    source-scoped advertiser program can be placed directly in any lifecycle
+    stage, while keeping feeds as observed facts and unmatched feeds visible.
+
+## Active Batch
+
+- Status: active
+- Batch: CJ Program Lifecycle
+- Decision:
+  - One page at `/ingestion/cj-programs` manages every program stage; the old
+    `/ingestion/feed-candidates` path redirects there.
+  - Stages are New, Considering, Selected, Applied, Accepted, Not pursuing,
+    and Declined, with direct movement between any two stages.
+  - A program groups feeds by one trimmed advertiser ID within one source and
+    owns the only durable stage, note, and change time.
+  - The previous broad ingestion-dashboard deferral is reversed only for this
+    concrete page. eBay fallback, live application submission, Tier-3
+    scraping, credential storage, raw provider data, and CSV export remain
+    excluded.
+- Queue exception:
+  - The user explicitly approved a one-time three-ready-reserve waiver on
+    2026-07-25 after a fresh audit found no two additional coherent outcomes.
+  - The validator remains unchanged. Its exact zero-ready-row failure is the
+    only waived gate; formatting, types, quality, coverage, frontend checks,
+    focused tests, reviews, and diff hygiene remain required.
+- Internal slices:
+  - Schema/backfill; lifecycle/discovery; queries/warnings; reports;
+    imports/readiness; GraphQL; Relay loading; unified React page and closeout.
 
 ## Research Summary
 
