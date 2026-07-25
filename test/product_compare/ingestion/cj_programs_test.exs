@@ -8,7 +8,15 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @stages ~w(new considering selected applied accepted not_pursuing declined)
+  @direct_stage_pairs [
+    {"declined", "new"},
+    {"accepted", "considering"},
+    {"not_pursuing", "selected"},
+    {"declined", "applied"},
+    {"not_pursuing", "accepted"},
+    {"accepted", "not_pursuing"},
+    {"applied", "declined"}
+  ]
 
   test "two CJ feeds with one trimmed advertiser ID share one program" do
     source = source_fixture()
@@ -123,13 +131,14 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
   test "every allowed stage can be selected directly" do
     source = source_fixture()
-    program = cj_program_fixture(source)
 
-    for stage <- @stages do
-      assert {:ok, %CJProgram{stage: ^stage}} =
+    for {current_stage, target_stage} <- @direct_stage_pairs do
+      program = source |> cj_program_fixture() |> persist_stage(current_stage)
+
+      assert {:ok, %CJProgram{stage: ^target_stage}} =
                CJPrograms.update_lifecycle(
                  program.entropy_id,
-                 %{stage: stage, note: "Decision for #{stage}"},
+                 %{stage: target_stage, note: "Decision for #{target_stage}"},
                  ~U[2026-07-25 15:00:00.000000Z]
                )
     end
@@ -190,5 +199,15 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
              })
 
     assert is_nil(Repo.get_by(CJProgram, source_id: source.id, advertiser_id: "adv-rolled-back"))
+  end
+
+  defp persist_stage(program, stage) do
+    program
+    |> CJProgram.lifecycle_changeset(%{
+      stage: stage,
+      note: "Existing decision for #{stage}",
+      changed_at: ~U[2026-07-25 13:00:00.000000Z]
+    })
+    |> Repo.update!()
   end
 end
