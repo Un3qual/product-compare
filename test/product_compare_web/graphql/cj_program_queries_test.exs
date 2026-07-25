@@ -179,6 +179,95 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       assert alpha.entropy_id != bravo.entropy_id
     end
 
+    test "cjProgram decorates its singular result with factual warning codes", %{conn: conn} do
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "singular-warning",
+          nil,
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z],
+          advertiser_country: nil,
+          currency: nil,
+          language: nil,
+          product_count: nil
+        )
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn(conn), cj_program_warnings_query(), %{
+            "id" => relay_id(:cj_program, program.entropy_id)
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "cjProgram" => %{
+                   "warningCodes" => [
+                     "MISSING_ADVERTISER_NAME",
+                     "MISSING_PRODUCT_COUNT",
+                     "NON_US_MARKET",
+                     "NON_USD_CURRENCY",
+                     "NON_ENGLISH_LANGUAGE"
+                   ]
+                 }
+               }
+             } = response
+
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 1
+    end
+
+    test "updateCjProgram decorates its mutation payload with factual warning codes", %{
+      conn: conn
+    } do
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "mutation-warning",
+          nil,
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z],
+          advertiser_country: nil,
+          currency: nil,
+          language: nil,
+          product_count: nil
+        )
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn(conn), update_cj_program_warnings_mutation(), %{
+            "input" => %{
+              "id" => relay_id(:cj_program, program.entropy_id),
+              "stage" => "APPLIED"
+            }
+          })
+        end)
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => %{
+                     "stage" => "APPLIED",
+                     "warningCodes" => [
+                       "MISSING_ADVERTISER_NAME",
+                       "MISSING_PRODUCT_COUNT",
+                       "NON_US_MARKET",
+                       "NON_USD_CURRENCY",
+                       "NON_ENGLISH_LANGUAGE"
+                     ]
+                   },
+                   "errors" => []
+                 }
+               }
+             } = response
+
+      assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 1
+    end
+
     test "cjProgram feeds and unmatchedCjFeeds expose bounded safe feed facts", %{conn: conn} do
       source = source_fixture()
 
@@ -486,6 +575,14 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
     """
   end
 
+  defp cj_program_warnings_query do
+    """
+    query CJProgramWarnings($id: ID!) {
+      cjProgram(id: $id) { warningCodes }
+    }
+    """
+  end
+
   defp cj_program_and_unmatched_query do
     """
     query CJProgramFeeds($id: ID!) {
@@ -507,6 +604,17 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
     mutation UpdateCjProgram($input: UpdateCjProgramInput!) {
       updateCjProgram(input: $input) {
         program { id stage note }
+        errors { code message field }
+      }
+    }
+    """
+  end
+
+  defp update_cj_program_warnings_mutation do
+    """
+    mutation UpdateCjProgramWarnings($input: UpdateCjProgramInput!) {
+      updateCjProgram(input: $input) {
+        program { stage warningCodes }
         errors { code message field }
       }
     }

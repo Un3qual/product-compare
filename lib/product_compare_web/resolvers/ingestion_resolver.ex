@@ -33,7 +33,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   def cj_program(_parent, %{id: id}, resolution) do
     with {:ok, _operator} <- Authorization.require_operator(resolution),
          {:ok, entropy_id} <- decode_program_id(id) do
-      {:ok, Ingestion.get_cj_program_by_entropy_id(entropy_id)}
+      {:ok, entropy_id |> Ingestion.get_cj_program_by_entropy_id() |> decorate_warning_codes()}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
         {:error, GraphQLErrors.authorization_error(reason)}
@@ -83,7 +83,7 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
          {:ok, entropy_id} <- decode_program_id(Input.fetch_value(input, :id)),
          {:ok, program} <-
            Ingestion.update_cj_program_lifecycle(entropy_id, lifecycle_attrs(input)) do
-      {:ok, %{program: program, errors: []}}
+      {:ok, %{program: decorate_warning_codes(program), errors: []}}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
         {:ok, program_error_payload(GraphQLErrors.authorization_mutation_error(reason))}
@@ -122,6 +122,17 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
         end)
       end)
     end)
+  end
+
+  defp decorate_warning_codes(nil), do: nil
+
+  defp decorate_warning_codes(program) do
+    warning_codes =
+      [program.id]
+      |> Ingestion.cj_program_warnings()
+      |> Map.get(program.id, [])
+
+    Map.put(program, :warning_codes, warning_codes)
   end
 
   defp decode_program_id(value) when is_binary(value) do
