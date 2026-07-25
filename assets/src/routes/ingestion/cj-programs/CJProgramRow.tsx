@@ -7,6 +7,7 @@ import {
   useQueryLoader,
   type PreloadedQuery
 } from "react-relay";
+import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import cjProgramFeedsQuery, {
   type CJProgramFeedsQuery
 } from "../../../__generated__/CJProgramFeedsQuery.graphql";
@@ -142,6 +143,8 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const [note, setNote] = useState(program.note ?? "");
   const [feedback, setFeedback] = useState("");
   const [isFeedsOpen, setIsFeedsOpen] = useState(false);
+  const [feedAfter, setFeedAfter] = useState<string | null>(null);
+  const [feedRetryToken, setFeedRetryToken] = useState(0);
   const hasLoadedFeeds = useRef(false);
   const revalidator = useRevalidator();
   const [commitUpdate, isUpdateInFlight] = useMutation<UpdateCJProgramMutation>(
@@ -157,6 +160,19 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const lastChanged = formatCJProgramLastChanged(program.lastChanged);
 
   useEffect(() => disposeFeedQuery, [disposeFeedQuery]);
+
+  const loadFeedPage = (after: string | null) => {
+    setFeedAfter(after);
+    loadFeedQuery(
+      { id: program.id, first: 10, after },
+      { fetchPolicy: "store-or-network" }
+    );
+  };
+
+  const retryFeedPage = () => {
+    setFeedRetryToken((token) => token + 1);
+    loadFeedPage(feedAfter);
+  };
 
   const handleSave = () => {
     if (!stage) {
@@ -252,10 +268,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
 
           if (open && !hasLoadedFeeds.current) {
             hasLoadedFeeds.current = true;
-            loadFeedQuery(
-              { id: program.id, first: 10, after: null },
-              { fetchPolicy: "store-or-network" }
-            );
+            loadFeedPage(null);
           }
         }}
         open={isFeedsOpen}
@@ -267,22 +280,39 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
         </CollapsibleTrigger>
         <CollapsibleContent {...props(styles.feedDetails)}>
           {feedQueryRef ? (
-            <Suspense fallback={<p>Loading feed details...</p>}>
-              <CJProgramFeeds
-                onPage={(after) =>
-                  loadFeedQuery(
-                    { id: program.id, first: 10, after },
-                    { fetchPolicy: "store-or-network" }
-                  )
-                }
-                programName={programName}
-                queryRef={feedQueryRef}
-              />
-            </Suspense>
+            <ResettableErrorBoundary
+              fallback={<CJProgramFeedUnavailable onRetry={retryFeedPage} programName={programName} />}
+              resetToken={feedRetryToken}
+            >
+              <Suspense fallback={<p>Loading feed details...</p>}>
+                <CJProgramFeeds
+                  onPage={loadFeedPage}
+                  programName={programName}
+                  queryRef={feedQueryRef}
+                />
+              </Suspense>
+            </ResettableErrorBoundary>
           ) : null}
         </CollapsibleContent>
       </Collapsible>
     </li>
+  );
+}
+
+function CJProgramFeedUnavailable({
+  onRetry,
+  programName
+}: {
+  onRetry: () => void;
+  programName: string;
+}) {
+  return (
+    <div role="alert">
+      <p>Feeds unavailable.</p>
+      <Button aria-label={`Retry feeds for ${programName}`} onClick={onRetry} type="button" variant="soft">
+        Retry feeds
+      </Button>
+    </div>
   );
 }
 

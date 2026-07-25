@@ -313,6 +313,47 @@ test("CJ program feed details wait for the first expansion before loading", () =
   );
 });
 
+test("a failed CJ program feed query stays in its row and retries only that row", () => {
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  mockedUseQueryLoader.mockReturnValue([FEED_QUERY_REF, loadFeedQueryMock, disposeFeedQueryMock] as never);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce(buildCJProgramsData())
+    .mockImplementation(() => {
+      throw new Error("CJ program feed query failed");
+    });
+
+  try {
+    renderCJProgramsRoute();
+    fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
+
+    expect(rowFor("New Merchant").getByRole("alert")).toHaveTextContent(
+      "Feeds unavailable."
+    );
+    expect(
+      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" })
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
+    expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
+    fireEvent.change(screen.getByLabelText("Stage for Considering Merchant"), {
+      target: { value: "ACCEPTED" }
+    });
+    expect(screen.getByLabelText("Stage for Considering Merchant")).toHaveValue("ACCEPTED");
+
+    fireEvent.click(
+      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" })
+    );
+
+    expect(loadFeedQueryMock).toHaveBeenNthCalledWith(
+      2,
+      { id: "program-1", first: 10, after: null },
+      expect.anything()
+    );
+  } finally {
+    consoleError.mockRestore();
+  }
+});
+
 test("expanded CJ program rows render bounded feed facts and replace only their feed page", () => {
   mockedUseQueryLoader.mockReturnValue([FEED_QUERY_REF, loadFeedQueryMock, disposeFeedQueryMock] as never);
   mockedUsePreloadedQuery
