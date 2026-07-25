@@ -89,17 +89,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "fetches, normalizes, and persists one redacted CJ product record" do
       original_level = Logger.level()
-      Logger.configure(level: :debug)
+      Logger.put_process_level(self(), :debug)
 
       on_exit(fn ->
-        Logger.configure(level: original_level)
+        Logger.delete_process_level(self())
       end)
 
       parent = self()
 
       fetcher = fn cursor, opts ->
         send(parent, {:fetch, cursor, opts})
-        send(parent, {:logger_level, Logger.level()})
+        send(parent, {:logger_level, Logger.get_process_level(self())})
         {:ok, product_validation_fixture(), nil}
       end
 
@@ -118,7 +118,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert_receive {:logger_level, :debug}
       assert opts[:keywords] == ["shoe"]
       assert opts[:limit] == 1
-      assert Logger.level() == :debug
+      assert Logger.level() == original_level
 
       assert output =~ "fetched=1 normalized=1 persisted=1 failed=0"
 

@@ -13,16 +13,16 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
   describe "run/1" do
     test "does not change the current Logger level while fetching feeds" do
       original_level = Logger.level()
-      Logger.configure(level: :debug)
+      Logger.put_process_level(self(), :debug)
 
       on_exit(fn ->
-        Logger.configure(level: original_level)
+        Logger.delete_process_level(self())
       end)
 
       parent = self()
 
       fetcher = fn _cursor, _opts ->
-        send(parent, {:logger_level, Logger.level()})
+        send(parent, {:logger_level, Logger.get_process_level(self())})
 
         {:ok, [], nil}
       end
@@ -33,6 +33,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
       end)
 
       assert_receive {:logger_level, :debug}
+      assert Logger.level() == original_level
     end
 
     test "fetches CJ shopping product feeds and records run counts" do
