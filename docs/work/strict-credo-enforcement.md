@@ -16,11 +16,11 @@ The normal repository Credo gate enforces strict readability checks and the two
 test-support modules explain repository-specific contracts instead of
 narrating their names.
 
-## Ready Evidence
+## Baseline Evidence
 
-- Non-strict Credo passes.
-- Strict Credo reports exactly two narrator-documentation findings in ConnCase
-  and DataCase.
+- Non-strict Credo passed.
+- Strict Credo reported exactly two narrator-documentation findings in
+  ConnCase and DataCase.
 
 ## Verification
 
@@ -29,10 +29,11 @@ narrating their names.
 - `mix quality` — passed: Credo reported no issues; ExDNA remained within its
   3/3 clone budget; Cross-Function Smell Detection reported no issues; and
   Dialyzer reported 0 errors, 0 skipped, and 0 unnecessary skips.
-- `mix ci` — passed: queue validation reported 3 ready rows; Credo reported no
-  issues; quality checks passed; 931 backend tests and 1,507 frontend tests
-  passed; frontend Relay validation, TypeScript, builds, and bundle contract
-  passed.
+- The pre-waiver `mix ci` run passed: queue validation reported 3 ready rows;
+  Credo reported no issues; quality checks passed; 931 backend tests and 1,507
+  frontend tests passed; frontend Relay validation, TypeScript, builds, and
+  the bundle contract passed. That run preceded final reserve-floor waiver
+  reconciliation.
 - `git diff --check` — passed.
 
 ## Completion Evidence

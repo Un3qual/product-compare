@@ -93,12 +93,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
       fetcher = fn cursor, opts ->
         send(parent, {:fetch, cursor, opts})
-        send(parent, {:logger_level, Logger.get_process_level(self())})
+
+        send(
+          parent,
+          {:logger_levels, Logger.level(), Logger.get_process_level(self())}
+        )
+
         {:ok, product_validation_fixture(), nil}
       end
 
       try do
         Logger.put_process_level(self(), :debug)
+        assert Logger.level() == original_level
 
         output =
           capture_io(fn ->
@@ -112,7 +118,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
           end)
 
         assert_receive {:fetch, nil, opts}
-        assert_receive {:logger_level, :debug}
+        assert_receive {:logger_levels, ^original_level, :debug}
         assert opts[:keywords] == ["shoe"]
         assert opts[:limit] == 1
         assert Logger.level() == original_level

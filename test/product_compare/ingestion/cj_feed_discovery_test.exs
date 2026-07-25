@@ -16,20 +16,24 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
       parent = self()
 
       fetcher = fn _cursor, _opts ->
-        send(parent, {:logger_level, Logger.get_process_level(self())})
+        send(
+          parent,
+          {:logger_levels, Logger.level(), Logger.get_process_level(self())}
+        )
 
         {:ok, [], nil}
       end
 
       try do
         Logger.put_process_level(self(), :debug)
+        assert Logger.level() == original_level
 
         capture_log(fn ->
           assert {:ok, %{candidates_persisted: 0, failed: 0, feeds_fetched: 0, pages_fetched: 1}} =
                    CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
         end)
 
-        assert_receive {:logger_level, :debug}
+        assert_receive {:logger_levels, ^original_level, :debug}
         assert Logger.level() == original_level
         assert Logger.get_process_level(self()) == :debug
       after

@@ -13,20 +13,21 @@
 ## Target Outcome
 
 The backend coverage gate enforces an 82% floor and directly exercises the two
-currently uncovered first-party Mix entry points.
+first-party Mix entry points that previously lacked direct coverage.
 
-## Ready Evidence
+## Baseline Evidence
 
-- Fresh baseline and post-ratchet coverage are both 84.05%; the configured
-  floor is now 82%.
+- Before hardening, full baseline coverage was 83.74% while the configured
+  floor was 69%.
 - `Mix.Tasks.WorkQueue.Validate` and
-  `Mix.Tasks.ProductAttributeClaims.ValidateBackfill` now report 75.00% and
-  90.91% direct coverage, respectively.
+  `Mix.Tasks.ProductAttributeClaims.ValidateBackfill` reported 0% direct
+  coverage despite tested underlying workflows.
 
 ## Verification
 
 - `mix test --cover` — 931 tests, 0 failures; 84.05% total coverage.
-- `mix ci` — backend static analysis, Dialyzer, coverage, Relay/type/unit,
-  client/SSR builds, and bundle contract passed. No standalone catalog
-  EXPLAIN-plan failure occurred.
+- The pre-waiver `mix ci` run passed backend static analysis, Dialyzer,
+  coverage, Relay/type/unit, client/SSR builds, and the bundle contract. No
+  standalone catalog EXPLAIN-plan failure occurred. That run preceded final
+  reserve-floor waiver reconciliation.
 - `git diff --check`

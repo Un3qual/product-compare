@@ -7,10 +7,13 @@ defmodule Mix.Tasks.WorkQueue.ValidateTest do
 
   @tag :tmp_dir
   test "reports the ready-row count for a complete temporary queue", %{tmp_dir: tmp_dir} do
+    project_root = Path.expand("../../..", __DIR__)
     queue_path = Path.join(tmp_dir, "queue.md")
     File.write!(queue_path, queue_fixture())
 
-    assert capture_io(fn -> run_task([queue_path]) end) == "work queue valid: 3 ready rows\n"
+    assert File.cd!(Path.join(project_root, "lib"), fn ->
+             capture_io(fn -> run_task([queue_path]) end)
+           end) == "work queue valid: 3 ready rows\n"
   end
 
   test "rejects more than one queue path" do
