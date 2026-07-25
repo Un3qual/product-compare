@@ -1,7 +1,7 @@
 defmodule ProductCompareWeb.ConnCase do
   @moduledoc """
   Connection tests receive an isolated SQL sandbox and a fresh Phoenix connection
-  so HTTP behavior starts from the same state as production. The included helpers
+  so they begin from a known clean test state. The included helpers
   model the repository's session, API-token, and same-origin authentication contracts
   without duplicating setup in each test.
   """
