@@ -56,11 +56,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   defp normalize_report(report) when is_binary(report), do: Mix.raise("invalid report: #{report}")
   defp normalize_report(_report), do: Mix.raise("invalid report")
 
-  defp normalize_stage(stage, _report) when is_binary(stage) do
+  defp normalize_stage(stage, report) when is_binary(stage) do
     stage = stage |> String.trim() |> String.downcase()
 
     if stage in @allowed_stages do
-      stage
+      normalize_stage_for_report(stage, report)
     else
       Mix.raise("invalid program stage: #{stage}")
     end
@@ -69,6 +69,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   defp normalize_stage(_stage, "fit-gaps"), do: "new"
   defp normalize_stage(_stage, "application-cohort"), do: "selected"
   defp normalize_stage(_stage, _report), do: "all"
+
+  defp normalize_stage_for_report(_stage, "application-cohort"), do: "selected"
+  defp normalize_stage_for_report(stage, _report), do: stage
 
   defp normalize_format(nil), do: @default_format
   defp normalize_format(format) when format in ~w(lines markdown), do: format

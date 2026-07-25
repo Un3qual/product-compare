@@ -25,6 +25,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
         Options.normalize(stage: "paused")
       end
     end
+
+    test "forces application cohort options to the selected program stage" do
+      opts = Options.normalize(report: "application-cohort", stage: "new")
+
+      assert opts[:stage] == "selected"
+    end
   end
 
   describe "run/1" do
