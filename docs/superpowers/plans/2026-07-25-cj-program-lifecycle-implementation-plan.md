@@ -1108,6 +1108,8 @@ git commit -m "feat: load paginated CJ program data"
   `assets/src/routes/ingestion/cj-programs/CJProgramRow.tsx`
 - Create:
   `assets/test/routes/ingestion/cj-programs/cj-programs.route.test.tsx`
+- Modify: `assets/src/react-relay.d.ts`
+- Modify: `assets/scripts/check-client-bundle.ts`
 - Modify: `assets/src/router.tsx`
 - Modify: `assets/test/router.test.tsx`
 - Modify: `assets/src/routes/root-destination-data.ts`
@@ -1297,6 +1299,6 @@ Verify:
 - [ ] **Step 10: Commit the completed cross-stack outcome**
 
 ```bash
-git add assets/src/router.tsx assets/test/router.test.tsx assets/src/routes/root-destination-data.ts assets/src/routes/ingestion/cj-programs assets/src/routes/ingestion/feed-candidates assets/test/routes/root-destination-data.test.ts assets/test/routes/root.route.test.tsx assets/test/routes/ingestion/cj-programs assets/test/routes/ingestion/feed-candidates ARCHITECTURE.md docs/work/index.md docs/work/product-data-scraping.md docs/plans/INDEX.md
+git add assets/src/react-relay.d.ts assets/scripts/check-client-bundle.ts assets/src/router.tsx assets/test/router.test.tsx assets/src/routes/root-destination-data.ts assets/src/routes/ingestion/cj-programs assets/src/routes/ingestion/feed-candidates assets/test/routes/root-destination-data.test.ts assets/test/routes/root.route.test.tsx assets/test/routes/ingestion/cj-programs assets/test/routes/ingestion/feed-candidates ARCHITECTURE.md docs/work/index.md docs/work/product-data-scraping.md docs/plans/INDEX.md
 git commit -m "feat: add unified CJ programs workspace"
 ```
