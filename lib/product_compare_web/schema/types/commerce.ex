@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
   alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Resolvers.AffiliateResolver
+  alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareWeb.Resolvers.SeoResolver
 
@@ -99,9 +100,9 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     field :after, :string
   end
 
-  input_object :review_merchant_feed_candidate_input do
+  input_object :update_cj_program_input do
     field :id, non_null(:id)
-    field :status, non_null(:merchant_feed_candidate_review_status)
+    field :stage, non_null(:cj_program_stage)
     field :note, :string
   end
 
@@ -267,8 +268,8 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     value(:other)
   end
 
-  object :review_merchant_feed_candidate_payload do
-    field :candidate, :merchant_feed_candidate
+  object :update_cj_program_payload do
+    field :program, :cj_program
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
@@ -319,6 +320,73 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     field :node, non_null(:merchant)
   end
 
+  enum :cj_program_stage, name: "CJProgramStage" do
+    value(:new, as: "new")
+    value(:considering, as: "considering")
+    value(:selected, as: "selected")
+    value(:applied, as: "applied")
+    value(:accepted, as: "accepted")
+    value(:not_pursuing, as: "not_pursuing")
+    value(:declined, as: "declined")
+  end
+
+  enum :cj_program_sort, name: "CJProgramSort" do
+    value(:name_asc, as: :name_asc)
+    value(:last_changed_desc, as: :last_changed_desc)
+    value(:feed_count_desc, as: :feed_count_desc)
+  end
+
+  enum :cj_program_warning_code, name: "CJProgramWarningCode" do
+    value(:missing_advertiser_name, as: "missing_advertiser_name")
+    value(:missing_product_count, as: "missing_product_count")
+    value(:non_us_market, as: "non_us_market")
+    value(:non_usd_currency, as: "non_usd_currency")
+    value(:non_english_language, as: "non_english_language")
+  end
+
+  object :cj_program, name: "CJProgram" do
+    field :id, non_null(:id) do
+      resolve(fn program, _, _ -> GlobalId.encode_required(:cj_program, program.entropy_id) end)
+    end
+
+    field :advertiser_id, non_null(:string)
+    field :advertiser_name, :string
+    field :stage, non_null(:cj_program_stage)
+    field :note, :string
+
+    field :last_changed, non_null(:datetime),
+      resolve: fn program, _, _ -> {:ok, program.changed_at} end
+
+    field :feed_count, :integer
+    field :warning_codes, non_null(list_of(non_null(:cj_program_warning_code)))
+
+    field :feeds, non_null(:merchant_feed_candidate_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+      resolve(&IngestionResolver.cj_program_feeds/3)
+    end
+  end
+
+  object :cj_program_stage_counts, name: "CJProgramStageCounts" do
+    field :new, non_null(:integer)
+    field :considering, non_null(:integer)
+    field :selected, non_null(:integer)
+    field :applied, non_null(:integer)
+    field :accepted, non_null(:integer)
+    field :not_pursuing, non_null(:integer)
+    field :declined, non_null(:integer)
+  end
+
+  object :cj_program_connection, name: "CJProgramConnection" do
+    field :edges, non_null(list_of(non_null(:cj_program_edge)))
+    field :page_info, non_null(:page_info)
+  end
+
+  object :cj_program_edge, name: "CJProgramEdge" do
+    field :cursor, non_null(:string)
+    field :node, non_null(:cj_program)
+  end
+
   object :merchant_feed_candidate do
     field :id, non_null(:id) do
       resolve(fn candidate, _, _ ->
@@ -338,9 +406,6 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
     field :product_count, :integer
     field :provider_last_updated_at, :datetime
     field :last_seen_at, non_null(:datetime)
-    field :review_status, non_null(:merchant_feed_candidate_review_status)
-    field :review_note, :string
-    field :reviewed_at, :datetime
   end
 
   object :merchant_feed_candidate_connection do
@@ -351,19 +416,6 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
   object :merchant_feed_candidate_edge do
     field :cursor, non_null(:string)
     field :node, non_null(:merchant_feed_candidate)
-  end
-
-  enum :merchant_feed_candidate_review_status do
-    value(:pending, as: "pending")
-    value(:shortlisted, as: "shortlisted")
-    value(:dismissed, as: "dismissed")
-  end
-
-  enum :merchant_feed_candidate_sort do
-    value(:name_asc, as: :name_asc)
-    value(:product_count_desc, as: :product_count_desc)
-    value(:last_seen_desc, as: :last_seen_desc)
-    value(:fit_score_desc, as: :fit_score_desc)
   end
 
   object :merchant_product do

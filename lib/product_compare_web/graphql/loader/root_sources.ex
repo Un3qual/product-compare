@@ -9,7 +9,6 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     CommerceAttribution,
     ComparisonSnapshots,
     Discussions,
-    Ingestion,
     Pricing,
     Specs
   }
@@ -241,14 +240,14 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   end
 
   defp authorized_connection_batch(
-         {:operator, kind, operator_id, :operator, filters, connection_args},
+         {:operator, :specification_correction_moderation_queue, operator_id, :operator, filters,
+          connection_args},
          requests
        )
-       when kind in [:specification_correction_moderation_queue, :merchant_feed_candidates] and
-              is_integer(operator_id) and operator_id > 0 and is_map(filters) and
+       when is_integer(operator_id) and operator_id > 0 and is_map(filters) and
               is_map(connection_args) do
     result =
-      kind
+      :specification_correction_moderation_queue
       |> authorized_operator_connection_query(filters)
       |> Connection.from_query_result(connection_args, Repo)
 
@@ -281,13 +280,6 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   defp authorized_operator_connection_query(:specification_correction_moderation_queue, filters) do
     Specs.list_correction_moderation_query(status: Map.fetch!(filters, :status))
-  end
-
-  defp authorized_operator_connection_query(:merchant_feed_candidates, filters) do
-    Ingestion.list_merchant_feed_candidates_query(
-      review_status: Map.fetch!(filters, :review_status),
-      sort: Map.fetch!(filters, :sort)
-    )
   end
 
   defp project_lookup_results(items, values) do

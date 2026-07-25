@@ -10,7 +10,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Catalog,
     ComparisonSnapshots,
     Discussions,
-    Ingestion,
     Pricing,
     Specs
   }
@@ -29,7 +28,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @category_tables ~w(taxons products)a
   @comparison_root_tables ~w(products product_attribute_current merchant_products price_points)a
   @owner_management_collections ~w(specification_corrections price_watches alert_events api_tokens saved_comparison_sets comparison_snapshots)a
-  @operator_management_collections ~w(specification_correction_moderation_queue merchant_feed_candidates)a
+  @operator_management_collections ~w(specification_correction_moderation_queue)a
   @public_opaque_tables ~w(source_artifacts sources product_threads thread_posts comparison_snapshots)a
   @authorized_node_tables ~w(affiliate_networks affiliate_programs affiliate_links coupons saved_comparison_sets api_tokens saved_comparison_items products)a
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
@@ -1987,14 +1986,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   defp operator_management_field(:specification_correction_moderation_queue),
     do: "specificationCorrectionModerationQueue(first: 1, status: PENDING)"
 
-  defp operator_management_field(:merchant_feed_candidates),
-    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
-
   defp operator_management_node_selection(:specification_correction_moderation_queue),
     do: "id productId attributeId status valueText moderationNote"
-
-  defp operator_management_node_selection(:merchant_feed_candidates),
-    do: "id providerFeedId advertiserName productCount reviewStatus reviewNote"
 
   defp operator_management_mixed_key_query(collection) do
     selections =
@@ -2047,19 +2040,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
          :alternate_sort
        ),
        do: nil
-
-  defp operator_management_mixed_key_field(:merchant_feed_candidates, :same),
-    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
-
-  defp operator_management_mixed_key_field(:merchant_feed_candidates, :next_page),
-    do:
-      "merchantFeedCandidates(first: 1, after: \"#{cursor_for(0)}\", reviewStatus: SHORTLISTED, sort: PRODUCT_COUNT_DESC)"
-
-  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_filter),
-    do: "merchantFeedCandidates(first: 1, reviewStatus: PENDING, sort: PRODUCT_COUNT_DESC)"
-
-  defp operator_management_mixed_key_field(:merchant_feed_candidates, :alternate_sort),
-    do: "merchantFeedCandidates(first: 1, reviewStatus: SHORTLISTED, sort: NAME_ASC)"
 
   defp operator_management_invalid_connection_query(collection, invalid_kind) do
     field = operator_management_field_with_invalid_connection(collection, invalid_kind)
@@ -2174,18 +2154,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
          :invalid_cursor
        ),
        do: "specificationCorrectionModerationQueue(first: 1, after: \"not-a-cursor\")"
-
-  defp operator_management_field_with_invalid_connection(
-         :merchant_feed_candidates,
-         :invalid_first
-       ),
-       do: "merchantFeedCandidates(first: -1, reviewStatus: SHORTLISTED)"
-
-  defp operator_management_field_with_invalid_connection(
-         :merchant_feed_candidates,
-         :invalid_cursor
-       ),
-       do: "merchantFeedCandidates(first: 1, after: \"not-a-cursor\")"
 
   defp authorized_node_batch_query(records) do
     selections =
@@ -2960,7 +2928,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     table =
       case collection do
         :specification_correction_moderation_queue -> :specification_corrections
-        :merchant_feed_candidates -> :merchant_feed_candidates
       end
 
     Enum.count(queries, &query_targets_table?(&1, table))
@@ -2979,7 +2946,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   end
 
   defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
-  defp operator_management_mixed_key_budget(:merchant_feed_candidates), do: 4
 
   defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
     assert %{"data" => data} = response
@@ -3225,17 +3191,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     assert %{"errors" => errors} = response
     assert Enum.all?(errors, &(get_in(&1, ["extensions", "code"]) == code))
 
-    case collection do
-      :specification_correction_moderation_queue ->
-        assert [%{"path" => [alias_name]}] = errors
-        assert MapSet.member?(alias_names, alias_name)
-        assert Map.get(response, "data") in [nil, %{}]
-
-      :merchant_feed_candidates ->
-        assert length(errors) == alias_count
-        assert MapSet.new(errors, &get_in(&1, ["path", Access.at(0)])) == alias_names
-        assert response["data"] == Map.new(alias_names, &{&1, nil})
-    end
+    assert [%{"path" => [alias_name]}] = errors
+    assert MapSet.member?(alias_names, alias_name)
+    assert Map.get(response, "data") in [nil, %{}]
   end
 
   defp assert_comparison_root_values(response, records) do
@@ -4948,32 +4906,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     }
   end
 
-  defp operator_management_mixed_key_records(:merchant_feed_candidates, operator, prefix) do
-    _expected = operator_management_records(:merchant_feed_candidates, operator, prefix)
-
-    [first, second] =
-      [review_status: "shortlisted", sort: :product_count_desc]
-      |> Ingestion.list_merchant_feed_candidates_query()
-      |> Repo.all()
-
-    [alternate] =
-      [review_status: "pending", sort: :product_count_desc]
-      |> Ingestion.list_merchant_feed_candidates_query()
-      |> Repo.all()
-
-    [alternate_sort | _] =
-      [review_status: "shortlisted", sort: :name_asc]
-      |> Ingestion.list_merchant_feed_candidates_query()
-      |> Repo.all()
-
-    %{
-      first: relay_id(:merchant_feed_candidate, first.id),
-      second: relay_id(:merchant_feed_candidate, second.id),
-      alternate: relay_id(:merchant_feed_candidate, alternate.id),
-      alternate_sort: relay_id(:merchant_feed_candidate, alternate_sort.id)
-    }
-  end
-
   defp operator_management_records(:specification_correction_moderation_queue, operator, prefix) do
     owner = AccountsFixtures.user_fixture()
 
@@ -4990,47 +4922,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       "status" => "PENDING",
       "valueText" => "First pending value",
       "moderationNote" => nil
-    }
-  end
-
-  defp operator_management_records(:merchant_feed_candidates, _operator, prefix) do
-    source =
-      %Source{}
-      |> Source.changeset(%{
-        kind: "affiliate_feed",
-        name: "#{prefix} Feed",
-        domain: "#{prefix}.example.com"
-      })
-      |> Repo.insert!()
-
-    _excluded =
-      merchant_feed_candidate_record(source, "#{prefix}-excluded", %{
-        advertiser_name: "Excluded pending candidate",
-        product_count: 500,
-        review_status: "pending"
-      })
-
-    first =
-      merchant_feed_candidate_record(source, "#{prefix}-first", %{
-        advertiser_name: "Zulu shortlisted candidate",
-        product_count: 200,
-        review_status: "shortlisted"
-      })
-
-    _second =
-      merchant_feed_candidate_record(source, "#{prefix}-second", %{
-        advertiser_name: "Alpha shortlisted candidate",
-        product_count: 100,
-        review_status: "shortlisted"
-      })
-
-    %{
-      "id" => relay_id(:merchant_feed_candidate, first.id),
-      "providerFeedId" => "#{prefix}-first",
-      "advertiserName" => "Zulu shortlisted candidate",
-      "productCount" => 200,
-      "reviewStatus" => "SHORTLISTED",
-      "reviewNote" => nil
     }
   end
 
@@ -5057,30 +4948,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       )
 
     correction
-  end
-
-  defp merchant_feed_candidate_record(source, provider_feed_id, attrs) do
-    defaults = %{
-      advertiser_country: "US",
-      advertiser_id: provider_feed_id,
-      advertiser_name: provider_feed_id,
-      currency: "USD",
-      feed_name: provider_feed_id,
-      language: "EN",
-      last_seen_at: ~U[2026-07-21 12:00:00Z],
-      product_count: 1,
-      provider: "cj",
-      provider_feed_id: provider_feed_id,
-      provider_last_updated_at: ~U[2026-07-21 12:00:00Z],
-      raw_metadata: %{},
-      review_status: "pending",
-      source_feed_type: "SHOPPING"
-    }
-
-    {:ok, candidate} =
-      Ingestion.upsert_merchant_feed_candidate(source, Map.merge(defaults, attrs))
-
-    candidate
   end
 
   defp canonical_slug(value) do
