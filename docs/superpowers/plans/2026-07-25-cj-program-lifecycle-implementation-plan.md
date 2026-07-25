@@ -799,6 +799,7 @@ git commit -m "feat: operate CJ imports from program stages"
 - Modify: `test/product_compare_web/graphql/global_id_test.exs`
 - Modify: `test/product_compare_web/graphql/dataloader_batching_test.exs`
 - Modify: `test/product_compare_web/graphql/schema_snapshot_test.exs`
+- Modify: `test/product_compare/ingestion/ingestion_test.exs`
 - Delete:
   `test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs`
 
@@ -936,8 +937,14 @@ mix test test/product_compare_web/graphql/cj_program_queries_test.exs test/produ
 
 Expected: PASS.
 
+The first required full-suite convergence run exposed one obsolete fit-score
+ranking test in `ingestion_test.exs` that Task 3's FitScore-removal file list
+omitted. Remove only that stale test here; do not change ingestion behavior or
+add score compatibility. This cleanup is necessary for Task 6's mandatory
+aggregate-green gate.
+
 ```bash
-git add lib/product_compare_web/graphql/global_id.ex lib/product_compare_web/graphql/loader/root_sources.ex lib/product_compare_web/resolvers/ingestion_resolver.ex lib/product_compare_web/schema/types/commerce.ex lib/product_compare_web/schema.ex assets/schema.graphql test/product_compare_web/graphql/cj_program_queries_test.exs test/product_compare_web/graphql/global_id_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs
+git add lib/product_compare_web/graphql/global_id.ex lib/product_compare_web/graphql/loader/root_sources.ex lib/product_compare_web/resolvers/ingestion_resolver.ex lib/product_compare_web/schema/types/commerce.ex lib/product_compare_web/schema.ex assets/schema.graphql test/product_compare_web/graphql/cj_program_queries_test.exs test/product_compare_web/graphql/global_id_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs test/product_compare_web/graphql/merchant_feed_candidate_queries_test.exs test/product_compare/ingestion/ingestion_test.exs
 git commit -m "feat: expose operator CJ program lifecycle"
 ```
 
