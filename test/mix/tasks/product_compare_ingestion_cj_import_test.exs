@@ -89,12 +89,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "fetches, normalizes, and persists one redacted CJ product record" do
       original_level = Logger.level()
-      Logger.put_process_level(self(), :debug)
-
-      on_exit(fn ->
-        Logger.delete_process_level(self())
-      end)
-
       parent = self()
 
       fetcher = fn cursor, opts ->
@@ -103,24 +97,30 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
         {:ok, product_validation_fixture(), nil}
       end
 
-      output =
-        capture_io(fn ->
-          assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
-                   CjImport.run_import(
-                     complete_scope: true,
-                     fetcher: fetcher,
-                     keywords: ["shoe"],
-                     limit: 1
-                   )
-        end)
+      try do
+        Logger.put_process_level(self(), :debug)
 
-      assert_receive {:fetch, nil, opts}
-      assert_receive {:logger_level, :debug}
-      assert opts[:keywords] == ["shoe"]
-      assert opts[:limit] == 1
-      assert Logger.level() == original_level
+        output =
+          capture_io(fn ->
+            assert {:ok, %{failed: 0, fetched: 1, normalized: 1, persisted: 1}} =
+                     CjImport.run_import(
+                       complete_scope: true,
+                       fetcher: fetcher,
+                       keywords: ["shoe"],
+                       limit: 1
+                     )
+          end)
 
-      assert output =~ "fetched=1 normalized=1 persisted=1 failed=0"
+        assert_receive {:fetch, nil, opts}
+        assert_receive {:logger_level, :debug}
+        assert opts[:keywords] == ["shoe"]
+        assert opts[:limit] == 1
+        assert Logger.level() == original_level
+        assert Logger.get_process_level(self()) == :debug
+        assert output =~ "fetched=1 normalized=1 persisted=1 failed=0"
+      after
+        Logger.delete_process_level(self())
+      end
 
       assert %Source{id: source_id, kind: "affiliate_feed", name: "CJ", domain: "cj.com"} =
                Repo.get_by(Source, name: "CJ", domain: "cj.com")
