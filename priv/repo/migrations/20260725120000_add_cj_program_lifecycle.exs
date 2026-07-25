@@ -11,16 +11,18 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
       IF EXISTS (
         SELECT 1
         FROM #{feeds}
-        WHERE provider = 'cj'
-          AND NULLIF(BTRIM(advertiser_id), '') IS NULL
+        WHERE (
+          review_status <> 'pending'
+          OR NULLIF(BTRIM(review_note), '') IS NOT NULL
+          OR reviewed_at IS NOT NULL
+        )
           AND (
-            review_status <> 'pending'
-            OR NULLIF(BTRIM(review_note), '') IS NOT NULL
-            OR reviewed_at IS NOT NULL
+            provider IS DISTINCT FROM 'cj'
+            OR NULLIF(BTRIM(advertiser_id), '') IS NULL
           )
       ) THEN
         RAISE EXCEPTION
-          'cannot migrate reviewed CJ feeds without advertiser IDs';
+          'cannot migrate feed review state without a CJ program identity';
       END IF;
     END
     $$;

@@ -235,8 +235,15 @@ defmodule ProductCompare.Ingestion.CJPrograms do
     do: {:error, changeset}
 
   defp persist_lifecycle_update(%Ecto.Changeset{changes: changes}, program, _now)
-       when map_size(changes) == 0,
-       do: {:ok, program}
+       when map_size(changes) == 0 do
+    CJProgram
+    |> where([current], current.id == ^program.id and current.changed_at == ^program.changed_at)
+    |> Repo.update_all(set: [changed_at: program.changed_at])
+    |> case do
+      {1, _rows} -> {:ok, program}
+      {0, _rows} -> {:error, :stale}
+    end
+  end
 
   defp persist_lifecycle_update(changeset, _program, now) do
     changeset

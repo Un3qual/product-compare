@@ -1,9 +1,10 @@
 defmodule ProductCompare.Ingestion.CJProgramsTest do
-  use ProductCompare.DataCase, async: true
+  use ProductCompare.DataCase, async: false
 
-  import Ecto.Query, only: [limit: 2]
+  import Ecto.Query, only: [from: 2, limit: 2]
 
   import ProductCompare.Fixtures.CJIngestionFixtures
+  import ProductCompare.DatabaseTestHelpers, only: [assert_blocked_by: 2]
 
   alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.CJPrograms
@@ -190,6 +191,91 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
     assert %CJProgram{stage: "applied", changed_at: ^first_change_at} =
              Repo.get!(CJProgram, program.id)
+  end
+
+  test "an unchanged save conflicts when the row changes after its initial read" do
+    parent = self()
+    concurrent_change_at = ~U[2026-07-25 17:55:00.000000Z]
+
+    {source_id, program} =
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        source =
+          source_fixture(%{
+            name: "Concurrent lifecycle source",
+            domain: "concurrent-lifecycle-#{System.unique_integer([:positive])}.example"
+          })
+
+        {source.id, cj_program_fixture(source)}
+      end)
+
+    on_exit(fn ->
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.query!("DELETE FROM sources WHERE id = $1", [source_id])
+      end)
+    end)
+
+    lock_holder =
+      Task.async(fn ->
+        Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+          Repo.transaction(fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+
+            Repo.one!(
+              from locked_program in CJProgram,
+                where: locked_program.id == ^program.id,
+                lock: "FOR UPDATE"
+            )
+            |> Ecto.Changeset.change(stage: "applied", changed_at: concurrent_change_at)
+            |> Repo.update!()
+
+            send(parent, {:lifecycle_change_held, backend_pid})
+
+            receive do
+              :commit_lifecycle_change -> :ok
+            after
+              5_000 -> flunk("timed out waiting to commit the concurrent lifecycle change")
+            end
+          end)
+        end)
+      end)
+
+    assert_receive {:lifecycle_change_held, lock_backend_pid}
+
+    unchanged_save =
+      Task.async(fn ->
+        Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+          Repo.transaction(fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+            send(parent, {:unchanged_save_started, backend_pid})
+
+            CJPrograms.update_lifecycle(
+              program.entropy_id,
+              %{
+                stage: program.stage,
+                note: program.note,
+                expected_changed_at: program.changed_at
+              },
+              ~U[2026-07-25 18:00:00.000000Z]
+            )
+          end)
+        end)
+      end)
+
+    assert_receive {:unchanged_save_started, unchanged_save_backend_pid}
+
+    try do
+      assert_blocked_by(unchanged_save_backend_pid, lock_backend_pid)
+    after
+      send(lock_holder.pid, :commit_lifecycle_change)
+    end
+
+    assert {:ok, :ok} = Task.await(lock_holder)
+    assert {:ok, {:error, :stale}} = Task.await(unchanged_save)
+
+    assert %CJProgram{stage: "applied", changed_at: ^concurrent_change_at} =
+             Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+               Repo.get!(CJProgram, program.id)
+             end)
   end
 
   test "invalid stages and missing entropy IDs make no change" do

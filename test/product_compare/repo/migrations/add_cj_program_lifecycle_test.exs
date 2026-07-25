@@ -130,7 +130,21 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
         reviewed_at: ~U[2026-07-25 15:00:00.000000Z]
       })
 
-      assert_raise Postgrex.Error, ~r/reviewed CJ feeds without advertiser IDs/, fn ->
+      assert_raise Postgrex.Error, ~r/feed review state without a CJ program identity/, fn ->
+        migrate_up(prefix)
+      end
+    end)
+  end
+
+  test "up refuses to discard reviewed non-CJ feed state" do
+    with_legacy_schema(fn prefix ->
+      MigrationRepo.query!("""
+      INSERT INTO "#{prefix}"."merchant_feed_candidates"
+        (source_id, provider, advertiser_id, review_status, review_note, reviewed_at)
+      VALUES (1, 'impact', 'impact-advertiser', 'shortlisted', 'Keep this review', now())
+      """)
+
+      assert_raise Postgrex.Error, ~r/feed review state without a CJ program identity/, fn ->
         migrate_up(prefix)
       end
     end)
