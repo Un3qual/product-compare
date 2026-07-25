@@ -4,6 +4,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
   import Ecto.Query
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -19,7 +20,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
     end
 
     [
-      "provider=#{@provider} report=stale max_age_hours=#{Keyword.fetch!(opts, :max_age_hours)} stale_count=#{length(candidates)} status=#{Keyword.fetch!(opts, :status)}"
+      "provider=#{@provider} report=stale max_age_hours=#{Keyword.fetch!(opts, :max_age_hours)} stale_count=#{length(candidates)} stage=#{Keyword.fetch!(opts, :stage)} include_unmatched=#{Keyword.fetch!(opts, :include_unmatched)}"
       | Enum.map(candidates, &render_candidate/1)
     ]
     |> Enum.join("\n")
@@ -32,10 +33,29 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
       DateTime.utc_now()
       |> DateTime.add(-Keyword.fetch!(opts, :max_age_hours) * 60 * 60, :second)
 
-    MerchantFeedCandidate
-    |> where([candidate], candidate.provider == @provider)
+    linked_candidates =
+      opts
+      |> linked_stale_candidates(cutoff)
+      |> Repo.all()
+
+    unmatched_candidates =
+      if Keyword.fetch!(opts, :include_unmatched) do
+        cutoff
+        |> unmatched_stale_candidates(Keyword.fetch!(opts, :limit))
+        |> Repo.all()
+      else
+        []
+      end
+
+    (linked_candidates ++ unmatched_candidates)
+    |> Enum.sort_by(&candidate_sort_key/1)
+    |> Enum.take(Keyword.fetch!(opts, :limit))
+  end
+
+  defp linked_stale_candidates(opts, cutoff) do
+    CJPrograms.list_feeds_query(stage: Keyword.fetch!(opts, :stage))
     |> where([candidate], candidate.last_seen_at < ^cutoff)
-    |> maybe_filter_status(Keyword.fetch!(opts, :status))
+    |> exclude(:order_by)
     |> order_by([candidate],
       asc: candidate.last_seen_at,
       asc: candidate.advertiser_name,
@@ -43,13 +63,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
       asc: candidate.id
     )
     |> limit(^Keyword.fetch!(opts, :limit))
-    |> Repo.all()
   end
 
-  defp maybe_filter_status(query, "all"), do: query
-
-  defp maybe_filter_status(query, status),
-    do: where(query, [candidate], candidate.review_status == ^status)
+  defp unmatched_stale_candidates(cutoff, limit) do
+    CJPrograms.list_unmatched_feeds_query()
+    |> where([candidate], candidate.last_seen_at < ^cutoff)
+    |> exclude(:order_by)
+    |> order_by([candidate],
+      asc: candidate.last_seen_at,
+      asc: candidate.advertiser_name,
+      asc: candidate.feed_name,
+      asc: candidate.id
+    )
+    |> limit(^limit)
+  end
 
   defp render_candidate(%MerchantFeedCandidate{} = candidate) do
     {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, candidate.id)
@@ -59,7 +86,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
       {:provider_feed_id, candidate.provider_feed_id},
       {:advertiser_id, candidate.advertiser_id},
       {:advertiser_name, candidate.advertiser_name},
-      {:review_status, candidate.review_status},
       {:product_count, candidate.product_count},
       {:last_seen_at, candidate.last_seen_at},
       {:age_hours, age_hours(candidate.last_seen_at)}
@@ -69,5 +95,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.StaleReport do
 
   defp age_hours(%DateTime{} = timestamp) do
     DateTime.diff(DateTime.utc_now(), timestamp, :second) |> div(3600)
+  end
+
+  defp candidate_sort_key(candidate) do
+    {
+      DateTime.to_unix(candidate.last_seen_at, :microsecond),
+      candidate.advertiser_name || "",
+      candidate.feed_name || "",
+      candidate.id
+    }
   end
 end

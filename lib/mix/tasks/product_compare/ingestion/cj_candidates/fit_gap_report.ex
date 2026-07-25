@@ -5,7 +5,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Output
-  alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -21,7 +21,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
     summary = [
       "provider=#{@provider}",
       "report=fit-gaps",
-      "status=#{Keyword.fetch!(opts, :status)}",
+      "stage=#{Keyword.fetch!(opts, :stage)}",
       "candidate_count=#{length(candidates)}",
       "country_not_us=#{counts.country_not_us}",
       "currency_not_usd=#{counts.currency_not_usd}",
@@ -41,20 +41,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
   end
 
   defp candidates(opts) do
-    status = Keyword.fetch!(opts, :status)
-
-    query =
-      if status == "all" do
-        Ingestion.list_merchant_feed_candidates_query(sort: :fit_score_desc)
-      else
-        Ingestion.list_merchant_feed_candidates_query(
-          review_status: status,
-          sort: :fit_score_desc
-        )
-      end
-
-    query
-    |> where([candidate], candidate.provider == @provider)
+    CJPrograms.list_feeds_query(stage: Keyword.fetch!(opts, :stage))
     |> limit(^Keyword.fetch!(opts, :limit))
     |> Repo.all()
   end
@@ -112,7 +99,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.FitGapReport do
       {:provider_feed_id, candidate.provider_feed_id},
       {:advertiser_id, candidate.advertiser_id},
       {:advertiser_name, candidate.advertiser_name},
-      {:review_status, candidate.review_status},
       {:product_count, candidate.product_count},
       {:gap_count, length(gaps)},
       {:gaps, Enum.map_join(gaps, ",", &Atom.to_string/1)}
