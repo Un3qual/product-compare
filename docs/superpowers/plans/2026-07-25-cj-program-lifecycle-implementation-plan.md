@@ -967,6 +967,10 @@ git commit -m "feat: expose operator CJ program lifecycle"
 - Create:
   `assets/test/routes/ingestion/cj-programs/cj-programs-loader.test.ts`
 - Delete:
+  `assets/src/routes/ingestion/feed-candidates/queries/MerchantFeedCandidatesRouteQuery.ts`
+- Delete:
+  `assets/src/routes/ingestion/feed-candidates/mutations/ReviewMerchantFeedCandidateMutation.ts`
+- Delete:
   `assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts`
 - Delete:
   `assets/src/__generated__/ReviewMerchantFeedCandidateMutation.graphql.ts`
@@ -1079,10 +1083,16 @@ bun x vitest run test/routes/ingestion/cj-programs/cj-program-data.test.ts test/
 
 Expected: PASS and the old generated candidate artifacts are gone.
 
+Relay compilation cannot ignore source documents that reference schema types
+removed in Task 6. Delete the two obsolete feed-candidate query/mutation source
+documents in this task together with their generated artifacts. Routing,
+components, tests, navigation, and remaining old-route files stay owned by
+Task 8.
+
 - [ ] **Step 7: Commit the Relay and loader milestone**
 
 ```bash
-git add assets/src/routes/ingestion/cj-programs assets/test/routes/ingestion/cj-programs assets/src/__generated__/CJProgramsRouteQuery.graphql.ts assets/src/__generated__/CJProgramFeedsQuery.graphql.ts assets/src/__generated__/UpdateCJProgramMutation.graphql.ts assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts assets/src/__generated__/ReviewMerchantFeedCandidateMutation.graphql.ts
+git add assets/src/routes/ingestion/cj-programs assets/test/routes/ingestion/cj-programs assets/src/routes/ingestion/feed-candidates/queries/MerchantFeedCandidatesRouteQuery.ts assets/src/routes/ingestion/feed-candidates/mutations/ReviewMerchantFeedCandidateMutation.ts assets/src/__generated__/CJProgramsRouteQuery.graphql.ts assets/src/__generated__/CJProgramFeedsQuery.graphql.ts assets/src/__generated__/UpdateCJProgramMutation.graphql.ts assets/src/__generated__/MerchantFeedCandidatesRouteQuery.graphql.ts assets/src/__generated__/ReviewMerchantFeedCandidateMutation.graphql.ts
 git commit -m "feat: load paginated CJ program data"
 ```
 
@@ -1111,10 +1121,6 @@ git commit -m "feat: load paginated CJ program data"
   `assets/src/routes/ingestion/feed-candidates/feed-candidate-review-mutation-data.ts`
 - Delete: `assets/src/routes/ingestion/feed-candidates/loader.ts`
 - Delete: `assets/src/routes/ingestion/feed-candidates/pagination.ts`
-- Delete:
-  `assets/src/routes/ingestion/feed-candidates/queries/MerchantFeedCandidatesRouteQuery.ts`
-- Delete:
-  `assets/src/routes/ingestion/feed-candidates/mutations/ReviewMerchantFeedCandidateMutation.ts`
 - Delete:
   `assets/test/routes/ingestion/feed-candidates/feed-candidate-review-data.test.ts`
 - Delete:
