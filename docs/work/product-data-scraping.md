@@ -2,23 +2,29 @@
 
 ## Snapshot
 
-- Status: done (CJ scheduled-readiness contract)
+- Status: complete (CJ program lifecycle)
 - Priority: P2
 - Source of truth: this file
-- Live queue row: completed and removed during coordinator close-out.
-- Last verified: 2026-07-11 against effective scheduler configuration and the
-  focused CJ readiness suite.
-- Last documentation refresh: 2026-07-10 after scheduled-readiness verification
-- Last plan refresh: 2026-07-02 after moving the CJ read-model and weekly
-  operator runbook plans to completed status
+- Live queue row: none; the completed lifecycle batch is recorded in
+  `docs/work/index.md` and the next dispatch requires a new product or quality
+  decision.
+- Last verified: 2026-07-25 CJ program lifecycle completion matrix. The only
+  permitted non-green result is the explicitly waived zero-ready-row reserve
+  count from `mix work_queue.validate` and `mix ci`.
+- Last documentation refresh: 2026-07-25 after unified CJ programs completion
+  and queue closeout.
+- Last plan refresh: 2026-07-25 for the CJ program lifecycle design and
+  implementation plan.
 - Historical context:
   - `docs/decisions/2026-03-05-mvp-scope-freeze.md`
   - `docs/decisions/2026-03-05-graphql-contract-posture-and-async-boundaries.md`
   - `docs/implementation-checklist.md`
 - Detailed plan:
   - `docs/plans/2026-03-23-product-data-sourcing-and-scraping-plan.md`
-- Active implementation plans:
-  - None.
+- Completed implementation plans:
+  - `docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
+  - Design:
+    `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
 - Recently completed implementation plans:
   - `docs/plans/2026-07-10-cj-scheduled-readiness-implementation-plan.md`
   - `docs/plans/2026-06-27-cj-merchant-identity-quality-read-model-implementation-plan.md`
@@ -65,7 +71,53 @@
   - `docs/plans/2026-06-01-live-cj-provider-validation-and-source-onboarding-implementation-plan.md`
   - `docs/plans/2026-05-23-product-data-ingestion-foundation-implementation-plan.md`
 - Objective:
-  - Re-activate deferred ingestion work with a source-first plan that specifies where product data comes from, how it is fetched through approved provider surfaces, and how it lands in existing Catalog/Pricing models.
+  - Replace feed-by-feed CJ review with one operator-only page where every
+    source-scoped advertiser program can be placed directly in any lifecycle
+    stage, while keeping feeds as observed facts and unmatched feeds visible.
+
+## CJ Program Lifecycle Completion Evidence
+
+- Status: complete on 2026-07-25
+- Batch: CJ Program Lifecycle
+- Decision:
+  - One page at `/ingestion/cj-programs` manages every program stage; the old
+    `/ingestion/feed-candidates` path redirects there.
+  - Stages are New, Considering, Selected, Applied, Accepted, Not pursuing,
+    and Declined, with direct movement between any two stages.
+  - A program groups feeds by one trimmed advertiser ID within one source and
+    owns the only durable stage, note, and change time.
+  - The previous broad ingestion-dashboard deferral is reversed only for this
+    concrete page. eBay fallback, live application submission, Tier-3
+    scraping, credential storage, raw provider data, and CSV export remain
+    excluded.
+- Queue exception:
+  - The user explicitly approved a one-time three-ready-reserve waiver on
+    2026-07-25 after a fresh audit found no two additional coherent outcomes.
+  - The validator remains unchanged. Its exact zero-ready-row failure is the
+    only waived gate; formatting, types, quality, coverage, frontend checks,
+    focused tests, reviews, and diff hygiene remain required.
+- Delivered:
+  - One canonical `/ingestion/cj-programs` operator workspace now owns durable
+    program stage and note updates, global lifecycle summary counts, bounded
+    row-local observed-feed inspection, and independently paged unmatched
+    feeds. The legacy `/ingestion/feed-candidates` route redirects to it.
+  - Program lifecycle state is authoritative across discovery, reports,
+    imports, readiness, GraphQL, Relay loading, and the React workspace;
+    discovery does not overwrite a program stage or note.
+  - Legacy feed-level review UI, helpers, and tests are removed. Historical
+    documentation remains as historical evidence only.
+- Verification:
+  - Task-focused backend and frontend tests, Relay validation, frontend
+    typecheck, backend formatting/types/quality/coverage, frontend check, and
+    diff hygiene are recorded in the Task 8 report.
+  - `mix test` over the twelve lifecycle, migration, import/readiness, and
+    GraphQL contract files passed 138 tests; `mix test --cover` passed;
+    `mix frontend_check` passed all 104 frontend files and 1,486 tests; and
+    the client bundle contract passed at 182,240 gzip bytes against its
+    unchanged 200,000-byte budget.
+  - The one-time 2026-07-25 reserve-floor waiver remains limited to the exact
+    `Ready Work requires at least 3 complete rows; found 0` result from queue
+    validation and aggregate CI. It does not waive another failure.
 
 ## Research Summary
 

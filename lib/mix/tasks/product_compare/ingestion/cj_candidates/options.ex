@@ -2,8 +2,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   @moduledoc false
 
   alias ProductCompare.MixTasks.CliOptions
+  alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @allowed_statuses ~w(pending shortlisted dismissed all)
+  @allowed_stages CJProgram.stages() ++ ["all"]
   @default_limit 25
   @max_limit 100
   @default_max_age_hours 168
@@ -14,7 +15,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   def parse_argv(argv) do
     CliOptions.parse!(argv,
       report: :string,
-      status: :string,
+      stage: :string,
+      include_unmatched: :boolean,
       limit: :integer,
       max_age_hours: :integer,
       require_fresh: :boolean,
@@ -33,7 +35,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
 
     [
       report: report,
-      status: normalize_status(Keyword.get(opts, :status), report),
+      stage: normalize_stage(Keyword.get(opts, :stage), report),
+      include_unmatched: Keyword.get(opts, :include_unmatched, false) == true,
       limit: normalize_limit(Keyword.get(opts, :limit)),
       max_age_hours: normalize_max_age_hours(Keyword.get(opts, :max_age_hours)),
       require_fresh: Keyword.get(opts, :require_fresh, false),
@@ -46,6 +49,14 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
     ]
   end
 
+  @spec query_stage(keyword()) :: String.t() | nil
+  def query_stage(opts) do
+    case Keyword.fetch!(opts, :stage) do
+      "all" -> nil
+      stage -> stage
+    end
+  end
+
   defp normalize_report(nil), do: @default_report
 
   defp normalize_report(report) when report in ~w(stale fit-gaps application-cohort export),
@@ -54,19 +65,22 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   defp normalize_report(report) when is_binary(report), do: Mix.raise("invalid report: #{report}")
   defp normalize_report(_report), do: Mix.raise("invalid report")
 
-  defp normalize_status(status, _report) when is_binary(status) do
-    status = status |> String.trim() |> String.downcase()
+  defp normalize_stage(stage, report) when is_binary(stage) do
+    stage = stage |> String.trim() |> String.downcase()
 
-    if status in @allowed_statuses do
-      status
+    if stage in @allowed_stages do
+      normalize_stage_for_report(stage, report)
     else
-      Mix.raise("invalid review status: #{status}")
+      Mix.raise("invalid program stage: #{stage}")
     end
   end
 
-  defp normalize_status(_status, "fit-gaps"), do: "pending"
-  defp normalize_status(_status, "application-cohort"), do: "shortlisted"
-  defp normalize_status(_status, _report), do: "all"
+  defp normalize_stage(_stage, "fit-gaps"), do: "new"
+  defp normalize_stage(_stage, "application-cohort"), do: "selected"
+  defp normalize_stage(_stage, _report), do: "all"
+
+  defp normalize_stage_for_report(_stage, "application-cohort"), do: "selected"
+  defp normalize_stage_for_report(stage, _report), do: stage
 
   defp normalize_format(nil), do: @default_format
   defp normalize_format(format) when format in ~w(lines markdown), do: format

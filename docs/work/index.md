@@ -1751,12 +1751,41 @@ global Logger level. Reach joined the active program, while strict Credo
 enforcement, coverage-contract hardening, and Logger-level test isolation were
 promoted as three non-overlapping ready reserves.
 
-## Active Work
+The three quality reserves completed on 2026-07-24. Ingestion logging-policy
+tests now use process-local Logger overrides and preserve caller policy, the
+backend coverage contract is 82% with direct Mix-task behavior coverage, and
+the normal Credo gate is strict with purposeful ConnCase and DataCase
+documentation. The final aggregate implementation gate passed 931 backend
+tests, 1,507 frontend tests, and every queue, quality, type, Relay, build, and
+bundle check while the three rows were still available to the validator.
 
-The user claimed all four post-decomposition quality outcomes for serial
-execution on the current detached worktree. Their complete contracts are
-listed under `Active Quality Program`. Three source-verified, non-overlapping
-reserve rows remain ready.
+Before execution, a fresh coordinator audit found no additional coherent,
+source-backed implementation candidates: the remaining catalog choices were
+deferred or rejected, and the completed decomposition program had reached its
+explicit stop boundary. The user explicitly approved a one-time waiver of the
+three-ready-reserve claim rule so these final three rows could execute without
+inventing filler or reopening deferred scope. With their completion, the queue
+has no ready implementation rows and requires a new product or quality
+direction.
+
+On 2026-07-25, the user selected the CJ program lifecycle as the next product
+direction after clarifying that one page must let an operator place any
+advertiser program directly in any lifecycle stage. A fresh audit found this
+to be one coherent cross-stack outcome rather than separate database, API, and
+frontend batches, and found no two additional source-backed outcomes that
+could truthfully restore the reserve floor. The user explicitly approved a
+one-time waiver for this batch.
+
+The CJ Program Lifecycle completed on 2026-07-25. Its canonical
+`/ingestion/cj-programs` workspace now owns durable program lifecycle updates,
+bounded observed-feed inspection, and unmatched-feed pagination; the legacy
+feed-candidate route redirects there. The previous feed-level review UI and
+state are no longer active. The validator remains unchanged, and its exact
+`Ready Work requires at least 3 complete rows; found 0` result is the sole
+waived outcome. The queue has no ready implementation rows: the next truthful
+dispatch boundary is a new product or quality decision, followed by fresh
+source-backed candidate validation. No deferred catalog item is promoted by
+this closeout.
 
 ## Completed 2026-07-23 Backend Decomposition Work
 
@@ -2048,116 +2077,10 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-### 15. Strict Credo Enforcement
-
-Status: ready
-Lane: Strict Credo enforcement
-Plan: `docs/superpowers/plans/2026-07-24-strict-credo-enforcement-implementation-plan.md`
-Batch outcome: the normal repository Credo gate enforces strict readability
-checks and the two test-support modules document repository-specific contracts
-instead of narrating their names.
-Next action: replace the two narrator docs and enable strict mode in the
-existing Credo configuration.
-Owned paths:
-
-- `.credo.exs`
-- `test/support/conn_case.ex`
-- `test/support/data_case.ex`
-- `docs/work/strict-credo-enforcement.md`
-
-Internal slices:
-
-- Purposeful ConnCase and DataCase documentation.
-- Strict Credo configuration and repository gate.
-
-Prerequisites:
-
-- Preserve all test-support runtime behavior and imports.
-- Keep the existing Credo and ExSlop check set.
-
-Verification:
-
-- `mix credo --all`
-- `mix quality`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: strict Credo reports zero findings through the normal quality
-alias and full CI passes.
-
-### 16. Coverage Contract Hardening
-
-Status: ready
-Lane: Coverage contract hardening
-Plan: `docs/superpowers/plans/2026-07-24-coverage-contract-hardening-implementation-plan.md`
-Batch outcome: the backend coverage gate enforces an 82% floor and directly
-exercises the two currently uncovered first-party Mix entry points.
-Next action: add behavior coverage for the queue and attribute-claim validation
-tasks, then ratchet the threshold after a fresh full report.
-Owned paths:
-
-- `mix.exs`
-- `test/mix/tasks/work_queue_validate_test.exs`
-- `test/mix/tasks/product_attribute_claims_validate_backfill_task_test.exs`
-- `docs/work/coverage-contract-hardening.md`
-
-Internal slices:
-
-- Work-queue task output and usage behavior.
-- Attribute-claim validation task dry-run and invalid-option behavior.
-- Coverage-floor enforcement.
-
-Prerequisites:
-
-- Preserve task text, errors, dry-run behavior, and database safety.
-- Do not use source-string assertions or exclude first-party modules.
-
-Verification:
-
-- New direct Mix-task suites.
-- `mix test --cover`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: both entry points have direct behavior coverage, total coverage
-remains above 82%, and the full repository gate enforces that floor.
-
-### 17. Logger-Level Test Isolation
-
-Status: ready
-Lane: Logger-level test isolation
-Plan: `docs/superpowers/plans/2026-07-24-logger-level-test-isolation-implementation-plan.md`
-Batch outcome: ingestion logging-policy tests use process-local Logger
-overrides and no longer leak a temporary global debug level into concurrent
-tests.
-Next action: replace global Logger configuration in the two affected tests
-with process-local setup and cleanup while preserving the logging-policy proof.
-Owned paths:
-
-- `test/mix/tasks/product_compare_ingestion_cj_import_test.exs`
-- `test/product_compare/ingestion/cj_feed_discovery_test.exs`
-- `docs/work/logger-level-test-isolation.md`
-
-Internal slices:
-
-- Import-task process-local Logger proof.
-- Feed-discovery process-local Logger proof.
-- Focused and aggregate output verification.
-
-Prerequisites:
-
-- Preserve production logging and warning assertions.
-- Keep the proof that ingestion functions do not alter caller logging policy.
-
-Verification:
-
-- `mix test test/mix/tasks/product_compare_ingestion_cj_import_test.exs test/product_compare/ingestion/cj_feed_discovery_test.exs`
-- `mix test`
-- `mix ci`
-- `git diff --check`
-
-Exit condition: the focused suites pass with process-local overrides, full
-tests no longer emit concurrent debug leakage from these cases, and CI passes.
+Ready-row count: 0. The CJ Program Lifecycle batch is complete. Fresh
+source-backed candidate validation requires a new product or quality decision.
+The validator remains unchanged under the approved one-time waiver:
+`Ready Work requires at least 3 complete rows; found 0`.
 
 ## Completed 2026-07-20 Cross-Stack Work
 
@@ -2544,7 +2467,10 @@ another row.
 
 ## Needs Decision Work
 
-None. Shopper decision confidence was selected on 2026-07-09.
+None. The prior Post-Quality Program Direction decision was resolved on
+2026-07-25 when the user selected and approved the CJ Program Lifecycle
+outcome. eBay fallback, Tier-3 scraping, application submission, and CJ
+candidate CSV export remain outside this decision.
 
 ## Blocked Work
 

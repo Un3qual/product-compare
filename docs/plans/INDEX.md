@@ -10,18 +10,27 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
+- `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
 
 ## Active Plan Catalog
 
-Start at `docs/work/index.md` for live dispatch status and ownership. The
-2026-06-29 usable-product batch, the product filtering and in-depth comparison
+Start at `docs/work/index.md` for live dispatch status and ownership. The CJ
+Program Lifecycle outcome from
+`docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
+completed under the user's explicit one-time 2026-07-25 reserve-floor waiver.
+It replaced per-feed review with one program-level lifecycle page. The queue
+now has no ready rows: the next dispatch requires a new product or quality
+decision, not a catalog candidate treated as active work. eBay fallback,
+application submission, Tier-3 scraping, and CSV export remain out of scope.
+
+The 2026-06-29 usable-product batch, the product filtering and in-depth comparison
 batch, the persistent compare tray follow-up, the CJ read-model plus weekly
 operator-runbook batch, and the 2026-07-03 product-facing follow-up batch
 completed. The 2026-07-08 product-facing curation batch and the full shopper
 decision-confidence batch are also complete.
 
 Shopper decision confidence was selected and completed on 2026-07-09. Deferred
-ingestion/eBay/operator candidates remain deferred or rejected.
+ingestion/eBay candidates remain deferred or rejected.
 
 The 2026-07-10 feature-complete product milestone is also complete. It covered
 shopper home and navigation, safe relative loaded-price comparison, saved-set
@@ -485,7 +494,7 @@ batch and should not be recreated or promoted.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
-| deferred | Ingestion dashboard and operator surfaces | Product decision reverses the 2026-07-08 dashboard deferral and chooses one concrete non-secret read-only contract. | Do not promote CJ read-model dashboard contracts, source-health dashboard slices, or ingestion operator dashboard surfaces while deferred. |
+| deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
 ## Planned Follow-Up Groups
 

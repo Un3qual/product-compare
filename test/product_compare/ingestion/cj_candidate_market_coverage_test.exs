@@ -1,295 +1,179 @@
 defmodule ProductCompare.Ingestion.CJCandidateMarketCoverageTest do
   use ProductCompare.DataCase, async: true
 
-  alias ProductCompare.Ingestion
+  import ProductCompare.Fixtures.CJIngestionFixtures
+
   alias ProductCompare.Ingestion.CJCandidateMarketCoverage
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Specs.Source
+  alias ProductCompareSchemas.Ingestion.CJProgram
 
   describe "summary/1" do
-    test "returns safe CJ-only coverage buckets" do
+    test "returns safe CJ feed counts by normalized market bucket, stage, and unmatched state" do
       source = source_fixture()
 
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: " US ",
-        currency: " usd ",
-        language: " en ",
-        provider_feed_id: "cj-us-pending",
-        review_status: "pending",
-        source_feed_type: " shopping "
-      })
+      _first_new_feed =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: " US ",
+          advertiser_id: "new-program",
+          currency: " usd ",
+          language: " en ",
+          provider_feed_id: "cj-us-new-first",
+          source_feed_type: " shopping "
+        })
 
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "US",
-        currency: "USD",
-        language: "EN",
-        provider_feed_id: "cj-us-shortlisted",
-        review_status: "shortlisted",
-        source_feed_type: "SHOPPING"
-      })
+      _second_new_feed =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: "US",
+          advertiser_id: "new-program",
+          currency: "USD",
+          language: "EN",
+          provider_feed_id: "cj-us-new-second",
+          source_feed_type: "SHOPPING"
+        })
 
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: " ca ",
-        currency: " cad ",
-        language: " fr ",
-        provider_feed_id: "cj-ca-pending",
-        review_status: "pending",
-        source_feed_type: " product "
-      })
+      selected_feed =
+        merchant_feed_candidate_fixture(source, %{
+          advertiser_country: " ca ",
+          advertiser_id: "selected-program",
+          currency: " cad ",
+          language: " fr ",
+          provider_feed_id: "cj-ca-selected",
+          source_feed_type: " product "
+        })
+
+      set_program_stage(selected_feed, "selected")
 
       merchant_feed_candidate_fixture(source, %{
         advertiser_country: nil,
+        advertiser_id: "   ",
         currency: "",
         language: "   ",
-        provider_feed_id: "cj-unknown-market",
-        review_status: "pending",
+        provider_feed_id: "cj-unknown-unmatched",
         source_feed_type: nil
       })
 
       merchant_feed_candidate_fixture(source, %{
         advertiser_country: "US",
-        currency: "USD",
-        language: "EN",
         provider: "awin",
-        provider_feed_id: "awin-us-shortlisted",
-        review_status: "shortlisted",
-        source_feed_type: "SHOPPING"
+        provider_feed_id: "awin-us"
       })
 
       assert %{
                provider: "cj",
-               review_status_filter: nil,
                total_candidate_count: 4,
-               shortlisted_candidate_count: 1,
+               stage_counts: %{
+                 new: 2,
+                 considering: 0,
+                 selected: 1,
+                 applied: 0,
+                 accepted: 0,
+                 not_pursuing: 0,
+                 declined: 0,
+                 unmatched: 1
+               },
                dimensions: %{
                  advertiser_country: [
-                   %{bucket: "US", candidate_count: 2, shortlisted_candidate_count: 1},
-                   %{bucket: "CA", candidate_count: 1, shortlisted_candidate_count: 0},
-                   %{bucket: "unknown", candidate_count: 1, shortlisted_candidate_count: 0}
+                   %{
+                     bucket: "US",
+                     candidate_count: 2,
+                     stage_counts: %{
+                       new: 2,
+                       considering: 0,
+                       selected: 0,
+                       applied: 0,
+                       accepted: 0,
+                       not_pursuing: 0,
+                       declined: 0,
+                       unmatched: 0
+                     }
+                   },
+                   %{
+                     bucket: "CA",
+                     candidate_count: 1,
+                     stage_counts: %{
+                       new: 0,
+                       considering: 0,
+                       selected: 1,
+                       applied: 0,
+                       accepted: 0,
+                       not_pursuing: 0,
+                       declined: 0,
+                       unmatched: 0
+                     }
+                   },
+                   %{
+                     bucket: "unknown",
+                     candidate_count: 1,
+                     stage_counts: %{
+                       new: 0,
+                       considering: 0,
+                       selected: 0,
+                       applied: 0,
+                       accepted: 0,
+                       not_pursuing: 0,
+                       declined: 0,
+                       unmatched: 1
+                     }
+                   }
                  ],
                  currency: [
-                   %{bucket: "USD", candidate_count: 2, shortlisted_candidate_count: 1},
-                   %{bucket: "CAD", candidate_count: 1, shortlisted_candidate_count: 0},
-                   %{bucket: "unknown", candidate_count: 1, shortlisted_candidate_count: 0}
+                   %{bucket: "USD", candidate_count: 2},
+                   %{bucket: "CAD", candidate_count: 1},
+                   %{bucket: "unknown", candidate_count: 1}
                  ],
                  language: [
-                   %{bucket: "EN", candidate_count: 2, shortlisted_candidate_count: 1},
-                   %{bucket: "FR", candidate_count: 1, shortlisted_candidate_count: 0},
-                   %{bucket: "unknown", candidate_count: 1, shortlisted_candidate_count: 0}
+                   %{bucket: "EN", candidate_count: 2},
+                   %{bucket: "FR", candidate_count: 1},
+                   %{bucket: "unknown", candidate_count: 1}
                  ],
                  source_feed_type: [
-                   %{bucket: "SHOPPING", candidate_count: 2, shortlisted_candidate_count: 1},
-                   %{bucket: "PRODUCT", candidate_count: 1, shortlisted_candidate_count: 0},
-                   %{bucket: "unknown", candidate_count: 1, shortlisted_candidate_count: 0}
+                   %{bucket: "SHOPPING", candidate_count: 2},
+                   %{bucket: "PRODUCT", candidate_count: 1},
+                   %{bucket: "unknown", candidate_count: 1}
                  ]
                }
-             } = summary = CJCandidateMarketCoverage.summary([])
+             } = summary = CJCandidateMarketCoverage.summary()
 
       assert_safe_summary(summary)
     end
-
-    test "applies supported review status filters" do
-      source = source_fixture()
-
-      merchant_feed_candidate_fixture(source)
-
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "CA",
-        provider_feed_id: "cj-shortlisted",
-        review_status: "shortlisted"
-      })
-
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "MX",
-        provider_feed_id: "cj-dismissed",
-        review_status: "dismissed"
-      })
-
-      assert %{
-               review_status_filter: "pending",
-               total_candidate_count: 1,
-               shortlisted_candidate_count: 0,
-               dimensions: %{
-                 advertiser_country: [
-                   %{bucket: "US", candidate_count: 1, shortlisted_candidate_count: 0}
-                 ]
-               }
-             } = CJCandidateMarketCoverage.summary(review_status: "pending")
-
-      assert %{
-               review_status_filter: "shortlisted",
-               total_candidate_count: 1,
-               shortlisted_candidate_count: 1,
-               dimensions: %{
-                 advertiser_country: [
-                   %{bucket: "CA", candidate_count: 1, shortlisted_candidate_count: 1}
-                 ],
-                 currency: [
-                   %{bucket: "USD", candidate_count: 1, shortlisted_candidate_count: 1}
-                 ],
-                 language: [
-                   %{bucket: "EN", candidate_count: 1, shortlisted_candidate_count: 1}
-                 ],
-                 source_feed_type: [
-                   %{bucket: "SHOPPING", candidate_count: 1, shortlisted_candidate_count: 1}
-                 ]
-               }
-             } = CJCandidateMarketCoverage.summary(review_status: "shortlisted")
-
-      assert %{
-               review_status_filter: "dismissed",
-               total_candidate_count: 1,
-               shortlisted_candidate_count: 0,
-               dimensions: %{
-                 advertiser_country: [
-                   %{bucket: "MX", candidate_count: 1, shortlisted_candidate_count: 0}
-                 ]
-               }
-             } = CJCandidateMarketCoverage.summary(review_status: "dismissed")
-    end
-
-    test "applies supported review status filters from string-keyed map options" do
-      source = source_fixture()
-
-      merchant_feed_candidate_fixture(source, %{
-        provider_feed_id: "cj-pending",
-        review_status: "pending"
-      })
-
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "CA",
-        provider_feed_id: "cj-shortlisted",
-        review_status: "shortlisted"
-      })
-
-      assert %{
-               review_status_filter: "pending",
-               total_candidate_count: 1,
-               shortlisted_candidate_count: 0,
-               dimensions: %{
-                 advertiser_country: [
-                   %{bucket: "US", candidate_count: 1, shortlisted_candidate_count: 0}
-                 ]
-               }
-             } = CJCandidateMarketCoverage.summary(%{"review_status" => "pending"})
-    end
-
-    test "ignores unsupported review status filters" do
-      source = source_fixture()
-
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "US",
-        provider_feed_id: "cj-pending",
-        review_status: "pending"
-      })
-
-      merchant_feed_candidate_fixture(source, %{
-        advertiser_country: "CA",
-        provider_feed_id: "cj-shortlisted",
-        review_status: "shortlisted"
-      })
-
-      baseline = CJCandidateMarketCoverage.summary([])
-
-      assert CJCandidateMarketCoverage.summary(review_status: "needs_review") == baseline
-      assert CJCandidateMarketCoverage.summary(review_status: " ") == baseline
-      assert CJCandidateMarketCoverage.summary(review_status: :shortlisted) == baseline
-      assert CJCandidateMarketCoverage.summary(review_status: nil) == baseline
-    end
   end
 
-  defp source_fixture(attrs \\ %{}) do
-    suffix = System.unique_integer([:positive])
+  defp set_program_stage(candidate, stage) do
+    program = Repo.get!(CJProgram, candidate.cj_program_id)
 
-    %Source{}
-    |> Source.changeset(
-      Map.merge(
-        %{
-          kind: "affiliate_feed",
-          name: "CJ #{suffix}",
-          domain: "cj-#{suffix}.example"
-        },
-        attrs
-      )
-    )
-    |> Repo.insert!()
-  end
-
-  defp merchant_feed_candidate_fixture(source, attrs \\ %{}) do
-    suffix = System.unique_integer([:positive])
-
-    attrs =
-      Map.merge(
-        %{
-          advertiser_country: "US",
-          advertiser_id: "adv-#{suffix}",
-          advertiser_name: "Merchant #{suffix}",
-          currency: "USD",
-          feed_name: "Feed #{suffix}",
-          language: "EN",
-          last_seen_at: ~U[2026-07-01 18:00:00Z],
-          product_count: 1,
-          provider: "cj",
-          provider_feed_id: "feed-#{suffix}",
-          provider_last_updated_at: ~U[2026-07-01 18:00:00Z],
-          raw_metadata: %{"credential" => "do-not-return"},
-          review_status: "pending",
-          source_feed_type: "SHOPPING"
-        },
-        attrs
-      )
-
-    assert {:ok, %MerchantFeedCandidate{} = candidate} =
-             Ingestion.upsert_merchant_feed_candidate(source, attrs)
-
-    candidate
+    assert {:ok, _program} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: stage, note: "Decision for #{stage}"},
+               ~U[2026-07-25 13:00:00.000000Z]
+             )
   end
 
   defp assert_safe_summary(summary) do
     sensitive_keys =
       MapSet.new([
         :account_id,
-        :account_ids,
         :advertiser_id,
-        :artifact_url,
         :credentials,
-        :error_summary,
-        :import_query,
-        :provider_error_payload,
         :provider_payload,
-        :query,
-        :raw_json,
         :raw_metadata,
-        :raw_provider_payload,
-        :raw_text,
-        :tracking,
-        :tracking_params,
-        :url
+        :tracking_params
       ])
 
-    summary_keys = summary |> Map.keys() |> MapSet.new()
-    assert MapSet.disjoint?(summary_keys, sensitive_keys)
+    assert Map.keys(summary) |> Enum.sort() == [
+             :dimensions,
+             :provider,
+             :stage_counts,
+             :total_candidate_count
+           ]
 
-    assert Map.keys(summary) |> Enum.sort() ==
-             [
-               :dimensions,
-               :provider,
-               :review_status_filter,
-               :shortlisted_candidate_count,
-               :total_candidate_count
-             ]
+    assert MapSet.disjoint?(MapSet.new(Map.keys(summary)), sensitive_keys)
 
     Enum.each(summary.dimensions, fn {_dimension, rows} ->
       Enum.each(rows, fn row ->
-        assert Map.keys(row) |> Enum.sort() == [
-                 :bucket,
-                 :candidate_count,
-                 :shortlisted_candidate_count
-               ]
-
-        row_keys = row |> Map.keys() |> MapSet.new()
-        assert MapSet.disjoint?(row_keys, sensitive_keys)
+        assert Map.keys(row) |> Enum.sort() == [:bucket, :candidate_count, :stage_counts]
+        assert MapSet.disjoint?(MapSet.new(Map.keys(row)), sensitive_keys)
       end)
     end)
   end

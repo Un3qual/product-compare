@@ -62,11 +62,16 @@ defmodule ProductCompareWeb.Schema do
     only: [
       :merchant_connection,
       :merchant_edge,
+      :cj_program,
+      :cj_program_stage_counts,
+      :cj_program_connection,
+      :cj_program_edge,
+      :cj_program_stage,
+      :cj_program_sort,
+      :cj_program_warning_code,
       :merchant_feed_candidate,
       :merchant_feed_candidate_connection,
-      :merchant_feed_candidate_edge,
-      :merchant_feed_candidate_review_status,
-      :merchant_feed_candidate_sort
+      :merchant_feed_candidate_edge
     ]
   )
 
@@ -106,9 +111,7 @@ defmodule ProductCompareWeb.Schema do
 
   import_types(ProductCompareWeb.Schema.Types.Common, only: [:mutation_error])
 
-  import_types(ProductCompareWeb.Schema.Types.Commerce,
-    only: [:review_merchant_feed_candidate_payload]
-  )
+  import_types(ProductCompareWeb.Schema.Types.Commerce, only: [:update_cj_program_payload])
 
   import_types(ProductCompareWeb.Schema.Types.Accounts,
     only: [
@@ -214,7 +217,7 @@ defmodule ProductCompareWeb.Schema do
   )
 
   import_types(ProductCompareWeb.Schema.Types.Commerce,
-    only: [:merchant_products_input, :review_merchant_feed_candidate_input]
+    only: [:merchant_products_input, :update_cj_program_input]
   )
 
   import_types(ProductCompareWeb.Schema.Types.Trust,
@@ -431,14 +434,34 @@ defmodule ProductCompareWeb.Schema do
       resolve(&SeoResolver.category/3)
     end
 
-    @desc "Returns captured merchant feed candidates with review-safe metadata."
-    field :merchant_feed_candidates, :merchant_feed_candidate_connection do
+    @desc "Returns CJ advertiser programs for lifecycle management."
+    field :cj_programs, non_null(:cj_program_connection) do
       arg(:first, :integer)
       arg(:after, :string)
-      arg(:review_status, :merchant_feed_candidate_review_status)
-      arg(:sort, :merchant_feed_candidate_sort)
+      arg(:stage, :cj_program_stage)
+      arg(:sort, :cj_program_sort)
 
-      resolve(&IngestionResolver.merchant_feed_candidates/3)
+      resolve(&IngestionResolver.cj_programs/3)
+    end
+
+    @desc "Returns one CJ advertiser program by its opaque lifecycle ID."
+    field :cj_program, :cj_program do
+      arg(:id, non_null(:id))
+
+      resolve(&IngestionResolver.cj_program/3)
+    end
+
+    @desc "Returns lifecycle counts across all CJ advertiser programs."
+    field :cj_program_stage_counts, non_null(:cj_program_stage_counts) do
+      resolve(&IngestionResolver.cj_program_stage_counts/3)
+    end
+
+    @desc "Returns CJ feeds that cannot be associated with an advertiser program."
+    field :unmatched_cj_feeds, non_null(:merchant_feed_candidate_connection) do
+      arg(:first, :integer)
+      arg(:after, :string)
+
+      resolve(&IngestionResolver.unmatched_cj_feeds/3)
     end
 
     @desc "Returns merchant products for a product with optional merchant and active filters."
@@ -592,11 +615,11 @@ defmodule ProductCompareWeb.Schema do
       resolve(&AffiliateResolver.create_coupon/3)
     end
 
-    @desc "Updates review status for a captured merchant feed candidate."
-    field :review_merchant_feed_candidate, non_null(:review_merchant_feed_candidate_payload) do
-      arg(:input, non_null(:review_merchant_feed_candidate_input))
+    @desc "Updates the lifecycle state and optional note for one CJ advertiser program."
+    field :update_cj_program, non_null(:update_cj_program_payload) do
+      arg(:input, non_null(:update_cj_program_input))
 
-      resolve(&IngestionResolver.review_merchant_feed_candidate/3)
+      resolve(&IngestionResolver.update_cj_program/3)
     end
 
     @desc "Creates a private saved comparison set for the current authenticated user."

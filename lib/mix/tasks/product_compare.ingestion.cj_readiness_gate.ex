@@ -5,10 +5,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
   import Ecto.Query
 
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Ingestion.CJRunReadiness
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompare.MixTasks.RepoOnlyStartup
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
 
   @shortdoc "Checks CJ ingestion readiness"
@@ -21,7 +23,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
   @default_max_discovery_age_hours 48
   @default_max_import_age_hours 48
   @default_min_candidates 1
-  @default_min_shortlisted 0
+  @default_min_pursued_programs 0
 
   @impl Mix.Task
   def run(argv) do
@@ -47,7 +49,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
         max_discovery_age_hours: :integer,
         max_import_age_hours: :integer,
         min_candidates: :integer,
-        min_shortlisted: :integer,
+        min_pursued_programs: :integer,
         require_scheduled: :boolean,
         require_ready: :boolean
       )
@@ -71,11 +73,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
           @default_min_candidates,
           "--min-candidates"
         ),
-      min_shortlisted:
+      min_pursued_programs:
         CliOptions.non_negative_integer!(
-          Keyword.get(opts, :min_shortlisted),
-          @default_min_shortlisted,
-          "--min-shortlisted"
+          Keyword.get(opts, :min_pursued_programs),
+          @default_min_pursued_programs,
+          "--min-pursued-programs"
         ),
       require_scheduled: Keyword.get(opts, :require_scheduled, false),
       require_ready: Keyword.get(opts, :require_ready, false)
@@ -97,7 +99,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       |> CJRunReadiness.fresh?(opts.max_import_age_hours)
 
     candidate_count = candidate_count()
-    shortlisted_count = shortlisted_count()
+    pursued_program_count = pursued_program_count()
     feed_discovery_schedule_enabled = scheduler_enabled?(@feed_discovery_scheduler_config)
     product_import_schedule_enabled = scheduler_enabled?(@product_import_scheduler_config)
     schedules_ready = feed_discovery_schedule_enabled and product_import_schedule_enabled
@@ -105,7 +107,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
     base_ready =
       credentials_ready and discovery_fresh and import_fresh and
         candidate_count >= opts.min_candidates and
-        shortlisted_count >= opts.min_shortlisted
+        pursued_program_count >= opts.min_pursued_programs
 
     Map.merge(opts, %{
       candidate_count: candidate_count,
@@ -116,8 +118,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       missing_required: missing_required,
       product_import_schedule_enabled: product_import_schedule_enabled,
       ready: base_ready and (not opts.require_scheduled or schedules_ready),
-      schedules_ready: schedules_ready,
-      shortlisted_count: shortlisted_count
+      pursued_program_count: pursued_program_count,
+      schedules_ready: schedules_ready
     })
   end
 
@@ -145,10 +147,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
     |> Repo.aggregate(:count, :id)
   end
 
-  defp shortlisted_count do
-    MerchantFeedCandidate
-    |> where([candidate], candidate.provider == @provider)
-    |> where([candidate], candidate.review_status == "shortlisted")
+  defp pursued_program_count do
+    CJProgram
+    |> where([program], program.stage in ^CJPrograms.pursued_stages())
     |> Repo.aggregate(:count, :id)
   end
 
@@ -162,8 +163,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
       "import_fresh=#{report.import_fresh}",
       "candidate_count=#{report.candidate_count}",
       "min_candidates=#{report.min_candidates}",
-      "shortlisted_count=#{report.shortlisted_count}",
-      "min_shortlisted=#{report.min_shortlisted}",
+      "pursued_program_count=#{report.pursued_program_count}",
+      "min_pursued_programs=#{report.min_pursued_programs}",
       "require_scheduled=#{report.require_scheduled}",
       "feed_discovery_schedule_enabled=#{report.feed_discovery_schedule_enabled}",
       "product_import_schedule_enabled=#{report.product_import_schedule_enabled}",

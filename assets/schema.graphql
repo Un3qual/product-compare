@@ -67,10 +67,17 @@ type RootQueryType {
   "Returns a curated public product category by canonical search slug."
   category(slug: String!): SeoCategory
 
-  "Returns captured merchant feed candidates with review-safe metadata."
-  merchantFeedCandidates(
-    first: Int, after: String, reviewStatus: MerchantFeedCandidateReviewStatus, sort: MerchantFeedCandidateSort
-  ): MerchantFeedCandidateConnection
+  "Returns CJ advertiser programs for lifecycle management."
+  cjPrograms(first: Int, after: String, stage: CJProgramStage, sort: CJProgramSort): CJProgramConnection!
+
+  "Returns one CJ advertiser program by its opaque lifecycle ID."
+  cjProgram(id: ID!): CJProgram
+
+  "Returns lifecycle counts across all CJ advertiser programs."
+  cjProgramStageCounts: CJProgramStageCounts!
+
+  "Returns CJ feeds that cannot be associated with an advertiser program."
+  unmatchedCjFeeds(first: Int, after: String): MerchantFeedCandidateConnection!
 
   "Returns merchant products for a product with optional merchant and active filters."
   merchantProducts(input: MerchantProductsInput!): MerchantProductConnection
@@ -137,8 +144,8 @@ type RootMutationType {
   "Creates a coupon for a merchant."
   createCoupon(input: CreateCouponInput!): CreateCouponPayload
 
-  "Updates review status for a captured merchant feed candidate."
-  reviewMerchantFeedCandidate(input: ReviewMerchantFeedCandidateInput!): ReviewMerchantFeedCandidatePayload!
+  "Updates the lifecycle state and optional note for one CJ advertiser program."
+  updateCjProgram(input: UpdateCjProgramInput!): UpdateCjProgramPayload!
 
   "Creates a private saved comparison set for the current authenticated user."
   createSavedComparisonSet(input: CreateSavedComparisonSetInput!): SavedComparisonSetPayload!
@@ -324,10 +331,11 @@ input MerchantProductsInput {
   after: String
 }
 
-input ReviewMerchantFeedCandidateInput {
+input UpdateCjProgramInput {
   id: ID!
-  status: MerchantFeedCandidateReviewStatus!
+  stage: CJProgramStage!
   note: String
+  expectedChangedAt: DateTime!
 }
 
 input ProductNumericFilterInput {
@@ -739,8 +747,8 @@ type RevokeApiTokenPayload {
   errors: [MutationError!]!
 }
 
-type ReviewMerchantFeedCandidatePayload {
-  candidate: MerchantFeedCandidate
+type UpdateCjProgramPayload {
+  program: CJProgram
   errors: [MutationError!]!
 }
 
@@ -944,6 +952,62 @@ type MerchantEdge {
   node: Merchant!
 }
 
+enum CJProgramStage {
+  NEW
+  CONSIDERING
+  SELECTED
+  APPLIED
+  ACCEPTED
+  NOT_PURSUING
+  DECLINED
+}
+
+enum CJProgramSort {
+  NAME_ASC
+  LAST_CHANGED_DESC
+  FEED_COUNT_DESC
+}
+
+enum CJProgramWarningCode {
+  MISSING_ADVERTISER_NAME
+  MISSING_PRODUCT_COUNT
+  NON_US_MARKET
+  NON_USD_CURRENCY
+  NON_ENGLISH_LANGUAGE
+}
+
+type CJProgram {
+  id: ID!
+  advertiserId: String!
+  advertiserName: String
+  stage: CJProgramStage!
+  note: String
+  lastChanged: DateTime!
+  feedCount: Int
+  warningCodes: [CJProgramWarningCode!]!
+  feeds(first: Int, after: String): MerchantFeedCandidateConnection!
+}
+
+type CJProgramStageCounts {
+  new: Int!
+  considering: Int!
+  selected: Int!
+  applied: Int!
+  accepted: Int!
+  notPursuing: Int!
+  declined: Int!
+}
+
+type CJProgramConnection {
+  edges: [CJProgramEdge!]!
+  pageInfo: PageInfo!
+}
+
+type CJProgramEdge {
+  cursor: String!
+  node: CJProgram!
+}
+
 type MerchantFeedCandidate {
   id: ID!
   provider: String!
@@ -958,9 +1022,6 @@ type MerchantFeedCandidate {
   productCount: Int
   providerLastUpdatedAt: DateTime
   lastSeenAt: DateTime!
-  reviewStatus: MerchantFeedCandidateReviewStatus!
-  reviewNote: String
-  reviewedAt: DateTime
 }
 
 type MerchantFeedCandidateConnection {
@@ -971,19 +1032,6 @@ type MerchantFeedCandidateConnection {
 type MerchantFeedCandidateEdge {
   cursor: String!
   node: MerchantFeedCandidate!
-}
-
-enum MerchantFeedCandidateReviewStatus {
-  PENDING
-  SHORTLISTED
-  DISMISSED
-}
-
-enum MerchantFeedCandidateSort {
-  NAME_ASC
-  PRODUCT_COUNT_DESC
-  LAST_SEEN_DESC
-  FIT_SCORE_DESC
 }
 
 type Product implements Node {

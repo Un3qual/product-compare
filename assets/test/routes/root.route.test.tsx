@@ -269,9 +269,9 @@ test("root destinations render authenticated account actions with the exact acti
     "href",
     "/commerce/revenue"
   );
-  expect(within(homeActions).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
-    "/ingestion/feed-candidates"
+    "/ingestion/cj-programs"
   );
   expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
@@ -301,7 +301,7 @@ test("root destinations keep member account actions but hide operator destinatio
   expect(within(primary).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
   expect(within(primary).queryByRole("link", { name: "Affiliate setup" })).not.toBeInTheDocument();
   expect(within(primary).queryByRole("link", { name: "Revenue preview" })).not.toBeInTheDocument();
-  expect(within(primary).queryByRole("link", { name: "Feed candidates" })).not.toBeInTheDocument();
+  expect(within(primary).queryByRole("link", { name: "CJ programs" })).not.toBeInTheDocument();
 });
 
 test("root layout applies the deepest matched document metadata", async () => {
@@ -345,7 +345,7 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
-    "Feed candidates",
+    "CJ programs",
     "API tokens"
   ]) {
     expect(
@@ -389,9 +389,9 @@ test("root layout renders authenticated auth links in the primary navigation", a
     "href",
     "/commerce/revenue"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+  expect(within(primaryNavigation).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
-    "/ingestion/feed-candidates"
+    "/ingestion/cj-programs"
   );
   expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
@@ -470,7 +470,7 @@ test("root route renders guest home actions as links while using the shared butt
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
-    "Feed candidates",
+    "CJ programs",
     "API tokens"
   ]) {
     expect(
@@ -559,9 +559,9 @@ test("root route renders authenticated home actions", async () => {
     "href",
     "/commerce/revenue"
   );
-  expect(within(homeActions).getByRole("link", { name: "Feed candidates" })).toHaveAttribute(
+  expect(within(homeActions).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
-    "/ingestion/feed-candidates"
+    "/ingestion/cj-programs"
   );
   expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",

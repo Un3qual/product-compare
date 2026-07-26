@@ -4,198 +4,213 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
   import ExUnit.CaptureIO
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates
+  alias Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options
+  alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareWeb.GraphQL.GlobalId
 
+  describe "options" do
+    test "normalizes a program stage and leaves unmatched feeds excluded by default" do
+      opts = ["--stage", "new"] |> Options.parse_argv() |> Options.normalize()
+
+      assert opts[:stage] == "new"
+      assert opts[:include_unmatched] == false
+    end
+
+    test "rejects a stage outside the program lifecycle" do
+      assert_raise Mix.Error, "invalid program stage: paused", fn ->
+        Options.normalize(stage: "paused")
+      end
+    end
+
+    test "forces application cohort options to the selected program stage" do
+      opts = Options.normalize(report: "application-cohort", stage: "new")
+
+      assert opts[:stage] == "selected"
+    end
+  end
+
   describe "run/1" do
-    test "prints stale CJ candidates without raw provider fields" do
+    test "stale report includes linked and unmatched CJ feeds when requested" do
       source = source_fixture()
 
-      stale =
+      linked =
         candidate_fixture(source, %{
-          advertiser_id: "adv-stale",
-          advertiser_name: "Peak Trail",
-          provider_feed_id: "cj-feed-stale",
-          review_status: "pending",
+          advertiser_id: "adv-linked-stale",
+          advertiser_name: "Linked stale feed",
           last_seen_at: days_ago(20),
-          raw_metadata: %{"token" => "do-not-print"},
-          review_note: "also-do-not-print"
+          provider_feed_id: "cj-linked-stale",
+          raw_metadata: %{"token" => "do-not-print"}
+        })
+
+      unmatched =
+        candidate_fixture(source, %{
+          advertiser_id: "   ",
+          advertiser_name: "Unmatched stale feed",
+          last_seen_at: days_ago(20),
+          provider_feed_id: "cj-unmatched-stale"
         })
 
       candidate_fixture(source, %{
         advertiser_id: "adv-fresh",
-        provider_feed_id: "cj-feed-fresh",
-        last_seen_at: hours_ago(2)
+        last_seen_at: hours_ago(2),
+        provider_feed_id: "cj-fresh"
       })
 
       candidate_fixture(source, %{
-        provider: "shopify",
         advertiser_id: "adv-noncj",
-        provider_feed_id: "non-cj-feed",
-        last_seen_at: days_ago(40)
+        last_seen_at: days_ago(20),
+        provider: "shopify",
+        provider_feed_id: "non-cj-stale"
       })
 
-      output = capture_io(fn -> CjCandidates.run(["--report", "stale"]) end)
+      output =
+        capture_io(fn ->
+          CjCandidates.run(["--report", "stale", "--stage", "all", "--include-unmatched"])
+        end)
 
-      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, stale.id)
+      {:ok, linked_id} = GlobalId.encode_required(:merchant_feed_candidate, linked.id)
+      {:ok, unmatched_id} = GlobalId.encode_required(:merchant_feed_candidate, unmatched.id)
 
-      assert output =~ "provider=cj report=stale max_age_hours=168 stale_count=1 status=all"
-      assert output =~ "candidate_id=#{candidate_id}"
-      assert output =~ "provider_feed_id=cj-feed-stale"
-      assert output =~ ~s(advertiser_name="Peak Trail")
+      assert output =~
+               "provider=cj report=stale max_age_hours=168 stale_count=2 stage=all include_unmatched=true"
+
+      assert output =~ "candidate_id=#{linked_id}"
+      assert output =~ "candidate_id=#{unmatched_id}"
       refute output =~ "adv-fresh"
       refute output =~ "adv-noncj"
       refute output =~ "do-not-print"
-      refute output =~ "also-do-not-print"
     end
 
-    test "reports fit gaps for pending candidates" do
+    test "fit gaps defaults to New programs" do
       source = source_fixture()
 
-      candidate_fixture(source, %{
-        advertiser_country: "CA",
-        advertiser_id: "adv-gap",
-        currency: "CAD",
-        language: "FR",
-        product_count: 25,
-        provider_feed_id: "feed-gap",
-        source_feed_type: nil
-      })
+      new_feed =
+        candidate_fixture(source, %{
+          advertiser_country: "CA",
+          advertiser_id: "adv-new-gap",
+          currency: "CAD",
+          language: "FR",
+          product_count: 25,
+          provider_feed_id: "feed-new-gap",
+          source_feed_type: nil
+        })
+
+      selected_feed =
+        candidate_fixture(source, %{
+          advertiser_id: "adv-selected-gap",
+          provider_feed_id: "feed-selected-gap"
+        })
+
+      set_program_stage(selected_feed, "selected", "Selected outside the fit-gap default")
 
       output = capture_io(fn -> CjCandidates.run(["--report", "fit-gaps"]) end)
 
-      assert output =~ "provider=cj report=fit-gaps status=pending candidate_count=1"
-      assert output =~ "country_not_us=1"
-      assert output =~ "currency_not_usd=1"
-      assert output =~ "language_not_en=1"
-      assert output =~ "low_product_count=1"
-      assert output =~ "missing_source_feed_type=1"
+      {:ok, new_id} = GlobalId.encode_required(:merchant_feed_candidate, new_feed.id)
+      {:ok, selected_id} = GlobalId.encode_required(:merchant_feed_candidate, selected_feed.id)
+
+      assert output =~ "provider=cj report=fit-gaps stage=new candidate_count=1"
+      assert output =~ "candidate_id=#{new_id}"
 
       assert output =~
                "gaps=country_not_us,currency_not_usd,language_not_en,low_product_count,missing_source_feed_type"
+
+      refute output =~ "candidate_id=#{selected_id}"
     end
 
-    test "prints application cohort in markdown format" do
+    test "fit gaps include unmatched feeds when requested" do
       source = source_fixture()
 
-      shortlisted =
+      linked =
         candidate_fixture(source, %{
-          advertiser_id: "adv-shortlisted",
-          advertiser_name: "Table | Merchant",
-          provider_feed_id: "feed-shortlisted",
-          feed_name: "Outdoor | Feed",
-          product_count: 5_000,
-          review_status: "shortlisted",
-          review_note: "ready"
+          advertiser_id: "adv-linked-gap",
+          provider_feed_id: "feed-linked-gap"
         })
 
-      candidate_fixture(source, %{
-        advertiser_id: "adv-pending",
-        provider_feed_id: "feed-pending",
-        review_status: "pending"
-      })
+      unmatched =
+        candidate_fixture(source, %{
+          advertiser_id: "   ",
+          provider_feed_id: "feed-unmatched-gap"
+        })
 
       output =
         capture_io(fn ->
           CjCandidates.run([
             "--report",
-            "application-cohort",
-            "--format",
-            "markdown",
-            "--min-product-count",
-            "1000"
+            "fit-gaps",
+            "--include-unmatched",
+            "--limit",
+            "2"
           ])
         end)
 
-      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, shortlisted.id)
+      {:ok, linked_id} = GlobalId.encode_required(:merchant_feed_candidate, linked.id)
+      {:ok, unmatched_id} = GlobalId.encode_required(:merchant_feed_candidate, unmatched.id)
 
-      assert output =~ "# CJ Application Cohort"
-      assert output =~ "count=1"
-      assert output =~ candidate_id
-      assert output =~ "Table \\| Merchant"
-      assert output =~ "Outdoor \\| Feed"
-      assert output =~ "present"
-      refute output =~ "adv-pending"
+      assert output =~ "candidate_count=2"
+      assert output =~ "candidate_id=#{linked_id}"
+      assert output =~ "candidate_id=#{unmatched_id}"
     end
 
-    test "application cohort applies the requested review status" do
+    test "application cohort reports selected program state and factual warnings only" do
       source = source_fixture()
+      changed_at = ~U[2026-07-25 16:00:00.000000Z]
 
-      pending =
+      selected_feed =
         candidate_fixture(source, %{
-          advertiser_id: "adv-pending-status",
-          provider_feed_id: "feed-pending-status",
-          review_status: "pending"
+          advertiser_country: "CA",
+          advertiser_id: "adv-selected-cohort",
+          advertiser_name: nil,
+          currency: "CAD",
+          language: "FR",
+          product_count: nil,
+          provider_feed_id: "feed-selected-cohort",
+          raw_metadata: %{"token" => "do-not-print"}
         })
 
-      candidate_fixture(source, %{
-        advertiser_id: "adv-shortlisted-status",
-        provider_feed_id: "feed-shortlisted-status",
-        review_status: "shortlisted"
-      })
+      set_program_stage(selected_feed, "selected", "Ready for an application", changed_at)
+
+      applied_feed =
+        candidate_fixture(source, %{
+          advertiser_id: "adv-applied-cohort",
+          provider_feed_id: "feed-applied-cohort"
+        })
+
+      accepted_feed =
+        candidate_fixture(source, %{
+          advertiser_id: "adv-accepted-cohort",
+          provider_feed_id: "feed-accepted-cohort"
+        })
+
+      set_program_stage(applied_feed, "applied", "Application already sent")
+      set_program_stage(accepted_feed, "accepted", "Already accepted")
 
       output =
         capture_io(fn ->
-          CjCandidates.run([
-            "--report",
-            "application-cohort",
-            "--status",
-            "pending"
-          ])
+          CjCandidates.run(["--report", "application-cohort", "--stage", "new"])
         end)
 
-      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, pending.id)
+      {:ok, selected_id} = GlobalId.encode_required(:merchant_feed_candidate, selected_feed.id)
 
-      assert output =~ "provider=cj report=application-cohort format=lines count=1"
-      assert output =~ candidate_id
-      assert output =~ "adv-pending-status"
-      refute output =~ "adv-shortlisted-status"
-    end
+      assert output =~ "provider=cj report=application-cohort format=lines stage=selected count=1"
+      assert output =~ "candidate_id=#{selected_id}"
+      assert output =~ "program_stage=selected"
+      assert output =~ "program_note_present=true"
+      assert output =~ "program_changed_at=2026-07-25T16:00:00.000000Z"
 
-    test "application cohort normalizes market filters against stored provider values" do
-      source = source_fixture()
+      assert output =~
+               "warning_codes=missing_advertiser_name,missing_product_count,non_us_market,non_usd_currency,non_english_language"
 
-      normalized =
-        candidate_fixture(source, %{
-          advertiser_country: " us ",
-          advertiser_id: "adv-normalized-market",
-          currency: " usd ",
-          language: " en ",
-          provider_feed_id: "feed-normalized-market",
-          review_status: "shortlisted"
-        })
-
-      candidate_fixture(source, %{
-        advertiser_country: "CA",
-        advertiser_id: "adv-ca-market",
-        currency: "CAD",
-        language: "FR",
-        provider_feed_id: "feed-ca-market",
-        review_status: "shortlisted"
-      })
-
-      output =
-        capture_io(fn ->
-          CjCandidates.run([
-            "--report",
-            "application-cohort",
-            "--country",
-            "us",
-            "--currency",
-            "usd",
-            "--language",
-            "en"
-          ])
-        end)
-
-      {:ok, candidate_id} = GlobalId.encode_required(:merchant_feed_candidate, normalized.id)
-
-      assert output =~ "provider=cj report=application-cohort format=lines count=1"
-      assert output =~ candidate_id
-      assert output =~ "adv-normalized-market"
-      refute output =~ "adv-ca-market"
+      refute output =~ "adv-applied-cohort"
+      refute output =~ "adv-accepted-cohort"
+      refute output =~ "review_status"
+      refute output =~ "shortlisted"
+      refute output =~ "dismissed"
+      refute output =~ "fit_score"
+      refute output =~ "do-not-print"
     end
 
     test "rejects removed CSV export report" do
@@ -222,7 +237,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
     attrs =
       Map.merge(
         %{
-          source_id: source.id,
           advertiser_country: "US",
           advertiser_id: "adv-1",
           advertiser_name: "Trail Merchant",
@@ -235,15 +249,24 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
           provider_last_updated_at: hours_ago(22),
           raw_metadata: %{},
           last_seen_at: DateTime.utc_now(),
-          review_status: "pending",
           source_feed_type: "SHOPPING"
         },
         attrs
       )
 
-    %MerchantFeedCandidate{}
-    |> MerchantFeedCandidate.changeset(attrs)
-    |> Repo.insert!()
+    assert {:ok, candidate} = Ingestion.upsert_merchant_feed_candidate(source, attrs)
+    candidate
+  end
+
+  defp set_program_stage(candidate, stage, note, changed_at \\ DateTime.utc_now()) do
+    program = Repo.get!(CJProgram, candidate.cj_program_id)
+
+    assert {:ok, _program} =
+             CJPrograms.update_lifecycle(
+               program.entropy_id,
+               %{stage: stage, note: note},
+               changed_at
+             )
   end
 
   defp days_ago(days) do

@@ -5,8 +5,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
 
   use Mix.Task
 
-  alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Candidates
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Options
+  alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs
   alias Mix.Tasks.ProductCompare.Ingestion.CjImport.Runner
 
   @shortdoc "Imports one manual CJ shopping product page"
@@ -42,15 +42,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
   end
 
   defp do_run_import(opts) do
-    cond do
-      Keyword.get(opts, :check_credentials, false) ->
-        {:ok, Options.credential_report(opts)}
+    if Keyword.get(opts, :check_credentials, false) do
+      {:ok, Options.credential_report(opts)}
+    else
+      opts = Options.normalize_program_import_opts!(opts)
 
-      Candidates.requested?(opts) ->
-        import_candidates(opts)
-
-      true ->
+      if Programs.requested?(opts) do
+        import_program_feeds(opts)
+      else
         do_import(opts)
+      end
     end
   end
 
@@ -61,16 +62,16 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport do
     end
   end
 
-  defp import_candidates(opts) do
-    {result, report} = Candidates.run(opts)
-    maybe_print_candidate_report(report, opts)
+  defp import_program_feeds(opts) do
+    {result, report} = Programs.run(opts)
+    maybe_print_feed_report(report, opts)
     result
   end
 
-  defp maybe_print_candidate_report(report, opts) do
+  defp maybe_print_feed_report(report, opts) do
     if Keyword.get(opts, :print_report, true) do
       IO.puts(
-        "candidate_count=#{report.candidates_matched} imported_candidates=#{report.candidates_imported} skipped_candidates=#{report.candidates_skipped} candidate_failures=#{report.candidate_failures} fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
+        "feed_count=#{report.feed_count} imported_feeds=#{report.imported_feeds} skipped_feeds=#{report.feeds_skipped} feed_failures=#{report.feed_failures} fetched=#{report.fetched} normalized=#{report.normalized} persisted=#{report.persisted} failed=#{report.failed} pages_fetched=#{report.pages_fetched}"
       )
     end
   end

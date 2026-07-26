@@ -1,17 +1,8 @@
 defmodule ProductCompare.DataCase do
   @moduledoc """
-  This module defines the setup for tests requiring
-  access to the application's data layer.
-
-  You may define functions here to be used as helpers in
-  your tests.
-
-  Finally, if the test case interacts with the database,
-  we enable the SQL sandbox, so changes done to the database
-  are reverted at the end of every test. If you are using
-  PostgreSQL, you can even run database tests asynchronously
-  by setting `use ProductCompare.DataCase, async: true`, although
-  this option is not recommended for other databases.
+  Database tests run inside an owned SQL sandbox so their writes never leak across
+  tests. `async: true` keeps the sandbox private; the shared Ecto imports and
+  `errors_on/1` keep persistence assertions focused on application behavior.
   """
 
   use ExUnit.CaseTemplate

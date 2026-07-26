@@ -4,7 +4,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
   import ExUnit.CaptureIO
 
   alias Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate
+  alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
@@ -51,8 +54,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       assert output =~ "import_fresh=false"
       assert output =~ "candidate_count=0"
       assert output =~ "min_candidates=1"
-      assert output =~ "shortlisted_count=0"
-      assert output =~ "min_shortlisted=0"
+      assert output =~ "pursued_program_count=0"
+      assert output =~ "min_pursued_programs=0"
     end
 
     test "treats whitespace credentials as missing" do
@@ -77,24 +80,20 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       refute output =~ "1234567"
     end
 
-    test "reports ready when credentials, fresh runs, and candidate counts pass" do
+    test "reports ready when credentials, fresh runs, and feed counts pass" do
       System.put_env("CJ_API_TOKEN", "secret-token")
       System.put_env("CJ_ACCOUNT_ID", "1234567")
       source = source_fixture()
 
       insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(2)})
       insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
-      insert_candidate!(source, %{provider_feed_id: "feed-pending"})
-
-      insert_candidate!(source, %{
-        provider_feed_id: "feed-shortlisted",
-        review_status: "shortlisted"
-      })
+      insert_feed!(source, %{provider_feed_id: "feed-one"})
+      insert_feed!(source, %{provider_feed_id: "feed-two"})
 
       output = capture_io(fn -> CjReadinessGate.run([]) end)
 
       assert output ==
-               "provider=cj ready=true credentials_ready=true missing_required= discovery_fresh=true import_fresh=true candidate_count=2 min_candidates=1 shortlisted_count=1 min_shortlisted=0 require_scheduled=false feed_discovery_schedule_enabled=false product_import_schedule_enabled=false schedules_ready=false\n"
+               "provider=cj ready=true credentials_ready=true missing_required= discovery_fresh=true import_fresh=true candidate_count=2 min_candidates=1 pursued_program_count=0 min_pursued_programs=0 require_scheduled=false feed_discovery_schedule_enabled=false product_import_schedule_enabled=false schedules_ready=false\n"
 
       refute output =~ "secret-token"
       refute output =~ "1234567"
@@ -162,7 +161,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
       insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(49)})
       insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
-      insert_candidate!(source)
+      insert_feed!(source)
 
       stale_discovery_output = capture_io(fn -> CjReadinessGate.run([]) end)
 
@@ -178,7 +177,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
       insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(1)})
       insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(49)})
-      insert_candidate!(source)
+      insert_feed!(source)
 
       stale_import_output =
         capture_io(fn ->
@@ -190,26 +189,65 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       assert stale_import_output =~ "import_fresh=false"
     end
 
-    test "applies minimum shortlisted candidate gate" do
+    test "readiness counts programs rather than feeds" do
       System.put_env("CJ_API_TOKEN", "secret-token")
       System.put_env("CJ_ACCOUNT_ID", "1234567")
       source = source_fixture()
 
       insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(1)})
       insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
-      insert_candidate!(source, %{provider_feed_id: "feed-pending"})
 
-      insert_candidate!(source, %{
-        provider_feed_id: "feed-shortlisted",
-        review_status: "shortlisted"
+      first_feed =
+        insert_feed!(source, %{
+          advertiser_id: "adv-shared-program",
+          provider_feed_id: "feed-shared-one"
+        })
+
+      insert_feed!(source, %{
+        advertiser_id: "adv-shared-program",
+        provider_feed_id: "feed-shared-two"
       })
 
-      output = capture_io(fn -> CjReadinessGate.run(["--min-shortlisted", "2"]) end)
+      place_in_stage!(first_feed, "selected")
+
+      output =
+        capture_io(fn ->
+          CjReadinessGate.run(["--min-pursued-programs", "2"])
+        end)
 
       assert output =~ "ready=false"
       assert output =~ "candidate_count=2"
-      assert output =~ "shortlisted_count=1"
-      assert output =~ "min_shortlisted=2"
+      assert output =~ "pursued_program_count=1"
+      assert output =~ "min_pursued_programs=2"
+      refute output =~ "shortlisted"
+      refute output =~ "review_status"
+    end
+
+    test "advancing selected to applied or accepted preserves pursued count" do
+      System.put_env("CJ_API_TOKEN", "secret-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+      source = source_fixture()
+
+      insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(1)})
+      insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
+
+      feed =
+        source
+        |> insert_feed!(%{advertiser_id: "adv-pursued", provider_feed_id: "feed-pursued"})
+        |> place_in_stage!("selected")
+
+      Enum.each(["selected", "applied", "accepted"], fn stage ->
+        place_in_stage!(feed, stage)
+
+        output =
+          capture_io(fn ->
+            CjReadinessGate.run(["--min-pursued-programs", "1"])
+          end)
+
+        assert output =~ "ready=true"
+        assert output =~ "pursued_program_count=1"
+        assert output =~ "min_pursued_programs=1"
+      end)
     end
 
     test "raises after printing the report when readiness is required" do
@@ -236,9 +274,11 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
         capture_io(fn -> CjReadinessGate.run(["--max-import-age-hours", "many"]) end)
       end
 
-      assert_raise Mix.Error, "invalid --min-shortlisted: expected a non-negative integer", fn ->
-        capture_io(fn -> CjReadinessGate.run(["--min-shortlisted", "-1"]) end)
-      end
+      assert_raise Mix.Error,
+                   "invalid --min-pursued-programs: expected a non-negative integer",
+                   fn ->
+                     capture_io(fn -> CjReadinessGate.run(["--min-pursued-programs", "-1"]) end)
+                   end
     end
 
     test "does not start ProductCompare.Supervisor or CJ schedulers" do
@@ -287,7 +327,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
 
     insert_run!(source, %{surface: "shoppingProductFeeds", finished_at: hours_ago(1)})
     insert_run!(source, %{surface: "shoppingProducts", finished_at: hours_ago(1)})
-    insert_candidate!(source)
+    insert_feed!(source)
 
     source
   end
@@ -317,11 +357,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
     |> Repo.insert!()
   end
 
-  defp insert_candidate!(source, attrs \\ %{}) do
+  defp insert_feed!(source, attrs \\ %{}) do
     attrs =
       Map.merge(
         %{
-          source_id: source.id,
           advertiser_country: "US",
           advertiser_id: "adv-1",
           advertiser_name: "Trail Merchant",
@@ -344,9 +383,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
         attrs
       )
 
-    %MerchantFeedCandidate{}
-    |> MerchantFeedCandidate.changeset(attrs)
-    |> Repo.insert!()
+    {:ok, feed} = Ingestion.upsert_merchant_feed_candidate(source, attrs)
+    feed
+  end
+
+  defp place_in_stage!(feed, stage) do
+    program = Repo.get!(CJProgram, feed.cj_program_id)
+
+    assert {:ok, _program} =
+             CJPrograms.update_lifecycle(program.entropy_id, %{stage: stage}, DateTime.utc_now())
+
+    feed
   end
 
   defp hours_ago(hours) do
