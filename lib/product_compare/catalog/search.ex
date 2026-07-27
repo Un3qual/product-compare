@@ -1,0 +1,292 @@
+defmodule ProductCompare.Catalog.Search do
+  @moduledoc false
+
+  import Ecto.Query
+
+  alias ProductCompare.Catalog.GTIN
+  alias ProductCompareSchemas.Catalog.Brand
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
+
+  @similarity_threshold 0.35
+  @minimum_trigram_length 3
+
+  @spec apply_match(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Query.t()
+  def apply_match(query, value) when is_binary(value) and value != "" do
+    terms = search_terms(value)
+
+    query
+    |> ensure_brand_join()
+    |> where(^match_expression(terms))
+  end
+
+  def apply_match(query, _value), do: query
+
+  @spec order_by_relevance(Ecto.Queryable.t(), String.t()) :: Ecto.Query.t()
+  def order_by_relevance(query, value) when is_binary(value) and value != "" do
+    terms = search_terms(value)
+
+    order_expressions = [
+      asc: relevance_tier(terms),
+      desc: full_text_rank(terms),
+      desc: greatest_similarity(terms.normalized),
+      asc: dynamic([product: product], fragment("lower(?)", product.name)),
+      asc: dynamic([product: product], product.id)
+    ]
+
+    query
+    |> ensure_brand_join()
+    |> order_by(^order_expressions)
+  end
+
+  defp search_terms(value) do
+    %{
+      query: value,
+      normalized: String.downcase(value),
+      contains_pattern: "%#{escape_like_pattern(String.downcase(value))}%",
+      prefix_pattern: "#{escape_like_pattern(String.downcase(value))}%",
+      gtin: normalized_gtin(value),
+      trigram?: String.length(value) >= @minimum_trigram_length
+    }
+  end
+
+  defp normalized_gtin(value) do
+    case GTIN.normalize(value) do
+      {:ok, normalized} -> normalized
+      {:error, :invalid_gtin} -> nil
+    end
+  end
+
+  defp escape_like_pattern(value) do
+    value
+    |> String.replace("\\", "\\\\")
+    |> String.replace("%", "\\%")
+    |> String.replace("_", "\\_")
+  end
+
+  defp match_expression(terms) do
+    gtin = validated_gtin_expression(terms.gtin)
+    exact = exact_text_expression(terms.normalized)
+    prefix = text_pattern_expression(terms.prefix_pattern)
+    contains = text_pattern_expression(terms.contains_pattern)
+    full_text = full_text_expression(terms.query)
+    trigram = trigram_expression(terms)
+    description = description_contains_expression(terms.contains_pattern)
+
+    dynamic(
+      [product: _product, brand: _brand],
+      ^gtin or ^exact or ^prefix or ^contains or ^full_text or ^trigram or ^description
+    )
+  end
+
+  defp validated_gtin_expression(nil), do: dynamic(false)
+
+  defp validated_gtin_expression(normalized_gtin) do
+    identifier_query =
+      from identifier in ProductIdentifier,
+        where: identifier.product_id == parent_as(:product).id,
+        where: identifier.scheme == "gtin",
+        where: identifier.verification_status == "validated",
+        where: identifier.normalized_value == ^normalized_gtin
+
+    dynamic([product: _product], exists(identifier_query))
+  end
+
+  defp exact_text_expression(normalized) do
+    dynamic(
+      [product: product, brand: brand],
+      fragment("lower(?)", product.name) == ^normalized or
+        fragment("lower(?)", product.slug) == ^normalized or
+        fragment("lower(coalesce(?, ''))", product.model_number) == ^normalized or
+        fragment("lower(coalesce(?, ''))", brand.name) == ^normalized
+    )
+  end
+
+  defp text_pattern_expression(pattern) do
+    dynamic(
+      [product: product, brand: brand],
+      ilike(product.name, ^pattern) or
+        ilike(product.slug, ^pattern) or
+        ilike(fragment("coalesce(?, '')", product.model_number), ^pattern) or
+        ilike(fragment("coalesce(?, '')", brand.name), ^pattern)
+    )
+  end
+
+  defp full_text_expression(query) do
+    dynamic(
+      [product: product],
+      fragment(
+        """
+        ? @@ (
+          websearch_to_tsquery('simple', ?) ||
+          websearch_to_tsquery('english', ?)
+        )
+        """,
+        product.search_document,
+        ^query,
+        ^query
+      )
+    )
+  end
+
+  defp trigram_expression(%{trigram?: false}), do: dynamic(false)
+
+  defp trigram_expression(%{trigram?: true, normalized: normalized}) do
+    threshold = @similarity_threshold
+
+    dynamic(
+      [product: product, brand: brand],
+      fragment(
+        "similarity(lower(coalesce(?, '')), ?) >= ?",
+        product.name,
+        ^normalized,
+        ^threshold
+      ) or
+        fragment(
+          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          product.slug,
+          ^normalized,
+          ^threshold
+        ) or
+        fragment(
+          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          product.model_number,
+          ^normalized,
+          ^threshold
+        ) or
+        fragment(
+          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          brand.name,
+          ^normalized,
+          ^threshold
+        )
+    )
+  end
+
+  defp description_contains_expression(pattern) do
+    dynamic(
+      [product: product],
+      ilike(fragment("coalesce(?, '')", product.description), ^pattern)
+    )
+  end
+
+  defp relevance_tier(terms) do
+    tier_one = tier_one_expression(terms)
+    tier_two = tier_two_expression(terms.normalized)
+    tier_three = text_pattern_expression(terms.prefix_pattern)
+    tier_four = text_pattern_expression(terms.contains_pattern)
+    tier_five = full_text_expression(terms.query)
+    tier_six = trigram_expression(terms)
+    tier_seven = description_contains_expression(terms.contains_pattern)
+
+    dynamic(
+      [product: _product, brand: _brand],
+      fragment(
+        """
+        CASE
+          WHEN ? THEN 1
+          WHEN ? THEN 2
+          WHEN ? THEN 3
+          WHEN ? THEN 4
+          WHEN ? THEN 5
+          WHEN ? THEN 6
+          WHEN ? THEN 7
+          ELSE 7
+        END
+        """,
+        ^tier_one,
+        ^tier_two,
+        ^tier_three,
+        ^tier_four,
+        ^tier_five,
+        ^tier_six,
+        ^tier_seven
+      )
+    )
+  end
+
+  defp tier_one_expression(terms) do
+    gtin = validated_gtin_expression(terms.gtin)
+
+    dynamic(
+      [product: product],
+      ^gtin or
+        fragment("lower(coalesce(?, ''))", product.model_number) == ^terms.normalized
+    )
+  end
+
+  defp tier_two_expression(normalized) do
+    dynamic(
+      [product: product],
+      fragment("lower(?)", product.name) == ^normalized or
+        fragment("lower(?)", product.slug) == ^normalized
+    )
+  end
+
+  defp full_text_rank(terms) do
+    tier_one = tier_one_expression(terms)
+    tier_two = tier_two_expression(terms.normalized)
+    tier_three = text_pattern_expression(terms.prefix_pattern)
+    tier_four = text_pattern_expression(terms.contains_pattern)
+    full_text = full_text_expression(terms.query)
+
+    dynamic(
+      [product: product, brand: _brand],
+      fragment(
+        """
+        CASE
+          WHEN ? AND NOT (?) AND NOT (?) AND NOT (?) AND NOT (?) THEN
+            ts_rank_cd(
+              ?,
+              websearch_to_tsquery('simple', ?) ||
+              websearch_to_tsquery('english', ?)
+            )
+          ELSE 0.0
+        END
+        """,
+        ^full_text,
+        ^tier_one,
+        ^tier_two,
+        ^tier_three,
+        ^tier_four,
+        product.search_document,
+        ^terms.query,
+        ^terms.query
+      )
+    )
+  end
+
+  defp greatest_similarity(normalized) do
+    dynamic(
+      [product: product, brand: brand],
+      fragment(
+        """
+        greatest(
+          similarity(lower(coalesce(?, '')), ?),
+          similarity(lower(coalesce(?, '')), ?),
+          similarity(lower(coalesce(?, '')), ?),
+          similarity(lower(coalesce(?, '')), ?)
+        )
+        """,
+        product.name,
+        ^normalized,
+        product.slug,
+        ^normalized,
+        product.model_number,
+        ^normalized,
+        brand.name,
+        ^normalized
+      )
+    )
+  end
+
+  defp ensure_brand_join(query) do
+    if has_named_binding?(query, :brand) do
+      query
+    else
+      join(query, :left, [product: product], brand in Brand,
+        on: brand.id == product.brand_id,
+        as: :brand
+      )
+    end
+  end
+end
