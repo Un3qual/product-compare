@@ -11,16 +11,22 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
+- `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md`
 
 ## Active Plan Catalog
 
-Start at `docs/work/index.md` for live dispatch status and ownership. The CJ
-Program Lifecycle outcome from
+Start at `docs/work/index.md` for live dispatch status and ownership.
+Ranked Catalog Search is active through
+`docs/superpowers/plans/2026-07-27-ranked-catalog-search.md` under the user's
+explicit one-time 2026-07-27 reserve-floor waiver. Three independent
+replenishment audits found only two other coherent candidates, so the waiver
+avoids filler and does not reopen deferred or completed work.
+
+The CJ Program Lifecycle outcome from
 `docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
 completed under the user's explicit one-time 2026-07-25 reserve-floor waiver.
 It replaced per-feed review with one program-level lifecycle page. The queue
-now has no ready rows: the next dispatch requires a new product or quality
-decision, not a catalog candidate treated as active work. eBay fallback,
+has no ready reserve rows while ranked search is active. eBay fallback,
 application submission, Tier-3 scraping, and CSV export remain out of scope.
 
 The 2026-06-29 usable-product batch, the product filtering and in-depth comparison

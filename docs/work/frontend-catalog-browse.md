@@ -2,12 +2,18 @@
 
 ## Snapshot
 
-- Status: done (catalog browse route data contract)
+- Status: active (ranked catalog search)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after final branch-review compare-limit fix
-  (69 focused tests)
+- Active plan:
+  `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
+- Active design:
+  `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md`
+- Claim gate: the user explicitly granted a one-time reserve-floor waiver on
+  2026-07-27 after three replenishment audits found only two other coherent
+  candidates.
+- Baseline: 96 focused backend and 86 focused catalog frontend tests pass.
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
