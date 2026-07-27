@@ -3,6 +3,7 @@ defmodule ProductCompare.Catalog.Products do
 
   import Ecto.Query
 
+  alias ProductCompare.Catalog.SearchDocuments
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompare.Taxonomy
@@ -46,9 +47,16 @@ defmodule ProductCompare.Catalog.Products do
   def create_product(attrs) do
     with :ok <- validate_primary_type_taxon(attrs),
          :ok <- ensure_slug_not_reserved(Input.fetch_attr(attrs, :slug)) do
-      %Product{}
-      |> Product.changeset(attrs)
-      |> Repo.insert()
+      changeset = Product.changeset(%Product{}, attrs)
+
+      Repo.transaction(fn ->
+        with {:ok, product} <- Repo.insert(changeset),
+             :ok <- SearchDocuments.refresh_product(product.id) do
+          product
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
     end
   end
 
@@ -60,24 +68,15 @@ defmodule ProductCompare.Catalog.Products do
          :ok <- ensure_slug_not_reserved(next_slug, product.id) do
       changeset = Product.changeset(product, drop_nil_primary_type_taxon(attrs))
 
-      if is_binary(next_slug) and next_slug != product.slug do
-        Repo.transaction(fn ->
-          with {:ok, updated} <- Repo.update(changeset),
-               {:ok, _alias} <-
-                 %ProductSlugAlias{}
-                 |> ProductSlugAlias.changeset(%{
-                   product_id: product.id,
-                   slug: product.slug
-                 })
-                 |> Repo.insert() do
-            updated
-          else
-            {:error, reason} -> Repo.rollback(reason)
-          end
-        end)
-      else
-        Repo.update(changeset)
-      end
+      Repo.transaction(fn ->
+        with {:ok, updated} <- Repo.update(changeset),
+             :ok <- preserve_prior_slug_alias(product, next_slug),
+             :ok <- SearchDocuments.refresh_product(updated.id) do
+          updated
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
     end
   end
 
@@ -178,6 +177,18 @@ defmodule ProductCompare.Catalog.Products do
   end
 
   defp ensure_slug_not_reserved(_slug, _product_id), do: :ok
+
+  defp preserve_prior_slug_alias(%Product{} = product, next_slug)
+       when is_binary(next_slug) and next_slug != product.slug do
+    case %ProductSlugAlias{}
+         |> ProductSlugAlias.changeset(%{product_id: product.id, slug: product.slug})
+         |> Repo.insert() do
+      {:ok, _alias} -> :ok
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  defp preserve_prior_slug_alias(_product, _next_slug), do: :ok
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do
     primary_type_taxon_id_key = "primary_type_taxon_id"

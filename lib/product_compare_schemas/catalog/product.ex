@@ -9,6 +9,7 @@ defmodule ProductCompareSchemas.Catalog.Product do
     field :model_number, :string
     field :slug, :string
     field :description, :string
+    field :search_document, :string, load_in_query: false
 
     belongs_to :brand, ProductCompareSchemas.Catalog.Brand
     belongs_to :primary_type_taxon, ProductCompareSchemas.Taxonomy.Taxon
