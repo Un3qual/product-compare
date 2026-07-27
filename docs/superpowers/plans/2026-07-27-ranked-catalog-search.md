@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make catalog text searches deterministic and relevance-ranked, including exact validated GTIN lookup and typo-tolerant matching, while preserving every explicit sort, filter, Relay pagination, and URL contract.
+**Goal:** Make catalog text searches deterministic and relevance-ranked, including exact validated GTIN lookup, PostgreSQL full-text search, and typo-tolerant matching, while preserving every explicit sort, filter, Relay pagination, and URL contract.
 
-**Architecture:** Enable PostgreSQL `pg_trgm` and add expression indexes for the text fields that participate in typo-tolerant search. A focused `ProductCompare.Catalog.Search` module owns the matching predicate and relevance order, while `ProductCompare.Catalog.Filtering` continues to compose taxonomy, typed-claim, use-case, and explicit-sort policy. GraphQL normalizes query-without-sort to relevance, and the catalog route presents the same policy without serializing redundant `sort=RELEVANCE`.
+**Architecture:** Enable PostgreSQL `pg_trgm`, add trigram indexes, and persist a weighted `products.search_document` built by a pure SQL function. Application write paths refresh that document inside the same transaction as each product mutation; an explicit Mix task repairs stale rows, and no database trigger or recurring scheduler is introduced. A focused `ProductCompare.Catalog.Search` module owns hybrid exact, prefix, contains, full-text, and trigram matching plus deterministic relevance order, while `ProductCompare.Catalog.Filtering` continues to compose taxonomy, typed-claim, use-case, and explicit-sort policy. GraphQL normalizes query-without-sort to relevance, and the catalog route presents the same policy without serializing redundant `sort=RELEVANCE`.
 
 **Tech Stack:** Elixir, Ecto, PostgreSQL 18, `pg_trgm`, Absinthe GraphQL, ExUnit, React 19, TypeScript, React Router, Relay, Vitest, Testing Library.
 
@@ -18,8 +18,38 @@
 - Only `scheme = "gtin"` and `verification_status = "validated"` identifiers can receive the exact-identifier tier.
 - Normalize possible GTIN queries only through `ProductCompare.Catalog.GTIN.normalize/1`.
 - Do not introduce an MPN normalizer or make MPN a separate search authority.
-- Relevance tiers are, in order: exact validated GTIN or model number; exact name or slug; text prefix; text contains; trigram; description contains.
-- Relevance ties use greatest text similarity descending, normalized product name ascending, then product ID ascending.
+- Do not add database triggers. The application owns every search-document
+  refresh.
+- The SQL document-builder function must be pure, immutable, explicitly
+  invoked, and limited to the text values passed to it. It must not read tables
+  or mutate rows.
+- Weight A uses `simple` over brand, name, model number, and slug; weight B uses
+  `english` over brand, name, and slug; weight C uses `simple` over description;
+  weight D uses `english` over description.
+- Full-text matching ORs `websearch_to_tsquery('simple', query)` with
+  `websearch_to_tsquery('english', query)` so unquoted terms retain AND
+  semantics while quoted phrases, uppercase `OR`, and `-` exclusions work.
+- A query that produces no lexemes simply makes the full-text branch false;
+  exact, prefix, contains, and eligible trigram matching still apply.
+- Relevance tiers are, in order: exact validated GTIN or model number; exact
+  name or slug; text prefix; text contains; full text; trigram; description
+  contains.
+- Tier-five ties use `ts_rank_cd` descending. Every tier then uses greatest
+  text similarity descending, normalized product name ascending, and product
+  ID ascending.
+- `Catalog.Products.create_product/1` and `update_product/2` must refresh the
+  document in the same `Repo.transaction/1` as the product write, including
+  slug-alias preservation and brand reassignment. A refresh error rolls back
+  the entire mutation.
+- Current catalog write paths must remain centralized through
+  `Catalog.Products`; direct `Repo` product mutations are unsupported.
+- `ProductCompare.Catalog.SearchDocuments.refresh_brand/1` and
+  `refresh_products/1` are the lifecycle APIs for future brand rename and
+  deletion paths. Brand deletion must capture affected product IDs before the
+  foreign key clears `brand_id`, then refresh those IDs in the same
+  transaction.
+- `mix catalog.search_documents.rebuild` is the explicit deployment and repair
+  mechanism. Do not add a scheduled reconciliation job.
 - A nonblank query with no explicit sort uses relevance.
 - Explicit `RELEVANCE` with a nonblank query uses relevance.
 - Explicit `ID_ASC`, `NAME_ASC`, `BRAND_NAME_ASC`, or `NEWEST` overrides relevance while retaining the search predicate.
@@ -28,7 +58,9 @@
 - Preserve taxonomy filters, typed specification filters, use-case filters, result-count/facet parity, page-size state, compare slugs, and deterministic Relay cursors.
 - Preserve literal wildcard behavior for `%`, `_`, and backslash.
 - Do not assert PostgreSQL planner node strings or private SQL fragments in tests.
-- Do not add autocomplete, suggestions, highlighting, analytics, external search infrastructure, a denormalized search table, or unrelated refactors.
+- Do not add autocomplete, suggestions, highlighting, analytics, external
+  search infrastructure, a denormalized search table, database triggers,
+  recurring reconciliation, or unrelated refactors.
 
 ---
 
@@ -40,14 +72,34 @@
   - Enables `pg_trgm`.
   - Adds lowercased GIN trigram indexes for `products.name`, `products.slug`,
     `products.model_number`, and `brands.name`.
+  - Defines the pure `catalog_search_document/5` SQL function, adds and
+    backfills the non-null `products.search_document`, and adds its GIN index.
+- `lib/product_compare/catalog/search_documents.ex`
+  - Explicitly refreshes one product, many products, all products for a brand,
+    or the entire catalog using the pure SQL builder.
+- `lib/mix/tasks/catalog.search_documents.rebuild.ex`
+  - Provides the explicit repair and deployment command.
 - `lib/product_compare/catalog/search.ex`
-  - Owns search-term preparation, the matching predicate, validated-GTIN
-    lookup, the six relevance tiers, and deterministic relevance ordering.
+  - Owns search-term preparation, the hybrid matching predicate,
+    validated-GTIN lookup, the seven relevance tiers, and deterministic
+    relevance ordering.
+- `test/product_compare/catalog/search_documents_test.exs`
+  - Covers document generation, transaction-coupled write refresh, future
+    brand lifecycle APIs, rebuild behavior, and rollback on refresh failure.
+- `test/mix/tasks/catalog_search_documents_rebuild_test.exs`
+  - Covers the operator-facing rebuild task and output.
 - `test/product_compare/catalog/search_test.exs`
-  - Covers the search module directly with database-backed behavior tests.
+  - Covers the hybrid search module directly with database-backed behavior
+    tests.
 
 ### Existing backend and GraphQL files
 
+- `lib/product_compare/catalog/products.ex`
+  - Makes create and update single transactions that refresh the search
+    document and preserve any slug alias atomically.
+- `lib/product_compare_schemas/catalog/product.ex`
+  - Declares the query-only search-document field without casting it or loading
+    it in ordinary product selects.
 - `lib/product_compare/catalog/filtering.ex`
   - Delegates text matching and relevance ordering to `Catalog.Search`.
   - Retains all non-search filter composition and named explicit sorts.
@@ -101,11 +153,406 @@
 
 ---
 
-### Task 1: Add the PostgreSQL search capability and focused ranking owner
+### Task 1: Persist and maintain weighted catalog search documents
 
 **Files:**
 
 - Create: `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`
+- Create: `lib/product_compare/catalog/search_documents.ex`
+- Create: `lib/mix/tasks/catalog.search_documents.rebuild.ex`
+- Modify: `lib/product_compare/catalog/products.ex`
+- Modify: `lib/product_compare_schemas/catalog/product.ex`
+- Create: `test/product_compare/catalog/search_documents_test.exs`
+- Create: `test/mix/tasks/catalog_search_documents_rebuild_test.exs`
+
+**Interfaces:**
+
+- Produces:
+  - SQL
+    `catalog_search_document(product_name text, product_slug text,
+    product_model_number text, product_description text, brand_name text)
+    RETURNS tsvector`.
+  - `ProductCompare.Catalog.SearchDocuments.refresh_product/1`
+    - Signature: `(pos_integer()) :: :ok | {:error, term()}`
+  - `ProductCompare.Catalog.SearchDocuments.refresh_products/1`
+    - Signature:
+      `([pos_integer()]) :: {:ok, non_neg_integer()} | {:error, term()}`
+  - `ProductCompare.Catalog.SearchDocuments.refresh_brand/1`
+    - Signature:
+      `(pos_integer()) :: {:ok, non_neg_integer()} | {:error, term()}`
+  - `ProductCompare.Catalog.SearchDocuments.rebuild/0`
+    - Signature: `() :: {:ok, non_neg_integer()} | {:error, term()}`
+  - `mix catalog.search_documents.rebuild`
+- Extends:
+  - `Catalog.Products.create_product/1` and `update_product/2` so the product
+    write, optional slug alias, and search-document refresh share one
+    transaction.
+
+- [ ] **Step 1: Write failing search-document lifecycle tests**
+
+Create `test/product_compare/catalog/search_documents_test.exs` as a non-async
+`ProductCompare.DataCase`. Alias `Catalog`, `Repo`, `SearchDocuments`, and
+`SpecsFixtures`. Add a helper that asks PostgreSQL whether a persisted document
+matches the same combined full-text query used by catalog search:
+
+```elixir
+defp document_matches?(product_id, query) do
+  %Postgrex.Result{rows: [[matches?]]} =
+    Repo.query!(
+      """
+      SELECT search_document @@ (
+        websearch_to_tsquery('simple', $2) ||
+        websearch_to_tsquery('english', $2)
+      )
+      FROM products
+      WHERE id = $1
+      """,
+      [product_id, query]
+    )
+
+  matches?
+end
+```
+
+Cover all application-maintained lifecycle paths:
+
+1. Create a brand and a product whose brand, name, model number, slug, and
+   description contain distinct terms. Assert a query spanning multiple fields
+   matches the persisted document.
+2. Update name, model number, slug, and description through
+   `Catalog.update_product/2`. Assert new terms match, removed terms no longer
+   match, and the old slug alias was still created.
+3. Reassign the product to another brand through `Catalog.update_product/2`.
+   Assert the new brand term matches and the old brand term does not.
+4. Simulate a future brand rename by wrapping `Repo.update!/1` and
+   `SearchDocuments.refresh_brand/1` in one `Repo.transaction/1`, then assert
+   all products for that brand receive the new term.
+5. Simulate a future brand deletion by capturing product IDs, deleting the
+   brand so the foreign key clears `brand_id`, then calling
+   `SearchDocuments.refresh_products/1` in the same `Repo.transaction/1`.
+   Assert the removed brand term no longer matches.
+6. Corrupt one row with
+   `UPDATE products SET search_document = ''::tsvector WHERE id = $1`, call
+   `SearchDocuments.rebuild/0`, and assert the original terms match again.
+
+Add coverage for both dictionaries:
+
+```elixir
+assert document_matches?(product.id, "RX-7900")
+assert document_matches?(product.id, "keyboards")
+```
+
+The fixture should contain the exact technical token `RX-7900` in an
+A- or C-weight field and the English root `keyboard` in a B- or D-weight field.
+
+- [ ] **Step 2: Write the failing transaction rollback test**
+
+In the same non-async module, add a test that temporarily replaces the SQL
+builder inside the SQL sandbox transaction with a function that raises:
+
+```elixir
+Repo.query!("""
+CREATE OR REPLACE FUNCTION catalog_search_document(
+  text, text, text, text, text
+) RETURNS tsvector
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RAISE EXCEPTION 'forced search document failure';
+END
+$$
+""")
+```
+
+Call `Catalog.create_product/1` with a unique name and slug. Assert it returns
+`{:error, _}` and a direct `Repo.exists?/1` lookup finds no persisted product.
+Let the SQL sandbox roll back the temporary function definition with the test.
+This test must remain `async: false` because it alters a database function.
+
+Add the corresponding update case: create a product while the normal builder
+is installed, replace the builder with the failing function, call
+`Catalog.update_product/2`, and assert the product fields and slug aliases are
+unchanged after the error.
+
+- [ ] **Step 3: Write the failing operator task test**
+
+Create `test/mix/tasks/catalog_search_documents_rebuild_test.exs` with
+`ProductCompare.DataCase`, `async: false`, and `ExUnit.CaptureIO`. Create a
+product, clear its document with direct SQL, re-enable the task, and assert:
+
+```elixir
+output =
+  capture_io(fn ->
+    Mix.Task.reenable("catalog.search_documents.rebuild")
+    Mix.Task.run("catalog.search_documents.rebuild")
+  end)
+
+assert output =~ ~r/^Rebuilt \d+ catalog search documents?\.\n$/
+
+assert document_matches?(product.id, product.name)
+```
+
+The regex deliberately accepts either singular or plural output because the
+test database may contain rows beyond the focused fixture.
+
+- [ ] **Step 4: Run the new tests and verify the missing persistence owner**
+
+Run:
+
+```bash
+mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
+```
+
+Expected: compilation fails because the migration, `SearchDocuments`, and Mix
+task do not exist and product writes do not yet refresh a document.
+
+- [ ] **Step 5: Add the trigger-free migration**
+
+Create `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`.
+Its `up/0` must execute, in this order:
+
+1. `CREATE EXTENSION IF NOT EXISTS pg_trgm`.
+2. The pure builder:
+
+```sql
+CREATE OR REPLACE FUNCTION catalog_search_document(
+  product_name text,
+  product_slug text,
+  product_model_number text,
+  product_description text,
+  brand_name text
+) RETURNS tsvector
+LANGUAGE sql
+IMMUTABLE
+PARALLEL SAFE
+RETURN
+  setweight(
+    to_tsvector(
+      'simple',
+      concat_ws(
+        ' ',
+        brand_name,
+        product_name,
+        product_model_number,
+        replace(product_slug, '-', ' ')
+      )
+    ),
+    'A'
+  ) ||
+  setweight(
+    to_tsvector(
+      'english',
+      concat_ws(
+        ' ',
+        brand_name,
+        product_name,
+        replace(product_slug, '-', ' ')
+      )
+    ),
+    'B'
+  ) ||
+  setweight(
+    to_tsvector('simple', coalesce(product_description, '')),
+    'C'
+  ) ||
+  setweight(
+    to_tsvector('english', coalesce(product_description, '')),
+    'D'
+  )
+```
+
+3. The column:
+
+```sql
+ALTER TABLE products
+ADD COLUMN search_document tsvector NOT NULL DEFAULT ''::tsvector
+```
+
+4. The backfill:
+
+```sql
+UPDATE products AS product
+SET search_document = catalog_search_document(
+  product.name,
+  product.slug,
+  product.model_number,
+  product.description,
+  (
+    SELECT brand.name
+    FROM brands AS brand
+    WHERE brand.id = product.brand_id
+  )
+)
+```
+
+5. A GIN index on `products(search_document)`.
+6. Lowercased GIN trigram indexes on `products.name`, `products.slug`,
+   `products.model_number`, and `brands.name`.
+
+Do not create a trigger or trigger function. The SQL builder accepts values,
+reads no tables, and mutates no rows.
+
+The `down/0` order is: drop the four trigram indexes; drop the
+`search_document` GIN index; drop the column; drop
+`catalog_search_document(text, text, text, text, text)`. Intentionally retain
+the shared `pg_trgm` extension.
+
+- [ ] **Step 6: Apply the migration and prove existing rows were backfilled**
+
+While the test database is still at the previous migration, insert one
+pre-migration sentinel:
+
+```bash
+MIX_ENV=test mix run -e 'result = ProductCompare.Repo.query!("INSERT INTO products (name, slug, description, inserted_at, updated_at) VALUES ($1, $2, $3, now(), now()) RETURNING id", ["Backfill Sentinel", "ranked-search-backfill-sentinel", "migration lexeme"]); IO.inspect(result.rows, label: "sentinel product")'
+```
+
+Then run:
+
+```bash
+MIX_ENV=test mix ecto.migrate
+```
+
+Verify the migration populated the document and remove only that sentinel:
+
+```bash
+MIX_ENV=test mix run -e 'slug = "ranked-search-backfill-sentinel"; result = ProductCompare.Repo.query!("SELECT search_document <> $2::text::tsvector FROM products WHERE slug = $1", [slug, ""]); unless result.rows == [[true]], do: raise("search document backfill failed: #{inspect(result.rows)}"); ProductCompare.Repo.query!("DELETE FROM products WHERE slug = $1", [slug]); IO.puts("search document backfill verified")'
+```
+
+Expected: the first command prints one sentinel ID, the migration succeeds, and
+the final command prints `search document backfill verified`. This is the
+operational migration-backfill proof; the focused test suite separately proves
+that the identical builder repairs an empty document.
+
+- [ ] **Step 7: Declare the query-only schema field**
+
+Modify `lib/product_compare_schemas/catalog/product.ex`:
+
+```elixir
+field :search_document, :string, load_in_query: false
+```
+
+Do not add the field to `cast/3`, GraphQL, or JSON output. Ecto needs the field
+metadata so query fragments can reference it; Postgrex must not decode
+`tsvector` during ordinary product loads.
+
+- [ ] **Step 8: Implement `ProductCompare.Catalog.SearchDocuments`**
+
+Create `lib/product_compare/catalog/search_documents.ex`. Each function must
+use `Repo.query/2` to run this `SET` expression:
+
+```sql
+search_document = catalog_search_document(
+  product.name,
+  product.slug,
+  product.model_number,
+  product.description,
+  (
+    SELECT brand.name
+    FROM brands AS brand
+    WHERE brand.id = product.brand_id
+  )
+)
+```
+
+Apply these scopes:
+
+- `refresh_product(id)`: `WHERE product.id = $1`; map one updated row to
+  `:ok`, zero rows to `{:error, :product_not_found}`, and a database error to
+  `{:error, reason}`.
+- `refresh_products([])`: return `{:ok, 0}` without issuing SQL.
+- `refresh_products(ids)`: `WHERE product.id = ANY($1::bigint[])`; return the
+  `Postgrex.Result.num_rows`.
+- `refresh_brand(brand_id)`: `WHERE product.brand_id = $1`; return the updated
+  count.
+- `rebuild()`: no `WHERE` clause; return the updated count.
+
+Keep the shared `SET` clause in one private SQL constant or private function so
+all refresh APIs and the migration use the same argument order. Do not hide
+transaction ownership inside this module; callers compose these operations
+inside their existing transaction.
+
+- [ ] **Step 9: Couple product writes to document refresh**
+
+Modify `lib/product_compare/catalog/products.ex`:
+
+1. Alias `ProductCompare.Catalog.SearchDocuments`.
+2. Keep the existing external return contracts.
+3. After changeset validation, make `create_product/1` one
+   `Repo.transaction/1`. Insert the product, call
+   `SearchDocuments.refresh_product(product.id)`, return the product on `:ok`,
+   and call `Repo.rollback(reason)` for either insert or refresh failure.
+4. Make every `update_product/2` use one transaction, including updates that
+   do not change the slug. In that transaction:
+   - update the product;
+   - preserve the old slug alias if the slug changed;
+   - refresh the updated product;
+   - return the updated product.
+5. Refactor the existing slug-alias helper to return `:ok` or
+   `{:error, reason}` so the single outer transaction handles every rollback.
+   Do not create a nested transaction.
+
+The result must preserve validation errors as `{:error, changeset}` and must
+roll back product and alias changes for a document-refresh error.
+
+- [ ] **Step 10: Implement the explicit rebuild task**
+
+Create `lib/mix/tasks/catalog.search_documents.rebuild.ex`:
+
+```elixir
+defmodule Mix.Tasks.Catalog.SearchDocuments.Rebuild do
+  use Mix.Task
+
+  alias ProductCompare.Catalog.SearchDocuments
+  alias ProductCompare.MixTasks.RepoOnlyStartup
+
+  @shortdoc "Rebuilds persisted catalog search documents"
+
+  @impl Mix.Task
+  def run(_args) do
+    RepoOnlyStartup.start!()
+
+    case SearchDocuments.rebuild() do
+      {:ok, count} ->
+        Mix.shell().info(
+          "Rebuilt #{count} catalog search #{document_label(count)}."
+        )
+
+      {:error, reason} ->
+        Mix.raise("Catalog search-document rebuild failed: #{inspect(reason)}")
+    end
+  end
+
+  defp document_label(1), do: "document"
+  defp document_label(_count), do: "documents"
+end
+```
+
+- [ ] **Step 11: Format and run persistence-focused tests**
+
+Run:
+
+```bash
+mix format priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
+mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/products_test.exs
+```
+
+Expected: the migration backfill, both dictionaries, create/update/slug/brand
+refresh, future brand lifecycle APIs, explicit rebuild, and rollback behavior
+all pass without a database trigger.
+
+- [ ] **Step 12: Commit the persistence milestone**
+
+```bash
+git add priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
+git commit -m "feat: persist catalog search documents"
+```
+
+---
+
+### Task 2: Add the focused hybrid ranking owner
+
+**Files:**
+
 - Create: `lib/product_compare/catalog/search.ex`
 - Create: `test/product_compare/catalog/search_test.exs`
 
@@ -121,7 +568,7 @@
     - Adds only matching joins and predicates; it never orders.
   - `ProductCompare.Catalog.Search.order_by_relevance/2`
     - Signature: `(Ecto.Queryable.t(), String.t()) :: Ecto.Query.t()`
-    - Applies the six tiers and all deterministic tie-breakers.
+    - Applies the seven tiers and all deterministic tie-breakers.
 
 - [ ] **Step 1: Write the failing database-backed search behavior tests**
 
@@ -164,13 +611,14 @@ Add one tier-order test using query `"aurora"` and these records in deliberately
 different insertion order:
 
 ```elixir
-description =
+description_contains =
   product(%{
     name: "Description Only",
-    description: "Designed for aurora workflows"
+    description: "Designed for xaurorax workflows"
   })
 
 typo = product(%{name: "Aurorra"})
+full_text = product(%{name: "Northern Lights", description: "aurora workflow"})
 contains = product(%{name: "Display for Aurora Creators"})
 prefix = product(%{name: "Aurora Pro Display"})
 slug_exact = product(%{name: "Beacon", slug: "aurora"})
@@ -183,8 +631,9 @@ assert Enum.map(ranked_search("aurora"), & &1.id) == [
          slug_exact.id,
          prefix.id,
          contains.id,
+         full_text.id,
          typo.id,
-         description.id
+         description_contains.id
        ]
 ```
 
@@ -256,59 +705,42 @@ Expected: compilation fails because
 `ProductCompare.Catalog.Search.apply_match/2` and
 `order_by_relevance/2` do not exist.
 
-- [ ] **Step 3: Add the reversible migration**
+- [ ] **Step 3: Add failing full-text syntax, weighting, and rank tests**
 
-Create `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`:
+Extend `test/product_compare/catalog/search_test.exs` with behavior tests for
+the persisted document:
 
-```elixir
-defmodule ProductCompare.Repo.Migrations.AddRankedCatalogSearch do
-  use Ecto.Migration
+1. A natural multi-term query whose terms occur across brand, product name,
+   model number, slug, and description matches only when all unquoted terms are
+   present across the combined document.
+2. Technical tokens such as `RX-7900` match through the `simple`
+   configuration.
+3. English morphology such as query `keyboards` matching document `keyboard`
+   works through the `english` configuration.
+4. `"mechanical keyboard"` requires phrase order and adjacency.
+5. `keyboard OR mouse` matches either branch.
+6. `keyboard -wireless` excludes the wireless record.
+7. A stopword-only query such as `"the and"` and a punctuation-only query such
+   as `"!!!"` return safely without a PostgreSQL syntax error.
+8. A product with the same lexeme in its name outranks a product that has the
+   lexeme only in its description because weights A/B outrank C/D.
+9. Two otherwise equal tier-five rows are ordered by normalized name and then
+   ID after equal `ts_rank_cd` and trigram similarity.
 
-  def up do
-    execute("CREATE EXTENSION IF NOT EXISTS pg_trgm")
+Keep these tests database-backed and assert returned product IDs, not generated
+SQL strings or planner nodes.
 
-    execute("""
-    CREATE INDEX products_search_name_trgm_idx
-    ON products USING gin (lower(name) gin_trgm_ops)
-    """)
-
-    execute("""
-    CREATE INDEX products_search_slug_trgm_idx
-    ON products USING gin (lower(slug) gin_trgm_ops)
-    """)
-
-    execute("""
-    CREATE INDEX products_search_model_number_trgm_idx
-    ON products USING gin (lower(model_number) gin_trgm_ops)
-    """)
-
-    execute("""
-    CREATE INDEX brands_search_name_trgm_idx
-    ON brands USING gin (lower(name) gin_trgm_ops)
-    """)
-  end
-
-  def down do
-    execute("DROP INDEX IF EXISTS brands_search_name_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_search_model_number_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_search_slug_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_search_name_trgm_idx")
-  end
-end
-```
-
-The down migration intentionally retains the shared `pg_trgm` extension after
-removing this feature's indexes.
-
-- [ ] **Step 4: Apply the test migration**
+- [ ] **Step 4: Run the expanded test and verify hybrid search is missing**
 
 Run:
 
 ```bash
-MIX_ENV=test mix ecto.migrate
+mix test test/product_compare/catalog/search_test.exs
 ```
 
-Expected: the migration creates the extension and four indexes successfully.
+Expected: the exact/prefix/trigram cases fail because
+`ProductCompare.Catalog.Search` does not exist, and the full-text cases fail
+because no query consumes `products.search_document`.
 
 - [ ] **Step 5: Implement `ProductCompare.Catalog.Search`**
 
@@ -344,6 +776,7 @@ defmodule ProductCompare.Catalog.Search do
     terms = search_terms(value)
     order_expressions = [
       asc: relevance_tier(terms),
+      desc: full_text_rank(terms),
       desc: greatest_similarity(terms.normalized),
       asc: dynamic([product: product], fragment("lower(?)", product.name)),
       asc: dynamic([product: product], product.id)
@@ -360,6 +793,7 @@ Implement `search_terms/1` so it returns exactly:
 
 ```elixir
 %{
+  query: value,
   normalized: String.downcase(value),
   contains_pattern: "%#{escape_like_pattern(String.downcase(value))}%",
   prefix_pattern: "#{escape_like_pattern(String.downcase(value))}%",
@@ -387,9 +821,28 @@ of:
 1. `validated_gtin_expression(terms.gtin)`;
 2. case-insensitive exact/prefix/contains predicates over `product.name`,
    `product.slug`, `product.model_number`, and `brand.name`;
-3. the four `similarity(lower(coalesce(field, '')), normalized) >= 0.35`
+3. this full-text predicate, with both query arguments bound:
+
+```elixir
+dynamic(
+  [product: product],
+  fragment(
+    """
+    ? @@ (
+      websearch_to_tsquery('simple', ?) ||
+      websearch_to_tsquery('english', ?)
+    )
+    """,
+    product.search_document,
+    ^terms.query,
+    ^terms.query
+  )
+)
+```
+
+4. the four `similarity(lower(coalesce(field, '')), normalized) >= 0.35`
    predicates only when `terms.trigram?` is true; and
-4. description contains via `ilike(product.description, contains_pattern)`.
+5. description contains via `ilike(product.description, contains_pattern)`.
 
 `validated_gtin_expression(nil)` must be `dynamic(false)`. For a normalized
 GTIN, use a correlated `EXISTS` subquery:
@@ -413,11 +866,19 @@ booleans:
 2: lower(name) = normalized OR lower(slug) = normalized
 3: name/slug/model_number/brand ILIKE prefix_pattern
 4: name/slug/model_number/brand ILIKE contains_pattern
-5: any enabled text-field similarity >= 0.35
-6: description ILIKE contains_pattern
+5: persisted search_document matches the combined websearch tsquery
+6: any enabled text-field similarity >= 0.35
+7: description ILIKE contains_pattern
 ```
 
 Use `coalesce(field, '')` for nullable model, brand, and description values.
+Implement `full_text_rank/1` with `ts_rank_cd` over the same combined
+`simple || english` query. Wrap it in `CASE` so it returns the rank only when
+the row is actually assigned tier five—that is, full text matches and none of
+tiers one through four match—and returns `0.0` for every other tier. This
+prevents an incidental full-text overlap from influencing ties inside an exact,
+prefix, or contains tier.
+
 Build `greatest_similarity/1` as a `dynamic/2` expression containing:
 
 ```sql
@@ -450,24 +911,25 @@ end
 Run:
 
 ```bash
-mix format priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search.ex test/product_compare/catalog/search_test.exs
+mix format lib/product_compare/catalog/search.ex test/product_compare/catalog/search_test.exs
 mix test test/product_compare/catalog/search_test.exs
 ```
 
-Expected: all ranked-search tests pass, including GTIN normalization, all six
-tiers, the `0.35` boundary, short-query behavior, stable ties, punctuation,
-and literal wildcards.
+Expected: all ranked-search tests pass, including GTIN normalization, all seven
+tiers, technical and English dictionaries, web-search syntax, weighted
+full-text rank, the `0.35` boundary, short-query behavior, stable ties,
+stopwords, punctuation, and literal wildcards.
 
 - [ ] **Step 7: Commit the search core milestone**
 
 ```bash
-git add priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search.ex test/product_compare/catalog/search_test.exs
-git commit -m "feat: add ranked catalog search query"
+git add lib/product_compare/catalog/search.ex test/product_compare/catalog/search_test.exs
+git commit -m "feat: add hybrid ranked catalog search"
 ```
 
 ---
 
-### Task 2: Integrate relevance through filtering, GraphQL, metadata, and Relay connections
+### Task 3: Integrate relevance through filtering, GraphQL, metadata, and Relay connections
 
 **Files:**
 
@@ -494,24 +956,31 @@ git commit -m "feat: add ranked catalog search query"
 - [ ] **Step 1: Add failing GraphQL relevance and override tests**
 
 In `test/product_compare_web/graphql/catalog_queries_test.exs`, add a test that
-creates products matching `"aurora"` at exact-name, prefix, and contains tiers.
-Assert:
+creates products matching `"aurora"` at exact-name, prefix, contains,
+full-text, and trigram tiers. The full-text fixture must contain `aurora` as a
+standalone description lexeme; the trigram fixture uses `Aurorra`. Assert:
 
 ```elixir
 assert product_slugs(conn, nil, "aurora") == [
          exact.slug,
          prefix.slug,
-         contains.slug
+         contains.slug,
+         full_text.slug,
+         typo.slug
        ]
 
 assert product_slugs(conn, "RELEVANCE", "aurora") == [
          exact.slug,
          prefix.slug,
-         contains.slug
+         contains.slug,
+         full_text.slug,
+         typo.slug
        ]
 
 assert product_slugs(conn, "ID_ASC", "aurora") ==
-         Enum.map(Enum.sort_by([exact, prefix, contains], & &1.id), & &1.slug)
+         [exact, prefix, contains, full_text, typo]
+         |> Enum.sort_by(& &1.id)
+         |> Enum.map(& &1.slug)
 ```
 
 Extend the helper without changing existing callers:
@@ -562,12 +1031,14 @@ productFilterMetadata(filters: $filters) {
 }
 ```
 
-Use a typo query, a primary-type taxon filter, and an existing typed numeric
-filter. Create one product that matches all three, one that matches query plus
-numeric but has the wrong primary type, one that matches query plus type but is
-outside the numeric range, and one that matches type plus numeric but not the
-query. Assert the returned edge count and `resultCount` are both `1`, and the
-edge is the product that satisfies all three predicates.
+Use a multi-term full-text query whose terms span brand, name, and description,
+a primary-type taxon filter, and an existing typed numeric filter. Create one
+product that matches all three dimensions, one that matches query plus numeric
+but has the wrong primary type, one that matches query plus type but is outside
+the numeric range, and one that matches type plus numeric but not the query.
+Assert the returned edge count and `resultCount` are both `1`, and the edge is
+the product that satisfies all predicates. This proves metadata uses the same
+AND-connected full-text result set as the connection.
 
 In `test/product_compare_web/graphql/dataloader_batching_test.exs`, add a query
 with these two aliases:
@@ -707,7 +1178,7 @@ Run:
 
 ```bash
 mix format lib/product_compare/catalog/filtering.ex lib/product_compare_web/resolvers/catalog/input_normalization.ex lib/product_compare_web/schema/types/catalog.ex test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs
-mix test test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs
+mix test test/product_compare/catalog/search_documents_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs
 ```
 
 Expected: all focused backend, GraphQL, metadata, batching, and schema tests
@@ -722,7 +1193,7 @@ git commit -m "feat: expose relevance catalog sorting"
 
 ---
 
-### Task 3: Normalize relevance and explicit catalog order in frontend route state
+### Task 4: Normalize relevance and explicit catalog order in frontend route state
 
 **Files:**
 
@@ -1001,7 +1472,7 @@ git commit -m "feat: normalize relevance catalog urls"
 
 ---
 
-### Task 4: Add the relevance control, regenerate Relay, and close the dispatch
+### Task 5: Add the relevance control, regenerate Relay, and close the dispatch
 
 **Files:**
 
@@ -1117,7 +1588,7 @@ Run:
 cd assets && bun run relay:check
 ```
 
-Expected: the Task 3 artifact containing `"RELEVANCE"` is current and
+Expected: the Task 4 artifact containing `"RELEVANCE"` is current and
 validation exits successfully without changing generated files.
 
 - [ ] **Step 5: Run focused frontend verification**
@@ -1138,7 +1609,7 @@ Run:
 ```bash
 mix format --check-formatted
 mix typecheck
-mix test test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs
+mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs
 cd assets && bun run check
 mix ci
 git diff --check
@@ -1155,11 +1626,15 @@ into filler rows.
 Append `## Ranked Catalog Search Evidence` to
 `docs/work/frontend-catalog-browse.md`. Record:
 
-- the selected `pg_trgm` and tiered-ranking architecture;
+- the selected application-maintained `tsvector`, `pg_trgm`, and seven-tier
+  ranking architecture;
+- confirmation that no database trigger or recurring reconciliation was added,
+  and that product writes roll back if document refresh fails;
+- the exact `mix catalog.search_documents.rebuild` repair contract;
 - the migration, backend, GraphQL, frontend, and generated-artifact paths;
-- the first three milestone commit hashes, with the final milestone hash
+- the first four milestone commit hashes, with the final milestone hash
   reported in the implementation handoff after this evidence is committed;
-- each verification command from Step 7 with its actual exit status and test
+- each verification command from Step 6 with its actual exit status and test
   count;
 - confirmation that relevance is implicit for query-only URLs;
 - confirmation that `sort=ID_ASC` remains explicit during a search;
@@ -1178,7 +1653,7 @@ git diff --check
 git status --short
 ```
 
-Expected: formatting and diff checks pass, and status lists only the Task 4
+Expected: formatting and diff checks pass, and status lists only the Task 5
 form, route-test, and lane-evidence files.
 
 - [ ] **Step 9: Commit the completed cross-stack dispatch**
@@ -1192,8 +1667,8 @@ After the commit, run:
 
 ```bash
 git status --short --branch
-git log -4 --oneline
+git log -5 --oneline
 ```
 
-Expected: the worktree is clean and the four ranked-search milestone commits
+Expected: the worktree is clean and the five ranked-search milestone commits
 are the newest commits.
