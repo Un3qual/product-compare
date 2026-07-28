@@ -42,74 +42,16 @@ For the operating rules, prompt templates, and handoff format, read
 
 Updated: 2026-07-27
 
-### 1. Ranked Catalog Search
+No active or ready implementation rows remain.
 
-Status: active
-Lane: Ranked catalog search
-Plan: `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
-Batch outcome: catalog text search combines exact validated GTIN and model
-matching, weighted application-maintained PostgreSQL full-text documents,
-prefix and contains policy, and typo-tolerant trigram matching under one
-deterministic seven-tier relevance order while preserving explicit sorts,
-filters, metadata counts, Relay pagination, and canonical frontend URL state.
-Next action: execute the five internal milestones through the approved
-subagent-driven TDD and review workflow.
-Owned paths:
-- `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`
-- `lib/product_compare/catalog/search_documents.ex`
-- `lib/mix/tasks/catalog.search_documents.rebuild.ex`
-- `lib/product_compare/catalog/search.ex`
-- `lib/product_compare/catalog/products.ex`
-- `lib/product_compare_schemas/catalog/product.ex`
-- `lib/product_compare/catalog/filtering.ex`
-- `lib/product_compare_web/resolvers/catalog/input_normalization.ex`
-- `lib/product_compare_web/schema/types/catalog.ex`
-- `assets/schema.graphql`
-- `test/product_compare/catalog/search_documents_test.exs`
-- `test/mix/tasks/catalog_search_documents_rebuild_test.exs`
-- `test/product_compare/catalog/search_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare_web/graphql/catalog_filter_metadata_test.exs`
-- `test/product_compare_web/graphql/dataloader_batching_test.exs`
-- `assets/src/routes/catalog/filters.ts`
-- `assets/src/routes/catalog/paths.ts`
-- `assets/src/routes/catalog/BrowseRoute.tsx`
-- `assets/src/routes/catalog/filter-summary.ts`
-- `assets/src/routes/catalog/CatalogFilterForm.tsx`
-- `assets/test/routes/catalog/catalog-sort-input.test.ts`
-- `assets/test/routes/catalog/paths.test.ts`
-- `assets/test/routes/catalog/filter-summary.test.ts`
-- `assets/test/routes/catalog/browse.route.test.tsx`
-- `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`
-- `docs/work/frontend-catalog-browse.md`
-Internal slices:
-- Persist and transactionally maintain weighted search documents without
-  database triggers, with an explicit rebuild task.
-- Apply hybrid matching, seven-tier ranking, GraphQL normalization, metadata
-  parity, and deterministic cursor behavior.
-- Normalize Relay and frontend URL state, expose the contextual Relevance
-  control, and record full verification evidence.
-Prerequisites:
-- The user approved
-  `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md`.
-- Focused baseline verification passed 96 backend and 86 frontend tests.
-- Three independent replenishment audits found only two other coherent
-  candidates; no third reserve existed without filler or reopening deferred
-  work.
-- The user explicitly granted this outcome a one-time reserve-floor waiver on
-  2026-07-27. No other batch inherits that waiver.
-Verification:
-- Focused search-document, search-ranking, catalog metadata, GraphQL,
-  Dataloader, schema snapshot, catalog route, URL, and filter-summary suites.
-- `mix format --check-formatted`
-- `mix typecheck`
-- `cd assets && bun run check`
-- `mix ci`
-- `git diff --check`
-Exit condition: every approved trigger-free persistence, hybrid matching,
-ranking, GraphQL, Relay, URL, and control contract passes focused and full
-verification; the only acceptable queue-gate exception is the explicitly
-waived lack of three ready reserve rows.
+Ranked Catalog Search completed on 2026-07-27. Its application-maintained
+search document, indexed candidate-product selection, exact seven-tier
+predicate and ranking, GraphQL and metadata parity, Relay pagination, and
+canonical frontend URL state are complete. The user's one-time 2026-07-27
+reserve-floor waiver remains limited to this outcome. The unchanged validator's
+exact `Ready Work requires at least 3 complete rows; found 0` result is the sole
+waived outcome; no completed, deferred, or speculative work was promoted as
+filler.
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -2146,9 +2088,9 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-Ready-row count: 0. The CJ Program Lifecycle batch is complete. Fresh
-source-backed candidate validation requires a new product or quality decision.
-The validator remains unchanged under the approved one-time waiver:
+Ready-row count: 0. Ranked Catalog Search is complete. Fresh source-backed
+candidate validation requires a new product or quality decision. The validator
+remains unchanged under the approved one-time waiver:
 `Ready Work requires at least 3 complete rows; found 0`.
 
 ## Completed 2026-07-20 Cross-Stack Work

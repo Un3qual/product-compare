@@ -48,6 +48,99 @@ defmodule ProductCompare.Catalog.SearchTest do
     assert Enum.map(ranked_search("4006-3813-3393-1"), & &1.id) == [validated.id]
   end
 
+  test "preserves indexed contains, full-text, and brand matches through candidate selection" do
+    name_match =
+      product(%{
+        name: "aaaaaaaaaaaaaaaanameneedlezzzzzzzzzzzzzzzz",
+        slug: "candidate-name-path"
+      })
+
+    slug_match =
+      product(%{
+        name: "Slug Candidate Reference",
+        slug: "aaaaaaaaaaaaaaaaslugneedlezzzzzzzzzzzzzzzz"
+      })
+
+    model_match =
+      product(%{
+        name: "Model Candidate Reference",
+        model_number: "aaaaaaaaaaaaaaaamodelneedlezzzzzzzzzzzzzzzz"
+      })
+
+    description_match =
+      product(%{
+        name: "Description Candidate Reference",
+        description: "aaaaaaaaaaaaaaaadescneedlezzzzzzzzzzzzzzzz"
+      })
+
+    {:ok, brand} =
+      Catalog.upsert_brand(%{
+        name: "aaaaaaaaaaaaaaaabrandneedlezzzzzzzzzzzzzzzz"
+      })
+
+    brand_match =
+      product(%{
+        brand_id: brand.id,
+        name: "Brand Candidate Reference"
+      })
+
+    full_text_match =
+      product(%{
+        name: "Morphology Candidate Reference",
+        description: "A compact keyboard for studio work"
+      })
+
+    for {query, product} <- [
+          {"nameneedle", name_match},
+          {"slugneedle", slug_match},
+          {"modelneedle", model_match},
+          {"descneedle", description_match},
+          {"brandneedle", brand_match},
+          {"keyboards", full_text_match}
+        ] do
+      assert Enum.map(ranked_search(query), & &1.id) == [product.id]
+    end
+  end
+
+  test "preserves trigram matches on every ranked text field through candidate selection" do
+    name_match = product(%{name: "Monitora", slug: "candidate-trigram-name"})
+
+    slug_match =
+      product(%{
+        name: "Slug Trigram Reference",
+        slug: "peripherala"
+      })
+
+    model_match =
+      product(%{
+        name: "Model Trigram Reference",
+        model_number: "RX7900A"
+      })
+
+    {:ok, brand} = Catalog.upsert_brand(%{name: "Logitecha"})
+    brand_match = product(%{brand_id: brand.id, name: "Brand Trigram Reference"})
+
+    for {query, field_value, product} <- [
+          {"monitorb", name_match.name, name_match},
+          {"peripheralb", slug_match.slug, slug_match},
+          {"rx7900b", model_match.model_number, model_match},
+          {"logitechb", brand.name, brand_match}
+        ] do
+      assert similarity(field_value, query) >= 0.35
+      assert Enum.map(ranked_search(query), & &1.id) == [product.id]
+    end
+  end
+
+  test "candidate selection keeps boundary-only trigrams and rejects overlap below 0.35" do
+    above_threshold = product(%{name: "Ab", slug: "candidate-boundary-ab"})
+    below_threshold = product(%{name: "Abx", slug: "candidate-boundary-abx"})
+
+    assert similarity(above_threshold.name, "abc") >= 0.35
+    assert similarity(below_threshold.name, "abc") < 0.35
+
+    assert Enum.map(ranked_search("abc"), & &1.id) == [above_threshold.id]
+  end
+
   test "enables trigram matching at three characters and enforces the similarity threshold" do
     monitor = product(%{name: "Monitor"})
 
@@ -208,6 +301,13 @@ defmodule ProductCompare.Catalog.SearchTest do
     |> Search.apply_match(query)
     |> Search.order_by_relevance(query)
     |> Repo.all()
+  end
+
+  defp similarity(left, right) do
+    %Postgrex.Result{rows: [[similarity]]} =
+      Repo.query!("SELECT similarity(lower($1), lower($2))", [left, right])
+
+    similarity
   end
 
   defp product(attrs) do

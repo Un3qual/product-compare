@@ -2,13 +2,13 @@
 
 ## Snapshot
 
-- Status: active (ranked catalog search)
+- Status: done (ranked catalog search)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Active plan:
+- Completed plan:
   `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
-- Active design:
+- Completed design:
   `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md`
 - Claim gate: the user explicitly granted a one-time reserve-floor waiver on
   2026-07-27 after three replenishment audits found only two other coherent
@@ -544,10 +544,16 @@
 - Architecture:
   - PostgreSQL owns hybrid matching through `pg_trgm` plus an
     application-maintained, weighted `products.search_document` `tsvector`.
+  - Search first derives a distinct candidate-product-ID set through the
+    validated-GTIN partial index; GIN-backed product and brand contains,
+    description, and full-text paths; and immutable trigram-array overlap.
+    The trigram candidate path applies the unchanged exact `0.35` similarity
+    boundary after the index-supported superset, and brand candidates resolve
+    products through `products_brand_idx`.
   - `ProductCompare.Catalog.Search` applies the identical match predicate to
-    relevance and named-sort queries, then ranks relevance through seven tiers:
-    exact validated GTIN/model number, exact name/slug, text prefix, text
-    contains, full text, trigram, and description contains.
+    that bounded set for relevance and named-sort queries, then ranks relevance
+    through seven tiers: exact validated GTIN/model number, exact name/slug,
+    text prefix, text contains, full text, trigram, and description contains.
   - Full-text ties use `ts_rank_cd`; every tier then uses greatest applicable
     trigram similarity, normalized product name, and product ID.
   - Catalog product writes refresh search documents inside the owning
@@ -593,8 +599,9 @@
     sorting through GraphQL.
   - `823e1ce275aa882604559ee907635213b92d23bb` — normalize relevance catalog
     URLs.
-  - The final milestone hash is reported in the implementation handoff after
-    this evidence is committed.
+  - `ef867cbb93c9d661d3f041f3788f3d8bac9902e3` — finish ranked catalog search.
+  - The final aggregate repair hash is recorded in the final-fix report after
+    the repair milestone is committed.
 - Frontend contract:
   - Query-only URLs use implicit relevance and omit redundant
     `sort=RELEVANCE`.
@@ -614,19 +621,32 @@
   - `mix format --check-formatted` — exit `0`; no tests.
   - `mix typecheck` — exit `0`; compilation with warnings as errors passed.
   - `mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
-    — exit `0`; 124 tests, 0 failures.
+    — final aggregate repair exit `0`; 127 tests, 0 failures.
+  - `MIX_ENV=test mix ecto.rollback --step 1` followed by
+    `MIX_ENV=test mix ecto.migrate` — both exit `0` on the local test database;
+    the revised migration rolled down and recreated every search index.
+  - `MIX_ENV=test mix catalog.search_documents.rebuild` — exit `0`;
+    `Rebuilt 0 catalog search documents.` on the empty local test database.
   - `cd assets && bun run check` — exit `0`; Relay validation compiled 52
     reader, 51 normalization, and 51 operation-text documents; TypeScript
     passed; 104 test files and 1,505 tests passed; client and SSR builds passed;
     the client bundle passed at 182,233 gzip bytes against the 200,000-byte
     budget.
-  - `mix ci` — exit `1` solely with the explicitly waived queue-reserve result:
-    `Ready Work requires at least 3 complete rows; found 0`.
-  - The remaining CI gates were run directly after that early validator exit:
-    `mix quality` exited `0` with Credo clean, ExDNA at its 3/3 budget, Reach
-    clean, and Dialyzer reporting 0 errors; `mix test --cover` exited `0` with
-    970 tests, 0 failures, and 83.93% total coverage. Formatting, typecheck,
-    and the complete frontend gate also passed as recorded above.
+  - A representative 30,000-product default-planner probe reduced execution
+    from the pre-repair 219.545 ms parallel product scan to 6.056 ms. Candidate
+    branches used the product full-text, contains, and trigram-overlap GIN
+    indexes before one product primary-key lookup. A complementary
+    30,000-brand probe used both brand GIN indexes and
+    `products_brand_idx` before the unchanged final predicate.
+  - `mix quality` — exit `0`; Credo clean, ExDNA at its unchanged 3/3 budget,
+    Reach clean with 11 baseline suppressions, and Dialyzer at 0 errors.
+  - `mix test --cover` — exit `0`; 973 tests, 0 failures, and 83.98% total
+    coverage.
+  - `mix work_queue.validate` — exit `1` only with the explicitly waived exact
+    result: `Ready Work requires at least 3 complete rows; found 0`.
+  - `mix ci` was not rerun for the final repair and is not claimed to pass; its
+    queue-validator component is the exact waived result above, while all
+    remaining gates were run directly.
   - `git diff --check` — exit `0`; no whitespace errors.
 - Out of scope:
   - Autocomplete and suggestions, result highlighting or excerpts, score and
