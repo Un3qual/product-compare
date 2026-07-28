@@ -51,9 +51,22 @@ defmodule ProductCompare.Catalog.SearchDocuments do
   end
 
   defp rebuild_timeout do
-    :product_compare
-    |> Application.fetch_env!(__MODULE__)
-    |> Keyword.fetch!(:rebuild_timeout)
+    timeout =
+      :product_compare
+      |> Application.fetch_env!(__MODULE__)
+      |> Keyword.fetch!(:rebuild_timeout)
+
+    case timeout do
+      :infinity ->
+        :infinity
+
+      timeout when is_integer(timeout) and timeout >= 0 ->
+        timeout
+
+      invalid ->
+        raise ArgumentError,
+              "rebuild_timeout must be :infinity or a non-negative integer, got: #{inspect(invalid)}"
+    end
   end
 
   defp refresh_sql(where_clause \\ "") do

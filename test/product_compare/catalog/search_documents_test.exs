@@ -119,7 +119,7 @@ defmodule ProductCompare.Catalog.SearchDocumentsTest do
     assert document_matches?(product.id, "Rebuild RX-7900 keyboards")
   end
 
-  test "rebuild uses its dedicated maintenance timeout" do
+  test "rebuild rejects an invalid maintenance timeout with a configuration error" do
     previous_config = Application.get_env(:product_compare, SearchDocuments)
 
     on_exit(fn ->
@@ -132,9 +132,9 @@ defmodule ProductCompare.Catalog.SearchDocumentsTest do
 
     Application.put_env(:product_compare, SearchDocuments, rebuild_timeout: :invalid)
 
-    assert_raise ArithmeticError, fn ->
-      SearchDocuments.rebuild()
-    end
+    assert_raise ArgumentError,
+                 ~r/rebuild_timeout must be :infinity or a non-negative integer, got: :invalid/,
+                 fn -> SearchDocuments.rebuild() end
   end
 
   test "create rolls back the product when document refresh fails" do
