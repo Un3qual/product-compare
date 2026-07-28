@@ -46,7 +46,11 @@ export function catalogFiltersWithout(
 }
 
 function removeQueryFilter(filters: CatalogFilters): CatalogFilters {
-  return { ...filters, query: undefined };
+  return {
+    ...filters,
+    query: undefined,
+    sort: filters.sort === "RELEVANCE" ? undefined : filters.sort
+  };
 }
 
 function removeSortFilter(filters: CatalogFilters): CatalogFilters {
@@ -117,7 +121,7 @@ export function catalogFilterSummaryItems(
           }
         ]
       : []),
-    ...(filters.sort
+    ...(filters.sort !== undefined && filters.sort !== "RELEVANCE"
       ? [
           {
             key: "sort",

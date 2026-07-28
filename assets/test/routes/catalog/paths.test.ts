@@ -1,5 +1,15 @@
 import type { CatalogFilters } from "../../../src/routes/catalog/filters";
-import { buildCatalogBrowsePaginationData } from "../../../src/routes/catalog/paths";
+import {
+  buildCatalogBrowsePaginationData,
+  catalogBrowsePath
+} from "../../../src/routes/catalog/paths";
+
+const EMPTY_FILTERS: CatalogFilters = {
+  useCaseTaxonIds: [],
+  numeric: [],
+  booleans: [],
+  enums: []
+};
 
 const FILTERS: CatalogFilters = {
   query: "oled display",
@@ -44,6 +54,24 @@ test("buildCatalogBrowsePaginationData preserves filters, page size, compare ord
     nextHref:
       "/products?first=24&q=oled+display&sort=BRAND_NAME_ASC&typeTaxonId=type%2Flaptops&includeTypeDescendants=1&useCaseTaxonId=gaming+%26+media&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=next+cursor%2F%2B&slug=first+product&slug=second%2Fproduct"
   });
+});
+
+test("catalogBrowsePath omits relevance when it is the active query default", () => {
+  expect(
+    catalogBrowsePath(
+      { ...EMPTY_FILTERS, query: "oled", sort: "RELEVANCE" },
+      12
+    )
+  ).toBe("/products?first=12&q=oled");
+});
+
+test("catalogBrowsePath preserves explicit catalog order for an active query", () => {
+  expect(
+    catalogBrowsePath(
+      { ...EMPTY_FILTERS, query: "oled", sort: "ID_ASC" },
+      12
+    )
+  ).toBe("/products?first=12&q=oled&sort=ID_ASC");
 });
 
 test.each([null, ""])(

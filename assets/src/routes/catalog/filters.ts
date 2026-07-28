@@ -10,6 +10,7 @@ export interface CatalogFilters {
 }
 
 export const CATALOG_PRODUCT_SORTS = [
+  "RELEVANCE",
   "ID_ASC",
   "NAME_ASC",
   "BRAND_NAME_ASC",
@@ -82,6 +83,7 @@ const MAX_DECIMAL_EXPONENT_SHIFT = 1_000;
 export const MAX_CATALOG_SEARCH_QUERY_LENGTH = 100;
 
 const CATALOG_PRODUCT_SORT_LABELS: Record<CatalogProductSort, string> = {
+  RELEVANCE: "Relevance",
   ID_ASC: "Catalog order",
   NAME_ASC: "Product name",
   BRAND_NAME_ASC: "Brand name",
@@ -93,15 +95,34 @@ export function catalogProductSortLabel(sort: CatalogProductSort) {
 }
 
 export function catalogProductSortFromValue(value: string): CatalogProductSort {
+  return supportedCatalogProductSort(value) ?? "ID_ASC";
+}
+
+function supportedCatalogProductSort(value: string): CatalogProductSort | null {
   switch (value) {
+    case "RELEVANCE":
     case "ID_ASC":
     case "NAME_ASC":
     case "BRAND_NAME_ASC":
     case "NEWEST":
       return value;
     default:
-      return "ID_ASC";
+      return null;
   }
+}
+
+export function catalogProductSortParam(
+  filters: Pick<CatalogFilters, "query" | "sort">
+): CatalogProductSort | undefined {
+  if (filters.query) {
+    return filters.sort === "RELEVANCE" ? undefined : filters.sort;
+  }
+
+  return filters.sort === "NAME_ASC" ||
+    filters.sort === "BRAND_NAME_ASC" ||
+    filters.sort === "NEWEST"
+    ? filters.sort
+    : undefined;
 }
 
 interface DecimalFilterValueParts {
@@ -123,7 +144,7 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
   const enumFilters = new Map<string, CatalogEnumFilter>();
   const typeTaxonId = nonBlankParam(url, "typeTaxonId");
   const query = catalogSearchQuery(url.searchParams.get("q"));
-  const sort = catalogProductSort(url.searchParams.get("sort"));
+  const sort = catalogProductSort(url.searchParams.get("sort"), Boolean(query));
   const includeTypeDescendants = url.searchParams.get("includeTypeDescendants") === "1";
   const useCaseTaxonIds = nonBlankParams(url, "useCaseTaxonId");
 
@@ -399,11 +420,22 @@ function catalogSearchQuery(rawValue: string | null) {
   return value === "" ? null : value.slice(0, MAX_CATALOG_SEARCH_QUERY_LENGTH);
 }
 
-function catalogProductSort(rawValue: string | null): CatalogProductSort | null {
+function catalogProductSort(
+  rawValue: string | null,
+  hasQuery: boolean
+): CatalogProductSort | null {
   const value = rawValue?.trim() ?? "";
-  const sort = catalogProductSortFromValue(value);
+  const parsed = supportedCatalogProductSort(value);
 
-  return sort === "ID_ASC" ? null : sort;
+  if (hasQuery) {
+    return parsed ?? "RELEVANCE";
+  }
+
+  if (parsed === null || parsed === "ID_ASC" || parsed === "RELEVANCE") {
+    return null;
+  }
+
+  return parsed;
 }
 
 function nonBlankParam(url: URL, name: string) {
