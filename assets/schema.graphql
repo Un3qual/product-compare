@@ -355,6 +355,7 @@ input ProductEnumFilterInput {
 }
 
 enum ProductSort {
+  RELEVANCE
   ID_ASC
   NAME_ASC
   BRAND_NAME_ASC

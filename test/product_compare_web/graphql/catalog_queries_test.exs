@@ -997,9 +997,9 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       })
 
       for {query, product} <- [
-            {"50% Off", percent_product},
-            {"27_inch", underscore_product},
-            {"C:\\Display", backslash_product}
+            {"%", percent_product},
+            {"_", underscore_product},
+            {"\\", backslash_product}
           ] do
         assert %{
                  "data" => %{
@@ -1087,7 +1087,82 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                })
     end
 
-    test "products supports deterministic name, brand, and newest sort modes", %{conn: conn} do
+    test "products defaults searches to relevance and explicit ID sorting overrides only order",
+         %{
+           conn: conn
+         } do
+      typo =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurorra",
+          slug: "catalog-relevance-typo"
+        })
+
+      full_text =
+        SpecsFixtures.product_fixture(%{
+          name: "Northern Lights Reference",
+          slug: "catalog-relevance-full-text",
+          description: "A studio workflow inspired by the aurora phenomenon."
+        })
+
+      contains =
+        SpecsFixtures.product_fixture(%{
+          name: "Display for Aurora Creators",
+          slug: "catalog-relevance-contains"
+        })
+
+      prefix =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora Pro Display",
+          slug: "catalog-relevance-prefix"
+        })
+
+      exact =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora",
+          slug: "catalog-relevance-exact"
+        })
+
+      assert product_slugs(conn, nil, "aurora") == [
+               exact.slug,
+               prefix.slug,
+               contains.slug,
+               full_text.slug,
+               typo.slug
+             ]
+
+      assert product_slugs(conn, "RELEVANCE", "aurora") == [
+               exact.slug,
+               prefix.slug,
+               contains.slug,
+               full_text.slug,
+               typo.slug
+             ]
+
+      assert product_slugs(conn, "ID_ASC", "aurora") ==
+               [exact, prefix, contains, full_text, typo]
+               |> Enum.sort_by(& &1.id)
+               |> Enum.map(& &1.slug)
+    end
+
+    test "products falls back to ID order when relevance has no query", %{conn: conn} do
+      first =
+        SpecsFixtures.product_fixture(%{
+          name: "Zulu Relevance Fallback",
+          slug: "catalog-relevance-fallback-first"
+        })
+
+      second =
+        SpecsFixtures.product_fixture(%{
+          name: "Alpha Relevance Fallback",
+          slug: "catalog-relevance-fallback-second"
+        })
+
+      assert product_slugs(conn, "RELEVANCE") == [first.slug, second.slug]
+    end
+
+    test "products supports deterministic explicit sort modes over the same search predicate", %{
+      conn: conn
+    } do
       {:ok, alpha_brand} = Catalog.upsert_brand(%{name: "Alpha Brand"})
       {:ok, beta_brand} = Catalog.upsert_brand(%{name: "Beta Brand"})
       {:ok, zulu_brand} = Catalog.upsert_brand(%{name: "Zulu Brand"})
@@ -1096,7 +1171,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
         SpecsFixtures.product_fixture(%{
           brand_id: beta_brand.id,
           name: "Zulu Product",
-          slug: "catalog-sort-oldest"
+          slug: "catalog-sort-oldest",
+          description: "A shared qualifier for explicit sorting."
         })
         |> Ecto.Changeset.change(inserted_at: ~U[2026-01-01 00:00:00.000000Z])
         |> Repo.update!()
@@ -1105,7 +1181,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
         SpecsFixtures.product_fixture(%{
           brand_id: zulu_brand.id,
           name: "Alpha Product",
-          slug: "catalog-sort-middle"
+          slug: "catalog-sort-middle",
+          description: "A shared qualifier for explicit sorting."
         })
         |> Ecto.Changeset.change(inserted_at: ~U[2026-01-02 00:00:00.000000Z])
         |> Repo.update!()
@@ -1114,15 +1191,33 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
         SpecsFixtures.product_fixture(%{
           brand_id: alpha_brand.id,
           name: "Middle Product",
-          slug: "catalog-sort-newest"
+          slug: "catalog-sort-newest",
+          description: "A shared qualifier for explicit sorting."
         })
         |> Ecto.Changeset.change(inserted_at: ~U[2026-01-03 00:00:00.000000Z])
         |> Repo.update!()
 
-      assert product_slugs(conn, "NAME_ASC") == [middle.slug, newest.slug, oldest.slug]
-      assert product_slugs(conn, "BRAND_NAME_ASC") == [newest.slug, oldest.slug, middle.slug]
-      assert product_slugs(conn, "NEWEST") == [newest.slug, middle.slug, oldest.slug]
-      assert product_slugs(conn, "ID_ASC") == [oldest.slug, middle.slug, newest.slug]
+      SpecsFixtures.product_fixture(%{
+        brand_id: alpha_brand.id,
+        name: "Aardvark Unrelated Product",
+        slug: "catalog-sort-unrelated",
+        description: "A conventional office product."
+      })
+      |> Ecto.Changeset.change(inserted_at: ~U[2026-01-04 00:00:00.000000Z])
+      |> Repo.update!()
+
+      query = "shared qualifier"
+
+      assert product_slugs(conn, "NAME_ASC", query) == [middle.slug, newest.slug, oldest.slug]
+
+      assert product_slugs(conn, "BRAND_NAME_ASC", query) == [
+               newest.slug,
+               oldest.slug,
+               middle.slug
+             ]
+
+      assert product_slugs(conn, "NEWEST", query) == [newest.slug, middle.slug, oldest.slug]
+      assert product_slugs(conn, "ID_ASC", query) == [oldest.slug, middle.slug, newest.slug]
     end
 
     test "products keeps cursor pagination stable when sorted values are tied", %{conn: conn} do
@@ -1170,6 +1265,58 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
                  "first" => 1,
                  "after" => cursor,
                  "filters" => %{"sort" => "NAME_ASC"}
+               })
+
+      assert second_product_id == relay_id(:product, second_product.id)
+    end
+
+    test "products keeps relevance cursors stable when ranked values are tied", %{conn: conn} do
+      first_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora Relay Tie",
+          slug: "catalog-relevance-tie-first"
+        })
+
+      second_product =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora Relay Tie",
+          slug: "catalog-relevance-tie-second"
+        })
+
+      assert first_product.id < second_product.id
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{
+                       "cursor" => cursor,
+                       "node" => %{"id" => first_product_id}
+                     }
+                   ],
+                   "pageInfo" => %{"hasNextPage" => true}
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "first" => 1,
+                 "filters" => %{"query" => "Aurora Relay Tie"}
+               })
+
+      assert first_product_id == relay_id(:product, first_product.id)
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [%{"node" => %{"id" => second_product_id}}],
+                   "pageInfo" => %{"hasNextPage" => false, "hasPreviousPage" => true}
+                 }
+               }
+             } =
+               graphql(conn, products_query(), %{
+                 "first" => 1,
+                 "after" => cursor,
+                 "filters" => %{"query" => "Aurora Relay Tie"}
                })
 
       assert second_product_id == relay_id(:product, second_product.id)
@@ -1605,14 +1752,21 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
     """
   end
 
-  defp product_slugs(conn, sort) do
+  defp product_slugs(conn, sort), do: product_slugs(conn, sort, nil)
+
+  defp product_slugs(conn, sort, query) do
+    filters =
+      %{}
+      |> then(fn filters -> if query, do: Map.put(filters, "query", query), else: filters end)
+      |> then(fn filters -> if sort, do: Map.put(filters, "sort", sort), else: filters end)
+
     %{
       "data" => %{
         "products" => %{
           "edges" => edges
         }
       }
-    } = graphql(conn, products_query(), %{"filters" => %{"sort" => sort}})
+    } = graphql(conn, products_query(), %{"filters" => filters})
 
     Enum.map(edges, &get_in(&1, ["node", "slug"]))
   end

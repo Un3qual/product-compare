@@ -702,6 +702,47 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              } == {1, 1}
     end
 
+    test "implicit and explicit relevance share one request-scoped products loader key", %{
+      conn: conn
+    } do
+      product =
+        SpecsFixtures.product_fixture(%{
+          name: "Aurora",
+          slug: canonical_slug("implicit-explicit-relevance-aurora")
+        })
+
+      {response, queries} =
+        capture_select_queries(fn ->
+          graphql(conn, catalog_relevance_alias_query(), %{})
+        end)
+
+      assert %{
+               "data" => %{
+                 "implicit" => implicit,
+                 "explicit" => explicit
+               }
+             } = response
+
+      assert implicit == explicit
+
+      assert %{
+               "edges" => [
+                 %{
+                   "cursor" => cursor,
+                   "node" => %{
+                     "id" => product_id,
+                     "slug" => product_slug
+                   }
+                 }
+               ]
+             } = implicit
+
+      assert is_binary(cursor)
+      assert product_id == relay_id(:product, product.id)
+      assert product_slug == product.slug
+      assert catalog_discovery_product_query_budget(queries) == 1
+    end
+
     test "product filter metadata root aliases preserve exact selected values and fixed SELECT budgets as aliases grow",
          %{conn: conn, test: test_name} do
       {_monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
@@ -1588,6 +1629,19 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     """
     query CatalogProductsAliases($filters: ProductFiltersInput!) {
       #{selections}
+    }
+    """
+  end
+
+  defp catalog_relevance_alias_query do
+    """
+    query CatalogRelevanceAliases {
+      implicit: products(first: 1, filters: {query: "aurora"}) {
+        edges { cursor node { id slug } }
+      }
+      explicit: products(first: 1, filters: {query: "aurora", sort: RELEVANCE}) {
+        edges { cursor node { id slug } }
+      }
     }
     """
   end

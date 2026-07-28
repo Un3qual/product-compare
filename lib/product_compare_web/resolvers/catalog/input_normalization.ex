@@ -32,7 +32,7 @@ defmodule ProductCompareWeb.Resolvers.Catalog.InputNormalization do
 
   def filters(filters) when is_map(filters) do
     with {:ok, query} <- normalize_search_query(Input.fetch_value(filters, :query)),
-         {:ok, sort} <- normalize_product_sort(Input.fetch_value(filters, :sort)),
+         {:ok, sort} <- normalize_product_sort(Input.fetch_value(filters, :sort), query),
          {:ok, primary_type_taxon_id} <-
            Input.decode_optional_integer_id(
              Input.fetch_value(filters, :primary_type_taxon_id),
@@ -88,14 +88,16 @@ defmodule ProductCompareWeb.Resolvers.Catalog.InputNormalization do
 
   defp normalize_search_query(_value), do: {:error, "invalid search query"}
 
-  defp normalize_product_sort(nil), do: {:ok, nil}
+  defp normalize_product_sort(nil, query) when is_binary(query), do: {:ok, :relevance}
+  defp normalize_product_sort(nil, _query), do: {:ok, nil}
 
-  defp normalize_product_sort(sort)
-       when sort in [:id_asc, :name_asc, :brand_name_asc, :newest],
+  defp normalize_product_sort(sort, _query)
+       when sort in [:relevance, :id_asc, :name_asc, :brand_name_asc, :newest],
        do: {:ok, sort}
 
-  defp normalize_product_sort(sort) when is_binary(sort) do
+  defp normalize_product_sort(sort, _query) when is_binary(sort) do
     case sort |> String.trim() |> String.upcase() do
+      "RELEVANCE" -> {:ok, :relevance}
       "ID_ASC" -> {:ok, :id_asc}
       "NAME_ASC" -> {:ok, :name_asc}
       "BRAND_NAME_ASC" -> {:ok, :brand_name_asc}
@@ -104,7 +106,7 @@ defmodule ProductCompareWeb.Resolvers.Catalog.InputNormalization do
     end
   end
 
-  defp normalize_product_sort(_sort), do: {:error, "invalid product sort"}
+  defp normalize_product_sort(_sort, _query), do: {:error, "invalid product sort"}
 
   @spec normalize_numeric_filters(any()) :: {:ok, [map()]} | {:error, String.t()}
   defp normalize_numeric_filters(filters) when is_list(filters) do

@@ -28,6 +28,7 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
   end
 
   enum :product_sort do
+    value(:relevance)
     value(:id_asc)
     value(:name_asc)
     value(:brand_name_asc)
