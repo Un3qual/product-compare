@@ -82,24 +82,11 @@ export function CatalogFilterForm({
     hasInitiallyOpenCatalogAdvancedFilters(filters)
   );
   const [query, setQuery] = useState(filters.query ?? "");
-  const [sortSelection, setSortSelection] = useState<{
-    value: CatalogProductSort;
-    implicit: boolean;
-  }>(() => {
-    const hasQuery = hasCatalogSearchQuery(filters.query ?? "");
-    const defaultSort = hasQuery ? "RELEVANCE" : "ID_ASC";
-    const requestedSort = filters.sort ?? defaultSort;
-    const value = requestedSort === "RELEVANCE" && !hasQuery ? defaultSort : requestedSort;
-    const serializedSort = catalogProductSortParam({
-      query: hasQuery ? filters.query : undefined,
-      sort: value
-    });
-
-    return {
-      value,
-      implicit: serializedSort === undefined
-    };
-  });
+  const [explicitSort, setExplicitSort] = useState<CatalogProductSort | undefined>(() =>
+    catalogProductSortParam(filters)
+  );
+  const sort: CatalogProductSort =
+    explicitSort ?? (hasCatalogSearchQuery(query) ? "RELEVANCE" : "ID_ASC");
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     setTypeFilterState((previous) => catalogFilterFormTypeSelection(previous, typeTaxonId));
@@ -113,16 +100,10 @@ export function CatalogFilterForm({
     const hasQuery = hasCatalogSearchQuery(nextQuery);
 
     setQuery(nextQuery);
-    setSortSelection((previous) => {
-      if (previous.implicit || (!hasQuery && previous.value === "RELEVANCE")) {
-        return {
-          value: hasQuery ? "RELEVANCE" : "ID_ASC",
-          implicit: true
-        };
-      }
 
-      return previous;
-    });
+    if (!hasQuery) {
+      setExplicitSort((previous) => (previous === "RELEVANCE" ? undefined : previous));
+    }
   }
 
   return (
@@ -136,8 +117,8 @@ export function CatalogFilterForm({
         <SearchField query={query} onQueryChange={handleQueryChange} />
         <SortField
           query={query}
-          sort={sortSelection.value}
-          onSortChange={(sort) => setSortSelection({ value: sort, implicit: false })}
+          sort={sort}
+          onSortChange={setExplicitSort}
         />
         <PageSizeField pageSize={pageSize} />
         <CompareSlugFields compareSlugs={compareSlugs} />
