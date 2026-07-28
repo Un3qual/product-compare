@@ -42,14 +42,21 @@ index fails visibly on retry.
 - Full-text matching ORs `websearch_to_tsquery('simple', query)` with
   `websearch_to_tsquery('english', query)` so unquoted terms retain AND
   semantics while quoted phrases, uppercase `OR`, and `-` exclusions work.
-- A query that produces no lexemes simply makes the full-text branch false;
-  exact, prefix, contains, and eligible trigram matching still apply.
+- Input containing a quote, standalone uppercase `OR`, or a `-term` at the
+  start of the query or after whitespace is structured web-search input.
+  PostgreSQL full text is its sole membership authority so raw exact, partial,
+  trigram, identifier, and description fallbacks cannot bypass operators.
+  Internal hyphens such as `RX-7900` remain ordinary technical text.
+- A query that produces no lexemes makes the full-text branch false. Ordinary
+  input may still use exact, prefix, contains, identifier, description, and
+  eligible trigram matching; structured input returns no matches.
 - Relevance tiers are, in order: exact validated GTIN or model number; exact
   name or slug; text prefix; text contains; full text; trigram; description
   contains.
-- Tier-five ties use `ts_rank_cd` descending. Every tier then uses greatest
+- Tier-five ties use `ts_rank_cd` descending. Ordinary input then uses greatest
   text similarity descending, normalized product name ascending, and product
-  ID ascending.
+  ID ascending. Structured input ranks only through tier five and skips the
+  inapplicable raw-string similarity tie-breaker.
 - `Catalog.Products.create_product/1` and `update_product/2` must refresh the
   document in the same `Repo.transaction/1` as the product write, including
   slug-alias preservation and brand reassignment. A refresh error rolls back
@@ -726,7 +733,8 @@ the persisted document:
 5. A reversed phrase cannot match across the stored simple/English vector
    boundary.
 6. `keyboard OR mouse` matches either branch.
-7. `keyboard -wireless` excludes the wireless record.
+7. `keyboard -wireless` excludes the wireless record even when its name is
+   similar enough to pass the raw trigram threshold.
 8. A stopword-only query such as `"the and"` and a punctuation-only query such
    as `"!!!"` return safely without a PostgreSQL syntax error.
 9. A product with the same lexeme in its name outranks a product that has the
@@ -801,18 +809,26 @@ end
 Implement `search_terms/1` so it returns exactly:
 
 ```elixir
+structured? = structured_query?(value)
+
 %{
   query: value,
   contains_pattern: "%#{escape_like_pattern(value)}%",
   prefix_pattern: "#{escape_like_pattern(value)}%",
   gtin: normalized_gtin(value),
-  trigram?: String.length(value) >= @minimum_trigram_length
+  structured?: structured?,
+  trigram?: not structured? and String.length(value) >= @minimum_trigram_length
 }
 ```
 
+`structured_query?/1` recognizes any quote, standalone uppercase `OR`, or
+`-term` at the start of the query or after whitespace. It must not classify an
+internal technical hyphen such as `RX-7900` as exclusion syntax.
+
 `apply_match/2` adds the candidate-ID subquery only when `terms.trigram?` is
-true. Shorter queries go directly from the shared brand join to the combined
-match predicate.
+true. Shorter and structured queries go directly from the shared brand join to
+their match predicate. For structured input, the predicate is only the combined
+full-text expression; ordinary input uses the hybrid OR below.
 
 Implement `normalized_gtin/1` as `normalized` for
 `{:ok, normalized} <- GTIN.normalize(value)` and `nil` for an invalid GTIN.
@@ -827,8 +843,8 @@ value
 |> String.replace("_", "\\_")
 ```
 
-Build the match expression with `dynamic/2` and bound parameters. It is the OR
-of:
+Build the ordinary match expression with `dynamic/2` and bound parameters. It
+is the OR of:
 
 1. `validated_gtin_expression(terms.gtin)`;
 2. case-insensitive exact/prefix/contains predicates over `product.name`,

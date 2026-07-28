@@ -545,7 +545,7 @@
 - Architecture:
   - PostgreSQL owns hybrid matching through `pg_trgm` plus an
     application-maintained, weighted `products.search_document` `tsvector`.
-  - Searches of at least three characters first derive a distinct
+  - Ordinary searches of at least three characters first derive a distinct
     candidate-product-ID set through the validated-GTIN partial index;
     GIN-backed product and brand contains, description, and full-text paths;
     and immutable trigram-array overlap. The trigram candidate path applies
@@ -554,16 +554,23 @@
     One- and two-character searches bypass that fan-out and apply the combined
     predicate in one joined product query because trigram indexes cannot
     selectively bound them.
+  - Queries containing quotes, standalone uppercase `OR`, or a `-term` at the
+    start of the query or after whitespace use PostgreSQL full text as the sole
+    membership authority. Raw exact, partial, trigram, identifier, and
+    description fallbacks cannot bypass phrase or exclusion semantics.
+    Internal technical hyphens such as `RX-7900` remain ordinary text.
   - `ProductCompare.Catalog.Search` applies the identical match predicate to
     that bounded set for relevance and named-sort queries, then ranks relevance
     through seven tiers: exact validated GTIN/model number, exact name/slug,
     text prefix, text contains, full text, trigram, and description contains.
+    Structured queries match and rank through the full-text tier only.
   - Exact, pattern, and trigram comparisons case-fold both fields and bound
     query values in PostgreSQL so Unicode behavior uses one database
     collation. Positional gaps between stored vector segments prevent quoted
     phrases from crossing simple/English or product/description boundaries.
-  - Full-text ties use `ts_rank_cd`; every tier then uses greatest applicable
-    trigram similarity, normalized product name, and product ID.
+  - Full-text ties use `ts_rank_cd`; ordinary searches then use greatest
+    applicable trigram similarity, normalized product name, and product ID.
+    Structured queries skip the inapplicable raw-string similarity tie-breaker.
   - Catalog product writes refresh search documents inside the owning
     transaction. No database trigger or recurring reconciliation was added,
     and a failed document refresh rolls back the product write and any slug

@@ -129,6 +129,12 @@ The 2026-07-28 bot-review pass reproduced four new findings before editing:
 - an indexability probe showed the nullable-column `coalesce` wrapper prevented
   the full-text candidate from using `products_search_document_idx`.
 
+A later thread-aware pass reproduced one additional correctness finding:
+
+- high-similarity raw trigram matches could bypass quoted-phrase adjacency and
+  `-term` exclusions because structured web-search input was also evaluated as
+  ordinary fuzzy text.
+
 After the fixes:
 
 - all 19 focused search tests pass, including short and candidate-bound Unicode
@@ -139,7 +145,21 @@ After the fixes:
 - the revised migrations roll back and reapply successfully; and
 - the indexability probe finds `products_search_document_idx`,
   `products_name_trgm_idx`, and
-  `products_name_trigram_candidates_idx` available to the generated query.
+  `products_name_trigram_candidates_idx` available to the generated query; and
+- structured queries now use the combined PostgreSQL full-text expression as
+  their sole membership authority, and focused regressions reject both a
+  non-adjacent high-similarity phrase and an excluded high-similarity product.
+
+The later follow-through verification completed with:
+
+- `mix test test/product_compare/catalog/search_test.exs` — 19 tests,
+  0 failures;
+- the focused search, filtering, metadata, GraphQL, and Dataloader slice —
+  106 tests, 0 failures;
+- `cd assets && bun run check` — Relay and TypeScript passed, 104 test files
+  and 1,507 tests passed, both builds passed, and the bundle gate passed;
+- `mix quality` — passed; and
+- `mix test` — 976 tests, 0 failures.
 
 ## EXPLAIN Evidence
 

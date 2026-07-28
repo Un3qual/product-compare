@@ -88,14 +88,16 @@ export function CatalogFilterForm({
   }>(() => {
     const hasQuery = hasCatalogSearchQuery(filters.query ?? "");
     const defaultSort = hasQuery ? "RELEVANCE" : "ID_ASC";
-    const value =
-      filters.sort === "RELEVANCE" && !hasQuery
-        ? defaultSort
-        : (filters.sort ?? defaultSort);
+    const requestedSort = filters.sort ?? defaultSort;
+    const value = requestedSort === "RELEVANCE" && !hasQuery ? defaultSort : requestedSort;
+    const serializedSort = catalogProductSortParam({
+      query: hasQuery ? filters.query : undefined,
+      sort: value
+    });
 
     return {
       value,
-      implicit: filters.sort === undefined || filters.sort === defaultSort || value !== filters.sort
+      implicit: serializedSort === undefined
     };
   });
 

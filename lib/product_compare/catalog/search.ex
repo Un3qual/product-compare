@@ -10,6 +10,7 @@ defmodule ProductCompare.Catalog.Search do
 
   @similarity_threshold 0.35
   @minimum_trigram_length 3
+  @structured_query_pattern ~r/(?:^|\s)(?:OR(?:\s|$)|-\S)/u
   @product_pattern_candidate_fields [:name, :slug, :model_number, :description]
   @product_trigram_candidate_fields [:name, :slug, :model_number]
 
@@ -32,7 +33,7 @@ defmodule ProductCompare.Catalog.Search do
     order_expressions = [
       asc: relevance_tier(terms),
       desc: full_text_rank(terms),
-      desc: greatest_similarity(terms.query),
+      desc: greatest_similarity(terms),
       asc: dynamic([product: product], fragment("lower(?)", product.name)),
       asc: dynamic([product: product], product.id)
     ]
@@ -43,15 +44,23 @@ defmodule ProductCompare.Catalog.Search do
   end
 
   defp search_terms(value) do
+    structured? = structured_query?(value)
+
     %{
       query: value,
       contains_pattern: "%#{escape_like_pattern(value)}%",
       prefix_pattern: "#{escape_like_pattern(value)}%",
       gtin: normalized_gtin(value),
-      trigram?: String.length(value) >= @minimum_trigram_length
+      structured?: structured?,
+      trigram?: not structured? and String.length(value) >= @minimum_trigram_length
     }
   end
 
+  defp structured_query?(value) do
+    String.contains?(value, "\"") or Regex.match?(@structured_query_pattern, value)
+  end
+
+  defp maybe_bound_candidates(query, %{structured?: true}), do: query
   defp maybe_bound_candidates(query, %{trigram?: false}), do: query
 
   defp maybe_bound_candidates(query, terms) do
@@ -177,6 +186,10 @@ defmodule ProductCompare.Catalog.Search do
     |> String.replace("_", "\\_")
   end
 
+  defp match_expression(%{structured?: true, query: query}) do
+    full_text_expression(query)
+  end
+
   defp match_expression(terms) do
     gtin = validated_gtin_expression(terms.gtin)
     exact = exact_text_expression(terms.query)
@@ -283,6 +296,15 @@ defmodule ProductCompare.Catalog.Search do
     )
   end
 
+  defp relevance_tier(%{structured?: true, query: query}) do
+    full_text = full_text_expression(query)
+
+    dynamic(
+      [product: _product],
+      fragment("CASE WHEN ? THEN 5 ELSE 8 END", ^full_text)
+    )
+  end
+
   defp relevance_tier(terms) do
     tier_one = tier_one_expression(terms)
     tier_two = tier_two_expression(terms.query)
@@ -340,6 +362,10 @@ defmodule ProductCompare.Catalog.Search do
     )
   end
 
+  defp full_text_rank(%{structured?: true, query: query}) do
+    full_text_rank_expression(query, full_text_expression(query))
+  end
+
   defp full_text_rank(terms) do
     tier_one = tier_one_expression(terms)
     tier_two = tier_two_expression(terms.query)
@@ -347,12 +373,23 @@ defmodule ProductCompare.Catalog.Search do
     tier_four = text_pattern_expression(terms.contains_pattern)
     full_text = full_text_expression(terms.query)
 
+    eligible =
+      dynamic(
+        [product: _product, brand: _brand],
+        ^full_text and not (^tier_one) and not (^tier_two) and not (^tier_three) and
+          not (^tier_four)
+      )
+
+    full_text_rank_expression(terms.query, eligible)
+  end
+
+  defp full_text_rank_expression(query, eligible) do
     dynamic(
-      [product: product, brand: _brand],
+      [product: product],
       fragment(
         """
         CASE
-          WHEN ? AND NOT (?) AND NOT (?) AND NOT (?) AND NOT (?) THEN
+          WHEN ? THEN
             ts_rank_cd(
               ?.search_document,
               websearch_to_tsquery('simple', ?) ||
@@ -361,19 +398,19 @@ defmodule ProductCompare.Catalog.Search do
           ELSE 0.0
         END
         """,
-        ^full_text,
-        ^tier_one,
-        ^tier_two,
-        ^tier_three,
-        ^tier_four,
+        ^eligible,
         product,
-        ^terms.query,
-        ^terms.query
+        ^query,
+        ^query
       )
     )
   end
 
-  defp greatest_similarity(query) do
+  defp greatest_similarity(%{structured?: true}) do
+    dynamic(fragment("CAST(0 AS real)"))
+  end
+
+  defp greatest_similarity(%{query: query}) do
     dynamic(
       [product: product, brand: brand],
       fragment(

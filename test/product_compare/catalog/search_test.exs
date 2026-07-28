@@ -226,7 +226,11 @@ defmodule ProductCompare.Catalog.SearchTest do
   test "quoted phrases require order and adjacency" do
     adjacent = product(%{name: "Adjacent Terms", description: "A mechanical keyboard for work"})
     product(%{name: "Reversed Terms", description: "A keyboard mechanical layout"})
-    product(%{name: "Separated Terms", description: "A mechanical compact keyboard"})
+
+    product(%{
+      name: "Mechanical Compact Keyboard",
+      description: "A mechanical compact keyboard"
+    })
 
     assert Enum.map(ranked_search("\"mechanical keyboard\""), & &1.id) == [adjacent.id]
   end
@@ -248,7 +252,7 @@ defmodule ProductCompare.Catalog.SearchTest do
 
   test "websearch exclusion syntax removes negative terms" do
     wired = product(%{name: "Wired Input", description: "A wired keyboard"})
-    product(%{name: "Cordless Input", description: "A wireless keyboard"})
+    product(%{name: "Keyboard Wireless", description: "A wireless keyboard"})
 
     assert Enum.map(ranked_search("keyboard -wireless"), & &1.id) == [wired.id]
   end

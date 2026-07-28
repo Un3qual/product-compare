@@ -98,9 +98,22 @@ The two parsed queries are combined with full-text OR. Each parsed branch keeps
 the normal web-search AND semantics between unquoted terms and supports quoted
 phrases, uppercase `OR`, and `-` exclusions. PostgreSQL's web-search parser is
 the raw-input boundary, so malformed punctuation cannot produce a tsquery
-syntax error. If both parsed branches contain no lexemes, full-text matching is
-false and the remaining exact, partial, trigram, and description predicates
-continue normally.
+syntax error.
+
+Queries containing a quote, standalone uppercase `OR`, or a `-term` at the
+start of the query or after whitespace are structured web-search input. For
+these queries, the combined full-text expression is the sole membership
+authority. Exact, partial, trigram, identifier, and description fallbacks
+cannot admit a row that violates phrase or exclusion semantics. Structured
+matches use tier five, `ts_rank_cd`, normalized product name, and product ID;
+raw-string trigram similarity is not applicable to their membership or
+tie-breaking. Internal hyphens such as `RX-7900` remain ordinary technical
+text, not exclusion syntax.
+
+If both parsed branches contain no lexemes, full-text matching is false.
+Ordinary unstructured input may still use exact, partial, trigram, identifier,
+and description predicates; structured input returns no matches rather than
+bypassing its operators.
 
 The stored document contains both configurations so one query can match terms
 distributed across brand, product name, model number, slug, and description:
@@ -129,10 +142,11 @@ tier:
 7. product-description contains match.
 
 Within the full-text tier, results first sort by `ts_rank_cd` using the document
-weights above. All tiers then sort by the greatest applicable trigram
-similarity, normalized product name, and product ID. Full-text rank is zero
-outside its tier. The final product-ID tie-breaker keeps Relay pages
-deterministic for equal names and scores.
+weights above. Ordinary unstructured queries then sort all tiers by the
+greatest applicable trigram similarity, normalized product name, and product
+ID. Structured queries skip the inapplicable raw-string similarity tie-breaker.
+Full-text rank is zero outside its tier. The final product-ID tie-breaker keeps
+Relay pages deterministic for equal names and scores.
 
 The API does not expose a relevance score or matching field. Those values are
 query policy, not durable product facts.
@@ -276,7 +290,8 @@ explanation is added.
   combined match predicate through one joined product query.
 - Punctuation-only queries are safe and may return an ordinary empty result.
 - Web-search quotes, uppercase `OR`, and `-` exclusions retain PostgreSQL
-  `websearch_to_tsquery` semantics.
+  `websearch_to_tsquery` semantics because structured input cannot fall back
+  to raw exact, partial, trigram, identifier, or description matching.
 - A query that resembles an invalid GTIN may still match ordinary text, but it
   cannot gain the exact-identifier tier.
 - Missing brand, model number, or description cannot make the query fail.
@@ -298,7 +313,8 @@ Backend behavior tests cover:
 - multi-term matching across brand, product name, model, slug, and description;
 - `simple` technical-term matching and `english` stemming;
 - quoted phrases, uppercase `OR`, exclusions, stop-word-only input, and
-  punctuation-only input;
+  punctuation-only input, including high-similarity rows that would bypass
+  phrase or exclusion constraints without the structured-query boundary;
 - quoted phrases not crossing the stored simple/English vector boundaries;
 - Unicode case-insensitive matching using the database collation;
 - full-text rank ordering and deterministic equal-rank ties;
