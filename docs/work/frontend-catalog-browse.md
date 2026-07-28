@@ -600,8 +600,8 @@
   - `823e1ce275aa882604559ee907635213b92d23bb` — normalize relevance catalog
     URLs.
   - `ef867cbb93c9d661d3f041f3788f3d8bac9902e3` — finish ranked catalog search.
-  - The final aggregate repair hash is recorded in the final-fix report after
-    the repair milestone is committed.
+  - `f12dbf539115354da0c1d7480e7e73237ffe9649` — bound ranked catalog search
+    candidates and close the completed dispatch state.
 - Frontend contract:
   - Query-only URLs use implicit relevance and omit redundant
     `sort=RELEVANCE`.
