@@ -119,6 +119,24 @@ defmodule ProductCompare.Catalog.SearchDocumentsTest do
     assert document_matches?(product.id, "Rebuild RX-7900 keyboards")
   end
 
+  test "rebuild uses its dedicated maintenance timeout" do
+    previous_config = Application.get_env(:product_compare, SearchDocuments)
+
+    on_exit(fn ->
+      if previous_config do
+        Application.put_env(:product_compare, SearchDocuments, previous_config)
+      else
+        Application.delete_env(:product_compare, SearchDocuments)
+      end
+    end)
+
+    Application.put_env(:product_compare, SearchDocuments, rebuild_timeout: :invalid)
+
+    assert_raise ArithmeticError, fn ->
+      SearchDocuments.rebuild()
+    end
+  end
+
   test "create rolls back the product when document refresh fails" do
     existing = SpecsFixtures.product_fixture(%{name: "Rollback Reference"})
     name = "Rollback Create #{System.unique_integer([:positive])}"

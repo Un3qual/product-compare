@@ -39,13 +39,21 @@ defmodule ProductCompare.Catalog.SearchDocuments do
   end
 
   @spec rebuild() :: {:ok, non_neg_integer()} | {:error, term()}
-  def rebuild, do: refresh_many(refresh_sql(), [])
+  def rebuild do
+    refresh_many(refresh_sql(), [], timeout: rebuild_timeout())
+  end
 
-  defp refresh_many(sql, params) do
-    case Repo.query(sql, params) do
+  defp refresh_many(sql, params, opts \\ []) do
+    case Repo.query(sql, params, opts) do
       {:ok, %Postgrex.Result{num_rows: count}} -> {:ok, count}
       {:error, reason} -> {:error, reason}
     end
+  end
+
+  defp rebuild_timeout do
+    :product_compare
+    |> Application.fetch_env!(__MODULE__)
+    |> Keyword.fetch!(:rebuild_timeout)
   end
 
   defp refresh_sql(where_clause \\ "") do
