@@ -70,10 +70,11 @@
 
 - `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`
   - Enables `pg_trgm`.
-  - Adds lowercased GIN trigram indexes for `products.name`, `products.slug`,
-    `products.model_number`, and `brands.name`.
-  - Defines the pure `catalog_search_document/5` SQL function, adds and
-    backfills the non-null `products.search_document`, and adds its GIN index.
+  - Defines the pure `catalog_search_document/5` SQL function and adds the
+    nullable `products.search_document` without a table rewrite.
+- `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`
+  - Adds the full-text, contains, and trigram candidate indexes concurrently
+    outside a migration transaction.
 - `lib/product_compare/catalog/search_documents.ex`
   - Explicitly refreshes one product, many products, all products for a brand,
     or the entire catalog using the pure SQL builder.
@@ -158,6 +159,7 @@
 **Files:**
 
 - Create: `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`
+- Create: `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`
 - Create: `lib/product_compare/catalog/search_documents.ex`
 - Create: `lib/mix/tasks/catalog.search_documents.rebuild.ex`
 - Modify: `lib/product_compare/catalog/products.ex`
@@ -306,7 +308,7 @@ mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/c
 Expected: compilation fails because the migration, `SearchDocuments`, and Mix
 task do not exist and product writes do not yet refresh a document.
 
-- [ ] **Step 5: Add the trigger-free migration**
+- [ ] **Step 5: Add the trigger-free staged migrations**
 
 Create `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`.
 Its `up/0` must execute, in this order:
@@ -361,43 +363,27 @@ RETURN
   )
 ```
 
-3. The column:
+1. The column:
 
 ```sql
 ALTER TABLE products
-ADD COLUMN search_document tsvector NOT NULL DEFAULT ''::tsvector
+ADD COLUMN search_document tsvector
 ```
 
-4. The backfill:
-
-```sql
-UPDATE products AS product
-SET search_document = catalog_search_document(
-  product.name,
-  product.slug,
-  product.model_number,
-  product.description,
-  (
-    SELECT brand.name
-    FROM brands AS brand
-    WHERE brand.id = product.brand_id
-  )
-)
-```
-
-5. A GIN index on `products(search_document)`.
-6. Lowercased GIN trigram indexes on `products.name`, `products.slug`,
-   `products.model_number`, and `brands.name`.
+Create
+`priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`
+with `@disable_ddl_transaction true` and `@disable_migration_lock true`.
+Create the `search_document`, contains, and trigram candidate indexes with
+`CREATE INDEX CONCURRENTLY`.
 
 Do not create a trigger or trigger function. The SQL builder accepts values,
 reads no tables, and mutates no rows.
 
-The `down/0` order is: drop the four trigram indexes; drop the
-`search_document` GIN index; drop the column; drop
-`catalog_search_document(text, text, text, text, text)`. Intentionally retain
-the shared `pg_trgm` extension.
+Rollback drops the indexes concurrently before the earlier migration drops the
+column and `catalog_search_document(text, text, text, text, text)`.
+Intentionally retain the shared `pg_trgm` extension.
 
-- [ ] **Step 6: Apply the migration and prove existing rows were backfilled**
+- [ ] **Step 6: Apply the migrations and prove explicit rebuild backfill**
 
 While the test database is still at the previous migration, insert one
 pre-migration sentinel:
@@ -412,28 +398,27 @@ Then run:
 MIX_ENV=test mix ecto.migrate
 ```
 
-Verify the migration populated the document and remove only that sentinel:
+Run the explicit deployment rebuild, verify that it populated the document,
+and remove only that sentinel:
 
 ```bash
+MIX_ENV=test mix catalog.search_documents.rebuild
 MIX_ENV=test mix run -e 'slug = "ranked-search-backfill-sentinel"; result = ProductCompare.Repo.query!("SELECT search_document <> $2::text::tsvector FROM products WHERE slug = $1", [slug, ""]); unless result.rows == [[true]], do: raise("search document backfill failed: #{inspect(result.rows)}"); ProductCompare.Repo.query!("DELETE FROM products WHERE slug = $1", [slug]); IO.puts("search document backfill verified")'
 ```
 
 Expected: the first command prints one sentinel ID, the migration succeeds, and
-the final command prints `search document backfill verified`. This is the
-operational migration-backfill proof; the focused test suite separately proves
-that the identical builder repairs an empty document.
+the rebuild reports its refreshed count before the final command prints
+`search document backfill verified`. This is the operational deployment
+backfill proof; the focused test suite separately proves that the identical
+builder repairs an empty document.
 
-- [ ] **Step 7: Declare the query-only schema field**
+- [ ] **Step 7: Keep the database-owned document opaque to Ecto**
 
-Modify `lib/product_compare_schemas/catalog/product.ex`:
-
-```elixir
-field :search_document, :string, load_in_query: false
-```
-
-Do not add the field to `cast/3`, GraphQL, or JSON output. Ecto needs the field
-metadata so query fragments can reference it; Postgrex must not decode
-`tsvector` during ordinary product loads.
+Do not declare `search_document` as an Ecto `:string`; PostgreSQL owns the
+`tsvector` wire type and the application never loads it as an Ecto term.
+Reference it only inside bound SQL fragments, coalescing null to
+`''::tsvector` while the deployment rebuild is pending. Do not add it to
+`cast/3`, GraphQL, or JSON output.
 
 - [ ] **Step 8: Implement `ProductCompare.Catalog.SearchDocuments`**
 
@@ -532,18 +517,18 @@ end
 Run:
 
 ```bash
-mix format priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
+mix format priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
 mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/products_test.exs
 ```
 
-Expected: the migration backfill, both dictionaries, create/update/slug/brand
-refresh, future brand lifecycle APIs, explicit rebuild, and rollback behavior
-all pass without a database trigger.
+Expected: staged migration and explicit backfill, both dictionaries,
+create/update/slug/brand refresh, future brand lifecycle APIs, explicit rebuild,
+and rollback behavior all pass without a database trigger.
 
 - [ ] **Step 12: Commit the persistence milestone**
 
 ```bash
-git add priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
+git add priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs lib/product_compare/catalog/search_documents.ex lib/mix/tasks/catalog.search_documents.rebuild.ex lib/product_compare/catalog/products.ex lib/product_compare_schemas/catalog/product.ex test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs
 git commit -m "feat: persist catalog search documents"
 ```
 
@@ -828,21 +813,21 @@ dynamic(
   [product: product],
   fragment(
     """
-    ? @@ (
+    coalesce(?.search_document, ''::tsvector) @@ (
       websearch_to_tsquery('simple', ?) ||
       websearch_to_tsquery('english', ?)
     )
     """,
-    product.search_document,
+    product,
     ^terms.query,
     ^terms.query
   )
 )
 ```
 
-4. the four `similarity(lower(coalesce(field, '')), normalized) >= 0.35`
+1. the four `similarity(lower(coalesce(field, '')), normalized) >= 0.35`
    predicates only when `terms.trigram?` is true; and
-5. description contains via `ilike(product.description, contains_pattern)`.
+1. description contains via `ilike(product.description, contains_pattern)`.
 
 `validated_gtin_expression(nil)` must be `dynamic(false)`. For a normalized
 GTIN, use a correlated `EXISTS` subquery:
@@ -1090,7 +1075,7 @@ base_query
 |> apply_sort(Map.get(filters, :sort), search_query)
 ```
 
-4. Use these sort clauses:
+1. Use these sort clauses:
 
 ```elixir
 defp apply_sort(query, sort, search_query)

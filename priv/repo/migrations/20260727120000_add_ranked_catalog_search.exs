@@ -53,76 +53,11 @@ defmodule ProductCompare.Repo.Migrations.AddRankedCatalogSearch do
 
     execute("""
     ALTER TABLE products
-    ADD COLUMN search_document tsvector NOT NULL DEFAULT ''::tsvector
-    """)
-
-    execute("""
-    UPDATE products AS product
-    SET search_document = catalog_search_document(
-      product.name,
-      product.slug,
-      product.model_number,
-      product.description,
-      (
-        SELECT brand.name
-        FROM brands AS brand
-        WHERE brand.id = product.brand_id
-      )
-    )
-    """)
-
-    execute("CREATE INDEX products_search_document_idx ON products USING gin (search_document)")
-
-    execute(
-      "CREATE INDEX products_name_trgm_idx ON products USING gin (lower(name) gin_trgm_ops)"
-    )
-
-    execute(
-      "CREATE INDEX products_slug_trgm_idx ON products USING gin (lower(slug) gin_trgm_ops)"
-    )
-
-    execute(
-      "CREATE INDEX products_model_number_trgm_idx ON products USING gin (lower(model_number) gin_trgm_ops)"
-    )
-
-    execute(
-      "CREATE INDEX products_description_trgm_idx ON products USING gin (lower(description) gin_trgm_ops)"
-    )
-
-    execute("CREATE INDEX brands_name_trgm_idx ON brands USING gin (lower(name) gin_trgm_ops)")
-
-    execute("""
-    CREATE INDEX products_name_trigram_candidates_idx
-    ON products USING gin (show_trgm(lower(coalesce(name, ''))))
-    """)
-
-    execute("""
-    CREATE INDEX products_slug_trigram_candidates_idx
-    ON products USING gin (show_trgm(lower(coalesce(slug, ''))))
-    """)
-
-    execute("""
-    CREATE INDEX products_model_number_trigram_candidates_idx
-    ON products USING gin (show_trgm(lower(coalesce(model_number, ''))))
-    """)
-
-    execute("""
-    CREATE INDEX brands_name_trigram_candidates_idx
-    ON brands USING gin (show_trgm(lower(name)))
+    ADD COLUMN search_document tsvector
     """)
   end
 
   def down do
-    execute("DROP INDEX IF EXISTS brands_name_trigram_candidates_idx")
-    execute("DROP INDEX IF EXISTS products_model_number_trigram_candidates_idx")
-    execute("DROP INDEX IF EXISTS products_slug_trigram_candidates_idx")
-    execute("DROP INDEX IF EXISTS products_name_trigram_candidates_idx")
-    execute("DROP INDEX IF EXISTS brands_name_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_description_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_model_number_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_slug_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_name_trgm_idx")
-    execute("DROP INDEX IF EXISTS products_search_document_idx")
     execute("ALTER TABLE products DROP COLUMN search_document")
     execute("DROP FUNCTION catalog_search_document(text, text, text, text, text)")
   end

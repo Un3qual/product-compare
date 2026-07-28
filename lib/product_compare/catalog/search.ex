@@ -229,12 +229,12 @@ defmodule ProductCompare.Catalog.Search do
       [product: product],
       fragment(
         """
-        ? @@ (
+        coalesce(?.search_document, ''::tsvector) @@ (
           websearch_to_tsquery('simple', ?) ||
           websearch_to_tsquery('english', ?)
         )
         """,
-        product.search_document,
+        product,
         ^query,
         ^query
       )
@@ -303,7 +303,7 @@ defmodule ProductCompare.Catalog.Search do
           WHEN ? THEN 5
           WHEN ? THEN 6
           WHEN ? THEN 7
-          ELSE 7
+          ELSE 8
         END
         """,
         ^tier_one,
@@ -349,7 +349,7 @@ defmodule ProductCompare.Catalog.Search do
         CASE
           WHEN ? AND NOT (?) AND NOT (?) AND NOT (?) AND NOT (?) THEN
             ts_rank_cd(
-              ?,
+              coalesce(?.search_document, ''::tsvector),
               websearch_to_tsquery('simple', ?) ||
               websearch_to_tsquery('english', ?)
             )
@@ -361,7 +361,7 @@ defmodule ProductCompare.Catalog.Search do
         ^tier_two,
         ^tier_three,
         ^tier_four,
-        product.search_document,
+        product,
         ^terms.query,
         ^terms.query
       )

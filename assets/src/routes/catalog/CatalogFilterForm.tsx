@@ -17,7 +17,8 @@ import {
   catalogProductSortLabel,
   catalogProductSortParam,
   type CatalogFilterMetadata,
-  type CatalogFilters
+  type CatalogFilters,
+  type CatalogProductSort
 } from "./filters";
 import {
   catalogFiltersWithout,
@@ -80,6 +81,23 @@ export function CatalogFilterForm({
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     hasInitiallyOpenCatalogAdvancedFilters(filters)
   );
+  const [query, setQuery] = useState(filters.query ?? "");
+  const [sortSelection, setSortSelection] = useState<{
+    value: CatalogProductSort;
+    implicit: boolean;
+  }>(() => {
+    const hasQuery = hasCatalogSearchQuery(filters.query ?? "");
+    const defaultSort = hasQuery ? "RELEVANCE" : "ID_ASC";
+    const value =
+      filters.sort === "RELEVANCE" && !hasQuery
+        ? defaultSort
+        : (filters.sort ?? defaultSort);
+
+    return {
+      value,
+      implicit: filters.sort === undefined || filters.sort === defaultSort || value !== filters.sort
+    };
+  });
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     setTypeFilterState((previous) => catalogFilterFormTypeSelection(previous, typeTaxonId));
@@ -87,6 +105,22 @@ export function CatalogFilterForm({
 
   function handleIncludeTypeDescendantsChange(includeTypeDescendants: boolean) {
     setTypeFilterState((previous) => ({ ...previous, includeTypeDescendants }));
+  }
+
+  function handleQueryChange(nextQuery: string) {
+    const hasQuery = hasCatalogSearchQuery(nextQuery);
+
+    setQuery(nextQuery);
+    setSortSelection((previous) => {
+      if (previous.implicit || (!hasQuery && previous.value === "RELEVANCE")) {
+        return {
+          value: hasQuery ? "RELEVANCE" : "ID_ASC",
+          implicit: true
+        };
+      }
+
+      return previous;
+    });
   }
 
   return (
@@ -97,8 +131,12 @@ export function CatalogFilterForm({
       {...props(styles.form)}
     >
       <div {...props(styles.primary)}>
-        <SearchField query={filters.query} />
-        <SortField query={filters.query} sort={filters.sort} />
+        <SearchField query={query} onQueryChange={handleQueryChange} />
+        <SortField
+          query={query}
+          sort={sortSelection.value}
+          onSortChange={(sort) => setSortSelection({ value: sort, implicit: false })}
+        />
         <PageSizeField pageSize={pageSize} />
         <CompareSlugFields compareSlugs={compareSlugs} />
         <ProductTypeField
@@ -131,14 +169,21 @@ export function CatalogFilterForm({
   );
 }
 
-function SearchField({ query }: { query?: string }) {
+function SearchField({
+  query,
+  onQueryChange
+}: {
+  query: string;
+  onQueryChange: (query: string) => void;
+}) {
   return (
     <label>
       Search products
       <TextField
         type="search"
         name="q"
-        defaultValue={query ?? ""}
+        value={query}
+        onChange={(event) => onQueryChange(event.currentTarget.value)}
         maxLength={MAX_CATALOG_SEARCH_QUERY_LENGTH}
       />
     </label>
@@ -147,21 +192,20 @@ function SearchField({ query }: { query?: string }) {
 
 function SortField({
   query,
-  sort
+  sort,
+  onSortChange
 }: {
-  query?: string;
-  sort?: CatalogFilters["sort"];
+  query: string;
+  sort: CatalogProductSort;
+  onSortChange: (sort: CatalogProductSort) => void;
 }) {
-  const hasQuery = Boolean(query);
-  const [selectedSort, setSelectedSort] = useState(
-    sort ?? (hasQuery ? "RELEVANCE" : "ID_ASC")
-  );
+  const hasQuery = hasCatalogSearchQuery(query);
   const availableSorts = hasQuery
     ? CATALOG_PRODUCT_SORTS
     : CATALOG_PRODUCT_SORTS.filter((value) => value !== "RELEVANCE");
   const sortParam = catalogProductSortParam({
-    query,
-    sort: selectedSort
+    query: hasQuery ? query : undefined,
+    sort
   });
 
   return (
@@ -169,9 +213,9 @@ function SortField({
       Sort products
       <select
         name={sortParam ? "sort" : undefined}
-        value={selectedSort}
+        value={sort}
         onChange={(event) =>
-          setSelectedSort(catalogProductSortFromValue(event.currentTarget.value))
+          onSortChange(catalogProductSortFromValue(event.currentTarget.value))
         }
       >
         {availableSorts.map((value) => (
@@ -182,6 +226,10 @@ function SortField({
       </select>
     </label>
   );
+}
+
+function hasCatalogSearchQuery(query: string) {
+  return query.trim() !== "";
 }
 
 function CompareSlugFields({ compareSlugs }: { compareSlugs: readonly string[] }) {

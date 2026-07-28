@@ -31,11 +31,12 @@ Both final aggregate findings are resolved.
   - Keeps candidate construction private; no test-only or speculative API was
     added.
 - `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`
-  - Adds the missing description contains index.
-  - Adds product and brand expression GIN indexes for immutable
-    `show_trgm(...)` overlap candidate selection.
-  - Preserves the existing product name, slug, model, brand, and persisted
-    full-text indexes.
+  - Adds the nullable `search_document` and pure document builder without a
+    table rewrite or database trigger.
+- `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`
+  - Adds the description contains, product and brand trigram, immutable
+    `show_trgm(...)` overlap candidate, and persisted full-text indexes
+    concurrently outside a migration transaction.
 - `test/product_compare/catalog/search_test.exs`
   - Covers isolated name, slug, model, description, brand, full-text,
     validated-GTIN, short-query, wildcard, and all trigram-authority behavior.
@@ -149,16 +150,19 @@ names remain observational evidence only and are not encoded in tests.
 - `mix format --check-formatted`: exit 0.
 - `mix typecheck`: exit 0.
 - Final focused backend command: exit 0; 127 tests, 0 failures.
-- `MIX_ENV=test mix ecto.rollback --step 1`: exit 0 on the local test database.
-- `MIX_ENV=test mix ecto.migrate`: exit 0 on the local test database.
+- Focused live-query frontend command: exit 0; 106 tests, 0 failures.
+- `MIX_ENV=test mix ecto.rollback --step 2`: exit 0 on the local test database.
+- `MIX_ENV=test mix ecto.migrate`: exit 0; the staged schema and concurrent
+  index migrations reapplied successfully.
 - `MIX_ENV=test mix catalog.search_documents.rebuild`: exit 0;
-  `Rebuilt 0 catalog search documents.` on the empty local test database.
+  a pre-migration sentinel remained null until this command rebuilt its
+  document, after which the sentinel was verified and removed.
 - `cd assets && bun run check`: exit 0.
   - Relay: 52 reader, 51 normalization, and 51 operation-text documents.
   - TypeScript: exit 0.
-  - Vitest: 104 files, 1,505 tests, 0 failures.
+  - Vitest: 104 files, 1,507 tests, 0 failures.
   - Client and SSR builds: exit 0.
-  - Client bundle: 182,233 gzip bytes against the 200,000-byte budget.
+  - Client bundle: 182,238 gzip bytes against the 200,000-byte budget.
 - `mix quality`: exit 0.
   - Credo: no issues.
   - ExDNA: unchanged 3/3 clone budget.

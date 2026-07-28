@@ -1492,7 +1492,22 @@ test("submits explicit catalog order for an active search", () => {
   expect(new FormData(filterForm).get("sort")).toBe("ID_ASC");
 });
 
-test("omits relevance when the active search input is cleared", () => {
+test("defaults a newly entered search to relevance", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const searchInput = within(filterForm).getByRole("searchbox", { name: "Search products" });
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  fireEvent.change(searchInput, { target: { value: "oled" } });
+
+  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
+  expect(sortSelect).toHaveValue("RELEVANCE");
+  expect(new FormData(filterForm).get("q")).toBe("oled");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("clearing an implicit relevance search restores catalog order", () => {
   renderBrowseRouteWithRelayData({
     initialEntries: ["/products?q=oled"],
     loaderData: readyBrowseLoaderData({
@@ -1505,12 +1520,34 @@ test("omits relevance when the active search input is cleared", () => {
   });
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const searchInput = within(filterForm).getByRole("searchbox", { name: "Search products" });
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
-  fireEvent.change(within(filterForm).getByRole("searchbox", { name: "Search products" }), {
-    target: { value: "" }
+  expect(sortSelect).toHaveValue("RELEVANCE");
+
+  fireEvent.change(searchInput, { target: { value: "" } });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
+  expect(new FormData(filterForm).get("q")).toBe("");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("normalizes relevance to catalog order when no search is present", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        sort: "RELEVANCE"
+      }
+    })
   });
 
-  expect(new FormData(filterForm).get("q")).toBe("");
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
   expect(new FormData(filterForm).get("sort")).toBeNull();
 });
 

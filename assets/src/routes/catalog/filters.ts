@@ -431,11 +431,20 @@ function catalogProductSort(
     return parsed ?? "RELEVANCE";
   }
 
-  if (parsed === null || parsed === "ID_ASC" || parsed === "RELEVANCE") {
-    return null;
-  }
+  return catalogProductSortWithoutQuery(parsed);
+}
 
-  return parsed;
+function catalogProductSortWithoutQuery(
+  parsed: CatalogProductSort | null
+): CatalogProductSort | null {
+  switch (parsed) {
+    case "NAME_ASC":
+    case "BRAND_NAME_ASC":
+    case "NEWEST":
+      return parsed;
+    default:
+      return null;
+  }
 }
 
 function nonBlankParam(url: URL, name: string) {

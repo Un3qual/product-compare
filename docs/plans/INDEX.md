@@ -754,8 +754,9 @@ batch and should not be recreated or promoted.
 
 ## Completed Plan Archive
 
-Completed implementation plans stay in `docs/plans/` as dated reference files.
-Use the corresponding `docs/work/*.md` lane doc for completion evidence.
+Completed implementation plans stay as dated reference files in `docs/plans/`
+or `docs/superpowers/plans/`, matching the planning workflow that produced
+them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 

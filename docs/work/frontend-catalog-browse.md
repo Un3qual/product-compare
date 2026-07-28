@@ -13,7 +13,8 @@
 - Claim gate: the user explicitly granted a one-time reserve-floor waiver on
   2026-07-27 after three replenishment audits found only two other coherent
   candidates.
-- Baseline: 96 focused backend and 86 focused catalog frontend tests pass.
+- Pre-ranked-search baseline: 96 focused backend and 86 focused catalog
+  frontend tests passed.
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -569,8 +570,12 @@
     `Catalog search-document rebuild failed: <reason>` on failure.
   - It is not scheduled and does not weaken transaction-coupled refreshes.
 - Implementation paths:
-  - Migration:
-    `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`.
+  - Migrations:
+    `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs` and
+    `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`.
+    The first adds the nullable `tsvector` and pure builder without a table
+    rewrite; the second creates the search indexes concurrently. The explicit
+    rebuild command backfills preexisting products after deployment.
   - Persistence and repair:
     `lib/product_compare/catalog/search_documents.ex`,
     `lib/mix/tasks/catalog.search_documents.rebuild.ex`,
@@ -622,15 +627,16 @@
   - `mix typecheck` — exit `0`; compilation with warnings as errors passed.
   - `mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
     — final aggregate repair exit `0`; 127 tests, 0 failures.
-  - `MIX_ENV=test mix ecto.rollback --step 1` followed by
+  - `MIX_ENV=test mix ecto.rollback --step 2` followed by
     `MIX_ENV=test mix ecto.migrate` — both exit `0` on the local test database;
-    the revised migration rolled down and recreated every search index.
-  - `MIX_ENV=test mix catalog.search_documents.rebuild` — exit `0`;
-    `Rebuilt 0 catalog search documents.` on the empty local test database.
+    the staged schema and concurrent index migrations rolled down and reapplied.
+  - `MIX_ENV=test mix catalog.search_documents.rebuild` — exit `0`; a
+    pre-migration sentinel stayed null until this command rebuilt its document,
+    after which the sentinel was verified and removed.
   - `cd assets && bun run check` — exit `0`; Relay validation compiled 52
     reader, 51 normalization, and 51 operation-text documents; TypeScript
-    passed; 104 test files and 1,505 tests passed; client and SSR builds passed;
-    the client bundle passed at 182,233 gzip bytes against the 200,000-byte
+    passed; 104 test files and 1,507 tests passed; client and SSR builds passed;
+    the client bundle passed at 182,238 gzip bytes against the 200,000-byte
     budget.
   - A representative 30,000-product default-planner probe reduced execution
     from the pre-repair 219.545 ms parallel product scan to 6.056 ms. Candidate

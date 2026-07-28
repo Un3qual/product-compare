@@ -53,9 +53,10 @@ This is preferred over:
    incorrect across pages and disconnect result counts from visible results.
 
 Add an application-maintained `products.search_document` column. Catalog
-product writes refresh it transactionally, the migration backfills existing
-products, and an explicit rebuild task repairs drift. No database trigger,
-separate search table, or external service is introduced.
+product writes refresh it transactionally, an explicit post-deployment rebuild
+backfills existing products and repairs drift, and search indexes are created
+concurrently. No database trigger, separate search table, or external service
+is introduced.
 
 ## Search Matching Contract
 
@@ -145,22 +146,22 @@ existing explicit sort.
 
 ## Database And Query Boundaries
 
-Add a migration that:
+Add staged migrations that:
 
 - enables `pg_trgm`;
-- adds targeted trigram indexes for the product and brand text fields used by
-  typo-tolerant matching;
-- adds `products.search_document` as a non-null `tsvector`;
+- adds `products.search_document` as a nullable `tsvector` without a default or
+  table rewrite;
 - defines one pure, explicitly invoked SQL function that builds the weighted
   document from product and brand text;
-- backfills every existing product through that function; and
-- adds a GIN index for `products.search_document`.
+- creates the `search_document` and targeted product and brand search indexes
+  concurrently outside a migration transaction.
 
 The document-building function reads no tables and mutates no rows. It accepts
-text values and returns a `tsvector`, allowing the migration backfill and
+text values and returns a `tsvector`, allowing the deployment rebuild and
 application refresh path to share one weighting/configuration policy without a
-trigger. The existing validated identifier index remains the exact-identifier
-path.
+trigger. Search expressions treat an unbackfilled null document as an empty
+`tsvector`; the existing validated identifier index remains the
+exact-identifier path.
 
 Add `ProductCompare.Catalog.SearchDocuments` as the application synchronization
 owner. It provides:
@@ -289,7 +290,7 @@ Backend behavior tests cover:
 - matching-set parity between product results and filter metadata;
 - cursor pagination across tied search results;
 - escaped wildcard and punctuation behavior;
-- migration backfill of existing products;
+- staged migration followed by explicit rebuild backfill of existing products;
 - transactional document refresh after product creation, text edits, slug
   changes, and brand reassignment;
 - brand-wide refresh behavior for a future application-owned rename path and
