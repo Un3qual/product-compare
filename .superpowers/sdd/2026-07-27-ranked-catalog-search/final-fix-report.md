@@ -55,7 +55,8 @@ Both final aggregate findings are resolved.
 
 ## Candidate Design
 
-The candidate set is the distinct union of:
+For queries of at least three characters, the candidate set is the distinct
+union of:
 
 1. the existing partial validated-GTIN authority;
 2. `lower(field) LIKE escaped_contains_pattern` for product name, slug, model
@@ -70,19 +71,24 @@ The trigram candidate is an index-supported superset:
 
 ```text
 show_trgm(lower(coalesce(field, ''))) &&
-show_trgm(normalized_query)
+show_trgm(lower(query))
 ```
 
 Any positive pg_trgm similarity requires at least one shared trigram, so this
 cannot exclude a match at the fixed positive `0.35` threshold. The candidate
 branch then applies the unchanged exact
-`similarity(lower(coalesce(field, '')), normalized_query) >= 0.35` predicate.
+`similarity(lower(coalesce(field, '')), lower(query)) >= 0.35` predicate.
 This avoids relying on the mutable `pg_trgm.similarity_threshold` GUC used by
 the `%` operator.
 
 The outer query still applies the original exact OR predicate and original
 ranking. Candidate generation is therefore a performance bound, not a new
 search authority.
+
+One- and two-character queries bypass the candidate union and execute the
+combined predicate through one joined product query. PostgreSQL cannot extract
+a selective trigram from those patterns, so the union would multiply
+catalog-wide scans without providing a bound.
 
 ## RED-GREEN Evidence
 
@@ -108,6 +114,32 @@ GREEN:
   26 tests, 0 failures.
 - Final focused search, metadata, GraphQL, schema, and Dataloader verification:
   127 tests, 0 failures.
+
+## Review Follow-Through Evidence
+
+The 2026-07-28 bot-review pass reproduced four new findings before editing:
+
+- the focused search suite failed 2 of 19 tests for PostgreSQL/Elixir Unicode
+  casing drift and a reversed phrase crossing concatenated vector copies;
+- the one-off short-query shape probe found six product relations for a
+  two-character query;
+- an interrupted concurrent-index probe left `indisvalid = false`, and
+  retrying with `IF NOT EXISTS` returned success while retaining that invalid
+  index; and
+- an indexability probe showed the nullable-column `coalesce` wrapper prevented
+  the full-text candidate from using `products_search_document_idx`.
+
+After the fixes:
+
+- all 19 focused search tests pass, including short and candidate-bound Unicode
+  prefixes plus phrase-boundary behavior;
+- the short-query probe reports one product relation;
+- the strict concurrent-index retry returns PostgreSQL's duplicate-relation
+  error instead of silently accepting the invalid index;
+- the revised migrations roll back and reapply successfully; and
+- the indexability probe finds `products_search_document_idx`,
+  `products_name_trgm_idx`, and
+  `products_name_trigram_candidates_idx` available to the generated query.
 
 ## EXPLAIN Evidence
 
@@ -149,7 +181,7 @@ names remain observational evidence only and are not encoded in tests.
 
 - `mix format --check-formatted`: exit 0.
 - `mix typecheck`: exit 0.
-- Final focused backend command: exit 0; 127 tests, 0 failures.
+- Final focused backend command: exit 0; 129 tests, 0 failures.
 - Focused live-query frontend command: exit 0; 106 tests, 0 failures.
 - `MIX_ENV=test mix ecto.rollback --step 2`: exit 0 on the local test database.
 - `MIX_ENV=test mix ecto.migrate`: exit 0; the staged schema and concurrent
@@ -168,7 +200,7 @@ names remain observational evidence only and are not encoded in tests.
   - ExDNA: unchanged 3/3 clone budget.
   - Reach: no current issues; 11 baseline findings suppressed.
   - Dialyzer: 0 errors.
-- `mix test --cover`: exit 0; 973 tests, 0 failures, 83.98% total coverage.
+- `mix test --cover`: exit 0; 975 tests, 0 failures, 83.98% total coverage.
 - `mix work_queue.validate`: exit 1 only with the exact approved waiver:
   `Ready Work requires at least 3 complete rows; found 0`.
 - Targeted plan-state verification found no active ranked queue row, active
@@ -200,8 +232,8 @@ environmental launch failures, not product or test failures.
 No blocking correctness or verification concern remains.
 
 - One- and two-character contains searches cannot be selectively accelerated
-  by trigram indexing; trigram matching remains disabled below three
-  characters and the exact short-query behavior is preserved.
+  by trigram indexing. They now use one joined product scan instead of the
+  multi-branch candidate union, while preserving exact short-query behavior.
 - PostgreSQL can still choose a sequential scan as a cheap join strategy for a
   candidate-ID relation under some distributions, as observed in the
   30,000-brand probe. The expensive final predicate remains candidate-bounded;

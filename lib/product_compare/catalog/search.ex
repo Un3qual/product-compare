@@ -16,11 +16,10 @@ defmodule ProductCompare.Catalog.Search do
   @spec apply_match(Ecto.Queryable.t(), String.t() | nil) :: Ecto.Query.t()
   def apply_match(query, value) when is_binary(value) and value != "" do
     terms = search_terms(value)
-    candidate_ids = candidate_product_ids_for_terms(terms)
 
     query
     |> ensure_brand_join()
-    |> where([product: product], product.id in subquery(candidate_ids))
+    |> maybe_bound_candidates(terms)
     |> where(^match_expression(terms))
   end
 
@@ -33,7 +32,7 @@ defmodule ProductCompare.Catalog.Search do
     order_expressions = [
       asc: relevance_tier(terms),
       desc: full_text_rank(terms),
-      desc: greatest_similarity(terms.normalized),
+      desc: greatest_similarity(terms.query),
       asc: dynamic([product: product], fragment("lower(?)", product.name)),
       asc: dynamic([product: product], product.id)
     ]
@@ -44,16 +43,20 @@ defmodule ProductCompare.Catalog.Search do
   end
 
   defp search_terms(value) do
-    normalized = String.downcase(value)
-
     %{
       query: value,
-      normalized: normalized,
-      contains_pattern: "%#{escape_like_pattern(normalized)}%",
-      prefix_pattern: "#{escape_like_pattern(normalized)}%",
+      contains_pattern: "%#{escape_like_pattern(value)}%",
+      prefix_pattern: "#{escape_like_pattern(value)}%",
       gtin: normalized_gtin(value),
       trigram?: String.length(value) >= @minimum_trigram_length
     }
+  end
+
+  defp maybe_bound_candidates(query, %{trigram?: false}), do: query
+
+  defp maybe_bound_candidates(query, terms) do
+    candidate_ids = candidate_product_ids_for_terms(terms)
+    where(query, [product: product], product.id in subquery(candidate_ids))
   end
 
   defp candidate_product_ids_for_terms(terms) do
@@ -88,7 +91,7 @@ defmodule ProductCompare.Catalog.Search do
 
   defp product_pattern_candidate(field_name, pattern) do
     from product in Product,
-      where: fragment("lower(?) LIKE ?", field(product, ^field_name), ^pattern),
+      where: fragment("lower(?) LIKE lower(?)", field(product, ^field_name), ^pattern),
       select: %{product_id: product.id}
   end
 
@@ -96,7 +99,7 @@ defmodule ProductCompare.Catalog.Search do
     from brand in Brand,
       join: product in Product,
       on: product.brand_id == brand.id,
-      where: fragment("lower(?) LIKE ?", brand.name, ^pattern),
+      where: fragment("lower(?) LIKE lower(?)", brand.name, ^pattern),
       select: %{product_id: product.id}
   end
 
@@ -120,45 +123,43 @@ defmodule ProductCompare.Catalog.Search do
     [candidate | candidates]
   end
 
-  defp maybe_add_trigram_candidates(candidates, %{trigram?: false}), do: candidates
-
-  defp maybe_add_trigram_candidates(candidates, %{trigram?: true, normalized: normalized}) do
+  defp maybe_add_trigram_candidates(candidates, %{trigram?: true, query: query}) do
     product_candidates =
       Enum.map(@product_trigram_candidate_fields, fn field_name ->
-        product_trigram_candidate(field_name, normalized)
+        product_trigram_candidate(field_name, query)
       end)
 
-    [brand_trigram_candidate(normalized) | product_candidates] ++ candidates
+    [brand_trigram_candidate(query) | product_candidates] ++ candidates
   end
 
-  defp product_trigram_candidate(field_name, normalized) do
+  defp product_trigram_candidate(field_name, query) do
     threshold = @similarity_threshold
 
     from product in Product,
       where:
         fragment(
-          "show_trgm(lower(coalesce(?, ''))) && show_trgm(?)",
+          "show_trgm(lower(coalesce(?, ''))) && show_trgm(lower(?))",
           field(product, ^field_name),
-          ^normalized
+          ^query
         ),
       where:
         fragment(
-          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          "similarity(lower(coalesce(?, '')), lower(?)) >= ?",
           field(product, ^field_name),
-          ^normalized,
+          ^query,
           ^threshold
         ),
       select: %{product_id: product.id}
   end
 
-  defp brand_trigram_candidate(normalized) do
+  defp brand_trigram_candidate(query) do
     threshold = @similarity_threshold
 
     from brand in Brand,
       join: product in Product,
       on: product.brand_id == brand.id,
-      where: fragment("show_trgm(lower(?)) && show_trgm(?)", brand.name, ^normalized),
-      where: fragment("similarity(lower(?), ?) >= ?", brand.name, ^normalized, ^threshold),
+      where: fragment("show_trgm(lower(?)) && show_trgm(lower(?))", brand.name, ^query),
+      where: fragment("similarity(lower(?), lower(?)) >= ?", brand.name, ^query, ^threshold),
       select: %{product_id: product.id}
   end
 
@@ -178,7 +179,7 @@ defmodule ProductCompare.Catalog.Search do
 
   defp match_expression(terms) do
     gtin = validated_gtin_expression(terms.gtin)
-    exact = exact_text_expression(terms.normalized)
+    exact = exact_text_expression(terms.query)
     prefix = text_pattern_expression(terms.prefix_pattern)
     contains = text_pattern_expression(terms.contains_pattern)
     full_text = full_text_expression(terms.query)
@@ -204,13 +205,13 @@ defmodule ProductCompare.Catalog.Search do
     dynamic([product: _product], exists(identifier_query))
   end
 
-  defp exact_text_expression(normalized) do
+  defp exact_text_expression(query) do
     dynamic(
       [product: product, brand: brand],
-      fragment("lower(?)", product.name) == ^normalized or
-        fragment("lower(?)", product.slug) == ^normalized or
-        fragment("lower(coalesce(?, ''))", product.model_number) == ^normalized or
-        fragment("lower(coalesce(?, ''))", brand.name) == ^normalized
+      fragment("lower(?) = lower(?)", product.name, ^query) or
+        fragment("lower(?) = lower(?)", product.slug, ^query) or
+        fragment("lower(coalesce(?, '')) = lower(?)", product.model_number, ^query) or
+        fragment("lower(coalesce(?, '')) = lower(?)", brand.name, ^query)
     )
   end
 
@@ -229,7 +230,7 @@ defmodule ProductCompare.Catalog.Search do
       [product: product],
       fragment(
         """
-        coalesce(?.search_document, ''::tsvector) @@ (
+        ?.search_document @@ (
           websearch_to_tsquery('simple', ?) ||
           websearch_to_tsquery('english', ?)
         )
@@ -243,33 +244,33 @@ defmodule ProductCompare.Catalog.Search do
 
   defp trigram_expression(%{trigram?: false}), do: dynamic(false)
 
-  defp trigram_expression(%{trigram?: true, normalized: normalized}) do
+  defp trigram_expression(%{trigram?: true, query: query}) do
     threshold = @similarity_threshold
 
     dynamic(
       [product: product, brand: brand],
       fragment(
-        "similarity(lower(coalesce(?, '')), ?) >= ?",
+        "similarity(lower(coalesce(?, '')), lower(?)) >= ?",
         product.name,
-        ^normalized,
+        ^query,
         ^threshold
       ) or
         fragment(
-          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          "similarity(lower(coalesce(?, '')), lower(?)) >= ?",
           product.slug,
-          ^normalized,
+          ^query,
           ^threshold
         ) or
         fragment(
-          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          "similarity(lower(coalesce(?, '')), lower(?)) >= ?",
           product.model_number,
-          ^normalized,
+          ^query,
           ^threshold
         ) or
         fragment(
-          "similarity(lower(coalesce(?, '')), ?) >= ?",
+          "similarity(lower(coalesce(?, '')), lower(?)) >= ?",
           brand.name,
-          ^normalized,
+          ^query,
           ^threshold
         )
     )
@@ -284,7 +285,7 @@ defmodule ProductCompare.Catalog.Search do
 
   defp relevance_tier(terms) do
     tier_one = tier_one_expression(terms)
-    tier_two = tier_two_expression(terms.normalized)
+    tier_two = tier_two_expression(terms.query)
     tier_three = text_pattern_expression(terms.prefix_pattern)
     tier_four = text_pattern_expression(terms.contains_pattern)
     tier_five = full_text_expression(terms.query)
@@ -323,21 +324,25 @@ defmodule ProductCompare.Catalog.Search do
     dynamic(
       [product: product],
       ^gtin or
-        fragment("lower(coalesce(?, ''))", product.model_number) == ^terms.normalized
+        fragment(
+          "lower(coalesce(?, '')) = lower(?)",
+          product.model_number,
+          ^terms.query
+        )
     )
   end
 
-  defp tier_two_expression(normalized) do
+  defp tier_two_expression(query) do
     dynamic(
       [product: product],
-      fragment("lower(?)", product.name) == ^normalized or
-        fragment("lower(?)", product.slug) == ^normalized
+      fragment("lower(?) = lower(?)", product.name, ^query) or
+        fragment("lower(?) = lower(?)", product.slug, ^query)
     )
   end
 
   defp full_text_rank(terms) do
     tier_one = tier_one_expression(terms)
-    tier_two = tier_two_expression(terms.normalized)
+    tier_two = tier_two_expression(terms.query)
     tier_three = text_pattern_expression(terms.prefix_pattern)
     tier_four = text_pattern_expression(terms.contains_pattern)
     full_text = full_text_expression(terms.query)
@@ -349,7 +354,7 @@ defmodule ProductCompare.Catalog.Search do
         CASE
           WHEN ? AND NOT (?) AND NOT (?) AND NOT (?) AND NOT (?) THEN
             ts_rank_cd(
-              coalesce(?.search_document, ''::tsvector),
+              ?.search_document,
               websearch_to_tsquery('simple', ?) ||
               websearch_to_tsquery('english', ?)
             )
@@ -368,26 +373,26 @@ defmodule ProductCompare.Catalog.Search do
     )
   end
 
-  defp greatest_similarity(normalized) do
+  defp greatest_similarity(query) do
     dynamic(
       [product: product, brand: brand],
       fragment(
         """
         greatest(
-          similarity(lower(coalesce(?, '')), ?),
-          similarity(lower(coalesce(?, '')), ?),
-          similarity(lower(coalesce(?, '')), ?),
-          similarity(lower(coalesce(?, '')), ?)
+          similarity(lower(coalesce(?, '')), lower(?)),
+          similarity(lower(coalesce(?, '')), lower(?)),
+          similarity(lower(coalesce(?, '')), lower(?)),
+          similarity(lower(coalesce(?, '')), lower(?))
         )
         """,
         product.name,
-        ^normalized,
+        ^query,
         product.slug,
-        ^normalized,
+        ^query,
         product.model_number,
-        ^normalized,
+        ^query,
         brand.name,
-        ^normalized
+        ^query
       )
     )
   end

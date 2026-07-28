@@ -8,6 +8,12 @@
 
 **Tech Stack:** Elixir, Ecto, PostgreSQL 18, `pg_trgm`, Absinthe GraphQL, ExUnit, React 19, TypeScript, React Router, Relay, Vitest, Testing Library.
 
+**Post-completion review corrections:** Case folding occurs in PostgreSQL on
+both fields and bound query values; one- and two-character searches bypass the
+candidate-ID union; positional gaps separate the weighted vector segments; and
+concurrent index creation omits `IF NOT EXISTS` so an interrupted invalid
+index fails visibly on retry.
+
 ## Global Constraints
 
 - Do not claim implementation until the coordinator either leaves at least three other independently shippable `ready` rows in `docs/work/index.md` or records an explicit one-time reserve waiver.
@@ -15,6 +21,11 @@
 - The maximum catalog query length remains exactly `100` characters.
 - The trigram similarity threshold is the code constant `0.35`.
 - Trigram matching is disabled when `String.length(query) < 3`.
+- Exact, pattern, and trigram comparisons lower both catalog fields and bound
+  query values inside PostgreSQL. Do not pre-lowercase Unicode search text in
+  Elixir.
+- Queries shorter than three characters apply the combined match predicate in
+  one joined product query instead of multiplying unselective candidate scans.
 - Only `scheme = "gtin"` and `verification_status = "validated"` identifiers can receive the exact-identifier tier.
 - Normalize possible GTIN queries only through `ProductCompare.Catalog.GTIN.normalize/1`.
 - Do not introduce an MPN normalizer or make MPN a separate search authority.
@@ -26,6 +37,8 @@
 - Weight A uses `simple` over brand, name, model number, and slug; weight B uses
   `english` over brand, name, and slug; weight C uses `simple` over description;
   weight D uses `english` over description.
+- Preserve positional gaps between all four weighted vectors so phrases cannot
+  match across an artificial configuration or field-copy boundary.
 - Full-text matching ORs `websearch_to_tsquery('simple', query)` with
   `websearch_to_tsquery('english', query)` so unquoted terms retain AND
   semantics while quoted phrases, uppercase `OR`, and `-` exclusions work.
@@ -328,38 +341,44 @@ LANGUAGE sql
 IMMUTABLE
 PARALLEL SAFE
 RETURN
-  setweight(
-    to_tsvector(
-      'simple',
-      concat_ws(
-        ' ',
-        brand_name,
-        product_name,
-        product_model_number,
-        replace(product_slug, '-', ' ')
-      )
+  ts_delete(
+    setweight(
+      to_tsvector(
+        'simple',
+        concat_ws(
+          ' ',
+          brand_name,
+          product_name,
+          product_model_number,
+          replace(product_slug, '-', ' ')
+        )
+      ),
+      'A'
+    ) ||
+    $$'catalog search boundary':1$$::tsvector ||
+    setweight(
+      to_tsvector(
+        'english',
+        concat_ws(
+          ' ',
+          brand_name,
+          product_name,
+          replace(product_slug, '-', ' ')
+        )
+      ),
+      'B'
+    ) ||
+    $$'catalog search boundary':1$$::tsvector ||
+    setweight(
+      to_tsvector('simple', coalesce(product_description, '')),
+      'C'
+    ) ||
+    $$'catalog search boundary':1$$::tsvector ||
+    setweight(
+      to_tsvector('english', coalesce(product_description, '')),
+      'D'
     ),
-    'A'
-  ) ||
-  setweight(
-    to_tsvector(
-      'english',
-      concat_ws(
-        ' ',
-        brand_name,
-        product_name,
-        replace(product_slug, '-', ' ')
-      )
-    ),
-    'B'
-  ) ||
-  setweight(
-    to_tsvector('simple', coalesce(product_description, '')),
-    'C'
-  ) ||
-  setweight(
-    to_tsvector('english', coalesce(product_description, '')),
-    'D'
+    'catalog search boundary'
   )
 ```
 
@@ -374,7 +393,8 @@ Create
 `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`
 with `@disable_ddl_transaction true` and `@disable_migration_lock true`.
 Create the `search_document`, contains, and trigram candidate indexes with
-`CREATE INDEX CONCURRENTLY`.
+`CREATE INDEX CONCURRENTLY` and without `IF NOT EXISTS`. A retry after an
+interrupted build must fail visibly if PostgreSQL retained an invalid index.
 
 Do not create a trigger or trigger function. The SQL builder accepts values,
 reads no tables, and mutates no rows.
@@ -703,14 +723,18 @@ the persisted document:
 3. English morphology such as query `keyboards` matching document `keyboard`
    works through the `english` configuration.
 4. `"mechanical keyboard"` requires phrase order and adjacency.
-5. `keyboard OR mouse` matches either branch.
-6. `keyboard -wireless` excludes the wireless record.
-7. A stopword-only query such as `"the and"` and a punctuation-only query such
+5. A reversed phrase cannot match across the stored simple/English vector
+   boundary.
+6. `keyboard OR mouse` matches either branch.
+7. `keyboard -wireless` excludes the wireless record.
+8. A stopword-only query such as `"the and"` and a punctuation-only query such
    as `"!!!"` return safely without a PostgreSQL syntax error.
-8. A product with the same lexeme in its name outranks a product that has the
+9. A product with the same lexeme in its name outranks a product that has the
    lexeme only in its description because weights A/B outrank C/D.
-9. Two otherwise equal tier-five rows are ordered by normalized name and then
+10. Two otherwise equal tier-five rows are ordered by normalized name and then
    ID after equal `ts_rank_cd` and trigram similarity.
+11. Unicode case-insensitive prefixes use PostgreSQL casing on both short and
+    candidate-bounded query paths.
 
 Keep these tests database-backed and assert returned product IDs, not generated
 SQL strings or planner nodes.
@@ -762,7 +786,7 @@ defmodule ProductCompare.Catalog.Search do
     order_expressions = [
       asc: relevance_tier(terms),
       desc: full_text_rank(terms),
-      desc: greatest_similarity(terms.normalized),
+      desc: greatest_similarity(terms.query),
       asc: dynamic([product: product], fragment("lower(?)", product.name)),
       asc: dynamic([product: product], product.id)
     ]
@@ -779,13 +803,16 @@ Implement `search_terms/1` so it returns exactly:
 ```elixir
 %{
   query: value,
-  normalized: String.downcase(value),
-  contains_pattern: "%#{escape_like_pattern(String.downcase(value))}%",
-  prefix_pattern: "#{escape_like_pattern(String.downcase(value))}%",
+  contains_pattern: "%#{escape_like_pattern(value)}%",
+  prefix_pattern: "#{escape_like_pattern(value)}%",
   gtin: normalized_gtin(value),
   trigram?: String.length(value) >= @minimum_trigram_length
 }
 ```
+
+`apply_match/2` adds the candidate-ID subquery only when `terms.trigram?` is
+true. Shorter queries go directly from the shared brand join to the combined
+match predicate.
 
 Implement `normalized_gtin/1` as `normalized` for
 `{:ok, normalized} <- GTIN.normalize(value)` and `nil` for an invalid GTIN.
@@ -813,7 +840,7 @@ dynamic(
   [product: product],
   fragment(
     """
-    coalesce(?.search_document, ''::tsvector) @@ (
+    ?.search_document @@ (
       websearch_to_tsquery('simple', ?) ||
       websearch_to_tsquery('english', ?)
     )
@@ -825,7 +852,8 @@ dynamic(
 )
 ```
 
-1. the four `similarity(lower(coalesce(field, '')), normalized) >= 0.35`
+1. the four
+   `similarity(lower(coalesce(field, '')), lower(query)) >= 0.35`
    predicates only when `terms.trigram?` is true; and
 1. description contains via `ilike(product.description, contains_pattern)`.
 
@@ -847,8 +875,8 @@ Build `relevance_tier/1` as a `dynamic/2` `CASE` expression over these exact
 booleans:
 
 ```text
-1: validated GTIN OR lower(model_number) = normalized
-2: lower(name) = normalized OR lower(slug) = normalized
+1: validated GTIN OR lower(model_number) = lower(query)
+2: lower(name) = lower(query) OR lower(slug) = lower(query)
 3: name/slug/model_number/brand ILIKE prefix_pattern
 4: name/slug/model_number/brand ILIKE contains_pattern
 5: persisted search_document matches the combined websearch tsquery
@@ -868,10 +896,10 @@ Build `greatest_similarity/1` as a `dynamic/2` expression containing:
 
 ```sql
 greatest(
-  similarity(lower(coalesce(product.name, '')), normalized),
-  similarity(lower(coalesce(product.slug, '')), normalized),
-  similarity(lower(coalesce(product.model_number, '')), normalized),
-  similarity(lower(coalesce(brand.name, '')), normalized)
+  similarity(lower(coalesce(product.name, '')), lower(query)),
+  similarity(lower(coalesce(product.slug, '')), lower(query)),
+  similarity(lower(coalesce(product.model_number, '')), lower(query)),
+  similarity(lower(coalesce(brand.name, '')), lower(query))
 )
 ```
 

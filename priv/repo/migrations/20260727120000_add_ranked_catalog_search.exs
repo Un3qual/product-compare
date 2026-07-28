@@ -16,38 +16,44 @@ defmodule ProductCompare.Repo.Migrations.AddRankedCatalogSearch do
     IMMUTABLE
     PARALLEL SAFE
     RETURN
-      setweight(
-        to_tsvector(
-          'simple',
-          concat_ws(
-            ' ',
-            brand_name,
-            product_name,
-            product_model_number,
-            replace(product_slug, '-', ' ')
-          )
+      ts_delete(
+        setweight(
+          to_tsvector(
+            'simple',
+            concat_ws(
+              ' ',
+              brand_name,
+              product_name,
+              product_model_number,
+              replace(product_slug, '-', ' ')
+            )
+          ),
+          'A'
+        ) ||
+        $$'catalog search boundary':1$$::tsvector ||
+        setweight(
+          to_tsvector(
+            'english',
+            concat_ws(
+              ' ',
+              brand_name,
+              product_name,
+              replace(product_slug, '-', ' ')
+            )
+          ),
+          'B'
+        ) ||
+        $$'catalog search boundary':1$$::tsvector ||
+        setweight(
+          to_tsvector('simple', coalesce(product_description, '')),
+          'C'
+        ) ||
+        $$'catalog search boundary':1$$::tsvector ||
+        setweight(
+          to_tsvector('english', coalesce(product_description, '')),
+          'D'
         ),
-        'A'
-      ) ||
-      setweight(
-        to_tsvector(
-          'english',
-          concat_ws(
-            ' ',
-            brand_name,
-            product_name,
-            replace(product_slug, '-', ' ')
-          )
-        ),
-        'B'
-      ) ||
-      setweight(
-        to_tsvector('simple', coalesce(product_description, '')),
-        'C'
-      ) ||
-      setweight(
-        to_tsvector('english', coalesce(product_description, '')),
-        'D'
+        'catalog search boundary'
       )
     """)
 

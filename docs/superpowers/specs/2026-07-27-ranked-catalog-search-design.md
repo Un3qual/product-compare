@@ -60,7 +60,7 @@ is introduced.
 
 ## Search Matching Contract
 
-The normalized nonblank query remains a catalog filter. A product matches when
+The trimmed nonblank query remains a catalog filter. A product matches when
 at least one of these conditions is true:
 
 - a validated GTIN exactly matches the value produced by the existing
@@ -83,6 +83,11 @@ matching is disabled for queries shorter than three characters. The fixed
 similarity threshold is `0.35`; changing it later is a reviewed search-policy
 change, not runtime configuration.
 
+Case folding for exact, prefix, contains, and trigram comparisons happens in
+PostgreSQL on both the catalog field and bound query value. Elixir does not
+pre-lowercase search text, because Unicode casing must use the same database
+collation on both sides of each comparison.
+
 Full-text parsing uses both:
 
 - `websearch_to_tsquery('simple', query)` for literal product, brand, model,
@@ -104,6 +109,11 @@ distributed across brand, product name, model number, slug, and description:
 - weight B: `english` brand name, product name, and slug terms;
 - weight C: `simple` description terms; and
 - weight D: `english` description terms.
+
+The builder inserts then removes an unqueryable sentinel lexeme between each
+weighted vector. Removing the lexeme preserves a positional gap, so quoted
+phrases cannot match across artificial configuration or field-copy
+boundaries.
 
 ## Relevance Ranking Contract
 
@@ -156,12 +166,18 @@ Add staged migrations that:
 - creates the `search_document` and targeted product and brand search indexes
   concurrently outside a migration transaction.
 
+Concurrent index creation intentionally omits `IF NOT EXISTS`. If PostgreSQL
+leaves an invalid index after an interrupted concurrent build, retrying the
+migration must fail visibly instead of silently accepting the unusable index.
+
 The document-building function reads no tables and mutates no rows. It accepts
 text values and returns a `tsvector`, allowing the deployment rebuild and
 application refresh path to share one weighting/configuration policy without a
-trigger. Search expressions treat an unbackfilled null document as an empty
-`tsvector`; the existing validated identifier index remains the
-exact-identifier path.
+trigger. Full-text predicates naturally treat an unbackfilled null document as
+a non-match, and the guarded rank expression does not evaluate it as a
+tier-five match. This preserves the raw-column GIN index path without an
+unindexable `coalesce` wrapper. The existing validated identifier index remains
+the exact-identifier path.
 
 Add `ProductCompare.Catalog.SearchDocuments` as the application synchronization
 owner. It provides:
@@ -255,7 +271,9 @@ explanation is added.
 - Non-string or longer-than-100-character queries retain the current GraphQL
   errors.
 - Queries shorter than three characters use exact, prefix, contains, and any
-  nonempty full-text token match without trigram expansion.
+  nonempty full-text token match without trigram expansion. They bypass the
+  candidate-ID union because no trigram-selective bound exists and execute the
+  combined match predicate through one joined product query.
 - Punctuation-only queries are safe and may return an ordinary empty result.
 - Web-search quotes, uppercase `OR`, and `-` exclusions retain PostgreSQL
   `websearch_to_tsquery` semantics.
@@ -281,6 +299,8 @@ Backend behavior tests cover:
 - `simple` technical-term matching and `english` stemming;
 - quoted phrases, uppercase `OR`, exclusions, stop-word-only input, and
   punctuation-only input;
+- quoted phrases not crossing the stored simple/English vector boundaries;
+- Unicode case-insensitive matching using the database collation;
 - full-text rank ordering and deterministic equal-rank ties;
 - the three-character trigram boundary and the `0.35` threshold;
 - deterministic ties by normalized name and product ID;

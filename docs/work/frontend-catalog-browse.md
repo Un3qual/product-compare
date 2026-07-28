@@ -545,16 +545,23 @@
 - Architecture:
   - PostgreSQL owns hybrid matching through `pg_trgm` plus an
     application-maintained, weighted `products.search_document` `tsvector`.
-  - Search first derives a distinct candidate-product-ID set through the
-    validated-GTIN partial index; GIN-backed product and brand contains,
-    description, and full-text paths; and immutable trigram-array overlap.
-    The trigram candidate path applies the unchanged exact `0.35` similarity
-    boundary after the index-supported superset, and brand candidates resolve
-    products through `products_brand_idx`.
+  - Searches of at least three characters first derive a distinct
+    candidate-product-ID set through the validated-GTIN partial index;
+    GIN-backed product and brand contains, description, and full-text paths;
+    and immutable trigram-array overlap. The trigram candidate path applies
+    the exact `0.35` similarity boundary after the index-supported superset,
+    and brand candidates resolve products through `products_brand_idx`.
+    One- and two-character searches bypass that fan-out and apply the combined
+    predicate in one joined product query because trigram indexes cannot
+    selectively bound them.
   - `ProductCompare.Catalog.Search` applies the identical match predicate to
     that bounded set for relevance and named-sort queries, then ranks relevance
     through seven tiers: exact validated GTIN/model number, exact name/slug,
     text prefix, text contains, full text, trigram, and description contains.
+  - Exact, pattern, and trigram comparisons case-fold both fields and bound
+    query values in PostgreSQL so Unicode behavior uses one database
+    collation. Positional gaps between stored vector segments prevent quoted
+    phrases from crossing simple/English or product/description boundaries.
   - Full-text ties use `ts_rank_cd`; every tier then uses greatest applicable
     trigram similarity, normalized product name, and product ID.
   - Catalog product writes refresh search documents inside the owning
@@ -574,8 +581,9 @@
     `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs` and
     `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`.
     The first adds the nullable `tsvector` and pure builder without a table
-    rewrite; the second creates the search indexes concurrently. The explicit
-    rebuild command backfills preexisting products after deployment.
+    rewrite; the second creates the search indexes concurrently without
+    `IF NOT EXISTS`, so interrupted invalid builds fail visibly on retry. The
+    explicit rebuild command backfills preexisting products after deployment.
   - Persistence and repair:
     `lib/product_compare/catalog/search_documents.ex`,
     `lib/mix/tasks/catalog.search_documents.rebuild.ex`,
@@ -626,7 +634,7 @@
   - `mix format --check-formatted` — exit `0`; no tests.
   - `mix typecheck` — exit `0`; compilation with warnings as errors passed.
   - `mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
-    — final aggregate repair exit `0`; 127 tests, 0 failures.
+    — final review-follow-through exit `0`; 129 tests, 0 failures.
   - `MIX_ENV=test mix ecto.rollback --step 2` followed by
     `MIX_ENV=test mix ecto.migrate` — both exit `0` on the local test database;
     the staged schema and concurrent index migrations rolled down and reapplied.
@@ -646,7 +654,7 @@
     `products_brand_idx` before the unchanged final predicate.
   - `mix quality` — exit `0`; Credo clean, ExDNA at its unchanged 3/3 budget,
     Reach clean with 11 baseline suppressions, and Dialyzer at 0 errors.
-  - `mix test --cover` — exit `0`; 973 tests, 0 failures, and 83.98% total
+  - `mix test --cover` — exit `0`; 975 tests, 0 failures, and 83.98% total
     coverage.
   - `mix work_queue.validate` — exit `1` only with the explicitly waived exact
     result: `Ready Work requires at least 3 complete rows; found 0`.

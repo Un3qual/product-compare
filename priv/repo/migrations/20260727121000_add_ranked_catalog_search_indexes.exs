@@ -23,7 +23,7 @@ defmodule ProductCompare.Repo.Migrations.AddRankedCatalogSearchIndexes do
 
   def up do
     for {name, definition} <- @indexes do
-      execute("CREATE INDEX CONCURRENTLY IF NOT EXISTS #{name} #{definition}")
+      execute("CREATE INDEX CONCURRENTLY #{name} #{definition}")
     end
   end
 

@@ -158,6 +158,13 @@ defmodule ProductCompare.Catalog.SearchTest do
     assert ranked_search("mt") == []
   end
 
+  test "uses PostgreSQL casing for Unicode case-insensitive prefix matches" do
+    istanbul = product(%{name: "İstanbul Display"})
+
+    assert Enum.map(ranked_search("İs"), & &1.id) == [istanbul.id]
+    assert Enum.map(ranked_search("İsta"), & &1.id) == [istanbul.id]
+  end
+
   test "matches a brand-only typo through the shared brand join" do
     {:ok, brand} = Catalog.upsert_brand(%{name: "Logitech"})
     brand_product = product(%{name: "Conference Camera", brand_id: brand.id})
@@ -222,6 +229,12 @@ defmodule ProductCompare.Catalog.SearchTest do
     product(%{name: "Separated Terms", description: "A mechanical compact keyboard"})
 
     assert Enum.map(ranked_search("\"mechanical keyboard\""), & &1.id) == [adjacent.id]
+  end
+
+  test "quoted phrases do not cross search-configuration vector boundaries" do
+    product(%{name: "Boundary Terms", description: "alpha omega"})
+
+    assert ranked_search("\"omega alpha\"") == []
   end
 
   test "websearch OR syntax matches either branch" do
