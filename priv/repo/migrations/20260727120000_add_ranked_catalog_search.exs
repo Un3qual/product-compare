@@ -18,29 +18,22 @@ defmodule ProductCompare.Repo.Migrations.AddRankedCatalogSearch do
     RETURN
       ts_delete(
         setweight(
-          to_tsvector(
-            'simple',
-            concat_ws(
-              ' ',
-              brand_name,
-              product_name,
-              product_model_number,
-              replace(product_slug, '-', ' ')
-            )
-          ),
+          to_tsvector('simple', coalesce(brand_name, '')) ||
+          $$'catalog search boundary':1$$::tsvector ||
+          to_tsvector('simple', coalesce(product_name, '')) ||
+          $$'catalog search boundary':1$$::tsvector ||
+          to_tsvector('simple', coalesce(product_model_number, '')) ||
+          $$'catalog search boundary':1$$::tsvector ||
+          to_tsvector('simple', coalesce(replace(product_slug, '-', ' '), '')),
           'A'
         ) ||
         $$'catalog search boundary':1$$::tsvector ||
         setweight(
-          to_tsvector(
-            'english',
-            concat_ws(
-              ' ',
-              brand_name,
-              product_name,
-              replace(product_slug, '-', ' ')
-            )
-          ),
+          to_tsvector('english', coalesce(brand_name, '')) ||
+          $$'catalog search boundary':1$$::tsvector ||
+          to_tsvector('english', coalesce(product_name, '')) ||
+          $$'catalog search boundary':1$$::tsvector ||
+          to_tsvector('english', coalesce(replace(product_slug, '-', ' '), '')),
           'B'
         ) ||
         $$'catalog search boundary':1$$::tsvector ||

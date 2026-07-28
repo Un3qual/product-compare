@@ -241,6 +241,21 @@ defmodule ProductCompare.Catalog.SearchTest do
     assert ranked_search("\"omega alpha\"") == []
   end
 
+  test "quoted phrases do not cross catalog field boundaries" do
+    {:ok, brand} = Catalog.upsert_brand(%{name: "Asterion Omega"})
+
+    product(%{
+      brand_id: brand.id,
+      name: "Keyboard Reference",
+      model_number: "RX Pro",
+      slug: "display-reference"
+    })
+
+    assert ranked_search("\"omega keyboard\"") == []
+    assert ranked_search("\"reference rx\"") == []
+    assert ranked_search("\"pro display\"") == []
+  end
+
   test "websearch OR syntax matches either branch" do
     keyboard = product(%{name: "Keyboard Branch", description: "A compact keyboard"})
     mouse = product(%{name: "Mouse Branch", description: "A precise mouse"})
