@@ -15,6 +15,7 @@ import {
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
   catalogProductSortFromValue,
   catalogProductSortLabel,
+  catalogProductSortParam,
   type CatalogFilterMetadata,
   type CatalogFilters
 } from "./filters";
@@ -97,7 +98,7 @@ export function CatalogFilterForm({
     >
       <div {...props(styles.primary)}>
         <SearchField query={filters.query} />
-        <SortField sort={filters.sort} />
+        <SortField query={filters.query} sort={filters.sort} />
         <PageSizeField pageSize={pageSize} />
         <CompareSlugFields compareSlugs={compareSlugs} />
         <ProductTypeField
@@ -144,20 +145,36 @@ function SearchField({ query }: { query?: string }) {
   );
 }
 
-function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
-  const [selectedSort, setSelectedSort] = useState(sort ?? "ID_ASC");
+function SortField({
+  query,
+  sort
+}: {
+  query?: string;
+  sort?: CatalogFilters["sort"];
+}) {
+  const hasQuery = Boolean(query);
+  const [selectedSort, setSelectedSort] = useState(
+    sort ?? (hasQuery ? "RELEVANCE" : "ID_ASC")
+  );
+  const availableSorts = hasQuery
+    ? CATALOG_PRODUCT_SORTS
+    : CATALOG_PRODUCT_SORTS.filter((value) => value !== "RELEVANCE");
+  const sortParam = catalogProductSortParam({
+    query,
+    sort: selectedSort
+  });
 
   return (
     <label>
       Sort products
       <select
-        name={selectedSort === "ID_ASC" ? undefined : "sort"}
+        name={sortParam ? "sort" : undefined}
         value={selectedSort}
         onChange={(event) =>
           setSelectedSort(catalogProductSortFromValue(event.currentTarget.value))
         }
       >
-        {CATALOG_PRODUCT_SORTS.map((value) => (
+        {availableSorts.map((value) => (
           <option key={value} value={value}>
             {catalogProductSortLabel(value)}
           </option>

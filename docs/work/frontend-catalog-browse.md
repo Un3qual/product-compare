@@ -536,3 +536,99 @@
 - `sed -n '1,220p' assets/src/router.tsx`
 - `sed -n '1,220p' assets/src/routes/root.tsx`
 - `rg -n "field :products" lib/product_compare_web/schema.ex`
+
+## Ranked Catalog Search Evidence
+
+- Status: done on 2026-07-27.
+- Plan: `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`.
+- Architecture:
+  - PostgreSQL owns hybrid matching through `pg_trgm` plus an
+    application-maintained, weighted `products.search_document` `tsvector`.
+  - `ProductCompare.Catalog.Search` applies the identical match predicate to
+    relevance and named-sort queries, then ranks relevance through seven tiers:
+    exact validated GTIN/model number, exact name/slug, text prefix, text
+    contains, full text, trigram, and description contains.
+  - Full-text ties use `ts_rank_cd`; every tier then uses greatest applicable
+    trigram similarity, normalized product name, and product ID.
+  - Catalog product writes refresh search documents inside the owning
+    transaction. No database trigger or recurring reconciliation was added,
+    and a failed document refresh rolls back the product write and any slug
+    alias.
+- Repair contract:
+  - `mix catalog.search_documents.rebuild` is the explicit deployment, manual
+    repair, and drift-recovery command.
+  - It starts only the repository dependencies, refreshes every product through
+    the same pure `catalog_search_document/5` SQL builder, prints
+    `Rebuilt <count> catalog search document(s).` on success, and raises
+    `Catalog search-document rebuild failed: <reason>` on failure.
+  - It is not scheduled and does not weaken transaction-coupled refreshes.
+- Implementation paths:
+  - Migration:
+    `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs`.
+  - Persistence and repair:
+    `lib/product_compare/catalog/search_documents.ex`,
+    `lib/mix/tasks/catalog.search_documents.rebuild.ex`,
+    `lib/product_compare/catalog/products.ex`, and
+    `lib/product_compare_schemas/catalog/product.ex`.
+  - Backend matching and composition:
+    `lib/product_compare/catalog/search.ex` and
+    `lib/product_compare/catalog/filtering.ex`.
+  - GraphQL:
+    `lib/product_compare_web/resolvers/catalog/input_normalization.ex` and
+    `lib/product_compare_web/schema/types/catalog.ex`.
+  - Frontend:
+    `assets/src/routes/catalog/filters.ts`,
+    `assets/src/routes/catalog/paths.ts`,
+    `assets/src/routes/catalog/BrowseRoute.tsx`,
+    `assets/src/routes/catalog/filter-summary.ts`, and
+    `assets/src/routes/catalog/CatalogFilterForm.tsx`.
+  - Schema and generated artifacts: `assets/schema.graphql` and
+    `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`.
+- Milestone commits:
+  - `41f6cce5659f1b450fbb9fa84323f03b20342477` — persist and maintain
+    weighted catalog search documents.
+  - `1968889e0d5033531d2344701ace70df49e4cac7` — add hybrid ranked catalog
+    search.
+  - `4098b2f26893683b41df0df9e2e0e715f5ca3066` — expose relevance catalog
+    sorting through GraphQL.
+  - `823e1ce275aa882604559ee907635213b92d23bb` — normalize relevance catalog
+    URLs.
+  - The final milestone hash is reported in the implementation handoff after
+    this evidence is committed.
+- Frontend contract:
+  - Query-only URLs use implicit relevance and omit redundant
+    `sort=RELEVANCE`.
+  - Choosing Catalog order for an active query submits explicit
+    `sort=ID_ASC`; Product name, Brand name, and Newest remain explicit.
+  - Relevance appears only for an active search, and clearing a relevance
+    search submits a blank query without a stale sort.
+  - Pagination and compare links preserve query, page size, filters, and
+    compare slugs while omitting implicit relevance. GET filter submissions
+    continue to omit the current `after` cursor.
+- Cross-surface parity:
+  - `productFilterMetadata.resultCount` and Relay cursor pages use the
+    identical hybrid matching set; ranking changes order only.
+  - Explicit sorts retain the search predicate and all taxonomy, typed
+    specification, and use-case filters.
+- Verification:
+  - `mix format --check-formatted` — exit `0`; no tests.
+  - `mix typecheck` — exit `0`; compilation with warnings as errors passed.
+  - `mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+    — exit `0`; 124 tests, 0 failures.
+  - `cd assets && bun run check` — exit `0`; Relay validation compiled 52
+    reader, 51 normalization, and 51 operation-text documents; TypeScript
+    passed; 104 test files and 1,505 tests passed; client and SSR builds passed;
+    the client bundle passed at 182,233 gzip bytes against the 200,000-byte
+    budget.
+  - `mix ci` — exit `1` solely with the explicitly waived queue-reserve result:
+    `Ready Work requires at least 3 complete rows; found 0`.
+  - The remaining CI gates were run directly after that early validator exit:
+    `mix quality` exited `0` with Credo clean, ExDNA at its 3/3 budget, Reach
+    clean, and Dialyzer reporting 0 errors; `mix test --cover` exited `0` with
+    970 tests, 0 failures, and 83.93% total coverage. Formatting, typecheck,
+    and the complete frontend gate also passed as recorded above.
+  - `git diff --check` — exit `0`; no whitespace errors.
+- Out of scope:
+  - Autocomplete and suggestions, result highlighting or excerpts, score and
+    match-reason fields, MPN search authority, and external search
+    infrastructure remain excluded.

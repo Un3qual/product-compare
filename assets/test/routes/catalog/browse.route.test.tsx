@@ -1442,6 +1442,100 @@ test("omits the default catalog sort until an explicit sort is selected", () => 
   expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
 });
 
+test("shows but does not submit implicit relevance for an active search", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
+  expect(sortSelect).toHaveValue("RELEVANCE");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("hides relevance and selects catalog order without a search", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
+});
+
+test("submits explicit catalog order for an active search", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  fireEvent.change(sortSelect, { target: { value: "ID_ASC" } });
+
+  expect(new FormData(filterForm).get("sort")).toBe("ID_ASC");
+});
+
+test("omits relevance when the active search input is cleared", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+
+  fireEvent.change(within(filterForm).getByRole("searchbox", { name: "Search products" }), {
+    target: { value: "" }
+  });
+
+  expect(new FormData(filterForm).get("q")).toBe("");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test.each(["NAME_ASC", "BRAND_NAME_ASC", "NEWEST"] as const)(
+  "submits explicit %s unchanged for an active search",
+  (sort) => {
+    renderBrowseRouteWithRelayData({
+      initialEntries: [`/products?q=oled&sort=${sort}`],
+      loaderData: readyBrowseLoaderData({
+        filters: {
+          ...emptyCatalogFilters,
+          query: "oled",
+          sort
+        }
+      })
+    });
+
+    const filterForm = screen.getByRole("form", {
+      name: "Filter products"
+    }) as HTMLFormElement;
+
+    expect(new FormData(filterForm).get("sort")).toBe(sort);
+  }
+);
+
 test.each([
   { resultCount: 0, label: "No matching products" },
   { resultCount: 1, label: "1 matching product" },
@@ -2132,18 +2226,21 @@ test("omits normalized relevance from rendered pagination and compare links", ()
   const activeFilters = {
     query: "oled",
     sort: "RELEVANCE",
-    useCaseTaxonIds: [],
+    useCaseTaxonIds: ["use-gaming"],
     numeric: [],
     booleans: [],
     enums: []
   } as const;
   const productFiltersInput = {
     query: "oled",
-    sort: "RELEVANCE" as const
+    sort: "RELEVANCE" as const,
+    useCaseTaxonIds: ["use-gaming"]
   };
 
   renderBrowseRouteWithRelayData({
-    initialEntries: ["/products?first=24&q=oled&slug=selected-product"],
+    initialEntries: [
+      "/products?first=24&q=oled&useCaseTaxonId=use-gaming&slug=selected-product"
+    ],
     loaderData: readyBrowseLoaderData({
       filters: activeFilters,
       pageSize: 24,
@@ -2170,11 +2267,11 @@ test("omits normalized relevance from rendered pagination and compare links", ()
 
   expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
     "href",
-    "/products?first=24&q=oled&after=cursor-next-page&slug=selected-product"
+    "/products?first=24&q=oled&useCaseTaxonId=use-gaming&after=cursor-next-page&slug=selected-product"
   );
   expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
     "href",
-    "/products?first=24&q=oled&slug=selected-product&slug=catalog-first"
+    "/products?first=24&q=oled&useCaseTaxonId=use-gaming&slug=selected-product&slug=catalog-first"
   );
 });
 

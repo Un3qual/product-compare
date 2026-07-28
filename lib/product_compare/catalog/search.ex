@@ -39,11 +39,13 @@ defmodule ProductCompare.Catalog.Search do
   end
 
   defp search_terms(value) do
+    normalized = String.downcase(value)
+
     %{
       query: value,
-      normalized: String.downcase(value),
-      contains_pattern: "%#{escape_like_pattern(String.downcase(value))}%",
-      prefix_pattern: "#{escape_like_pattern(String.downcase(value))}%",
+      normalized: normalized,
+      contains_pattern: "%#{escape_like_pattern(normalized)}%",
+      prefix_pattern: "#{escape_like_pattern(normalized)}%",
       gtin: normalized_gtin(value),
       trigram?: String.length(value) >= @minimum_trigram_length
     }
@@ -279,7 +281,11 @@ defmodule ProductCompare.Catalog.Search do
     )
   end
 
-  defp ensure_brand_join(query) do
+  @doc """
+  Ensures a catalog query has the shared named `:brand` binding.
+  """
+  @spec ensure_brand_join(Ecto.Queryable.t()) :: Ecto.Query.t()
+  def ensure_brand_join(query) do
     if has_named_binding?(query, :brand) do
       query
     else

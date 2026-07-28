@@ -7,7 +7,6 @@ defmodule ProductCompare.Catalog.Filtering do
 
   alias ProductCompare.Catalog.Search
   alias ProductCompare.Input
-  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -57,7 +56,7 @@ defmodule ProductCompare.Catalog.Filtering do
 
   defp apply_sort(query, :brand_name_asc, _search_query) do
     query
-    |> ensure_brand_join()
+    |> Search.ensure_brand_join()
     |> order_by(
       [product: product, brand: brand],
       asc: brand.name,
@@ -71,17 +70,6 @@ defmodule ProductCompare.Catalog.Filtering do
 
   defp apply_sort(query, _sort, _search_query),
     do: order_by(query, [product: product], asc: product.id)
-
-  defp ensure_brand_join(query) do
-    if has_named_binding?(query, :brand) do
-      query
-    else
-      join(query, :left, [product: product], brand in Brand,
-        on: brand.id == product.brand_id,
-        as: :brand
-      )
-    end
-  end
 
   defp maybe_apply_primary_type_filter(query, _filters, :primary_type), do: query
 
