@@ -460,6 +460,52 @@ Verification:
 Exit condition: active source and tests contain no `Crud`-named owner, the
 public discussions facade is unchanged, and all backend gates pass.
 
+### 9. Concurrency-Safe Write Audit
+
+Status: ready
+Lane: Backend write correctness
+Plan: `docs/superpowers/plans/2026-07-30-concurrency-safe-write-audit-implementation-plan.md`
+Batch outcome: every first-party modifying action has an explicit atomicity
+mechanism, and every confirmed read-modify-write race is fixed at the database
+boundary with a deterministic concurrency regression.
+Next action: inventory every modifying action and trace each pre-write read or
+cross-row validation to its protecting statement, constraint, transaction,
+lock, or stale-write check.
+Owned paths:
+
+- `lib/product_compare/**`
+- `lib/product_compare_schemas/**`
+- `priv/repo/migrations/**`
+- affected `test/product_compare/**`
+- `docs/work/concurrency-safe-writes.md`
+
+Internal slices:
+
+- Complete modifying-action and invariant inventory.
+- Single-row conditional, locked, or optimistic state transitions.
+- Cross-row validation and constraint-backed writes.
+- Deterministic concurrency regression and full-gate evidence.
+
+Prerequisites:
+
+- No active row owns backend context, schema, or migration write paths.
+- Confirmed findings have a reproducible unsafe interleaving before the fix.
+
+Verification:
+
+- focused deterministic concurrency tests for every confirmed finding
+- affected context, schema, migration, and GraphQL suites
+- repeated randomized-seed runs
+- `mix test`
+- `mix typecheck`
+- `mix quality`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every modifying action is classified, every confirmed race has
+a database-owned fix and regression, and no unsafe read-modify-write path
+remains.
+
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
 predicate and ranking, GraphQL and metadata parity, Relay pagination, and
