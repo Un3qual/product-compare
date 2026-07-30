@@ -332,23 +332,24 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Backend Naming Work
 
 ### 8. Rename Discussion Content Ownership
 
-Status: ready
+Status: active
 Lane: Backend naming
 Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
 Batch outcome: the discussions write owner and its tests are named for content
 lifecycle behavior rather than `Crud`, with the stable context facade
 unchanged.
-Next action: characterize the existing discussions owner and select the
-narrowest behavior-oriented module name from its live responsibilities.
+Next action: run the focused baseline suite, then rename the owner and test to
+the validated `ContentLifecycle` responsibility.
 Owned paths:
 
 - `lib/product_compare/discussions/crud.ex`
 - `lib/product_compare/discussions.ex`
 - `test/product_compare/discussions/thread_crud_test.exs`
+- `docs/work/discussion-content-lifecycle.md`
 - affected active documentation references
 
 Internal slices:
@@ -372,6 +373,8 @@ Verification:
 
 Exit condition: active source and tests contain no `Crud`-named owner, the
 public discussions facade is unchanged, and all backend gates pass.
+
+## Ready Work
 
 ### 9. Concurrency-Safe Write Audit
 
@@ -469,6 +472,50 @@ Exit condition: all supported nodes and connections use Absinthe Relay macros,
 the schema is split by context without a `Common` module, associations use
 inline Ecto Dataloader, all 13 KV sources and shallow resolver facades are
 absent, and every correctness/query-budget gate passes.
+
+### 11. Effect GraphQL Transport Pilot
+
+Status: ready
+Lane: Frontend transport
+Plan: `docs/superpowers/plans/2026-07-30-effect-graphql-transport-pilot-implementation-plan.md`
+Batch outcome: the Relay GraphQL transport models configuration, network, HTTP,
+and response-decoding failures with one internal Effect workflow while its
+stable Promise interface and browser/SSR behavior remain unchanged.
+Next action: add failing typed-failure characterization to the focused transport
+suite before introducing the Effect dependency.
+Owned paths:
+
+- `assets/package.json`
+- `assets/pnpm-lock.yaml`
+- `assets/src/relay/fetch-graphql.ts`
+- `assets/test/relay/fetch-graphql.test.ts`
+- affected `assets/test/relay/environment.test.ts`
+- `docs/work/frontend-effect-graphql-transport.md`
+
+Internal slices:
+
+- Existing transport and cancellation contract characterization.
+- Tagged Effect failure workflow and stable Promise adapter.
+- Import-boundary and bundle-cost verification.
+
+Prerequisites:
+
+- No active row owns the Relay transport or its focused tests.
+- Effect remains confined to the transport boundary unless a later separately
+  reviewed outcome proves another use.
+
+Verification:
+
+- focused transport and Relay environment tests
+- Effect import-boundary scan
+- Relay validation, TypeScript, Oxc, and the full frontend suite
+- Vite client and SSR builds plus the bundle contract
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: the internal transport workflow has typed failures, Relay still
+consumes `fetchGraphQL/3` as a Promise, browser and SSR behavior is preserved,
+Effect has not spread into route/component code, and every frontend gate passes.
 
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
