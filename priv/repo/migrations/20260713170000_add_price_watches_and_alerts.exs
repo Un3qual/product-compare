@@ -65,7 +65,9 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :shipping, :decimal, null: false
       add :landed_price, :decimal, null: false
       add :observed_at, :utc_datetime_usec, null: false
-      add :fact_snapshot, :map, null: false
+      add :baseline_landed_price, :decimal
+      add :target_amount, :decimal
+      add :percentage_drop, :decimal
       add :read_at, :utc_datetime_usec
 
       timestamps(type: :utc_datetime_usec, updated_at: false)

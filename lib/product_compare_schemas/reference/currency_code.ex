@@ -36,12 +36,7 @@ defmodule ProductCompareSchemas.Reference.CurrencyCode do
   end
 
   @impl true
-  def load(id) when is_integer(id) do
-    case Map.fetch(@ids, id) do
-      {:ok, code} -> {:ok, code}
-      :error -> :error
-    end
-  end
+  def load(id) when is_integer(id), do: Map.fetch(@ids, id)
 
   def load(_id), do: :error
 end

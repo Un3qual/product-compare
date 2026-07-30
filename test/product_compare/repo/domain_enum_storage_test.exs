@@ -29,7 +29,11 @@ defmodule ProductCompare.Repo.DomainEnumStorageTest do
     {"community_reports", "status", "community_report_status"},
     {"community_write_receipts", "content_type", "community_content_type"},
     {"community_write_windows", "action_kind", "community_action_kind"},
-    {"cj_programs", "stage", "cj_program_stage"}
+    {"cj_programs", "stage", "cj_program_stage"},
+    {"comparison_snapshot_attributes", "source_type", "product_attribute_claim_source_type"},
+    {"comparison_snapshot_offers", "freshness", "offer_freshness"},
+    {"comparison_snapshot_recommendations", "profile", "recommendation_profile"},
+    {"comparison_snapshot_recommendations", "status", "recommendation_status"}
   ]
 
   test "closed domain columns use their native PostgreSQL enum types" do

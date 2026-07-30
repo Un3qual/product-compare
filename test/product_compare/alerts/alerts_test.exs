@@ -58,6 +58,9 @@ defmodule ProductCompare.AlertsTest do
     assert first.triggering_price_point_id == cooled.id
     assert first.currency == "USD"
     assert Decimal.eq?(first.landed_price, Decimal.new("80"))
+    assert Decimal.eq?(first.baseline_landed_price, Decimal.new("100"))
+    assert Decimal.eq?(first.target_amount, Decimal.new("90"))
+    assert first.percentage_drop == nil
     assert first.read_at == nil
   end
 
@@ -138,6 +141,16 @@ defmodule ProductCompare.AlertsTest do
 
     assert Repo.aggregate(AlertEvent, :count, :id) == 2
     assert baseline.id == percent_watch.baseline_price_point_id
+
+    percent_event = Repo.get_by!(AlertEvent, watch_rule_id: percent_watch.id)
+    assert Decimal.eq?(percent_event.baseline_landed_price, Decimal.new("110"))
+    assert Decimal.eq?(percent_event.percentage_drop, Decimal.new("20"))
+    assert percent_event.target_amount == nil
+
+    availability_event = Repo.get_by!(AlertEvent, watch_rule_id: availability_watch.id)
+    assert availability_event.baseline_landed_price == nil
+    assert availability_event.target_amount == nil
+    assert availability_event.percentage_drop == nil
   end
 
   test "watch and inbox reads, updates, deletes, and read state are owner scoped", %{now: now} do

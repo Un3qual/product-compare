@@ -56,12 +56,7 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
   @impl true
   def load(nil, _loader, _params), do: {:ok, nil}
 
-  def load(id, _loader, %{ids: ids}) when is_integer(id) do
-    case Map.fetch(ids, id) do
-      {:ok, code} -> {:ok, code}
-      :error -> :error
-    end
-  end
+  def load(id, _loader, %{ids: ids}) when is_integer(id), do: Map.fetch(ids, id)
 
   def load(_id, _loader, _params), do: :error
 

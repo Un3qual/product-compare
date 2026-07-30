@@ -5,7 +5,7 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Reference.{Country, Currency, Language}
+  alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @warning_codes [
@@ -44,9 +44,9 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
   defp warning_rows(program_ids) do
     MerchantFeedCandidate
     |> join(:inner, [feed], source in assoc(feed, :source))
-    |> join(:left, [feed], country in Country, on: country.id == feed.advertiser_country)
+    |> join(:left, [feed], country in "countries", on: country.id == feed.advertiser_country)
     |> join(:left, [feed], currency in Currency, on: currency.id == feed.currency)
-    |> join(:left, [feed], language in Language, on: language.id == feed.language)
+    |> join(:left, [feed], language in "languages", on: language.id == feed.language)
     |> where(
       [feed, source],
       source.provider == @provider and feed.cj_program_id in ^program_ids

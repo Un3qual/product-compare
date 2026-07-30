@@ -27,7 +27,10 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
     community_report_status: ~w(pending resolved dismissed),
     community_content_type: ~w(review question answer),
     community_action_kind: ~w(review question answer report),
-    cj_program_stage: ~w(new considering selected applied accepted not_pursuing declined)
+    cj_program_stage: ~w(new considering selected applied accepted not_pursuing declined),
+    offer_freshness: ~w(fresh aging stale unobserved),
+    recommendation_profile: ~w(lowest_current_cost best_value),
+    recommendation_status: ~w(winner tie insufficient_evidence)
   ]
 
   def change do
@@ -75,6 +78,27 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
         (978, 'EUR', '978', 2, 'Euro', now(), now())
       """,
       "DELETE FROM currencies"
+    )
+
+    create table(:recommendation_algorithms, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :text, null: false
+      add :name, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:recommendation_algorithms, [:code])
+
+    execute(
+      """
+      INSERT INTO recommendation_algorithms
+        (id, code, name, inserted_at, updated_at)
+      VALUES
+        (1, 'lowest-current-cost-v1', 'Lowest current cost v1', now(), now()),
+        (2, 'best-supported-current-cost-v1', 'Best supported current cost v1', now(), now())
+      """,
+      "DELETE FROM recommendation_algorithms"
     )
 
     create table(:affiliate_program_statuses, primary_key: false) do

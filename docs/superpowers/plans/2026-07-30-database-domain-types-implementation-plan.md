@@ -200,7 +200,6 @@ git commit -m "refactor: store closed domains as postgres enums"
 
 **Files:**
 - Create: `lib/product_compare_schemas/reference/currency.ex`
-- Create: `lib/product_compare_schemas/affiliate/affiliate_program_status.ex`
 - Modify: `priv/repo/migrations/20260303222607_init_extensions.exs`
 - Modify: `priv/repo/migrations/20260303222611_create_pricing_affiliate_discussions.exs`
 - Modify: `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
@@ -243,16 +242,12 @@ Commit with `git commit -m "refactor: normalize commerce reference domains"`.
 ### Task 3: Source and Provider Reference Domains
 
 **Files:**
-- Create: `lib/product_compare_schemas/specs/source_kind.ex`
-- Create: `lib/product_compare_schemas/ingestion/integration_provider.ex`
-- Create: `lib/product_compare_schemas/ingestion/integration_surface.ex`
-- Create: `lib/product_compare_schemas/ingestion/provider_feed_type.ex`
-- Create: `lib/product_compare_schemas/reference/country.ex`
-- Create: `lib/product_compare_schemas/reference/language.ex`
 - Modify: `priv/repo/migrations/20260303222607_init_extensions.exs`
 - Modify: `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
 - Modify: `priv/repo/migrations/20260604191000_create_ingestion_runs.exs`
 - Modify: `priv/repo/migrations/20260604210000_create_merchant_feed_candidates.exs`
+- Modify: the source, import-run, and merchant-feed-candidate schemas that own
+  normalized foreign-key fields and their stable public-code mappings.
 - Modify: source, ingestion-run, feed-candidate, CJ client/parser, reporting, task, and GraphQL files.
 - Test: `test/product_compare/repo/ingestion_reference_storage_test.exs`
 - Test: existing source, ingestion, Mix-task, and GraphQL suites.
@@ -332,7 +327,6 @@ Commit with `git commit -m "refactor: remove categorical discriminator strings"`
 
 **Files:**
 - Create: focused comparison snapshot product, attribute, evidence, offer, recommendation, and ranking schemas under `lib/product_compare_schemas/catalog/comparison_snapshot/`.
-- Create: `lib/product_compare_schemas/catalog/recommendation_algorithm.ex`
 - Modify: `priv/repo/migrations/20260713180000_create_comparison_snapshots.exs`
 - Modify: `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
 - Modify: `lib/product_compare/comparison_snapshots/capture.ex`
@@ -346,27 +340,27 @@ Commit with `git commit -m "refactor: remove categorical discriminator strings"`
 - Consumes: native profile/status/source/freshness enums and normalized currency/source-kind/recommendation-algorithm references.
 - Produces: immutable normalized snapshot records and typed alert facts with no application-owned categorical JSON state.
 
-- [ ] **Step 1: Write failing normalized-storage tests**
+- [x] **Step 1: Write failing normalized-storage tests**
 
 Assert `comparison_snapshots.payload` and `alert_events.fact_snapshot` are absent. Assert snapshot child tables preserve ordered products, attributes, evidence, offers, recommendations, and rankings, and assert alert events expose typed baseline, target, and percentage fields.
 
-- [ ] **Step 2: Run the storage and behavior tests and verify RED**
+- [x] **Step 2: Run the storage and behavior tests and verify RED**
 
 Run the new storage test plus `test/product_compare/comparison_snapshots_test.exs` and `test/product_compare/alerts/alerts_test.exs`.
 
-- [ ] **Step 3: Normalize comparison snapshots**
+- [x] **Step 3: Normalize comparison snapshots**
 
 Create immutable child rows for copied product facts, attributes, evidence, offers, one recommendation, and ordered rankings. Store recommendation profile/status and offer freshness as PostgreSQL enums; store source kind, currency, and recommendation algorithm as foreign keys. Keep copied names, descriptions, prices, timestamps, excerpts, reasons, and missing-input prose in typed scalar columns.
 
-- [ ] **Step 4: Normalize alert event facts**
+- [x] **Step 4: Normalize alert event facts**
 
 Drop `fact_snapshot`; retain the existing typed event columns and add nullable decimal `baseline_landed_price`, `target_amount`, and `percentage_drop` snapshot columns.
 
-- [ ] **Step 5: Replace hydration with associations**
+- [x] **Step 5: Replace hydration with associations**
 
 Load immutable child rows in bounded preloads, preserve the current public GraphQL shape, ordering, owner privacy, revocation behavior, and SELECT budgets, and delete `PayloadCodec`.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run storage, snapshot, alert, SEO, GraphQL, query-budget, `mix typecheck`, `mix format --check-formatted`, `mix test`, `mix work_queue.validate`, and `git diff --check`.
 
@@ -374,9 +368,9 @@ Commit with `git commit -m "refactor: normalize immutable application snapshots"
 
 ## Final Program Verification
 
-- [ ] Run `MIX_ENV=test mix ecto.reset`.
-- [ ] Run `mix test test/product_compare/repo`.
-- [ ] Run `mix ci`.
-- [ ] Run a schema audit that reports no first-party categorical `varchar` or `text` columns and no application-owned categorical JSON paths.
-- [ ] Run `git diff --check`.
-- [ ] Record exact verification evidence in `docs/work/database-domain-types.md`.
+- [x] Run `MIX_ENV=test mix ecto.reset`.
+- [x] Run `mix test test/product_compare/repo`.
+- [x] Run `mix ci`.
+- [x] Run a schema audit that reports no first-party categorical `varchar` or `text` columns and no application-owned categorical JSON paths.
+- [x] Run `git diff --check`.
+- [x] Record exact verification evidence in `docs/work/database-domain-types.md`.

@@ -3,6 +3,7 @@ defmodule ProductCompare.Seo.Sitemaps do
 
   import Ecto.Query
 
+  alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Repo
   alias ProductCompare.Seo.{Categories, Metadata, QualificationPolicy}
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
@@ -121,6 +122,7 @@ defmodule ProductCompare.Seo.Sitemaps do
     |> order_by([snapshot], asc: snapshot.inserted_at, asc: snapshot.id)
     |> limit(^limit)
     |> Repo.all()
+    |> ComparisonSnapshots.hydrate_many()
     |> Enum.filter(&Metadata.snapshot_qualified?/1)
     |> Enum.map(fn snapshot ->
       {"/compare/shared/#{snapshot.public_token}", snapshot.inserted_at}

@@ -102,7 +102,7 @@ defmodule ProductCompare.Seo.Metadata do
 
   @spec snapshot(ComparisonSnapshot.t()) :: metadata()
   def snapshot(%ComparisonSnapshot{} = snapshot) do
-    products = field(snapshot.payload, :products) || []
+    products = snapshot_products(snapshot)
     names = Enum.map(products, &field(&1, :name))
 
     indexable =
@@ -146,16 +146,14 @@ defmodule ProductCompare.Seo.Metadata do
   end
 
   @spec snapshot_qualified?(ComparisonSnapshot.t() | map()) :: boolean()
-  def snapshot_qualified?(%ComparisonSnapshot{payload: payload}), do: snapshot_qualified?(payload)
+  def snapshot_qualified?(%ComparisonSnapshot{} = snapshot),
+    do: qualified_snapshot_products?(snapshot_products(snapshot))
 
   def snapshot_qualified?(payload) when is_map(payload) do
-    products = field(payload, :products) || []
-
-    case products do
-      [_first, _second] -> Enum.all?(products, &snapshot_product_quality?/1)
-      [_first, _second, _third] -> Enum.all?(products, &snapshot_product_quality?/1)
-      _other -> false
-    end
+    payload
+    |> field(:products)
+    |> List.wrap()
+    |> qualified_snapshot_products?()
   end
 
   def snapshot_qualified?(_payload), do: false
@@ -194,6 +192,19 @@ defmodule ProductCompare.Seo.Metadata do
 
   defp snapshot_product_quality?(product),
     do: (field(product, :attributes) || []) != [] and (field(product, :offers) || []) != []
+
+  defp snapshot_products(%ComparisonSnapshot{payload: %{products: products}})
+       when is_list(products),
+       do: products
+
+  defp snapshot_products(%ComparisonSnapshot{products: products}) when is_list(products),
+    do: products
+
+  defp snapshot_products(%ComparisonSnapshot{}), do: []
+
+  defp qualified_snapshot_products?(products) do
+    length(products) in 2..3 and Enum.all?(products, &snapshot_product_quality?/1)
+  end
 
   defp adequate_product_copy?(description, image_url),
     do: QualificationPolicy.adequate_text?(description) or is_binary(image_url)

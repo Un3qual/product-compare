@@ -1,16 +1,19 @@
 defmodule ProductCompareSchemas.Affiliate.AffiliateProgram do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Affiliate.AffiliateProgramStatusCode
+  alias ProductCompareSchemas.Reference.ReferenceCode
 
+  @status_codes %{"active" => 1, "paused" => 2}
   @type t :: %__MODULE__{}
 
   schema "affiliate_programs" do
     field :entropy_id, Ecto.UUID
     field :program_code, :string
 
-    field :status, AffiliateProgramStatusCode,
+    field :status, ReferenceCode,
       source: :affiliate_program_status_id,
+      codes: @status_codes,
+      normalization: :lower,
       default: "active"
 
     belongs_to :affiliate_network, ProductCompareSchemas.Affiliate.AffiliateNetwork

@@ -5,10 +5,20 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
 
   alias ProductCompare.Pricing
   alias ProductCompare.Recommendations
-  alias ProductCompare.Recommendations.Result, as: RecommendationResult
+  alias ProductCompare.Recommendations.Result
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Specs.ClaimValue
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute, as: SnapshotAttribute
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Evidence, as: SnapshotEvidence
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer, as: SnapshotOffer
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Product, as: SnapshotProduct
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking, as: SnapshotRanking
+
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Recommendation,
+    as: SnapshotRecommendation
+
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
@@ -36,7 +46,7 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
 
     %{
       version: 1,
-      captured_at: DateTime.to_iso8601(now),
+      captured_at: now,
       products:
         Enum.map(
           products,
@@ -48,6 +58,43 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
           )
         ),
       recommendation: capture_recommendation(recommendation)
+    }
+  end
+
+  def preloads do
+    evidence = from evidence in SnapshotEvidence, order_by: [asc: evidence.position]
+
+    attributes =
+      from attribute in SnapshotAttribute,
+        order_by: [asc: attribute.position],
+        preload: [evidence: ^evidence]
+
+    offers = from offer in SnapshotOffer, order_by: [asc: offer.position]
+
+    products =
+      from product in SnapshotProduct,
+        order_by: [asc: product.position],
+        preload: [attributes: ^attributes, offers: ^offers]
+
+    rankings = from ranking in SnapshotRanking, order_by: [asc: ranking.rank]
+
+    recommendation =
+      from recommendation in SnapshotRecommendation,
+        preload: [rankings: ^rankings]
+
+    [products: products, recommendation: recommendation]
+  end
+
+  def hydrate(%ComparisonSnapshot{} = snapshot) do
+    %{snapshot | payload: payload(snapshot)}
+  end
+
+  def payload(%ComparisonSnapshot{} = snapshot) do
+    %{
+      version: snapshot.version,
+      captured_at: DateTime.to_iso8601(snapshot.captured_at),
+      products: Enum.map(snapshot.products, &product_payload/1),
+      recommendation: recommendation_payload(snapshot.recommendation)
     }
   end
 
@@ -82,8 +129,8 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
       code: attribute.code,
       display_name: attribute.display_name,
       value_text: ClaimValue.format(claim),
-      source_type: Atom.to_string(claim.source_type),
-      confidence: decimal(claim.confidence),
+      source_type: claim.source_type,
+      confidence: claim.confidence,
       evidence: Enum.map(claim.evidence_links, &capture_evidence/1)
     }
   end
@@ -98,16 +145,14 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
       source_name: artifact.source.name,
       source_domain: artifact.source.domain,
       url: artifact.url,
-      fetched_at: DateTime.to_iso8601(artifact.fetched_at)
+      fetched_at: artifact.fetched_at
     }
   end
 
   defp capture_offers(truth, merchants_by_offer_id) do
-    best_offers =
-      truth.currency_summaries
-      |> Enum.flat_map(&List.wrap(&1.best_offer))
-
-    Enum.map(best_offers, fn offer ->
+    truth.currency_summaries
+    |> Enum.flat_map(&List.wrap(&1.best_offer))
+    |> Enum.map(fn offer ->
       merchant = Map.fetch!(merchants_by_offer_id, offer.merchant_product_id)
 
       %{
@@ -116,11 +161,11 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
         merchant_name: merchant.name,
         merchant_domain: merchant.domain,
         currency: offer.currency,
-        item_price: decimal(offer.item_price),
-        shipping: decimal(offer.shipping),
-        landed_price: decimal(offer.landed_price),
-        observed_at: DateTime.to_iso8601(offer.observed_at),
-        freshness: Atom.to_string(offer.freshness)
+        item_price: offer.item_price,
+        shipping: offer.shipping,
+        landed_price: offer.landed_price,
+        observed_at: offer.observed_at,
+        freshness: offer.freshness
       }
     end)
   end
@@ -148,35 +193,97 @@ defmodule ProductCompare.ComparisonSnapshots.Capture do
   end
 
   defp capture_recommendation(result) do
-    rankings =
-      Enum.map(result.rankings, fn ranking ->
-        %{
-          rank: ranking.rank,
-          product_id: ranking.product_id,
-          product_name: ranking.product_name,
-          landed_price: decimal(ranking.landed_price),
-          currency: ranking.currency,
-          price_point_id: ranking.price_point_id,
-          merchant_product_id: ranking.merchant_product_id,
-          claim_ids: ranking.claim_ids,
-          reasons: ranking.reasons
-        }
-      end)
-
-    RecommendationResult.new(
-      Atom.to_string(result.profile),
+    Result.new(
+      result.profile,
       result.algorithm_version,
-      DateTime.to_iso8601(result.evaluated_at),
-      Atom.to_string(result.status),
+      result.evaluated_at,
+      result.status,
       result.winner_product_id,
       result.currency,
-      rankings,
+      result.rankings,
       result.missing_inputs
     )
   end
 
-  defp decimal(nil), do: nil
-  defp decimal(%Decimal{} = value), do: value |> Decimal.normalize() |> Decimal.to_string(:normal)
+  defp product_payload(product) do
+    %{
+      id: product.product_id,
+      name: product.name,
+      slug: product.slug,
+      description: product.description,
+      model_number: product.model_number,
+      brand_name: product.brand_name,
+      attributes: Enum.map(product.attributes, &attribute_payload/1),
+      offers: Enum.map(product.offers, &offer_payload/1)
+    }
+  end
+
+  defp attribute_payload(attribute) do
+    %{
+      attribute_id: attribute.attribute_id,
+      claim_id: attribute.claim_id,
+      code: attribute.code,
+      display_name: attribute.display_name,
+      value_text: attribute.value_text,
+      source_type: Atom.to_string(attribute.source_type),
+      confidence: attribute.confidence,
+      evidence: Enum.map(attribute.evidence, &evidence_payload/1)
+    }
+  end
+
+  defp evidence_payload(evidence) do
+    %{
+      artifact_id: evidence.artifact_id,
+      excerpt: evidence.excerpt,
+      source_kind: evidence.source_kind,
+      source_name: evidence.source_name,
+      source_domain: evidence.source_domain,
+      url: evidence.url,
+      fetched_at: DateTime.to_iso8601(evidence.fetched_at)
+    }
+  end
+
+  defp offer_payload(offer) do
+    %{
+      merchant_product_id: offer.merchant_product_id,
+      price_point_id: offer.price_point_id,
+      merchant_name: offer.merchant_name,
+      merchant_domain: offer.merchant_domain,
+      currency: offer.currency,
+      item_price: offer.item_price,
+      shipping: offer.shipping,
+      landed_price: offer.landed_price,
+      observed_at: DateTime.to_iso8601(offer.observed_at),
+      freshness: Atom.to_string(offer.freshness)
+    }
+  end
+
+  defp recommendation_payload(recommendation) do
+    Result.new(
+      recommendation.profile,
+      recommendation.algorithm_version,
+      recommendation.evaluated_at,
+      recommendation.status,
+      recommendation.winner_product_id,
+      recommendation.currency,
+      Enum.map(recommendation.rankings, &ranking_payload/1),
+      recommendation.missing_inputs
+    )
+  end
+
+  defp ranking_payload(ranking) do
+    %{
+      rank: ranking.rank,
+      product_id: ranking.product_id,
+      product_name: ranking.product_name,
+      landed_price: ranking.landed_price,
+      currency: ranking.currency,
+      price_point_id: ranking.price_point_id,
+      merchant_product_id: ranking.merchant_product_id,
+      claim_ids: ranking.claim_ids,
+      reasons: ranking.reasons
+    }
+  end
 
   defp bounded_excerpt(value) when is_binary(value), do: String.slice(value, 0, 500)
   defp bounded_excerpt(_value), do: nil

@@ -284,21 +284,19 @@ categorical strings, and all gates pass.
 
 ### 5. Application-Owned Snapshot JSON Normalization
 
-Status: active
+Status: complete
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Immutable comparison snapshots use typed relational child rows,
 and alert events use typed fact columns; neither first-party model stores
 application-owned categorical state in JSON.
-Next action: write the failing normalized-storage test and characterize the
-current snapshot hydration/query-budget contract.
+Next action: none; released to the approved frontend toolchain modernization.
 Owned paths:
 
 - `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
 - `priv/repo/migrations/20260713180000_create_comparison_snapshots.exs`
 - `lib/product_compare_schemas/catalog/comparison_snapshot.ex`
 - `lib/product_compare_schemas/catalog/comparison_snapshot/**`
-- `lib/product_compare_schemas/catalog/recommendation_algorithm.ex`
 - `lib/product_compare_schemas/alerts/alert_event.ex`
 - `lib/product_compare/comparison_snapshots/**`
 - `lib/product_compare/alerts/**`

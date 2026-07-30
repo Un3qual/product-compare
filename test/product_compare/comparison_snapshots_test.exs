@@ -11,6 +11,7 @@ defmodule ProductCompare.ComparisonSnapshotsTest do
   alias ProductCompare.Specs
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
 
   @now ~U[2026-07-13 23:00:00Z]
 
@@ -19,47 +20,12 @@ defmodule ProductCompare.ComparisonSnapshotsTest do
       ComparisonSnapshot.publish_changeset(%ComparisonSnapshot{}, %{
         public_token: String.duplicate("a", 43),
         user_id: 1,
-        payload: %{},
+        version: 1,
+        captured_at: @now,
         search_qualified: true
       })
 
     refute Ecto.Changeset.get_change(changeset, :search_qualified)
-  end
-
-  test "hydrates payloads whose recommendation is absent" do
-    snapshot =
-      ComparisonSnapshots.hydrate(%ComparisonSnapshot{
-        payload: %{"version" => 1, "products" => []}
-      })
-
-    assert snapshot.payload.recommendation == %{
-             algorithm_version: nil,
-             currency: nil,
-             evaluated_at: nil,
-             missing_inputs: nil,
-             profile: nil,
-             rankings: [],
-             status: nil,
-             winner_product_id: nil
-           }
-  end
-
-  test "hydrates recommendation payloads whose evaluated timestamp is absent" do
-    snapshot =
-      ComparisonSnapshots.hydrate(%ComparisonSnapshot{
-        payload: %{
-          "version" => 1,
-          "products" => [],
-          "recommendation" => %{
-            "profile" => "best_value",
-            "status" => "insufficient_evidence"
-          }
-        }
-      })
-
-    assert snapshot.payload.recommendation.profile == :best_value
-    assert snapshot.payload.recommendation.status == :insufficient_evidence
-    assert snapshot.payload.recommendation.evaluated_at == nil
   end
 
   test "publishes ordered immutable facts behind a high-entropy public token" do
@@ -116,6 +82,74 @@ defmodule ProductCompare.ComparisonSnapshotsTest do
     refute first_snapshot.id == second_snapshot.id
     refute first_snapshot.public_token == second_snapshot.public_token
     assert first_snapshot.payload == second_snapshot.payload
+  end
+
+  test "copies evidence and controlled source identity independently of live source records" do
+    owner = AccountsFixtures.user_fixture()
+    operator = AccountsFixtures.operator_fixture()
+    {first, _first_point} = product_with_price("Evidence first", "120")
+    {second, _second_point} = product_with_price("Evidence second", "90")
+
+    source =
+      %Source{}
+      |> Source.changeset(%{
+        kind: "manufacturer",
+        name: "Captured manufacturer",
+        domain: "captured-manufacturer.example"
+      })
+      |> Repo.insert!()
+
+    artifact =
+      %SourceArtifact{}
+      |> SourceArtifact.changeset(%{
+        source_id: source.id,
+        url: "https://captured-manufacturer.example/specification",
+        fetched_at: @now,
+        raw_json: %{"provider_owned" => "raw evidence"}
+      })
+      |> Repo.insert!()
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        data_type: :text,
+        display_name: "Captured panel",
+        code: "captured-panel-#{System.unique_integer([:positive])}"
+      })
+
+    {:ok, claim} =
+      Specs.propose_claim(first.id, attribute.id, %{value_text: "OLED"}, %{
+        source_type: :import,
+        confidence: Decimal.new("0.95"),
+        artifact_id: artifact.id,
+        excerpt: "Panel technology: OLED"
+      })
+
+    {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
+    {:ok, _current} = Specs.select_current_claim(first.id, attribute.id, claim.id, operator.id)
+
+    assert {:ok, snapshot} =
+             ComparisonSnapshots.publish(
+               owner.id,
+               %{product_ids: [first.id, second.id]},
+               now: @now
+             )
+
+    evidence =
+      snapshot.payload.products
+      |> hd()
+      |> Map.fetch!(:attributes)
+      |> hd()
+      |> Map.fetch!(:evidence)
+      |> hd()
+
+    assert evidence.source_kind == "manufacturer"
+    assert evidence.source_name == "Captured manufacturer"
+    assert evidence.source_domain == "captured-manufacturer.example"
+    assert evidence.excerpt == "Panel technology: OLED"
+    refute Jason.encode!(snapshot.payload) =~ "provider_owned"
+
+    source |> Source.changeset(%{name: "Renamed source"}) |> Repo.update!()
+    assert ComparisonSnapshots.get_public(snapshot.public_token).payload == snapshot.payload
   end
 
   test "revocation is owner-scoped and hides the public token" do

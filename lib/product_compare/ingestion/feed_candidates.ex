@@ -7,13 +7,8 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   alias ProductCompare.Ingestion.SourceProviders
   alias ProductCompare.Repo
 
-  alias ProductCompareSchemas.Ingestion.{
-    IntegrationProvider,
-    MerchantFeedCandidate,
-    ProviderFeedType
-  }
-
-  alias ProductCompareSchemas.Reference.{Country, CurrencyCode, Language}
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Reference.CurrencyCode
   alias ProductCompareSchemas.Specs.Source
 
   @replace_fields [
@@ -148,8 +143,10 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   end
 
   defp candidate_provider(attrs) do
-    requested = IntegrationProvider.normalize_code(attr(attrs, :provider))
-    feed_type_provider = ProviderFeedType.provider_code_for_code(attr(attrs, :source_feed_type))
+    requested = Source.normalize_provider(attr(attrs, :provider))
+
+    feed_type_provider =
+      MerchantFeedCandidate.provider_for_feed_type(attr(attrs, :source_feed_type))
 
     if requested && feed_type_provider && requested != feed_type_provider do
       {:error,
@@ -166,10 +163,16 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
 
   defp normalize_reference_codes(attrs) do
     attrs
-    |> Map.put(:advertiser_country, Country.normalize_code(attr(attrs, :advertiser_country)))
+    |> Map.put(
+      :advertiser_country,
+      MerchantFeedCandidate.normalize_country(attr(attrs, :advertiser_country))
+    )
     |> Map.put(:currency, normalize_currency(attr(attrs, :currency)))
-    |> Map.put(:language, Language.normalize_code(attr(attrs, :language)))
-    |> Map.put(:source_feed_type, ProviderFeedType.normalize_code(attr(attrs, :source_feed_type)))
+    |> Map.put(:language, MerchantFeedCandidate.normalize_language(attr(attrs, :language)))
+    |> Map.put(
+      :source_feed_type,
+      MerchantFeedCandidate.normalize_feed_type(attr(attrs, :source_feed_type))
+    )
   end
 
   defp normalize_currency(value) do

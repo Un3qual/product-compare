@@ -1,11 +1,11 @@
 defmodule ProductCompareSchemas.Ingestion.ImportRun do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Ingestion.IntegrationSurface
   alias ProductCompareSchemas.Reference.ReferenceCode
 
   @type t :: %__MODULE__{}
 
+  @surface_codes %{"shoppingProducts" => 1, "shoppingProductFeeds" => 2}
   @statuses [:running, :succeeded, :failed]
   @reconciliation_statuses [
     :not_requested,
@@ -29,7 +29,7 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     field :provider, :string, virtual: true
 
     field :surface, ReferenceCode,
-      codes: IntegrationSurface.codes(),
+      codes: @surface_codes,
       normalization: :none,
       source: :integration_surface_id
 
@@ -96,6 +96,14 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
+  end
+
+  @spec normalize_surface(term()) :: String.t() | nil
+  def normalize_surface(value), do: ReferenceCode.normalize(value, @surface_codes, :none)
+
+  @spec provider_for_surface(term()) :: String.t() | nil
+  def provider_for_surface(value) do
+    if normalize_surface(value), do: "cj"
   end
 
   defp validate_counts(changeset) do

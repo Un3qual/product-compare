@@ -4,7 +4,8 @@ defmodule ProductCompare.Ingestion.Runs do
   alias ProductCompare.Ingestion.Reconciliation
   alias ProductCompare.Ingestion.SourceProviders
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.{ImportRun, IntegrationProvider, IntegrationSurface}
+  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Specs.Source
 
   @spec start_import_run(map()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
   def start_import_run(attrs) do
@@ -73,8 +74,8 @@ defmodule ProductCompare.Ingestion.Runs do
   defp normalize_complete_scope_cursor(attrs, _complete_scope), do: attrs
 
   defp run_provider(attrs) do
-    requested = IntegrationProvider.normalize_code(attr(attrs, :provider))
-    surface_provider = IntegrationSurface.provider_code_for_code(attr(attrs, :surface))
+    requested = Source.normalize_provider(attr(attrs, :provider))
+    surface_provider = ImportRun.provider_for_surface(attr(attrs, :surface))
 
     cond do
       present?(attr(attrs, :provider)) and is_nil(requested) ->

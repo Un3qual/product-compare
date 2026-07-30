@@ -143,6 +143,8 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
     end
   end
 
+  defp iso_datetime(%DateTime{} = value), do: {:ok, value}
+
   defp snapshot_payload(%{payload: %{captured_at: _captured_at} = payload}), do: payload
   defp snapshot_payload(snapshot), do: ComparisonSnapshots.hydrate(snapshot).payload
 

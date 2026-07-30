@@ -3,7 +3,7 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
 
   alias ProductCompare.Ingestion.SourceHealth
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Specs.SourceKind
+  alias ProductCompareSchemas.Specs.Source
 
   @now ~U[2026-06-27 18:00:00Z]
 
@@ -179,7 +179,7 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
           attrs
           |> Map.drop([:kind])
           |> Map.merge(%{
-            source_kind_id: Map.fetch!(SourceKind.codes(), attrs.kind),
+            source_kind_id: Map.fetch!(Source.kind_codes(), attrs.kind),
             inserted_at: @now,
             updated_at: @now
           })

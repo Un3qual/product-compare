@@ -10,7 +10,7 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
   import Ecto.Query
 
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.{ImportRun, IntegrationSurface}
+  alias ProductCompareSchemas.Ingestion.ImportRun
 
   @provider "cj"
   @default_days 14
@@ -82,7 +82,9 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
 
     ImportRun
     |> join(:inner, [run], source in assoc(run, :source))
-    |> join(:inner, [run, _source], surface in IntegrationSurface, on: surface.id == run.surface)
+    |> join(:inner, [run, _source], surface in "integration_surfaces",
+      on: surface.id == run.surface
+    )
     |> where(
       [run, source],
       source.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now

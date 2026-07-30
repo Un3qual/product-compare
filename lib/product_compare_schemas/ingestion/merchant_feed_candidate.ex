@@ -1,9 +1,11 @@
 defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
   use ProductCompareSchemas.Schema, :relational
 
-  alias ProductCompareSchemas.Ingestion.ProviderFeedType
-  alias ProductCompareSchemas.Reference.{Country, CurrencyCode, Language, ReferenceCode}
+  alias ProductCompareSchemas.Reference.{CurrencyCode, ReferenceCode}
 
+  @country_codes %{"CA" => 124, "US" => 840}
+  @feed_type_codes %{"SHOPPING" => 1, "PRODUCT" => 2}
+  @language_codes %{"EN" => 1, "FR" => 2}
   @type t :: %__MODULE__{}
 
   schema "merchant_feed_candidates" do
@@ -14,19 +16,19 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     field :advertiser_name, :string
 
     field :advertiser_country, ReferenceCode,
-      codes: Country.codes(),
+      codes: @country_codes,
       normalization: :upper,
       source: :advertiser_country_id
 
     field :source_feed_type, ReferenceCode,
-      codes: ProviderFeedType.codes(),
+      codes: @feed_type_codes,
       normalization: :upper,
       source: :provider_feed_type_id
 
     field :currency, CurrencyCode, source: :currency_id
 
     field :language, ReferenceCode,
-      codes: Language.codes(),
+      codes: @language_codes,
       normalization: :upper,
       source: :language_id
 
@@ -80,5 +82,19 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     |> check_constraint(:product_count,
       name: :merchant_feed_candidates_product_count_non_negative
     )
+  end
+
+  @spec normalize_country(term()) :: String.t() | nil
+  def normalize_country(value), do: ReferenceCode.normalize(value, @country_codes, :upper)
+
+  @spec normalize_feed_type(term()) :: String.t() | nil
+  def normalize_feed_type(value), do: ReferenceCode.normalize(value, @feed_type_codes, :upper)
+
+  @spec normalize_language(term()) :: String.t() | nil
+  def normalize_language(value), do: ReferenceCode.normalize(value, @language_codes, :upper)
+
+  @spec provider_for_feed_type(term()) :: String.t() | nil
+  def provider_for_feed_type(value) do
+    if normalize_feed_type(value), do: "cj"
   end
 end

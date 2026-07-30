@@ -2,10 +2,11 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Source of truth: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-- Last verified: 2026-07-30 after the discriminator-removal milestone gates.
+- Last verified: 2026-07-30 against a clean test-database rebuild and the
+  complete repository storage-contract suite.
 
 ## Target Outcome
 
@@ -50,10 +51,23 @@ normalized domain state.
   `mutation_kind`.
 - Unreleased feed-review migrations were removed, and CJ lifecycle storage is
   created directly in its final native-enum and foreign-key shape.
+- Immutable comparison snapshots use ordered relational rows for copied
+  products, attributes, evidence, offers, recommendations, and rankings.
+  Recommendation profile/status and offer freshness are native PostgreSQL
+  enums; source kind, currency, and recommendation algorithm use controlled
+  references.
+- Snapshot hydration uses bounded association preloads and retains the public
+  GraphQL payload projection without a persisted JSON payload or decoder.
+- Alert events copy baseline, target, and percentage facts into typed decimal
+  columns rather than an application-owned JSON map.
+- Stable lookup-code maps live with the schemas that persist each foreign key.
+  Read models join lookup tables directly for labels, so the application does
+  not carry passive one-table Ecto modules or duplicate code-normalization
+  implementations.
 
 ## Active Batch
 
-- Application-owned comparison snapshot and alert fact JSON normalization.
+- None. The database-domain program is complete.
 
 ## Dependent Successors
 
@@ -97,6 +111,23 @@ normalized domain state.
 - `mix test`: 981 tests, 0 failures.
 - `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate` (3 ready rows), and `git diff --check`: passed.
+- `MIX_ENV=test mix ecto.reset`: normalized snapshot and alert migrations
+  applied through `20260727121000`.
+- Snapshot/alert storage, enum storage, comparison snapshots, alerts, SEO, and
+  affected GraphQL/query-budget suites: 80 tests, 0 failures.
+- `mix test`: 982 tests, 0 failures.
+- Final `MIX_ENV=test mix ecto.reset`: all rewritten migrations applied
+  through `20260727121000`.
+- `mix test test/product_compare/repo`: 19 storage and migration contract
+  tests, 0 failures. The suite covers native enum physical types, controlled
+  references, removed discriminators, and absence of application-owned
+  snapshot/alert categorical JSON.
+- Final `mix ci`: 982 backend tests, 0 failures, 84.44% coverage; 1,507
+  frontend tests, 0 failures; Credo, ExDNA at the intentional 3/3 baseline,
+  strict Reach smell analysis, Dialyzer with zero findings, Relay validation,
+  TypeScript, client/SSR builds, and the client bundle budget all passed.
+- `mix work_queue.validate`: 3 ready rows remain.
+- `mix format --check-formatted` and `git diff --check`: passed.
 
 ## Blocker Rule
 

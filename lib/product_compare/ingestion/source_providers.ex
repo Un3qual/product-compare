@@ -5,7 +5,6 @@ defmodule ProductCompare.Ingestion.SourceProviders do
 
   alias Ecto.Changeset
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.IntegrationProvider
   alias ProductCompareSchemas.Specs.Source
 
   @spec ensure_in_transaction(pos_integer(), term()) ::
@@ -22,7 +21,7 @@ defmodule ProductCompare.Ingestion.SourceProviders do
         {:error, missing_source_changeset(source_id)}
 
       %Source{} = source ->
-        reconcile(source, IntegrationProvider.normalize_code(requested_provider))
+        reconcile(source, Source.normalize_provider(requested_provider))
     end
   end
 
