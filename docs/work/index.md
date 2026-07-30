@@ -332,11 +332,11 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Backend Write Work
 
 ### 9. Concurrency-Safe Write Audit
 
-Status: ready
+Status: active
 Lane: Backend write correctness
 Plan: `docs/superpowers/plans/2026-07-30-concurrency-safe-write-audit-implementation-plan.md`
 Batch outcome: every first-party modifying action has an explicit atomicity
@@ -379,6 +379,8 @@ Verification:
 Exit condition: every modifying action is classified, every confirmed race has
 a database-owned fix and regression, and no unsafe read-modify-write path
 remains.
+
+## Ready Work
 
 ### 10. Relay-Native Modular GraphQL Schema
 
@@ -474,6 +476,52 @@ Verification:
 Exit condition: the internal transport workflow has typed failures, Relay still
 consumes `fetchGraphQL/3` as a Promise, browser and SSR behavior is preserved,
 Effect has not spread into route/component code, and every frontend gate passes.
+
+### 12. Radix Form Controls
+
+Status: ready
+Lane: Frontend UI foundation
+Plan: `docs/superpowers/plans/2026-07-30-radix-form-controls-implementation-plan.md`
+Batch outcome: visible buttons and form controls use Radix Themes through thin
+project-semantic wrappers wherever Radix provides a faithful equivalent;
+hidden transport inputs remain explicitly native.
+Next action: characterize form submission, accessibility, date-input, select,
+checkbox, text-area, and `asChild` behavior before changing the control
+foundation.
+Owned paths:
+
+- `assets/package.json`
+- `assets/pnpm-lock.yaml`
+- shared application provider and theme entry paths
+- `assets/src/ui/primitives/**`
+- affected visible form controls under `assets/src/routes/**`
+- affected UI and route tests
+- `docs/work/frontend-radix-form-controls.md`
+
+Internal slices:
+
+- Raw-control and wrapper behavior characterization.
+- Radix Themes provider and semantic primitive rebasing.
+- Visible control migration with native hidden-field exceptions.
+- Accessibility, SSR, and bundle-cost verification.
+
+Prerequisites:
+
+- No active row owns the UI primitive layer or affected route controls.
+- StyleX remains the application styling owner.
+
+Verification:
+
+- focused UI and affected route tests
+- visible raw-control architecture scan
+- TypeScript, Oxc, and the full frontend suite
+- Vite client and SSR builds plus the bundle contract
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every visible control with a faithful Radix equivalent uses the
+project wrapper, native exceptions are explicit, StyleX remains in place, and
+every frontend gate passes.
 
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
