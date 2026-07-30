@@ -120,7 +120,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
       add :code, :text, null: false
       add :description, :text
-      add :discount_type, :string, null: false, default: "other"
+      add :discount_type, :coupon_discount_type, null: false, default: "other"
       add :discount_value, :decimal
       add :currency, :string, size: 3
       add :valid_from, :utc_datetime_usec
@@ -133,10 +133,6 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
     create index(:coupons, [:merchant_id, :valid_to], name: :coupons_merchant_validto_idx)
     create unique_index(:coupons, [:entropy_id])
-
-    create constraint(:coupons, :coupons_discount_type_check,
-             check: "discount_type IN ('percent', 'amount', 'free_shipping', 'other')"
-           )
 
     create constraint(:coupons, :coupons_discount_shape_check,
              check: """

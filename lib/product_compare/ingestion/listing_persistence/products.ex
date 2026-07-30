@@ -46,7 +46,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Products do
   end
 
   defp get_or_create_listing_product_by_gtin(normalized_gtin, source_artifact, listing) do
-    case Catalog.get_product_by_identifier("gtin", normalized_gtin) do
+    case Catalog.get_product_by_identifier(:gtin, normalized_gtin) do
       %Product{} = product ->
         {:ok, product}
 
@@ -130,7 +130,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Products do
 
   defp resolve_identifier_insert_error(changeset, product, created?, normalized_gtin) do
     if ChangesetErrors.unique_error_on_any_field?(changeset, [:scheme, :normalized_value]) do
-      winner = Catalog.get_product_by_identifier("gtin", normalized_gtin)
+      winner = Catalog.get_product_by_identifier(:gtin, normalized_gtin)
 
       if (created? and winner) && winner.id != product.id do
         {:ok, _deleted_product} = Repo.delete(product)
@@ -146,7 +146,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Products do
   end
 
   defp preserve_external_product_identity(product, source_artifact, listing) do
-    case {Catalog.list_product_identifiers(product.id, "gtin"), GTIN.normalize(listing.gtin)} do
+    case {Catalog.list_product_identifiers(product.id, :gtin), GTIN.normalize(listing.gtin)} do
       {[], {:ok, normalized_gtin}} ->
         maybe_attach_gtin_to_existing_product(
           product,
@@ -180,10 +180,10 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Products do
   defp validated_gtin_attrs(product, normalized_gtin, source_artifact, listing) do
     %{
       product_id: product.id,
-      scheme: "gtin",
+      scheme: :gtin,
       normalized_value: normalized_gtin,
       display_value: listing.gtin,
-      verification_status: "validated",
+      verification_status: :validated,
       source_artifact_id: source_artifact.id,
       verified_at: listing.observed_at
     }

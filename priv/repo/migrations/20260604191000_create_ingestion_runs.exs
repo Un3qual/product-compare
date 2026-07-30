@@ -8,7 +8,7 @@ defmodule ProductCompare.Repo.Migrations.CreateIngestionRuns do
       add :provider, :text, null: false
       add :surface, :text, null: false
       add :query, :map, null: false, default: %{}
-      add :status, :text, null: false
+      add :status, :ingestion_run_status, null: false
       add :started_at, :utc_datetime_usec, null: false
       add :finished_at, :utc_datetime_usec
       add :cursor_start, :integer

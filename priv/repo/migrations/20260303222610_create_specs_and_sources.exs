@@ -58,7 +58,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :code, :text, null: false
       add :display_name, :text, null: false
-      add :data_type, :string, null: false
+      add :data_type, :attribute_data_type, null: false
       add :dimension_id, references(:dimensions, type: :bigint, on_delete: :nilify_all)
       add :enum_set_id, references(:enum_sets, type: :bigint, on_delete: :nilify_all)
       add :is_multivalued, :boolean, null: false, default: false
@@ -71,13 +71,6 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
     create unique_index(:attributes, [:code])
     create unique_index(:attributes, [:entropy_id])
-
-    create constraint(
-             :attributes,
-             :attributes_data_type_check,
-             check:
-               "data_type IN ('bool', 'int', 'numeric', 'text', 'enum', 'date', 'timestamp', 'json')"
-           )
 
     create table(:taxon_attributes) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
@@ -169,8 +162,8 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :attribute_id, references(:attributes, type: :bigint, on_delete: :delete_all),
         null: false
 
-      add :source_type, :string, null: false
-      add :status, :string, null: false, default: "proposed"
+      add :source_type, :product_attribute_claim_source_type, null: false
+      add :status, :product_attribute_claim_status, null: false, default: "proposed"
       add :created_by, references(:users, type: :bigint, on_delete: :nilify_all)
       add :confidence, :decimal
 
@@ -218,18 +211,6 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
            )
 
     create unique_index(:product_attribute_claims, [:entropy_id])
-
-    create constraint(
-             :product_attribute_claims,
-             :product_attribute_claim_source_type_check,
-             check: "source_type IN ('scrape', 'user', 'import', 'derived')"
-           )
-
-    create constraint(
-             :product_attribute_claims,
-             :product_attribute_claim_status_check,
-             check: "status IN ('proposed', 'accepted', 'rejected', 'superseded')"
-           )
 
     create constraint(
              :product_attribute_claims,

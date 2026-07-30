@@ -18,7 +18,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     first_b = persist!(source, listing("B", 0), first_run)
     completed_first = complete!(first_run)
 
-    assert completed_first.reconciliation_status == "succeeded"
+    assert completed_first.reconciliation_status == :succeeded
     assert completed_first.offers_deactivated == 0
     assert Repo.aggregate(ImportObservation, :count, :id) == 2
 
@@ -26,7 +26,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     second_a = persist!(source, listing("A", 60), second_run)
     completed_second = complete!(second_run)
 
-    assert completed_second.reconciliation_status == "succeeded"
+    assert completed_second.reconciliation_status == :succeeded
     assert completed_second.offers_deactivated == 1
     assert %DateTime{} = completed_second.reconciled_at
     assert Repo.get!(MerchantProduct, first_a.merchant_product.id).is_active
@@ -36,7 +36,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     assert {:ok, replayed} =
              Ingestion.complete_import_run(completed_second, completion_attrs())
 
-    assert replayed.reconciliation_status == "succeeded"
+    assert replayed.reconciliation_status == :succeeded
     assert replayed.offers_deactivated == 1
   end
 
@@ -58,7 +58,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
                completion_attrs(%{cursor_end: 100})
              )
 
-    assert partial.reconciliation_status == "skipped_partial"
+    assert partial.reconciliation_status == :skipped_partial
     assert partial.offers_deactivated == 0
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
 
@@ -71,7 +71,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
                completion_attrs(%{status: "failed", records_failed: 1})
              )
 
-    assert failed.reconciliation_status == "skipped_failed"
+    assert failed.reconciliation_status == :skipped_failed
     assert failed.offers_deactivated == 0
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
@@ -89,7 +89,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     persist!(source, listing("A", 60), offset_run)
     completed = complete!(offset_run)
 
-    assert completed.reconciliation_status == "skipped_partial"
+    assert completed.reconciliation_status == :skipped_partial
     assert completed.offers_deactivated == 0
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
@@ -120,7 +120,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
 
     completed = complete!(run)
 
-    assert completed.reconciliation_status == "succeeded"
+    assert completed.reconciliation_status == :succeeded
     refute Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 
@@ -136,7 +136,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     bounded = start_bounded_run!(source, shoe_scope)
     persist!(source, listing("A", 60), bounded)
     bounded = complete!(bounded)
-    assert bounded.reconciliation_status == "not_requested"
+    assert bounded.reconciliation_status == :not_requested
     assert Repo.get!(MerchantProduct, persisted_b.merchant_product.id).is_active
 
     other_scope = start_complete_scope_run!(source, %{"providerFeedId" => "feed-boots"})
@@ -199,11 +199,11 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     persist!(source, listing("B", 120), newer)
     newer = complete!(newer)
 
-    assert newer.reconciliation_status == "succeeded"
+    assert newer.reconciliation_status == :succeeded
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
 
     older = complete!(older)
-    assert older.reconciliation_status == "skipped_superseded"
+    assert older.reconciliation_status == :skipped_superseded
     assert older.offers_deactivated == 0
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
@@ -225,11 +225,11 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
     persist!(source, listing("B", 120), newer)
 
     older = complete!(older)
-    assert older.reconciliation_status == "succeeded"
+    assert older.reconciliation_status == :succeeded
     refute Repo.get!(MerchantProduct, offer_b.id).is_active
 
     newer = complete!(newer)
-    assert newer.reconciliation_status == "succeeded"
+    assert newer.reconciliation_status == :succeeded
     assert Repo.get!(MerchantProduct, offer_b.id).is_active
   end
 

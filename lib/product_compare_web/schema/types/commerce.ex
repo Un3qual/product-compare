@@ -322,13 +322,13 @@ defmodule ProductCompareWeb.Schema.Types.Commerce do
   end
 
   enum :cj_program_stage, name: "CJProgramStage" do
-    value(:new, as: "new")
-    value(:considering, as: "considering")
-    value(:selected, as: "selected")
-    value(:applied, as: "applied")
-    value(:accepted, as: "accepted")
-    value(:not_pursuing, as: "not_pursuing")
-    value(:declined, as: "declined")
+    value(:new, as: :new)
+    value(:considering, as: :considering)
+    value(:selected, as: :selected)
+    value(:applied, as: :applied)
+    value(:accepted, as: :accepted)
+    value(:not_pursuing, as: :not_pursuing)
+    value(:declined, as: :declined)
   end
 
   enum :cj_program_sort, name: "CJProgramSort" do

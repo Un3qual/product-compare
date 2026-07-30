@@ -7,7 +7,7 @@ defmodule ProductCompare.Accounts.UserAuth.Sessions do
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserSessionToken
 
-  @session_context "session"
+  @session_context :session
   @session_validity_in_days 60
   @token_bytes 32
 
@@ -59,7 +59,7 @@ defmodule ProductCompare.Accounts.UserAuth.Sessions do
 
   def delete_user_session_token(_token), do: :ok
 
-  @spec issue(User.t(), String.t(), DateTime.t(), keyword()) :: String.t()
+  @spec issue(User.t(), atom(), DateTime.t(), keyword()) :: String.t()
   def issue(%User{} = user, context, expires_at, opts) do
     if Keyword.get(opts, :replace_context?, false) do
       clear(user.id, [context])
@@ -89,7 +89,7 @@ defmodule ProductCompare.Accounts.UserAuth.Sessions do
   @spec hash(binary()) :: binary()
   def hash(raw_token), do: :crypto.hash(:sha256, raw_token)
 
-  @spec clear(pos_integer(), :all | [String.t()]) :: {non_neg_integer(), nil}
+  @spec clear(pos_integer(), :all | [atom()]) :: {non_neg_integer(), nil}
   def clear(user_id, :all) do
     from(token_row in UserSessionToken, where: token_row.user_id == ^user_id)
     |> Repo.delete_all()

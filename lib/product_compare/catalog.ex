@@ -70,15 +70,15 @@ defmodule ProductCompare.Catalog do
     Products.get_products_by_slugs(slugs)
   end
 
-  @spec get_product_by_identifier(String.t(), String.t()) :: Product.t() | nil
+  @spec get_product_by_identifier(atom() | String.t(), String.t()) :: Product.t() | nil
   def get_product_by_identifier(scheme, normalized_value)
-      when is_binary(scheme) and is_binary(normalized_value) do
+      when (is_atom(scheme) or is_binary(scheme)) and is_binary(normalized_value) do
     Evidence.get_product_by_identifier(scheme, normalized_value)
   end
 
-  @spec list_product_identifiers(pos_integer(), String.t()) :: [ProductIdentifier.t()]
+  @spec list_product_identifiers(pos_integer(), atom() | String.t()) :: [ProductIdentifier.t()]
   def list_product_identifiers(product_id, scheme)
-      when is_integer(product_id) and is_binary(scheme) do
+      when is_integer(product_id) and (is_atom(scheme) or is_binary(scheme)) do
     Evidence.list_product_identifiers(product_id, scheme)
   end
 

@@ -30,7 +30,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
     assert first_feed.cj_program_id == second_feed.cj_program_id
 
-    assert %CJProgram{advertiser_id: "adv-shared", stage: "new"} =
+    assert %CJProgram{advertiser_id: "adv-shared", stage: :new} =
              Repo.get!(CJProgram, first_feed.cj_program_id)
 
     assert Repo.aggregate(CJProgram, :count, :id) == 1
@@ -93,10 +93,10 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     program = Repo.get!(CJProgram, first_feed.cj_program_id)
     changed_at = ~U[2026-07-25 14:00:00.000000Z]
 
-    assert {:ok, %{stage: "applied", note: "Follow up Tuesday"} = updated_program} =
+    assert {:ok, %{stage: :applied, note: "Follow up Tuesday"} = updated_program} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
-               %{stage: "applied", note: "Follow up Tuesday"},
+               %{stage: :applied, note: "Follow up Tuesday"},
                changed_at
              )
 
@@ -118,18 +118,18 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     assert refreshed_feed.cj_program_id == updated_program.id
     assert second_feed.cj_program_id == updated_program.id
 
-    assert %CJProgram{stage: "applied", note: "Follow up Tuesday", changed_at: ^changed_at} =
+    assert %CJProgram{stage: :applied, note: "Follow up Tuesday", changed_at: ^changed_at} =
              Repo.get!(CJProgram, updated_program.id)
   end
 
   test "lifecycle updates do not impose an artificial stage sequence" do
     source = source_fixture()
-    program = source |> cj_program_fixture() |> persist_stage("accepted")
+    program = source |> cj_program_fixture() |> persist_stage(:accepted)
 
-    assert {:ok, %CJProgram{stage: "considering"}} =
+    assert {:ok, %CJProgram{stage: :considering}} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
-               %{stage: "considering", note: "Reconsidering"},
+               %{stage: :considering, note: "Reconsidering"},
                ~U[2026-07-25 15:00:00.000000Z]
              )
   end
@@ -140,17 +140,17 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     blanked_at = ~U[2026-07-25 16:00:00.000000Z]
     unchanged_at = ~U[2026-07-25 17:00:00.000000Z]
 
-    assert {:ok, %CJProgram{stage: "considering", note: nil, changed_at: ^blanked_at}} =
+    assert {:ok, %CJProgram{stage: :considering, note: nil, changed_at: ^blanked_at}} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
                %{"stage" => "considering", "note" => "   "},
                blanked_at
              )
 
-    assert {:ok, %CJProgram{stage: "considering", note: nil, changed_at: ^blanked_at}} =
+    assert {:ok, %CJProgram{stage: :considering, note: nil, changed_at: ^blanked_at}} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
-               %{stage: "considering", note: nil},
+               %{stage: :considering, note: nil},
                unchanged_at
              )
   end
@@ -175,21 +175,21 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     original_changed_at = program.changed_at
     first_change_at = ~U[2026-07-25 17:45:00.000000Z]
 
-    assert {:ok, %CJProgram{stage: "applied", changed_at: ^first_change_at}} =
+    assert {:ok, %CJProgram{stage: :applied, changed_at: ^first_change_at}} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
-               %{stage: "applied", expected_changed_at: original_changed_at},
+               %{stage: :applied, expected_changed_at: original_changed_at},
                first_change_at
              )
 
     assert {:error, :stale} =
              CJPrograms.update_lifecycle(
                program.entropy_id,
-               %{stage: "declined", expected_changed_at: original_changed_at},
+               %{stage: :declined, expected_changed_at: original_changed_at},
                ~U[2026-07-25 17:50:00.000000Z]
              )
 
-    assert %CJProgram{stage: "applied", changed_at: ^first_change_at} =
+    assert %CJProgram{stage: :applied, changed_at: ^first_change_at} =
              Repo.get!(CJProgram, program.id)
   end
 
@@ -225,7 +225,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
                 where: locked_program.id == ^program.id,
                 lock: "FOR UPDATE"
             )
-            |> Ecto.Changeset.change(stage: "applied", changed_at: concurrent_change_at)
+            |> Ecto.Changeset.change(stage: :applied, changed_at: concurrent_change_at)
             |> Repo.update!()
 
             send(parent, {:lifecycle_change_held, backend_pid})
@@ -272,7 +272,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     assert {:ok, :ok} = Task.await(lock_holder)
     assert {:ok, {:error, :stale}} = Task.await(unchanged_save)
 
-    assert %CJProgram{stage: "applied", changed_at: ^concurrent_change_at} =
+    assert %CJProgram{stage: :applied, changed_at: ^concurrent_change_at} =
              Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
                Repo.get!(CJProgram, program.id)
              end)
@@ -294,11 +294,11 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     assert {:error, :not_found} =
              CJPrograms.update_lifecycle(
                Ecto.UUID.generate(),
-               %{stage: "applied", note: "Missing record"},
+               %{stage: :applied, note: "Missing record"},
                ~U[2026-07-25 18:00:00.000000Z]
              )
 
-    assert %CJProgram{stage: "new", note: nil} = Repo.get!(CJProgram, program.id)
+    assert %CJProgram{stage: :new, note: nil} = Repo.get!(CJProgram, program.id)
     assert Repo.aggregate(CJProgram, :count, :id) == 1
   end
 
@@ -319,7 +319,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     {new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
     {selected_program, _selected_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
 
-    persist_stage(selected_program, "selected")
+    persist_stage(selected_program, :selected)
 
     assert [_one_program] =
              CJPrograms.list_query(sort: :name_asc)
@@ -344,7 +344,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     {_new_program, _new_feed} = program_with_feed(source, %{advertiser_name: "Alpha"})
     {selected_program, _selected_feed} = program_with_feed(source, %{advertiser_name: "Bravo"})
 
-    persist_stage(selected_program, "selected")
+    persist_stage(selected_program, :selected)
 
     assert [selected_id] =
              CJPrograms.list_query(stage: "selected")
@@ -422,9 +422,9 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
     {newest_program, _newest_feed} = program_with_feed(source, %{advertiser_name: "Charlie"})
 
     tie_time = ~U[2026-07-25 12:00:00.000000Z]
-    persist_stage(first_program, "considering", tie_time)
-    persist_stage(second_program, "considering", tie_time)
-    persist_stage(newest_program, "considering", ~U[2026-07-25 13:00:00.000000Z])
+    persist_stage(first_program, :considering, tie_time)
+    persist_stage(second_program, :considering, tie_time)
+    persist_stage(newest_program, :considering, ~U[2026-07-25 13:00:00.000000Z])
 
     assert [newest_id | tied_ids] =
              CJPrograms.list_query(sort: :last_changed_desc)
@@ -494,7 +494,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
         product_count: 99
       })
 
-    persist_stage(selected_program, "selected")
+    persist_stage(selected_program, :selected)
 
     assert [{second_feed.id, 11}, {first_feed.id, 7}] ==
              CJPrograms.list_feeds_query(program_id: selected_program.id)
@@ -557,7 +557,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
   end
 
   test "pursued stages are the selected application lifecycle" do
-    assert CJPrograms.pursued_stages() == ["selected", "applied", "accepted"]
+    assert CJPrograms.pursued_stages() == [:selected, :applied, :accepted]
   end
 
   defp persist_stage(program, stage) do

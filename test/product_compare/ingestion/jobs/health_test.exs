@@ -65,7 +65,7 @@ defmodule ProductCompare.Ingestion.Jobs.HealthTest do
              last_failure_at: last_failure_at,
              last_failure_category: "discarded",
              last_reconciliation: %{
-               status: "succeeded",
+               status: :succeeded,
                reconciled_at: reconciled_at,
                offers_deactivated: 2
              }

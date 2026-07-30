@@ -2,27 +2,19 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
   use ProductCompareSchemas.Schema, :relational
 
   @type t :: %__MODULE__{}
-  @stage_keys %{
-    "new" => :new,
-    "considering" => :considering,
-    "selected" => :selected,
-    "applied" => :applied,
-    "accepted" => :accepted,
-    "not_pursuing" => :not_pursuing,
-    "declined" => :declined
-  }
-  @stages Map.keys(@stage_keys)
+  @stages [:new, :considering, :selected, :applied, :accepted, :not_pursuing, :declined]
+  @stage_keys Map.new(@stages, &{&1, &1})
 
-  @spec stages() :: [String.t()]
+  @spec stages() :: [atom()]
   def stages, do: @stages
 
-  @spec stage_keys() :: %{required(String.t()) => atom()}
+  @spec stage_keys() :: %{required(atom()) => atom()}
   def stage_keys, do: @stage_keys
 
   schema "cj_programs" do
     field :entropy_id, Ecto.UUID
     field :advertiser_id, :string
-    field :stage, :string, default: "new"
+    field :stage, Ecto.Enum, values: @stages, default: :new
     field :note, :string
     field :changed_at, :utc_datetime_usec
     field :advertiser_name, :string, virtual: true
@@ -42,10 +34,8 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
     |> require_stage_attribute(attrs)
     |> validate_required([:source_id, :advertiser_id, :stage, :changed_at])
     |> validate_trimmed_advertiser_id()
-    |> validate_inclusion(:stage, @stages)
     |> unique_constraint([:source_id, :advertiser_id], name: :cj_programs_source_advertiser_uq)
     |> foreign_key_constraint(:source_id)
-    |> check_constraint(:stage, name: :cj_programs_stage_chk)
   end
 
   @spec lifecycle_changeset(t(), map()) :: Ecto.Changeset.t()
@@ -54,8 +44,6 @@ defmodule ProductCompareSchemas.Ingestion.CJProgram do
     |> cast(attrs, [:stage, :note])
     |> update_change(:note, &blank_to_nil/1)
     |> validate_required([:stage, :changed_at])
-    |> validate_inclusion(:stage, @stages)
-    |> check_constraint(:stage, name: :cj_programs_stage_chk)
   end
 
   defp require_stage_attribute(changeset, attrs) do

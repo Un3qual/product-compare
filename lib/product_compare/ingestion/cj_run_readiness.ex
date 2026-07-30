@@ -13,7 +13,7 @@ defmodule ProductCompare.Ingestion.CJRunReadiness do
     ImportRun
     |> where([run], run.provider == @provider)
     |> where([run], run.surface == ^surface)
-    |> where([run], run.status == "succeeded")
+    |> where([run], run.status == :succeeded)
     |> order_by([run], desc_nulls_last: run.finished_at, desc: run.started_at, desc: run.id)
     |> limit(1)
     |> Repo.one()

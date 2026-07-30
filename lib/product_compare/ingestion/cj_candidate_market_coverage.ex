@@ -70,7 +70,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
     base_query
     |> group_by([_feed, program], program.stage)
     |> select([feed, program], %{
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage),
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
     |> Repo.all()
@@ -101,7 +101,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
           "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
           field(feed, ^dimension)
         ),
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage),
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
     |> Repo.all()

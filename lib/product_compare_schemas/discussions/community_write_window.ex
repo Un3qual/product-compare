@@ -23,7 +23,6 @@ defmodule ProductCompareSchemas.Discussions.CommunityWriteWindow do
       name: :community_write_windows_user_action_window_uq,
       error_key: :window_started_at
     )
-    |> check_constraint(:action_kind, name: :community_write_windows_action_kind_check)
     |> check_constraint(:count, name: :community_write_windows_count_check)
     |> check_constraint(:window_started_at, name: :community_write_windows_hour_check)
     |> foreign_key_constraint(:user_id)

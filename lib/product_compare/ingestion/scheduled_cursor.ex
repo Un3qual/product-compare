@@ -49,7 +49,7 @@ defmodule ProductCompare.Ingestion.ScheduledCursor do
     |> resolved_cursor(fallback)
   end
 
-  defp resolved_cursor({"succeeded", _cursor_start, cursor_end}, _fallback), do: cursor_end
+  defp resolved_cursor({:succeeded, _cursor_start, cursor_end}, _fallback), do: cursor_end
 
   defp resolved_cursor({_status, cursor_start, _cursor_end}, _fallback)
        when is_integer(cursor_start) and cursor_start >= 0,

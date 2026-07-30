@@ -84,10 +84,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:merchant_product_id)
     |> check_constraint(:source_network, name: :commerce_conversions_source_network_check)
-    |> check_constraint(:status, name: :commerce_conversions_status_check)
-    |> check_constraint(:attribution_confidence,
-      name: :commerce_conversions_attribution_confidence_check
-    )
     |> check_constraint(:currency, name: :commerce_conversions_currency_check)
     |> check_constraint(:order_amount, name: :commerce_conversions_amounts_non_negative)
   end

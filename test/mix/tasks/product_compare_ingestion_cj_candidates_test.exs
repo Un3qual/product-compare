@@ -16,7 +16,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
     test "normalizes a program stage and leaves unmatched feeds excluded by default" do
       opts = ["--stage", "new"] |> Options.parse_argv() |> Options.normalize()
 
-      assert opts[:stage] == "new"
+      assert opts[:stage] == :new
       assert opts[:include_unmatched] == false
     end
 
@@ -29,7 +29,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
     test "forces application cohort options to the selected program stage" do
       opts = Options.normalize(report: "application-cohort", stage: "new")
 
-      assert opts[:stage] == "selected"
+      assert opts[:stage] == :selected
     end
   end
 

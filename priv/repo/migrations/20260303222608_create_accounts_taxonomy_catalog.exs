@@ -127,7 +127,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
       add :taxon_id, references(:taxons, type: :bigint, on_delete: :delete_all), null: false
-      add :source_type, :string, null: false
+      add :source_type, :product_taxon_source_type, null: false
       add :confidence, :decimal
       add :created_by, references(:users, type: :bigint, on_delete: :nilify_all)
 
@@ -143,12 +143,6 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
            )
 
     create unique_index(:product_taxons, [:entropy_id])
-
-    create constraint(
-             :product_taxons,
-             :product_taxons_source_type_check,
-             check: "source_type IN ('scrape', 'user', 'derived', 'editorial')"
-           )
 
     create constraint(:product_taxons, :product_taxons_confidence_range,
              check: "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)"

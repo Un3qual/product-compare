@@ -16,7 +16,7 @@ defmodule ProductCompare.Ingestion.CJRunCompletion do
           {:ok, ImportRun.t()} | {:error, term()}
   def complete(%ImportRun{} = import_run, counts, next_cursor) do
     complete_with(import_run, counts, next_cursor, %{
-      status: if(counts.records_failed == 0, do: "succeeded", else: "failed")
+      status: if(counts.records_failed == 0, do: :succeeded, else: :failed)
     })
   end
 
@@ -25,7 +25,7 @@ defmodule ProductCompare.Ingestion.CJRunCompletion do
   def fail(%ImportRun{} = import_run, counts, next_cursor, error_summary) do
     complete_with(import_run, counts, next_cursor, %{
       error_summary: error_summary,
-      status: "failed"
+      status: :failed
     })
   end
 

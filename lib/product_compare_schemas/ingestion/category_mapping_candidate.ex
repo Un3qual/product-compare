@@ -7,7 +7,7 @@ defmodule ProductCompareSchemas.Ingestion.CategoryMappingCandidate do
     field :entropy_id, Ecto.UUID
     field :display_path, :string
     field :normalized_path, :string
-    field :status, :string, default: "pending"
+    field :status, Ecto.Enum, values: [:pending, :mapped, :dismissed], default: :pending
     field :observation_count, :integer, default: 1
     field :last_seen_at, :utc_datetime_usec
 
@@ -37,7 +37,6 @@ defmodule ProductCompareSchemas.Ingestion.CategoryMappingCandidate do
       :observation_count,
       :last_seen_at
     ])
-    |> validate_inclusion(:status, ["pending", "mapped", "dismissed"])
     |> validate_number(:observation_count, greater_than: 0)
     |> unique_constraint([:source_id, :normalized_path],
       name: :category_mapping_candidates_source_path_uq

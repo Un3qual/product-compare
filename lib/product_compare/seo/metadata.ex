@@ -200,7 +200,7 @@ defmodule ProductCompare.Seo.Metadata do
 
   defp primary_image_url(media) do
     media
-    |> Enum.sort_by(&{if(&1.role == "primary", do: 0, else: 1), &1.position, &1.id})
+    |> Enum.sort_by(&{if(&1.role == :primary, do: 0, else: 1), &1.position, &1.id})
     |> List.first()
     |> case do
       nil -> nil

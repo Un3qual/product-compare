@@ -112,7 +112,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
       source_id: source_id,
       display_path: display_path,
       normalized_path: normalized_path,
-      status: "pending",
+      status: :pending,
       observation_count: 1,
       last_seen_at: observed_at
     }

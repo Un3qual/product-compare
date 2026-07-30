@@ -11,7 +11,7 @@ defmodule ProductCompare.Ingestion.Runs do
       attrs
       |> Map.new()
       |> prepare_reconciliation()
-      |> Map.put_new(:status, "running")
+      |> Map.put_new(:status, :running)
       |> Map.put_new(:started_at, DateTime.utc_now())
 
     %ImportRun{}
@@ -48,7 +48,7 @@ defmodule ProductCompare.Ingestion.Runs do
     |> Map.put_new(:scope_fingerprint, Reconciliation.scope_fingerprint(attrs))
     |> Map.put_new(
       :reconciliation_status,
-      if(complete_scope == true, do: "pending", else: "not_requested")
+      if(complete_scope == true, do: :pending, else: :not_requested)
     )
   end
 

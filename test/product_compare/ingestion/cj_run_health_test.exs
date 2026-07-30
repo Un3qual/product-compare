@@ -12,7 +12,7 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
       import_run_fixture(source, %{
         provider: "cj",
         surface: "shoppingProducts",
-        status: "succeeded",
+        status: :succeeded,
         started_at: ~U[2026-07-02 10:00:00Z],
         finished_at: ~U[2026-07-02 10:05:00Z],
         cursor_start: 0,
@@ -43,7 +43,7 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
           records_normalized: 49,
           records_persisted: 49,
           records_failed: 0,
-          reconciliation_status: "succeeded",
+          reconciliation_status: :succeeded,
           reconciled_at: ~U[2026-07-02 12:03:00Z],
           offers_deactivated: 4,
           query: %{"providerFeedId" => "secret-feed"}
@@ -53,7 +53,7 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
         import_run_fixture(source, %{
           provider: "cj",
           surface: "shoppingProductFeeds",
-          status: "failed",
+          status: :failed,
           started_at: ~U[2026-07-02 11:00:00Z],
           finished_at: ~U[2026-07-02 11:01:00Z],
           cursor_start: 0,
@@ -87,7 +87,7 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
                  shoppingProducts: %{
                    surface: "shoppingProducts",
                    missing: false,
-                   status: "succeeded",
+                   status: :succeeded,
                    successful: true,
                    started_at: ^latest_products_started_at,
                    finished_at: ^latest_products_finished_at,
@@ -101,14 +101,14 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
                    records_persisted: 49,
                    records_failed: 0,
                    has_error_summary: false,
-                   reconciliation_status: "succeeded",
+                   reconciliation_status: :succeeded,
                    reconciled_at: ^latest_products_finished_at,
                    offers_deactivated: 4
                  },
                  shoppingProductFeeds: %{
                    surface: "shoppingProductFeeds",
                    missing: false,
-                   status: "failed",
+                   status: :failed,
                    successful: false,
                    started_at: ^latest_feeds_started_at,
                    finished_at: ^latest_feeds_finished_at,
@@ -122,7 +122,7 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
                    records_persisted: 0,
                    records_failed: 1,
                    has_error_summary: true,
-                   reconciliation_status: "not_requested",
+                   reconciliation_status: :not_requested,
                    reconciled_at: nil,
                    offers_deactivated: 0
                  }

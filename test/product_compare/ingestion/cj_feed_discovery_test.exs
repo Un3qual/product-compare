@@ -105,7 +105,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                source_id: ^source_id,
                provider: "cj",
                surface: "shoppingProductFeeds",
-               status: "succeeded",
+               status: :succeeded,
                query: %{"advertiserCountry" => "US"},
                cursor_start: 0,
                cursor_end: nil,
@@ -139,7 +139,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                  pages: 1
                )
 
-      assert %ImportRun{status: "succeeded", cursor_start: 0, cursor_end: 5} =
+      assert %ImportRun{status: :succeeded, cursor_start: 0, cursor_end: 5} =
                Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
     end
 
@@ -182,7 +182,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                source_id: ^source_id,
                provider: "cj",
                surface: "shoppingProductFeeds",
-               status: "failed",
+               status: :failed,
                cursor_start: 0,
                cursor_end: 1,
                page_size: 1,
@@ -214,7 +214,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                }}} =
                CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
 
-      assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
+      assert %ImportRun{status: :failed, error_summary: "fetch_failed"} =
                Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
     end
 
@@ -227,7 +227,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
                CJFeedDiscovery.run(advertiser_country: "US", fetcher: fetcher, limit: 1)
 
       assert %ImportRun{
-               status: "failed",
+               status: :failed,
                error_summary: "fetch_failed",
                pages_fetched: 0,
                records_fetched: 0,
@@ -317,7 +317,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
       assert %{domain: "cj.com"} = Repo.get!(Source, existing_source.id)
       assert Repo.aggregate(Source, :count, :id) == 1
 
-      assert %ImportRun{source_id: source_id, status: "succeeded"} =
+      assert %ImportRun{source_id: source_id, status: :succeeded} =
                Repo.get_by!(ImportRun, surface: "shoppingProductFeeds")
 
       assert source_id == existing_source.id
@@ -357,7 +357,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
       assert output == ""
 
       assert %ImportRun{
-               status: "failed",
+               status: :failed,
                records_fetched: 1,
                records_normalized: 0,
                records_persisted: 0,

@@ -110,7 +110,7 @@ defmodule ProductCompare.Ingestion.SourceHealth do
     |> from(as: :run)
     |> where(
       [run: run],
-      field(run, :status) == "failed" and
+      fragment("? = 'failed'::ingestion_run_status", field(run, :status)) and
         not is_nil(field(run, :finished_at)) and
         field(run, :finished_at) >= ^recent_failure_since
     )

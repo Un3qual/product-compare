@@ -10,7 +10,7 @@ defmodule ProductCompare.Repo.Migrations.AddUserAuthFieldsAndSessionTokens do
       add :id, :uuid, primary_key: true, null: false, default: fragment("uuidv7()")
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
       add :token_hash, :binary, null: false
-      add :context, :string, null: false
+      add :context, :user_token_context, null: false
       add :sent_to, :citext
       add :expires_at, :utc_datetime_usec, null: false
 

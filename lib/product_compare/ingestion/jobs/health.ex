@@ -109,7 +109,7 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
     |> where(
       [run],
       run.provider == "cj" and run.surface == "shoppingProducts" and
-        run.reconciliation_status != "not_requested"
+        run.reconciliation_status != :not_requested
     )
     |> order_by([run], desc: run.started_at, desc: run.id)
     |> select([run], %{

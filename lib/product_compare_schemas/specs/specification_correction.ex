@@ -53,7 +53,6 @@ defmodule ProductCompareSchemas.Specs.SpecificationCorrection do
       name: :specification_corrections_one_pending_uq,
       message: "already has a pending correction"
     )
-    |> check_constraint(:status, name: :specification_corrections_status_check)
     |> check_constraint(:base, name: :specification_corrections_evidence_check)
   end
 
@@ -65,7 +64,6 @@ defmodule ProductCompareSchemas.Specs.SpecificationCorrection do
     |> validate_required([:status, :reviewed_by, :reviewed_at])
     |> validate_inclusion(:status, [:accepted, :rejected])
     |> validate_length(:moderation_note, max: 1_000)
-    |> check_constraint(:status, name: :specification_corrections_status_check)
   end
 
   defp normalize_text(changeset, fields) do

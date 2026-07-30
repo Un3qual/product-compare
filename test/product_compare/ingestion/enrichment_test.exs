@@ -84,7 +84,7 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
     assert persisted.taxonomy == %{status: :candidate}
     assert %PricePoint{} = persisted.price_point
 
-    assert [%ProductMedia{url: media_url, role: "primary", position: 0}] =
+    assert [%ProductMedia{url: media_url, role: :primary, position: 0}] =
              Catalog.list_product_media(persisted.product.id)
 
     assert media_url == "https://cdn.example/products/trail-primary.jpg"

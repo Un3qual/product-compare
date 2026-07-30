@@ -45,7 +45,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
     |> unique_constraint(:destination_url, name: :commerce_links_business_key_uq)
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:affiliate_program_id)
-    |> check_constraint(:link_type, name: :commerce_links_link_type_check)
     |> check_constraint(:network, name: :commerce_links_network_check)
   end
 

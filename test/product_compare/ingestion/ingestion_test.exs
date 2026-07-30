@@ -197,7 +197,7 @@ defmodule ProductCompare.IngestionTest do
       assert run.source_id == source.id
       assert run.provider == "cj"
       assert run.surface == "shoppingProducts"
-      assert run.status == "running"
+      assert run.status == :running
       assert run.query == %{"keywords" => ["shoe"], "limit" => 2}
       assert run.cursor_start == 0
       assert run.page_size == 2
@@ -216,7 +216,7 @@ defmodule ProductCompare.IngestionTest do
                  finished_at: finished_at
                })
 
-      assert completed.status == "succeeded"
+      assert completed.status == :succeeded
       assert completed.cursor_end == 4
       assert completed.pages_fetched == 2
       assert completed.records_fetched == 4
@@ -564,10 +564,10 @@ defmodule ProductCompare.IngestionTest do
 
       assert %ProductIdentifier{
                product_id: product_id,
-               scheme: "gtin",
+               scheme: :gtin,
                normalized_value: "00012345678905",
                display_value: "00012345678905",
-               verification_status: "validated",
+               verification_status: :validated,
                source_artifact_id: source_artifact_id
              } = Repo.one!(ProductIdentifier)
 

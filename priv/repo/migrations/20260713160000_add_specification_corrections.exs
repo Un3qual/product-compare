@@ -18,7 +18,7 @@ defmodule ProductCompare.Repo.Migrations.AddSpecificationCorrections do
       add :reason, :text, null: false
       add :source_url, :text
       add :explanation, :text
-      add :status, :string, null: false, default: "pending"
+      add :status, :specification_correction_status, null: false, default: "pending"
       add :reviewed_by, references(:users, type: :bigint, on_delete: :nilify_all)
       add :reviewed_at, :utc_datetime_usec
       add :moderation_note, :text
@@ -39,10 +39,6 @@ defmodule ProductCompare.Repo.Migrations.AddSpecificationCorrections do
     create index(:specification_corrections, [:submitted_by, :inserted_at])
     create index(:specification_corrections, [:status, :inserted_at])
     create index(:specification_corrections, [:product_id, :attribute_id, :status])
-
-    create constraint(:specification_corrections, :specification_corrections_status_check,
-             check: "status IN ('pending', 'accepted', 'rejected')"
-           )
 
     create constraint(:specification_corrections, :specification_corrections_evidence_check,
              check:

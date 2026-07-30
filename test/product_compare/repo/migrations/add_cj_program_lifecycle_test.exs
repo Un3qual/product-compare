@@ -61,7 +61,13 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
                VALUES (1, 'adv-shortlist', 'new', now(), now(), now())
                """)
 
-      assert {:error, %Postgrex.Error{postgres: %{constraint: "cj_programs_stage_chk"}}} =
+      assert {:error,
+              %Postgrex.Error{
+                postgres: %{
+                  code: :invalid_text_representation,
+                  message: "invalid input value for enum cj_program_stage: \"unknown\""
+                }
+              }} =
                MigrationRepo.query("""
                INSERT INTO "#{prefix}"."cj_programs"
                  (source_id, advertiser_id, stage, changed_at, inserted_at, updated_at)

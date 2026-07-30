@@ -46,9 +46,6 @@ defmodule ProductCompareSchemas.Discussions.CommunityWriteReceipt do
     |> check_constraint(:mutation_kind,
       name: :community_write_receipts_mutation_kind_check
     )
-    |> check_constraint(:content_type,
-      name: :community_write_receipts_content_type_check
-    )
     |> check_constraint(:idempotency_key, name: :community_write_receipts_key_check)
     |> check_constraint(:payload_digest, name: :community_write_receipts_digest_check)
     |> foreign_key_constraint(:user_id)

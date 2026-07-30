@@ -418,7 +418,10 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
 
   object :product_media do
     field :url, non_null(:string)
-    field :role, non_null(:string)
+
+    field :role, non_null(:string),
+      resolve: fn media, _, _ -> {:ok, Atom.to_string(media.role)} end
+
     field :position, non_null(:integer)
     field :alt_text, :string
     field :observed_at, non_null(:datetime)

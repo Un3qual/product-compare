@@ -38,11 +38,243 @@ For the operating rules, prompt templates, and handoff format, read
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
-## Current Queue
+## Active Work
 
-Updated: 2026-07-27
+Updated: 2026-07-30
 
-No active or ready implementation rows remain.
+### 1. Native PostgreSQL Enum Storage
+
+Status: active
+Lane: Database domain types
+Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
+Batch outcome: The 28 approved code-owned categorical columns use 25
+context-specific native PostgreSQL enum types, and affected Ecto schemas load
+atoms without relying on `varchar`, `text`, or duplicated `IN (...)`
+constraints.
+Next action: add the failing physical-storage inventory test, rebuild the test
+database, and convert the owned migration columns and raw string schemas.
+Owned paths:
+
+- `priv/repo/migrations/20260303222607_init_extensions.exs`
+- `priv/repo/migrations/20260303222608_create_accounts_taxonomy_catalog.exs`
+- `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
+- `priv/repo/migrations/20260303222611_create_pricing_affiliate_discussions.exs`
+- `priv/repo/migrations/20260305130000_add_user_auth_fields_and_session_tokens.exs`
+- `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
+- `priv/repo/migrations/20260604191000_create_ingestion_runs.exs`
+- `priv/repo/migrations/20260713120000_create_product_identifiers.exs`
+- `priv/repo/migrations/20260713140000_add_ingestion_reconciliation.exs`
+- `priv/repo/migrations/20260713140100_allow_superseded_ingestion_reconciliation.exs`
+- `priv/repo/migrations/20260713150000_add_product_enrichment.exs`
+- `priv/repo/migrations/20260713160000_add_specification_corrections.exs`
+- `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
+- `priv/repo/migrations/20260713190000_add_community_moderation.exs`
+- `priv/repo/migrations/20260720120000_add_community_write_controls.exs`
+- `priv/repo/migrations/20260725120000_add_cj_program_lifecycle.exs`
+- `lib/product_compare_schemas/**`
+- `lib/product_compare/**`
+- `test/product_compare/**`
+- `docs/work/database-domain-types.md`
+
+Internal slices:
+
+- Native enum type creation and reversible migration ordering.
+- Physical column conversion with redundant check-constraint removal.
+- Raw Ecto string schema conversion to atom-backed `Ecto.Enum`.
+- Focused caller, fixture, query, and GraphQL expectation updates.
+
+Prerequisites:
+
+- The user approved the complete 51-column inventory and native-enum/reference/
+  removal classification on 2026-07-30.
+- The project is unreleased, so direct migration-history rewrites and breaking
+  Ecto representation changes are allowed.
+- Provider-owned raw evidence remains verbatim and outside normalized domain
+  filtering.
+
+Verification:
+
+- `MIX_ENV=test mix ecto.reset`
+- `mix test test/product_compare/repo/domain_enum_storage_test.exs`
+- `mix test`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all 28 inventoried columns report the expected native enum
+`udt_name`, focused and full suites pass, and the milestone is committed with
+three ready successors still available.
+
+## Ready Work
+
+### 2. Commerce Reference Domains
+
+Status: ready
+Lane: Database domain types
+Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
+Batch outcome: Currencies and affiliate lifecycle/network identities are
+controlled reference rows, while commerce, pricing, affiliate, alert, and feed
+records store only numeric foreign keys and expose stable codes at API
+boundaries.
+Next action: write the failing FK-storage inventory test and create currency
+and affiliate-program-status reference schemas.
+Owned paths:
+
+- `priv/repo/migrations/20260303222607_init_extensions.exs`
+- `priv/repo/migrations/20260303222611_create_pricing_affiliate_discussions.exs`
+- `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
+- `priv/repo/migrations/20260604210000_create_merchant_feed_candidates.exs`
+- `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
+- `lib/product_compare_schemas/reference/**`
+- `lib/product_compare_schemas/pricing/**`
+- `lib/product_compare_schemas/affiliate/**`
+- `lib/product_compare_schemas/commerce_attribution/**`
+- `lib/product_compare_schemas/alerts/**`
+- `lib/product_compare/{pricing,affiliate,commerce_attribution,alerts}/**`
+- `test/product_compare/repo/domain_reference_storage_test.exs`
+- `test/product_compare/{pricing,affiliate,commerce_attribution,alerts}/**`
+- `docs/work/database-domain-types.md`
+
+Internal slices:
+
+- Currency and affiliate-program-status reference tables.
+- Seven currency foreign-key conversions.
+- Commerce link network deduplication and conversion network reference.
+- Ecto and GraphQL code derivation at public boundaries.
+
+Prerequisites:
+
+- No active row owns the same migration or schema paths.
+- Existing external codes remain the public contract; internal numeric IDs do
+  not become GraphQL enum values.
+
+Verification:
+
+- `mix test test/product_compare/repo/domain_reference_storage_test.exs`
+- focused pricing, affiliate, commerce-attribution, alert, ingestion, and
+  GraphQL suites
+- `mix test`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: every approved commerce reference field is a foreign key,
+duplicated network storage is absent, public codes are preserved, and all gates
+pass.
+
+### 3. Source and Provider Reference Domains
+
+Status: ready
+Lane: Database domain types
+Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
+Batch outcome: Source kinds, providers, provider surfaces, feed types,
+countries, languages, and candidate currencies are controlled references;
+ingestion runs and feed candidates contain no provider or market category
+strings outside verbatim raw evidence.
+Next action: write the failing ingestion FK-storage test and create the
+provider/source reference schemas.
+Owned paths:
+
+- `priv/repo/migrations/20260303222607_init_extensions.exs`
+- `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
+- `priv/repo/migrations/20260604191000_create_ingestion_runs.exs`
+- `priv/repo/migrations/20260604210000_create_merchant_feed_candidates.exs`
+- `lib/product_compare_schemas/specs/source*.ex`
+- `lib/product_compare_schemas/ingestion/**`
+- `lib/product_compare_schemas/reference/**`
+- `lib/product_compare/ingestion/**`
+- `lib/mix/tasks/product_compare/ingestion/**`
+- `test/product_compare/repo/ingestion_reference_storage_test.exs`
+- `test/product_compare/ingestion/**`
+- `test/mix/tasks/product_compare_ingestion_*.exs`
+- `docs/work/database-domain-types.md`
+
+Internal slices:
+
+- Source-kind and provider identity.
+- Provider-scoped surfaces and feed types.
+- Country, language, and currency normalization.
+- CJ tasks, reports, read models, and GraphQL code projection.
+
+Prerequisites:
+
+- No active row owns the same migration or schema paths.
+- Unknown provider values stay only in raw evidence and do not become
+  normalized rows without an explicit controlled mapping.
+
+Verification:
+
+- `mix test test/product_compare/repo/ingestion_reference_storage_test.exs`
+- `mix test test/product_compare/ingestion`
+- `mix test test/mix/tasks/product_compare_ingestion_*.exs`
+- affected GraphQL suites
+- `mix test`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all approved source/provider/market columns are foreign keys or
+removed duplicates, raw evidence is not queried as domain state, and all gates
+pass.
+
+### 4. Redundant and Unsafe Discriminator Removal
+
+Status: ready
+Lane: Database domain types
+Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
+Batch outcome: Reputation events use controlled event types and explicit
+subjects, while generic table-name references, unused formula/failure
+categories, single-value thread kinds, duplicate receipt kinds, and transient
+feed review strings are absent.
+Next action: write the failing absence/reference storage test and normalize
+reputation event types.
+Owned paths:
+
+- `priv/repo/migrations/20260303222608_create_accounts_taxonomy_catalog.exs`
+- `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
+- `priv/repo/migrations/20260604230000_add_review_status_to_merchant_feed_candidates.exs`
+- `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
+- `priv/repo/migrations/20260713190000_add_community_moderation.exs`
+- `priv/repo/migrations/20260720120000_add_community_write_controls.exs`
+- `priv/repo/migrations/20260725120000_add_cj_program_lifecycle.exs`
+- `lib/product_compare_schemas/accounts/**`
+- `lib/product_compare_schemas/specs/**`
+- `lib/product_compare_schemas/alerts/**`
+- `lib/product_compare_schemas/discussions/**`
+- `lib/product_compare/{accounts,specs,alerts,discussions}/**`
+- `test/product_compare/repo/categorical_discriminator_storage_test.exs`
+- `test/product_compare/{accounts,specs,alerts,discussions}/**`
+- `docs/work/database-domain-types.md`
+
+Internal slices:
+
+- Reputation event type reference and generic subject removal.
+- Unused formula-language and alert-failure-category removal.
+- Single-value thread-kind and duplicate receipt-kind removal.
+- Transient feed-review migration-history cleanup.
+
+Prerequisites:
+
+- No active row owns the same migration or schema paths.
+- Add explicit reputation subject foreign keys only for concrete producers;
+  do not replace `ref_table` with another polymorphic discriminator.
+
+Verification:
+
+- `mix test test/product_compare/repo/categorical_discriminator_storage_test.exs`
+- focused accounts, specs, alerts, discussions, migration, and GraphQL suites
+- `mix test`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: the absence/reference inventory passes, idempotency and
+moderation behavior remain intact, migration history never creates transient
+categorical strings, and all gates pass.
 
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
@@ -2086,7 +2318,7 @@ Exit condition: every actionable current finding is removed, every retained
 finding has current ownership and a concrete rationale, strict baseline-backed
 Reach passes, and the full repository gate passes.
 
-## Ready Work
+## Exhausted Queue Snapshot (2026-07-22)
 
 Ready-row count: 0. Ranked Catalog Search is complete. Fresh source-backed
 candidate validation requires a new product or quality decision. The validator

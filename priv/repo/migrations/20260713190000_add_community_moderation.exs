@@ -3,7 +3,10 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
 
   def change do
     alter table(:product_reviews) do
-      add :moderation_status, :string, null: false, default: "published"
+      add :moderation_status, :community_moderation_status,
+        null: false,
+        default: "published"
+
       add :moderation_note, :text
       add :moderated_at, :utc_datetime_usec
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
@@ -12,7 +15,11 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     alter table(:product_threads) do
       add :kind, :string, null: false, default: "question"
       add :body_md, :text
-      add :moderation_status, :string, null: false, default: "published"
+
+      add :moderation_status, :community_moderation_status,
+        null: false,
+        default: "published"
+
       add :moderation_note, :text
       add :moderated_at, :utc_datetime_usec
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
@@ -20,7 +27,10 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     end
 
     alter table(:thread_posts) do
-      add :moderation_status, :string, null: false, default: "published"
+      add :moderation_status, :community_moderation_status,
+        null: false,
+        default: "published"
+
       add :moderation_note, :text
       add :moderated_at, :utc_datetime_usec
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
@@ -32,12 +42,6 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     create index(:product_threads, [:product_id, :kind, :moderation_status, :inserted_at])
     create index(:thread_posts, [:thread_id, :moderation_status, :inserted_at])
 
-    for table <- [:product_reviews, :product_threads, :thread_posts] do
-      create constraint(table, String.to_atom("#{table}_moderation_status_check"),
-               check: "moderation_status IN ('pending', 'published', 'hidden', 'rejected')"
-             )
-    end
-
     create constraint(:product_threads, :product_threads_kind_check, check: "kind = 'question'")
 
     create table(:community_reports) do
@@ -47,7 +51,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
       add :thread_id, references(:product_threads, type: :bigint, on_delete: :delete_all)
       add :post_id, references(:thread_posts, type: :bigint, on_delete: :delete_all)
       add :reason, :string, null: false, size: 500
-      add :status, :string, null: false, default: "pending"
+      add :status, :community_report_status, null: false, default: "pending"
       add :resolved_at, :utc_datetime_usec
       add :resolved_by, references(:users, type: :bigint, on_delete: :nilify_all)
 
@@ -73,10 +77,6 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     create constraint(:community_reports, :community_reports_one_target,
              check:
                "((review_id IS NOT NULL)::int + (thread_id IS NOT NULL)::int + (post_id IS NOT NULL)::int) = 1"
-           )
-
-    create constraint(:community_reports, :community_reports_status_check,
-             check: "status IN ('pending', 'resolved', 'dismissed')"
            )
   end
 end

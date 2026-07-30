@@ -52,31 +52,31 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   def observe(%ImportRun{}, _persisted_listing), do: :ok
 
   @spec finalize(ImportRun.t()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
-  def finalize(%ImportRun{reconciliation_status: status} = run) when status != "pending",
+  def finalize(%ImportRun{reconciliation_status: status} = run) when status != :pending,
     do: {:ok, run}
 
-  def finalize(%ImportRun{status: status} = run) when status != "succeeded" do
-    update_outcome(run, "skipped_failed", 0, nil)
+  def finalize(%ImportRun{status: status} = run) when status != :succeeded do
+    update_outcome(run, :skipped_failed, 0, nil)
   end
 
   def finalize(%ImportRun{cursor_start: cursor_start} = run)
       when not is_integer(cursor_start) or cursor_start != 0 do
-    update_outcome(run, "skipped_partial", 0, nil)
+    update_outcome(run, :skipped_partial, 0, nil)
   end
 
   def finalize(%ImportRun{cursor_end: cursor_end} = run) when not is_nil(cursor_end) do
-    update_outcome(run, "skipped_partial", 0, nil)
+    update_outcome(run, :skipped_partial, 0, nil)
   end
 
   def finalize(%ImportRun{records_failed: failed} = run) when failed > 0 do
-    update_outcome(run, "skipped_partial", 0, nil)
+    update_outcome(run, :skipped_partial, 0, nil)
   end
 
   def finalize(%ImportRun{} = run) do
     lock_scope!(run)
 
     if superseded?(run) do
-      update_outcome(run, "skipped_superseded", 0, nil)
+      update_outcome(run, :skipped_superseded, 0, nil)
     else
       now = DateTime.utc_now()
 
@@ -89,7 +89,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
         |> unseen_historical_offers_query()
         |> Repo.update_all(set: [is_active: false, updated_at: now])
 
-      update_outcome(run, "succeeded", deactivated, now)
+      update_outcome(run, :succeeded, deactivated, now)
     end
   end
 
@@ -110,7 +110,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
       candidate.id > ^run.id and candidate.source_id == ^run.source_id and
         candidate.provider == ^run.provider and candidate.surface == ^run.surface and
         candidate.scope_fingerprint == ^run.scope_fingerprint and
-        candidate.reconciliation_status == "succeeded"
+        candidate.reconciliation_status == :succeeded
     )
     |> Repo.exists?()
   end

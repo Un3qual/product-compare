@@ -7,7 +7,7 @@ defmodule ProductCompareSchemas.Accounts.UserSessionToken do
 
   schema "users_tokens" do
     field :token_hash, :binary
-    field :context, :string
+    field :context, Ecto.Enum, values: [:session, :confirm, :reset_password]
     field :sent_to, :string
     field :expires_at, :utc_datetime_usec
 

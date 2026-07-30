@@ -8,32 +8,40 @@ defmodule ProductCompare.Catalog.Evidence do
   alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Catalog.ProductMedia
 
-  @spec get_product_by_identifier(String.t(), String.t()) :: Product.t() | nil
+  @spec get_product_by_identifier(atom() | String.t(), String.t()) :: Product.t() | nil
   def get_product_by_identifier(scheme, normalized_value)
-      when is_binary(scheme) and is_binary(normalized_value) do
-    Product
-    |> join(:inner, [product], identifier in ProductIdentifier,
-      on: identifier.product_id == product.id
-    )
-    |> where(
-      [_product, identifier],
-      identifier.scheme == ^scheme and
-        identifier.normalized_value == ^normalized_value and
-        identifier.verification_status == "validated"
-    )
-    |> Repo.one()
+      when (is_atom(scheme) or is_binary(scheme)) and is_binary(normalized_value) do
+    with {:ok, scheme} <- Ecto.Enum.cast_value(ProductIdentifier, :scheme, scheme) do
+      Product
+      |> join(:inner, [product], identifier in ProductIdentifier,
+        on: identifier.product_id == product.id
+      )
+      |> where(
+        [_product, identifier],
+        identifier.scheme == ^scheme and
+          identifier.normalized_value == ^normalized_value and
+          identifier.verification_status == :validated
+      )
+      |> Repo.one()
+    else
+      :error -> nil
+    end
   end
 
-  @spec list_product_identifiers(pos_integer(), String.t()) :: [ProductIdentifier.t()]
+  @spec list_product_identifiers(pos_integer(), atom() | String.t()) :: [ProductIdentifier.t()]
   def list_product_identifiers(product_id, scheme)
-      when is_integer(product_id) and is_binary(scheme) do
-    ProductIdentifier
-    |> where(
-      [identifier],
-      identifier.product_id == ^product_id and identifier.scheme == ^scheme
-    )
-    |> order_by([identifier], asc: identifier.id)
-    |> Repo.all()
+      when is_integer(product_id) and (is_atom(scheme) or is_binary(scheme)) do
+    with {:ok, scheme} <- Ecto.Enum.cast_value(ProductIdentifier, :scheme, scheme) do
+      ProductIdentifier
+      |> where(
+        [identifier],
+        identifier.product_id == ^product_id and identifier.scheme == ^scheme
+      )
+      |> order_by([identifier], asc: identifier.id)
+      |> Repo.all()
+    else
+      :error -> []
+    end
   end
 
   @spec create_product_identifier(map()) ::
@@ -55,7 +63,7 @@ defmodule ProductCompare.Catalog.Evidence do
         product_id: product.id,
         source_artifact_id: source_artifact_id,
         url: Map.get(observation, :url),
-        role: observation |> Map.get(:role, :gallery) |> to_string(),
+        role: Map.get(observation, :role, :gallery),
         position: Map.get(observation, :position, 0),
         alt_text: Map.get(observation, :alt_text),
         observed_at: observed_at
@@ -68,7 +76,7 @@ defmodule ProductCompare.Catalog.Evidence do
              on_conflict: [
                set: [
                  source_artifact_id: source_artifact_id,
-                 role: attrs.role,
+                 role: Ecto.Changeset.get_field(changeset, :role),
                  position: attrs.position,
                  alt_text: attrs.alt_text,
                  observed_at: observed_at,

@@ -88,6 +88,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   defp normalize_program_stages!(values) do
     pursued_stages = CJPrograms.pursued_stages()
+    pursued_stage_by_name = Map.new(pursued_stages, &{Atom.to_string(&1), &1})
 
     stages =
       values
@@ -98,13 +99,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       |> Enum.map(&String.downcase/1)
       |> Enum.uniq()
 
-    case Enum.find(stages, &(&1 not in pursued_stages)) do
+    case Enum.find(stages, &(not Map.has_key?(pursued_stage_by_name, &1))) do
       nil ->
-        if(stages == [], do: pursued_stages, else: stages)
+        if stages == [] do
+          pursued_stages
+        else
+          Enum.map(stages, &Map.fetch!(pursued_stage_by_name, &1))
+        end
 
       invalid_stage ->
         Mix.raise(
-          "invalid --stage: #{inspect(invalid_stage)}; expected one of #{Enum.join(pursued_stages, ", ")}"
+          "invalid --stage: #{inspect(invalid_stage)}; expected one of " <>
+            Enum.map_join(pursued_stages, ", ", &Atom.to_string/1)
         )
     end
   end

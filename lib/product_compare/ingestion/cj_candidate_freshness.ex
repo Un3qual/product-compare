@@ -105,7 +105,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
           feed.last_seen_at,
           ^stale_hours
         ),
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage)
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage)
     })
     |> subquery()
     |> group_by([feed], [feed.bucket, feed.stage])

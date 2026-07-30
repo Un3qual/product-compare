@@ -10,9 +10,9 @@ defmodule ProductCompare.Accounts.UserAuth.EmailTokens do
   alias ProductCompareSchemas.Accounts.UserSessionToken
 
   @before_reset_user_password_transaction_hook :before_reset_user_password_transaction
-  @confirm_context "confirm"
+  @confirm_context :confirm
   @confirm_validity_in_days 7
-  @reset_password_context "reset_password"
+  @reset_password_context :reset_password
   @reset_password_validity_in_days 1
   @user_auth_config :"Elixir.ProductCompare.Accounts.UserAuth"
 

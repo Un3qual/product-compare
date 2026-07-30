@@ -138,7 +138,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
     query =
       ImportRun
       |> where([run], run.provider == @provider)
-      |> where([run], run.status == "failed")
+      |> where([run], run.status == :failed)
 
     runs =
       query
@@ -154,7 +154,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
       ImportRun
       |> where([run], run.provider == @provider)
       |> where([run], run.surface == ^surface)
-      |> where([run], run.status == "failed")
+      |> where([run], run.status == :failed)
 
     runs =
       query

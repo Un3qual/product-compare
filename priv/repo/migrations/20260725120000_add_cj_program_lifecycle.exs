@@ -34,7 +34,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
       add :source_id, references(:sources, type: :bigint, on_delete: :delete_all), null: false
 
       add :advertiser_id, :text, null: false
-      add :stage, :text, null: false, default: "new"
+      add :stage, :cj_program_stage, null: false, default: "new"
       add :note, :text
       add :changed_at, :utc_datetime_usec, null: false
       timestamps(type: :utc_datetime_usec)
@@ -57,7 +57,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
     )
     SELECT grouped.source_id,
            grouped.advertiser_id,
-           grouped.stage,
+           grouped.stage::cj_program_stage,
            notes.review_note,
            COALESCE(notes.changed_at, grouped.fallback_changed_at),
            NOW(),
@@ -96,12 +96,6 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
 
     create unique_index(:cj_programs, [:source_id, :advertiser_id],
              name: :cj_programs_source_advertiser_uq
-           )
-
-    create constraint(:cj_programs, :cj_programs_stage_chk,
-             check:
-               "stage IN ('new', 'considering', 'selected', 'applied', " <>
-                 "'accepted', 'not_pursuing', 'declined')"
            )
 
     create index(:merchant_feed_candidates, [:cj_program_id],

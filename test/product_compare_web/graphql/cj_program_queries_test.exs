@@ -459,7 +459,7 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
                  }
                })
 
-      assert %CJProgram{stage: "declined", note: nil} = Repo.get!(CJProgram, program.id)
+      assert %CJProgram{stage: :declined, note: nil} = Repo.get!(CJProgram, program.id)
     end
 
     test "updateCjProgram rejects a stale lifecycle snapshot without overwriting it", %{
@@ -516,7 +516,7 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
                  }
                })
 
-      assert %CJProgram{stage: "applied"} = Repo.get!(CJProgram, program.id)
+      assert %CJProgram{stage: :applied} = Repo.get!(CJProgram, program.id)
     end
 
     test "update_cj_program returns an input error for authorized malformed direct calls" do
@@ -604,7 +604,7 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
 
       assert count_select_queries_targeting_table(queries, :cj_programs) == 0
       assert count_select_queries_targeting_table(queries, :merchant_feed_candidates) == 0
-      assert %CJProgram{stage: "new"} = Repo.get!(CJProgram, program.id)
+      assert %CJProgram{stage: :new} = Repo.get!(CJProgram, program.id)
     end
 
     test "CJ program schema omits secrets and retired feed-review operations", %{conn: conn} do

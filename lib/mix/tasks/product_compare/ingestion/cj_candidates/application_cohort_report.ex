@@ -35,7 +35,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
   end
 
   defp candidates(opts) do
-    CJPrograms.list_feeds_query(stage: "selected")
+    CJPrograms.list_feeds_query(stage: :selected)
     |> preload([candidate], :cj_program)
     |> maybe_filter_string(:advertiser_country, Keyword.fetch!(opts, :country))
     |> maybe_filter_string(:currency, Keyword.fetch!(opts, :currency))

@@ -138,7 +138,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                source_id: ^source_id,
                provider: "cj",
                surface: "shoppingProducts",
-               status: "succeeded",
+               status: :succeeded,
                query: %{"currency" => "USD", "keywords" => ["shoe"], "serviceableAreas" => ["US"]},
                cursor_start: 0,
                cursor_end: nil,
@@ -149,7 +149,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_normalized: 1,
                records_persisted: 1,
                records_failed: 0,
-               reconciliation_status: "succeeded",
+               reconciliation_status: :succeeded,
                offers_deactivated: 0,
                reconciled_at: %DateTime{},
                scope_fingerprint: scope_fingerprint
@@ -211,7 +211,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                source_id: ^source_id,
                provider: "cj",
                surface: "shoppingProducts",
-               status: "succeeded",
+               status: :succeeded,
                cursor_start: 0,
                cursor_end: nil,
                page_size: 1,
@@ -221,7 +221,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                records_normalized: 2,
                records_persisted: 2,
                records_failed: 0,
-               reconciliation_status: "not_requested",
+               reconciliation_status: :not_requested,
                offers_deactivated: 0,
                reconciled_at: nil
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
@@ -292,7 +292,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                  "providerFeedId" => "feed-kotobukiya"
                },
                records_persisted: 1,
-               status: "succeeded"
+               status: :succeeded
              } = Repo.get_by!(ImportRun, source_id: source.id, surface: "shoppingProducts")
 
       assert feed_id == feed.id
@@ -673,7 +673,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert output =~ "fetched=1 normalized=1 persisted=1 failed=0 pages_fetched=1"
 
       assert %ImportRun{
-               status: "failed",
+               status: :failed,
                error_summary: "fetch_failed",
                pages_fetched: 1,
                records_fetched: 1,
@@ -720,7 +720,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert %{domain: "cj.com"} = Repo.get!(Source, existing_source.id)
       assert Repo.aggregate(Source, :count, :id) == 1
 
-      assert %ImportRun{source_id: source_id, status: "succeeded"} =
+      assert %ImportRun{source_id: source_id, status: :succeeded} =
                Repo.get_by!(ImportRun, surface: "shoppingProducts")
 
       assert source_id == existing_source.id
@@ -754,7 +754,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert output =~ "fetched=1 normalized=0 persisted=0 failed=1 pages_fetched=1"
 
       assert %ImportRun{
-               status: "failed",
+               status: :failed,
                records_fetched: 1,
                records_normalized: 0,
                records_persisted: 0,
@@ -785,7 +785,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                  print_report: false
                )
 
-      assert %ImportRun{status: "failed", error_summary: "fetch_failed"} =
+      assert %ImportRun{status: :failed, error_summary: "fetch_failed"} =
                Repo.get_by!(ImportRun, surface: "shoppingProducts")
     end
 
@@ -812,7 +812,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       refute log =~ "provider secret should not be logged"
 
       assert %ImportRun{
-               status: "failed",
+               status: :failed,
                error_summary: "fetch_failed",
                pages_fetched: 0,
                records_fetched: 0,

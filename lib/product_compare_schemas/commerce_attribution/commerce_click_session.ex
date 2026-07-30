@@ -41,7 +41,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     |> foreign_key_constraint(:commerce_link_id)
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:user_id)
-    |> check_constraint(:source_surface, name: :commerce_click_sessions_source_surface_check)
   end
 
   defp put_generated_click_id(changeset) do
