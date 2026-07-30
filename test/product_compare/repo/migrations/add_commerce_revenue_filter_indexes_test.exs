@@ -8,7 +8,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommerceRevenueFilterIndexesTest do
     commerce_conversions_revenue_currency_idx
     commerce_conversions_revenue_product_idx
     commerce_conversions_revenue_time_idx
-    commerce_links_network_idx
+    commerce_conversions_affiliate_network_idx
   )
 
   test "installs the missing revenue dashboard filter indexes" do

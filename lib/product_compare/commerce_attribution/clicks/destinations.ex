@@ -7,15 +7,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
-  @affiliate_network_names %{
-    "amazon" => :amazon_associates,
-    "amazon associates" => :amazon_associates,
-    "awin" => :awin,
-    "cj" => :cj,
-    "commission junction" => :cj,
-    "impact" => :impact,
-    "rakuten" => :rakuten
-  }
   @click_id_query_keys MapSet.new(~w(ClickId clickId click_id subId subid sub_id))
 
   @spec for_merchant_product(pos_integer()) ::
@@ -55,14 +46,14 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
 
   defp affiliate_destination_or_fallback(affiliate_link, merchant_product) do
     affiliate_url = normalize_browser_accepted_destination_url(affiliate_link.affiliate_url)
+    affiliate_program_id = affiliate_program_id(affiliate_link, merchant_product)
 
-    if CommerceLink.valid_destination_url?(affiliate_url) do
+    if CommerceLink.valid_destination_url?(affiliate_url) and is_integer(affiliate_program_id) do
       %{
         destination_url: affiliate_url,
-        affiliate_program_id: affiliate_program_id(affiliate_link, merchant_product),
+        affiliate_program_id: affiliate_program_id,
         link_type: :affiliate,
         merchant_id: merchant_product.merchant_id,
-        network: commerce_network(affiliate_link),
         backfilled_from_affiliate_links: true
       }
     else
@@ -76,7 +67,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
       affiliate_program_id: nil,
       link_type: :non_affiliate,
       merchant_id: merchant_product.merchant_id,
-      network: nil,
       backfilled_from_affiliate_links: false
     }
   end
@@ -108,12 +98,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
   end
 
   defp affiliate_program_id(_affiliate_link, _merchant_product), do: nil
-
-  defp commerce_network(%AffiliateLink{affiliate_network: %{name: name}}) when is_binary(name) do
-    name |> String.downcase() |> String.trim() |> then(&Map.get(@affiliate_network_names, &1))
-  end
-
-  defp commerce_network(_affiliate_link), do: nil
 
   defp has_click_id_query_param?(query) do
     query

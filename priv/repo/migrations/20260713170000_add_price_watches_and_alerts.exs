@@ -11,7 +11,7 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
           references(:merchant_products, type: :bigint, on_delete: :delete_all)
 
       add :rule_type, :price_watch_rule_type, null: false
-      add :currency, :string, null: false
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :target_amount, :decimal
       add :percentage_drop, :decimal
 
@@ -34,12 +34,8 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
 
     create unique_index(:price_watch_rules, [:entropy_id])
     create index(:price_watch_rules, [:user_id, :inserted_at])
-    create index(:price_watch_rules, [:product_id, :currency, :enabled])
-    create index(:price_watch_rules, [:merchant_product_id, :currency, :enabled])
-
-    create constraint(:price_watch_rules, :price_watch_rules_currency_check,
-             check: "currency ~ '^[A-Z]{3}$'"
-           )
+    create index(:price_watch_rules, [:product_id, :currency_id, :enabled])
+    create index(:price_watch_rules, [:merchant_product_id, :currency_id, :enabled])
 
     create constraint(:price_watch_rules, :price_watch_rules_target_check,
              check:
@@ -64,7 +60,7 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
           null: false
 
       add :rule_type, :price_watch_rule_type, null: false
-      add :currency, :string, null: false
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :item_price, :decimal, null: false
       add :shipping, :decimal, null: false
       add :landed_price, :decimal, null: false

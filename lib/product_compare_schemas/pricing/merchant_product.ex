@@ -1,13 +1,15 @@
 defmodule ProductCompareSchemas.Pricing.MerchantProduct do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.CurrencyCode
+
   @type t :: %__MODULE__{}
 
   schema "merchant_products" do
     field :entropy_id, Ecto.UUID
     field :external_sku, :string
     field :url, :string
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :last_seen_at, :utc_datetime_usec
     field :is_active, :boolean
 
@@ -32,13 +34,9 @@ defmodule ProductCompareSchemas.Pricing.MerchantProduct do
       :is_active
     ])
     |> validate_required([:merchant_id, :product_id, :url, :currency])
-    |> update_change(:currency, fn
-      nil -> nil
-      currency -> String.upcase(currency)
-    end)
-    |> validate_format(:currency, ~r/^[A-Z]{3}$/, message: "must be a valid ISO 4217 code")
     |> unique_constraint([:merchant_id, :url], name: :merchant_products_merchant_url_uq)
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:product_id)
+    |> foreign_key_constraint(:currency, name: :merchant_products_currency_id_fkey)
   end
 end

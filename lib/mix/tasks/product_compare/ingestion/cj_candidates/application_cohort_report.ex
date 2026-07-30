@@ -47,6 +47,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
 
   defp maybe_filter_string(query, _field, nil), do: query
 
+  defp maybe_filter_string(query, :currency, expected) do
+    where(query, [candidate], candidate.currency == ^expected)
+  end
+
   defp maybe_filter_string(query, field, expected),
     do:
       where(

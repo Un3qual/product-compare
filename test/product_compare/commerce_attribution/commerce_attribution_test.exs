@@ -39,7 +39,7 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "upsert_commerce_link/1" do
-    test "converges duplicate destination rows with a nil affiliate program" do
+    test "converges duplicate non-affiliate destination rows" do
       merchant = merchant_fixture()
       destination_url = "https://merchant.example.com/products/desk"
 
@@ -47,8 +47,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.upsert_commerce_link(%{
           merchant_id: merchant.id,
           destination_url: destination_url,
-          link_type: :affiliate,
-          network: :impact,
+          link_type: :non_affiliate,
           campaign_params: %{"utm_campaign" => "launch"},
           is_active: true
         })
@@ -57,14 +56,12 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.upsert_commerce_link(%{
           merchant_id: merchant.id,
           destination_url: destination_url,
-          link_type: :affiliate,
-          network: :awin,
+          link_type: :non_affiliate,
           campaign_params: %{"utm_campaign" => "refresh"},
           is_active: false
         })
 
       assert updated.id == inserted.id
-      assert updated.network == :awin
       assert updated.campaign_params == %{"utm_campaign" => "refresh"}
       assert updated.is_active == false
 
@@ -72,17 +69,28 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.upsert_commerce_link(%{
           merchant_id: merchant.id,
           destination_url: destination_url,
-          link_type: :affiliate,
-          network: nil,
+          link_type: :non_affiliate,
           campaign_params: %{},
           is_active: true
         })
 
       assert reactivated.id == inserted.id
-      assert reactivated.network == nil
       assert reactivated.campaign_params == %{}
       assert reactivated.is_active == true
       assert Repo.aggregate(CommerceLink, :count, :id) == 1
+    end
+
+    test "requires affiliate links to identify their affiliate program" do
+      merchant = merchant_fixture()
+
+      assert {:error, changeset} =
+               CommerceAttribution.upsert_commerce_link(%{
+                 merchant_id: merchant.id,
+                 destination_url: "https://affiliate.example.com/click",
+                 link_type: :affiliate
+               })
+
+      assert "is invalid" in errors_on(changeset).affiliate_program_id
     end
 
     test "rejects redirect destinations without an http or https URL" do
@@ -237,7 +245,6 @@ defmodule ProductCompare.CommerceAttributionTest do
                affiliate_program_id: affiliate_program_id,
                link_type: :affiliate,
                merchant_id: merchant_id,
-               network: :impact,
                backfilled_from_affiliate_links: true,
                is_active: true
              } = tracked_click.commerce_link
@@ -266,6 +273,9 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       affiliate_network = affiliate_network_fixture(%{name: "Impact"})
 
+      _affiliate_program =
+        affiliate_program_fixture(%{affiliate_network: affiliate_network, merchant: merchant})
+
       {:ok, _affiliate_link} =
         Affiliate.upsert_link(%{
           merchant_product_id: merchant_product.id,
@@ -284,23 +294,13 @@ defmodule ProductCompare.CommerceAttributionTest do
                CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
     end
 
-    test "preserves an existing commerce link network when a tracked affiliate network is unmapped" do
+    test "falls back to the merchant URL when a tracked affiliate network has no program" do
       merchant = merchant_fixture()
-      destination_url = "https://affiliate.example.com/click/preserved-network"
 
       merchant_product =
         merchant_product_fixture(%{
           merchant: merchant,
           url: "https://merchant.example.com/direct-product"
-        })
-
-      {:ok, existing_link} =
-        CommerceAttribution.upsert_commerce_link(%{
-          merchant_id: merchant.id,
-          destination_url: destination_url,
-          link_type: :affiliate,
-          network: :impact,
-          is_active: true
         })
 
       affiliate_network = affiliate_network_fixture(%{name: "Unknown Network"})
@@ -310,7 +310,7 @@ defmodule ProductCompare.CommerceAttributionTest do
           merchant_product_id: merchant_product.id,
           affiliate_network_id: affiliate_network.id,
           original_url: merchant_product.url,
-          affiliate_url: destination_url
+          affiliate_url: "https://affiliate.example.com/click/unconfigured-network"
         })
 
       assert {:ok, tracked_click} =
@@ -319,14 +319,13 @@ defmodule ProductCompare.CommerceAttributionTest do
                  source_surface: :web
                })
 
-      assert tracked_click.commerce_link.id == existing_link.id
-      assert tracked_click.commerce_link.network == :impact
+      assert tracked_click.commerce_link.link_type == :non_affiliate
+      assert tracked_click.commerce_link.affiliate_program_id == nil
 
       assert {:ok, redirect_destination} =
                CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
 
-      assert redirect_destination ==
-               "#{destination_url}?ClickId=#{tracked_click.click_session.click_id}"
+      assert redirect_destination == merchant_product.url
     end
 
     test "falls back to the merchant product URL when no affiliate link exists" do
@@ -348,7 +347,6 @@ defmodule ProductCompare.CommerceAttributionTest do
                destination_url: "https://merchant.example.com/direct-product",
                link_type: :non_affiliate,
                merchant_id: merchant_id,
-               network: nil,
                backfilled_from_affiliate_links: false,
                is_active: true
              } = tracked_click.commerce_link
@@ -417,7 +415,6 @@ defmodule ProductCompare.CommerceAttributionTest do
                destination_url: "https://merchant.example.com/direct-product",
                link_type: :non_affiliate,
                merchant_id: merchant_id,
-               network: nil,
                backfilled_from_affiliate_links: false,
                is_active: true
              } = tracked_click.commerce_link
@@ -456,7 +453,6 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert %CommerceLink{
                destination_url: "https://merchant.example.com/direct-product",
                link_type: :non_affiliate,
-               network: nil,
                backfilled_from_affiliate_links: false
              } = tracked_click.commerce_link
     end
@@ -649,7 +645,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert {:error, changeset} = ImpactAdapter.ingest_action(follow_up)
       assert "does not match resolved click" in errors_on(changeset).merchant_product_id
-      assert Repo.reload!(approved) == approved
+      assert Repo.reload!(approved) == %{approved | source_network: nil}
     end
 
     test "rejects a conflicting direct dimension on an identifier-free follow-up" do
@@ -681,7 +677,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                })
 
       assert "does not match resolved click" in errors_on(changeset).merchant_id
-      assert Repo.reload!(approved) == approved
+      assert Repo.reload!(approved) == %{approved | source_network: nil}
     end
 
     test "stores external click tokens without rejecting conversions" do
@@ -1370,9 +1366,12 @@ defmodule ProductCompare.CommerceAttributionTest do
              } = CommerceAttribution.dashboard_revenue_summary(currency: "usd")
     end
 
-    test "counts network clicks from conversion source when the link has no network" do
+    test "counts network clicks from conversion source for a non-affiliate link" do
       merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+
+      commerce_link =
+        commerce_link_fixture(%{merchant: merchant, link_type: :non_affiliate, network: nil})
+
       click_session = click_session_fixture(commerce_link)
 
       conversion_fixture(%{
@@ -1396,19 +1395,27 @@ defmodule ProductCompare.CommerceAttributionTest do
              } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
     end
 
-    test "does not override a link network with an inconsistent conversion source network" do
+    test "rejects a conversion network that conflicts with the link's affiliate program" do
       merchant = merchant_fixture()
       commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
       click_session = click_session_fixture(commerce_link)
 
-      conversion_fixture(%{
-        click_session_id: click_session.id,
-        public_click_id: click_session.click_id,
-        source_network: :awin,
-        merchant_id: merchant.id,
-        status: :pending,
-        reported_at: ~U[2026-05-21 12:00:00.000000Z]
-      })
+      assert {:error, changeset} =
+               CommerceAttribution.ingest_conversion(%{
+                 click_session_id: click_session.id,
+                 public_click_id: click_session.click_id,
+                 source_network: :awin,
+                 network_conversion_ref: "conversion-#{System.unique_integer([:positive])}",
+                 merchant_id: merchant.id,
+                 status: :pending,
+                 currency: "USD",
+                 order_amount: Decimal.new("100.00"),
+                 commission_amount: Decimal.new("10.00"),
+                 attribution_confidence: :unmatched,
+                 reported_at: ~U[2026-05-21 12:00:00.000000Z]
+               })
+
+      assert "does not match resolved click" in errors_on(changeset).affiliate_network_id
 
       assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
                CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
@@ -1421,7 +1428,10 @@ defmodule ProductCompare.CommerceAttributionTest do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: nil})
+
+      commerce_link =
+        commerce_link_fixture(%{merchant: merchant, link_type: :non_affiliate, network: nil})
+
       click_session = click_session_fixture(commerce_link)
 
       conversion_fixture(%{
@@ -1600,20 +1610,54 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   defp commerce_link_fixture(attrs \\ %{}) do
-    merchant = Map.get(attrs, :merchant, merchant_fixture())
     suffix = System.unique_integer([:positive])
+    merchant_id = commerce_link_merchant_id(attrs)
+    link_type = Map.get(attrs, :link_type, :affiliate)
 
     {:ok, commerce_link} =
       attrs
-      |> Map.drop([:merchant])
-      |> Map.put_new(:merchant_id, merchant.id)
+      |> Map.drop([:merchant, :network])
+      |> Map.put_new(:merchant_id, merchant_id)
       |> Map.put_new(:destination_url, "https://merchant.example.com/products/#{suffix}")
-      |> Map.put_new(:link_type, :affiliate)
-      |> Map.put_new(:network, :impact)
+      |> Map.put_new(:link_type, link_type)
+      |> put_fixture_affiliate_program(link_type, merchant_id, Map.get(attrs, :network, :impact))
       |> CommerceAttribution.upsert_commerce_link()
 
     commerce_link
   end
+
+  defp commerce_link_merchant_id(attrs) do
+    case Map.fetch(attrs, :merchant_id) do
+      {:ok, merchant_id} -> merchant_id
+      :error -> attrs |> Map.get_lazy(:merchant, &merchant_fixture/0) |> Map.fetch!(:id)
+    end
+  end
+
+  defp put_fixture_affiliate_program(attrs, :affiliate, merchant_id, network)
+       when not is_nil(network) do
+    if Map.has_key?(attrs, :affiliate_program_id) do
+      attrs
+    else
+      network_name =
+        network
+        |> Atom.to_string()
+        |> String.replace("_", " ")
+        |> String.split()
+        |> Enum.map_join(" ", &String.capitalize/1)
+
+      {:ok, affiliate_network} = Affiliate.upsert_network(%{name: network_name})
+
+      {:ok, affiliate_program} =
+        Affiliate.upsert_program(%{
+          affiliate_network_id: affiliate_network.id,
+          merchant_id: merchant_id
+        })
+
+      Map.put(attrs, :affiliate_program_id, affiliate_program.id)
+    end
+  end
+
+  defp put_fixture_affiliate_program(attrs, _link_type, _merchant_id, _network), do: attrs
 
   defp merchant_fixture(attrs \\ %{}) do
     suffix = System.unique_integer([:positive])
@@ -1684,7 +1728,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
   defp currency_probe_query?(query) when is_binary(query) do
     String.contains?(query, "DISTINCT") and
-      String.contains?(query, ~s("currency")) and
+      String.contains?(query, ~s("currency_id")) and
       String.contains?(query, ~s(FROM "commerce_conversions"))
   end
 end

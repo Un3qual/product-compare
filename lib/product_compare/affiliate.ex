@@ -49,15 +49,11 @@ defmodule ProductCompare.Affiliate do
 
   @spec upsert_network(map()) :: {:ok, AffiliateNetwork.t()} | {:error, Ecto.Changeset.t()}
   def upsert_network(attrs) do
-    now = DateTime.utc_now()
     changeset = AffiliateNetwork.changeset(%AffiliateNetwork{}, attrs)
 
-    Repo.insert(
-      changeset,
-      on_conflict: [set: [updated_at: now]],
-      conflict_target: [:name],
-      returning: true
-    )
+    changeset
+    |> Repo.insert(on_conflict: :nothing, conflict_target: [:name], returning: true)
+    |> fetch_existing_network(changeset)
   end
 
   @spec upsert_program(map()) :: {:ok, AffiliateProgram.t()} | {:error, Ecto.Changeset.t()}
@@ -178,6 +174,13 @@ defmodule ProductCompare.Affiliate do
       end
     end)
   end
+
+  defp fetch_existing_network({:ok, %AffiliateNetwork{id: nil}}, changeset) do
+    name = Ecto.Changeset.get_field(changeset, :name)
+    {:ok, Repo.get_by!(AffiliateNetwork, name: name)}
+  end
+
+  defp fetch_existing_network(result, _changeset), do: result
 
   defp affiliate_node_schema(:affiliate_network), do: AffiliateNetwork
   defp affiliate_node_schema(:affiliate_program), do: AffiliateProgram

@@ -1,6 +1,7 @@
 defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -351,14 +352,24 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   defp commerce_link_fixture(attrs) do
     merchant = Map.get(attrs, :merchant, merchant_fixture())
     suffix = System.unique_integer([:positive])
+    network = Map.get(attrs, :network, :impact)
+    network_name = network |> Atom.to_string() |> String.capitalize()
+
+    {:ok, affiliate_network} = Affiliate.upsert_network(%{name: network_name})
+
+    {:ok, affiliate_program} =
+      Affiliate.upsert_program(%{
+        affiliate_network_id: affiliate_network.id,
+        merchant_id: merchant.id
+      })
 
     {:ok, commerce_link} =
       attrs
-      |> Map.drop([:merchant])
+      |> Map.drop([:merchant, :network])
       |> Map.put_new(:merchant_id, merchant.id)
+      |> Map.put_new(:affiliate_program_id, affiliate_program.id)
       |> Map.put_new(:destination_url, "https://merchant.example.com/products/#{suffix}")
       |> Map.put_new(:link_type, :affiliate)
-      |> Map.put_new(:network, :impact)
       |> CommerceAttribution.upsert_commerce_link()
 
     commerce_link

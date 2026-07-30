@@ -214,27 +214,27 @@ git commit -m "refactor: store closed domains as postgres enums"
 - Consumes: Task 1 enum-backed schemas.
 - Produces: numeric `currency_id`, `affiliate_program_status_id`, and `affiliate_network_id` foreign keys with no duplicated currency, program-status, or network strings.
 
-- [ ] **Step 1: Write failing FK-storage tests**
+- [x] **Step 1: Write failing FK-storage tests**
 
 Assert that the seven approved currency owners expose `currency_id` foreign keys to `currencies`, `affiliate_programs.affiliate_program_status_id` references `affiliate_program_statuses`, and `commerce_conversions.affiliate_network_id` references `affiliate_networks`. Assert the removed `commerce_links.network` column is absent.
 
-- [ ] **Step 2: Run the FK test and verify RED**
+- [x] **Step 2: Run the FK test and verify RED**
 
 Run `mix test test/product_compare/repo/domain_reference_storage_test.exs`.
 
-- [ ] **Step 3: Create controlled reference tables**
+- [x] **Step 3: Create controlled reference tables**
 
 Create `currencies(id, code, numeric_code, minor_unit, name)` with a unique uppercase `code`, and `affiliate_program_statuses(id, code, name, enabled)` with a unique lowercase `code`. Seed only ISO currencies exercised by fixtures and the observed program states `active` and `paused`; add a deterministic seed/upsert path for additional ISO rows.
 
-- [ ] **Step 4: Replace operational strings with foreign keys**
+- [x] **Step 4: Replace operational strings with foreign keys**
 
 Replace the seven currency columns with `currency_id`, replace affiliate-program status with `affiliate_program_status_id`, remove `commerce_links.network`, require `affiliate_program_id` when `link_type == :affiliate`, and replace conversion `source_network` with `affiliate_network_id`. Add a stable unique `code` to `affiliate_networks`.
 
-- [ ] **Step 5: Update Ecto and GraphQL boundaries**
+- [x] **Step 5: Update Ecto and GraphQL boundaries**
 
 Load reference associations in schemas and contexts. Preserve public ISO currency codes, affiliate status codes, and network codes as derived GraphQL values rather than exposing internal numeric IDs.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run the storage test, focused context and GraphQL suites, `mix typecheck`, `mix format --check-formatted`, `mix test`, `mix work_queue.validate`, and `git diff --check`.
 

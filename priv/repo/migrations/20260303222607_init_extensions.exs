@@ -50,5 +50,53 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       labels = Enum.map_join(values, ", ", &"'#{&1}'")
       execute("CREATE TYPE #{name} AS ENUM (#{labels})", "DROP TYPE #{name}")
     end)
+
+    create table(:currencies, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :string, size: 3, null: false
+      add :numeric_code, :string, size: 3, null: false
+      add :minor_unit, :smallint, null: false
+      add :name, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:currencies, [:code])
+    create unique_index(:currencies, [:numeric_code])
+
+    execute(
+      """
+      INSERT INTO currencies
+        (id, code, numeric_code, minor_unit, name, inserted_at, updated_at)
+      VALUES
+        (124, 'CAD', '124', 2, 'Canadian dollar', now(), now()),
+        (826, 'GBP', '826', 2, 'Pound sterling', now(), now()),
+        (840, 'USD', '840', 2, 'United States dollar', now(), now()),
+        (978, 'EUR', '978', 2, 'Euro', now(), now())
+      """,
+      "DELETE FROM currencies"
+    )
+
+    create table(:affiliate_program_statuses, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :string, null: false
+      add :name, :text, null: false
+      add :enabled, :boolean, null: false, default: true
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:affiliate_program_statuses, [:code])
+
+    execute(
+      """
+      INSERT INTO affiliate_program_statuses
+        (id, code, name, enabled, inserted_at, updated_at)
+      VALUES
+        (1, 'active', 'Active', true, now(), now()),
+        (2, 'paused', 'Paused', true, now(), now())
+      """,
+      "DELETE FROM affiliate_program_statuses"
+    )
   end
 end

@@ -5,6 +5,7 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @warning_codes [
@@ -42,12 +43,13 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
 
   defp warning_rows(program_ids) do
     MerchantFeedCandidate
+    |> join(:left, [feed], currency in Currency, on: currency.id == feed.currency)
     |> where(
-      [feed],
+      [feed, _currency],
       feed.provider == @provider and feed.cj_program_id in ^program_ids
     )
-    |> group_by([feed], feed.cj_program_id)
-    |> select([feed], %{
+    |> group_by([feed, _currency], feed.cj_program_id)
+    |> select([feed, currency], %{
       cj_program_id: feed.cj_program_id,
       missing_advertiser_name:
         fragment("bool_or(NULLIF(BTRIM(?), '') IS NULL)", feed.advertiser_name),
@@ -58,8 +60,7 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
           "bool_or(COALESCE(NULLIF(UPPER(BTRIM(?)), ''), '') != 'US')",
           feed.advertiser_country
         ),
-      non_usd_currency:
-        fragment("bool_or(COALESCE(NULLIF(UPPER(BTRIM(?)), ''), '') != 'USD')", feed.currency),
+      non_usd_currency: fragment("bool_or(COALESCE(?, '') != 'USD')", currency.code),
       non_english_language:
         fragment("bool_or(COALESCE(NULLIF(UPPER(BTRIM(?)), ''), '') != 'EN')", feed.language)
     })

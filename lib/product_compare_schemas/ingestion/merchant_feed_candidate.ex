@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.CurrencyCode
+
   @type t :: %__MODULE__{}
 
   schema "merchant_feed_candidates" do
@@ -11,7 +13,7 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     field :advertiser_name, :string
     field :advertiser_country, :string
     field :source_feed_type, :string
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :language, :string
     field :feed_name, :string
     field :product_count, :integer
@@ -52,6 +54,7 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     )
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:cj_program_id)
+    |> foreign_key_constraint(:currency, name: :merchant_feed_candidates_currency_id_fkey)
     |> check_constraint(:product_count,
       name: :merchant_feed_candidates_product_count_non_negative
     )

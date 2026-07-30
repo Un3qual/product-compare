@@ -58,7 +58,13 @@ defmodule ProductCompare.AffiliateWorkflowsTest do
 
       assert updated.id == inserted.id
       assert updated.name == name
-      assert Repo.aggregate(AffiliateNetwork, :count, :id) == 1
+      assert updated.updated_at == inserted.updated_at
+
+      assert Repo.aggregate(
+               from(network in AffiliateNetwork, where: network.name == ^name),
+               :count,
+               :id
+             ) == 1
     end
   end
 

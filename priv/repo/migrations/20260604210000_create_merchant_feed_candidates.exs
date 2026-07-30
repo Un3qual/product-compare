@@ -11,7 +11,7 @@ defmodule ProductCompare.Repo.Migrations.CreateMerchantFeedCandidates do
       add :advertiser_name, :text
       add :advertiser_country, :text
       add :source_feed_type, :text
-      add :currency, :text
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict)
       add :language, :text
       add :feed_name, :text
       add :product_count, :integer

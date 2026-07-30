@@ -105,19 +105,16 @@ Exit condition: all 28 inventoried columns report the expected native enum
 `udt_name`, focused and full suites pass, and the milestone is committed with
 three ready successors still available.
 
-## Active Work
-
 ### 2. Commerce Reference Domains
 
-Status: active
+Status: complete
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Currencies and affiliate lifecycle/network identities are
 controlled reference rows, while commerce, pricing, affiliate, alert, and feed
 records store only numeric foreign keys and expose stable codes at API
 boundaries.
-Next action: write the failing FK-storage inventory test and create currency
-and affiliate-program-status reference schemas.
+Next action: none; all reference storage and behavior gates pass.
 Owned paths:
 
 - `priv/repo/migrations/20260303222607_init_extensions.exs`
@@ -125,14 +122,19 @@ Owned paths:
 - `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
 - `priv/repo/migrations/20260604210000_create_merchant_feed_candidates.exs`
 - `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
+- `priv/repo/migrations/20260723050000_add_commerce_revenue_filter_indexes.exs`
 - `lib/product_compare_schemas/reference/**`
 - `lib/product_compare_schemas/pricing/**`
 - `lib/product_compare_schemas/affiliate/**`
 - `lib/product_compare_schemas/commerce_attribution/**`
 - `lib/product_compare_schemas/alerts/**`
-- `lib/product_compare/{pricing,affiliate,commerce_attribution,alerts}/**`
+- `lib/product_compare_schemas/ingestion/merchant_feed_candidate.ex`
+- `lib/product_compare/{pricing,affiliate,commerce_attribution,alerts,ingestion}/**`
+- `lib/mix/tasks/product_compare/ingestion/cj_candidates/application_cohort_report.ex`
+- `lib/product_compare_web/resolvers/commerce_attribution/reads.ex`
 - `test/product_compare/repo/domain_reference_storage_test.exs`
-- `test/product_compare/{pricing,affiliate,commerce_attribution,alerts}/**`
+- `test/product_compare/{pricing,affiliate,commerce_attribution,alerts,ingestion}/**`
+- affected commerce redirect and GraphQL suites
 - `docs/work/database-domain-types.md`
 
 Internal slices:
@@ -163,11 +165,11 @@ Exit condition: every approved commerce reference field is a foreign key,
 duplicated network storage is absent, public codes are preserved, and all gates
 pass.
 
-## Dependent Work
+## Active Work
 
 ### 3. Source and Provider Reference Domains
 
-Status: dependent
+Status: active
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Source kinds, providers, provider surfaces, feed types,
@@ -222,6 +224,8 @@ Exit condition: all approved source/provider/market columns are foreign keys or
 removed duplicates, raw evidence is not queried as domain state, and all gates
 pass.
 
+## Dependent Work
+
 ### 4. Redundant and Unsafe Discriminator Removal
 
 Status: dependent
@@ -260,8 +264,8 @@ Internal slices:
 
 Prerequisites:
 
-- Commerce Reference Domains releases its overlapping alert migration and
-  schema paths.
+- Source and Provider Reference Domains releases its overlapping ingestion
+  migration and schema paths.
 - Add explicit reputation subject foreign keys only for concrete producers;
   do not replace `ref_table` with another polymorphic discriminator.
 

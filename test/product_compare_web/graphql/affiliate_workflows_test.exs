@@ -695,7 +695,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                )
     end
 
-    test "upsertAffiliateProgram resolver preserves explicit nil attrs on conflict" do
+    test "upsertAffiliateProgram resolver rejects clearing the controlled status" do
       merchant = merchant_fixture()
       {:ok, network} = Affiliate.upsert_network(%{name: "Nullable Program Network"})
 
@@ -713,7 +713,13 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  %{context: %{current_user: operator_fixture()}}
                )
 
-      assert {:ok, %{program: %{status: nil}, errors: []}} =
+      assert {:ok,
+              %{
+                program: nil,
+                errors: [
+                  %{code: "INVALID_ARGUMENT", field: "status", message: "can't be blank"}
+                ]
+              }} =
                AffiliateResolver.upsert_affiliate_program(
                  nil,
                  %{
@@ -726,6 +732,13 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  },
                  %{context: %{current_user: operator_fixture()}}
                )
+
+      assert Affiliate.get_affiliate_program(
+               Repo.get_by!(AffiliateProgram,
+                 affiliate_network_id: network.id,
+                 merchant_id: merchant.id
+               ).id
+             ).status == "active"
     end
 
     test "upsertAffiliateLink resolver preserves explicit nil attrs on conflict" do

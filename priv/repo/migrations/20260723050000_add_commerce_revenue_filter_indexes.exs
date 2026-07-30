@@ -10,7 +10,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommerceRevenueFilterIndexes do
              concurrently: true
            )
 
-    create index(:commerce_conversions, [:status, :currency],
+    create index(:commerce_conversions, [:status, :currency_id],
              name: :commerce_conversions_revenue_currency_idx,
              concurrently: true
            )
@@ -25,8 +25,8 @@ defmodule ProductCompare.Repo.Migrations.AddCommerceRevenueFilterIndexes do
              concurrently: true
            )
 
-    create index(:commerce_links, [:network],
-             name: :commerce_links_network_idx,
+    create index(:commerce_conversions, [:affiliate_network_id],
+             name: :commerce_conversions_affiliate_network_idx,
              concurrently: true
            )
   end

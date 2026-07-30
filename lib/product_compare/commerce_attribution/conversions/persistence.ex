@@ -6,6 +6,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   alias ProductCompare.CommerceAttribution.Conversions.Attribution
   alias ProductCompare.Input
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
 
   @commerce_conversion_upsert_fields [
@@ -31,10 +32,11 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   @spec ingest(map()) :: {:ok, CommerceConversion.t()} | {:error, Ecto.Changeset.t()}
   def ingest(attrs) do
     Repo.transaction(fn ->
-      attrs = Attribution.restore_persisted(attrs)
-
-      case Attribution.resolve(attrs) do
-        {:ok, attrs} -> persist_or_rollback(attrs)
+      with {:ok, attrs} <- put_affiliate_network_id(attrs),
+           attrs <- Attribution.restore_persisted(attrs),
+           {:ok, attrs} <- Attribution.resolve(attrs) do
+        persist_or_rollback(attrs)
+      else
         {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
@@ -58,7 +60,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
     changeset
     |> Repo.insert(
       on_conflict: conversion_conflict_query(update_fields, now),
-      conflict_target: [:source_network, :network_conversion_ref],
+      conflict_target: [:affiliate_network_id, :network_conversion_ref],
       allow_stale: true,
       returning: true
     )
@@ -80,9 +82,32 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   defp get_existing_conversion!(changeset) do
     Repo.get_by!(
       CommerceConversion,
-      source_network: Ecto.Changeset.get_field(changeset, :source_network),
+      affiliate_network_id: Ecto.Changeset.get_field(changeset, :affiliate_network_id),
       network_conversion_ref: Ecto.Changeset.get_field(changeset, :network_conversion_ref)
     )
+  end
+
+  defp put_affiliate_network_id(attrs) do
+    changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
+
+    case Ecto.Changeset.get_field(changeset, :source_network) do
+      source_network when is_atom(source_network) ->
+        case Repo.get_by(AffiliateNetwork, code: Atom.to_string(source_network)) do
+          %AffiliateNetwork{id: affiliate_network_id} ->
+            {:ok, Map.put(attrs, :affiliate_network_id, affiliate_network_id)}
+
+          nil ->
+            {:error,
+             Ecto.Changeset.add_error(
+               changeset,
+               :source_network,
+               "is not configured as an affiliate network"
+             )}
+        end
+
+      _invalid_or_missing_network ->
+        {:error, changeset}
+    end
   end
 
   defp put_default_attribution_confidence(attrs) do

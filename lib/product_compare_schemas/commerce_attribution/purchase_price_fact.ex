@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.CurrencyCode
+
   @type t :: %__MODULE__{}
 
   schema "purchase_price_facts" do
@@ -10,7 +12,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
     field :shipping_amount, :decimal
     field :tax_amount, :decimal
     field :discount_amount, :decimal
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :observed_at, :utc_datetime_usec
     field :observed_price, :decimal
     field :price_delta, :decimal
@@ -37,9 +39,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
       :observed_price,
       :price_delta
     ])
-    |> update_change(:currency, &upcase_currency/1)
     |> validate_required([:conversion_id, :reported_paid_price, :currency])
-    |> validate_format(:currency, ~r/^[A-Z]{3}$/, message: "must be a valid ISO 4217 code")
     |> validate_number(:listed_price_at_click, greater_than_or_equal_to: 0)
     |> validate_number(:reported_paid_price, greater_than_or_equal_to: 0)
     |> validate_number(:shipping_amount, greater_than_or_equal_to: 0)
@@ -49,10 +49,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.PurchasePriceFact do
     |> unique_constraint(:conversion_id)
     |> foreign_key_constraint(:conversion_id)
     |> foreign_key_constraint(:price_observation_id)
-    |> check_constraint(:currency, name: :purchase_price_facts_currency_check)
+    |> foreign_key_constraint(:currency, name: :purchase_price_facts_currency_id_fkey)
     |> check_constraint(:reported_paid_price, name: :purchase_price_facts_amounts_non_negative)
   end
-
-  defp upcase_currency(nil), do: nil
-  defp upcase_currency(currency), do: String.upcase(currency)
 end

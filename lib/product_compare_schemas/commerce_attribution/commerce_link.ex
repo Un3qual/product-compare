@@ -3,7 +3,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
 
   alias ProductCompare.CommerceAttribution.DestinationUrl
 
-  @networks [:impact, :awin, :rakuten, :cj, :amazon_associates]
   @link_types [:affiliate, :non_affiliate]
 
   @type t :: %__MODULE__{}
@@ -12,7 +11,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
     field :entropy_id, Ecto.UUID
     field :destination_url, :string
     field :link_type, Ecto.Enum, values: @link_types
-    field :network, Ecto.Enum, values: @networks
     field :campaign_params, :map, default: %{}
     field :backfilled_from_affiliate_links, :boolean, default: false
     field :is_active, :boolean, default: true
@@ -23,9 +21,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
     timestamps()
   end
 
-  @spec networks() :: [atom()]
-  def networks, do: @networks
-
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(link, attrs) do
     link
@@ -34,7 +29,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
       :affiliate_program_id,
       :destination_url,
       :link_type,
-      :network,
       :campaign_params,
       :backfilled_from_affiliate_links,
       :is_active
@@ -45,7 +39,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
     |> unique_constraint(:destination_url, name: :commerce_links_business_key_uq)
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:affiliate_program_id)
-    |> check_constraint(:network, name: :commerce_links_network_check)
+    |> check_constraint(:affiliate_program_id, name: :commerce_links_affiliate_program_check)
   end
 
   defp validate_campaign_params(changeset) do

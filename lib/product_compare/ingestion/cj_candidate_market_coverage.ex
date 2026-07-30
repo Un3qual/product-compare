@@ -13,6 +13,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
@@ -63,13 +64,14 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   defp base_query do
     MerchantFeedCandidate
     |> join(:left, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
-    |> where([feed], feed.provider == @provider)
+    |> join(:left, [feed, _program], currency in Currency, on: currency.id == feed.currency)
+    |> where([feed, _program, _currency], feed.provider == @provider)
   end
 
   defp stage_counts(base_query) do
     base_query
-    |> group_by([_feed, program], program.stage)
-    |> select([feed, program], %{
+    |> group_by([_feed, program, _currency], program.stage)
+    |> select([feed, program, _currency], %{
       stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
@@ -85,8 +87,28 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
 
   defp dimension_summary(base_query, dimension) do
     base_query
+    |> dimension_rows(dimension)
+    |> summarize_dimension_rows()
+  end
+
+  defp dimension_rows(base_query, :currency) do
+    base_query
     |> group_by(
-      [feed, program],
+      [_feed, program, currency],
+      [fragment("COALESCE(?, 'unknown')", currency.code), program.stage]
+    )
+    |> select([feed, program, currency], %{
+      bucket: fragment("COALESCE(?, 'unknown')", currency.code),
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
+      candidate_count: count(feed.id)
+    })
+    |> Repo.all()
+  end
+
+  defp dimension_rows(base_query, dimension) do
+    base_query
+    |> group_by(
+      [feed, program, _currency],
       [
         fragment(
           "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
@@ -95,7 +117,7 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
         program.stage
       ]
     )
-    |> select([feed, program], %{
+    |> select([feed, program, _currency], %{
       bucket:
         fragment(
           "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
@@ -105,6 +127,10 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
       candidate_count: count(feed.id)
     })
     |> Repo.all()
+  end
+
+  defp summarize_dimension_rows(rows) do
+    rows
     |> Enum.reduce(%{}, fn row, buckets ->
       stage = Map.get(@stage_keys, row.stage, :unmatched)
 

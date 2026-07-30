@@ -19,7 +19,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
       add :external_sku, :text
       add :url, :text, null: false
-      add :currency, :string, size: 3, null: false
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :last_seen_at, :utc_datetime_usec, null: false, default: fragment("now()")
       add :is_active, :boolean, null: false, default: true
 
@@ -62,13 +62,28 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
     create table(:affiliate_networks) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
+      add :code, :text, null: false
       add :name, :text, null: false
 
       timestamps(type: :utc_datetime_usec)
     end
 
+    create unique_index(:affiliate_networks, [:code])
     create unique_index(:affiliate_networks, [:name])
     create unique_index(:affiliate_networks, [:entropy_id])
+
+    execute(
+      """
+      INSERT INTO affiliate_networks (entropy_id, code, name, inserted_at, updated_at)
+      VALUES
+        (uuidv7(), 'impact', 'Impact', now(), now()),
+        (uuidv7(), 'awin', 'Awin', now(), now()),
+        (uuidv7(), 'rakuten', 'Rakuten', now(), now()),
+        (uuidv7(), 'cj', 'CJ', now(), now()),
+        (uuidv7(), 'amazon_associates', 'Amazon Associates', now(), now())
+      """,
+      "DELETE FROM affiliate_networks"
+    )
 
     create table(:affiliate_programs) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
@@ -78,7 +93,11 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
       add :merchant_id, references(:merchants, type: :bigint, on_delete: :delete_all), null: false
       add :program_code, :text
-      add :status, :text
+
+      add :affiliate_program_status_id,
+          references(:affiliate_program_statuses, type: :integer, on_delete: :restrict),
+          null: false,
+          default: 1
 
       timestamps(type: :utc_datetime_usec)
     end
@@ -122,7 +141,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :description, :text
       add :discount_type, :coupon_discount_type, null: false, default: "other"
       add :discount_value, :decimal
-      add :currency, :string, size: 3
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict)
       add :valid_from, :utc_datetime_usec
       add :valid_to, :utc_datetime_usec
       add :terms, :text
@@ -138,7 +157,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
              check: """
              (
                (discount_type = 'percent' AND discount_value IS NOT NULL AND discount_value >= 0 AND discount_value <= 100) OR
-               (discount_type = 'amount' AND discount_value IS NOT NULL AND discount_value >= 0 AND currency IS NOT NULL) OR
+               (discount_type = 'amount' AND discount_value IS NOT NULL AND discount_value >= 0 AND currency_id IS NOT NULL) OR
                (discount_type IN ('free_shipping', 'other') AND discount_value IS NULL)
              )
              """
