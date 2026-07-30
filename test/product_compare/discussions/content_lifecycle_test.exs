@@ -1,4 +1,4 @@
-defmodule ProductCompare.Discussions.ThreadCrudTest do
+defmodule ProductCompare.Discussions.ContentLifecycleTest do
   use ProductCompare.DataCase, async: false
 
   alias ProductCompare.Discussions
@@ -7,7 +7,7 @@ defmodule ProductCompare.Discussions.ThreadCrudTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Discussions.ProductThread
 
-  describe "thread CRUD" do
+  describe "thread lifecycle" do
     test "update_thread/2 updates a thread title" do
       user = AccountsFixtures.user_fixture()
       product = SpecsFixtures.product_fixture(%{slug: "thread-update-product"})

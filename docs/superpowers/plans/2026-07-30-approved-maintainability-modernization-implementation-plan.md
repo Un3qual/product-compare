@@ -118,22 +118,22 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Produces: a discussions owner named for content lifecycle behavior with the
   public `ProductCompare.Discussions` facade unchanged.
 
-- [ ] Characterize the module's actual responsibility and prove the current
+- [x] Characterize the module's actual responsibility and prove the current
   facade behavior with its focused suite.
-- [ ] Rename the module and test to the narrow domain responsibility; do not add
+- [x] Rename the module and test to the narrow domain responsibility; do not add
   delegates, compatibility aliases, or a generic service layer.
-- [ ] Remove active `Crud` naming from source and tests while preserving
+- [x] Remove active `Crud` naming from source and tests while preserving
   historical prose that is not an executable contract.
-- [ ] Run discussions context and GraphQL suites, type checks, the full backend
+- [x] Run discussions context and GraphQL suites, type checks, the full backend
   suite, and `git diff --check`.
-- [ ] Commit with `refactor: name discussion content ownership`.
+- [x] Commit with `refactor: name discussion content ownership`.
 
 ## Final Program Verification
 
-- [ ] Run the repository frontend and backend CI gates from a clean dependency
+- [x] Run the repository frontend and backend CI gates from a clean dependency
   install.
-- [ ] Confirm no active Bun command, lockfile, or runtime dependency remains.
-- [ ] Confirm StyleX output and bundle budgets remain intact.
-- [ ] Confirm authored single-consumer mutation-only files and active `Crud`
+- [x] Confirm no active Bun command, lockfile, or runtime dependency remains.
+- [x] Confirm StyleX output and bundle budgets remain intact.
+- [x] Confirm authored single-consumer mutation-only files and active `Crud`
   source/test names are absent.
-- [ ] Record exact verification evidence in the relevant lane docs.
+- [x] Record exact verification evidence in the relevant lane docs.

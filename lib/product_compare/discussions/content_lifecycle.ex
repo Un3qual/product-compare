@@ -1,4 +1,4 @@
-defmodule ProductCompare.Discussions.Crud do
+defmodule ProductCompare.Discussions.ContentLifecycle do
   @moduledoc false
 
   import Ecto.Query

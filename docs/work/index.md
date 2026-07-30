@@ -332,48 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Backend Naming Work
-
-### 8. Rename Discussion Content Ownership
-
-Status: active
-Lane: Backend naming
-Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
-Batch outcome: the discussions write owner and its tests are named for content
-lifecycle behavior rather than `Crud`, with the stable context facade
-unchanged.
-Next action: run the focused baseline suite, then rename the owner and test to
-the validated `ContentLifecycle` responsibility.
-Owned paths:
-
-- `lib/product_compare/discussions/crud.ex`
-- `lib/product_compare/discussions.ex`
-- `test/product_compare/discussions/thread_crud_test.exs`
-- `docs/work/discussion-content-lifecycle.md`
-- affected active documentation references
-
-Internal slices:
-
-- Responsibility characterization.
-- Module, file, alias, and test naming change.
-- Active `Crud` naming absence check.
-
-Prerequisites:
-
-- No active row owns the discussions facade, write owner, or focused test.
-- The rename adds no compatibility alias or delegation layer.
-
-Verification:
-
-- discussions context and GraphQL suites
-- `mix typecheck`
-- `mix test`
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: active source and tests contain no `Crud`-named owner, the
-public discussions facade is unchanged, and all backend gates pass.
-
 ## Ready Work
 
 ### 9. Concurrency-Safe Write Audit
