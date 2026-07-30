@@ -1,8 +1,8 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation, useRelayEnvironment } from "react-relay";
+import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
-import loginMutation, { type LoginMutation } from "../../__generated__/LoginMutation.graphql";
+import type { LoginRouteMutation } from "../../__generated__/LoginRouteMutation.graphql";
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -13,11 +13,28 @@ import {
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
 
+const loginMutation = graphql`
+  mutation LoginRouteMutation($email: String!, $password: String!) {
+    login(email: $email, password: $password) {
+      viewer {
+        id
+        email
+        isOperator
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 export function LoginRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
-  const [commitLogin, isSubmitting] = useMutation<LoginMutation>(loginMutation);
+  const [commitLogin, isSubmitting] = useMutation<LoginRouteMutation>(loginMutation);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

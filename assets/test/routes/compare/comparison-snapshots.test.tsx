@@ -3,11 +3,13 @@ import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
-import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
+import {
+  publishComparisonSnapshotMutation,
+  revokeComparisonSnapshotMutation,
+  ShareComparisonControl
+} from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
 import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";
-import publishComparisonSnapshotMutation from "../../../src/routes/compare/queries/PublishComparisonSnapshotMutation";
-import revokeComparisonSnapshotMutation from "../../../src/routes/compare/queries/RevokeComparisonSnapshotMutation";
 
 const {
   fetchRouteQueryMock,

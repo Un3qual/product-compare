@@ -90,18 +90,18 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Produces: operations colocated with their sole execution owner, while
   genuinely shared queries/fragments retain dedicated modules.
 
-- [ ] Build an import-graph inventory of every authored Relay operation and
+- [x] Build an import-graph inventory of every authored Relay operation and
   classify zero-, one-, and multi-consumer documents.
-- [ ] Add focused dependency-boundary tests that fail for single-consumer
+- [x] Add focused dependency-boundary tests that fail for single-consumer
   mutation-only modules but permit shared documents.
-- [ ] Move each single-consumer mutation literal into its route/component/action
+- [x] Move each single-consumer mutation literal into its route/component/action
   owner and delete the empty operation module; do not merge unrelated route
   logic.
-- [ ] Keep generated artifacts generated, update imports and tests, and verify
+- [x] Keep generated artifacts generated, update imports and tests, and verify
   Relay compiler stability.
-- [ ] Run Relay validation, TypeScript, focused route tests, the full frontend
+- [x] Run Relay validation, TypeScript, focused route tests, the full frontend
   unit suite, both production builds, bundle checks, and `git diff --check`.
-- [ ] Commit with `refactor: colocate relay mutations with owners`.
+- [x] Commit with `refactor: colocate relay mutations with owners`.
 
 ### Task 3: Rename Persistence-Verb Domain Owners
 

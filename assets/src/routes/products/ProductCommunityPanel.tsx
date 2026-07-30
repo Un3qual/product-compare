@@ -9,23 +9,20 @@ import {
   useState
 } from "react";
 import { props } from "@stylexjs/stylex";
-import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
-import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
+import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
+import type { ProductCommunityPanelAnswerProductQuestionMutation } from "../../__generated__/ProductCommunityPanelAnswerProductQuestionMutation.graphql";
+import type { ProductCommunityPanelAskProductQuestionMutation } from "../../__generated__/ProductCommunityPanelAskProductQuestionMutation.graphql";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
 import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
-import type { SubmitProductReviewMutation } from "../../__generated__/SubmitProductReviewMutation.graphql";
+import type { ProductCommunityPanelSubmitProductReviewMutation } from "../../__generated__/ProductCommunityPanelSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
 import { productCommunityStyles as styles } from "./product-community-styles";
-import answerProductQuestionMutation from "./queries/AnswerProductQuestionMutation";
-import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
 import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
-import submitProductReviewMutation from "./queries/SubmitProductReviewMutation";
 import {
   appendUniqueCommunityItems,
   buildProductAnswerInput,
@@ -37,6 +34,54 @@ import {
   resolveProductQuestionMutationMessage,
   resolveProductReviewMutationMessage
 } from "./product-community-data";
+
+export const answerProductQuestionMutation = graphql`
+  mutation ProductCommunityPanelAnswerProductQuestionMutation($input: AnswerProductQuestionInput!) {
+    answerProductQuestion(input: $input) {
+      answer {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const askProductQuestionMutation = graphql`
+  mutation ProductCommunityPanelAskProductQuestionMutation($input: AskProductQuestionInput!) {
+    askProductQuestion(input: $input) {
+      question {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const submitProductReviewMutation = graphql`
+  mutation ProductCommunityPanelSubmitProductReviewMutation($input: SubmitProductReviewInput!) {
+    submitProductReview(input: $input) {
+      review {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
@@ -192,7 +237,7 @@ function ReviewSection({
   reviews: readonly Review[];
   summary: CommunityProduct["reviewSummary"];
 }) {
-  const [commitReview, pending] = useMutation<SubmitProductReviewMutation>(submitProductReviewMutation);
+  const [commitReview, pending] = useMutation<ProductCommunityPanelSubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
   const ratingId = useId();
   const submissionKey = useSubmissionKey();
@@ -242,7 +287,7 @@ function QuestionSection({
   productId: string;
   questions: readonly Question[];
 }) {
-  const [commitQuestion, pending] = useMutation<AskProductQuestionMutation>(askProductQuestionMutation);
+  const [commitQuestion, pending] = useMutation<ProductCommunityPanelAskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
   const submissionKey = useSubmissionKey();
 
@@ -334,7 +379,7 @@ function AdditionalAnswers({
 }
 
 function AnswerForm({ questionId }: { questionId: string }) {
-  const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
+  const [commitAnswer, pending] = useMutation<ProductCommunityPanelAnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
   const submissionKey = useSubmissionKey();
 

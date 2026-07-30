@@ -2,10 +2,8 @@ import { Suspense, type ReactNode, useRef, useState } from "react";
 import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as TabsTrigger } from "@radix-ui/react-tabs";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
-import createSavedComparisonSetMutation, {
-  type CreateSavedComparisonSetMutation
-} from "../../__generated__/CreateSavedComparisonSetMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { CompareRouteCreateSavedComparisonSetMutation } from "../../__generated__/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
@@ -40,6 +38,21 @@ import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome
 } from "./saved-comparison-mutation-data";
+
+const createSavedComparisonSetMutation = graphql`
+  mutation CompareRouteCreateSavedComparisonSetMutation($input: CreateSavedComparisonSetInput!) {
+    createSavedComparisonSet(input: $input) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   tabList: {
@@ -93,7 +106,7 @@ function CompareSelectionRoute({
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<CreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+    useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
 
   function handleSave() {
     if (loaderData.status !== "ready") {

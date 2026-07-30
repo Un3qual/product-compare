@@ -1,9 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation } from "react-relay";
-import forgotPasswordMutation, {
-  type ForgotPasswordMutation
-} from "../../__generated__/ForgotPasswordMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { ForgotPasswordRouteMutation } from "../../__generated__/ForgotPasswordRouteMutation.graphql";
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -15,6 +13,19 @@ import {
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
+const forgotPasswordMutation = graphql`
+  mutation ForgotPasswordRouteMutation($email: String!) {
+    forgotPassword(email: $email) {
+      ok
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 const successMessage =
   "If an account exists for that email, reset instructions are on the way.";
 
@@ -22,7 +33,7 @@ export function ForgotPasswordRoute() {
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [message, setMessage] = useState<string | null>(null);
   const [commitForgotPassword, isSubmitting] =
-    useMutation<ForgotPasswordMutation>(forgotPasswordMutation);
+    useMutation<ForgotPasswordRouteMutation>(forgotPasswordMutation);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

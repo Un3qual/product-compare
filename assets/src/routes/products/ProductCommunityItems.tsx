@@ -1,11 +1,11 @@
 import { type FormEvent, type ReactNode, useState } from "react";
 import { props } from "@stylexjs/stylex";
-import { useMutation } from "react-relay";
+import { graphql, useMutation } from "react-relay";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
-import type { RemoveCommunityContentMutation } from "../../__generated__/RemoveCommunityContentMutation.graphql";
-import type { UpdateProductAnswerMutation } from "../../__generated__/UpdateProductAnswerMutation.graphql";
-import type { UpdateProductQuestionMutation } from "../../__generated__/UpdateProductQuestionMutation.graphql";
-import type { UpdateProductReviewMutation } from "../../__generated__/UpdateProductReviewMutation.graphql";
+import type { ProductCommunityItemsRemoveCommunityContentMutation } from "../../__generated__/ProductCommunityItemsRemoveCommunityContentMutation.graphql";
+import type { ProductCommunityItemsUpdateProductAnswerMutation } from "../../__generated__/ProductCommunityItemsUpdateProductAnswerMutation.graphql";
+import type { ProductCommunityItemsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityItemsUpdateProductQuestionMutation.graphql";
+import type { ProductCommunityItemsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityItemsUpdateProductReviewMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../route-errors";
@@ -18,10 +18,73 @@ import {
   resolveProductReviewUpdateMessage
 } from "./product-community-data";
 import { productCommunityStyles as styles } from "./product-community-styles";
-import removeCommunityContentMutation from "./queries/RemoveCommunityContentMutation";
-import updateProductAnswerMutation from "./queries/UpdateProductAnswerMutation";
-import updateProductQuestionMutation from "./queries/UpdateProductQuestionMutation";
-import updateProductReviewMutation from "./queries/UpdateProductReviewMutation";
+
+export const removeCommunityContentMutation = graphql`
+  mutation ProductCommunityItemsRemoveCommunityContentMutation($input: RemoveCommunityContentInput!) {
+    removeCommunityContent(input: $input) {
+      removedContentId
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductAnswerMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductAnswerMutation($input: UpdateProductAnswerInput!) {
+    updateProductAnswer(input: $input) {
+      answer {
+        id
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductQuestionMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductQuestionMutation($input: UpdateProductQuestionInput!) {
+    updateProductQuestion(input: $input) {
+      question {
+        id
+        title
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductReviewMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductReviewMutation($input: UpdateProductReviewInput!) {
+    updateProductReview(input: $input) {
+      review {
+        id
+        rating
+        title
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 type CommunityProduct = NonNullable<ProductCommunityQuery["response"]["product"]>;
 type Review = CommunityProduct["reviews"]["edges"][number]["node"];
@@ -178,7 +241,7 @@ function useCommunityItemState() {
 type CommunityItemState = ReturnType<typeof useCommunityItemState>;
 
 function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductReviewMutation>(updateProductReviewMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductReviewMutation>(updateProductReviewMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -205,7 +268,7 @@ function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityIte
 }
 
 function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductQuestionMutation>(updateProductQuestionMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductQuestionMutation>(updateProductQuestionMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -231,7 +294,7 @@ function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: Com
 }
 
 function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductAnswerMutation>(updateProductAnswerMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductAnswerMutation>(updateProductAnswerMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -360,7 +423,7 @@ function RemoveCommunityControl({
   label: CommunityContentLabel;
   onRemoved: () => void;
 }) {
-  const [commitRemove, pending] = useMutation<RemoveCommunityContentMutation>(removeCommunityContentMutation);
+  const [commitRemove, pending] = useMutation<ProductCommunityItemsRemoveCommunityContentMutation>(removeCommunityContentMutation);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 

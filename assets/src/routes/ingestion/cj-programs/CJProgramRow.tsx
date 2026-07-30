@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useRevalidator } from "react-router-dom";
 import {
+  graphql,
   useMutation,
   usePreloadedQuery,
   useQueryLoader,
@@ -12,8 +13,7 @@ import cjProgramFeedsQuery, {
   type CJProgramFeedsQuery
 } from "../../../__generated__/CJProgramFeedsQuery.graphql";
 import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
-import type { UpdateCJProgramMutation } from "../../../__generated__/UpdateCJProgramMutation.graphql";
-import updateCJProgramMutation from "../../../__generated__/UpdateCJProgramMutation.graphql";
+import type { CJProgramRowUpdateCJProgramMutation } from "../../../__generated__/CJProgramRowUpdateCJProgramMutation.graphql";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import {
   Collapsible,
@@ -33,6 +33,18 @@ import {
 import { CJFeedRow } from "./CJFeedRow";
 
 type CJProgram = CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"];
+
+const updateCJProgramMutation = graphql`
+  mutation CJProgramRowUpdateCJProgramMutation($input: UpdateCjProgramInput!) {
+    updateCjProgram(input: $input) {
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   item: {
@@ -119,7 +131,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const [feedRetryToken, setFeedRetryToken] = useState(0);
   const hasLoadedFeeds = useRef(false);
   const revalidator = useRevalidator();
-  const [commitUpdate, isUpdateInFlight] = useMutation<UpdateCJProgramMutation>(
+  const [commitUpdate, isUpdateInFlight] = useMutation<CJProgramRowUpdateCJProgramMutation>(
     updateCJProgramMutation
   );
   const [feedQueryRef, loadFeedQuery, disposeFeedQuery] = useQueryLoader<CJProgramFeedsQuery>(

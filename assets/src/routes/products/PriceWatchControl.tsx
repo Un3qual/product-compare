@@ -1,12 +1,11 @@
 import { type FormEvent, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { useMutation } from "react-relay";
-import type { CreatePriceWatchMutation } from "../../__generated__/CreatePriceWatchMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { PriceWatchControlCreatePriceWatchMutation } from "../../__generated__/PriceWatchControlCreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
-import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
 import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
@@ -14,6 +13,27 @@ import {
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
+
+const createPriceWatchMutation = graphql`
+  mutation PriceWatchControlCreatePriceWatchMutation($input: CreatePriceWatchInput!) {
+    createPriceWatch(input: $input) {
+      watch {
+        id
+        productName
+        ruleType
+        currency
+        targetAmount
+        percentageDrop
+        enabled
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   details: {
@@ -44,7 +64,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const ruleId = useId();
   const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
   const [message, setMessage] = useState<string | null>(null);
-  const [commitCreate, mutationPending] = useMutation<CreatePriceWatchMutation>(createPriceWatchMutation);
+  const [commitCreate, mutationPending] = useMutation<PriceWatchControlCreatePriceWatchMutation>(createPriceWatchMutation);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

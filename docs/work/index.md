@@ -332,49 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Frontend Relay Work
-
-### 7. Colocate Single-Consumer Relay Operations
-
-Status: active
-Lane: Frontend Relay ownership
-Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
-Batch outcome: GraphQL mutations used by one route or component are colocated
-with that execution owner; dedicated operation files remain only for genuinely
-shared documents.
-Next action: generate the authored-operation import graph and add the failing
-single-consumer mutation-module boundary test.
-Owned paths:
-
-- `assets/src/routes/**`
-- affected `assets/test/routes/**`
-- affected `assets/src/__generated__/**`
-- a focused authored Relay operation ownership test
-- `docs/work/frontend-relay-operation-ownership.md`
-
-Internal slices:
-
-- Zero-, one-, and multi-consumer operation inventory.
-- Auth, account, affiliate, comparison, offer, community, and ingestion
-  mutation colocation.
-- Generated artifact and import cleanup.
-
-Prerequisites:
-
-- No active row owns authored frontend route or Relay operation files.
-- The existing Relay compiler remains the only artifact generator.
-
-Verification:
-
-- focused operation-ownership and affected route tests
-- Relay validation and TypeScript
-- full frontend unit suite, client/SSR builds, and bundle checks
-- `git diff --check`
-
-Exit condition: no authored one-export file exists solely for a
-single-consumer mutation, shared operations remain explicit, and every
-frontend gate passes.
-
 ## Ready Work
 
 ### 8. Rename Discussion Content Ownership

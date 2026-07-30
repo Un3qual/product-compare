@@ -1,10 +1,8 @@
 import type { FormEvent } from "react";
 import { useEffect, useRef, useState } from "react";
-import { useMutation } from "react-relay";
+import { graphql, useMutation } from "react-relay";
 import { useSearchParams } from "react-router-dom";
-import resetPasswordMutation, {
-  type ResetPasswordMutation
-} from "../../__generated__/ResetPasswordMutation.graphql";
+import type { ResetPasswordRouteMutation } from "../../__generated__/ResetPasswordRouteMutation.graphql";
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {
@@ -21,6 +19,19 @@ import {
 } from "./reset-password-data";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
+const resetPasswordMutation = graphql`
+  mutation ResetPasswordRouteMutation($token: String!, $password: String!) {
+    resetPassword(token: $token, password: $password) {
+      ok
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
   const token = normalizeResetPasswordToken(searchParams.get("token"));
@@ -30,7 +41,7 @@ export function ResetPasswordRoute() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeRequestVersion = useRef(0);
-  const [commitResetPassword] = useMutation<ResetPasswordMutation>(resetPasswordMutation);
+  const [commitResetPassword] = useMutation<ResetPasswordRouteMutation>(resetPasswordMutation);
 
   useEffect(() => {
     // Bump the active request marker so late responses from an older token do not

@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
-import { useMutation } from "react-relay";
-import type { TrackCommerceClickMutation } from "../../__generated__/TrackCommerceClickMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { TrackedCommerceClickActionMutation } from "../../__generated__/TrackedCommerceClickActionMutation.graphql";
 import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
 import { Button } from "../../ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
@@ -10,7 +10,19 @@ import {
   shouldTrackCommerceClick,
   trackedMerchantProductHref
 } from "./tracked-commerce-click-data";
-import { trackCommerceClickMutation } from "./mutations/TrackCommerceClickMutation";
+
+export const trackCommerceClickMutation = graphql`
+  mutation TrackedCommerceClickActionMutation($input: TrackCommerceClickInput!) {
+    trackCommerceClick(input: $input) {
+      redirectPath
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 export function TrackedCommerceClickAction({
   label,
@@ -20,7 +32,7 @@ export function TrackedCommerceClickAction({
   merchantProductId: string;
 }) {
   const [commitTrackCommerceClick, isPending] =
-    useMutation<TrackCommerceClickMutation>(trackCommerceClickMutation);
+    useMutation<TrackedCommerceClickActionMutation>(trackCommerceClickMutation);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const graphQLEndpoint = resolveGraphQLEndpoint();
 
