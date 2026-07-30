@@ -38,21 +38,20 @@ For the operating rules, prompt templates, and handoff format, read
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
-## Active Work
+## Completed 2026-07-30 Database Domain Types
 
 Updated: 2026-07-30
 
 ### 1. Native PostgreSQL Enum Storage
 
-Status: active
+Status: complete
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: The 28 approved code-owned categorical columns use 25
 context-specific native PostgreSQL enum types, and affected Ecto schemas load
 atoms without relying on `varchar`, `text`, or duplicated `IN (...)`
 constraints.
-Next action: add the failing physical-storage inventory test, rebuild the test
-database, and convert the owned migration columns and raw string schemas.
+Next action: none; milestone committed as `b2020f09`.
 Owned paths:
 
 - `priv/repo/migrations/20260303222607_init_extensions.exs`
@@ -106,11 +105,11 @@ Exit condition: all 28 inventoried columns report the expected native enum
 `udt_name`, focused and full suites pass, and the milestone is committed with
 three ready successors still available.
 
-## Ready Work
+## Active Work
 
 ### 2. Commerce Reference Domains
 
-Status: ready
+Status: active
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Currencies and affiliate lifecycle/network identities are
@@ -164,9 +163,11 @@ Exit condition: every approved commerce reference field is a foreign key,
 duplicated network storage is absent, public codes are preserved, and all gates
 pass.
 
+## Dependent Work
+
 ### 3. Source and Provider Reference Domains
 
-Status: ready
+Status: dependent
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Source kinds, providers, provider surfaces, feed types,
@@ -200,7 +201,8 @@ Internal slices:
 
 Prerequisites:
 
-- No active row owns the same migration or schema paths.
+- Commerce Reference Domains is complete and owns the canonical currency
+  reference consumed by this batch.
 - Unknown provider values stay only in raw evidence and do not become
   normalized rows without an explicit controlled mapping.
 
@@ -222,7 +224,7 @@ pass.
 
 ### 4. Redundant and Unsafe Discriminator Removal
 
-Status: ready
+Status: dependent
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Reputation events use controlled event types and explicit
@@ -258,7 +260,8 @@ Internal slices:
 
 Prerequisites:
 
-- No active row owns the same migration or schema paths.
+- Commerce Reference Domains releases its overlapping alert migration and
+  schema paths.
 - Add explicit reputation subject foreign keys only for concrete producers;
   do not replace `ref_table` with another polymorphic discriminator.
 
@@ -275,6 +278,134 @@ Verification:
 Exit condition: the absence/reference inventory passes, idempotency and
 moderation behavior remain intact, migration history never creates transient
 categorical strings, and all gates pass.
+
+## Ready Work
+
+### 5. pnpm, mise, Rolldown, and Oxc Toolchain
+
+Status: ready
+Lane: Frontend platform
+Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
+Batch outcome: mise owns repository runtime versions, pnpm owns frontend
+dependencies, Vite builds through Rolldown, Oxc supplies compatible fast static
+checks, StyleX remains intact, and no active Bun/Nix contract remains.
+Next action: inventory active Bun/Nix/tool-version references and add the
+failing repository toolchain contract test.
+Owned paths:
+
+- `.mise.toml`
+- `flake.nix`
+- `flake.lock`
+- `assets/package.json`
+- `assets/bun.lock`
+- `assets/bunfig.toml`
+- `assets/pnpm-lock.yaml`
+- `assets/vite.config.ts`
+- `assets/stylex-plugin.ts`
+- active CI, Mix alias, script, README, and work-doc commands that execute Bun
+
+Internal slices:
+
+- Runtime and package-manager ownership.
+- pnpm lockfile and active command conversion.
+- Rolldown-backed Vite build adoption.
+- Oxc checks with the StyleX Babel transform preserved.
+
+Prerequisites:
+
+- No active row owns frontend dependency, build, or runtime configuration.
+- Package installation can resolve the pinned compatible dependency graph.
+
+Verification:
+
+- frozen pnpm install and repository toolchain contract test
+- Relay validation, TypeScript, frontend unit tests, client/SSR builds, and
+  bundle checks
+- backend integration gates
+- `git diff --check`
+
+Exit condition: all active frontend commands run through pnpm/mise, no Bun/Nix
+contract remains, Rolldown/Oxc are exercised by gates, StyleX output is
+preserved, and full verification passes.
+
+### 6. Colocate Single-Consumer Relay Operations
+
+Status: ready
+Lane: Frontend Relay ownership
+Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
+Batch outcome: GraphQL mutations used by one route or component are colocated
+with that execution owner; dedicated operation files remain only for genuinely
+shared documents.
+Next action: generate the authored-operation import graph and add the failing
+single-consumer mutation-module boundary test.
+Owned paths:
+
+- `assets/src/routes/**`
+- affected `assets/test/routes/**`
+- affected `assets/src/__generated__/**`
+- a focused authored Relay operation ownership test
+
+Internal slices:
+
+- Zero-, one-, and multi-consumer operation inventory.
+- Auth, account, affiliate, comparison, offer, community, and ingestion
+  mutation colocation.
+- Generated artifact and import cleanup.
+
+Prerequisites:
+
+- No active row owns authored frontend route or Relay operation files.
+- The existing Relay compiler remains the only artifact generator.
+
+Verification:
+
+- focused operation-ownership and affected route tests
+- Relay validation and TypeScript
+- full frontend unit suite, client/SSR builds, and bundle checks
+- `git diff --check`
+
+Exit condition: no authored one-export file exists solely for a
+single-consumer mutation, shared operations remain explicit, and every
+frontend gate passes.
+
+### 7. Rename Discussion Content Ownership
+
+Status: ready
+Lane: Backend naming
+Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
+Batch outcome: the discussions write owner and its tests are named for content
+lifecycle behavior rather than `Crud`, with the stable context facade
+unchanged.
+Next action: characterize the existing discussions owner and select the
+narrowest behavior-oriented module name from its live responsibilities.
+Owned paths:
+
+- `lib/product_compare/discussions/crud.ex`
+- `lib/product_compare/discussions.ex`
+- `test/product_compare/discussions/thread_crud_test.exs`
+- affected active documentation references
+
+Internal slices:
+
+- Responsibility characterization.
+- Module, file, alias, and test naming change.
+- Active `Crud` naming absence check.
+
+Prerequisites:
+
+- No active row owns the discussions facade, write owner, or focused test.
+- The rename adds no compatibility alias or delegation layer.
+
+Verification:
+
+- discussions context and GraphQL suites
+- `mix typecheck`
+- `mix test`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: active source and tests contain no `Crud`-named owner, the
+public discussions facade is unchanged, and all backend gates pass.
 
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier

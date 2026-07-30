@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-- Last verified: 2026-07-30 against the current migrations, Ecto schemas, and persistence callers.
+- Last verified: 2026-07-30 after native-enum milestone commit `b2020f09`.
 
 ## Target Outcome
 
@@ -15,7 +15,7 @@ redundant. Application-owned comparison and alert facts are normalized out of
 JSON, while provider-owned raw evidence remains verbatim and is never used as
 normalized domain state.
 
-## Active Batch
+## Completed Batch
 
 - Native PostgreSQL enum storage for the 28 approved closed-domain columns.
 - Physical storage is verified through `information_schema`, not inferred from
@@ -23,20 +23,22 @@ normalized domain state.
 - Existing lifecycle, transaction, GraphQL, and query behavior remains covered
   by the focused context suites.
 
-## Ready Successors
+## Active Batch
 
 - Commerce reference domains: currencies, affiliate program statuses, and
   affiliate networks.
-- Source and provider reference domains: source kinds, providers, surfaces,
-  feed types, countries, languages, and candidate currencies.
-- Redundant and unsafe discriminator removal: reputation reference strings,
-  unused formula/failure fields, single-value kinds, duplicate receipt kinds,
-  and transient feed-review strings.
+- Seven operational currency columns become references to controlled currency
+  rows.
+- Affiliate program status and conversion network identity become references;
+  duplicated commerce-link network storage is removed.
 
-## Dependent Successor
+## Dependent Successors
 
+- Source/provider reference domains consume the canonical currency reference.
+- Redundant discriminator removal waits for overlapping alert paths to be
+  released.
 - Application-owned comparison snapshot and alert fact JSON normalization
-  follows the native enum and reference-domain milestones.
+  follows the reference-domain milestones.
 
 ## Verification
 
