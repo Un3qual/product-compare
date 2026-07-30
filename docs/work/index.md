@@ -40,7 +40,18 @@ For the operating rules, prompt templates, and handoff format, read
 
 ## Current Queue
 
-Updated: 2026-07-24
+Updated: 2026-07-27
+
+No active or ready implementation rows remain.
+
+Ranked Catalog Search completed on 2026-07-27. Its application-maintained
+search document, indexed candidate-product selection, exact seven-tier
+predicate and ranking, GraphQL and metadata parity, Relay pagination, and
+canonical frontend URL state are complete. The user's one-time 2026-07-27
+reserve-floor waiver remains limited to this outcome. The unchanged validator's
+exact `Ready Work requires at least 3 complete rows; found 0` result is the sole
+waived outcome; no completed, deferred, or speculative work was promoted as
+filler.
 
 The 2026-06-29 usable-product batch is complete. It moved the shopper decision
 loop forward across product browse cards, product detail actions, compare
@@ -2077,9 +2088,9 @@ Reach passes, and the full repository gate passes.
 
 ## Ready Work
 
-Ready-row count: 0. The CJ Program Lifecycle batch is complete. Fresh
-source-backed candidate validation requires a new product or quality decision.
-The validator remains unchanged under the approved one-time waiver:
+Ready-row count: 0. Ranked Catalog Search is complete. Fresh source-backed
+candidate validation requires a new product or quality decision. The validator
+remains unchanged under the approved one-time waiver:
 `Ready Work requires at least 3 complete rows; found 0`.
 
 ## Completed 2026-07-20 Cross-Stack Work

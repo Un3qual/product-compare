@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<82e28577ee209f01893bd8b0c9afc9f4>>
+ * @generated SignedSource<<1949c55116e37c94c3efb99f06a15ca6>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,7 +9,7 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type ProductSort = "BRAND_NAME_ASC" | "ID_ASC" | "NAME_ASC" | "NEWEST" | "%future added value";
+export type ProductSort = "BRAND_NAME_ASC" | "ID_ASC" | "NAME_ASC" | "NEWEST" | "RELEVANCE" | "%future added value";
 export type ProductFiltersInput = {
   booleans?: ReadonlyArray<ProductBooleanFilterInput> | null | undefined;
   enums?: ReadonlyArray<ProductEnumFilterInput> | null | undefined;

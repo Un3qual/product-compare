@@ -329,6 +329,106 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
       assert count_select_queries_targeting_table(queries, :products) == 0
     end
 
+    test "result count and product connection share the complete search and filter result set", %{
+      conn: conn
+    } do
+      moderator = AccountsFixtures.user_fixture()
+      type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+      monitor_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("gql-filter-parity-monitor"),
+          name: "Monitor"
+        })
+
+      laptop_taxon =
+        TaxonomyFixtures.taxon_fixture(%{
+          taxonomy_id: type_taxonomy.id,
+          code: unique_code("gql-filter-parity-laptop"),
+          name: "Laptop"
+        })
+
+      {:ok, matching_brand} =
+        ProductCompare.Catalog.upsert_brand(%{name: unique_code("Asterion Instruments")})
+
+      {refresh_rate_attribute, hz_unit} = numeric_attribute_with_unit_fixture()
+
+      matching =
+        SpecsFixtures.product_fixture(%{
+          brand_id: matching_brand.id,
+          name: "Helios Drafting Display",
+          slug: unique_code("gql-filter-parity-match"),
+          description: "A mechanical studio reference.",
+          primary_type_taxon: monitor_taxon
+        })
+
+      wrong_type =
+        SpecsFixtures.product_fixture(%{
+          brand_id: matching_brand.id,
+          name: "Helios Drafting Laptop",
+          slug: unique_code("gql-filter-parity-wrong-type"),
+          description: "A mechanical studio reference.",
+          primary_type_taxon: laptop_taxon
+        })
+
+      outside_range =
+        SpecsFixtures.product_fixture(%{
+          brand_id: matching_brand.id,
+          name: "Helios Drafting Slow Display",
+          slug: unique_code("gql-filter-parity-outside-range"),
+          description: "A mechanical studio reference.",
+          primary_type_taxon: monitor_taxon
+        })
+
+      no_query_match =
+        SpecsFixtures.product_fixture(%{
+          name: "Unrelated Office Display",
+          slug: unique_code("gql-filter-parity-no-query"),
+          description: "A conventional productivity panel.",
+          primary_type_taxon: monitor_taxon
+        })
+
+      for {product, refresh_rate} <- [
+            {matching, "144"},
+            {wrong_type, "144"},
+            {outside_range, "60"},
+            {no_query_match, "144"}
+          ] do
+        product
+        |> accept_claim!(
+          refresh_rate_attribute,
+          %{value_num: Decimal.new(refresh_rate), unit_id: hz_unit.id},
+          moderator
+        )
+        |> select_current_claim!(product, refresh_rate_attribute, moderator)
+      end
+
+      filters = %{
+        "query" => "Asterion Helios mechanical",
+        "primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id),
+        "numeric" => [
+          %{
+            "attributeId" => relay_id(:attribute, refresh_rate_attribute.id),
+            "min" => "120",
+            "max" => "180"
+          }
+        ]
+      }
+
+      assert %{
+               "data" => %{
+                 "products" => %{
+                   "edges" => [%{"node" => %{"id" => matching_id, "slug" => matching_slug}}]
+                 },
+                 "productFilterMetadata" => %{"resultCount" => 1}
+               }
+             } = graphql(conn, product_result_set_parity_query(), %{"filters" => filters})
+
+      assert matching_id == relay_id(:product, matching.id)
+      assert matching_slug == matching.slug
+    end
+
     test "productFilterMetadata direct no-loader fallback preserves normalized selected state" do
       type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
 
@@ -412,6 +512,24 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
             disabled
           }
         }
+      }
+    }
+    """
+  end
+
+  defp product_result_set_parity_query do
+    """
+    query ProductResultSetParity($filters: ProductFiltersInput!) {
+      products(first: 12, filters: $filters) {
+        edges {
+          node {
+            id
+            slug
+          }
+        }
+      }
+      productFilterMetadata(filters: $filters) {
+        resultCount
       }
     }
     """

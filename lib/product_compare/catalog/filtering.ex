@@ -5,8 +5,8 @@ defmodule ProductCompare.Catalog.Filtering do
 
   import Ecto.Query
 
+  alias ProductCompare.Catalog.Search
   alias ProductCompare.Input
-  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
@@ -34,51 +34,29 @@ defmodule ProductCompare.Catalog.Filtering do
 
   @spec apply_filters_except(Ecto.Queryable.t(), map(), term()) :: Ecto.Query.t()
   def apply_filters_except(base_query \\ Product, filters, omitted_group) do
+    search_query = Map.get(filters, :query)
+
     base_query
     |> from(as: :product)
-    |> maybe_apply_text_search(filters)
+    |> Search.apply_match(search_query)
     |> maybe_apply_primary_type_filter(filters, omitted_group)
     |> apply_numeric_filters(filters_for_group(filters, :numeric, omitted_group))
     |> apply_bool_filters(filters_for_group(filters, :booleans, omitted_group))
     |> apply_enum_filters(filters_for_group(filters, :enums, omitted_group))
     |> maybe_apply_use_case_filter(filters, omitted_group)
-    |> apply_sort(Map.get(filters, :sort))
+    |> apply_sort(Map.get(filters, :sort), search_query)
   end
 
-  defp maybe_apply_text_search(query, filters) do
-    case Map.get(filters, :query) do
-      value when is_binary(value) and value != "" ->
-        pattern = "%#{escape_like_pattern(value)}%"
+  defp apply_sort(query, sort, search_query)
+       when sort in [nil, :relevance] and is_binary(search_query) and search_query != "",
+       do: Search.order_by_relevance(query, search_query)
 
-        query
-        |> ensure_brand_join()
-        |> where(
-          [product: product, brand: brand],
-          ilike(product.name, ^pattern) or
-            ilike(product.slug, ^pattern) or
-            ilike(product.model_number, ^pattern) or
-            ilike(product.description, ^pattern) or
-            ilike(brand.name, ^pattern)
-        )
-
-      _other ->
-        query
-    end
-  end
-
-  defp escape_like_pattern(value) do
-    value
-    |> String.replace("\\", "\\\\")
-    |> String.replace("%", "\\%")
-    |> String.replace("_", "\\_")
-  end
-
-  defp apply_sort(query, :name_asc),
+  defp apply_sort(query, :name_asc, _search_query),
     do: order_by(query, [product: product], asc: product.name, asc: product.id)
 
-  defp apply_sort(query, :brand_name_asc) do
+  defp apply_sort(query, :brand_name_asc, _search_query) do
     query
-    |> ensure_brand_join()
+    |> Search.ensure_brand_join()
     |> order_by(
       [product: product, brand: brand],
       asc: brand.name,
@@ -87,22 +65,11 @@ defmodule ProductCompare.Catalog.Filtering do
     )
   end
 
-  defp apply_sort(query, :newest),
+  defp apply_sort(query, :newest, _search_query),
     do: order_by(query, [product: product], desc: product.inserted_at, desc: product.id)
 
-  defp apply_sort(query, _sort),
+  defp apply_sort(query, _sort, _search_query),
     do: order_by(query, [product: product], asc: product.id)
-
-  defp ensure_brand_join(query) do
-    if has_named_binding?(query, :brand) do
-      query
-    else
-      join(query, :left, [product: product], brand in Brand,
-        on: brand.id == product.brand_id,
-        as: :brand
-      )
-    end
-  end
 
   defp maybe_apply_primary_type_filter(query, _filters, :primary_type), do: query
 

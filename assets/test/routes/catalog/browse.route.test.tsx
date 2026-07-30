@@ -683,7 +683,7 @@ test("browse loader bounds search text and drops unsupported sort values", async
   const request = new Request(
     `https://app.example.com/products?q=${"a".repeat(120)}&sort=POPULARITY`
   );
-  const expectedFilters = { query: boundedQuery };
+  const expectedFilters = { query: boundedQuery, sort: "RELEVANCE" as const };
 
   mockSuccessfulBrowseLoaderFetches({
     productDescriptor: browseQueryDescriptorFromVariables({
@@ -702,6 +702,63 @@ test("browse loader bounds search text and drops unsupported sort values", async
     environment,
     expect.anything(),
     { first: 12, filters: expectedFilters },
+    { signal: request.signal }
+  );
+  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
+});
+
+test.each<{
+  expectedFilters?: BrowseProductsRouteQuery["variables"]["filters"];
+  search: string;
+}>([
+  {
+    search: "?q=oled",
+    expectedFilters: { query: "oled", sort: "RELEVANCE" }
+  },
+  {
+    search: "?q=oled&sort=RELEVANCE",
+    expectedFilters: { query: "oled", sort: "RELEVANCE" }
+  },
+  {
+    search: "?q=oled&sort=ID_ASC",
+    expectedFilters: { query: "oled", sort: "ID_ASC" }
+  },
+  {
+    search: "?sort=RELEVANCE"
+  },
+  {
+    search: "?q=oled&sort=UNKNOWN",
+    expectedFilters: { query: "oled", sort: "RELEVANCE" }
+  }
+])("browse loader normalizes contextual sort from $search", async ({ expectedFilters, search }) => {
+  const environment = createRelayEnvironment();
+  const request = new Request(`https://app.example.com/products${search}`);
+  const variables = {
+    first: 12,
+    ...(expectedFilters ? { filters: expectedFilters } : {})
+  };
+  const queryDescriptor = browseQueryDescriptorFromVariables(variables);
+
+  mockSuccessfulBrowseLoaderFetches({
+    productDescriptor: queryDescriptor
+  });
+
+  await expect(
+    browseLoader(buildBrowseLoaderArgs({ environment, request }))
+  ).resolves.toEqual(
+    readyBrowseLoaderData({
+      filters: expectedFilters
+        ? { ...emptyCatalogFilters, ...expectedFilters }
+        : emptyCatalogFilters,
+      query: queryDescriptor
+    })
+  );
+
+  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
+    1,
+    environment,
+    expect.anything(),
+    variables,
     { signal: request.signal }
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
@@ -1384,6 +1441,137 @@ test("omits the default catalog sort until an explicit sort is selected", () => 
 
   expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
 });
+
+test("shows but does not submit implicit relevance for an active search", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
+  expect(sortSelect).toHaveValue("RELEVANCE");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("hides relevance and selects catalog order without a search", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
+});
+
+test("submits explicit catalog order for an active search", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  fireEvent.change(sortSelect, { target: { value: "ID_ASC" } });
+
+  expect(new FormData(filterForm).get("sort")).toBe("ID_ASC");
+});
+
+test("defaults a newly entered search to relevance", () => {
+  renderBrowseRouteWithRelayData();
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const searchInput = within(filterForm).getByRole("searchbox", { name: "Search products" });
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  fireEvent.change(searchInput, { target: { value: "oled" } });
+
+  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
+  expect(sortSelect).toHaveValue("RELEVANCE");
+  expect(new FormData(filterForm).get("q")).toBe("oled");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("clearing an implicit relevance search restores catalog order", () => {
+  renderBrowseRouteWithRelayData({
+    initialEntries: ["/products?q=oled"],
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        query: "oled",
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const searchInput = within(filterForm).getByRole("searchbox", { name: "Search products" });
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(sortSelect).toHaveValue("RELEVANCE");
+
+  fireEvent.change(searchInput, { target: { value: "" } });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
+  expect(new FormData(filterForm).get("q")).toBe("");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test("normalizes relevance to catalog order when no search is present", () => {
+  renderBrowseRouteWithRelayData({
+    loaderData: readyBrowseLoaderData({
+      filters: {
+        ...emptyCatalogFilters,
+        sort: "RELEVANCE"
+      }
+    })
+  });
+
+  const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
+  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
+
+  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  expect(sortSelect).toHaveValue("ID_ASC");
+  expect(new FormData(filterForm).get("sort")).toBeNull();
+});
+
+test.each(["NAME_ASC", "BRAND_NAME_ASC", "NEWEST"] as const)(
+  "submits explicit %s unchanged for an active search",
+  (sort) => {
+    renderBrowseRouteWithRelayData({
+      initialEntries: [`/products?q=oled&sort=${sort}`],
+      loaderData: readyBrowseLoaderData({
+        filters: {
+          ...emptyCatalogFilters,
+          query: "oled",
+          sort
+        }
+      })
+    });
+
+    const filterForm = screen.getByRole("form", {
+      name: "Filter products"
+    }) as HTMLFormElement;
+
+    expect(new FormData(filterForm).get("sort")).toBe(sort);
+  }
+);
 
 test.each([
   { resultCount: 0, label: "No matching products" },
@@ -2068,6 +2256,59 @@ test("preserves search and sort through rendered pagination and compare links", 
   expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
     "href",
     "/products?first=24&q=oled&sort=NEWEST&slug=selected-product&slug=catalog-first"
+  );
+});
+
+test("omits normalized relevance from rendered pagination and compare links", () => {
+  const activeFilters = {
+    query: "oled",
+    sort: "RELEVANCE",
+    useCaseTaxonIds: ["use-gaming"],
+    numeric: [],
+    booleans: [],
+    enums: []
+  } as const;
+  const productFiltersInput = {
+    query: "oled",
+    sort: "RELEVANCE" as const,
+    useCaseTaxonIds: ["use-gaming"]
+  };
+
+  renderBrowseRouteWithRelayData({
+    initialEntries: [
+      "/products?first=24&q=oled&useCaseTaxonId=use-gaming&slug=selected-product"
+    ],
+    loaderData: readyBrowseLoaderData({
+      filters: activeFilters,
+      pageSize: 24,
+      query: browseQueryDescriptorFromVariables({
+        first: 24,
+        filters: productFiltersInput
+      }),
+      metadataQuery: filterMetadataQueryDescriptorFromVariables({
+        filters: productFiltersInput
+      })
+    }),
+    productData: buildBrowseProductsResponse({
+      endCursor: "cursor-next-page",
+      hasNextPage: true,
+      products: [
+        {
+          id: "product-1",
+          name: "Catalog First",
+          slug: "catalog-first"
+        }
+      ]
+    })
+  });
+
+  expect(screen.getByRole("link", { name: "Next products" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&useCaseTaxonId=use-gaming&after=cursor-next-page&slug=selected-product"
+  );
+  expect(screen.getByRole("link", { name: "Add Catalog First to compare" })).toHaveAttribute(
+    "href",
+    "/products?first=24&q=oled&useCaseTaxonId=use-gaming&slug=selected-product&slug=catalog-first"
   );
 });
 

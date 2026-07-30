@@ -1,4 +1,8 @@
-import { uniqueCatalogEnumFilters, type CatalogFilters } from "./filters";
+import {
+  catalogProductSortParam,
+  uniqueCatalogEnumFilters,
+  type CatalogFilters
+} from "./filters";
 import { nextRelayPageCursor } from "../relay-pagination";
 
 export function catalogBrowsePath(
@@ -71,14 +75,15 @@ export function buildCatalogBrowsePaginationData({
 
 export function catalogBrowseSearchWithNormalizedSort(
   search: string,
-  sort: CatalogFilters["sort"]
+  filters: Pick<CatalogFilters, "query" | "sort">
 ) {
   const params = new URLSearchParams(search);
+  const sortParam = catalogProductSortParam(filters);
 
   params.delete("sort");
 
-  if (sort) {
-    params.set("sort", sort);
+  if (sortParam) {
+    params.set("sort", sortParam);
   }
 
   return params.toString();
@@ -89,8 +94,10 @@ function appendCatalogFilterParams(params: URLSearchParams, filters: CatalogFilt
     params.set("q", filters.query);
   }
 
-  if (filters.sort) {
-    params.set("sort", filters.sort);
+  const sortParam = catalogProductSortParam(filters);
+
+  if (sortParam) {
+    params.set("sort", sortParam);
   }
 
   appendTypeFilterParams(params, filters);

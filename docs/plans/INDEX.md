@@ -14,13 +14,20 @@ of active and candidate plans, not the dispatch queue.
 
 ## Active Plan Catalog
 
-Start at `docs/work/index.md` for live dispatch status and ownership. The CJ
-Program Lifecycle outcome from
+Start at `docs/work/index.md` for live dispatch status and ownership.
+Ranked Catalog Search completed through
+`docs/superpowers/plans/2026-07-27-ranked-catalog-search.md` and
+`docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` under the
+user's explicit one-time 2026-07-27 reserve-floor waiver. The unchanged
+validator's exact `Ready Work requires at least 3 complete rows; found 0`
+result remains the sole waived outcome. The plan and design are retained only
+as completion history; neither is an active execution source.
+
+The CJ Program Lifecycle outcome from
 `docs/superpowers/plans/2026-07-25-cj-program-lifecycle-implementation-plan.md`
 completed under the user's explicit one-time 2026-07-25 reserve-floor waiver.
 It replaced per-feed review with one program-level lifecycle page. The queue
-now has no ready rows: the next dispatch requires a new product or quality
-decision, not a catalog candidate treated as active work. eBay fallback,
+has no ready reserve rows after ranked search completion. eBay fallback,
 application submission, Tier-3 scraping, and CSV export remain out of scope.
 
 The 2026-06-29 usable-product batch, the product filtering and in-depth comparison
@@ -424,6 +431,7 @@ coverage plus 1,507 frontend tests.
 
 Implementation plan references (non-dispatch):
 
+- `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
 - `docs/superpowers/plans/2026-07-21-bounded-authorized-node-graphql-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-alert-evaluation-market-reads-implementation-plan.md`
 - `docs/superpowers/plans/2026-07-21-bounded-comparison-root-graphql-reads-implementation-plan.md`
@@ -746,10 +754,18 @@ batch and should not be recreated or promoted.
 
 ## Completed Plan Archive
 
-Completed implementation plans stay in `docs/plans/` as dated reference files.
-Use the corresponding `docs/work/*.md` lane doc for completion evidence.
+Completed implementation plans stay as dated reference files in `docs/plans/`
+or `docs/superpowers/plans/`, matching the planning workflow that produced
+them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- 2026-07-27 Ranked Catalog Search:
+  `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` and
+  `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`. The lane
+  completed under its one-time reserve-floor waiver; the exact unchanged
+  validator result is
+  `Ready Work requires at least 3 complete rows; found 0`.
 
 - 2026-07-20 through 2026-07-21 bounded GraphQL and comparison evidence reads:
   merchant-offer connections, owner-private community submissions, public

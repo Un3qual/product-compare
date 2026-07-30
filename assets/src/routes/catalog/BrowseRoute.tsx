@@ -104,7 +104,7 @@ function BrowseProducts({
   const products = productConnection.edges.map(({ node }) => node);
   const currentCompareSearch = catalogBrowseSearchWithNormalizedSort(
     location.search,
-    activeFilters.sort
+    activeFilters
   );
   const browseRouteData = createBrowseRouteData({
     pathname: location.pathname,

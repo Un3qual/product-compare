@@ -2,12 +2,19 @@
 
 ## Snapshot
 
-- Status: done (catalog browse route data contract)
+- Status: done (ranked catalog search)
 - Priority: P1
 - Dispatch source of truth: `docs/work/index.md`
 - Lane context and status evidence: this file
-- Last verified: 2026-07-14 after final branch-review compare-limit fix
-  (69 focused tests)
+- Completed plan:
+  `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
+- Completed design:
+  `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md`
+- Claim gate: the user explicitly granted a one-time reserve-floor waiver on
+  2026-07-27 after three replenishment audits found only two other coherent
+  candidates.
+- Pre-ranked-search baseline: 96 focused backend and 86 focused catalog
+  frontend tests passed.
 - Recently completed usable-product plan:
   - `docs/plans/2026-06-29-product-catalog-decision-cards-implementation-plan.md`
 - Historical context:
@@ -530,3 +537,139 @@
 - `sed -n '1,220p' assets/src/router.tsx`
 - `sed -n '1,220p' assets/src/routes/root.tsx`
 - `rg -n "field :products" lib/product_compare_web/schema.ex`
+
+## Ranked Catalog Search Evidence
+
+- Status: done on 2026-07-27.
+- Plan: `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`.
+- Architecture:
+  - PostgreSQL owns hybrid matching through `pg_trgm` plus an
+    application-maintained, weighted `products.search_document` `tsvector`.
+  - Ordinary searches of at least three characters first derive a distinct
+    candidate-product-ID set through the validated-GTIN partial index;
+    GIN-backed product and brand contains, description, and full-text paths;
+    and immutable trigram-array overlap. The trigram candidate path applies
+    the exact `0.35` similarity boundary after the index-supported superset,
+    and brand candidates resolve products through `products_brand_idx`.
+    One- and two-character searches bypass that fan-out and apply the combined
+    predicate in one joined product query because trigram indexes cannot
+    selectively bound them.
+  - Queries containing quotes, standalone uppercase `OR`, or a `-term` at the
+    start of the query or after whitespace use PostgreSQL full text as the sole
+    membership authority. Raw exact, partial, trigram, identifier, and
+    description fallbacks cannot bypass phrase or exclusion semantics.
+    Internal technical hyphens such as `RX-7900` remain ordinary text.
+  - `ProductCompare.Catalog.Search` applies the identical match predicate to
+    that bounded set for relevance and named-sort queries, then ranks relevance
+    through seven tiers: exact validated GTIN/model number, exact name/slug,
+    text prefix, text contains, full text, trigram, and description contains.
+    Structured queries match and rank through the full-text tier only.
+  - Exact, pattern, and trigram comparisons case-fold both fields and bound
+    query values in PostgreSQL so Unicode behavior uses one database
+    collation. Positional gaps between stored vector segments prevent quoted
+    phrases from crossing simple/English or product/description boundaries.
+  - Full-text ties use `ts_rank_cd`; ordinary searches then use greatest
+    applicable trigram similarity, normalized product name, and product ID.
+    Structured queries skip the inapplicable raw-string similarity tie-breaker.
+  - Catalog product writes refresh search documents inside the owning
+    transaction. No database trigger or recurring reconciliation was added,
+    and a failed document refresh rolls back the product write and any slug
+    alias.
+- Repair contract:
+  - `mix catalog.search_documents.rebuild` is the explicit deployment, manual
+    repair, and drift-recovery command.
+  - It starts only the repository dependencies, refreshes every product through
+    the same pure `catalog_search_document/5` SQL builder, prints
+    `Rebuilt <count> catalog search document(s).` on success, and raises
+    `Catalog search-document rebuild failed: <reason>` on failure.
+  - It is not scheduled and does not weaken transaction-coupled refreshes.
+- Implementation paths:
+  - Migrations:
+    `priv/repo/migrations/20260727120000_add_ranked_catalog_search.exs` and
+    `priv/repo/migrations/20260727121000_add_ranked_catalog_search_indexes.exs`.
+    The first adds the nullable `tsvector` and pure builder without a table
+    rewrite; the second creates the search indexes concurrently without
+    `IF NOT EXISTS`, so interrupted invalid builds fail visibly on retry. The
+    explicit rebuild command backfills preexisting products after deployment.
+  - Persistence and repair:
+    `lib/product_compare/catalog/search_documents.ex`,
+    `lib/mix/tasks/catalog.search_documents.rebuild.ex`,
+    `lib/product_compare/catalog/products.ex`, and
+    `lib/product_compare_schemas/catalog/product.ex`.
+  - Backend matching and composition:
+    `lib/product_compare/catalog/search.ex` and
+    `lib/product_compare/catalog/filtering.ex`.
+  - GraphQL:
+    `lib/product_compare_web/resolvers/catalog/input_normalization.ex` and
+    `lib/product_compare_web/schema/types/catalog.ex`.
+  - Frontend:
+    `assets/src/routes/catalog/filters.ts`,
+    `assets/src/routes/catalog/paths.ts`,
+    `assets/src/routes/catalog/BrowseRoute.tsx`,
+    `assets/src/routes/catalog/filter-summary.ts`, and
+    `assets/src/routes/catalog/CatalogFilterForm.tsx`.
+  - Schema and generated artifacts: `assets/schema.graphql` and
+    `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts`.
+- Milestone commits:
+  - `41f6cce5659f1b450fbb9fa84323f03b20342477` — persist and maintain
+    weighted catalog search documents.
+  - `1968889e0d5033531d2344701ace70df49e4cac7` — add hybrid ranked catalog
+    search.
+  - `4098b2f26893683b41df0df9e2e0e715f5ca3066` — expose relevance catalog
+    sorting through GraphQL.
+  - `823e1ce275aa882604559ee907635213b92d23bb` — normalize relevance catalog
+    URLs.
+  - `ef867cbb93c9d661d3f041f3788f3d8bac9902e3` — finish ranked catalog search.
+  - `f12dbf539115354da0c1d7480e7e73237ffe9649` — bound ranked catalog search
+    candidates and close the completed dispatch state.
+- Frontend contract:
+  - Query-only URLs use implicit relevance and omit redundant
+    `sort=RELEVANCE`.
+  - Choosing Catalog order for an active query submits explicit
+    `sort=ID_ASC`; Product name, Brand name, and Newest remain explicit.
+  - Relevance appears only for an active search, and clearing a relevance
+    search submits a blank query without a stale sort.
+  - Pagination and compare links preserve query, page size, filters, and
+    compare slugs while omitting implicit relevance. GET filter submissions
+    continue to omit the current `after` cursor.
+- Cross-surface parity:
+  - `productFilterMetadata.resultCount` and Relay cursor pages use the
+    identical hybrid matching set; ranking changes order only.
+  - Explicit sorts retain the search predicate and all taxonomy, typed
+    specification, and use-case filters.
+- Verification:
+  - `mix format --check-formatted` — exit `0`; no tests.
+  - `mix typecheck` — exit `0`; compilation with warnings as errors passed.
+  - `mix test test/product_compare/catalog/search_documents_test.exs test/mix/tasks/catalog_search_documents_rebuild_test.exs test/product_compare/catalog/search_test.exs test/product_compare/catalog/filter_metadata_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/catalog_filter_metadata_test.exs test/product_compare_web/graphql/dataloader_batching_test.exs test/product_compare_web/graphql/schema_snapshot_test.exs`
+    — final review-follow-through exit `0`; 129 tests, 0 failures.
+  - `MIX_ENV=test mix ecto.rollback --step 2` followed by
+    `MIX_ENV=test mix ecto.migrate` — both exit `0` on the local test database;
+    the staged schema and concurrent index migrations rolled down and reapplied.
+  - `MIX_ENV=test mix catalog.search_documents.rebuild` — exit `0`; a
+    pre-migration sentinel stayed null until this command rebuilt its document,
+    after which the sentinel was verified and removed.
+  - `cd assets && bun run check` — exit `0`; Relay validation compiled 52
+    reader, 51 normalization, and 51 operation-text documents; TypeScript
+    passed; 104 test files and 1,507 tests passed; client and SSR builds passed;
+    the client bundle passed at 182,238 gzip bytes against the 200,000-byte
+    budget.
+  - A representative 30,000-product default-planner probe reduced execution
+    from the pre-repair 219.545 ms parallel product scan to 6.056 ms. Candidate
+    branches used the product full-text, contains, and trigram-overlap GIN
+    indexes before one product primary-key lookup. A complementary
+    30,000-brand probe used both brand GIN indexes and
+    `products_brand_idx` before the unchanged final predicate.
+  - `mix quality` — exit `0`; Credo clean, ExDNA at its unchanged 3/3 budget,
+    Reach clean with 11 baseline suppressions, and Dialyzer at 0 errors.
+  - `mix test --cover` — exit `0`; 975 tests, 0 failures, and 83.98% total
+    coverage.
+  - `mix work_queue.validate` — exit `1` only with the explicitly waived exact
+    result: `Ready Work requires at least 3 complete rows; found 0`.
+  - `mix ci` was not rerun for the final repair and is not claimed to pass; its
+    queue-validator component is the exact waived result above, while all
+    remaining gates were run directly.
+  - `git diff --check` — exit `0`; no whitespace errors.
+- Out of scope:
+  - Autocomplete and suggestions, result highlighting or excerpts, score and
+    match-reason fields, MPN search authority, and external search
+    infrastructure remain excluded.

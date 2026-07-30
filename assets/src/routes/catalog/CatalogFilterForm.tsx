@@ -15,8 +15,10 @@ import {
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
   catalogProductSortFromValue,
   catalogProductSortLabel,
+  catalogProductSortParam,
   type CatalogFilterMetadata,
-  type CatalogFilters
+  type CatalogFilters,
+  type CatalogProductSort
 } from "./filters";
 import {
   catalogFiltersWithout,
@@ -79,6 +81,12 @@ export function CatalogFilterForm({
   const [advancedOpen, setAdvancedOpen] = useState(() =>
     hasInitiallyOpenCatalogAdvancedFilters(filters)
   );
+  const [query, setQuery] = useState(filters.query ?? "");
+  const [explicitSort, setExplicitSort] = useState<CatalogProductSort | undefined>(() =>
+    catalogProductSortParam(filters)
+  );
+  const sort: CatalogProductSort =
+    explicitSort ?? (hasCatalogSearchQuery(query) ? "RELEVANCE" : "ID_ASC");
 
   function handleTypeTaxonIdChange(typeTaxonId: string) {
     setTypeFilterState((previous) => catalogFilterFormTypeSelection(previous, typeTaxonId));
@@ -86,6 +94,16 @@ export function CatalogFilterForm({
 
   function handleIncludeTypeDescendantsChange(includeTypeDescendants: boolean) {
     setTypeFilterState((previous) => ({ ...previous, includeTypeDescendants }));
+  }
+
+  function handleQueryChange(nextQuery: string) {
+    const hasQuery = hasCatalogSearchQuery(nextQuery);
+
+    setQuery(nextQuery);
+
+    if (!hasQuery) {
+      setExplicitSort((previous) => (previous === "RELEVANCE" ? undefined : previous));
+    }
   }
 
   return (
@@ -96,8 +114,12 @@ export function CatalogFilterForm({
       {...props(styles.form)}
     >
       <div {...props(styles.primary)}>
-        <SearchField query={filters.query} />
-        <SortField sort={filters.sort} />
+        <SearchField query={query} onQueryChange={handleQueryChange} />
+        <SortField
+          query={query}
+          sort={sort}
+          onSortChange={setExplicitSort}
+        />
         <PageSizeField pageSize={pageSize} />
         <CompareSlugFields compareSlugs={compareSlugs} />
         <ProductTypeField
@@ -130,34 +152,56 @@ export function CatalogFilterForm({
   );
 }
 
-function SearchField({ query }: { query?: string }) {
+function SearchField({
+  query,
+  onQueryChange
+}: {
+  query: string;
+  onQueryChange: (query: string) => void;
+}) {
   return (
     <label>
       Search products
       <TextField
         type="search"
         name="q"
-        defaultValue={query ?? ""}
+        value={query}
+        onChange={(event) => onQueryChange(event.currentTarget.value)}
         maxLength={MAX_CATALOG_SEARCH_QUERY_LENGTH}
       />
     </label>
   );
 }
 
-function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
-  const [selectedSort, setSelectedSort] = useState(sort ?? "ID_ASC");
+function SortField({
+  query,
+  sort,
+  onSortChange
+}: {
+  query: string;
+  sort: CatalogProductSort;
+  onSortChange: (sort: CatalogProductSort) => void;
+}) {
+  const hasQuery = hasCatalogSearchQuery(query);
+  const availableSorts = hasQuery
+    ? CATALOG_PRODUCT_SORTS
+    : CATALOG_PRODUCT_SORTS.filter((value) => value !== "RELEVANCE");
+  const sortParam = catalogProductSortParam({
+    query: hasQuery ? query : undefined,
+    sort
+  });
 
   return (
     <label>
       Sort products
       <select
-        name={selectedSort === "ID_ASC" ? undefined : "sort"}
-        value={selectedSort}
+        name={sortParam ? "sort" : undefined}
+        value={sort}
         onChange={(event) =>
-          setSelectedSort(catalogProductSortFromValue(event.currentTarget.value))
+          onSortChange(catalogProductSortFromValue(event.currentTarget.value))
         }
       >
-        {CATALOG_PRODUCT_SORTS.map((value) => (
+        {availableSorts.map((value) => (
           <option key={value} value={value}>
             {catalogProductSortLabel(value)}
           </option>
@@ -165,6 +209,10 @@ function SortField({ sort }: { sort?: CatalogFilters["sort"] }) {
       </select>
     </label>
   );
+}
+
+function hasCatalogSearchQuery(query: string) {
+  return query.trim() !== "";
 }
 
 function CompareSlugFields({ compareSlugs }: { compareSlugs: readonly string[] }) {

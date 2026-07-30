@@ -70,6 +70,25 @@ test("builds labels with typed removal intent", () => {
   );
 });
 
+test("omits relevance from active filter summaries", () => {
+  expect(
+    catalogFilterSummaryItems(metadata, {
+      ...filters,
+      query: "monitor",
+      sort: "RELEVANCE"
+    }).map((item) => item.key)
+  ).not.toContain("sort");
+});
+
+test("removing a query also removes its relevance default", () => {
+  expect(
+    catalogFiltersWithout(
+      { ...filters, query: "monitor", sort: "RELEVANCE" },
+      { kind: "query" }
+    )
+  ).toMatchObject({ query: undefined, sort: undefined });
+});
+
 test.each<[CatalogFilterRemoval, Partial<CatalogFilters>]>([
   [{ kind: "query" }, { query: undefined }],
   [{ kind: "sort" }, { sort: undefined }],
