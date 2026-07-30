@@ -61,7 +61,8 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
 
   defp latest_health_by_surface do
     ImportRun
-    |> where([run], run.provider == @provider and run.surface in ^@surfaces)
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> where([run, source], source.provider == @provider and run.surface in ^@surfaces)
     |> distinct([run], run.surface)
     |> order_by([run], asc: run.surface, desc: run.started_at, desc: run.id)
     |> select([run], %{

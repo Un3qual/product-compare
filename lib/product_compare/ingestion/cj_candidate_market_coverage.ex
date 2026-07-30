@@ -11,9 +11,8 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   import Ecto.Query
 
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.CJProgram
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Reference.Currency
+  alias ProductCompareSchemas.Ingestion.{CJProgram, MerchantFeedCandidate, ProviderFeedType}
+  alias ProductCompareSchemas.Reference.{Country, Currency, Language}
 
   @provider "cj"
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
@@ -64,14 +63,20 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   defp base_query do
     MerchantFeedCandidate
     |> join(:left, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
-    |> join(:left, [feed, _program], currency in Currency, on: currency.id == feed.currency)
-    |> where([feed, _program, _currency], feed.provider == @provider)
+    |> join(:inner, [feed, _program], source in assoc(feed, :source))
+    |> join(:left, [feed], country in Country, on: country.id == feed.advertiser_country)
+    |> join(:left, [feed], currency in Currency, on: currency.id == feed.currency)
+    |> join(:left, [feed], language in Language, on: language.id == feed.language)
+    |> join(:left, [feed], feed_type in ProviderFeedType,
+      on: feed_type.id == feed.source_feed_type
+    )
+    |> where([_feed, _program, source], source.provider == @provider)
   end
 
   defp stage_counts(base_query) do
     base_query
-    |> group_by([_feed, program, _currency], program.stage)
-    |> select([feed, program, _currency], %{
+    |> group_by([_feed, program], program.stage)
+    |> select([feed, program], %{
       stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
@@ -91,13 +96,27 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
     |> summarize_dimension_rows()
   end
 
+  defp dimension_rows(base_query, :advertiser_country) do
+    base_query
+    |> group_by(
+      [_feed, program, _source, country],
+      [fragment("COALESCE(?, 'unknown')", country.code), program.stage]
+    )
+    |> select([feed, program, _source, country], %{
+      bucket: fragment("COALESCE(?, 'unknown')", country.code),
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
+      candidate_count: count(feed.id)
+    })
+    |> Repo.all()
+  end
+
   defp dimension_rows(base_query, :currency) do
     base_query
     |> group_by(
-      [_feed, program, currency],
+      [_feed, program, _source, _country, currency],
       [fragment("COALESCE(?, 'unknown')", currency.code), program.stage]
     )
-    |> select([feed, program, currency], %{
+    |> select([feed, program, _source, _country, currency], %{
       bucket: fragment("COALESCE(?, 'unknown')", currency.code),
       stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
@@ -105,27 +124,34 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
     |> Repo.all()
   end
 
-  defp dimension_rows(base_query, dimension) do
+  defp dimension_rows(base_query, :language) do
     base_query
     |> group_by(
-      [feed, program, _currency],
-      [
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          field(feed, ^dimension)
-        ),
-        program.stage
-      ]
+      [_feed, program, _source, _country, _currency, language],
+      [fragment("COALESCE(?, 'unknown')", language.code), program.stage]
     )
-    |> select([feed, program, _currency], %{
-      bucket:
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          field(feed, ^dimension)
-        ),
+    |> select([feed, program, _source, _country, _currency, language], %{
+      bucket: fragment("COALESCE(?, 'unknown')", language.code),
       stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
+    |> Repo.all()
+  end
+
+  defp dimension_rows(base_query, :source_feed_type) do
+    base_query
+    |> group_by(
+      [_feed, program, _source, _country, _currency, _language, feed_type],
+      [fragment("COALESCE(?, 'unknown')", feed_type.code), program.stage]
+    )
+    |> select(
+      [feed, program, _source, _country, _currency, _language, feed_type],
+      %{
+        bucket: fragment("COALESCE(?, 'unknown')", feed_type.code),
+        stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
+        candidate_count: count(feed.id)
+      }
+    )
     |> Repo.all()
   end
 

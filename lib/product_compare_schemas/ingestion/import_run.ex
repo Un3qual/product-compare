@@ -1,6 +1,9 @@
 defmodule ProductCompareSchemas.Ingestion.ImportRun do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Ingestion.IntegrationSurface
+  alias ProductCompareSchemas.Reference.ReferenceCode
+
   @type t :: %__MODULE__{}
 
   @statuses [:running, :succeeded, :failed]
@@ -12,7 +15,7 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     :skipped_failed,
     :skipped_superseded
   ]
-  @required_fields [:source_id, :provider, :surface, :query, :status, :started_at]
+  @required_fields [:source_id, :surface, :query, :status, :started_at]
   @count_fields [
     :pages_fetched,
     :records_fetched,
@@ -23,8 +26,13 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
 
   schema "ingestion_runs" do
     field :entropy_id, Ecto.UUID
-    field :provider, :string
-    field :surface, :string
+    field :provider, :string, virtual: true
+
+    field :surface, ReferenceCode,
+      codes: IntegrationSurface.codes(),
+      normalization: :none,
+      source: :integration_surface_id
+
     field :query, :map, default: %{}
     field :status, Ecto.Enum, values: @statuses
     field :started_at, :utc_datetime_usec
@@ -86,6 +94,7 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> validate_counts()
     |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:source_id)
+    |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
   end
 

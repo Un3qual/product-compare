@@ -85,7 +85,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
 
       assert %MerchantFeedCandidate{
                source_id: ^source_id,
-               provider: "cj",
                provider_feed_id: "feed-1",
                advertiser_id: "adv-1",
                advertiser_name: "Merchant",
@@ -103,7 +102,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
 
       assert %ImportRun{
                source_id: ^source_id,
-               provider: "cj",
                surface: "shoppingProductFeeds",
                status: :succeeded,
                query: %{"advertiserCountry" => "US"},
@@ -180,7 +178,6 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
 
       assert %ImportRun{
                source_id: ^source_id,
-               provider: "cj",
                surface: "shoppingProductFeeds",
                status: :failed,
                cursor_start: 0,

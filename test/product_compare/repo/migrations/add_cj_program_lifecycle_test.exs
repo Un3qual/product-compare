@@ -146,8 +146,8 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     with_legacy_schema(fn prefix ->
       MigrationRepo.query!("""
       INSERT INTO "#{prefix}"."merchant_feed_candidates"
-        (source_id, provider, advertiser_id, review_status, review_note, reviewed_at)
-      VALUES (1, 'impact', 'impact-advertiser', 'shortlisted', 'Keep this review', now())
+        (source_id, advertiser_id, review_status, review_note, reviewed_at)
+      VALUES (2, 'impact-advertiser', 'shortlisted', 'Keep this review', now())
       """)
 
       assert_raise Postgrex.Error, ~r/feed review state without a CJ program identity/, fn ->
@@ -186,8 +186,8 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     MigrationRepo.query!(
       """
       INSERT INTO "#{prefix}"."merchant_feed_candidates"
-        (source_id, provider, advertiser_id, review_status, review_note, reviewed_at)
-      VALUES (1, 'cj', $1, $2, $3, $4)
+        (source_id, advertiser_id, review_status, review_note, reviewed_at)
+      VALUES (1, $1, $2, $3, $4)
       """,
       [
         row.advertiser_id,
@@ -204,8 +204,16 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
 
     try do
       MigrationRepo.query!("""
+      CREATE TABLE "#{prefix}"."integration_providers" (
+        id integer PRIMARY KEY,
+        code text NOT NULL UNIQUE
+      )
+      """)
+
+      MigrationRepo.query!("""
       CREATE TABLE "#{prefix}"."sources" (
-        id bigserial PRIMARY KEY
+        id bigserial PRIMARY KEY,
+        provider_id integer REFERENCES "#{prefix}"."integration_providers"(id)
       )
       """)
 
@@ -213,7 +221,6 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
       CREATE TABLE "#{prefix}"."merchant_feed_candidates" (
         id bigserial PRIMARY KEY,
         source_id bigint NOT NULL REFERENCES "#{prefix}"."sources"(id),
-        provider text NOT NULL,
         advertiser_id text,
         review_status text NOT NULL DEFAULT 'pending',
         review_note text,
@@ -229,10 +236,18 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
 
       MigrationRepo.query!("""
       CREATE INDEX merchant_feed_candidates_provider_review_status_idx
-      ON "#{prefix}"."merchant_feed_candidates" (provider, review_status)
+      ON "#{prefix}"."merchant_feed_candidates" (source_id, review_status)
       """)
 
-      MigrationRepo.query!("INSERT INTO \"#{prefix}\".\"sources\" (id) VALUES (1)")
+      MigrationRepo.query!("""
+      INSERT INTO "#{prefix}"."integration_providers" (id, code)
+      VALUES (1, 'cj'), (2, 'impact')
+      """)
+
+      MigrationRepo.query!("""
+      INSERT INTO "#{prefix}"."sources" (id, provider_id)
+      VALUES (1, 1), (2, 2)
+      """)
 
       fun.(prefix)
     after
@@ -267,8 +282,8 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
       MigrationRepo.query!(
         """
         INSERT INTO "#{prefix}"."merchant_feed_candidates"
-          (source_id, provider, advertiser_id, review_status, review_note, reviewed_at)
-        VALUES (1, 'cj', $1, $2, $3, $4)
+          (source_id, advertiser_id, review_status, review_note, reviewed_at)
+        VALUES (1, $1, $2, $3, $4)
         """,
         [
           row.advertiser_id,
@@ -306,8 +321,8 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
           RETURNING id
         )
         INSERT INTO "#{prefix}"."merchant_feed_candidates"
-          (source_id, provider, advertiser_id, cj_program_id)
-        SELECT 1, 'cj', $1, id
+          (source_id, advertiser_id, cj_program_id)
+        SELECT 1, $1, id
         FROM program
         """,
         [advertiser_id, stage]
@@ -366,8 +381,11 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycleTest do
     %{rows: [[count]]} =
       MigrationRepo.query!("""
       SELECT count(*)
-      FROM "#{prefix}"."merchant_feed_candidates"
-      WHERE provider = 'cj' AND cj_program_id IS NULL
+      FROM "#{prefix}"."merchant_feed_candidates" AS feed
+      JOIN "#{prefix}"."sources" AS source ON source.id = feed.source_id
+      JOIN "#{prefix}"."integration_providers" AS provider
+        ON provider.id = source.provider_id
+      WHERE provider.code = 'cj' AND feed.cj_program_id IS NULL
       """)
 
     count

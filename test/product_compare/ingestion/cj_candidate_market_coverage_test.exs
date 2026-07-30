@@ -53,7 +53,9 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverageTest do
         source_feed_type: nil
       })
 
-      merchant_feed_candidate_fixture(source, %{
+      awin_source = source_fixture(%{name: "Awin", provider: "awin"})
+
+      merchant_feed_candidate_fixture(awin_source, %{
         advertiser_country: "US",
         provider: "awin",
         provider_feed_id: "awin-us"

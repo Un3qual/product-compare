@@ -13,7 +13,7 @@ defmodule ProductCompare.Repo.Migrations.AddIngestionReconciliation do
       add :offers_deactivated, :integer, null: false, default: 0
     end
 
-    create index(:ingestion_runs, [:source_id, :surface, :scope_fingerprint],
+    create index(:ingestion_runs, [:source_id, :integration_surface_id, :scope_fingerprint],
              name: :ingestion_runs_reconciliation_scope_idx
            )
 

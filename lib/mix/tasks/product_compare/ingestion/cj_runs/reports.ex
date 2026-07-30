@@ -117,8 +117,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
   end
 
   defp latest_run(surface) do
-    ImportRun
-    |> where([run], run.provider == @provider)
+    cj_runs_query()
     |> where([run], run.surface == ^surface)
     |> order_by([run], desc: run.started_at, desc: run.id)
     |> limit(1)
@@ -126,8 +125,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
   end
 
   defp history_runs(surface, limit) do
-    ImportRun
-    |> where([run], run.provider == @provider)
+    cj_runs_query()
     |> where([run], run.surface == ^surface)
     |> order_by([run], desc: run.started_at, desc: run.id)
     |> limit(^limit)
@@ -136,8 +134,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
 
   defp failed_runs("all", limit) do
     query =
-      ImportRun
-      |> where([run], run.provider == @provider)
+      cj_runs_query()
       |> where([run], run.status == :failed)
 
     runs =
@@ -151,8 +148,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
 
   defp failed_runs(surface, limit) do
     query =
-      ImportRun
-      |> where([run], run.provider == @provider)
+      cj_runs_query()
       |> where([run], run.surface == ^surface)
       |> where([run], run.status == :failed)
 
@@ -192,8 +188,15 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRuns.Reports do
 
   defp candidate_count do
     MerchantFeedCandidate
-    |> where([candidate], candidate.provider == @provider)
+    |> join(:inner, [candidate], source in assoc(candidate, :source))
+    |> where([_candidate, source], source.provider == @provider)
     |> Repo.aggregate(:count, :id)
+  end
+
+  defp cj_runs_query do
+    ImportRun
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> where([_run, source], source.provider == @provider)
   end
 
   defp field(nil, _field), do: nil

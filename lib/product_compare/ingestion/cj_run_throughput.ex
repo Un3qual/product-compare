@@ -10,7 +10,7 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
   import Ecto.Query
 
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.{ImportRun, IntegrationSurface}
 
   @provider "cj"
   @default_days 14
@@ -81,15 +81,21 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
     start_at = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
 
     ImportRun
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> join(:inner, [run, _source], surface in IntegrationSurface, on: surface.id == run.surface)
     |> where(
-      [run],
-      run.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now
+      [run, source],
+      source.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now
     )
-    |> group_by([run], [fragment("?::date", run.started_at), run.surface])
-    |> order_by([run], desc: fragment("?::date", run.started_at), asc: run.surface)
-    |> select([run], %{
+    |> group_by([run, _source, surface], [fragment("?::date", run.started_at), surface.code])
+    |> order_by(
+      [run, _source, surface],
+      desc: fragment("?::date", run.started_at),
+      asc: surface.code
+    )
+    |> select([run, _source, surface], %{
       date: fragment("?::date", run.started_at),
-      surface: run.surface,
+      surface: surface.code,
       run_count: count(run.id),
       succeeded_run_count: filter(count(run.id), run.status == :succeeded),
       failed_run_count: filter(count(run.id), run.status == :failed),

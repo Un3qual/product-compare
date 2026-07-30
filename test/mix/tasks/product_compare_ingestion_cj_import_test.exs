@@ -136,7 +136,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
       assert %ImportRun{
                source_id: ^source_id,
-               provider: "cj",
                surface: "shoppingProducts",
                status: :succeeded,
                query: %{"currency" => "USD", "keywords" => ["shoe"], "serviceableAreas" => ["US"]},
@@ -209,7 +208,6 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
       assert %ImportRun{
                source_id: ^source_id,
-               provider: "cj",
                surface: "shoppingProducts",
                status: :succeeded,
                cursor_start: 0,
@@ -471,6 +469,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
 
     test "considering not_pursuing declined and non-CJ feeds are excluded" do
       source = source_fixture()
+      shopify_source = source_fixture(%{name: "Shopify", provider: "shopify"})
 
       source
       |> insert_feed!(%{advertiser_id: "adv-considering", provider_feed_id: "feed-considering"})
@@ -484,7 +483,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       |> insert_feed!(%{advertiser_id: "adv-declined", provider_feed_id: "feed-declined"})
       |> place_in_stage!("declined")
 
-      insert_feed!(source, %{provider: "shopify", provider_feed_id: "feed-non-cj"})
+      insert_feed!(shopify_source, %{provider: "shopify", provider_feed_id: "feed-non-cj"})
 
       fetcher = fn _cursor, _fetch_opts ->
         flunk("unmanaged CJ and non-CJ feeds must not be imported from programs")
@@ -914,7 +913,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
     %Source{}
     |> Source.changeset(
       Map.merge(
-        %{kind: "affiliate_feed", name: "CJ #{suffix}", domain: "cj-#{suffix}.example"},
+        %{
+          kind: "affiliate_feed",
+          provider: "cj",
+          name: "CJ #{suffix}",
+          domain: "cj-#{suffix}.example"
+        },
         attrs
       )
     )
@@ -937,7 +941,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
           provider_feed_id: "feed-1",
           provider_last_updated_at: DateTime.utc_now(),
           raw_metadata: %{},
-          source_feed_type: "SHOPPING"
+          source_feed_type: if(Map.get(attrs, :provider, "cj") == "cj", do: "SHOPPING")
         },
         attrs
       )

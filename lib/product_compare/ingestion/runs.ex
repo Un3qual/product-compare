@@ -2,8 +2,9 @@ defmodule ProductCompare.Ingestion.Runs do
   @moduledoc false
 
   alias ProductCompare.Ingestion.Reconciliation
+  alias ProductCompare.Ingestion.SourceProviders
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.{ImportRun, IntegrationProvider, IntegrationSurface}
 
   @spec start_import_run(map()) :: {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
   def start_import_run(attrs) do
@@ -14,9 +15,19 @@ defmodule ProductCompare.Ingestion.Runs do
       |> Map.put_new(:status, :running)
       |> Map.put_new(:started_at, DateTime.utc_now())
 
-    %ImportRun{}
-    |> ImportRun.changeset(attrs)
-    |> Repo.insert()
+    Repo.transaction(fn ->
+      with {:ok, provider} <- run_provider(attrs),
+           {:ok, provider} <-
+             SourceProviders.ensure_in_transaction(attr(attrs, :source_id), provider),
+           {:ok, import_run} <-
+             %ImportRun{}
+             |> ImportRun.changeset(Map.put(attrs, :provider, provider))
+             |> Repo.insert() do
+        import_run
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @spec complete_import_run(ImportRun.t(), map()) ::
@@ -60,4 +71,32 @@ defmodule ProductCompare.Ingestion.Runs do
   end
 
   defp normalize_complete_scope_cursor(attrs, _complete_scope), do: attrs
+
+  defp run_provider(attrs) do
+    requested = IntegrationProvider.normalize_code(attr(attrs, :provider))
+    surface_provider = IntegrationSurface.provider_code_for_code(attr(attrs, :surface))
+
+    cond do
+      present?(attr(attrs, :provider)) and is_nil(requested) ->
+        {:error, provider_error(attrs, "is not a supported integration provider")}
+
+      requested && surface_provider && requested != surface_provider ->
+        {:error, provider_error(attrs, "does not own the requested integration surface")}
+
+      true ->
+        {:ok, requested || surface_provider}
+    end
+  end
+
+  defp provider_error(attrs, message) do
+    %ImportRun{}
+    |> ImportRun.changeset(attrs)
+    |> Ecto.Changeset.add_error(:provider, message)
+  end
+
+  defp present?(value), do: not is_nil(value) and value != ""
+
+  defp attr(attrs, key) do
+    Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+  end
 end

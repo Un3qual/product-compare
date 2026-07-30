@@ -36,6 +36,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
   describe "run/1" do
     test "stale report includes linked and unmatched CJ feeds when requested" do
       source = source_fixture()
+      shopify_source = source_fixture(%{name: "Shopify", provider: "shopify"})
 
       linked =
         candidate_fixture(source, %{
@@ -60,7 +61,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
         provider_feed_id: "cj-fresh"
       })
 
-      candidate_fixture(source, %{
+      candidate_fixture(shopify_source, %{
         advertiser_id: "adv-noncj",
         last_seen_at: days_ago(20),
         provider: "shopify",
@@ -226,7 +227,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
     %Source{}
     |> Source.changeset(
       Map.merge(
-        %{kind: "affiliate_feed", name: "CJ #{suffix}", domain: "cj-#{suffix}.example"},
+        %{
+          kind: "affiliate_feed",
+          provider: "cj",
+          name: "CJ #{suffix}",
+          domain: "cj-#{suffix}.example"
+        },
         attrs
       )
     )
@@ -249,7 +255,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidatesTest do
           provider_last_updated_at: hours_ago(22),
           raw_metadata: %{},
           last_seen_at: DateTime.utc_now(),
-          source_feed_type: "SHOPPING"
+          source_feed_type: if(Map.get(attrs, :provider, "cj") == "cj", do: "SHOPPING")
         },
         attrs
       )

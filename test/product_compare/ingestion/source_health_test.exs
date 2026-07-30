@@ -3,6 +3,7 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
 
   alias ProductCompare.Ingestion.SourceHealth
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Specs.SourceKind
 
   @now ~U[2026-06-27 18:00:00Z]
 
@@ -175,7 +176,10 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
       Repo.insert_all(
         "sources",
         [
-          Map.merge(attrs, %{
+          attrs
+          |> Map.drop([:kind])
+          |> Map.merge(%{
+            source_kind_id: Map.fetch!(SourceKind.codes(), attrs.kind),
             inserted_at: @now,
             updated_at: @now
           })
@@ -206,15 +210,13 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
   end
 
   defp insert_run(source, attrs) do
-    unique = System.unique_integer([:positive])
     finished_at = Keyword.fetch!(attrs, :finished_at)
 
     Repo.insert_all("ingestion_runs", [
       Map.merge(
         %{
           source_id: source.id,
-          provider: "provider-#{unique}",
-          surface: "surface",
+          integration_surface_id: 1,
           query: %{},
           status: Keyword.fetch!(attrs, :status),
           started_at: Keyword.get(attrs, :started_at, finished_at),

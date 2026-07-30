@@ -47,17 +47,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
 
   defp maybe_filter_string(query, _field, nil), do: query
 
-  defp maybe_filter_string(query, :currency, expected) do
-    where(query, [candidate], candidate.currency == ^expected)
+  defp maybe_filter_string(query, field, expected) do
+    where(query, [candidate], field(candidate, ^field) == ^expected)
   end
-
-  defp maybe_filter_string(query, field, expected),
-    do:
-      where(
-        query,
-        [candidate],
-        fragment("UPPER(BTRIM(?))", field(candidate, ^field)) == ^expected
-      )
 
   defp maybe_filter_min_product_count(query, nil), do: query
 

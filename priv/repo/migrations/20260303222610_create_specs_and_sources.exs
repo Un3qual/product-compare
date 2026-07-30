@@ -94,14 +94,20 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
     create table(:sources) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
-      add :kind, :text, null: false
+
+      add :source_kind_id, references(:source_kinds, type: :integer, on_delete: :restrict),
+        null: false
+
+      add :provider_id,
+          references(:integration_providers, type: :integer, on_delete: :restrict)
+
       add :name, :text, null: false
       add :domain, :text
 
       timestamps(type: :utc_datetime_usec)
     end
 
-    create unique_index(:sources, [:kind, :name], name: :sources_kind_name_uq)
+    create unique_index(:sources, [:source_kind_id, :name], name: :sources_kind_name_uq)
     create unique_index(:sources, [:entropy_id])
 
     create table(:source_artifacts) do

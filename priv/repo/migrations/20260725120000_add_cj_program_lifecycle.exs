@@ -4,21 +4,25 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
   def up do
     programs = qualified_table(:cj_programs)
     feeds = qualified_table(:merchant_feed_candidates)
+    sources = qualified_table(:sources)
+    providers = qualified_table(:integration_providers)
 
     execute("""
     DO $$
     BEGIN
       IF EXISTS (
         SELECT 1
-        FROM #{feeds}
+        FROM #{feeds} AS feed
+        LEFT JOIN #{sources} AS source ON source.id = feed.source_id
+        LEFT JOIN #{providers} AS provider ON provider.id = source.provider_id
         WHERE (
-          review_status <> 'pending'
-          OR NULLIF(BTRIM(review_note), '') IS NOT NULL
-          OR reviewed_at IS NOT NULL
+          feed.review_status <> 'pending'
+          OR NULLIF(BTRIM(feed.review_note), '') IS NOT NULL
+          OR feed.reviewed_at IS NOT NULL
         )
           AND (
-            provider IS DISTINCT FROM 'cj'
-            OR NULLIF(BTRIM(advertiser_id), '') IS NULL
+            provider.code IS DISTINCT FROM 'cj'
+            OR NULLIF(BTRIM(feed.advertiser_id), '') IS NULL
           )
       ) THEN
         RAISE EXCEPTION
@@ -72,7 +76,12 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
              END AS stage,
              COALESCE(MAX(reviewed_at), NOW()) AS fallback_changed_at
       FROM #{feeds}
-      WHERE provider = 'cj'
+      WHERE source_id IN (
+        SELECT source.id
+        FROM #{sources} AS source
+        JOIN #{providers} AS provider ON provider.id = source.provider_id
+        WHERE provider.code = 'cj'
+      )
         AND NULLIF(BTRIM(advertiser_id), '') IS NOT NULL
       GROUP BY source_id, BTRIM(advertiser_id)
     ) AS grouped
@@ -83,7 +92,12 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
              review_note,
              reviewed_at AS changed_at
       FROM #{feeds}
-      WHERE provider = 'cj'
+      WHERE source_id IN (
+        SELECT source.id
+        FROM #{sources} AS source
+        JOIN #{providers} AS provider ON provider.id = source.provider_id
+        WHERE provider.code = 'cj'
+      )
         AND NULLIF(BTRIM(advertiser_id), '') IS NOT NULL
         AND NULLIF(BTRIM(review_note), '') IS NOT NULL
       ORDER BY source_id, BTRIM(advertiser_id), reviewed_at DESC NULLS LAST, id DESC
@@ -105,14 +119,18 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
     execute("""
     UPDATE #{feeds} AS feed
     SET cj_program_id = program.id
-    FROM #{programs} AS program
-    WHERE feed.provider = 'cj'
+    FROM #{programs} AS program,
+         #{sources} AS source,
+         #{providers} AS provider
+    WHERE provider.code = 'cj'
+      AND source.id = feed.source_id
+      AND provider.id = source.provider_id
       AND program.source_id = feed.source_id
       AND program.advertiser_id = BTRIM(feed.advertiser_id)
       AND NULLIF(BTRIM(feed.advertiser_id), '') IS NOT NULL
     """)
 
-    drop index(:merchant_feed_candidates, [:provider, :review_status],
+    drop index(:merchant_feed_candidates, [:source_id, :review_status],
            name: :merchant_feed_candidates_provider_review_status_idx
          )
 
@@ -161,7 +179,7 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
     WHERE feed.cj_program_id = program.id
     """)
 
-    create index(:merchant_feed_candidates, [:provider, :review_status],
+    create index(:merchant_feed_candidates, [:source_id, :review_status],
              name: :merchant_feed_candidates_provider_review_status_idx
            )
 

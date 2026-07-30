@@ -98,5 +98,148 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       """,
       "DELETE FROM affiliate_program_statuses"
     )
+
+    create table(:source_kinds, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :text, null: false
+      add :name, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:source_kinds, [:code])
+
+    execute(
+      """
+      INSERT INTO source_kinds (id, code, name, inserted_at, updated_at)
+      VALUES
+        (1, 'affiliate_feed', 'Affiliate feed', now(), now()),
+        (2, 'merchant_feed', 'Merchant feed', now(), now()),
+        (3, 'manufacturer', 'Manufacturer', now(), now()),
+        (4, 'web', 'Web', now(), now()),
+        (5, 'feed', 'Feed', now(), now()),
+        (6, 'affiliate', 'Affiliate', now(), now())
+      """,
+      "DELETE FROM source_kinds"
+    )
+
+    create table(:integration_providers, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :text, null: false
+      add :name, :text, null: false
+      add :enabled, :boolean, null: false, default: true
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:integration_providers, [:code])
+
+    execute(
+      """
+      INSERT INTO integration_providers (id, code, name, enabled, inserted_at, updated_at)
+      VALUES
+        (1, 'cj', 'CJ', true, now(), now()),
+        (2, 'awin', 'Awin', true, now(), now()),
+        (3, 'impact', 'Impact', true, now(), now()),
+        (4, 'shopify', 'Shopify', true, now(), now())
+      """,
+      "DELETE FROM integration_providers"
+    )
+
+    create table(:integration_surfaces, primary_key: false) do
+      add :id, :integer, primary_key: true
+
+      add :provider_id,
+          references(:integration_providers, type: :integer, on_delete: :restrict),
+          null: false
+
+      add :code, :text, null: false
+      add :name, :text, null: false
+      add :enabled, :boolean, null: false, default: true
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:integration_surfaces, [:provider_id, :code])
+
+    execute(
+      """
+      INSERT INTO integration_surfaces
+        (id, provider_id, code, name, enabled, inserted_at, updated_at)
+      VALUES
+        (1, 1, 'shoppingProducts', 'Shopping products', true, now(), now()),
+        (2, 1, 'shoppingProductFeeds', 'Shopping product feeds', true, now(), now())
+      """,
+      "DELETE FROM integration_surfaces"
+    )
+
+    create table(:provider_feed_types, primary_key: false) do
+      add :id, :integer, primary_key: true
+
+      add :provider_id,
+          references(:integration_providers, type: :integer, on_delete: :restrict),
+          null: false
+
+      add :code, :text, null: false
+      add :name, :text, null: false
+      add :enabled, :boolean, null: false, default: true
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:provider_feed_types, [:provider_id, :code])
+
+    execute(
+      """
+      INSERT INTO provider_feed_types
+        (id, provider_id, code, name, enabled, inserted_at, updated_at)
+      VALUES
+        (1, 1, 'SHOPPING', 'Shopping', true, now(), now()),
+        (2, 1, 'PRODUCT', 'Product', true, now(), now())
+      """,
+      "DELETE FROM provider_feed_types"
+    )
+
+    create table(:countries, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :string, size: 2, null: false
+      add :numeric_code, :string, size: 3, null: false
+      add :name, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:countries, [:code])
+    create unique_index(:countries, [:numeric_code])
+
+    execute(
+      """
+      INSERT INTO countries (id, code, numeric_code, name, inserted_at, updated_at)
+      VALUES
+        (124, 'CA', '124', 'Canada', now(), now()),
+        (840, 'US', '840', 'United States of America', now(), now())
+      """,
+      "DELETE FROM countries"
+    )
+
+    create table(:languages, primary_key: false) do
+      add :id, :integer, primary_key: true
+      add :code, :string, size: 2, null: false
+      add :name, :text, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:languages, [:code])
+
+    execute(
+      """
+      INSERT INTO languages (id, code, name, inserted_at, updated_at)
+      VALUES
+        (1, 'EN', 'English', now(), now()),
+        (2, 'FR', 'French', now(), now())
+      """,
+      "DELETE FROM languages"
+    )
   end
 end

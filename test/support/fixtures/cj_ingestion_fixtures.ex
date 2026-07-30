@@ -15,6 +15,7 @@ defmodule ProductCompare.Fixtures.CJIngestionFixtures do
       Map.merge(
         %{
           kind: "affiliate_feed",
+          provider: "cj",
           name: "CJ #{suffix}",
           domain: "cj-#{suffix}.example"
         },
@@ -26,6 +27,7 @@ defmodule ProductCompare.Fixtures.CJIngestionFixtures do
 
   def merchant_feed_candidate_fixture(source, attrs \\ %{}) do
     suffix = System.unique_integer([:positive])
+    provider = Map.get(attrs, :provider, "cj")
 
     attrs =
       Map.merge(
@@ -42,7 +44,7 @@ defmodule ProductCompare.Fixtures.CJIngestionFixtures do
           provider_feed_id: "feed-#{suffix}",
           provider_last_updated_at: ~U[2026-07-01 18:00:00Z],
           raw_metadata: %{},
-          source_feed_type: "SHOPPING"
+          source_feed_type: if(provider == "cj", do: "SHOPPING")
         },
         attrs
       )

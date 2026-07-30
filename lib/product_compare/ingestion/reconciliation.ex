@@ -14,7 +14,6 @@ defmodule ProductCompare.Ingestion.Reconciliation do
     attrs = Map.new(attrs)
 
     %{
-      provider: Map.get(attrs, :provider),
       query: Map.get(attrs, :query, %{}),
       source_id: Map.get(attrs, :source_id),
       surface: Map.get(attrs, :surface)
@@ -96,7 +95,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   defp lock_scope!(run) do
     lock_name =
       Enum.join(
-        [run.source_id, run.provider, run.surface, run.scope_fingerprint],
+        [run.source_id, run.surface, run.scope_fingerprint],
         ":"
       )
 
@@ -108,7 +107,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
     |> where(
       [candidate],
       candidate.id > ^run.id and candidate.source_id == ^run.source_id and
-        candidate.provider == ^run.provider and candidate.surface == ^run.surface and
+        candidate.surface == ^run.surface and
         candidate.scope_fingerprint == ^run.scope_fingerprint and
         candidate.reconciliation_status == :succeeded
     )
@@ -122,7 +121,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
         on: previous_run.id == observation.import_run_id,
         where:
           previous_run.id < ^run.id and previous_run.source_id == ^run.source_id and
-            previous_run.provider == ^run.provider and previous_run.surface == ^run.surface and
+            previous_run.surface == ^run.surface and
             previous_run.scope_fingerprint == ^run.scope_fingerprint and
             not is_nil(previous_run.finished_at),
         select: observation.merchant_product_id

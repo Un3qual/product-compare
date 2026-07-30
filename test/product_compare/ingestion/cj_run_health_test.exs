@@ -69,13 +69,6 @@ defmodule ProductCompare.Ingestion.CJRunHealthTest do
           query: %{"accountId" => "secret-account"}
         })
 
-      import_run_fixture(source, %{
-        provider: "awin",
-        surface: "shoppingProducts",
-        status: "succeeded",
-        started_at: ~U[2026-07-02 13:00:00Z]
-      })
-
       latest_products_started_at = latest_products.started_at
       latest_products_finished_at = latest_products.finished_at
       latest_feeds_started_at = latest_feeds.started_at

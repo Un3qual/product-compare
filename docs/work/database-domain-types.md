@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-- Last verified: 2026-07-30 after the commerce-reference milestone gates.
+- Last verified: 2026-07-30 after the source/provider reference milestone gates.
 
 ## Target Outcome
 
@@ -30,19 +30,25 @@ normalized domain state.
   program instead of storing a second value that can drift.
 - Existing affiliate-network upserts avoid a no-op `updated_at` write, removing
   the row lock that reproduced a cross-fixture deadlock at seed `284640`.
+- Source kinds, integration providers, provider-scoped surfaces and feed types,
+  countries, and languages are controlled reference rows with stable codes.
+- Sources own provider identity; ingestion runs and feed candidates no longer
+  duplicate provider strings, and all provider-sensitive reads join through
+  the locked source row.
+- Candidate country, currency, language, and feed type values are numeric
+  foreign keys. Unknown provider-owned values remain only in raw evidence and
+  never become invented controlled rows.
+- CJ source resolution and provider claiming use conflict-safe insert/fetch and
+  `FOR UPDATE` locking rather than read-modify-write updates.
 
 ## Active Batch
 
-- Source/provider reference domains consume the canonical currency reference.
-- Source kinds, providers, integration surfaces, feed types, countries, and
-  languages become controlled references.
-- Provider strings duplicated by source ownership are removed from ingestion
-  runs and feed candidates.
+- Redundant discriminator removal will normalize reputation event types and
+  remove generic, unused, single-value, duplicate, and transient category
+  strings.
 
 ## Dependent Successors
 
-- Redundant discriminator removal waits for overlapping ingestion paths to be
-  released.
 - Application-owned comparison snapshot and alert fact JSON normalization
   follows the reference-domain milestones.
 
@@ -64,6 +70,16 @@ normalized domain state.
 - Focused commerce-reference context and GraphQL suites: 277 tests, 0 failures.
 - `mix test --seed 284640`: 982 tests, 0 failures.
 - `mix typecheck`: passed.
+- `MIX_ENV=test mix ecto.reset`: all rewritten source/provider migrations
+  applied through `20260727121000`.
+- `mix test test/product_compare/repo/ingestion_reference_storage_test.exs
+  test/product_compare/ingestion`: 162 tests, 0 failures.
+- Focused CJ ingestion Mix-task suites: 68 tests, 0 failures.
+- `mix test test/product_compare/repo/migrations/add_cj_program_lifecycle_test.exs`:
+  7 tests, 0 failures.
+- `mix test`: 984 tests, 0 failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check`: passed.
 
 ## Blocker Rule
 

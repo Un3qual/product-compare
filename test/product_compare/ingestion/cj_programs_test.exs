@@ -60,6 +60,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
   test "blank advertiser IDs and non-CJ feeds remain unmatched" do
     source = source_fixture()
+    impact_source = source_fixture(%{name: "Impact", provider: "impact"})
 
     assert {:ok, blank_cj_feed} =
              Ingestion.upsert_merchant_feed_candidate(source, %{
@@ -69,7 +70,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
              })
 
     assert {:ok, other_provider_feed} =
-             Ingestion.upsert_merchant_feed_candidate(source, %{
+             Ingestion.upsert_merchant_feed_candidate(impact_source, %{
                advertiser_id: "adv-other-provider",
                provider: "impact",
                provider_feed_id: "feed-impact"
@@ -532,6 +533,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
 
   test "unmatched feed queries exclude linked and non-CJ feeds and do not return raw metadata" do
     source = source_fixture()
+    impact_source = source_fixture(%{name: "Impact", provider: "impact"})
     {_linked_program, _linked_feed} = program_with_feed(source, %{advertiser_id: "linked"})
 
     unmatched_feed =
@@ -542,7 +544,7 @@ defmodule ProductCompare.Ingestion.CJProgramsTest do
       })
 
     _non_cj_feed =
-      merchant_feed_candidate_fixture(source, %{
+      merchant_feed_candidate_fixture(impact_source, %{
         advertiser_id: "impact",
         provider: "impact",
         provider_feed_id: "non-cj"

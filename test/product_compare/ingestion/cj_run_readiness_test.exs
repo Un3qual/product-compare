@@ -34,14 +34,6 @@ defmodule ProductCompare.Ingestion.CJRunReadinessTest do
       })
 
       import_run_fixture(source, %{
-        provider: "awin",
-        surface: "shoppingProducts",
-        status: "succeeded",
-        started_at: ~U[2026-07-02 11:00:00Z],
-        finished_at: ~U[2026-07-02 11:05:00Z]
-      })
-
-      import_run_fixture(source, %{
         surface: "shoppingProductFeeds",
         status: "succeeded",
         started_at: ~U[2026-07-02 12:00:00Z],
@@ -100,13 +92,6 @@ defmodule ProductCompare.Ingestion.CJRunReadinessTest do
         surface: "shoppingProducts",
         status: "failed",
         finished_at: ~U[2026-07-02 08:05:00Z]
-      })
-
-      import_run_fixture(source, %{
-        provider: "awin",
-        surface: "shoppingProducts",
-        status: "succeeded",
-        finished_at: ~U[2026-07-02 09:05:00Z]
       })
 
       import_run_fixture(source, %{

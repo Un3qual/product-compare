@@ -5,7 +5,7 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
-  alias ProductCompareSchemas.Reference.Currency
+  alias ProductCompareSchemas.Reference.{Country, Currency, Language}
 
   @provider "cj"
   @warning_codes [
@@ -43,26 +43,24 @@ defmodule ProductCompare.Ingestion.CJProgramWarnings do
 
   defp warning_rows(program_ids) do
     MerchantFeedCandidate
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> join(:left, [feed], country in Country, on: country.id == feed.advertiser_country)
     |> join(:left, [feed], currency in Currency, on: currency.id == feed.currency)
+    |> join(:left, [feed], language in Language, on: language.id == feed.language)
     |> where(
-      [feed, _currency],
-      feed.provider == @provider and feed.cj_program_id in ^program_ids
+      [feed, source],
+      source.provider == @provider and feed.cj_program_id in ^program_ids
     )
-    |> group_by([feed, _currency], feed.cj_program_id)
-    |> select([feed, currency], %{
+    |> group_by([feed], feed.cj_program_id)
+    |> select([feed, _source, country, currency, language], %{
       cj_program_id: feed.cj_program_id,
       missing_advertiser_name:
         fragment("bool_or(NULLIF(BTRIM(?), '') IS NULL)", feed.advertiser_name),
       missing_product_count:
         fragment("bool_or(? IS NULL OR ? <= 0)", feed.product_count, feed.product_count),
-      non_us_market:
-        fragment(
-          "bool_or(COALESCE(NULLIF(UPPER(BTRIM(?)), ''), '') != 'US')",
-          feed.advertiser_country
-        ),
+      non_us_market: fragment("bool_or(COALESCE(?, '') != 'US')", country.code),
       non_usd_currency: fragment("bool_or(COALESCE(?, '') != 'USD')", currency.code),
-      non_english_language:
-        fragment("bool_or(COALESCE(NULLIF(UPPER(BTRIM(?)), ''), '') != 'EN')", feed.language)
+      non_english_language: fragment("bool_or(COALESCE(?, '') != 'EN')", language.code)
     })
     |> Repo.all()
   end

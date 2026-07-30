@@ -261,27 +261,27 @@ Commit with `git commit -m "refactor: normalize commerce reference domains"`.
 - Consumes: Task 1 ingestion enums and Task 2 `currencies`.
 - Produces: controlled source-kind, provider, surface, feed-type, country, language, and currency references; provider strings are derived through `source_id`.
 
-- [ ] **Step 1: Write failing storage tests**
+- [x] **Step 1: Write failing storage tests**
 
 Assert `sources.source_kind_id`, `sources.provider_id`, `ingestion_runs.integration_surface_id`, and feed-candidate country/language/feed-type/currency foreign keys. Assert both duplicated `provider` columns and the five external categorical text columns are absent.
 
-- [ ] **Step 2: Run the storage test and verify RED**
+- [x] **Step 2: Run the storage test and verify RED**
 
 Run `mix test test/product_compare/repo/ingestion_reference_storage_test.exs`.
 
-- [ ] **Step 3: Create reference tables**
+- [x] **Step 3: Create reference tables**
 
 Create unique controlled codes for source kinds, integration providers, provider-scoped surfaces, provider-scoped feed types, ISO countries, and normalized languages. Preserve all observed source-kind codes during migration without conflating them.
 
-- [ ] **Step 4: Replace source and ingestion strings**
+- [x] **Step 4: Replace source and ingestion strings**
 
 Make `sources` own kind and provider identity, remove duplicated run/candidate provider columns, point runs at a provider-scoped surface, and replace candidate market fields with foreign keys. Preserve unrecognized provider values only inside `raw_metadata`; normalized columns remain null until a controlled reference exists.
 
-- [ ] **Step 5: Update readers and writers**
+- [x] **Step 5: Update readers and writers**
 
 Resolve CJ through its provider reference, use surface references for resume/reconciliation/readiness queries, and use joined codes in CLI/GraphQL output. No application query may filter on the raw JSON fallback.
 
-- [ ] **Step 6: Verify and commit**
+- [x] **Step 6: Verify and commit**
 
 Run the storage test, all ingestion and Mix-task suites, affected GraphQL suites, `mix typecheck`, `mix format --check-formatted`, `mix test`, `mix work_queue.validate`, and `git diff --check`.
 

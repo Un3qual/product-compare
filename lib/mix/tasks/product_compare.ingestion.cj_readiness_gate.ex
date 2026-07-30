@@ -143,7 +143,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGate do
 
   defp candidate_count do
     MerchantFeedCandidate
-    |> where([candidate], candidate.provider == @provider)
+    |> join(:inner, [candidate], source in assoc(candidate, :source))
+    |> where([_candidate, source], source.provider == @provider)
     |> Repo.aggregate(:count, :id)
   end
 

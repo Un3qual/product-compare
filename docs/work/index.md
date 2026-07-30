@@ -165,19 +165,19 @@ Exit condition: every approved commerce reference field is a foreign key,
 duplicated network storage is absent, public codes are preserved, and all gates
 pass.
 
-## Active Work
+## Completed Work (continued)
 
 ### 3. Source and Provider Reference Domains
 
-Status: active
+Status: complete
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Source kinds, providers, provider surfaces, feed types,
 countries, languages, and candidate currencies are controlled references;
 ingestion runs and feed candidates contain no provider or market category
 strings outside verbatim raw evidence.
-Next action: write the failing ingestion FK-storage test and create the
-provider/source reference schemas.
+Next action: none; all storage, ingestion, task, migration, and full-suite
+gates pass.
 Owned paths:
 
 - `priv/repo/migrations/20260303222607_init_extensions.exs`
@@ -224,11 +224,11 @@ Exit condition: all approved source/provider/market columns are foreign keys or
 removed duplicates, raw evidence is not queried as domain state, and all gates
 pass.
 
-## Dependent Work
+## Active Work
 
 ### 4. Redundant and Unsafe Discriminator Removal
 
-Status: dependent
+Status: active
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
 Batch outcome: Reputation events use controlled event types and explicit

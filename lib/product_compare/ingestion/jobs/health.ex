@@ -106,9 +106,10 @@ defmodule ProductCompare.Ingestion.Jobs.Health do
 
   defp latest_reconciliation do
     ImportRun
+    |> join(:inner, [run], source in assoc(run, :source))
     |> where(
-      [run],
-      run.provider == "cj" and run.surface == "shoppingProducts" and
+      [run, source],
+      source.provider == "cj" and run.surface == "shoppingProducts" and
         run.reconciliation_status != :not_requested
     )
     |> order_by([run], desc: run.started_at, desc: run.id)

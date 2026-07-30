@@ -311,6 +311,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjReadinessGateTest do
       Map.merge(
         %{
           kind: "affiliate_feed",
+          provider: "cj",
           name: "CJ #{suffix}",
           domain: "cj-#{suffix}.example"
         },

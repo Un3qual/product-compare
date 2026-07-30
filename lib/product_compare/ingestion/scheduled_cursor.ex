@@ -37,9 +37,10 @@ defmodule ProductCompare.Ingestion.ScheduledCursor do
 
   defp latest(surface, query, fallback) do
     ImportRun
+    |> join(:inner, [run], source in assoc(run, :source))
     |> where(
-      [run],
-      run.provider == "cj" and run.surface == ^surface and run.query == ^query and
+      [run, source],
+      source.provider == "cj" and run.surface == ^surface and run.query == ^query and
         not is_nil(run.finished_at)
     )
     |> order_by([run], desc: run.id)

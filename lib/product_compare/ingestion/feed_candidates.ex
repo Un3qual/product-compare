@@ -4,12 +4,19 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   import Ecto.Query
 
   alias ProductCompare.Ingestion.CJPrograms
+  alias ProductCompare.Ingestion.SourceProviders
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+
+  alias ProductCompareSchemas.Ingestion.{
+    IntegrationProvider,
+    MerchantFeedCandidate,
+    ProviderFeedType
+  }
+
+  alias ProductCompareSchemas.Reference.{Country, CurrencyCode, Language}
   alias ProductCompareSchemas.Specs.Source
 
   @replace_fields [
-    :provider,
     :advertiser_id,
     :advertiser_name,
     :advertiser_country,
@@ -35,9 +42,14 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
       |> Map.put(:source_id, source_id)
       |> Map.put_new(:last_seen_at, DateTime.utc_now())
       |> Map.put_new(:raw_metadata, %{})
+      |> normalize_reference_codes()
 
     Repo.transaction(fn ->
-      with {:ok, cj_program_link} <- cj_program_link(source_id, attrs),
+      with {:ok, requested_provider} <- candidate_provider(attrs),
+           {:ok, provider} <-
+             SourceProviders.ensure_in_transaction(source_id, requested_provider),
+           attrs = Map.put(attrs, :provider, provider),
+           {:ok, cj_program_link} <- cj_program_link(source_id, attrs),
            {:ok, candidate} <- upsert_candidate(attrs, cj_program_link) do
         candidate
       else
@@ -133,5 +145,37 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
 
   defp attr(attrs, key) do
     Map.get(attrs, key, Map.get(attrs, Atom.to_string(key)))
+  end
+
+  defp candidate_provider(attrs) do
+    requested = IntegrationProvider.normalize_code(attr(attrs, :provider))
+    feed_type_provider = ProviderFeedType.provider_code_for_code(attr(attrs, :source_feed_type))
+
+    if requested && feed_type_provider && requested != feed_type_provider do
+      {:error,
+       %MerchantFeedCandidate{}
+       |> MerchantFeedCandidate.changeset(attrs)
+       |> Ecto.Changeset.add_error(
+         :provider,
+         "does not own the requested provider feed type"
+       )}
+    else
+      {:ok, requested || feed_type_provider}
+    end
+  end
+
+  defp normalize_reference_codes(attrs) do
+    attrs
+    |> Map.put(:advertiser_country, Country.normalize_code(attr(attrs, :advertiser_country)))
+    |> Map.put(:currency, normalize_currency(attr(attrs, :currency)))
+    |> Map.put(:language, Language.normalize_code(attr(attrs, :language)))
+    |> Map.put(:source_feed_type, ProviderFeedType.normalize_code(attr(attrs, :source_feed_type)))
+  end
+
+  defp normalize_currency(value) do
+    case CurrencyCode.cast(value) do
+      {:ok, code} -> code
+      :error -> nil
+    end
   end
 end
