@@ -5,7 +5,6 @@ defmodule ProductCompareSchemas.Specs.DerivedFormula do
 
   schema "derived_formulas" do
     field :entropy_id, Ecto.UUID
-    field :lang, :string
     field :expression, :string
 
     belongs_to :attribute, ProductCompareSchemas.Specs.Attribute
@@ -16,8 +15,8 @@ defmodule ProductCompareSchemas.Specs.DerivedFormula do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(formula, attrs) do
     formula
-    |> cast(attrs, [:attribute_id, :lang, :expression])
-    |> validate_required([:attribute_id, :lang, :expression])
+    |> cast(attrs, [:attribute_id, :expression])
+    |> validate_required([:attribute_id, :expression])
     |> unique_constraint(:attribute_id, name: :derived_formulas_attribute_uq)
   end
 end

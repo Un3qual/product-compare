@@ -13,7 +13,6 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     end
 
     alter table(:product_threads) do
-      add :kind, :string, null: false, default: "question"
       add :body_md, :text
 
       add :moderation_status, :community_moderation_status,
@@ -39,10 +38,8 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
     execute("UPDATE product_reviews SET verified_purchase = false", "SELECT 1")
 
     create index(:product_reviews, [:product_id, :moderation_status, :inserted_at])
-    create index(:product_threads, [:product_id, :kind, :moderation_status, :inserted_at])
+    create index(:product_threads, [:product_id, :moderation_status, :inserted_at])
     create index(:thread_posts, [:thread_id, :moderation_status, :inserted_at])
-
-    create constraint(:product_threads, :product_threads_kind_check, check: "kind = 'question'")
 
     create table(:community_reports) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")

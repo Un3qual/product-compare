@@ -228,15 +228,14 @@ pass.
 
 ### 4. Redundant and Unsafe Discriminator Removal
 
-Status: active
+Status: complete
 Lane: Database domain types
 Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-Batch outcome: Reputation events use controlled event types and explicit
-subjects, while generic table-name references, unused formula/failure
+Batch outcome: Reputation events use controlled event types, while generic
+table-name references, unused formula/failure
 categories, single-value thread kinds, duplicate receipt kinds, and transient
 feed review strings are absent.
-Next action: write the failing absence/reference storage test and normalize
-reputation event types.
+Next action: none; released to application-owned snapshot normalization.
 Owned paths:
 
 - `priv/repo/migrations/20260303222608_create_accounts_taxonomy_catalog.exs`
@@ -283,9 +282,61 @@ Exit condition: the absence/reference inventory passes, idempotency and
 moderation behavior remain intact, migration history never creates transient
 categorical strings, and all gates pass.
 
+### 5. Application-Owned Snapshot JSON Normalization
+
+Status: active
+Lane: Database domain types
+Plan: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
+Batch outcome: Immutable comparison snapshots use typed relational child rows,
+and alert events use typed fact columns; neither first-party model stores
+application-owned categorical state in JSON.
+Next action: write the failing normalized-storage test and characterize the
+current snapshot hydration/query-budget contract.
+Owned paths:
+
+- `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
+- `priv/repo/migrations/20260713180000_create_comparison_snapshots.exs`
+- `lib/product_compare_schemas/catalog/comparison_snapshot.ex`
+- `lib/product_compare_schemas/catalog/comparison_snapshot/**`
+- `lib/product_compare_schemas/catalog/recommendation_algorithm.ex`
+- `lib/product_compare_schemas/alerts/alert_event.ex`
+- `lib/product_compare/comparison_snapshots/**`
+- `lib/product_compare/alerts/**`
+- affected comparison snapshot, alert, SEO, and GraphQL schema/resolver files
+- `test/product_compare/repo/application_json_domain_storage_test.exs`
+- affected comparison snapshot, alert, SEO, GraphQL, and query-budget tests
+- `docs/work/database-domain-types.md`
+
+Internal slices:
+
+- Comparison snapshot typed child-table storage.
+- Alert event typed fact storage.
+- Association-based hydration with the existing public GraphQL shape.
+
+Prerequisites:
+
+- Native enum and controlled reference milestones are complete.
+- Preserve snapshot immutability, owner privacy, revocation, ordering, and
+  bounded SELECT counts.
+
+Verification:
+
+- application-owned JSON storage contract
+- comparison snapshot and alert context suites
+- affected SEO, GraphQL, and query-budget suites
+- `mix test`
+- `mix typecheck`
+- `mix format --check-formatted`
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: snapshot payload and alert fact JSON columns are absent, typed
+rows preserve current behavior and ordering, query budgets remain bounded, and
+all gates pass.
+
 ## Ready Work
 
-### 5. pnpm, mise, Rolldown, and Oxc Toolchain
+### 6. pnpm, mise, Rolldown, and Oxc Toolchain
 
 Status: ready
 Lane: Frontend platform
@@ -332,7 +383,7 @@ Exit condition: all active frontend commands run through pnpm/mise, no Bun/Nix
 contract remains, Rolldown/Oxc are exercised by gates, StyleX output is
 preserved, and full verification passes.
 
-### 6. Colocate Single-Consumer Relay Operations
+### 7. Colocate Single-Consumer Relay Operations
 
 Status: ready
 Lane: Frontend Relay ownership
@@ -372,7 +423,7 @@ Exit condition: no authored one-export file exists solely for a
 single-consumer mutation, shared operations remain explicit, and every
 frontend gate passes.
 
-### 7. Rename Discussion Content Ownership
+### 8. Rename Discussion Content Ownership
 
 Status: ready
 Lane: Backend naming

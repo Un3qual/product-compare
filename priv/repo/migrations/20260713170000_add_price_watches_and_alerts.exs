@@ -87,7 +87,6 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :state, :alert_delivery_state, null: false
       add :attempted_at, :utc_datetime_usec, null: false
       add :delivered_at, :utc_datetime_usec
-      add :failure_category, :string
 
       timestamps(type: :utc_datetime_usec, updated_at: false)
     end

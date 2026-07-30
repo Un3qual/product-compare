@@ -69,7 +69,6 @@ defmodule ProductCompare.Discussions.Reads.ViewerSubmissions do
     |> where(
       [question],
       question.created_by == ^user_id and question.product_id in ^product_ids and
-        question.kind == :question and
         question.moderation_status in ^@non_public_owner_statuses
     )
     |> owner_partitioned_submissions(:product_id)

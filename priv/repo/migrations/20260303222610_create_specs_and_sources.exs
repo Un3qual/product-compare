@@ -152,7 +152,6 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :attribute_id, references(:attributes, type: :bigint, on_delete: :delete_all),
         null: false
 
-      add :lang, :text, null: false
       add :expression, :text, null: false
 
       timestamps(type: :utc_datetime_usec)

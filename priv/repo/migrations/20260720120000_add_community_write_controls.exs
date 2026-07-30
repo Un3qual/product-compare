@@ -4,7 +4,6 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
   def up do
     create table(:community_write_receipts) do
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
-      add :mutation_kind, :string, null: false
       add :idempotency_key, :string, size: 128, null: false
       add :payload_digest, :binary, null: false
       add :content_type, :community_content_type, null: false
@@ -15,15 +14,11 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
 
     create unique_index(
              :community_write_receipts,
-             [:user_id, :mutation_kind, :idempotency_key],
-             name: :community_write_receipts_user_mutation_key_uq
+             [:user_id, :content_type, :idempotency_key],
+             name: :community_write_receipts_user_content_key_uq
            )
 
     create index(:community_write_receipts, [:content_type, :content_entropy_id])
-
-    create constraint(:community_write_receipts, :community_write_receipts_mutation_kind_check,
-             check: "mutation_kind IN ('review', 'question', 'answer')"
-           )
 
     create constraint(:community_write_receipts, :community_write_receipts_key_check,
              check:

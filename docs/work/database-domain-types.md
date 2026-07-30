@@ -5,7 +5,7 @@
 - Status: active
 - Priority: P1
 - Source of truth: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-- Last verified: 2026-07-30 after the source/provider reference milestone gates.
+- Last verified: 2026-07-30 after the discriminator-removal milestone gates.
 
 ## Target Outcome
 
@@ -40,17 +40,25 @@ normalized domain state.
   never become invented controlled rows.
 - CJ source resolution and provider claiming use conflict-safe insert/fetch and
   `FOR UPDATE` locking rather than read-modify-write updates.
+- Reputation events reference controlled event-type rows and no longer carry a
+  free-form reason or polymorphic table-name/id pair. No subject column was
+  invented because the repository has no concrete reputation event producer.
+- Derived formulas, alert delivery attempts, and question threads no longer
+  store unused or single-value categorical columns.
+- Community idempotency receipts use their native PostgreSQL `content_type`
+  enum in the unique identity instead of duplicating it in a string
+  `mutation_kind`.
+- Unreleased feed-review migrations were removed, and CJ lifecycle storage is
+  created directly in its final native-enum and foreign-key shape.
 
 ## Active Batch
 
-- Redundant discriminator removal will normalize reputation event types and
-  remove generic, unused, single-value, duplicate, and transient category
-  strings.
+- Application-owned comparison snapshot and alert fact JSON normalization.
 
 ## Dependent Successors
 
-- Application-owned comparison snapshot and alert fact JSON normalization
-  follows the reference-domain milestones.
+- The remaining approved GraphQL, frontend, naming, Effect, toolchain, and RMW
+  batches follow the database-domain program.
 
 ## Verification
 
@@ -80,6 +88,15 @@ normalized domain state.
 - `mix test`: 984 tests, 0 failures.
 - `mix typecheck`, `mix format --check-formatted`,
   `mix work_queue.validate`, and `git diff --check`: passed.
+- `MIX_ENV=test mix ecto.reset`: rewritten migration history applied through
+  `20260727121000` without creating the transient feed-review columns.
+- Discriminator storage, direct CJ migration, discussions, thread CRUD, and
+  alert suites: 42 tests, 0 failures.
+- Affected community, alert, and dataloader GraphQL suites: 59 tests,
+  0 failures.
+- `mix test`: 981 tests, 0 failures.
+- `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate` (3 ready rows), and `git diff --check`: passed.
 
 ## Blocker Rule
 

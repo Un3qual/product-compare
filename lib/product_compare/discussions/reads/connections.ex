@@ -39,7 +39,6 @@ defmodule ProductCompare.Discussions.Reads.Connections do
 
   defp page_query(:questions, parent_ids, offset, fetch_limit) do
     ProductThread
-    |> where([question], question.kind == :question)
     |> published_page_query(parent_ids, :product_id, :desc, offset, fetch_limit)
     |> join(:left, [question, _ranked], accepted_post in assoc(question, :accepted_post))
     |> preload([_question, _ranked, accepted_post], accepted_post: accepted_post)

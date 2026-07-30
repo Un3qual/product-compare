@@ -306,23 +306,23 @@ Commit with `git commit -m "refactor: normalize ingestion reference domains"`.
 - Consumes: Task 1 community enums.
 - Produces: controlled reputation event types and no generic table-name, formula-language, unused failure-category, single-value thread-kind, duplicate receipt-kind, or transient feed-review strings.
 
-- [ ] **Step 1: Write the failing absence/reference test**
+- [x] **Step 1: Write the failing absence/reference test**
 
 Assert `reputation_events.reputation_event_type_id` references `reputation_event_types`, and assert absence of `ref_table`, `ref_id`, `derived_formulas.lang`, `alert_delivery_attempts.failure_category`, `product_threads.kind`, and `community_write_receipts.mutation_kind`.
 
-- [ ] **Step 2: Run the test and verify RED**
+- [x] **Step 2: Run the test and verify RED**
 
 Run `mix test test/product_compare/repo/categorical_discriminator_storage_test.exs`.
 
-- [ ] **Step 3: Normalize reputation events**
+- [x] **Step 3: Normalize reputation events**
 
 Create `reputation_event_types(id, code, name, default_delta)` and replace `reason` with `reputation_event_type_id`. Remove the generic reference pair; add explicit subject foreign keys only alongside a concrete event producer and exactly-one-target constraint.
 
-- [ ] **Step 4: Remove unused and duplicate columns**
+- [x] **Step 4: Remove unused and duplicate columns**
 
 Remove formula language, alert failure category, single-value question kind, and duplicate receipt mutation kind. Key community idempotency by `{user_id, content_type, idempotency_key}`. Rewrite the feed-review/CJ migrations so the transient string review status is never created.
 
-- [ ] **Step 5: Verify and commit**
+- [x] **Step 5: Verify and commit**
 
 Run the storage test, affected context and GraphQL suites, migration tests, `mix typecheck`, `mix format --check-formatted`, `mix test`, `mix work_queue.validate`, and `git diff --check`.
 

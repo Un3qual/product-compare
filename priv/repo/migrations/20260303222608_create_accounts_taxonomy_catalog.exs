@@ -23,13 +23,25 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
     create unique_index(:user_reputation, [:user_id])
     create unique_index(:user_reputation, [:entropy_id])
 
+    create table(:reputation_event_types) do
+      add :code, :text, null: false
+      add :name, :text, null: false
+      add :default_delta, :bigint, null: false
+
+      timestamps(type: :utc_datetime_usec)
+    end
+
+    create unique_index(:reputation_event_types, [:code])
+
     create table(:reputation_events) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
+
+      add :reputation_event_type_id,
+          references(:reputation_event_types, type: :bigint, on_delete: :restrict),
+          null: false
+
       add :delta, :bigint, null: false
-      add :reason, :text, null: false
-      add :ref_table, :text
-      add :ref_id, :bigint
 
       timestamps(type: :utc_datetime_usec, updated_at: false)
     end
