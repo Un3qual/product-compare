@@ -332,11 +332,11 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Frontend Relay Work
 
 ### 7. Colocate Single-Consumer Relay Operations
 
-Status: ready
+Status: active
 Lane: Frontend Relay ownership
 Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
 Batch outcome: GraphQL mutations used by one route or component are colocated
@@ -350,6 +350,7 @@ Owned paths:
 - affected `assets/test/routes/**`
 - affected `assets/src/__generated__/**`
 - a focused authored Relay operation ownership test
+- `docs/work/frontend-relay-operation-ownership.md`
 
 Internal slices:
 
@@ -373,6 +374,8 @@ Verification:
 Exit condition: no authored one-export file exists solely for a
 single-consumer mutation, shared operations remain explicit, and every
 frontend gate passes.
+
+## Ready Work
 
 ### 8. Rename Discussion Content Ownership
 
@@ -458,6 +461,57 @@ Verification:
 Exit condition: every modifying action is classified, every confirmed race has
 a database-owned fix and regression, and no unsafe read-modify-write path
 remains.
+
+### 10. Relay-Native Modular GraphQL Schema
+
+Status: ready
+Lane: Backend GraphQL architecture
+Plan: `docs/superpowers/plans/2026-07-30-relay-native-graphql-schema-implementation-plan.md`
+Batch outcome: the API uses Absinthe Relay node/connection macros, context-owned
+schema modules, inline Ecto Dataloader associations, and no unapproved KV
+source or shallow resolver facade.
+Next action: add the failing schema-architecture contract and freeze current
+Node, connection, authorization, batching, and query-budget behavior.
+Owned paths:
+
+- `mix.exs`
+- `mix.lock`
+- `lib/product_compare_web/schema.ex`
+- `lib/product_compare_web/schema/**`
+- `lib/product_compare_web/graphql/loader/**`
+- affected `lib/product_compare_web/graphql/**`
+- affected shallow `lib/product_compare_web/resolvers/**`
+- affected `test/product_compare_web/graphql/**`
+- affected generated GraphQL schema and Relay artifacts
+- `docs/work/relay-native-graphql-schema.md`
+
+Internal slices:
+
+- Relay modern-mode and global Node contract.
+- Relay macro-owned nodes, connections, edges, and page info.
+- Context folders with separate type, query, and mutation modules.
+- Ecto Dataloader/direct set-based replacement of all 13 KV sources.
+- Shallow resolver-facade deletion and direct schema ownership.
+
+Prerequisites:
+
+- No active row owns backend GraphQL schema, resolver, loader, or GraphQL test
+  paths.
+- Any KV exception requires new explicit user approval before implementation.
+
+Verification:
+
+- schema architecture, snapshot, Node, connection, authorization, and
+  Dataloader/query-budget suites
+- full backend tests, type checks, and quality gates
+- Relay validation, frontend tests, client/SSR builds, and bundle checks
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all supported nodes and connections use Absinthe Relay macros,
+the schema is split by context without a `Common` module, associations use
+inline Ecto Dataloader, all 13 KV sources and shallow resolver facades are
+absent, and every correctness/query-budget gate passes.
 
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
