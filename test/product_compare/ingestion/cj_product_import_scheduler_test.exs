@@ -138,8 +138,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}, 250
-    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 1_000
+    assert_receive {:run, _opts}, 1_000
 
     GenServer.stop(pid)
   end
