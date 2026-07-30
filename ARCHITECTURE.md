@@ -10,7 +10,8 @@
 ## System Overview
 
 - Phoenix owns the product API, session cookies, and GraphQL contract at `/api/graphql`.
-- Bun + React Router SSR under `assets/` owns the frontend route shells and browser UX.
+- pnpm, Rolldown-backed Vite, and React Router SSR under `assets/` own the
+  frontend route shells and browser UX; mise pins the repository runtimes.
 - Browser auth flows must use GraphQL over `/api/graphql`; Phoenix remains the cookie-backed session authority.
 
 ## Current Delivered Frontend Baseline

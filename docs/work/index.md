@@ -334,53 +334,6 @@ all gates pass.
 
 ## Ready Work
 
-### 6. pnpm, mise, Rolldown, and Oxc Toolchain
-
-Status: ready
-Lane: Frontend platform
-Plan: `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
-Batch outcome: mise owns repository runtime versions, pnpm owns frontend
-dependencies, Vite builds through Rolldown, Oxc supplies compatible fast static
-checks, StyleX remains intact, and no active Bun/Nix contract remains.
-Next action: inventory active Bun/Nix/tool-version references and add the
-failing repository toolchain contract test.
-Owned paths:
-
-- `.mise.toml`
-- `flake.nix`
-- `flake.lock`
-- `assets/package.json`
-- `assets/bun.lock`
-- `assets/bunfig.toml`
-- `assets/pnpm-lock.yaml`
-- `assets/vite.config.ts`
-- `assets/stylex-plugin.ts`
-- active CI, Mix alias, script, README, and work-doc commands that execute Bun
-
-Internal slices:
-
-- Runtime and package-manager ownership.
-- pnpm lockfile and active command conversion.
-- Rolldown-backed Vite build adoption.
-- Oxc checks with the StyleX Babel transform preserved.
-
-Prerequisites:
-
-- No active row owns frontend dependency, build, or runtime configuration.
-- Package installation can resolve the pinned compatible dependency graph.
-
-Verification:
-
-- frozen pnpm install and repository toolchain contract test
-- Relay validation, TypeScript, frontend unit tests, client/SSR builds, and
-  bundle checks
-- backend integration gates
-- `git diff --check`
-
-Exit condition: all active frontend commands run through pnpm/mise, no Bun/Nix
-contract remains, Rolldown/Oxc are exercised by gates, StyleX output is
-preserved, and full verification passes.
-
 ### 7. Colocate Single-Consumer Relay Operations
 
 Status: ready

@@ -60,20 +60,20 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Produces: one mise-controlled local runtime contract and one pnpm-controlled
   frontend dependency/build contract.
 
-- [ ] Inventory every executable Bun, Nix, asdf, and frontend tool-version
+- [x] Inventory every executable Bun, Nix, asdf, and frontend tool-version
   reference; distinguish historical prose from active commands.
-- [ ] Add a failing repository contract test that rejects active Bun commands,
+- [x] Add a failing repository contract test that rejects active Bun commands,
   Bun lockfiles, and missing mise/pnpm metadata.
-- [ ] Pin the repository's actual Erlang, Elixir, Node.js, pnpm, and PostgreSQL
+- [x] Pin the repository's actual Erlang, Elixir, Node.js, pnpm, and PostgreSQL
   requirements in mise without inventing version drift.
-- [ ] Generate the pnpm lockfile, rewrite package scripts and active repository
+- [x] Generate the pnpm lockfile, rewrite package scripts and active repository
   gates, and remove Bun/Nix ownership.
-- [ ] Adopt the supported Rolldown-backed Vite package and Oxc lint/format
+- [x] Adopt the supported Rolldown-backed Vite package and Oxc lint/format
   checks while retaining the StyleX Babel transform.
-- [ ] Run pnpm install with a frozen lockfile, Relay validation, typecheck,
+- [x] Run pnpm install with a frozen lockfile, Relay validation, typecheck,
   unit tests, client/SSR production builds, bundle checks, backend integration
   gates, and `git diff --check`.
-- [ ] Commit with `build: adopt pnpm mise and rolldown tooling`.
+- [x] Commit with `build: adopt pnpm mise and rolldown tooling`.
 
 ### Task 2: Colocate Single-Consumer Relay Operations
 

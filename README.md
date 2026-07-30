@@ -8,13 +8,13 @@ Phoenix modular-monolith backend for collaborative, AI-assisted product comparis
 - Erlang/OTP 28
 - Phoenix 1.8.x
 - PostgreSQL 18
-- Nix dev shell + Docker Compose
+- mise + pnpm + Docker Compose
 
 ## Local Development
 
-1. Enter nix shell:
+1. Install the pinned runtimes:
    ```bash
-   XDG_CACHE_HOME=$PWD/.cache nix --extra-experimental-features 'nix-command flakes' develop
+   mise install
    ```
 2. Start Postgres 18:
    ```bash
@@ -83,10 +83,10 @@ Schema modules live under `ProductCompareSchemas` and remain schema-only.
   runs the complete frontend gate.
 - `mix ci` - checks backend formatting, runs all backend checks and tests, then
   runs the complete frontend gate.
-- `cd assets && bun run check` - validates Relay artifacts, type-checks, runs
+- `cd assets && pnpm run check` - validates Relay artifacts, type-checks, runs
   all unit tests, builds the client and SSR bundles, and verifies the client
   bundle contract.
-- `cd assets && bun run test:e2e` - runs the service-dependent Playwright suite
+- `cd assets && pnpm run test:e2e` - runs the service-dependent Playwright suite
   separately from the deterministic frontend gate.
 
 ## Planning Docs

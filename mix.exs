@@ -91,7 +91,7 @@ defmodule ProductCompare.MixProject do
         "reach.check --smells --strict --baseline .reach-baseline.json",
         "dialyzer"
       ],
-      frontend_check: ["cmd --cd assets bun run check"],
+      frontend_check: ["cmd --cd assets pnpm run check"],
       ci: [
         "work_queue.validate",
         "format --check-formatted",
