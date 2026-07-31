@@ -15,12 +15,21 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Discussions.CommunityReport
+  alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Discussions.ProductThread
+  alias ProductCompareSchemas.Discussions.ThreadPost
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   @saved_set_names ["Gaming shortlist", "Home theater shortlist"]
+  @watch_entropy_ids %{
+    target: "d3ca0000-0000-4000-8000-000000000001",
+    percentage_drop: "d3ca0000-0000-4000-8000-000000000002",
+    back_in_stock: "d3ca0000-0000-4000-8000-000000000003",
+    newly_available: "d3ca0000-0000-4000-8000-000000000004"
+  }
 
   @spec seed!(map(), map(), map(), DateTime.t()) :: map()
   def seed!(accounts, catalog, marketplace, %DateTime{} = anchor) do
@@ -115,17 +124,14 @@ defmodule ProductCompare.DevSeeds.Engagement do
     fresh_offer = marketplace.offers.fresh
     trigger = marketplace.price_points.fresh
 
-    delete_seed_watches!(shopper.id, products, marketplace.offers)
-
     target =
-      Alerts.create_watch(shopper.id, %{
+      recreate_seed_watch!(shopper.id, :target, %{
         product_id: products.monitor_16_9.id,
         rule_type: :target_price,
         currency: "USD",
         target_amount: "700.00",
         cooldown_seconds: 86_400
       })
-      |> Support.expect!("target-price watch")
 
     trigger
     |> PricePoint.changeset(%{
@@ -137,7 +143,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> Support.expect!("percentage watch baseline")
 
     percentage_drop =
-      Alerts.create_watch(shopper.id, %{
+      recreate_seed_watch!(shopper.id, :percentage_drop, %{
         product_id: products.monitor_16_9.id,
         merchant_product_id: fresh_offer.id,
         rule_type: :percentage_drop,
@@ -145,7 +151,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
         percentage_drop: "20",
         cooldown_seconds: 86_400
       })
-      |> Support.expect!("percentage-drop watch")
 
     Repo.get!(PricePoint, trigger.id)
     |> PricePoint.changeset(%{in_stock: false})
@@ -153,14 +158,13 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> Support.expect!("back-in-stock watch baseline")
 
     back_in_stock =
-      Alerts.create_watch(shopper.id, %{
+      recreate_seed_watch!(shopper.id, :back_in_stock, %{
         product_id: products.monitor_16_9.id,
         merchant_product_id: fresh_offer.id,
         rule_type: :back_in_stock,
         currency: "USD",
         cooldown_seconds: 86_400
       })
-      |> Support.expect!("back-in-stock watch")
 
     # Alert setup temporarily mutates this shared observation. Restore it before operations
     # reuse its ID and values for purchase-price attribution.
@@ -177,7 +181,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
       |> Support.expect!("restore alert trigger price")
 
     newly_available =
-      Alerts.create_watch(shopper.id, %{
+      recreate_seed_watch!(shopper.id, :newly_available, %{
         product_id: products.projector.id,
         merchant_product_id: marketplace.offers.unobserved.id,
         rule_type: :newly_available,
@@ -185,7 +189,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
         enabled: false,
         cooldown_seconds: 86_400
       })
-      |> Support.expect!("disabled newly-available watch")
 
     Alerts.evaluate_price_point(restored_trigger.id, now: anchor)
     |> Support.expect!("local alert evaluation")
@@ -218,34 +221,31 @@ defmodule ProductCompare.DevSeeds.Engagement do
     }
   end
 
-  defp delete_seed_watches!(shopper_id, products, offers) do
-    scenarios = [
-      {products.monitor_16_9.id, nil, :target_price},
-      {products.monitor_16_9.id, offers.fresh.id, :percentage_drop},
-      {products.monitor_16_9.id, offers.fresh.id, :back_in_stock},
-      {products.projector.id, offers.unobserved.id, :newly_available}
-    ]
+  defp recreate_seed_watch!(shopper_id, key, attrs) do
+    entropy_id = Map.fetch!(@watch_entropy_ids, key)
 
-    Enum.each(scenarios, fn {product_id, merchant_product_id, rule_type} ->
-      PriceWatchRule
-      |> where(
-        [watch],
-        watch.user_id == ^shopper_id and watch.product_id == ^product_id and
-          watch.rule_type == ^rule_type
-      )
-      |> where(
-        [watch],
-        ^if(is_nil(merchant_product_id),
-          do: dynamic([watch], is_nil(watch.merchant_product_id)),
-          else: dynamic([watch], watch.merchant_product_id == ^merchant_product_id)
-        )
-      )
-      |> Repo.all()
-      |> Enum.each(fn watch ->
-        Alerts.delete_watch(shopper_id, watch.entropy_id)
-        |> Support.expect!("delete #{rule_type} watch")
-      end)
-    end)
+    case Repo.get_by(PriceWatchRule, entropy_id: entropy_id) do
+      nil ->
+        :ok
+
+      %PriceWatchRule{user_id: ^shopper_id} = watch ->
+        AlertEvent
+        |> where([event], event.watch_rule_id == ^watch.id)
+        |> Repo.delete_all()
+
+        Alerts.delete_watch(shopper_id, entropy_id)
+        |> Support.expect!("delete #{key} watch")
+
+      %PriceWatchRule{user_id: conflicting_user_id} ->
+        raise "development seed #{key} watch belongs to user #{conflicting_user_id}"
+    end
+
+    shopper_id
+    |> Alerts.create_watch(attrs)
+    |> Support.expect!("#{key} watch")
+    |> Ecto.Changeset.change(entropy_id: entropy_id)
+    |> Repo.update()
+    |> Support.expect!("reserve #{key} watch")
   end
 
   defp seed_community!(accounts, products) do
@@ -349,7 +349,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
       Discussions.submit_review(owner.id, product.id, attrs, idempotency_key)
       |> Support.expect!("community review #{idempotency_key}")
 
-    review = maybe_restore_owned!(:review, owner, review, attrs, status)
+    review = maybe_restore_owned!(:review, review, attrs, status)
     moderate_owned!(:review, moderator, review, status)
   end
 
@@ -358,7 +358,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
       Discussions.ask_question(owner.id, product.id, attrs, idempotency_key)
       |> Support.expect!("community question #{idempotency_key}")
 
-    question = maybe_restore_owned!(:question, owner, question, attrs, status)
+    question = maybe_restore_owned!(:question, question, attrs, status)
 
     case status do
       :pending -> question
@@ -371,18 +371,24 @@ defmodule ProductCompare.DevSeeds.Engagement do
       Discussions.answer_question(owner.id, question.entropy_id, body, idempotency_key)
       |> Support.expect!("community answer #{idempotency_key}")
 
-    answer = maybe_restore_owned!(:answer, owner, answer, %{body: body}, status)
+    answer = maybe_restore_owned!(:answer, answer, %{body: body}, status)
     moderate_owned!(:answer, moderator, answer, status)
   end
 
-  defp maybe_restore_owned!(type, owner, record, attrs, desired_status) do
-    record = restore_removed_owned!(type, record)
-
-    if owned_content_matches?(type, record, attrs) and
+  defp maybe_restore_owned!(type, record, attrs, desired_status) do
+    if record.moderation_status != :removed and owned_content_matches?(type, record, attrs) and
          (desired_status != :pending or record.moderation_status == :pending) do
       record
     else
-      Discussions.update_owned(owner.id, type, record.entropy_id, attrs)
+      record
+      |> owned_seed_changeset(type, attrs)
+      |> Ecto.Changeset.change(
+        moderation_status: :pending,
+        moderation_note: nil,
+        moderated_by: nil,
+        moderated_at: nil
+      )
+      |> Repo.update()
       |> Support.expect!("restore #{type} #{record.entropy_id}")
     end
   end
@@ -397,21 +403,19 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
   defp owned_content_matches?(:answer, answer, attrs), do: answer.body_md == attrs.body
 
-  defp restore_removed_owned!(_type, %{moderation_status: status} = record)
-       when status != :removed,
-       do: record
-
-  defp restore_removed_owned!(type, record) do
-    record
-    |> Ecto.Changeset.change(
-      moderation_status: :pending,
-      moderation_note: nil,
-      moderated_by: nil,
-      moderated_at: nil
+  defp owned_seed_changeset(%ProductReview{} = review, :review, attrs) do
+    ProductReview.changeset_with_verified_purchase(
+      review,
+      %{rating: attrs.rating, title: attrs.title, body_md: attrs.body},
+      false
     )
-    |> Repo.update()
-    |> Support.expect!("restore removed #{type} #{record.entropy_id}")
   end
+
+  defp owned_seed_changeset(%ProductThread{} = question, :question, attrs),
+    do: ProductThread.changeset(question, %{title: attrs.title, body_md: attrs.body})
+
+  defp owned_seed_changeset(%ThreadPost{} = answer, :answer, attrs),
+    do: ThreadPost.changeset(answer, %{body_md: attrs.body})
 
   defp moderate_owned!(_type, _moderator, %{moderation_status: status} = record, status),
     do: record

@@ -477,14 +477,11 @@ defmodule ProductCompare.DevSeeds.Catalog do
       |> Support.expect!("imported refresh-rate observation")
 
     imported_claim =
-      case imported.claim.status do
-        :accepted ->
-          imported.claim
-
-        :proposed ->
-          Specs.accept_claim(imported.claim.id, accounts.moderator.id)
-          |> Support.expect!("accept imported refresh-rate claim")
-      end
+      restore_accepted_claim!(
+        imported.claim,
+        accounts.moderator,
+        "imported refresh-rate claim"
+      )
 
     Specs.select_current_claim(
       products.monitor_import_feed.id,
@@ -526,27 +523,42 @@ defmodule ProductCompare.DevSeeds.Catalog do
       end
 
     claim =
-      case claim.status do
-        :accepted ->
-          claim
-
-        :proposed ->
-          Specs.accept_claim(claim.id, moderator.id)
-          |> Support.expect!("accept claim #{product.slug}/#{attribute.code}")
-
-        :superseded ->
-          claim
-          |> ProductAttributeClaim.changeset(%{status: :accepted})
-          |> Repo.update()
-          |> Support.expect!("restore claim #{product.slug}/#{attribute.code}")
-
-        other ->
-          raise "development seed claim #{product.slug}/#{attribute.code} has #{other} status"
-      end
+      restore_accepted_claim!(claim, moderator, "claim #{product.slug}/#{attribute.code}")
 
     Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
     |> Support.expect!("current claim #{product.slug}/#{attribute.code}")
 
     claim
+  end
+
+  defp restore_accepted_claim!(
+         %ProductAttributeClaim{status: :accepted} = claim,
+         _moderator,
+         _stage
+       ),
+       do: claim
+
+  defp restore_accepted_claim!(
+         %ProductAttributeClaim{status: :proposed} = claim,
+         moderator,
+         stage
+       ) do
+    Specs.accept_claim(claim.id, moderator.id)
+    |> Support.expect!("accept #{stage}")
+  end
+
+  defp restore_accepted_claim!(
+         %ProductAttributeClaim{status: :superseded} = claim,
+         _moderator,
+         stage
+       ) do
+    claim
+    |> ProductAttributeClaim.changeset(%{status: :accepted})
+    |> Repo.update()
+    |> Support.expect!("restore #{stage}")
+  end
+
+  defp restore_accepted_claim!(%ProductAttributeClaim{status: status}, _moderator, stage) do
+    raise "development seed #{stage} has #{status} status"
   end
 end

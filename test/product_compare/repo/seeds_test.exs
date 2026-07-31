@@ -39,6 +39,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
+  alias ProductCompareSchemas.Discussions.CommunityWriteWindow
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
@@ -912,6 +913,152 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %MerchantFeedCandidate{advertiser_id: nil, cj_program_id: nil} =
              Repo.get!(MerchantFeedCandidate, unmatched_feed.id)
+  end
+
+  test "reruns preserve unrelated watches that share a seeded scope" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    product = Repo.get_by!(Product, slug: "acme-vision-27g")
+
+    assert {:ok, unrelated_watch} =
+             Alerts.create_watch(shopper.id, %{
+               product_id: product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "500.00",
+               cooldown_seconds: 604_800
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %PriceWatchRule{
+             target_amount: target_amount,
+             cooldown_seconds: 604_800
+           } = Repo.get(PriceWatchRule, unrelated_watch.id)
+
+    assert Decimal.equal?(target_amount, Decimal.new("500.00"))
+  end
+
+  test "reruns restore community content without consuming interactive write quota" do
+    previous_config = Application.get_env(:product_compare, ProductCompare.Discussions)
+
+    on_exit(fn ->
+      restore_env(ProductCompare.Discussions, previous_config)
+    end)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+
+    review =
+      Repo.get_by!(ProductReview,
+        user_id: shopper.id,
+        title: "Excellent for fast games"
+      )
+
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 2, question: 10, answer: 30, report: 30]
+    )
+
+    assert {:ok, edited_review} =
+             Discussions.update_owned(shopper.id, :review, review.entropy_id, %{
+               title: "Developer-edited review"
+             })
+
+    assert edited_review.title == "Developer-edited review"
+
+    assert Repo.get_by!(CommunityWriteWindow,
+             user_id: shopper.id,
+             action_kind: :review
+           ).count == 2
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %ProductReview{
+             title: "Excellent for fast games",
+             moderation_status: :published
+           } = Repo.get!(ProductReview, review.id)
+
+    assert Repo.get_by!(CommunityWriteWindow,
+             user_id: shopper.id,
+             action_kind: :review
+           ).count == 2
+  end
+
+  test "reruns restore a superseded imported claim as current" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+    product = Repo.get_by!(Product, slug: "acme-vision-27i-import")
+    imported_current = imported_current_claim(product.id, "refresh_rate")
+    imported_claim = Repo.get!(ProductAttributeClaim, imported_current.claim_id)
+
+    assert {:ok, correction} =
+             Specs.propose_correction(
+               product.id,
+               imported_claim.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("181"), unit_id: imported_claim.unit_id},
+               %{
+                 reason: "Developer exercised the imported claim correction",
+                 explanation: "Synthetic local correction used to exercise the lifecycle."
+               }
+             )
+
+    assert {:ok, _accepted_correction} =
+             Specs.moderate_correction(correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the local correction"
+             })
+
+    assert Repo.get!(ProductAttributeClaim, imported_claim.id).status == :superseded
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(ProductAttributeClaim, imported_claim.id).status == :accepted
+    assert imported_current_claim(product.id, "refresh_rate").claim_id == imported_claim.id
+  end
+
+  test "reruns preserve user-created coupons that reuse a development code" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    merchant = Repo.get_by!(Merchant, domain: "examplemart.test")
+    network = Repo.get_by!(AffiliateNetwork, name: "Development Affiliate Network")
+
+    seeded_coupon =
+      Repo.get_by!(Coupon,
+        merchant_id: merchant.id,
+        code: "DEV-ACTIVE-10",
+        description: "Active synthetic development discount"
+      )
+
+    assert {:ok, unrelated_coupon} =
+             Affiliate.create_coupon(%{
+               merchant_id: merchant.id,
+               affiliate_network_id: network.id,
+               code: "DEV-ACTIVE-10",
+               description: "Developer-created coupon with a reused visible code",
+               discount_type: :percent,
+               discount_value: Decimal.new("25"),
+               valid_from: DateTime.add(seeded_coupon.valid_from, -86_400, :second),
+               valid_to: DateTime.add(seeded_coupon.valid_to, 86_400, :second),
+               terms: "Unrelated local coupon"
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %Coupon{
+             description: "Developer-created coupon with a reused visible code",
+             artifact_id: nil,
+             terms: "Unrelated local coupon"
+           } = Repo.get(Coupon, unrelated_coupon.id)
+
+    assert Repo.get_by!(Coupon,
+             merchant_id: merchant.id,
+             artifact_id: seeded_coupon.artifact_id,
+             code: "DEV-ACTIVE-10"
+           ).id == seeded_coupon.id
   end
 
   test "purchase facts use the linked price observation values" do

@@ -236,7 +236,11 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       }
 
       coupon =
-        (Repo.get_by(Coupon, merchant_id: merchant.id, code: code) || %Coupon{})
+        (Repo.get_by(Coupon,
+           merchant_id: merchant.id,
+           artifact_id: artifact.id,
+           code: code
+         ) || %Coupon{})
         |> Coupon.changeset(attrs)
         |> Repo.insert_or_update()
         |> Support.expect!("coupon #{code}")
