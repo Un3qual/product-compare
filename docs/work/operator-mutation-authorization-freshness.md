@@ -28,9 +28,10 @@ request-context user cannot retain write authority after role revocation.
 - Community `moderateCommunityContent` already demonstrates the required
   database contract: its transaction locks and reloads the operator row before
   locking or changing moderated content.
-- The existing Accounts and Discussions concurrency support uses database
-  backend IDs plus `pg_blocking_pids`, so both lock orders can be tested without
-  sleeps or timing assertions.
+- Existing database concurrency support exposes backend IDs plus
+  `pg_blocking_pids`, so the real affiliate, specification-correction, and
+  CJ-program operations can prove both lock orders without sleeps or elapsed-
+  time assertions.
 - The focused Accounts/Discussions concurrency and affected GraphQL suites pass
   37 tests before implementation. They characterize existing payloads and
   domain behavior but cover revocation only for community moderation.
@@ -49,6 +50,14 @@ request-context user cannot retain write authority after role revocation.
   the other valid serialization order, not an authorization bypass.
 - Acquire the operator row before affiliate, correction, or CJ-program rows so
   every protected path uses one lock order.
+- Prove that the authorization lock and protected write share the owning
+  transaction. For each of the three transaction families, hold its domain row
+  behind a database barrier after the operation has acquired the operator row,
+  then observe revocation waiting on that operation's backend.
+- Exercise the actual affiliate shared transaction path, specification-
+  correction moderation transaction, and CJ-program update transaction. An
+  Accounts-only `lock_operator/1` race is useful unit coverage but cannot
+  satisfy the batch concurrency acceptance boundary.
 - Missing and non-operator database users fail as forbidden; do not expose
   account existence through mutation errors.
 - Keep anonymous-versus-forbidden GraphQL payloads, validation errors, stale
@@ -59,17 +68,22 @@ request-context user cannot retain write authority after role revocation.
 
 ## Internal Slices
 
-1. Accounts-owned transaction-required operator locking with deterministic
-   revocation-first and mutation-first regressions.
-2. Affiliate mutation transactions covering network, program, link, and coupon
-   writes.
-3. Existing specification-correction and CJ-program transaction boundaries
-   rechecking the locked operator before domain rows.
+1. Accounts-owned transaction-required operator locking plus stale-request
+   denial across all six mutation surfaces.
+2. One shared affiliate transaction covering network, program, link, and
+   coupon writes, with revocation-first and mutation-first actual-operation
+   regressions.
+3. Specification-correction and CJ-program owning transactions rechecking the
+   locked operator before domain rows, each with both actual-operation lock
+   orders.
 
 ## Verification
 
+- deterministic actual-operation concurrency coverage for the affiliate,
+  specification-correction, and CJ-program transaction families
+- stale-request-snapshot denial across all six affected GraphQL mutations
 - Accounts and Discussions concurrency suites
-- affiliate workflow, specification correction, and CJ program GraphQL suites
+- affiliate workflow, specification correction, and CJ-program GraphQL suites
 - complete GraphQL and backend suites
 - typecheck, quality, formatting, queue, and diff gates
 

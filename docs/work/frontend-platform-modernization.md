@@ -43,8 +43,9 @@ remains.
 
 ## Delivered
 
-- `.mise.toml` pins Erlang 28.3, Elixir 1.19.4, Node 24.18.1, pnpm 11.18.0,
-  and PostgreSQL 18; unrelated inherited Ruby tool versions are disabled.
+- `.mise.toml` pins Erlang 28.3, Elixir 1.19.4, Node 24.18.1, and pnpm 11.18.0;
+  unrelated inherited Ruby tool versions are disabled. Docker Compose, not
+  mise, owns the PostgreSQL runtime.
 - pnpm owns the dependency graph and lockfile; Bun and Nix metadata and active
   commands are removed.
 - Vite 8 builds through Rolldown. The supported Rolldown Babel bridge preserves

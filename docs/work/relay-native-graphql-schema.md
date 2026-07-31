@@ -14,12 +14,13 @@
 - `ProductCompareWeb.Schema` runs Absinthe Relay modern mode, owns only global
   types and root composition, and imports context-owned query and mutation
   fields.
-- Eleven context folders separately own types, queries, and mutations; no
-  `Common` module or broad legacy type module remains.
+- Eleven context folders each own a type module plus the query/mutation modules
+  that apply; no `Common` module or broad legacy type module remains.
 - All 22 supported global entities use `node object`, and the root Node field
   delegates lookup and authorization through the Relay adapter.
-- All 17 connections are macro-owned, forward-only, bounded by required
-  `first`, and expose non-null edge nodes and cursors.
+- Twenty-two connection fields use 17 macro-owned connection types. They are
+  forward-only, bounded by required `first`, and expose non-null edge nodes and
+  cursors.
 - Cursor parsing, list/query/slice projection, offsets, and limits delegate to
   `Absinthe.Relay.Connection`; project code retains only forward-page policy
   and resolver error translation.

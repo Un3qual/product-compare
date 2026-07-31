@@ -540,10 +540,11 @@ batch and should not be recreated or promoted.
   These are reviewer-sized domain outcomes; their context queries, Dataloader,
   shared-fact, and query-budget steps remain internal slices rather than
   separate queue rows.
-- GraphQL schema type decomposition is the path-disjoint structural successor:
-  the root facade stays stable while shared/account, commerce, catalog, and
-  trust/community declarations move to five domain notation modules under the
-  exact checked-in SDL snapshot.
+- GraphQL schema type decomposition is complete and must not be redispatched.
+  The root facade owns only global types and root composition; eleven context
+  folders each own a type module plus the query/mutation modules that apply.
+  No `Common` or broad legacy type module remains, and the exact checked-in SDL
+  snapshot remains the schema gate.
 - Discussions context decomposition is a path-disjoint structural successor:
   the stable `ProductCompare.Discussions` facade remains caller-facing while
   read/query, legacy CRUD, authenticated submission/owner policy, and operator

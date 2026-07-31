@@ -97,9 +97,10 @@ Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshne
 Batch outcome: every operator-only GraphQL mutation serializes its protected
 write with operator-role revocation instead of trusting the request-context
 user snapshot.
-Next action: add the failing revocation-first and mutation-first lock-order
-regressions, then prove all six affected mutation resolvers reject a stale
-operator snapshot without changing domain state.
+Next action: add failing revocation-first and mutation-first actual-operation
+regressions for the affiliate, correction, and CJ-program transaction families,
+then prove all six mutation surfaces reject a stale operator snapshot without
+changing domain state.
 Owned paths:
 
 - `lib/product_compare/accounts.ex`
@@ -115,10 +116,12 @@ Owned paths:
 
 Internal slices:
 
-- Transaction-required operator-row authorization lock and both serialization
-  orders.
-- Affiliate network, program, link, and coupon mutation adoption.
-- Specification-correction and CJ-program mutation adoption.
+- Transaction-required operator-row authorization lock plus stale-snapshot
+  denial for all six mutations.
+- Shared affiliate network/program/link/coupon transaction with both actual-
+  operation serialization orders.
+- Specification-correction and CJ-program transactions, each with both actual-
+  operation serialization orders.
 
 Prerequisites:
 
@@ -130,8 +133,11 @@ Prerequisites:
 
 Verification:
 
+- actual-operation revocation-first and mutation-first regressions for all
+  three owning transaction families
+- stale-request-snapshot denial for all six mutation surfaces
 - Accounts and Discussions concurrency suites
-- affiliate workflow, specification correction, and CJ program GraphQL suites
+- affiliate workflow, specification correction, and CJ-program GraphQL suites
 - complete GraphQL suite and full backend tests
 - typecheck, quality, and formatting gates
 - `mix work_queue.validate`
@@ -139,8 +145,9 @@ Verification:
 
 Exit condition: a revocation that commits first makes every affected mutation
 return its existing forbidden payload without a domain write, a mutation that
-locks first may commit before revocation, lock ordering is operator row before
-domain rows, and all backend gates pass.
+locks first remains the user-row lock owner while held at its domain-row barrier
+and may commit before revocation, all three owning transactions acquire the
+operator row before domain rows, and all backend gates pass.
 
 ### 16. Application JSON Storage Policy Guard
 
