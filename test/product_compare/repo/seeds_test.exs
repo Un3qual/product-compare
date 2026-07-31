@@ -12,6 +12,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.Affiliate
   alias ProductCompare.Alerts
   alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.CommerceAttribution
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
   alias ProductCompare.Discussions
   alias ProductCompare.Pricing
@@ -30,6 +31,9 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
+  alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
+  alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -37,6 +41,9 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.Source
@@ -462,6 +469,166 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert length(Discussions.list_public_reviews(shopper_review.product_id)) >= 1
   end
 
+  test "seeds synthetic CJ and attribution history and prints a complete local testing guide" do
+    parent = self()
+    original_accounts_config = Application.get_env(:product_compare, Accounts, [])
+    original_product_runner = Application.get_env(:product_compare, :cj_product_import_job_runner)
+    original_feed_runner = Application.get_env(:product_compare, :cj_feed_discovery_job_runner)
+    original_discovery_runner = Application.get_env(:product_compare, :cj_feed_discovery_runner)
+
+    external_call = fn _value ->
+      send(parent, :external_seed_call)
+      raise "development seeds must not invoke external integration hooks"
+    end
+
+    Application.put_env(
+      :product_compare,
+      Accounts,
+      deliver_user_confirmation_instructions: external_call,
+      deliver_user_reset_password_instructions: external_call
+    )
+
+    Application.put_env(:product_compare, :cj_product_import_job_runner, external_call)
+    Application.put_env(:product_compare, :cj_feed_discovery_job_runner, external_call)
+    Application.put_env(:product_compare, :cj_feed_discovery_runner, external_call)
+
+    on_exit(fn ->
+      Application.put_env(:product_compare, Accounts, original_accounts_config)
+      restore_env(:cj_product_import_job_runner, original_product_runner)
+      restore_env(:cj_feed_discovery_job_runner, original_feed_runner)
+      restore_env(:cj_feed_discovery_runner, original_discovery_runner)
+    end)
+
+    cj_workers = [
+      "ProductCompare.Ingestion.Jobs.CJProductImportWorker",
+      "ProductCompare.Ingestion.Jobs.CJFeedDiscoveryWorker"
+    ]
+
+    cj_job_count_before =
+      Repo.aggregate(from(job in Oban.Job, where: job.worker in ^cj_workers), :count, :id)
+
+    output = capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    refute_receive :external_seed_call
+
+    assert Repo.aggregate(from(job in Oban.Job, where: job.worker in ^cj_workers), :count, :id) ==
+             cj_job_count_before
+
+    cj_source = Repo.get_by!(Source, name: "CJ", provider: "cj")
+
+    programs =
+      CJProgram
+      |> where([program], program.source_id == ^cj_source.id)
+      |> where([program], like(program.advertiser_id, "DEV-CJ-ADV-%"))
+      |> Repo.all()
+
+    assert Enum.frequencies_by(programs, & &1.stage) == %{
+             new: 1,
+             considering: 1,
+             selected: 1,
+             applied: 1,
+             accepted: 1,
+             not_pursuing: 1,
+             declined: 1
+           }
+
+    feeds =
+      MerchantFeedCandidate
+      |> where([feed], feed.source_id == ^cj_source.id)
+      |> where([feed], like(feed.provider_feed_id, "DEV-CJ-FEED-%"))
+      |> Repo.all()
+
+    assert Enum.count(feeds, &is_integer(&1.cj_program_id)) == 7
+    assert Enum.count(feeds, &is_nil(&1.cj_program_id)) == 1
+
+    runs =
+      ImportRun
+      |> where([run], run.source_id == ^cj_source.id)
+      |> Repo.all()
+      |> Enum.filter(&String.starts_with?(&1.query["seedScenario"] || "", "development-"))
+
+    assert Enum.frequencies_by(runs, &{&1.surface, &1.status}) == %{
+             {"shoppingProducts", :succeeded} => 1,
+             {"shoppingProducts", :failed} => 1,
+             {"shoppingProductFeeds", :succeeded} => 1,
+             {"shoppingProductFeeds", :failed} => 1
+           }
+
+    failed_runs = Enum.filter(runs, &(&1.status == :failed))
+    assert Enum.all?(failed_runs, &String.contains?(&1.error_summary, "Synthetic development"))
+    refute Enum.any?(failed_runs, &String.contains?(&1.error_summary, "token"))
+
+    conversions =
+      CommerceConversion
+      |> where([conversion], like(conversion.network_conversion_ref, "DEV-CONV-%"))
+      |> Repo.all()
+
+    assert Enum.frequencies_by(conversions, & &1.status) == %{
+             approved: 1,
+             pending: 1,
+             reversed: 1,
+             paid: 1
+           }
+
+    assert Repo.aggregate(
+             from(fact in PurchasePriceFact,
+               where: fact.conversion_id in ^Enum.map(conversions, & &1.id)
+             ),
+             :count,
+             :id
+           ) == 4
+
+    assert Repo.aggregate(
+             from(click in CommerceClickSession,
+               where: like(click.anonymous_id, "development-shopper-%")
+             ),
+             :count,
+             :id
+           ) == 4
+
+    assert %{
+             "metrics" => %{
+               "clicks" => 4,
+               "commission_revenue" => "145.00",
+               "conversions" => 2,
+               "currency" => "USD"
+             }
+           } = CommerceAttribution.dashboard_revenue_summary(currency: "USD")
+
+    for email <- ~w(
+          admin@example.com
+          moderator@example.com
+          shopper@example.com
+          participant@example.com
+          unverified@example.com
+          reset@example.com
+        ) do
+      assert output =~ email
+    end
+
+    for route <- [
+          "/auth/login",
+          "/auth/verify-email?token=",
+          "/auth/reset-password?token=",
+          "/products/acme-vision-27g",
+          "/categories/monitors",
+          "/offers",
+          "/merchants/",
+          "/compare/saved",
+          "/compare/shared/",
+          "/account/alerts",
+          "/account/api-tokens",
+          "/affiliate/setup",
+          "/ingestion/cj-programs",
+          "/commerce/revenue"
+        ] do
+      assert output =~ route
+    end
+
+    assert output =~ "Synthetic"
+    assert output =~ "Development API token"
+  end
+
   defp current_attributes_by_code(product) do
     product.id
     |> Specs.list_current_attributes_for_product()
@@ -482,4 +649,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     )
     |> Repo.one()
   end
+
+  defp restore_env(key, nil), do: Application.delete_env(:product_compare, key)
+  defp restore_env(key, value), do: Application.put_env(:product_compare, key, value)
 end

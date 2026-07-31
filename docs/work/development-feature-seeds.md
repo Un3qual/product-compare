@@ -62,8 +62,14 @@ mailer, or network call.
    snapshot, enabled/disabled watches with read/unread local events, multi-owner
    community moderation examples, one accepted answer/report, and all three
    correction decisions are seeded through existing lifecycle APIs.
-4. Synthetic CJ/attribution history, testing guide, route smoke coverage, and
-   deterministic rerun proof.
+4. Synthetic CJ/attribution history, testing guide, and route smoke coverage.
+   Completed in the operator-workflow milestone: seven CJ lifecycle programs,
+   matched and unmatched feeds, successful/failed import histories, four
+   attribution states with purchase facts, and non-empty public/shopper/operator
+   GraphQL reads are all local-only; the guide prints credentials and concrete
+   test routes after commit.
+5. Deterministic rerun restoration, unrelated-data preservation, and atomic
+   failure proof.
 
 ## Verification
 
@@ -83,7 +89,18 @@ mailer, or network call.
   test/product_compare/alerts test/product_compare/discussions
   test/product_compare/specs` — 114 tests, 0 failures.
 - 2026-07-31: `git diff --check` — clean after the engagement milestone.
-- seed entry-point and development-seed GraphQL suites
+- 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs
+  test/product_compare_web/graphql/development_seeds_test.exs` — 6 tests,
+  0 failures after the synthetic operator-workflow milestone.
+- 2026-07-31: `mix test test/product_compare/ingestion
+  test/product_compare/commerce_attribution
+  test/product_compare_web/graphql/cj_program_queries_test.exs
+  test/product_compare_web/graphql/commerce_revenue_summary_test.exs` — 254
+  tests, 0 failures.
+- External-isolation coverage observed no configured delivery/import runner call
+  and no additional CJ worker job while the complete seed populated synthetic
+  CJ, import, attribution, and revenue history.
+- deterministic rerun and atomic failure regressions
 - affected account, catalog, pricing, affiliate, alert, discussion,
   specification, comparison, ingestion, attribution, and GraphQL suites
 - full backend tests, type checks, quality, formatting, queue, and diff gates

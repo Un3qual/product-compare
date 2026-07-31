@@ -59,21 +59,26 @@ defmodule ProductCompare.DevSeeds.Catalog do
     monitor = upsert_taxon!(type_taxonomy, "monitor", "Monitor", displays)
     projector = upsert_taxon!(type_taxonomy, "projector", "Projector", displays)
 
-    for {taxon, slug, description} <- [
-          {tv, "tvs",
-           "Compare television display specifications, accepted source evidence, and complete current offer observations."},
-          {monitor, "monitors",
-           "Compare monitor display specifications, accepted source evidence, and complete current offer observations."},
-          {projector, "projectors",
-           "Compare projector image specifications, accepted source evidence, and complete current offer observations."}
-        ] do
-      Taxonomy.update_taxon(taxon, %{
-        seo_slug: slug,
-        seo_description: description,
-        seo_indexable: true
-      })
-      |> Support.expect!("search metadata for #{taxon.code}")
-    end
+    search_taxons =
+      for {key, taxon, slug, description} <- [
+            {:tv, tv, "tvs",
+             "Compare television display specifications, accepted source evidence, and complete current offer observations."},
+            {:monitor, monitor, "monitors",
+             "Compare monitor display specifications, accepted source evidence, and complete current offer observations."},
+            {:projector, projector, "projectors",
+             "Compare projector image specifications, accepted source evidence, and complete current offer observations."}
+          ],
+          into: %{} do
+        updated_taxon =
+          Taxonomy.update_taxon(taxon, %{
+            seo_slug: slug,
+            seo_description: description,
+            seo_indexable: true
+          })
+          |> Support.expect!("search metadata for #{taxon.code}")
+
+        {key, updated_taxon}
+      end
 
     desktop_setup =
       upsert_taxon!(use_case_taxonomy, "desktop_setup", "Desktop Setup", nil)
@@ -81,9 +86,9 @@ defmodule ProductCompare.DevSeeds.Catalog do
     %{
       electronics: electronics,
       displays: displays,
-      tv: tv,
-      monitor: monitor,
-      projector: projector,
+      tv: search_taxons.tv,
+      monitor: search_taxons.monitor,
+      projector: search_taxons.projector,
       desktop_setup: desktop_setup,
       gaming: upsert_taxon!(use_case_taxonomy, "gaming", "Gaming", desktop_setup),
       office: upsert_taxon!(use_case_taxonomy, "office", "Office", desktop_setup),
