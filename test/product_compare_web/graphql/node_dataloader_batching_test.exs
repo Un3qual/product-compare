@@ -76,6 +76,52 @@ defmodule ProductCompareWeb.GraphQL.NodeDataloaderBatchingTest do
     )
   end
 
+  test "CJ program node aliases batch enriched summaries and warnings as selections grow", %{
+    conn: conn
+  } do
+    source = CJIngestionFixtures.source_fixture()
+
+    records =
+      Enum.map(1..4, fn index ->
+        advertiser_name = "Node batch merchant #{index}"
+
+        candidate =
+          CJIngestionFixtures.merchant_feed_candidate_fixture(source, %{
+            advertiser_id: "node-summary-advertiser-#{index}",
+            advertiser_name: advertiser_name,
+            product_count: nil,
+            provider_feed_id: "node-summary-feed-#{index}"
+          })
+
+        program = Repo.get!(CJProgram, candidate.cj_program_id)
+
+        %{
+          entropy_id: program.entropy_id,
+          advertiser_name: advertiser_name,
+          feed_count: 1,
+          warning_codes: ["MISSING_PRODUCT_COUNT"]
+        }
+      end)
+
+    conn = operator_conn(conn)
+    initial_records = Enum.take(records, 2)
+
+    {initial_response, initial_queries} =
+      capture_select_queries(fn -> graphql(conn, cj_program_alias_query(initial_records)) end)
+
+    {grown_response, grown_queries} =
+      capture_select_queries(fn -> graphql(conn, cj_program_alias_query(records)) end)
+
+    assert_cj_program_aliases(initial_response, initial_records)
+    assert_cj_program_aliases(grown_response, records)
+
+    initial_budget = query_budget(initial_queries, [:cj_programs, :merchant_feed_candidates])
+    grown_budget = query_budget(grown_queries, [:cj_programs, :merchant_feed_candidates])
+
+    assert initial_budget == grown_budget
+    assert initial_budget == %{cj_programs: 1, merchant_feed_candidates: 2}
+  end
+
   test "self node aliases never batch-read another user", %{conn: conn} do
     user = AccountsFixtures.user_fixture() |> then(&Accounts.get_user!(&1.id))
     other_user = AccountsFixtures.user_fixture() |> then(&Accounts.get_user!(&1.id))
@@ -188,6 +234,41 @@ defmodule ProductCompareWeb.GraphQL.NodeDataloaderBatchingTest do
       #{selections}
     }
     """
+  end
+
+  defp cj_program_alias_query(records) do
+    selections =
+      records
+      |> Enum.with_index(1)
+      |> Enum.map_join("\n", fn {record, index} ->
+        """
+        program#{index}: node(id: "#{relay_id(:cj_program, record.entropy_id)}") {
+          ... on CJProgram {
+            advertiserName
+            feedCount
+            warningCodes
+          }
+        }
+        """
+      end)
+
+    """
+    query CJProgramNodeAliases {
+      #{selections}
+    }
+    """
+  end
+
+  defp assert_cj_program_aliases(%{"data" => data}, records) do
+    records
+    |> Enum.with_index(1)
+    |> Enum.each(fn {record, index} ->
+      assert data["program#{index}"] == %{
+               "advertiserName" => record.advertiser_name,
+               "feedCount" => record.feed_count,
+               "warningCodes" => record.warning_codes
+             }
+    end)
   end
 
   defp assert_node_aliases(%{"data" => data}, expected_count) do

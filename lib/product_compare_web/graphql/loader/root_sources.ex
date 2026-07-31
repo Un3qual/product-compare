@@ -22,8 +22,14 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec authorized_nodes() :: Dataloader.Ecto.t()
   def authorized_nodes do
-    Dataloader.Ecto.new(Repo, run_batch: &authorized_node_batch/5)
+    Dataloader.Ecto.new(Repo,
+      query: &authorized_node_query/2,
+      run_batch: &authorized_node_batch/5
+    )
   end
+
+  defp authorized_node_query(CJProgram, _params), do: Ingestion.list_cj_programs_query()
+  defp authorized_node_query(schema, _params), do: schema
 
   defp authorized_node_batch(schema, _query, {:visible_to, viewer_id}, entropy_ids, _repo_opts)
        when schema in [ProductReview, ProductThread, ThreadPost] and

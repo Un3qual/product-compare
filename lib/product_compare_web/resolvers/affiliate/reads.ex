@@ -16,8 +16,7 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
           {:ok, map()}
           | {:error, String.t() | GraphQLErrors.top_level_error()}
   def active_coupons(_parent, args, resolution) when is_map(args) do
-    with {:ok, _operator, merchant_id, attrs, _connection_args} <-
-           normalize_active_coupon_request(args, resolution),
+    with {:ok, merchant_id, attrs} <- normalize_active_coupon_request(args, resolution),
          {:ok, connection} <- active_coupon_connection(merchant_id, attrs) do
       {:ok, connection}
     else
@@ -54,15 +53,11 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
     end
   end
 
-  defp active_coupon_connection(merchant_id, args, opts \\ []) do
+  defp active_coupon_connection(merchant_id, args) do
     now =
-      if Keyword.get(opts, :allow_at?, true) do
-        case Input.fetch_value(args, :at) do
-          %DateTime{} = at -> at
-          _ -> DateTime.utc_now()
-        end
-      else
-        DateTime.utc_now()
+      case Input.fetch_value(args, :at) do
+        %DateTime{} = at -> at
+        _ -> DateTime.utc_now()
       end
 
     merchant_id
@@ -71,11 +66,11 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
   end
 
   defp normalize_active_coupon_request(input, resolution) do
-    with {:ok, operator} <- Authorization.require_operator(resolution),
+    with {:ok, _operator} <- Authorization.require_operator(resolution),
          {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_merchant_id(input),
          connection_args = Input.connection_args(attrs),
          {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      {:ok, operator, merchant_id, attrs, connection_args}
+      {:ok, merchant_id, attrs}
     end
   end
 
