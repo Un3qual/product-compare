@@ -491,7 +491,8 @@ defmodule ProductCompare.DevSeeds.Catalog do
       ProductAttributeClaim
       |> where(
         [claim],
-        claim.product_id == ^product.id and claim.attribute_id == ^attribute.id
+        claim.product_id == ^product.id and claim.attribute_id == ^attribute.id and
+          claim.status in [:proposed, :accepted]
       )
       |> where(
         [claim],

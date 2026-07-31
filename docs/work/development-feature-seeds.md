@@ -58,6 +58,10 @@ mailer, or network call.
    out-of-stock, inactive, and unobserved states; synthetic source evidence,
    affiliate programs/links, and active/future/expired coupons are local-only.
 3. Saved/shared comparison, alert, community, and correction lifecycles.
+   Completed in the engagement milestone: two saved sets, one stable public
+   snapshot, enabled/disabled watches with read/unread local events, multi-owner
+   community moderation examples, one accepted answer/report, and all three
+   correction decisions are seeded through existing lifecycle APIs.
 4. Synthetic CJ/attribution history, testing guide, route smoke coverage, and
    deterministic rerun proof.
 
@@ -73,6 +77,12 @@ mailer, or network call.
   0 failures.
 - 2026-07-31: `git diff --check` — clean after the catalog/marketplace
   milestone.
+- 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs` — 4 tests,
+  0 failures after the engagement milestone.
+- 2026-07-31: `mix test test/product_compare/comparison_snapshots_test.exs
+  test/product_compare/alerts test/product_compare/discussions
+  test/product_compare/specs` — 114 tests, 0 failures.
+- 2026-07-31: `git diff --check` — clean after the engagement milestone.
 - seed entry-point and development-seed GraphQL suites
 - affected account, catalog, pricing, affiliate, alert, discussion,
   specification, comparison, ingestion, attribution, and GraphQL suites

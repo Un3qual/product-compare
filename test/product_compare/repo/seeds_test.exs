@@ -4,11 +4,16 @@ Code.require_file(Path.expand("../../../priv/repo/seeds/accounts.exs", __DIR__))
 defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   import ExUnit.CaptureIO
 
   alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
+  alias ProductCompare.Alerts
+  alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
+  alias ProductCompare.Discussions
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
@@ -20,7 +25,15 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
+  alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Discussions.CommunityReport
+  alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Discussions.ProductThread
+  alias ProductCompareSchemas.Discussions.ThreadPost
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -28,6 +41,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
+  alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   @seed_password "supersecretpass123"
 
@@ -309,6 +323,143 @@ defmodule ProductCompare.Repo.SeedsTest do
              & &1.code
            ) ==
              ["DEV-ACTIVE-10"]
+  end
+
+  test "seeds saved comparison, alert, community, and correction lifecycles" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Accounts.get_user_by_email("shopper@example.com")
+    participant = Accounts.get_user_by_email("participant@example.com")
+
+    saved_sets =
+      SavedComparisonSet
+      |> where(
+        [saved_set],
+        saved_set.user_id == ^shopper.id and
+          saved_set.name in ["Gaming shortlist", "Home theater shortlist"]
+      )
+      |> preload(:items)
+      |> Repo.all()
+      |> Map.new(&{&1.name, &1})
+
+    assert Map.keys(saved_sets) |> Enum.sort() ==
+             ["Gaming shortlist", "Home theater shortlist"]
+
+    assert length(saved_sets["Gaming shortlist"].items) == 3
+    assert length(saved_sets["Home theater shortlist"].items) == 2
+
+    assert %ComparisonSnapshot{public_token: public_token, revoked_at: nil} =
+             Repo.get_by(ComparisonSnapshot,
+               user_id: shopper.id,
+               title: "Development comparison"
+             )
+
+    assert %ComparisonSnapshot{public_token: ^public_token} =
+             ComparisonSnapshots.get_public(public_token)
+
+    watches =
+      shopper.id
+      |> Alerts.list_watch_rules_query()
+      |> Repo.all()
+
+    assert Enum.map(watches, & &1.rule_type) |> Enum.sort() ==
+             [:back_in_stock, :newly_available, :percentage_drop, :target_price]
+
+    assert Enum.count(watches, & &1.enabled) == 3
+    assert Enum.count(watches, &(not &1.enabled)) == 1
+
+    events =
+      shopper.id
+      |> Alerts.list_alert_events_query()
+      |> Repo.all()
+
+    assert length(events) >= 2
+    assert Enum.any?(events, &match?(%DateTime{}, &1.read_at))
+    assert Enum.any?(events, &is_nil(&1.read_at))
+
+    assert Enum.all?(events, fn event ->
+             %PriceWatchRule{user_id: user_id} = Repo.get!(PriceWatchRule, event.watch_rule_id)
+             user_id == shopper.id
+           end)
+
+    visible_reviews =
+      ProductReview
+      |> where(
+        [review],
+        review.user_id in ^[shopper.id, participant.id] and
+          review.moderation_status == :published
+      )
+      |> Repo.all()
+
+    assert Enum.map(visible_reviews, & &1.user_id) |> Enum.sort() ==
+             Enum.sort([shopper.id, participant.id])
+
+    question =
+      Repo.get_by!(ProductThread,
+        created_by: shopper.id,
+        title: "Which display fits a mixed gaming and movie room?"
+      )
+
+    assert question.moderation_status == :published
+
+    answers =
+      ThreadPost
+      |> where([post], post.thread_id == ^question.id)
+      |> Repo.all()
+
+    assert length(answers) == 2
+
+    assert Enum.any?(
+             answers,
+             &(&1.user_id == participant.id and &1.moderation_status == :published)
+           )
+
+    assert Enum.any?(answers, &(&1.user_id == shopper.id and &1.moderation_status == :hidden))
+    assert question.accepted_post_id in Enum.map(answers, & &1.id)
+
+    assert %ProductThread{moderation_status: :pending} =
+             Repo.get_by(ProductThread,
+               created_by: participant.id,
+               title: "Does the OLED model work well in a bright room?"
+             )
+
+    shopper_review = Enum.find(visible_reviews, &(&1.user_id == shopper.id))
+
+    assert %CommunityReport{reporter_id: reporter_id, review_id: review_id} =
+             Repo.get_by(CommunityReport,
+               reporter_id: participant.id,
+               review_id: shopper_review.id
+             )
+
+    assert reporter_id == participant.id
+    assert review_id == shopper_review.id
+
+    corrections =
+      SpecificationCorrection
+      |> where([correction], correction.submitted_by == ^shopper.id)
+      |> where(
+        [correction],
+        correction.reason in [
+          "Development pending correction example",
+          "Development accepted correction example",
+          "Development rejected correction example"
+        ]
+      )
+      |> Repo.all()
+      |> Map.new(&{&1.reason, &1})
+
+    assert corrections["Development pending correction example"].status == :pending
+    assert corrections["Development accepted correction example"].status == :accepted
+    assert corrections["Development rejected correction example"].status == :rejected
+
+    assert corrections["Development pending correction example"].attribute_id !=
+             corrections["Development accepted correction example"].attribute_id
+
+    assert corrections["Development accepted correction example"].attribute_id !=
+             corrections["Development rejected correction example"].attribute_id
+
+    assert Enum.count(events, &match?(%AlertEvent{}, &1)) == length(events)
+    assert length(Discussions.list_public_reviews(shopper_review.product_id)) >= 1
   end
 
   defp current_attributes_by_code(product) do
