@@ -332,54 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Work
-
-### 12. Radix Form Controls
-
-Status: active
-Lane: Frontend UI foundation
-Plan: `docs/superpowers/plans/2026-07-30-radix-form-controls-implementation-plan.md`
-Batch outcome: visible buttons and form controls use Radix Themes through thin
-project-semantic wrappers wherever Radix provides a faithful equivalent;
-hidden transport inputs remain explicitly native.
-Next action: characterize form submission, accessibility, date-input, select,
-checkbox, text-area, and `asChild` behavior before changing the control
-foundation.
-Owned paths:
-
-- `assets/package.json`
-- `assets/pnpm-lock.yaml`
-- shared application provider and theme entry paths
-- `assets/src/ui/primitives/**`
-- affected visible form controls under `assets/src/routes/**`
-- affected UI and route tests
-- `docs/work/frontend-radix-form-controls.md`
-
-Internal slices:
-
-- Raw-control and wrapper behavior characterization.
-- Radix Themes provider and semantic primitive rebasing.
-- Visible control migration with native hidden-field exceptions.
-- Accessibility, SSR, and bundle-cost verification.
-
-Prerequisites:
-
-- No active row owns the UI primitive layer or affected route controls.
-- StyleX remains the application styling owner.
-
-Verification:
-
-- focused UI and affected route tests
-- visible raw-control architecture scan
-- TypeScript, Oxc, and the full frontend suite
-- Vite client and SSR builds plus the bundle contract
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: every visible control with a faithful Radix equivalent uses the
-project wrapper, native exceptions are explicit, StyleX remains in place, and
-every frontend gate passes.
-
 ## Ready Work
 
 ### 13. Categorical Storage Policy Guard
@@ -455,8 +407,9 @@ Prerequisites:
 
 - No active row owns the affected disclosure consumers.
 - The existing project Collapsible wrapper remains the only primitive boundary.
-- The separately ranked form-control migration retains ownership of inputs,
-  selects, text areas, checkboxes, and the Radix Themes provider.
+- The completed form-control migration owns inputs, selects, text areas,
+  checkboxes, and the Radix Themes provider; those paths remain outside this
+  row except where a disclosure characterization test must render them.
 
 Verification:
 
