@@ -44,10 +44,11 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
       pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
       enqueuer:
         Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJProductImportWorker.enqueue/1)),
+      scheduler: SchedulerSupport.scheduler(opts),
       serviceable_areas: serviceable_areas_option(opts)
     }
 
-    SchedulerSupport.schedule(:run_import, state.initial_delay_ms)
+    SchedulerSupport.schedule(state.scheduler, :run_import, state.initial_delay_ms)
 
     {:ok, state}
   end
@@ -67,7 +68,7 @@ defmodule ProductCompare.Ingestion.CJProductImportScheduler do
 
     state = %{state | cursor: opts[:cursor]}
 
-    SchedulerSupport.schedule(:run_import, state.interval_ms)
+    SchedulerSupport.schedule(state.scheduler, :run_import, state.interval_ms)
 
     {:noreply, state}
   end

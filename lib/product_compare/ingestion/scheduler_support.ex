@@ -12,8 +12,18 @@ defmodule ProductCompare.Ingestion.SchedulerSupport do
     GenServer.start_link(module, opts, genserver_opts)
   end
 
-  @spec schedule(atom(), non_neg_integer()) :: reference()
-  def schedule(message, delay_ms), do: Process.send_after(self(), message, delay_ms)
+  @type scheduler :: (pid(), atom(), non_neg_integer() -> reference())
+
+  @spec schedule(scheduler(), atom(), non_neg_integer()) :: reference()
+  def schedule(scheduler, message, delay_ms), do: scheduler.(self(), message, delay_ms)
+
+  @spec scheduler(keyword()) :: scheduler()
+  def scheduler(opts) do
+    case Keyword.get(opts, :scheduler) do
+      scheduler when is_function(scheduler, 3) -> scheduler
+      _invalid -> &Process.send_after/3
+    end
+  end
 
   @spec schedule_window(DateTime.t() | String.t()) :: String.t()
   def schedule_window(%DateTime{} = datetime) do
