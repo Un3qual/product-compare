@@ -6,7 +6,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   @default_page_size 50
   @max_page_size 100
-  @max_after_cursor_offset 9_223_372_036_854_775_806
+  @max_bigint 9_223_372_036_854_775_807
 
   @type error_reason :: :invalid_cursor | :invalid_first
   @type batch_window :: %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
@@ -15,12 +15,15 @@ defmodule ProductCompareWeb.GraphQL.Connection do
   def batch_window(args) when is_map(args) do
     with {:ok, relay_args} <- relay_args(args),
          {:ok, :forward, first} <- RelayConnection.limit(relay_args, @max_page_size),
-         {:ok, offset} <- RelayConnection.offset(relay_args) do
-      offset = offset || 0
-      {:ok, %{offset: offset, fetch_limit: first + 1}}
+         {:ok, offset} <- RelayConnection.offset(relay_args),
+         fetch_limit = first + 1,
+         offset = offset || 0,
+         true <- offset <= @max_bigint - fetch_limit do
+      {:ok, %{offset: offset, fetch_limit: fetch_limit}}
     else
       {:error, :invalid_first} -> {:error, :invalid_first}
       {:error, _reason} -> {:error, :invalid_cursor}
+      false -> {:error, :invalid_cursor}
     end
   end
 
@@ -91,7 +94,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   defp normalize_after_cursor(cursor) when is_binary(cursor) do
     with {:ok, offset}
-         when is_integer(offset) and offset >= 0 and offset <= @max_after_cursor_offset <-
+         when is_integer(offset) and offset >= 0 and offset <= @max_bigint - 1 <-
            RelayConnection.cursor_to_offset(cursor),
          ^cursor <- RelayConnection.offset_to_cursor(offset) do
       {:ok, cursor}

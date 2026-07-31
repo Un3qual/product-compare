@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
   alias Absinthe.Relay.Connection, as: RelayConnection
   alias ProductCompareWeb.GraphQL.Connection
 
+  @max_bigint 9_223_372_036_854_775_807
   @invalid_after_cursors [
     {"negative offset", "YXJyYXljb25uZWN0aW9uOi0x"},
     {"trailing junk", "YXJyYXljb25uZWN0aW9uOjBqdW5r"},
@@ -174,11 +175,30 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
       end
     end
 
-    test "accept the largest cursor whose successor fits a PostgreSQL bigint" do
-      cursor = "YXJyYXljb25uZWN0aW9uOjkyMjMzNzIwMzY4NTQ3NzU4MDY="
+    test "preserve the direct list and query upper cursor range" do
+      cursor = RelayConnection.offset_to_cursor(@max_bigint - 1)
+      query = from(product in "products", select: product.id)
 
-      assert Connection.batch_window(%{first: 1, after: cursor}) ==
-               {:ok, %{offset: 9_223_372_036_854_775_807, fetch_limit: 2}}
+      assert {:ok, _connection} = Connection.from_list([:first], %{first: 1, after: cursor})
+
+      assert {:ok, _connection} =
+               Connection.from_query(query, %{first: 1, after: cursor}, FakeRepo)
+    end
+
+    test "accept the largest safe batch window and reject the next canonical cursor" do
+      largest_safe_cursor = RelayConnection.offset_to_cursor(@max_bigint - 3)
+      overflowing_cursor = RelayConnection.offset_to_cursor(@max_bigint - 2)
+
+      assert Connection.batch_window(%{first: 1, after: largest_safe_cursor}) ==
+               {:ok, %{offset: @max_bigint - 2, fetch_limit: 2}}
+
+      overflowing_args = %{first: 1, after: overflowing_cursor}
+
+      assert Connection.batch_window(overflowing_args) == {:error, :invalid_cursor}
+      assert Connection.batch_window_result(overflowing_args) == {:error, "invalid cursor"}
+
+      assert Connection.from_prefetched_page([:first, :second], overflowing_args) ==
+               {:error, :invalid_cursor}
     end
   end
 end
