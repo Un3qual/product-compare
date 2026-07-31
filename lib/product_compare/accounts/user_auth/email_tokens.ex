@@ -150,27 +150,24 @@ defmodule ProductCompare.Accounts.UserAuth.EmailTokens do
   end
 
   defp deliver_user_email_instructions(%User{} = user, context, expires_at, delivery_fun) do
-    case Repo.transaction(fn ->
-           token =
-             Sessions.issue(
-               user,
-               context,
-               expires_at,
-               sent_to: user.email,
-               replace_context?: true
-             )
+    token = Sessions.issue(user, context, expires_at, sent_to: user.email)
 
-           case invoke_delivery_fun(delivery_fun, token) do
-             :ok -> :ok
-             {:error, reason} -> Repo.rollback({:delivery_failed, context, reason})
-           end
-         end) do
-      {:ok, :ok} ->
-        :ok
+    case invoke_delivery_fun(delivery_fun, token) do
+      :ok ->
+        case Sessions.activate_context_token(user.id, context, token) do
+          :ok ->
+            :ok
 
-      {:error, {:delivery_failed, failed_context, reason}} ->
+          {:error, :invalid_token} ->
+            Logger.warning("delivered #{context} token was superseded before activation")
+            :ok
+        end
+
+      {:error, reason} ->
+        :ok = Sessions.discard_context_token(token, context)
+
         Logger.warning(
-          "delivery hook failed for #{failed_context} token " <>
+          "delivery hook failed for #{context} token " <>
             "(delivery_error=#{delivery_failure_kind(reason)})"
         )
 

@@ -61,10 +61,6 @@ defmodule ProductCompare.Accounts.UserAuth.Sessions do
 
   @spec issue(User.t(), atom(), DateTime.t(), keyword()) :: String.t()
   def issue(%User{} = user, context, expires_at, opts) do
-    if Keyword.get(opts, :replace_context?, false) do
-      clear(user.id, [context])
-    end
-
     raw_token = :crypto.strong_rand_bytes(@token_bytes)
     encoded_token = Base.url_encode64(raw_token, padding: false)
 
@@ -81,6 +77,54 @@ defmodule ProductCompare.Accounts.UserAuth.Sessions do
     |> Repo.insert!()
 
     encoded_token
+  end
+
+  @doc false
+  @spec activate_context_token(pos_integer(), atom(), String.t()) ::
+          :ok | {:error, :invalid_token}
+  def activate_context_token(user_id, context, encoded_token) do
+    with {:ok, raw_token} <- decode(encoded_token) do
+      token_hash = hash(raw_token)
+
+      case Repo.transaction(fn ->
+             case lock_user_for_session_issue(user_id) do
+               nil ->
+                 Repo.rollback(:invalid_token)
+
+               %User{} ->
+                 case Repo.get_by(UserSessionToken,
+                        user_id: user_id,
+                        context: context,
+                        token_hash: token_hash
+                      ) do
+                   nil ->
+                     Repo.rollback(:invalid_token)
+
+                   %UserSessionToken{} ->
+                     from(token_row in UserSessionToken,
+                       where: token_row.user_id == ^user_id,
+                       where: token_row.context == ^context,
+                       where: token_row.token_hash != ^token_hash
+                     )
+                     |> Repo.delete_all()
+
+                     :ok
+                 end
+             end
+           end) do
+        {:ok, :ok} -> :ok
+        {:error, :invalid_token} -> {:error, :invalid_token}
+      end
+    else
+      :error -> {:error, :invalid_token}
+    end
+  end
+
+  @doc false
+  @spec discard_context_token(String.t(), atom()) :: :ok
+  def discard_context_token(encoded_token, context) do
+    delete_token(encoded_token, context)
+    :ok
   end
 
   @spec decode(String.t()) :: {:ok, binary()} | :error

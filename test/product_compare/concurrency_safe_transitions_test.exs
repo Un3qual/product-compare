@@ -7,17 +7,26 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Accounts
   alias ProductCompare.Alerts
+  alias ProductCompare.Catalog
   alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Fixtures.TaxonomyFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Accounts.UserSessionToken
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Taxonomy.Taxon
 
   @first_transition_at ~U[2026-07-30 12:00:00.000000Z]
 
@@ -119,6 +128,86 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
     assert Repo.get!(ProductAttributeClaim, fixture.claim.id).status == :rejected
   end
 
+  test "moderation rechecks operator access after a competing revocation" do
+    fixture = committed_moderation_fixture()
+    on_exit(fn -> delete_committed_moderation_fixture(fixture) end)
+
+    {lock_holder, lock_backend_pid} =
+      hold_row_lock(User, fixture.operator.id, fn operator ->
+        operator
+        |> User.operator_access_changeset(false)
+        |> Repo.update!()
+      end)
+
+    {moderation, _moderation_backend_pid} =
+      start_unboxed_action(fn ->
+        Discussions.moderate(
+          fixture.operator.id,
+          :review,
+          fixture.review.entropy_id,
+          :published
+        )
+      end)
+
+    assert_some_backend_blocked_by(lock_backend_pid)
+    release_row_lock(lock_holder)
+
+    assert {:error, :forbidden} = Task.await(moderation)
+    assert Repo.get!(ProductReview, fixture.review.id).moderation_status == :pending
+  end
+
+  test "concurrent successful email deliveries activate exactly one replacement token" do
+    user =
+      Sandbox.unboxed_run(Repo, fn ->
+        AccountsFixtures.user_fixture()
+      end)
+
+    on_exit(fn -> delete_committed_user(user.id) end)
+    parent = self()
+
+    deliveries =
+      for label <- [:first, :second] do
+        Task.async(fn ->
+          Sandbox.unboxed_run(Repo, fn ->
+            Accounts.deliver_user_reset_password_instructions(user, fn token ->
+              send(parent, {:delivery_candidate, label, self(), token})
+
+              receive do
+                :finish_delivery -> :ok
+              after
+                5_000 -> flunk("timed out waiting to finish token delivery")
+              end
+            end)
+          end)
+        end)
+      end
+
+    assert_receive {:delivery_candidate, first_label, first_pid, first_token}
+    assert_receive {:delivery_candidate, second_label, second_pid, second_token}
+    assert MapSet.new([first_label, second_label]) == MapSet.new([:first, :second])
+
+    send(first_pid, :finish_delivery)
+    send(second_pid, :finish_delivery)
+    assert Enum.map(deliveries, &Task.await/1) == [:ok, :ok]
+
+    user_id = user.id
+
+    active_tokens =
+      Enum.filter([first_token, second_token], fn token ->
+        match?(%User{id: ^user_id}, Accounts.get_user_by_reset_password_token(token))
+      end)
+
+    assert length(active_tokens) == 1
+
+    assert Repo.aggregate(
+             from(token in UserSessionToken,
+               where: token.user_id == ^user.id and token.context == :reset_password
+             ),
+             :count,
+             :id
+           ) == 1
+  end
+
   defp hold_row_lock(schema, id, transition) do
     parent = self()
 
@@ -179,7 +268,8 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   defp committed_alert_fixture do
     Sandbox.unboxed_run(Repo, fn ->
       user = AccountsFixtures.user_fixture()
-      product = SpecsFixtures.product_fixture()
+      product_fixture = committed_product_fixture()
+      product = product_fixture.product
 
       {:ok, merchant} =
         Pricing.upsert_merchant(%{
@@ -219,7 +309,7 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
       %{
         event: Repo.get_by!(AlertEvent, watch_rule_id: watch.id),
         merchant: merchant,
-        product: product,
+        product_fixture: product_fixture,
         user: user
       }
     end)
@@ -247,8 +337,13 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   defp committed_claim_fixture do
     Sandbox.unboxed_run(Repo, fn ->
       moderator = AccountsFixtures.user_fixture()
-      product = SpecsFixtures.product_fixture()
-      attribute = SpecsFixtures.attribute_fixture()
+      product_fixture = committed_product_fixture()
+      product = product_fixture.product
+
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "concurrency-attribute-#{Ecto.UUID.generate()}"
+        })
 
       {:ok, claim} =
         Specs.propose_claim(product.id, attribute.id, %{value_bool: true}, %{
@@ -260,9 +355,55 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
         attribute: attribute,
         claim: claim,
         moderator: moderator,
-        product: product
+        product_fixture: product_fixture
       }
     end)
+  end
+
+  defp committed_moderation_fixture do
+    Sandbox.unboxed_run(Repo, fn ->
+      operator = AccountsFixtures.operator_fixture()
+      author = AccountsFixtures.user_fixture()
+      product_fixture = committed_product_fixture()
+      product = product_fixture.product
+
+      {:ok, review} =
+        Discussions.create_review(%{
+          user_id: author.id,
+          product_id: product.id,
+          rating: 4,
+          title: "Concurrent moderation"
+        })
+
+      %{
+        author: author,
+        operator: operator,
+        product_fixture: product_fixture,
+        review: Repo.get!(ProductReview, review.id)
+      }
+    end)
+  end
+
+  defp committed_product_fixture do
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "concurrency-taxon-#{Ecto.UUID.generate()}",
+        name: "Concurrency Taxon"
+      })
+
+    {:ok, brand} = Catalog.upsert_brand(%{name: "Concurrency Brand #{Ecto.UUID.generate()}"})
+
+    product =
+      SpecsFixtures.product_fixture(%{
+        primary_type_taxon: taxon,
+        brand_id: brand.id,
+        slug: "concurrency-product-#{Ecto.UUID.generate()}"
+      })
+
+    %{brand: brand, product: product, taxon: taxon}
   end
 
   defp delete_committed_alert_fixture(fixture) do
@@ -271,14 +412,11 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
       Repo.delete_all(from user in User, where: user.id == ^fixture.user.id)
 
       Repo.delete_all(
-        from product in ProductCompareSchemas.Catalog.Product,
-          where: product.id == ^fixture.product.id
-      )
-
-      Repo.delete_all(
         from merchant in ProductCompareSchemas.Pricing.Merchant,
           where: merchant.id == ^fixture.merchant.id
       )
+
+      delete_committed_product_fixture(fixture.product_fixture)
     end)
   end
 
@@ -289,18 +427,29 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
           where: claim.id == ^fixture.claim.id
       )
 
-      Repo.delete_all(
-        from attribute in ProductCompareSchemas.Specs.Attribute,
-          where: attribute.id == ^fixture.attribute.id
-      )
-
-      Repo.delete_all(
-        from product in ProductCompareSchemas.Catalog.Product,
-          where: product.id == ^fixture.product.id
-      )
-
+      Repo.delete_all(from attribute in Attribute, where: attribute.id == ^fixture.attribute.id)
       Repo.delete_all(from user in User, where: user.id == ^fixture.moderator.id)
+      delete_committed_product_fixture(fixture.product_fixture)
     end)
+  end
+
+  defp delete_committed_moderation_fixture(fixture) do
+    Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete_all(from review in ProductReview, where: review.id == ^fixture.review.id)
+
+      Repo.delete_all(
+        from user in User,
+          where: user.id in ^[fixture.author.id, fixture.operator.id]
+      )
+
+      delete_committed_product_fixture(fixture.product_fixture)
+    end)
+  end
+
+  defp delete_committed_product_fixture(fixture) do
+    Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+    Repo.delete_all(from brand in Brand, where: brand.id == ^fixture.brand.id)
+    Repo.delete_all(from taxon in Taxon, where: taxon.id == ^fixture.taxon.id)
   end
 
   defp delete_committed_user(user_id) do
