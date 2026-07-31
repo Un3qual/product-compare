@@ -50,13 +50,13 @@ details alone.
   single-statement atomic, constraint-backed, transaction-and-lock backed,
   stale-write protected, append-only, or unsafe.
 
-- [ ] Enumerate all modifying actions and trace every pre-write read or
+- [x] Enumerate all modifying actions and trace every pre-write read or
   cross-row validation they depend on.
-- [ ] Record the protected invariant and the exact database mechanism for every
+- [x] Record the protected invariant and the exact database mechanism for every
   safe path; do not infer safety from a surrounding function name.
-- [ ] Identify every unsafe path, including delete/update actions that accept
+- [x] Identify every unsafe path, including delete/update actions that accept
   stale structs and validation that reads related rows before a later write.
-- [ ] Add focused failing tests for every confirmed unsafe interleaving before
+- [x] Add focused failing tests for every confirmed unsafe interleaving before
   implementing fixes.
 
 ## Task 2: Make Single-Row State Transitions Atomic
@@ -76,10 +76,10 @@ details alone.
 - Produces: conditional writes or locked/stale-detected transitions that cannot
   overwrite or delete a concurrent change silently.
 
-- [ ] Replace unsafe stale-struct writes with conditional statements,
+- [x] Replace unsafe stale-struct writes with conditional statements,
   optimistic locks, or in-transaction locked reloads.
-- [ ] Return stable stale/not-found/conflict outcomes for zero-row writes.
-- [ ] Prove two concurrent transitions cannot both claim the same prior state
+- [x] Return stable stale/not-found/conflict outcomes for zero-row writes.
+- [x] Prove two concurrent transitions cannot both claim the same prior state
   or silently discard one another.
 
 ## Task 3: Make Cross-Row Validation and Derived Writes Atomic
@@ -99,13 +99,13 @@ details alone.
 - Produces: one transaction with deterministic locks or one constraint-backed
   statement for each dependent invariant.
 
-- [ ] Lock all mutable rows used to authorize or validate the dependent write,
+- [x] Lock all mutable rows used to authorize or validate the dependent write,
   in stable identifier order.
-- [ ] Replace check-then-insert/update sequences with conflict clauses or
+- [x] Replace check-then-insert/update sequences with conflict clauses or
   constraints where possible.
-- [ ] Keep external calls and non-database computation outside locked
+- [x] Keep external calls and non-database computation outside locked
   transactions.
-- [ ] Prove concurrent valid-looking requests cannot commit an invalid combined
+- [x] Prove concurrent valid-looking requests cannot commit an invalid combined
   state.
 
 ## Task 4: Verify the Repository-Wide Invariant
@@ -120,13 +120,13 @@ details alone.
 - Produces: a complete evidence table with no unclassified modifying action and
   no confirmed unsafe read-modify-write path.
 
-- [ ] Rerun the write inventory and confirm every modifying action is
+- [x] Rerun the write inventory and confirm every modifying action is
   classified with an explicit atomicity mechanism.
-- [ ] Run every new concurrency regression repeatedly with randomized seeds.
-- [ ] Run affected context and GraphQL suites, the full backend test suite,
+- [x] Run every new concurrency regression repeatedly with randomized seeds.
+- [x] Run affected context and GraphQL suites, the full backend test suite,
   `mix typecheck`, `mix quality`, `mix work_queue.validate`, and
   `git diff --check`.
-- [ ] Record exact verification evidence and commit reviewable milestones.
+- [x] Record exact verification evidence and commit reviewable milestones.
 
 Exit condition: every first-party modifying action has an evidence-backed
 atomicity classification, every confirmed race has a database-owned fix and

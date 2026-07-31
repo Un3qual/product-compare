@@ -233,7 +233,7 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
         match?(%User{id: ^user_id}, Accounts.get_user_by_reset_password_token(token))
       end)
 
-    assert length(active_tokens) == 1
+    assert [_active_token] = active_tokens
 
     assert Repo.aggregate(
              from(token in UserSessionToken,
