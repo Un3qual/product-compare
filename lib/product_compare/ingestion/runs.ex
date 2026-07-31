@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.Runs do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.Ingestion.Reconciliation
   alias ProductCompare.Ingestion.SourceProviders
   alias ProductCompare.Repo
@@ -32,22 +34,38 @@ defmodule ProductCompare.Ingestion.Runs do
   end
 
   @spec complete_import_run(ImportRun.t(), map()) ::
-          {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
-  def complete_import_run(%ImportRun{} = import_run, attrs) do
+          {:ok, ImportRun.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def complete_import_run(%ImportRun{id: import_run_id}, attrs) do
     attrs =
       attrs
       |> Map.new()
       |> Map.put_new(:finished_at, DateTime.utc_now())
 
     Repo.transaction(fn ->
-      with {:ok, completed_run} <-
-             import_run
-             |> ImportRun.changeset(attrs)
-             |> Repo.update(),
-           {:ok, reconciled_run} <- Reconciliation.finalize(completed_run) do
-        reconciled_run
-      else
-        {:error, reason} -> Repo.rollback(reason)
+      current_run =
+        Repo.one(
+          from run in ImportRun,
+            where: run.id == ^import_run_id,
+            lock: "FOR UPDATE"
+        )
+
+      case current_run do
+        nil ->
+          Repo.rollback(:not_found)
+
+        %ImportRun{status: status} = completed_run when status in [:succeeded, :failed] ->
+          completed_run
+
+        %ImportRun{status: :running} = running_run ->
+          with {:ok, completed_run} <-
+                 running_run
+                 |> ImportRun.completion_changeset(attrs)
+                 |> Repo.update(),
+               {:ok, reconciled_run} <- Reconciliation.finalize(completed_run) do
+            reconciled_run
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
       end
     end)
   end

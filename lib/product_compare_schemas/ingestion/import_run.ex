@@ -98,6 +98,14 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
   end
 
+  @spec completion_changeset(t(), map()) :: Ecto.Changeset.t()
+  def completion_changeset(import_run, attrs) do
+    import_run
+    |> changeset(attrs)
+    |> validate_required(:finished_at)
+    |> validate_inclusion(:status, [:succeeded, :failed])
+  end
+
   @spec normalize_surface(term()) :: String.t() | nil
   def normalize_surface(value), do: ReferenceCode.normalize(value, @surface_codes, :none)
 

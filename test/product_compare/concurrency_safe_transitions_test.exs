@@ -17,6 +17,7 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Fixtures.TaxonomyFixtures
+  alias ProductCompare.Ingestion
   alias ProductCompare.Ingestion.ListingPersistence.Enrichment
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -30,8 +31,10 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Discussions.ProductReview
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonAlias}
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
@@ -327,6 +330,47 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
     assert mapped_taxon_id == fixture.reassigned_taxon.id
     assert enriched.primary_type_taxon_id == fixture.reassigned_taxon.id
     refute mapped_taxon_id == fixture.mapped_taxon.id
+  end
+
+  test "import completion preserves the terminal transition that wins the row lock" do
+    fixture = committed_import_run_fixture()
+    on_exit(fn -> delete_committed_import_run_fixture(fixture) end)
+
+    {lock_holder, lock_backend_pid} =
+      hold_row_lock(ImportRun, fixture.run.id, fn run ->
+        run
+        |> ImportRun.changeset(%{
+          finished_at: @first_transition_at,
+          pages_fetched: 2,
+          records_failed: 0,
+          records_fetched: 20,
+          records_normalized: 20,
+          records_persisted: 20,
+          status: :succeeded
+        })
+        |> Repo.update!()
+      end)
+
+    {completion, completion_backend_pid} =
+      start_unboxed_action(fn ->
+        Ingestion.complete_import_run(fixture.run, %{
+          finished_at: DateTime.add(@first_transition_at, 1, :second),
+          pages_fetched: 1,
+          records_failed: 10,
+          records_fetched: 10,
+          records_normalized: 0,
+          records_persisted: 0,
+          status: :failed
+        })
+      end)
+
+    assert_blocked_by(completion_backend_pid, lock_backend_pid)
+    release_row_lock(lock_holder)
+
+    assert {:ok, completed} = Task.await(completion)
+    assert completed.status == :succeeded
+    assert completed.records_persisted == 20
+    assert completed.finished_at == @first_transition_at
   end
 
   defp hold_row_lock(schema, id, transition) do
@@ -714,6 +758,31 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
     end)
   end
 
+  defp committed_import_run_fixture do
+    Sandbox.unboxed_run(Repo, fn ->
+      source =
+        %Source{}
+        |> Source.changeset(%{
+          kind: "affiliate_feed",
+          provider: "cj",
+          name: "Concurrency source #{Ecto.UUID.generate()}",
+          domain: "concurrency-#{Ecto.UUID.generate()}.example"
+        })
+        |> Repo.insert!()
+
+      {:ok, run} =
+        Ingestion.start_import_run(%{
+          source_id: source.id,
+          provider: "cj",
+          surface: "shoppingProducts",
+          query: %{"concurrency" => true},
+          started_at: DateTime.add(@first_transition_at, -60, :second)
+        })
+
+      %{run: run, source: source}
+    end)
+  end
+
   defp delete_committed_alert_fixture(fixture) do
     Sandbox.unboxed_run(Repo, fn ->
       Repo.delete_all(from event in AlertEvent, where: event.id == ^fixture.event.id)
@@ -784,6 +853,12 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
             where: taxon.id == ^fixture.placeholder_taxon.id
         )
       end
+    end)
+  end
+
+  defp delete_committed_import_run_fixture(fixture) do
+    Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete_all(from source in Source, where: source.id == ^fixture.source.id)
     end)
   end
 

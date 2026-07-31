@@ -25,7 +25,7 @@ defmodule ProductCompare.Ingestion do
   def start_import_run(attrs), do: Runs.start_import_run(attrs)
 
   @spec complete_import_run(ImportRun.t(), map()) ::
-          {:ok, ImportRun.t()} | {:error, Ecto.Changeset.t()}
+          {:ok, ImportRun.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def complete_import_run(%ImportRun{} = import_run, attrs),
     do: Runs.complete_import_run(import_run, attrs)
 
