@@ -1,6 +1,8 @@
 defmodule ProductCompare.SeoTest do
   use ProductCompare.DataCase, async: true
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.ComparisonSnapshots

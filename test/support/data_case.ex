@@ -27,9 +27,18 @@ defmodule ProductCompare.DataCase do
   Sets up the sandbox based on the test tags.
   """
   def setup_sandbox(tags) do
-    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(ProductCompare.Repo, shared: not tags[:async])
+    opts =
+      [shared: not tags[:async]]
+      |> maybe_put_sandbox_isolation(tags[:sandbox_isolation])
+
+    pid = Ecto.Adapters.SQL.Sandbox.start_owner!(ProductCompare.Repo, opts)
     on_exit(fn -> Ecto.Adapters.SQL.Sandbox.stop_owner(pid) end)
   end
+
+  defp maybe_put_sandbox_isolation(opts, nil), do: opts
+
+  defp maybe_put_sandbox_isolation(opts, isolation),
+    do: Keyword.put(opts, :isolation, isolation)
 
   @doc """
   A helper that transforms changeset errors into a map of messages.

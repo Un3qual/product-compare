@@ -31,29 +31,32 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
     now = Keyword.get(opts, :now, DateTime.utc_now()) |> DateTime.truncate(:microsecond)
 
     with :ok <- validate_product_ids(product_ids),
-         :ok <- validate_profile(profile),
-         {:ok, products} <- Capture.load_products(product_ids) do
-      facts = Capture.capture(products, profile, now)
+         :ok <- validate_profile(profile) do
+      repeatable_read_transaction(fn ->
+        with {:ok, products} <- Capture.load_products(product_ids) do
+          facts = Capture.capture(products, profile, now)
 
-      Repo.transaction(fn ->
-        snapshot =
-          %ComparisonSnapshot{}
-          |> ComparisonSnapshot.publish_changeset(%{
-            public_token: public_token(),
-            user_id: user_id,
-            title: normalize_title(Input.fetch_attr(attrs, :title)),
-            search_indexable: Input.fetch_attr(attrs, :search_indexable) || false,
-            version: facts.version,
-            captured_at: facts.captured_at
-          })
-          |> Ecto.Changeset.put_change(:search_qualified, Seo.snapshot_qualified?(facts))
-          |> insert_or_rollback()
+          snapshot =
+            %ComparisonSnapshot{}
+            |> ComparisonSnapshot.publish_changeset(%{
+              public_token: public_token(),
+              user_id: user_id,
+              title: normalize_title(Input.fetch_attr(attrs, :title)),
+              search_indexable: Input.fetch_attr(attrs, :search_indexable) || false,
+              version: facts.version,
+              captured_at: facts.captured_at
+            })
+            |> Ecto.Changeset.put_change(:search_qualified, Seo.snapshot_qualified?(facts))
+            |> insert_or_rollback()
 
-        persist_facts(snapshot, facts)
+          persist_facts(snapshot, facts)
 
-        ComparisonSnapshot
-        |> Repo.get!(snapshot.id)
-        |> hydrate()
+          ComparisonSnapshot
+          |> Repo.get!(snapshot.id)
+          |> hydrate()
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
       end)
     end
   end
@@ -277,6 +280,31 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
 
   defp validate_profile(profile) when profile in @profiles, do: :ok
   defp validate_profile(_profile), do: {:error, :invalid_profile}
+
+  defp repeatable_read_transaction(fun) when is_function(fun, 0) do
+    already_in_transaction? = Repo.in_transaction?()
+
+    Repo.transaction(fn ->
+      if already_in_transaction? do
+        ensure_repeatable_read!()
+      else
+        Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
+      end
+
+      fun.()
+    end)
+  end
+
+  defp ensure_repeatable_read! do
+    case Repo.query!("SHOW transaction_isolation").rows do
+      [[level]] when level in ["repeatable read", "serializable"] ->
+        :ok
+
+      [[level]] ->
+        raise ArgumentError,
+              "comparison snapshot publication requires repeatable read or serializable isolation, got: #{level}"
+    end
+  end
 
   defp normalize_title(nil), do: nil
   defp normalize_title(title) when is_binary(title), do: String.trim(title)
