@@ -60,24 +60,12 @@ export async function graphqlTransport(
   }
 
   if (!response.ok) {
-    let body: string;
-
-    try {
-      body = await response.text();
-    } catch (cause) {
-      throw cause;
-    }
+    const body = await response.text();
 
     throw new Error(`GraphQL request failed (${response.status}): ${body}`);
   }
 
-  let body: unknown;
-
-  try {
-    body = await response.json();
-  } catch (cause) {
-    throw cause;
-  }
+  const body: unknown = await response.json();
 
   if (!isGraphQLResponse(body)) {
     throw new TypeError("GraphQL response must be an object");

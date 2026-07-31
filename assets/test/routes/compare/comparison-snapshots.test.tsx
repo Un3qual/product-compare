@@ -4,8 +4,7 @@ import { createRelayRouterContext, fetchRouteQuery, useRoutePreloadedQuery } fro
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
-  publishComparisonSnapshotMutation,
-  revokeComparisonSnapshotMutation
+  publishComparisonSnapshotMutation
 } from "../../../src/routes/compare/compare-mutations";
 import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
