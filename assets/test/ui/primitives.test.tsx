@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import {
   Button,
   Checkbox,
@@ -134,7 +134,7 @@ test("Select exposes its value and updates its form value through accessible opt
   expect(new FormData(form).get("sort")).toBe("name_asc");
 });
 
-test("Select gives keyboard-highlighted options a visible background", () => {
+test("Select gives keyboard-moved options a visible highlighted background", async () => {
   render(
     <AppProviders>
       <Select
@@ -152,9 +152,12 @@ test("Select gives keyboard-highlighted options a visible background", () => {
 
   openSelect(select);
 
-  const highlightedOption = screen.getByRole("option", { name: "Five" });
-  fireEvent.focus(highlightedOption);
-  expect(highlightedOption).toHaveAttribute("data-highlighted");
+  const selectedOption = screen.getByRole("option", { name: "Five" });
+  act(() => selectedOption.focus());
+  fireEvent.keyDown(selectedOption, { key: "ArrowDown" });
+
+  const highlightedOption = screen.getByRole("option", { name: "Four" });
+  await waitFor(() => expect(highlightedOption).toHaveAttribute("data-highlighted"));
   const backgroundColor = getComputedStyle(highlightedOption).backgroundColor;
   expect(backgroundColor).not.toBe("transparent");
   expect(backgroundColor).not.toMatch(/^rgba?\(0,\s*0,\s*0,\s*0\)$/);
