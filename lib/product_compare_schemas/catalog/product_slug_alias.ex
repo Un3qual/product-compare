@@ -19,6 +19,7 @@ defmodule ProductCompareSchemas.Catalog.ProductSlugAlias do
     |> validate_required([:slug, :product_id])
     |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     |> unique_constraint(:slug)
+    |> unique_constraint(:slug, name: :product_slug_namespace_uq)
     |> foreign_key_constraint(:product_id)
   end
 end

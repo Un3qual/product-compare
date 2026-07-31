@@ -29,5 +29,6 @@ defmodule ProductCompareSchemas.Catalog.Product do
     |> validate_required([:name, :slug])
     |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
     |> unique_constraint(:slug)
+    |> unique_constraint(:slug, name: :product_slug_namespace_uq)
   end
 end

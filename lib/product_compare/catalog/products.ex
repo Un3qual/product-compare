@@ -45,39 +45,46 @@ defmodule ProductCompare.Catalog.Products do
 
   @spec create_product(map()) :: {:ok, Product.t()} | {:error, term()}
   def create_product(attrs) do
-    with :ok <- validate_primary_type_taxon(attrs),
-         :ok <- ensure_slug_not_reserved(Input.fetch_attr(attrs, :slug)) do
-      changeset = Product.changeset(%Product{}, attrs)
-
-      Repo.transaction(fn ->
-        with {:ok, product} <- Repo.insert(changeset),
-             :ok <- SearchDocuments.refresh_product(product.id) do
-          product
-        else
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-    end
+    Repo.transaction(fn ->
+      with :ok <- validate_primary_type_taxon(attrs),
+           changeset = Product.changeset(%Product{}, attrs),
+           {:ok, product} <- Repo.insert(changeset),
+           :ok <- SearchDocuments.refresh_product(product.id) do
+        product
+      else
+        {:error, reason} -> Repo.rollback(reason)
+      end
+    end)
   end
 
   @spec update_product(Product.t(), map()) :: {:ok, Product.t()} | {:error, term()}
-  def update_product(%Product{} = product, attrs) do
-    next_slug = Input.fetch_attr(attrs, :slug)
+  def update_product(%Product{id: product_id}, attrs) do
+    Repo.transaction(fn ->
+      persisted_product =
+        Repo.one(
+          from product in Product,
+            where: product.id == ^product_id,
+            lock: "FOR UPDATE"
+        )
 
-    with :ok <- validate_primary_type_taxon(attrs, product),
-         :ok <- ensure_slug_not_reserved(next_slug, product.id) do
-      changeset = Product.changeset(product, drop_nil_primary_type_taxon(attrs))
+      case persisted_product do
+        nil ->
+          Repo.rollback(:product_not_found)
 
-      Repo.transaction(fn ->
-        with {:ok, updated} <- Repo.update(changeset),
-             :ok <- preserve_prior_slug_alias(product, next_slug),
-             :ok <- SearchDocuments.refresh_product(updated.id) do
-          updated
-        else
-          {:error, reason} -> Repo.rollback(reason)
-        end
-      end)
-    end
+        %Product{} = product ->
+          next_slug = Input.fetch_attr(attrs, :slug)
+
+          with :ok <- validate_primary_type_taxon(attrs, product),
+               changeset = Product.changeset(product, drop_nil_primary_type_taxon(attrs)),
+               {:ok, updated} <- Repo.update(changeset),
+               :ok <- preserve_prior_slug_alias(product, next_slug),
+               :ok <- SearchDocuments.refresh_product(updated.id) do
+            updated
+          else
+            {:error, reason} -> Repo.rollback(reason)
+          end
+      end
+    end)
   end
 
   @spec get_product!(pos_integer()) :: Product.t()
@@ -164,19 +171,6 @@ defmodule ProductCompare.Catalog.Products do
       Enum.map(slugs, &Map.get(products_by_slug, &1))
     end)
   end
-
-  defp ensure_slug_not_reserved(slug, product_id \\ nil)
-  defp ensure_slug_not_reserved(nil, _product_id), do: :ok
-
-  defp ensure_slug_not_reserved(slug, product_id) when is_binary(slug) do
-    case Repo.get_by(ProductSlugAlias, slug: slug) do
-      nil -> :ok
-      %ProductSlugAlias{product_id: ^product_id} -> {:error, :slug_reserved}
-      %ProductSlugAlias{} -> {:error, :slug_reserved}
-    end
-  end
-
-  defp ensure_slug_not_reserved(_slug, _product_id), do: :ok
 
   defp preserve_prior_slug_alias(%Product{} = product, next_slug)
        when is_binary(next_slug) and next_slug != product.slug do
