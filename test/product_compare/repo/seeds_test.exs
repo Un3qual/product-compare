@@ -189,6 +189,26 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert second.shopper.confirmed_at == first.shopper.confirmed_at
   end
 
+  test "account reruns restore changed and missing operator reputation baselines" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+
+    assert {:ok, %UserReputation{points: 17}} =
+             Accounts.upsert_user_reputation(accounts.admin.id, 17)
+
+    accounts.moderator.id
+    |> then(&Repo.get_by!(UserReputation, user_id: &1))
+    |> Repo.delete!()
+
+    restored = DevSeedAccounts.seed!(@seed_password, DateTime.add(anchor, 3_600, :second))
+
+    assert %UserReputation{points: 1_000} =
+             Repo.get_by!(UserReputation, user_id: restored.admin.id)
+
+    assert %UserReputation{points: 500} =
+             Repo.get_by!(UserReputation, user_id: restored.moderator.id)
+  end
+
   test "development seeds refuse to run outside development and test" do
     original_mix_env = Mix.env()
     original_seed_password = System.get_env("SEED_USER_PASSWORD")
@@ -1059,6 +1079,82 @@ defmodule ProductCompare.Repo.SeedsTest do
              artifact_id: seeded_coupon.artifact_id,
              code: "DEV-ACTIVE-10"
            ).id == seeded_coupon.id
+  end
+
+  test "reruns restore the reserved unobserved offer after price ingestion" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+
+    watch =
+      Repo.get_by!(PriceWatchRule,
+        user_id: shopper.id,
+        merchant_product_id: offer.id,
+        rule_type: :newly_available
+      )
+
+    assert {:ok, %PriceWatchRule{enabled: true}} =
+             Alerts.update_watch(shopper.id, watch.entropy_id, %{enabled: true})
+
+    observed_at = DateTime.utc_now() |> DateTime.add(60, :second)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: observed_at,
+               price: Decimal.new("1799.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: 1}} =
+             Alerts.evaluate_price_point(observation.id,
+               now: DateTime.add(observed_at, 1, :second)
+             )
+
+    event = Repo.get_by!(AlertEvent, triggering_price_point_id: observation.id)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Pricing.latest_price(offer.id) == nil
+    assert Repo.get(AlertEvent, event.id) == nil
+  end
+
+  test "reruns restore reserved conversions after a newer ingestion update" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    seeded = Repo.get_by!(CommerceConversion, network_conversion_ref: "DEV-CONV-APPROVED")
+    later_reported_at = DateTime.utc_now() |> DateTime.add(7, :day)
+
+    assert {:ok, exercised} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: "development_affiliate",
+               network_conversion_ref: seeded.network_conversion_ref,
+               status: :paid,
+               currency: "USD",
+               order_amount: Decimal.new("999.99"),
+               commission_amount: Decimal.new("1.00"),
+               data_freshness_at: later_reported_at,
+               reported_at: later_reported_at,
+               raw_payload: %{
+                 "synthetic" => true,
+                 "exercise" => "newer-development-update"
+               }
+             })
+
+    assert exercised.id == seeded.id
+    assert exercised.status == :paid
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    restored = Repo.get!(CommerceConversion, seeded.id)
+
+    assert restored.status == :approved
+    assert Decimal.equal?(restored.order_amount, Decimal.new("649.99"))
+    assert Decimal.equal?(restored.commission_amount, Decimal.new("65.00"))
+    assert restored.raw_payload["seedScenario"] == "development-approved"
+    assert DateTime.compare(restored.reported_at, later_reported_at) == :lt
   end
 
   test "purchase facts use the linked price observation values" do

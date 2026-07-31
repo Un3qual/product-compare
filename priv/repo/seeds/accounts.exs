@@ -71,6 +71,9 @@ defmodule ProductCompare.DevSeeds.Accounts do
   defp bootstrap_operator!(email, password, reputation_points) do
     case AccountsContext.bootstrap_operator_user(email, password, reputation_points) do
       {:ok, user} ->
+        AccountsContext.upsert_user_reputation(user.id, reputation_points)
+        |> Support.expect!("operator account reputation #{email}")
+
         user
 
       {:error, :existing_non_operator} ->

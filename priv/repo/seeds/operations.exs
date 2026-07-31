@@ -8,6 +8,7 @@ defmodule ProductCompare.DevSeeds.Operations do
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
+  alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.ImportRun
@@ -278,6 +279,11 @@ defmodule ProductCompare.DevSeeds.Operations do
         {status, click}
       end)
 
+    attribution_dimensions =
+      Map.new(click_scenarios, fn {status, _click_id, link, offer} ->
+        {status, {link, offer}}
+      end)
+
     conversion_scenarios = [
       {:approved, "DEV-CONV-APPROVED", "649.99", "65.00", days(anchor, -4)},
       {:pending, "DEV-CONV-PENDING", "1199.99", "120.00", days(anchor, -3)},
@@ -288,28 +294,39 @@ defmodule ProductCompare.DevSeeds.Operations do
     conversions =
       Map.new(conversion_scenarios, fn {status, reference, order, commission, reported_at} ->
         click = Map.fetch!(clicks, status)
+        {link, offer} = Map.fetch!(attribution_dimensions, status)
+
+        attrs = %{
+          source_network: affiliate.network.code,
+          affiliate_network_id: affiliate.network.id,
+          network_conversion_ref: reference,
+          click_session_id: click.id,
+          public_click_id: click.click_id,
+          network_click_ref: "DEV-CLICK-#{status |> Atom.to_string() |> String.upcase()}",
+          merchant_id: link.merchant_id,
+          affiliate_program_id: link.affiliate_program_id,
+          product_id: offer.product_id,
+          merchant_product_id: offer.id,
+          status: status,
+          currency: "USD",
+          order_amount: Decimal.new(order),
+          commission_amount: Decimal.new(commission),
+          commission_rate: Decimal.new("0.10"),
+          attribution_confidence: :high,
+          data_freshness_at: reported_at,
+          purchased_at: DateTime.add(reported_at, -3_600, :second),
+          reported_at: reported_at,
+          raw_payload: %{
+            "synthetic" => true,
+            "seedScenario" => "development-#{status}"
+          }
+        }
 
         conversion =
-          CommerceAttribution.ingest_conversion(%{
-            source_network: affiliate.network.code,
-            network_conversion_ref: reference,
-            public_click_id: click.click_id,
-            network_click_ref: "DEV-CLICK-#{status |> Atom.to_string() |> String.upcase()}",
-            status: status,
-            currency: "USD",
-            order_amount: Decimal.new(order),
-            commission_amount: Decimal.new(commission),
-            commission_rate: Decimal.new("0.10"),
-            attribution_confidence: :high,
-            data_freshness_at: reported_at,
-            purchased_at: DateTime.add(reported_at, -3_600, :second),
-            reported_at: reported_at,
-            raw_payload: %{
-              "synthetic" => true,
-              "seedScenario" => "development-#{status}"
-            }
-          })
+          attrs
+          |> CommerceAttribution.ingest_conversion()
           |> Support.expect!("commerce conversion #{status}")
+          |> restore_seed_conversion!(attrs, status)
 
         {status, conversion}
       end)
@@ -363,6 +380,15 @@ defmodule ProductCompare.DevSeeds.Operations do
       purchase_price_facts: facts,
       featured_product: catalog.products.monitor_16_9
     }
+  end
+
+  defp restore_seed_conversion!(conversion, attrs, status) do
+    # Provider ingestion correctly preserves newer reports. Reserved seed references instead
+    # need their backdated lifecycle examples restored after a developer exercises that path.
+    conversion
+    |> CommerceConversion.changeset(attrs)
+    |> Repo.update()
+    |> Support.expect!("restore commerce conversion #{status}")
   end
 
   defp stage_index(stage) do

@@ -1,11 +1,14 @@
 defmodule ProductCompare.DevSeeds.Marketplace do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.Affiliate
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.Coupon
+  alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
@@ -18,6 +21,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     {source, artifact} = seed_source_evidence!(anchor)
     merchants = seed_merchants!()
     offers = seed_offers!(catalog.products, merchants, anchor)
+    restore_unobserved_offer!(offers.unobserved)
     price_history = seed_price_points!(offers, source, anchor)
     affiliate = seed_affiliate!(merchants, offers, anchor)
     coupons = seed_coupons!(merchants.example_mart, affiliate.network, artifact, anchor)
@@ -100,6 +104,22 @@ defmodule ProductCompare.DevSeeds.Marketplace do
 
       {key, offer}
     end)
+  end
+
+  defp restore_unobserved_offer!(offer) do
+    price_point_ids =
+      PricePoint
+      |> where([point], point.merchant_product_id == ^offer.id)
+      |> select([point], point.id)
+      |> Repo.all()
+
+    AlertEvent
+    |> where([event], event.triggering_price_point_id in ^price_point_ids)
+    |> Repo.delete_all()
+
+    PricePoint
+    |> where([point], point.id in ^price_point_ids)
+    |> Repo.delete_all()
   end
 
   defp seed_price_points!(offers, source, anchor) do
