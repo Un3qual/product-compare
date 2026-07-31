@@ -107,23 +107,37 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
       when is_integer(user_id) and is_binary(entropy_id) do
     now = Keyword.get(opts, :now, DateTime.utc_now()) |> DateTime.truncate(:microsecond)
 
-    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id),
-         %ComparisonSnapshot{} = snapshot <-
-           Repo.one(
-             from snapshot in ComparisonSnapshot,
-               where:
-                 snapshot.user_id == ^user_id and snapshot.entropy_id == ^uuid and
-                   is_nil(snapshot.revoked_at)
-           ),
-         {:ok, snapshot} <-
-           snapshot
-           |> ComparisonSnapshot.revoke_changeset(now)
-           |> Repo.update(stale_error_field: :id) do
-      {:ok, hydrate(snapshot)}
+    with {:ok, uuid} <- Ecto.UUID.cast(entropy_id) do
+      case Repo.transaction(fn ->
+             snapshot =
+               Repo.one(
+                 from snapshot in ComparisonSnapshot,
+                   where:
+                     snapshot.user_id == ^user_id and snapshot.entropy_id == ^uuid and
+                       is_nil(snapshot.revoked_at),
+                   lock: "FOR UPDATE"
+               )
+
+             case snapshot do
+               nil ->
+                 Repo.rollback(:not_found)
+
+               %ComparisonSnapshot{} ->
+                 snapshot
+                 |> ComparisonSnapshot.revoke_changeset(now)
+                 |> Repo.update()
+                 |> case do
+                   {:ok, revoked_snapshot} -> revoked_snapshot
+                   {:error, changeset} -> Repo.rollback(changeset)
+                 end
+             end
+           end) do
+        {:ok, snapshot} -> {:ok, hydrate(snapshot)}
+        {:error, :not_found} -> {:error, :not_found}
+        {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
+      end
     else
-      nil -> {:error, :not_found}
       :error -> {:error, :not_found}
-      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
     end
   end
 
