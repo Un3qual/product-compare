@@ -143,23 +143,46 @@ defmodule ProductCompare.Ingestion.FeedCandidates do
   end
 
   defp candidate_provider(attrs) do
-    requested = Source.normalize_provider(attr(attrs, :provider))
+    with {:ok, requested} <- normalize_requested_provider(attrs) do
+      feed_type_provider =
+        MerchantFeedCandidate.provider_for_feed_type(attr(attrs, :source_feed_type))
 
-    feed_type_provider =
-      MerchantFeedCandidate.provider_for_feed_type(attr(attrs, :source_feed_type))
-
-    if requested && feed_type_provider && requested != feed_type_provider do
-      {:error,
-       %MerchantFeedCandidate{}
-       |> MerchantFeedCandidate.changeset(attrs)
-       |> Ecto.Changeset.add_error(
-         :provider,
-         "does not own the requested provider feed type"
-       )}
-    else
-      {:ok, requested || feed_type_provider}
+      if requested && feed_type_provider && requested != feed_type_provider do
+        {:error,
+         %MerchantFeedCandidate{}
+         |> MerchantFeedCandidate.changeset(attrs)
+         |> Ecto.Changeset.add_error(
+           :provider,
+           "does not own the requested provider feed type"
+         )}
+      else
+        {:ok, requested || feed_type_provider}
+      end
     end
   end
+
+  defp normalize_requested_provider(attrs) do
+    value = attr(attrs, :provider)
+
+    case Source.normalize_provider(value) do
+      provider when is_binary(provider) ->
+        {:ok, provider}
+
+      nil ->
+        if blank_provider?(value) do
+          {:ok, nil}
+        else
+          {:error,
+           %MerchantFeedCandidate{}
+           |> MerchantFeedCandidate.changeset(attrs)
+           |> Ecto.Changeset.add_error(:provider, "is not a supported integration provider")}
+        end
+    end
+  end
+
+  defp blank_provider?(nil), do: true
+  defp blank_provider?(value) when is_binary(value), do: String.trim(value) == ""
+  defp blank_provider?(_value), do: false
 
   defp normalize_reference_codes(attrs) do
     attrs

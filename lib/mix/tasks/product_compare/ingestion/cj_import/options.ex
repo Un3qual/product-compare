@@ -3,6 +3,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
+  alias ProductCompareSchemas.Reference.CurrencyCode
 
   @credential_requirements [
     {"CJ_API_TOKEN", :api_token},
@@ -49,6 +50,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     opts
     |> Keyword.delete(:provider_feed_id)
     |> Keyword.delete(:stage)
+    |> Keyword.put(:currency, normalize_currency!(Keyword.get(opts, :currency, "USD")))
     |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
     |> Keyword.put(:program_stages, normalize_program_stages!(program_stages))
   end
@@ -182,6 +184,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       values -> values
     end
     |> maybe_uniq_ids()
+  end
+
+  defp normalize_currency!(value) do
+    case CurrencyCode.cast(value) do
+      {:ok, currency} -> currency
+      :error -> Mix.raise("unsupported CJ import currency: #{inspect(value)}")
+    end
   end
 
   defp maybe_uniq_ids(nil), do: nil

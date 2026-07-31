@@ -285,6 +285,21 @@ defmodule ProductCompare.IngestionTest do
       assert DateTime.compare(candidate.last_seen_at, last_seen_at) == :eq
     end
 
+    test "rejects an unsupported explicit provider instead of inheriting source ownership" do
+      source = source_fixture(%{provider: "cj"})
+
+      assert {:error, changeset} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_id: "adv-unsupported-provider",
+                 provider: "rakuten",
+                 provider_feed_id: "feed-unsupported-provider",
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert "is not a supported integration provider" in errors_on(changeset).provider
+      assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 0
+    end
+
     test "replays candidates idempotently, preserves program link, and lists them by source" do
       source = source_fixture()
       other_source = source_fixture(%{name: "Other Feed", domain: "other.example"})

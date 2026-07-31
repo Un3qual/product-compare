@@ -26,10 +26,10 @@ defmodule ProductCompare.Accounts.ApiTokens.Authentication do
 
     case Repo.one(query) do
       {user, token} ->
-        if touch_api_token_if_active(token.id, now, opts) do
-          {:ok, user, %{token | last_used_at: now}}
-        else
-          :error
+        case touch_api_token_if_active(token.id, now, opts) do
+          :touched -> {:ok, user, %{token | last_used_at: now}}
+          :unchanged -> {:ok, user, token}
+          :inactive -> :error
         end
 
       nil ->
@@ -46,9 +46,9 @@ defmodule ProductCompare.Accounts.ApiTokens.Authentication do
         |> where([token], is_nil(token.expires_at) or token.expires_at > ^now)
         |> Repo.update_all(set: [last_used_at: now])
 
-      count == 1
+      if count == 1, do: :touched, else: :inactive
     else
-      true
+      :unchanged
     end
   end
 
