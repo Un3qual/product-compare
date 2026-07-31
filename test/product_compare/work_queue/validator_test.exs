@@ -90,6 +90,38 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert Enum.any?(errors, &String.contains?(&1, "empty-state language"))
   end
 
+  test "rejects terminal work records anywhere in the live queue" do
+    markdown =
+      queue_with_rows(3) <>
+        """
+
+        ## Completed Work
+
+        ### Historical batch
+
+        Status: complete
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "live queue contains terminal work status `complete`" in errors
+  end
+
+  test "rejects completion history appended to a ready row" do
+    markdown =
+      String.replace(
+        queue_with_rows(3),
+        "Exit condition: Candidate 3 passes verification.\n",
+        """
+        Exit condition: Candidate 3 passes verification.
+
+        Candidate 3 completed last week and remains here as historical evidence.
+        """
+      )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "ready row 3 contains content after its Exit condition" in errors
+  end
+
   test "requires one backticked repository-relative docs plan path per ready row" do
     cases = [
       {"Plan: docs/plans/candidate-1.md",

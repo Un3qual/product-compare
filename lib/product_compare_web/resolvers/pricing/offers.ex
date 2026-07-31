@@ -12,25 +12,25 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
   @spec merchant_products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def merchant_products(_parent, %{input: input}, %{context: %{loader: loader}}) do
+  def merchant_products(_parent, %{input: input} = args, %{context: %{loader: loader}}) do
     with {:ok, attrs} <- normalize_merchant_products_input(input),
-         connection_args = Input.connection_args(attrs),
+         connection_args = Input.connection_args(args),
          {:ok, _window} <- Connection.batch_window_result(connection_args) do
       source = Loader.discovery_root_source()
       batch_key = {:merchant_products, attrs, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+        {:ok, Loader.get(loader, source, batch_key, :root)}
       end)
     end
   end
 
-  def merchant_products(_parent, %{input: input}, _resolution) do
+  def merchant_products(_parent, %{input: input} = args, _resolution) do
     with {:ok, attrs} <- normalize_merchant_products_input(input) do
       query = Pricing.list_merchant_products_query(attrs)
-      Connection.from_query_result(query, Input.connection_args(attrs), Repo)
+      Connection.from_query_result(query, Input.connection_args(args), Repo)
     end
   end
 
@@ -88,9 +88,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     source = Loader.product_evidence_source()
 
     loader
-    |> Dataloader.load(source, :offer_truth, product)
+    |> Loader.load(source, :offer_truth, product)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :offer_truth, product)}
+      {:ok, Loader.get(loader, source, :offer_truth, product)}
     end)
   end
 
@@ -129,9 +129,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     source = Loader.offer_connection_source()
 
     loader
-    |> Dataloader.load(source, batch_key, parent)
+    |> Loader.load(source, batch_key, parent)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, parent)}
+      {:ok, Loader.get(loader, source, batch_key, parent)}
     end)
   end
 
@@ -152,9 +152,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
        %{
          product_id: product_id,
          merchant_id: merchant_id,
-         active_only: Input.fetch_value(input, :active_only, false),
-         first: Input.fetch_value(input, :first),
-         after: Input.fetch_value(input, :after)
+         active_only: Input.fetch_value(input, :active_only, false)
        }}
     end
   end

@@ -5,24 +5,78 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
 
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Fixtures.TaxonomyFixtures
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.ProductSlugAlias
 
-  test "batch slug lookup preserves canonical precedence and historical aliases with a fixed budget" do
-    historical = SpecsFixtures.product_fixture(%{slug: "batch-product-legacy"})
+  test "database rejects a historical alias that overlaps a canonical product slug" do
+    canonical = product_fixture(%{slug: "reserved-canonical-product"})
+    historical = product_fixture(%{slug: "reserved-historical-product"})
+
+    assert {:error, changeset} =
+             %ProductSlugAlias{}
+             |> ProductSlugAlias.changeset(%{
+               product_id: historical.id,
+               slug: canonical.slug
+             })
+             |> Repo.insert()
+
+    assert "has already been taken" in errors_on(changeset).slug
+  end
+
+  test "database rejects a canonical product slug that overlaps a historical alias" do
+    historical = product_fixture(%{slug: "reserved-prior-product"})
+
+    assert {:ok, current} =
+             Catalog.update_product(historical, %{slug: "reserved-current-product"})
+
+    assert {:error, changeset} =
+             Catalog.create_product(%{
+               brand_id: current.brand_id,
+               primary_type_taxon_id: current.primary_type_taxon_id,
+               name: "Conflicting Canonical Product",
+               slug: historical.slug
+             })
+
+    assert "has already been taken" in errors_on(changeset).slug
+  end
+
+  test "historical slug aliases are immutable in changesets and direct SQL" do
+    product = product_fixture(%{slug: "immutable-prior-product"})
+
+    assert {:ok, product} =
+             Catalog.update_product(product, %{slug: "immutable-current-product"})
+
+    alias_record =
+      Repo.get_by!(ProductSlugAlias,
+        product_id: product.id,
+        slug: "immutable-prior-product"
+      )
+
+    changeset =
+      ProductSlugAlias.changeset(alias_record, %{
+        slug: "rewritten-historical-product"
+      })
+
+    refute changeset.valid?
+    assert "cannot be changed after creation" in errors_on(changeset).slug
+
+    assert_raise Postgrex.Error, ~r/product slug aliases are immutable/, fn ->
+      Repo.query!(
+        "UPDATE product_slug_aliases SET slug = $1 WHERE id = $2",
+        ["rewritten-historical-product", alias_record.id]
+      )
+    end
+  end
+
+  test "batch slug lookup returns canonical and historical slugs with a fixed budget" do
+    historical = product_fixture(%{slug: "batch-product-legacy"})
 
     assert {:ok, historical} =
              Catalog.update_product(historical, %{slug: "batch-product-current"})
 
-    canonical = SpecsFixtures.product_fixture(%{slug: "batch-product-canonical"})
-    other = SpecsFixtures.product_fixture(%{slug: "batch-product-other"})
-
-    %ProductSlugAlias{}
-    |> ProductSlugAlias.changeset(%{
-      product_id: historical.id,
-      slug: canonical.slug
-    })
-    |> Repo.insert!()
+    canonical = product_fixture(%{slug: "batch-product-canonical"})
+    other = product_fixture(%{slug: "batch-product-other"})
 
     initial_slugs = [canonical.slug, "batch-product-legacy"]
 
@@ -59,5 +113,23 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
              capture_select_queries(fn -> Catalog.get_products_by_slugs([]) end)
 
     assert empty_results == %{}
+  end
+
+  defp product_fixture(attrs) do
+    taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    taxon =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: taxonomy.id,
+        code: "lookup-#{Ecto.UUID.generate()}",
+        name: "Lookup Product"
+      })
+
+    {:ok, brand} = Catalog.upsert_brand(%{name: "Lookup Brand #{Ecto.UUID.generate()}"})
+
+    attrs
+    |> Map.put(:primary_type_taxon, taxon)
+    |> Map.put(:brand_id, brand.id)
+    |> SpecsFixtures.product_fixture()
   end
 end

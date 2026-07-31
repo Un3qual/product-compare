@@ -96,20 +96,36 @@ defmodule ProductCompare.Specs.Claims.Moderation do
   end
 
   defp update_claim_status(claim_id, _moderator_user_id, new_status) do
-    case Repo.get(ProductAttributeClaim, claim_id) do
-      nil ->
-        {:error, :claim_not_found}
+    case Repo.transaction(fn ->
+           claim =
+             Repo.one(
+               from claim in ProductAttributeClaim,
+                 where: claim.id == ^claim_id,
+                 lock: "FOR UPDATE"
+             )
 
-      %ProductAttributeClaim{status: ^new_status} = claim ->
-        {:ok, claim}
+           case claim do
+             nil ->
+               Repo.rollback(:claim_not_found)
 
-      %ProductAttributeClaim{status: :proposed} = claim ->
-        claim
-        |> ProductAttributeClaim.changeset(%{status: new_status})
-        |> Repo.update()
+             %ProductAttributeClaim{status: ^new_status} ->
+               claim
 
-      %ProductAttributeClaim{} ->
-        {:error, :invalid_status_transition}
+             %ProductAttributeClaim{status: :proposed} ->
+               claim
+               |> ProductAttributeClaim.changeset(%{status: new_status})
+               |> Repo.update()
+               |> case do
+                 {:ok, updated_claim} -> updated_claim
+                 {:error, changeset} -> Repo.rollback(changeset)
+               end
+
+             %ProductAttributeClaim{} ->
+               Repo.rollback(:invalid_status_transition)
+           end
+         end) do
+      {:ok, %ProductAttributeClaim{} = claim} -> {:ok, claim}
+      {:error, reason} -> {:error, reason}
     end
   end
 end

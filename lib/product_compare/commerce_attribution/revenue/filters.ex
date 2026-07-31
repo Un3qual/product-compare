@@ -1,7 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
   @moduledoc false
 
-  alias ProductCompareSchemas.CommerceAttribution.CommerceLink
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.Reference.CurrencyCode
 
   @max_bigint_id 9_223_372_036_854_775_807
 
@@ -102,12 +103,9 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
   defp normalize_currency(nil), do: nil
 
   defp normalize_currency(currency) when is_binary(currency) do
-    currency = String.upcase(currency)
-
-    if String.match?(currency, ~r/^[A-Z]{3}$/) do
-      currency
-    else
-      raise ArgumentError, "invalid revenue summary currency"
+    case CurrencyCode.cast(currency) do
+      {:ok, currency} -> currency
+      :error -> raise ArgumentError, "invalid revenue summary currency"
     end
   end
 
@@ -116,7 +114,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
   defp normalize_network(nil), do: nil
 
   defp normalize_network(network) when is_atom(network) do
-    if network in CommerceLink.networks() do
+    if network in AffiliateNetwork.provider_codes() do
       network
     else
       raise ArgumentError, "invalid revenue summary network"
@@ -125,7 +123,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
 
   defp normalize_network(network) when is_binary(network) do
     network =
-      Enum.find(CommerceLink.networks(), fn supported_network ->
+      Enum.find(AffiliateNetwork.provider_codes(), fn supported_network ->
         Atom.to_string(supported_network) == network
       end)
 

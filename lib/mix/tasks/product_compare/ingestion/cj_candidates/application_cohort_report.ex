@@ -35,7 +35,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
   end
 
   defp candidates(opts) do
-    CJPrograms.list_feeds_query(stage: "selected")
+    CJPrograms.list_feeds_query(stage: :selected)
     |> preload([candidate], :cj_program)
     |> maybe_filter_string(:advertiser_country, Keyword.fetch!(opts, :country))
     |> maybe_filter_string(:currency, Keyword.fetch!(opts, :currency))
@@ -47,13 +47,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.ApplicationCohortRepor
 
   defp maybe_filter_string(query, _field, nil), do: query
 
-  defp maybe_filter_string(query, field, expected),
-    do:
-      where(
-        query,
-        [candidate],
-        fragment("UPPER(BTRIM(?))", field(candidate, ^field)) == ^expected
-      )
+  defp maybe_filter_string(query, field, expected) do
+    where(query, [candidate], field(candidate, ^field) == ^expected)
+  end
 
   defp maybe_filter_min_product_count(query, nil), do: query
 

@@ -5,14 +5,18 @@ defmodule ProductCompare.Repo.Migrations.CreateMerchantFeedCandidates do
     create table(:merchant_feed_candidates) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :source_id, references(:sources, type: :bigint, on_delete: :delete_all), null: false
-      add :provider, :text, null: false
       add :provider_feed_id, :text, null: false
       add :advertiser_id, :text
       add :advertiser_name, :text
-      add :advertiser_country, :text
-      add :source_feed_type, :text
-      add :currency, :text
-      add :language, :text
+
+      add :advertiser_country_id,
+          references(:countries, type: :integer, on_delete: :restrict)
+
+      add :provider_feed_type_id,
+          references(:provider_feed_types, type: :integer, on_delete: :restrict)
+
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict)
+      add :language_id, references(:languages, type: :integer, on_delete: :restrict)
       add :feed_name, :text
       add :product_count, :integer
       add :provider_last_updated_at, :utc_datetime_usec

@@ -7,12 +7,16 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
     field :entropy_id, Ecto.UUID
     field :public_token, :string
     field :title, :string
-    field :payload, :map
+    field :version, :integer
+    field :captured_at, :utc_datetime_usec
+    field :payload, :map, virtual: true
     field :revoked_at, :utc_datetime_usec
     field :search_indexable, :boolean, default: false
     field :search_qualified, :boolean, default: false
 
     belongs_to :user, ProductCompareSchemas.Accounts.User
+    has_many :products, ProductCompareSchemas.Catalog.ComparisonSnapshot.Product
+    has_one :recommendation, ProductCompareSchemas.Catalog.ComparisonSnapshot.Recommendation
 
     timestamps(updated_at: false)
   end
@@ -24,14 +28,17 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
       :public_token,
       :user_id,
       :title,
-      :payload,
+      :version,
+      :captured_at,
       :search_indexable
     ])
-    |> validate_required([:public_token, :user_id, :payload])
+    |> validate_required([:public_token, :user_id, :version, :captured_at])
+    |> validate_number(:version, greater_than: 0)
     |> validate_length(:public_token, is: 43)
     |> validate_format(:public_token, ~r/^[A-Za-z0-9_-]+$/)
     |> validate_length(:title, min: 1, max: 120)
     |> unique_constraint(:public_token)
+    |> check_constraint(:version, name: :comparison_snapshots_version_positive)
     |> assoc_constraint(:user)
   end
 

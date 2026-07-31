@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.CJSource do
   alias ProductCompareSchemas.Specs.Source
 
   @kind "affiliate_feed"
+  @provider "cj"
   @name "CJ"
   @domain "cj.com"
 
@@ -17,7 +18,8 @@ defmodule ProductCompare.Ingestion.CJSource do
     Source
     |> where(
       [source],
-      source.kind == @kind and source.name == @name and source.domain == @domain
+      source.kind == @kind and source.provider == @provider and source.name == @name and
+        source.domain == @domain
     )
   end
 

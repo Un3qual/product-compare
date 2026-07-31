@@ -36,13 +36,12 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     end
   end
 
-  test "durable write receipts enforce one idempotency key per user and mutation kind" do
+  test "durable write receipts enforce one idempotency key per user and content type" do
     user = AccountsFixtures.user_fixture()
     content_entropy_id = Ecto.UUID.generate()
 
     attrs = %{
       user_id: user.id,
-      mutation_kind: :review,
       idempotency_key: "community-key-0001",
       payload_digest: :crypto.hash(:sha256, "payload"),
       content_type: :review,

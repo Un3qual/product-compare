@@ -10,8 +10,8 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :merchant_product_id,
           references(:merchant_products, type: :bigint, on_delete: :delete_all)
 
-      add :rule_type, :string, null: false
-      add :currency, :string, null: false
+      add :rule_type, :price_watch_rule_type, null: false
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :target_amount, :decimal
       add :percentage_drop, :decimal
 
@@ -34,17 +34,8 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
 
     create unique_index(:price_watch_rules, [:entropy_id])
     create index(:price_watch_rules, [:user_id, :inserted_at])
-    create index(:price_watch_rules, [:product_id, :currency, :enabled])
-    create index(:price_watch_rules, [:merchant_product_id, :currency, :enabled])
-
-    create constraint(:price_watch_rules, :price_watch_rules_type_check,
-             check:
-               "rule_type IN ('target_price', 'percentage_drop', 'back_in_stock', 'newly_available')"
-           )
-
-    create constraint(:price_watch_rules, :price_watch_rules_currency_check,
-             check: "currency ~ '^[A-Z]{3}$'"
-           )
+    create index(:price_watch_rules, [:product_id, :currency_id, :enabled])
+    create index(:price_watch_rules, [:merchant_product_id, :currency_id, :enabled])
 
     create constraint(:price_watch_rules, :price_watch_rules_target_check,
              check:
@@ -68,13 +59,15 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
           references(:merchant_products, type: :bigint, on_delete: :restrict),
           null: false
 
-      add :rule_type, :string, null: false
-      add :currency, :string, null: false
+      add :rule_type, :price_watch_rule_type, null: false
+      add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :item_price, :decimal, null: false
       add :shipping, :decimal, null: false
       add :landed_price, :decimal, null: false
       add :observed_at, :utc_datetime_usec, null: false
-      add :fact_snapshot, :map, null: false
+      add :baseline_landed_price, :decimal
+      add :target_amount, :decimal
+      add :percentage_drop, :decimal
       add :read_at, :utc_datetime_usec
 
       timestamps(type: :utc_datetime_usec, updated_at: false)
@@ -92,25 +85,16 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :alert_event_id, references(:alert_events, type: :bigint, on_delete: :delete_all),
         null: false
 
-      add :transport, :string, null: false
-      add :state, :string, null: false
+      add :transport, :alert_delivery_transport, null: false
+      add :state, :alert_delivery_state, null: false
       add :attempted_at, :utc_datetime_usec, null: false
       add :delivered_at, :utc_datetime_usec
-      add :failure_category, :string
 
       timestamps(type: :utc_datetime_usec, updated_at: false)
     end
 
     create unique_index(:alert_delivery_attempts, [:alert_event_id, :transport],
              name: :alert_delivery_attempts_event_transport_uq
-           )
-
-    create constraint(:alert_delivery_attempts, :alert_delivery_transport_check,
-             check: "transport IN ('in_app', 'email', 'webhook')"
-           )
-
-    create constraint(:alert_delivery_attempts, :alert_delivery_state_check,
-             check: "state IN ('pending', 'delivered', 'failed')"
            )
   end
 end

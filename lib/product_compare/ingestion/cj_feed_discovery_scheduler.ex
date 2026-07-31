@@ -39,10 +39,11 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
       limit: OptionNormalization.positive_integer_option(opts, :limit, @default_limit),
       pages: OptionNormalization.positive_integer_option(opts, :pages, @default_pages),
       enqueuer:
-        Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJFeedDiscoveryWorker.enqueue/1))
+        Keyword.get(opts, :enqueuer, Keyword.get(opts, :runner, &CJFeedDiscoveryWorker.enqueue/1)),
+      scheduler: SchedulerSupport.scheduler(opts)
     }
 
-    SchedulerSupport.schedule(:run_discovery, state.initial_delay_ms)
+    SchedulerSupport.schedule(state.scheduler, :run_discovery, state.initial_delay_ms)
 
     {:ok, state}
   end
@@ -62,7 +63,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryScheduler do
 
     state = %{state | cursor: opts[:cursor]}
 
-    SchedulerSupport.schedule(:run_discovery, state.interval_ms)
+    SchedulerSupport.schedule(state.scheduler, :run_discovery, state.interval_ms)
 
     {:noreply, state}
   end

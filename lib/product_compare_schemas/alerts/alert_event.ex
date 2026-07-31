@@ -1,17 +1,21 @@
 defmodule ProductCompareSchemas.Alerts.AlertEvent do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.CurrencyCode
+
   @type t :: %__MODULE__{}
 
   schema "alert_events" do
     field :entropy_id, Ecto.UUID
     field :rule_type, Ecto.Enum, values: ProductCompareSchemas.Alerts.PriceWatchRule.rule_types()
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :item_price, :decimal
     field :shipping, :decimal
     field :landed_price, :decimal
     field :observed_at, :utc_datetime_usec
-    field :fact_snapshot, :map
+    field :baseline_landed_price, :decimal
+    field :target_amount, :decimal
+    field :percentage_drop, :decimal
     field :read_at, :utc_datetime_usec
 
     belongs_to :watch_rule, ProductCompareSchemas.Alerts.PriceWatchRule
@@ -37,7 +41,9 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
       :shipping,
       :landed_price,
       :observed_at,
-      :fact_snapshot,
+      :baseline_landed_price,
+      :target_amount,
+      :percentage_drop,
       :read_at
     ])
     |> validate_required([
@@ -50,12 +56,12 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
       :item_price,
       :shipping,
       :landed_price,
-      :observed_at,
-      :fact_snapshot
+      :observed_at
     ])
     |> unique_constraint([:watch_rule_id, :triggering_price_point_id],
       name: :alert_events_watch_observation_uq
     )
+    |> foreign_key_constraint(:currency, name: :alert_events_currency_id_fkey)
   end
 
   @spec read_changeset(t(), DateTime.t()) :: Ecto.Changeset.t()

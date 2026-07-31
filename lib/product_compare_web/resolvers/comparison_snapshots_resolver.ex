@@ -18,9 +18,9 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
     source = Loader.public_opaque_source()
 
     loader
-    |> Dataloader.load(source, :comparison_snapshot, token)
+    |> Loader.load(source, :comparison_snapshot, token)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :comparison_snapshot, token)}
+      {:ok, Loader.get(loader, source, :comparison_snapshot, token)}
     end)
   end
 
@@ -142,6 +142,8 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
       _ -> {:error, "invalid captured datetime"}
     end
   end
+
+  defp iso_datetime(%DateTime{} = value), do: {:ok, value}
 
   defp snapshot_payload(%{payload: %{captured_at: _captured_at} = payload}), do: payload
   defp snapshot_payload(snapshot), do: ComparisonSnapshots.hydrate(snapshot).payload

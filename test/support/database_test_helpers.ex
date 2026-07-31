@@ -40,6 +40,16 @@ defmodule ProductCompare.DatabaseTestHelpers do
     wait_until_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
   end
 
+  def assert_some_backend_blocked_by(blocking_backend_pid) do
+    deadline = System.monotonic_time(:millisecond) + 2_000
+    wait_until_any_backend_blocked(blocking_backend_pid, deadline)
+  end
+
+  def assert_backend_blocked(waiting_backend_pid) do
+    deadline = System.monotonic_time(:millisecond) + 2_000
+    wait_until_backend_blocked(waiting_backend_pid, deadline)
+  end
+
   defp drain_queries(ref, acc) do
     receive do
       {^ref, query} -> drain_queries(ref, [query | acc])
@@ -80,6 +90,53 @@ defmodule ProductCompare.DatabaseTestHelpers do
         flunk(
           "expected database backend #{waiting_backend_pid} to wait for #{blocking_backend_pid}"
         )
+    end
+  end
+
+  defp wait_until_any_backend_blocked(blocking_backend_pid, deadline) do
+    blocked? =
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.query!(
+          """
+          SELECT EXISTS (
+            SELECT 1
+            FROM pg_stat_activity AS activity
+            WHERE $1 = ANY(pg_blocking_pids(activity.pid))
+          )
+          """,
+          [blocking_backend_pid]
+        )
+        |> then(&(&1.rows == [[true]]))
+      end)
+
+    cond do
+      blocked? ->
+        :ok
+
+      System.monotonic_time(:millisecond) < deadline ->
+        wait_until_any_backend_blocked(blocking_backend_pid, deadline)
+
+      true ->
+        flunk("expected a database backend to wait for #{blocking_backend_pid}")
+    end
+  end
+
+  defp wait_until_backend_blocked(waiting_backend_pid, deadline) do
+    blocked? =
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.query!("SELECT cardinality(pg_blocking_pids($1)) > 0", [waiting_backend_pid])
+        |> then(&(&1.rows == [[true]]))
+      end)
+
+    cond do
+      blocked? ->
+        :ok
+
+      System.monotonic_time(:millisecond) < deadline ->
+        wait_until_backend_blocked(waiting_backend_pid, deadline)
+
+      true ->
+        flunk("expected database backend #{waiting_backend_pid} to be blocked")
     end
   end
 end

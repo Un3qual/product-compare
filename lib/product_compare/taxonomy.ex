@@ -85,4 +85,7 @@ defmodule ProductCompare.Taxonomy do
 
   @spec resolve_type_alias([String.t()] | String.t()) :: Taxon.t() | nil
   def resolve_type_alias(path), do: Aliases.resolve_type_alias(path)
+
+  @spec resolve_type_alias_for_write([String.t()] | String.t()) :: Taxon.t() | nil
+  def resolve_type_alias_for_write(path), do: Aliases.resolve_type_alias_for_write(path)
 end

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<eddc009e8da8eca4653c612f55c5e71d>>
+ * @generated SignedSource<<810119120fb4b6016b72baff33e3fa63>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -12,12 +12,12 @@ import { ConcreteRequest } from 'relay-runtime';
 export type CouponDiscountType = "AMOUNT" | "FREE_SHIPPING" | "OTHER" | "PERCENT" | "%future added value";
 export type MerchantProductsInput = {
   activeOnly?: boolean | null | undefined;
-  after?: string | null | undefined;
-  first?: number | null | undefined;
   merchantId?: string | null | undefined;
   productId: string;
 };
 export type OfferDiscoveryRouteQuery$variables = {
+  after?: string | null | undefined;
+  first: number;
   input: MerchantProductsInput;
   productId: string;
 };
@@ -105,6 +105,16 @@ export type OfferDiscoveryRouteQuery = {
 
 const node: ConcreteRequest = (function(){
 var v0 = [
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "after"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "first"
+  },
   {
     "defaultValue": null,
     "kind": "LocalArgument",
@@ -217,6 +227,16 @@ v11 = {
 v12 = {
   "alias": null,
   "args": [
+    {
+      "kind": "Variable",
+      "name": "after",
+      "variableName": "after"
+    },
+    {
+      "kind": "Variable",
+      "name": "first",
+      "variableName": "first"
+    },
     {
       "kind": "Variable",
       "name": "input",
@@ -538,16 +558,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "028027667f3b830ee162abc6298db47a",
+    "cacheID": "db5de44c225f8c4c70e90bcee04e9c7a",
     "id": null,
     "metadata": {},
     "name": "OfferDiscoveryRouteQuery",
     "operationKind": "query",
-    "text": "query OfferDiscoveryRouteQuery(\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(input: $input) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        lastSeenAt\n        isActive\n        merchant {\n          id\n          name\n          domain\n        }\n        product {\n          id\n          name\n          slug\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n}\n"
+    "text": "query OfferDiscoveryRouteQuery(\n  $after: String\n  $first: Int!\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(after: $after, first: $first, input: $input) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        lastSeenAt\n        isActive\n        merchant {\n          id\n          name\n          domain\n        }\n        product {\n          id\n          name\n          slug\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "bb1a8a89d7f5c01075a8d4341e0d56ed";
+(node as any).hash = "c4f2d78cc5d761f637f7fe8fc5e37505";
 
 export default node;

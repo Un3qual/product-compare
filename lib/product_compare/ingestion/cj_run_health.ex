@@ -21,7 +21,7 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
   @type run_health :: %{
           surface: String.t(),
           missing: boolean(),
-          status: String.t() | nil,
+          status: atom() | nil,
           successful: boolean() | nil,
           started_at: DateTime.t() | nil,
           finished_at: DateTime.t() | nil,
@@ -35,7 +35,7 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
           records_persisted: non_neg_integer() | nil,
           records_failed: non_neg_integer() | nil,
           has_error_summary: boolean() | nil,
-          reconciliation_status: String.t() | nil,
+          reconciliation_status: atom() | nil,
           reconciled_at: DateTime.t() | nil,
           offers_deactivated: non_neg_integer() | nil
         }
@@ -61,14 +61,15 @@ defmodule ProductCompare.Ingestion.CJRunHealth do
 
   defp latest_health_by_surface do
     ImportRun
-    |> where([run], run.provider == @provider and run.surface in ^@surfaces)
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> where([run, source], source.provider == @provider and run.surface in ^@surfaces)
     |> distinct([run], run.surface)
     |> order_by([run], asc: run.surface, desc: run.started_at, desc: run.id)
     |> select([run], %{
       surface: run.surface,
       missing: false,
       status: run.status,
-      successful: run.status == "succeeded",
+      successful: run.status == :succeeded,
       started_at: run.started_at,
       finished_at: run.finished_at,
       cursor_start: run.cursor_start,

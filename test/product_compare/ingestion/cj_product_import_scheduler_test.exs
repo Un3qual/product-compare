@@ -14,6 +14,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
       {:ok, report()}
     end
 
+    scheduler = controlled_scheduler(parent)
+
     pid =
       start_supervised!(
         {CJProductImportScheduler,
@@ -27,11 +29,15 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
            limit: 10,
            pages: 2,
            runner: runner,
+           scheduler: scheduler,
            serviceable_areas: "us, ca"
          ]}
       )
 
-    assert_receive {:run, opts}, 250
+    assert_receive {:scheduled, ^pid, :run_import, 0}
+    send(pid, :run_import)
+    :sys.get_state(pid)
+    assert_receive {:run, opts}
 
     assert opts == [
              currency: "USD",
@@ -43,7 +49,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
              schedule_window: "2026-07-20T19:00:00Z"
            ]
 
-    refute_receive {:run, _opts}, 50
+    assert_receive {:scheduled, ^pid, :run_import, 1_000}
+    refute_received {:run, _opts}
 
     GenServer.stop(pid)
   end
@@ -138,8 +145,8 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}, 250
-    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 1_000
+    assert_receive {:run, _opts}, 1_000
 
     GenServer.stop(pid)
   end
@@ -334,5 +341,12 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
       pages_fetched: 1,
       persisted: 1
     }
+  end
+
+  defp controlled_scheduler(parent) do
+    fn recipient, message, delay_ms ->
+      send(parent, {:scheduled, recipient, message, delay_ms})
+      make_ref()
+    end
   end
 end

@@ -48,8 +48,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
         product_id: product_id,
         created_by: user_id,
         title: get_attr_value(attrs, :title),
-        body_md: get_attr_value(attrs, :body),
-        kind: :question
+        body_md: get_attr_value(attrs, :body)
       })
 
     with {:ok, digest} <-
@@ -73,7 +72,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
            submission_digest(changeset, :answer, [:thread_id, :body_md], question.entropy_id) do
       idempotent_insert(user_id, :answer, idempotency_key, digest, changeset, fn ->
         case Moderation.locked_record_by_entropy(ProductThread, question.entropy_id) do
-          %ProductThread{kind: :question, moderation_status: :published} -> :ok
+          %ProductThread{moderation_status: :published} -> :ok
           _not_public -> Repo.rollback(:not_found)
         end
       end)
@@ -127,7 +126,6 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
             %CommunityWriteReceipt{}
             |> CommunityWriteReceipt.changeset(%{
               user_id: user_id,
-              mutation_kind: mutation_kind,
               idempotency_key: idempotency_key,
               payload_digest: digest,
               content_type: mutation_kind,
@@ -145,7 +143,6 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
     changeset =
       CommunityWriteReceipt.changeset(%CommunityWriteReceipt{}, %{
         user_id: user_id,
-        mutation_kind: mutation_kind,
         idempotency_key: idempotency_key,
         payload_digest: digest,
         content_type: mutation_kind,
@@ -165,7 +162,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
     Repo.one(
       from receipt in CommunityWriteReceipt,
         where: receipt.user_id == ^user_id,
-        where: receipt.mutation_kind == ^mutation_kind,
+        where: receipt.content_type == ^mutation_kind,
         where: receipt.idempotency_key == ^idempotency_key,
         lock: "FOR UPDATE"
     )

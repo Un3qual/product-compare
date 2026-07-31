@@ -124,8 +124,8 @@ defmodule ProductCompare.Catalog.Search do
   defp maybe_add_validated_gtin_candidate(candidates, normalized_gtin) do
     candidate =
       from identifier in ProductIdentifier,
-        where: identifier.scheme == "gtin",
-        where: identifier.verification_status == "validated",
+        where: identifier.scheme == :gtin,
+        where: identifier.verification_status == :validated,
         where: identifier.normalized_value == ^normalized_gtin,
         select: %{product_id: identifier.product_id}
 
@@ -211,8 +211,8 @@ defmodule ProductCompare.Catalog.Search do
     identifier_query =
       from identifier in ProductIdentifier,
         where: identifier.product_id == parent_as(:product).id,
-        where: identifier.scheme == "gtin",
-        where: identifier.verification_status == "validated",
+        where: identifier.scheme == :gtin,
+        where: identifier.verification_status == :validated,
         where: identifier.normalized_value == ^normalized_gtin
 
     dynamic([product: _product], exists(identifier_query))

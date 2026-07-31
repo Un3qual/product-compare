@@ -52,6 +52,32 @@ defmodule ProductCompare.Catalog.SearchDocumentsTest do
     assert product_id == product.id
   end
 
+  test "update reloads the locked product before preserving its prior slug" do
+    stale_product =
+      SpecsFixtures.product_fixture(%{
+        name: "Stale Slug Product",
+        slug: "stale-slug-original"
+      })
+
+    assert {:ok, intermediate} =
+             Catalog.update_product(stale_product, %{slug: "stale-slug-intermediate"})
+
+    assert {:ok, current} =
+             Catalog.update_product(stale_product, %{slug: "stale-slug-current"})
+
+    assert current.slug == "stale-slug-current"
+
+    assert Repo.get_by(ProductSlugAlias,
+             product_id: stale_product.id,
+             slug: stale_product.slug
+           )
+
+    assert Repo.get_by(ProductSlugAlias,
+             product_id: stale_product.id,
+             slug: intermediate.slug
+           )
+  end
+
   test "brand reassignment refreshes the product document" do
     {:ok, former_brand} = Catalog.create_brand(%{name: "Former Beacon"})
     {:ok, current_brand} = Catalog.create_brand(%{name: "Current Meridian"})

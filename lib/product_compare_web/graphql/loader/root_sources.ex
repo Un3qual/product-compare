@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   @moduledoc false
 
+  import Ecto.Query
+
   alias ProductCompare.{
     Accounts,
     Alerts,
@@ -9,6 +11,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     CommerceAttribution,
     ComparisonSnapshots,
     Discussions,
+    Ingestion,
     Pricing,
     Specs
   }
@@ -16,11 +19,13 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Loader.EctoBatchSource
 
   @spec comparison() :: Dataloader.Source.t()
   def comparison do
-    Dataloader.KV.new(&comparison_batch/2, async?: false)
+    EctoBatchSource.new(&comparison_batch/2)
   end
 
   defp comparison_batch(:products, slug_selections) do
@@ -71,7 +76,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec discovery_roots() :: Dataloader.Source.t()
   def discovery_roots do
-    Dataloader.KV.new(&discovery_root_batch/2, async?: false)
+    EctoBatchSource.new(&discovery_root_batch/2)
   end
 
   defp discovery_root_batch({:products, filters, connection_args}, roots)
@@ -109,7 +114,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec operator_reporting() :: Dataloader.Source.t()
   def operator_reporting do
-    Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
+    EctoBatchSource.new(&operator_reporting_batch/2)
   end
 
   defp operator_reporting_batch(
@@ -148,7 +153,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec public_slugs() :: Dataloader.Source.t()
   def public_slugs do
-    Dataloader.KV.new(&public_slug_batch/2, async?: false)
+    EctoBatchSource.new(&public_slug_batch/2)
   end
 
   defp public_slug_batch(:product, slugs) do
@@ -165,7 +170,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec public_opaque_keys() :: Dataloader.Source.t()
   def public_opaque_keys do
-    Dataloader.KV.new(&public_opaque_batch/2, async?: false)
+    EctoBatchSource.new(&public_opaque_batch/2)
   end
 
   defp public_opaque_batch(:source_artifact, ids) do
@@ -188,7 +193,19 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec authorized_nodes() :: Dataloader.Source.t()
   def authorized_nodes do
-    Dataloader.KV.new(&authorized_node_batch/2, async?: false)
+    EctoBatchSource.new(&authorized_node_batch/2)
+  end
+
+  @doc false
+  @spec authorized_node_results(term(), Enumerable.t()) :: map()
+  def authorized_node_results(batch, ids), do: authorized_node_batch(batch, ids)
+
+  defp authorized_node_batch({:viewer, type, viewer_id}, entropy_ids)
+       when type in [:product_review, :product_question, :product_answer] and
+              (is_nil(viewer_id) or (is_integer(viewer_id) and viewer_id > 0)) do
+    entropy_ids
+    |> Enum.to_list()
+    |> then(&Discussions.get_visible_nodes(type, &1, viewer_id))
   end
 
   defp authorized_node_batch({:operator, type, operator_id}, ids)
@@ -197,6 +214,47 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     ids
     |> Enum.to_list()
     |> then(&Affiliate.get_affiliate_nodes(type, &1))
+  end
+
+  defp authorized_node_batch({:operator, :cj_program, operator_id}, entropy_ids)
+       when is_integer(operator_id) and operator_id > 0 do
+    entropy_ids = Enum.to_list(entropy_ids)
+
+    programs =
+      Ingestion.list_cj_programs_query()
+      |> where([program], program.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    warning_codes = Ingestion.cj_program_warnings(Enum.map(programs, & &1.id))
+    programs = Enum.map(programs, &Map.put(&1, :warning_codes, Map.get(warning_codes, &1.id, [])))
+
+    project_records(entropy_ids, programs, :entropy_id)
+  end
+
+  defp authorized_node_batch({:operator, :merchant_feed_candidate, operator_id}, ids)
+       when is_integer(operator_id) and operator_id > 0 do
+    ids = Enum.to_list(ids)
+
+    records =
+      MerchantFeedCandidate
+      |> join(:inner, [candidate], source in assoc(candidate, :source))
+      |> where([candidate, _source], candidate.id in ^ids)
+      |> select_merge([_candidate, source], %{provider: source.provider})
+      |> Repo.all()
+
+    project_records(ids, records, :id)
+  end
+
+  defp authorized_node_batch({:self, :user, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids = Enum.to_list(entropy_ids)
+
+    records =
+      User
+      |> where([user], user.id == ^user_id and user.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    project_records(entropy_ids, records, :entropy_id)
   end
 
   defp authorized_node_batch({:owner, :saved_comparison_set, user_id}, entropy_ids)
@@ -213,9 +271,73 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
     |> then(&Accounts.get_api_tokens_for_user(%User{id: user_id}, &1))
   end
 
+  defp authorized_node_batch({:owner, :comparison_snapshot, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids = Enum.to_list(entropy_ids)
+
+    records =
+      user_id
+      |> ComparisonSnapshots.active_for_owner_query()
+      |> where([snapshot], snapshot.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    project_records(entropy_ids, records, :entropy_id)
+  end
+
+  defp authorized_node_batch({:owner, :price_watch, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids = Enum.to_list(entropy_ids)
+
+    records =
+      user_id
+      |> Alerts.list_watch_rules_query()
+      |> where([watch], watch.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    project_records(entropy_ids, records, :entropy_id)
+  end
+
+  defp authorized_node_batch({:owner, :alert_event, user_id}, entropy_ids)
+       when is_integer(user_id) and user_id > 0 do
+    entropy_ids = Enum.to_list(entropy_ids)
+
+    records =
+      user_id
+      |> Alerts.list_alert_events_query()
+      |> where([event], event.entropy_id in ^entropy_ids)
+      |> Repo.all()
+
+    project_records(entropy_ids, records, :entropy_id)
+  end
+
+  defp authorized_node_batch({:owner, :specification_correction, user_id}, ids)
+       when is_integer(user_id) and user_id > 0 do
+    ids = Enum.to_list(ids)
+
+    records =
+      user_id
+      |> Specs.list_user_corrections_query()
+      |> where([correction], correction.id in ^ids)
+      |> Repo.all()
+
+    project_records(ids, records, :id)
+  end
+
+  defp authorized_node_batch({:operator, :specification_correction, operator_id}, ids)
+       when is_integer(operator_id) and operator_id > 0 do
+    ids = Enum.to_list(ids)
+
+    records =
+      Specs.list_correction_moderation_query(status: nil)
+      |> where([correction], correction.id in ^ids)
+      |> Repo.all()
+
+    project_records(ids, records, :id)
+  end
+
   @spec authorized_connections() :: Dataloader.Source.t()
   def authorized_connections do
-    Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
+    EctoBatchSource.new(&authorized_connection_batch/2)
   end
 
   defp authorized_connection_batch(
@@ -284,5 +406,10 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   defp project_lookup_results(items, values) do
     Map.new(items, &{&1, Map.get(values, &1)})
+  end
+
+  defp project_records(items, records, key) do
+    records_by_key = Map.new(records, &{Map.fetch!(&1, key), &1})
+    project_lookup_results(items, records_by_key)
   end
 end

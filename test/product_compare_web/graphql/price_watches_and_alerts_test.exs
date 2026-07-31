@@ -6,7 +6,7 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareWeb.Resolvers.AlertsResolver
+  alias ProductCompareWeb.Resolvers.Alerts.Reads
   alias ProductCompareSchemas.Alerts.PriceWatchRule
 
   test "watch and inbox APIs require authentication", %{conn: conn} do
@@ -188,14 +188,14 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
               edges: [%{cursor: cursor, node: first_node}],
               page_info: %{has_next_page: true, has_previous_page: false}
             }} =
-             AlertsResolver.my_price_watches(nil, %{enabled: true, first: 1}, resolution)
+             Reads.my_price_watches(nil, %{enabled: true, first: 1}, resolution)
 
     assert {:ok,
             %{
               edges: [%{node: second_node}],
               page_info: %{has_next_page: false, has_previous_page: true}
             }} =
-             AlertsResolver.my_price_watches(
+             Reads.my_price_watches(
                nil,
                %{enabled: true, first: 1, after: cursor},
                resolution
@@ -224,14 +224,14 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
               edges: [%{cursor: cursor, node: first_node}],
               page_info: %{has_next_page: true, has_previous_page: false}
             }} =
-             AlertsResolver.my_alert_events(nil, %{unread_only: true, first: 1}, resolution)
+             Reads.my_alert_events(nil, %{unread_only: true, first: 1}, resolution)
 
     assert {:ok,
             %{
               edges: [%{node: second_node}],
               page_info: %{has_next_page: false, has_previous_page: true}
             }} =
-             AlertsResolver.my_alert_events(
+             Reads.my_alert_events(
                nil,
                %{unread_only: true, first: 1, after: cursor},
                resolution

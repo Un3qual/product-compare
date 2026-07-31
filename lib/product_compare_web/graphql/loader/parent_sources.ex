@@ -3,10 +3,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   alias ProductCompare.{Affiliate, Discussions, Pricing, Seo}
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Loader.EctoBatchSource
 
   @spec merchant_detail() :: Dataloader.Source.t()
   def merchant_detail do
-    Dataloader.KV.new(&merchant_detail_batch/2, async?: false)
+    EctoBatchSource.new(&merchant_detail_batch/2)
   end
 
   defp merchant_detail_batch(:summary, merchants) do
@@ -17,7 +18,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   @spec product_evidence() :: Dataloader.Source.t()
   def product_evidence do
-    Dataloader.KV.new(&product_evidence_batch/2, async?: false)
+    EctoBatchSource.new(&product_evidence_batch/2)
   end
 
   defp product_evidence_batch(batch_key, products) do
@@ -47,7 +48,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   @spec community_connections() :: Dataloader.Source.t()
   def community_connections do
-    Dataloader.KV.new(&community_connection_batch/2, async?: false)
+    EctoBatchSource.new(&community_connection_batch/2)
   end
 
   defp community_connection_batch({kind, connection_args}, parents)
@@ -68,7 +69,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   @spec viewer_submissions() :: Dataloader.Source.t()
   def viewer_submissions do
-    Dataloader.KV.new(&viewer_submission_batch/2, async?: false)
+    EctoBatchSource.new(&viewer_submission_batch/2)
   end
 
   defp viewer_submission_batch(user_id, products)
@@ -88,7 +89,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   @spec offer_connections() :: Dataloader.Source.t()
   def offer_connections do
-    Dataloader.KV.new(&offer_connection_batch/2, async?: false)
+    EctoBatchSource.new(&offer_connection_batch/2)
   end
 
   defp offer_connection_batch({:product_offers, connection_args, filters}, products)
@@ -149,7 +150,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
 
   @spec categories() :: Dataloader.Source.t()
   def categories do
-    Dataloader.KV.new(&category_batch/2, async?: false)
+    EctoBatchSource.new(&category_batch/2)
   end
 
   defp category_batch(:lookup, slugs) do

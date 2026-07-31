@@ -1,10 +1,8 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
-import { useMutation, useRelayEnvironment } from "react-relay";
+import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
-import logoutMutation, {
-  type LogoutMutation
-} from "../../__generated__/LogoutMutation.graphql";
+import type { LogoutRouteMutation } from "../../__generated__/LogoutRouteMutation.graphql";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   isSuccessfulActionResult,
@@ -15,11 +13,24 @@ import {
 import { AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { clearRootViewer } from "./viewer-store";
 
+const logoutMutation = graphql`
+  mutation LogoutRouteMutation {
+    logout {
+      ok
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 export function LogoutRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
   const [errors, setErrors] = useState<MutationError[]>([]);
-  const [commitLogout, isSubmitting] = useMutation<LogoutMutation>(logoutMutation);
+  const [commitLogout, isSubmitting] = useMutation<LogoutRouteMutation>(logoutMutation);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

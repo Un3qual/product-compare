@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<bea01d0ff1fd1cfa3917fb6a811c52ed>>
+ * @generated SignedSource<<6f2ec3bfe5af95cca354e64bec523308>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type MerchantDirectoryRouteQuery$variables = {
   after?: string | null | undefined;
-  first?: number | null | undefined;
+  first: number;
 };
 export type MerchantDirectoryRouteQuery$data = {
   readonly merchants: {
@@ -192,16 +192,16 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "e60ed11a63074678d39c40ee8c369192",
+    "cacheID": "dd8d706966990cca75a15ab7d9f1a45a",
     "id": null,
     "metadata": {},
     "name": "MerchantDirectoryRouteQuery",
     "operationKind": "query",
-    "text": "query MerchantDirectoryRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query MerchantDirectoryRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "892aa8ea9692842feb68c2d7d18575d2";
+(node as any).hash = "47adea897150992b1401a3642408e2ae";
 
 export default node;

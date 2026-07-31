@@ -14,6 +14,7 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
   alias ProductCompareSchemas.Ingestion.MerchantSourceIdentity
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @default_stale_price_hours 168
@@ -79,10 +80,13 @@ defmodule ProductCompare.Ingestion.CJImportPriceQuality do
     |> join(:inner, [_merchant_product, identity], source in subquery(CJSource.query()),
       on: source.id == identity.source_id
     )
+    |> join(:inner, [merchant_product, _identity, _source], currency in Currency,
+      on: currency.id == merchant_product.currency
+    )
     |> distinct([merchant_product], merchant_product.id)
-    |> select([merchant_product], %{
+    |> select([merchant_product, _identity, _source, currency], %{
       id: merchant_product.id,
-      currency: merchant_product.currency,
+      currency: currency.code,
       is_active: merchant_product.is_active
     })
   end

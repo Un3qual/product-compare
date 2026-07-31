@@ -52,7 +52,9 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshnessTest do
         provider_feed_id: "cj-fresh-unmatched"
       })
 
-      merchant_feed_candidate_fixture(source, %{
+      awin_source = source_fixture(%{name: "Awin", provider: "awin"})
+
+      merchant_feed_candidate_fixture(awin_source, %{
         last_seen_at: now,
         provider: "awin",
         provider_feed_id: "awin-fresh"

@@ -350,7 +350,12 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjRunsTest do
     %Source{}
     |> Source.changeset(
       Map.merge(
-        %{kind: "affiliate_feed", name: "CJ #{suffix}", domain: "cj-#{suffix}.example"},
+        %{
+          kind: "affiliate_feed",
+          provider: "cj",
+          name: "CJ #{suffix}",
+          domain: "cj-#{suffix}.example"
+        },
         attrs
       )
     )

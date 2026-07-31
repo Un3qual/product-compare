@@ -58,13 +58,6 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
           url: "https://merchant.example/unpriced"
         })
 
-      blank_currency =
-        raw_merchant_product_fixture(second_merchant, %{
-          currency: "",
-          is_active: true,
-          url: "https://merchant.example/blank-currency"
-        })
-
       merchant_product_fixture(other_merchant, %{
         currency: "USD",
         is_active: true,
@@ -77,21 +70,20 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
       assert %{
                provider: "cj",
                stale_price_hours: 168,
-               merchant_product_count: 4,
+               merchant_product_count: 3,
                with_price_count: 2,
-               without_price_count: 2,
-               active_count: 3,
+               without_price_count: 1,
+               active_count: 2,
                inactive_count: 1,
                fresh_price_count: 1,
                stale_price_count: 1,
                currency_counts: [
                  %{currency: "USD", merchant_product_count: 2},
-                 %{currency: "EUR", merchant_product_count: 1},
-                 %{currency: "unknown", merchant_product_count: 1}
+                 %{currency: "EUR", merchant_product_count: 1}
                ]
              } = summary = CJImportPriceQuality.summary(now: now)
 
-      assert unpriced.id != blank_currency.id
+      assert unpriced.currency == "EUR"
       assert_safe_summary(summary)
     end
 
@@ -155,12 +147,6 @@ defmodule ProductCompare.Ingestion.CJImportPriceQualityTest do
   defp merchant_product_fixture(merchant, attrs) do
     %MerchantProduct{}
     |> MerchantProduct.changeset(merchant_product_attrs(merchant, attrs))
-    |> Repo.insert!()
-  end
-
-  defp raw_merchant_product_fixture(merchant, attrs) do
-    %MerchantProduct{}
-    |> struct(merchant_product_attrs(merchant, attrs))
     |> Repo.insert!()
   end
 

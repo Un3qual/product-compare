@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.ComparisonSnapshotsTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures

@@ -26,16 +26,18 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Offers do
     attrs = merchant_product_attrs(merchant_identity, product, listing)
     changeset = MerchantProduct.changeset(%MerchantProduct{}, attrs)
     now = DateTime.utc_now()
+    currency = Ecto.Changeset.get_field(changeset, :currency)
 
     update_fields =
       changeset.changes
-      |> Map.drop([:merchant_id, :product_id, :url])
+      |> Map.drop([:merchant_id, :product_id, :url, :currency])
       |> Map.to_list()
 
     conflict_query =
       from merchant_product in MerchantProduct,
         where:
           merchant_product.product_id == ^product.id and
+            merchant_product.currency == ^currency and
             merchant_product.last_seen_at <= ^listing.observed_at,
         update: [set: ^(update_fields ++ [updated_at: now])]
 
@@ -51,7 +53,8 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Offers do
         fetch_listing_merchant_product(
           merchant_identity.merchant_id,
           listing.listing_url,
-          product
+          product,
+          currency
         )
 
       {:ok, %MerchantProduct{} = merchant_product} ->
@@ -62,7 +65,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Offers do
     end
   end
 
-  defp fetch_listing_merchant_product(merchant_id, url, product) do
+  defp fetch_listing_merchant_product(merchant_id, url, product, currency) do
     case Repo.get_by(MerchantProduct, merchant_id: merchant_id, url: url) do
       nil ->
         {:error, :merchant_product_not_found}
@@ -70,6 +73,11 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Offers do
       %MerchantProduct{product_id: product_id} = merchant_product when product_id != product.id ->
         {:error,
          {:merchant_product_product_conflict, merchant_product.id, product_id, product.id}}
+
+      %MerchantProduct{currency: existing_currency} = merchant_product
+      when existing_currency != currency ->
+        {:error,
+         {:merchant_product_currency_conflict, merchant_product.id, existing_currency, currency}}
 
       %MerchantProduct{} = merchant_product ->
         {:ok, merchant_product}

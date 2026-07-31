@@ -1,8 +1,16 @@
 export { Button } from "./Button";
+export { Checkbox } from "./Checkbox";
 export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./Collapsible";
 export type { ButtonProps } from "./Button";
+export type { CheckboxProps } from "./Checkbox";
 export { Label } from "./Label";
+export { Radio } from "./Radio";
+export type { RadioProps } from "./Radio";
+export { Select } from "./Select";
+export type { SelectOption, SelectProps } from "./Select";
 export { Separator } from "./Separator";
 export { Slot } from "./Slot";
+export { TextArea } from "./TextArea";
+export type { TextAreaProps } from "./TextArea";
 export { TextField } from "./TextField";
 export type { TextFieldProps } from "./TextField";

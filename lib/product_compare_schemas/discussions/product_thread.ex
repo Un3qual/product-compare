@@ -9,7 +9,6 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
     field :entropy_id, Ecto.UUID
     field :title, :string
     field :body_md, :string
-    field :kind, Ecto.Enum, values: [:question], default: :question
 
     field :moderation_status, Ecto.Enum,
       values: [:pending, :published, :hidden, :rejected, :removed],
@@ -32,7 +31,7 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
   def changeset(thread, attrs) do
     cast_fields =
       if is_nil(thread.id),
-        do: [:product_id, :title, :body_md, :kind, :created_by],
+        do: [:product_id, :title, :body_md, :created_by],
         else: [:title, :body_md]
 
     thread

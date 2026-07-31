@@ -12,7 +12,6 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   @safe_feed_fields [
     :id,
     :entropy_id,
-    :provider,
     :provider_feed_id,
     :advertiser_id,
     :advertiser_name,
@@ -75,13 +74,14 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   @spec list_unmatched_feeds_query() :: Ecto.Query.t()
   def list_unmatched_feeds_query do
     MerchantFeedCandidate
-    |> where([feed], feed.provider == @provider and is_nil(feed.cj_program_id))
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> where([feed, source], source.provider == @provider and is_nil(feed.cj_program_id))
     |> safe_feed_select()
     |> order_by([feed], desc: feed.last_seen_at, asc: feed.id)
   end
 
-  @spec pursued_stages() :: [String.t()]
-  def pursued_stages, do: ["selected", "applied", "accepted"]
+  @spec pursued_stages() :: [atom()]
+  def pursued_stages, do: [:selected, :applied, :accepted]
 
   @spec ensure_in_transaction(pos_integer(), String.t() | nil) ::
           {:ok, CJProgram.t()} | {:error, :blank_advertiser_id | Ecto.Changeset.t()}
@@ -95,7 +95,7 @@ defmodule ProductCompare.Ingestion.CJPrograms do
         |> CJProgram.changeset(%{
           source_id: source_id,
           advertiser_id: advertiser_id,
-          stage: "new",
+          stage: :new,
           changed_at: DateTime.utc_now()
         })
         |> Repo.insert(
@@ -143,7 +143,8 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   defp latest_name_query do
     MerchantFeedCandidate
-    |> where([feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> where([feed, source], source.provider == @provider and not is_nil(feed.cj_program_id))
     |> where([feed], not is_nil(fragment("NULLIF(BTRIM(?), '')", feed.advertiser_name)))
     |> distinct([feed], feed.cj_program_id)
     |> order_by([feed], asc: feed.cj_program_id, desc: feed.last_seen_at, desc: feed.id)
@@ -155,23 +156,31 @@ defmodule ProductCompare.Ingestion.CJPrograms do
 
   defp feed_count_query do
     MerchantFeedCandidate
-    |> where([feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> where([feed, source], source.provider == @provider and not is_nil(feed.cj_program_id))
     |> group_by([feed], feed.cj_program_id)
     |> select([feed], %{cj_program_id: feed.cj_program_id, feed_count: count(feed.id)})
   end
 
   defp linked_cj_feed_query(query) do
-    where(query, [feed], feed.provider == @provider and not is_nil(feed.cj_program_id))
+    query
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> where([feed, source], source.provider == @provider and not is_nil(feed.cj_program_id))
   end
 
   defp safe_feed_select(query) do
-    select(query, [feed], struct(feed, ^@safe_feed_fields))
+    query
+    |> select([feed], struct(feed, ^@safe_feed_fields))
+    |> select_merge([_feed], %{provider: ^@provider})
   end
 
   defp maybe_filter_program_stage(query, nil), do: query
 
   defp maybe_filter_program_stage(query, stage) do
-    where(query, [program], program.stage == ^stage)
+    case Ecto.Enum.cast_value(CJProgram, :stage, stage) do
+      {:ok, stage} -> where(query, [program], program.stage == ^stage)
+      :error -> where(query, [program], false)
+    end
   end
 
   defp maybe_filter_program_id(query, program_id)
@@ -184,9 +193,15 @@ defmodule ProductCompare.Ingestion.CJPrograms do
   defp maybe_filter_feed_stage(query, nil), do: query
 
   defp maybe_filter_feed_stage(query, stage) do
-    join(query, :inner, [feed], program in CJProgram,
-      on: program.id == feed.cj_program_id and program.stage == ^stage
-    )
+    case Ecto.Enum.cast_value(CJProgram, :stage, stage) do
+      {:ok, stage} ->
+        join(query, :inner, [feed], program in CJProgram,
+          on: program.id == feed.cj_program_id and program.stage == ^stage
+        )
+
+      :error ->
+        where(query, [feed], false)
+    end
   end
 
   defp order_programs(query, :last_changed_desc) do

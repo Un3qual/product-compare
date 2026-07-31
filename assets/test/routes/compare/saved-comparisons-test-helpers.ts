@@ -54,8 +54,10 @@ export const buildCompareLoaderArgs = ({
   ({
     request,
     params: {},
-    context: environment ? createRelayRouterContext(environment) : undefined
-  }) as LoaderFunctionArgs;
+    context: environment ? createRelayRouterContext(environment) : undefined,
+    pattern: "/compare",
+    url: new URL(request.url)
+  });
 
 export const buildAbortableRequest = (url: string, signal: AbortSignal): Request =>
   Object.defineProperty(
@@ -78,5 +80,7 @@ export const buildSavedComparisonsLoaderArgs = ({
   ({
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  }) as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/compare/saved",
+    url: new URL(request.url)
+  });

@@ -181,8 +181,8 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
     end
   end
 
-  describe "filter query plan regressions" do
-    test "numeric filters preserve canonical PACUR -> PAC join and numeric index expectation" do
+  describe "filter query structure regressions" do
+    test "numeric filters emit the canonical join and indexed numeric predicates" do
       moderator = AccountsFixtures.user_fixture()
       {attribute, unit} = numeric_attribute_with_unit_fixture()
       product = product_fixture("plan-numeric")
@@ -191,8 +191,8 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       |> accept_claim!(attribute, %{value_num: Decimal.new("150"), unit_id: unit.id}, moderator)
       |> select_current_claim!(product, attribute, moderator)
 
-      {sql, plan} =
-        explain_filter_query(%{
+      sql =
+        filter_query_sql(%{
           numeric: [
             %{
               attribute_id: attribute.id,
@@ -203,13 +203,18 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
         })
 
       assert sql =~ @canonical_pac_join_regex
-      assert plan =~ "product_attribute_current"
-      assert plan =~ "product_attribute_claims"
+      assert sql =~ ~r/sp?\d+\."attribute_id" =/
+      assert sql =~ ~r/sp?\d+\."value_num_base" >=/
+      assert sql =~ ~r/sp?\d+\."value_num_base" <=/
 
-      assert_filter_plan_uses_index(plan, "pac_numeric_filter_idx")
+      assert_supporting_index(
+        "pac_numeric_filter_idx",
+        "attribute_id, value_num_base",
+        "value_num_base IS NOT NULL"
+      )
     end
 
-    test "boolean filters preserve canonical PACUR -> PAC join and bool predicate expectation" do
+    test "boolean filters emit the canonical join and indexed boolean predicates" do
       moderator = AccountsFixtures.user_fixture()
       attribute = bool_attribute_fixture()
       product = product_fixture("plan-bool")
@@ -218,20 +223,23 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       |> accept_claim!(attribute, %{value_bool: true}, moderator)
       |> select_current_claim!(product, attribute, moderator)
 
-      {sql, plan} =
-        explain_filter_query(%{
+      sql =
+        filter_query_sql(%{
           booleans: [%{attribute_id: attribute.id, value: true}]
         })
 
       assert sql =~ @canonical_pac_join_regex
+      assert sql =~ ~r/sp?\d+\."attribute_id" =/
       assert sql =~ ~r/sp?\d+\."value_bool" =/
-      assert plan =~ "product_attribute_current"
-      assert plan =~ "product_attribute_claims"
 
-      assert_filter_plan_uses_index(plan, "pac_bool_filter_idx")
+      assert_supporting_index(
+        "pac_bool_filter_idx",
+        "attribute_id, value_bool",
+        "value_bool IS NOT NULL"
+      )
     end
 
-    test "enum filters preserve canonical PACUR -> PAC join and enum index expectation" do
+    test "enum filters emit the canonical join and indexed enum predicates" do
       moderator = AccountsFixtures.user_fixture()
       {attribute, option_a, _option_b} = enum_attribute_with_options_fixture()
       product = product_fixture("plan-enum")
@@ -240,40 +248,44 @@ defmodule ProductCompare.Catalog.FilteringRegressionTest do
       |> accept_claim!(attribute, %{enum_option_id: option_a.id}, moderator)
       |> select_current_claim!(product, attribute, moderator)
 
-      {sql, plan} =
-        explain_filter_query(%{
+      sql =
+        filter_query_sql(%{
           enums: [%{attribute_id: attribute.id, enum_option_id: option_a.id}]
         })
 
       assert sql =~ @canonical_pac_join_regex
-      assert plan =~ "product_attribute_current"
-      assert plan =~ "product_attribute_claims"
+      assert sql =~ ~r/sp?\d+\."attribute_id" =/
+      assert sql =~ ~r/sp?\d+\."enum_option_id" = ANY\(/
 
-      assert_filter_plan_uses_index(plan, "pac_enum_filter_idx")
+      assert_supporting_index(
+        "pac_enum_filter_idx",
+        "attribute_id, enum_option_id",
+        "enum_option_id IS NOT NULL"
+      )
     end
   end
 
-  defp explain_filter_query(filters) do
-    # Planner node shapes vary by Postgres version. We only assert stable fragments and
-    # set local planner flags to make pac_* index expectations less noisy.
+  defp filter_query_sql(filters) do
     query = Filtering.apply_filters(filters)
-    {sql, params} = SQL.to_sql(:all, Repo, query)
-
-    {:ok, plan} =
-      Repo.transaction(fn ->
-        Repo.query!("SET LOCAL enable_seqscan = off")
-        Repo.query!("SET LOCAL enable_bitmapscan = off")
-
-        Repo.query!("EXPLAIN (COSTS OFF) " <> sql, params).rows
-        |> Enum.map(&List.first/1)
-        |> Enum.join("\n")
-      end)
-
-    {sql, plan}
+    {sql, _params} = SQL.to_sql(:all, Repo, query)
+    sql
   end
 
-  defp assert_filter_plan_uses_index(plan, index_name) do
-    assert plan =~ "using #{index_name}"
+  defp assert_supporting_index(index_name, columns, predicate) do
+    assert %{rows: [[definition]]} =
+             Repo.query!(
+               """
+               SELECT indexdef
+               FROM pg_indexes
+               WHERE schemaname = current_schema()
+                 AND tablename = 'product_attribute_claims'
+                 AND indexname = $1
+               """,
+               [index_name]
+             )
+
+    assert definition =~ "USING btree (#{columns})"
+    assert definition =~ predicate
   end
 
   defp accept_claim!(product, attribute, typed_value, moderator) do

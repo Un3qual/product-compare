@@ -9,7 +9,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.Loader
-  alias ProductCompareSchemas.CommerceAttribution.CommerceLink
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.Reference.CurrencyCode
 
   @invalid_filters_error "invalid revenue summary filters"
   @public_min_conversions 2
@@ -32,10 +33,10 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       batch_key = {:revenue_summary, operator.id, filters, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
         loader
-        |> Dataloader.get(source, batch_key, :root)
+        |> Loader.get(source, batch_key, :root)
         |> revenue_summary_result()
       end)
     else
@@ -100,11 +101,10 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp normalize_revenue_currency(nil), do: {:ok, nil}
 
   defp normalize_revenue_currency(currency) when is_binary(currency) do
-    currency = String.upcase(currency)
-
-    if String.match?(currency, ~r/^[A-Z]{3}$/),
-      do: {:ok, currency},
-      else: {:error, :invalid_currency}
+    case CurrencyCode.cast(currency) do
+      {:ok, currency} -> {:ok, currency}
+      :error -> {:error, :invalid_currency}
+    end
   end
 
   defp normalize_revenue_currency(_currency), do: {:error, :invalid_currency}
@@ -122,13 +122,13 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   defp normalize_revenue_network(nil), do: {:ok, nil}
 
   defp normalize_revenue_network(network) when is_atom(network) do
-    if network in CommerceLink.networks(),
+    if network in AffiliateNetwork.provider_codes(),
       do: {:ok, network},
       else: {:error, :invalid_network}
   end
 
   defp normalize_revenue_network(network) when is_binary(network) do
-    case Enum.find(CommerceLink.networks(), &(Atom.to_string(&1) == network)) do
+    case Enum.find(AffiliateNetwork.provider_codes(), &(Atom.to_string(&1) == network)) do
       nil -> {:error, :invalid_network}
       network -> {:ok, network}
     end

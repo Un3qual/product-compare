@@ -1,13 +1,18 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
-import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
-import answerProductQuestionMutation from "../../../src/routes/products/queries/AnswerProductQuestionMutation";
-import askProductQuestionMutation from "../../../src/routes/products/queries/AskProductQuestionMutation";
-import removeCommunityContentMutation from "../../../src/routes/products/queries/RemoveCommunityContentMutation";
-import submitProductReviewMutation from "../../../src/routes/products/queries/SubmitProductReviewMutation";
-import updateProductAnswerMutation from "../../../src/routes/products/queries/UpdateProductAnswerMutation";
-import updateProductQuestionMutation from "../../../src/routes/products/queries/UpdateProductQuestionMutation";
-import updateProductReviewMutation from "../../../src/routes/products/queries/UpdateProductReviewMutation";
+import {
+  removeCommunityContentMutation,
+  updateProductAnswerMutation,
+  updateProductQuestionMutation,
+  updateProductReviewMutation
+} from "../../../src/routes/products/ProductCommunityItems";
+import {
+  answerProductQuestionMutation,
+  askProductQuestionMutation,
+  ProductCommunityPanel,
+  submitProductReviewMutation
+} from "../../../src/routes/products/ProductCommunityPanel";
+import { chooseSelectOption } from "../../helpers/radix-select";
 
 const {
   answerMock,
@@ -128,10 +133,39 @@ test("ProductCommunityPanel shows published trust signals and renders authored t
   expect(screen.getByText("Accepted answer", { exact: false })).toBeVisible();
 });
 
+test("ProductCommunityPanel explicitly associates every community form label with its control", () => {
+  render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
+
+  fireEvent.click(screen.getByRole("button", { name: "Edit review" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit question" }));
+  fireEvent.click(screen.getByRole("button", { name: "Edit answer" }));
+
+  for (const label of [
+    "Rating",
+    "Title",
+    "Review",
+    "Question",
+    "Details",
+    "Answer",
+    "Edit review rating",
+    "Edit review title",
+    "Edit review body",
+    "Edit question title",
+    "Edit question body",
+    "Edit answer body"
+  ]) {
+    const control = screen.getByLabelText(label);
+    const id = control.getAttribute("id");
+
+    expect(id).toBeTruthy();
+    expect(document.querySelector(`label[for="${id}"]`)).toHaveTextContent(label);
+  }
+});
+
 test("ProductCommunityPanel reuses a create key after transport failure and replaces it after a terminal payload", async () => {
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
   fireEvent.click(screen.getByText("Write a review"));
-  fireEvent.change(screen.getByLabelText("Rating"), { target: { value: "3" } });
+  chooseSelectOption(screen.getByLabelText("Rating"), "3");
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Balanced" } });
   fireEvent.change(screen.getByLabelText("Review"), { target: { value: "Good, with caveats." } });
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));

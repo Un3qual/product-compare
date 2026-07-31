@@ -11,8 +11,8 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   import Ecto.Query
 
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Ingestion.CJProgram
-  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Ingestion.{CJProgram, MerchantFeedCandidate}
+  alias ProductCompareSchemas.Reference.Currency
 
   @provider "cj"
   @stages Map.values(CJProgram.stage_keys()) ++ [:unmatched]
@@ -63,14 +63,21 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
   defp base_query do
     MerchantFeedCandidate
     |> join(:left, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
-    |> where([feed], feed.provider == @provider)
+    |> join(:inner, [feed, _program], source in assoc(feed, :source))
+    |> join(:left, [feed], country in "countries", on: country.id == feed.advertiser_country)
+    |> join(:left, [feed], currency in Currency, on: currency.id == feed.currency)
+    |> join(:left, [feed], language in "languages", on: language.id == feed.language)
+    |> join(:left, [feed], feed_type in "provider_feed_types",
+      on: feed_type.id == feed.source_feed_type
+    )
+    |> where([_feed, _program, source], source.provider == @provider)
   end
 
   defp stage_counts(base_query) do
     base_query
     |> group_by([_feed, program], program.stage)
     |> select([feed, program], %{
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage),
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage),
       candidate_count: count(feed.id)
     })
     |> Repo.all()
@@ -85,42 +92,87 @@ defmodule ProductCompare.Ingestion.CJCandidateMarketCoverage do
 
   defp dimension_summary(base_query, dimension) do
     base_query
+    |> dimension_rows(dimension)
+    |> summarize_dimension_rows()
+  end
+
+  defp dimension_rows(base_query, :advertiser_country) do
+    base_query
     |> group_by(
-      [feed, program],
-      [
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          field(feed, ^dimension)
-        ),
-        program.stage
-      ]
+      [_feed, program, _source, country],
+      [fragment("COALESCE(?, 'unknown')", country.code), program.stage]
     )
-    |> select([feed, program], %{
-      bucket:
-        fragment(
-          "COALESCE(NULLIF(UPPER(BTRIM(?)), ''), 'unknown')",
-          field(feed, ^dimension)
-        ),
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage),
-      candidate_count: count(feed.id)
+    |> select([feed, program, _source, country], {
+      fragment("COALESCE(?, 'unknown')", country.code),
+      fragment("COALESCE(?::text, 'unmatched')", program.stage),
+      count(feed.id)
     })
     |> Repo.all()
-    |> Enum.reduce(%{}, fn row, buckets ->
-      stage = Map.get(@stage_keys, row.stage, :unmatched)
+  end
+
+  defp dimension_rows(base_query, :currency) do
+    base_query
+    |> group_by(
+      [_feed, program, _source, _country, currency],
+      [fragment("COALESCE(?, 'unknown')", currency.code), program.stage]
+    )
+    |> select([feed, program, _source, _country, currency], {
+      fragment("COALESCE(?, 'unknown')", currency.code),
+      fragment("COALESCE(?::text, 'unmatched')", program.stage),
+      count(feed.id)
+    })
+    |> Repo.all()
+  end
+
+  defp dimension_rows(base_query, :language) do
+    base_query
+    |> group_by(
+      [_feed, program, _source, _country, _currency, language],
+      [fragment("COALESCE(?, 'unknown')", language.code), program.stage]
+    )
+    |> select([feed, program, _source, _country, _currency, language], {
+      fragment("COALESCE(?, 'unknown')", language.code),
+      fragment("COALESCE(?::text, 'unmatched')", program.stage),
+      count(feed.id)
+    })
+    |> Repo.all()
+  end
+
+  defp dimension_rows(base_query, :source_feed_type) do
+    base_query
+    |> group_by(
+      [_feed, program, _source, _country, _currency, _language, feed_type],
+      [fragment("COALESCE(?, 'unknown')", feed_type.code), program.stage]
+    )
+    |> select(
+      [feed, program, _source, _country, _currency, _language, feed_type],
+      {
+        fragment("COALESCE(?, 'unknown')", feed_type.code),
+        fragment("COALESCE(?::text, 'unmatched')", program.stage),
+        count(feed.id)
+      }
+    )
+    |> Repo.all()
+  end
+
+  defp summarize_dimension_rows(rows) do
+    rows
+    |> Enum.reduce(%{}, fn {bucket, stage_code, candidate_count}, buckets ->
+      stage = Map.get(@stage_keys, stage_code, :unmatched)
 
       Map.update(
         buckets,
-        row.bucket,
-        %{candidate_count: row.candidate_count, stage_counts: %{stage => row.candidate_count}},
+        bucket,
+        %{candidate_count: candidate_count, stage_counts: %{stage => candidate_count}},
         fn summary ->
           %{
-            candidate_count: summary.candidate_count + row.candidate_count,
+            candidate_count: summary.candidate_count + candidate_count,
             stage_counts:
               Map.update(
                 summary.stage_counts,
                 stage,
-                row.candidate_count,
-                &(&1 + row.candidate_count)
+                candidate_count,
+                &(&1 + candidate_count)
               )
           }
         end

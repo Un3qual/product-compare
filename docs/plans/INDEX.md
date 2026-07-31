@@ -501,6 +501,8 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| completed | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the former native-enum test depended on a hand-maintained column list. | Completed in `7efad083`; compiled schema reflection now checks every persisted `Ecto.Enum`, and PostgreSQL catalog validation rejects string-backed enum fields and closed-domain text constraints. |
+| promoted | Application JSON storage policy guard | The normalized snapshot and alert test still names only the two removed columns, while six legitimate persisted map fields define the current JSON boundary. | Promoted to `docs/work/index.md`; compiled schema reflection plus PostgreSQL catalog coverage can reject new opaque application dumps without banning raw evidence or explicitly open JSON contracts. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 

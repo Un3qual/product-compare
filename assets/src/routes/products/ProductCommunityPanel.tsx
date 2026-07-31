@@ -9,23 +9,24 @@ import {
   useState
 } from "react";
 import { props } from "@stylexjs/stylex";
-import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { AnswerProductQuestionMutation } from "../../__generated__/AnswerProductQuestionMutation.graphql";
-import type { AskProductQuestionMutation } from "../../__generated__/AskProductQuestionMutation.graphql";
+import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
+import type { ProductCommunityPanelAnswerProductQuestionMutation } from "../../__generated__/ProductCommunityPanelAnswerProductQuestionMutation.graphql";
+import type { ProductCommunityPanelAskProductQuestionMutation } from "../../__generated__/ProductCommunityPanelAskProductQuestionMutation.graphql";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
 import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
-import type { SubmitProductReviewMutation } from "../../__generated__/SubmitProductReviewMutation.graphql";
+import type { ProductCommunityPanelSubmitProductReviewMutation } from "../../__generated__/ProductCommunityPanelSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
+import { Select } from "../../ui/primitives/Select";
+import { TextArea } from "../../ui/primitives/TextArea";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
 import { productCommunityStyles as styles } from "./product-community-styles";
-import answerProductQuestionMutation from "./queries/AnswerProductQuestionMutation";
-import askProductQuestionMutation from "./queries/AskProductQuestionMutation";
 import productCommunityQuery from "./queries/ProductCommunityQuery";
 import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
-import submitProductReviewMutation from "./queries/SubmitProductReviewMutation";
 import {
   appendUniqueCommunityItems,
   buildProductAnswerInput,
@@ -37,6 +38,54 @@ import {
   resolveProductQuestionMutationMessage,
   resolveProductReviewMutationMessage
 } from "./product-community-data";
+
+export const answerProductQuestionMutation = graphql`
+  mutation ProductCommunityPanelAnswerProductQuestionMutation($input: AnswerProductQuestionInput!) {
+    answerProductQuestion(input: $input) {
+      answer {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const askProductQuestionMutation = graphql`
+  mutation ProductCommunityPanelAskProductQuestionMutation($input: AskProductQuestionInput!) {
+    askProductQuestion(input: $input) {
+      question {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const submitProductReviewMutation = graphql`
+  mutation ProductCommunityPanelSubmitProductReviewMutation($input: SubmitProductReviewInput!) {
+    submitProductReview(input: $input) {
+      review {
+        id
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
@@ -192,9 +241,9 @@ function ReviewSection({
   reviews: readonly Review[];
   summary: CommunityProduct["reviewSummary"];
 }) {
-  const [commitReview, pending] = useMutation<SubmitProductReviewMutation>(submitProductReviewMutation);
+  const [commitReview, pending] = useMutation<ProductCommunityPanelSubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
-  const ratingId = useId();
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -224,9 +273,9 @@ function ReviewSection({
     </ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label htmlFor={ratingId} {...props(styles.field)}>Rating<select id={ratingId} name="rating" defaultValue="5" {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
-      <label {...props(styles.field)}>Title<input name="title" maxLength={120} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Review<textarea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
+      <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>Rating<Select id={`${fieldId}-rating`} name="rating" defaultValue="5" options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Title<TextField id={`${fieldId}-title`} name="title" maxLength={120} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Review<TextArea id={`${fieldId}-body`} name="body" maxLength={5000} rows={4} {...props(styles.input)} /></Label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -242,8 +291,9 @@ function QuestionSection({
   productId: string;
   questions: readonly Question[];
 }) {
-  const [commitQuestion, pending] = useMutation<AskProductQuestionMutation>(askProductQuestionMutation);
+  const [commitQuestion, pending] = useMutation<ProductCommunityPanelAskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -274,8 +324,8 @@ function QuestionSection({
     </ul> : <p>No published questions yet.</p>}
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more questions</Button> : null}
     <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
+      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Question<TextField id={`${fieldId}-title`} name="title" required maxLength={200} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Details<TextArea id={`${fieldId}-body`} name="body" maxLength={5000} rows={3} {...props(styles.input)} /></Label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -334,8 +384,9 @@ function AdditionalAnswers({
 }
 
 function AnswerForm({ questionId }: { questionId: string }) {
-  const [commitAnswer, pending] = useMutation<AnswerProductQuestionMutation>(answerProductQuestionMutation);
+  const [commitAnswer, pending] = useMutation<ProductCommunityPanelAnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -357,7 +408,7 @@ function AnswerForm({ questionId }: { questionId: string }) {
   }
 
   return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Answer<TextArea id={`${fieldId}-body`} name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>
     {message ? <p role="status">{message}</p> : null}
   </form></details>;

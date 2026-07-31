@@ -3,7 +3,7 @@ defmodule ProductCompare.Discussions do
   Discussions context for threads, posts, and product reviews.
   """
 
-  alias ProductCompare.Discussions.Crud
+  alias ProductCompare.Discussions.ContentLifecycle
   alias ProductCompare.Discussions.Moderation
   alias ProductCompare.Discussions.Reads
   alias ProductCompare.Discussions.Submissions
@@ -25,39 +25,41 @@ defmodule ProductCompare.Discussions do
     do: Reads.list_posts_for_thread(thread_id, opts)
 
   @spec create_thread(map()) :: {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
-  def create_thread(attrs), do: Crud.create_thread(attrs)
+  def create_thread(attrs), do: ContentLifecycle.create_thread(attrs)
 
   @spec update_thread(ProductThread.t(), map()) ::
           {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
-  def update_thread(%ProductThread{} = thread, attrs), do: Crud.update_thread(thread, attrs)
+  def update_thread(%ProductThread{} = thread, attrs),
+    do: ContentLifecycle.update_thread(thread, attrs)
 
   @spec delete_thread(ProductThread.t()) ::
           {:ok, ProductThread.t()} | {:error, Ecto.Changeset.t()}
-  def delete_thread(%ProductThread{} = thread), do: Crud.delete_thread(thread)
+  def delete_thread(%ProductThread{} = thread), do: ContentLifecycle.delete_thread(thread)
 
   @spec create_post(map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
-  def create_post(attrs), do: Crud.create_post(attrs)
+  def create_post(attrs), do: ContentLifecycle.create_post(attrs)
 
   @spec update_post(ThreadPost.t(), map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
-  def update_post(%ThreadPost{} = post, attrs), do: Crud.update_post(post, attrs)
+  def update_post(%ThreadPost{} = post, attrs), do: ContentLifecycle.update_post(post, attrs)
 
   @spec delete_post(ThreadPost.t()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
-  def delete_post(%ThreadPost{} = post), do: Crud.delete_post(post)
+  def delete_post(%ThreadPost{} = post), do: ContentLifecycle.delete_post(post)
 
   @spec list_reviews_for_product(pos_integer(), keyword() | map()) :: [ProductReview.t()]
   def list_reviews_for_product(product_id, opts \\ []),
     do: Reads.list_reviews_for_product(product_id, opts)
 
   @spec create_review(map()) :: {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
-  def create_review(attrs), do: Crud.create_review(attrs)
+  def create_review(attrs), do: ContentLifecycle.create_review(attrs)
 
   @spec update_review(ProductReview.t(), map()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
-  def update_review(%ProductReview{} = review, attrs), do: Crud.update_review(review, attrs)
+  def update_review(%ProductReview{} = review, attrs),
+    do: ContentLifecycle.update_review(review, attrs)
 
   @spec delete_review(ProductReview.t()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
-  def delete_review(%ProductReview{} = review), do: Crud.delete_review(review)
+  def delete_review(%ProductReview{} = review), do: ContentLifecycle.delete_review(review)
 
   @spec submit_review(pos_integer(), pos_integer(), map()) ::
           {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t() | atom()}
@@ -213,6 +215,18 @@ defmodule ProductCompare.Discussions do
   @spec get_public_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
   def get_public_questions(entropy_ids) when is_list(entropy_ids),
     do: Reads.get_public_questions(entropy_ids)
+
+  @spec get_visible_nodes(
+          :product_review | :product_question | :product_answer,
+          [term()],
+          pos_integer() | nil
+        ) :: %{optional(term()) => ProductReview.t() | ProductThread.t() | ThreadPost.t() | nil}
+  def get_visible_nodes(type, entropy_ids, viewer_id)
+      when type in [:product_review, :product_question, :product_answer] and
+             is_list(entropy_ids) and
+             (is_nil(viewer_id) or (is_integer(viewer_id) and viewer_id > 0)) do
+    Reads.get_visible_nodes(type, entropy_ids, viewer_id)
+  end
 
   @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::
           {:ok, ProductThread.t()}

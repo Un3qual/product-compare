@@ -124,5 +124,40 @@ defmodule ProductCompare.Taxonomy.TaxonClosureTest do
 
       assert {:error, :cycle_detected} = Taxonomy.move_taxon(root.id, child.id)
     end
+
+    test "update_taxon/2 cannot bypass closure maintenance by changing hierarchy fields" do
+      taxonomy =
+        TaxonomyFixtures.taxonomy_fixture("type-#{System.unique_integer([:positive])}", "Type")
+
+      other_taxonomy =
+        TaxonomyFixtures.taxonomy_fixture(
+          "other-#{System.unique_integer([:positive])}",
+          "Other"
+        )
+
+      {:ok, root} =
+        Taxonomy.create_taxon(%{
+          taxonomy_id: taxonomy.id,
+          code: "immutable-root",
+          name: "Immutable Root"
+        })
+
+      {:ok, child} =
+        Taxonomy.create_taxon(%{
+          taxonomy_id: taxonomy.id,
+          parent_id: root.id,
+          code: "immutable-child",
+          name: "Immutable Child"
+        })
+
+      assert {:error, parent_changeset} = Taxonomy.update_taxon(child, %{parent_id: nil})
+      assert "is managed by move_taxon/2" in errors_on(parent_changeset).parent_id
+
+      assert {:error, taxonomy_changeset} =
+               Taxonomy.update_taxon(child, %{taxonomy_id: other_taxonomy.id})
+
+      assert "is immutable" in errors_on(taxonomy_changeset).taxonomy_id
+      assert Enum.map(Taxonomy.list_ancestors(child.id), & &1.taxon.id) == [root.id]
+    end
   end
 end

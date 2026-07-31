@@ -166,8 +166,10 @@ function buildCJProgramsLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/ingestion/cj-programs",
+    url: new URL(request.url)
+  };
 }
 
 function cjProgramsQueryDescriptor(variables: CJProgramsRouteQuery["variables"]) {

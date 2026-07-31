@@ -1,12 +1,16 @@
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { props } from "@stylexjs/stylex";
-import { useMutation } from "react-relay";
+import { graphql, useMutation } from "react-relay";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
-import type { RemoveCommunityContentMutation } from "../../__generated__/RemoveCommunityContentMutation.graphql";
-import type { UpdateProductAnswerMutation } from "../../__generated__/UpdateProductAnswerMutation.graphql";
-import type { UpdateProductQuestionMutation } from "../../__generated__/UpdateProductQuestionMutation.graphql";
-import type { UpdateProductReviewMutation } from "../../__generated__/UpdateProductReviewMutation.graphql";
+import type { ProductCommunityItemsRemoveCommunityContentMutation } from "../../__generated__/ProductCommunityItemsRemoveCommunityContentMutation.graphql";
+import type { ProductCommunityItemsUpdateProductAnswerMutation } from "../../__generated__/ProductCommunityItemsUpdateProductAnswerMutation.graphql";
+import type { ProductCommunityItemsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityItemsUpdateProductQuestionMutation.graphql";
+import type { ProductCommunityItemsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityItemsUpdateProductReviewMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
+import { Select } from "../../ui/primitives/Select";
+import { TextArea } from "../../ui/primitives/TextArea";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../route-errors";
 import {
@@ -18,10 +22,73 @@ import {
   resolveProductReviewUpdateMessage
 } from "./product-community-data";
 import { productCommunityStyles as styles } from "./product-community-styles";
-import removeCommunityContentMutation from "./queries/RemoveCommunityContentMutation";
-import updateProductAnswerMutation from "./queries/UpdateProductAnswerMutation";
-import updateProductQuestionMutation from "./queries/UpdateProductQuestionMutation";
-import updateProductReviewMutation from "./queries/UpdateProductReviewMutation";
+
+export const removeCommunityContentMutation = graphql`
+  mutation ProductCommunityItemsRemoveCommunityContentMutation($input: RemoveCommunityContentInput!) {
+    removeCommunityContent(input: $input) {
+      removedContentId
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductAnswerMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductAnswerMutation($input: UpdateProductAnswerInput!) {
+    updateProductAnswer(input: $input) {
+      answer {
+        id
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductQuestionMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductQuestionMutation($input: UpdateProductQuestionInput!) {
+    updateProductQuestion(input: $input) {
+      question {
+        id
+        title
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const updateProductReviewMutation = graphql`
+  mutation ProductCommunityItemsUpdateProductReviewMutation($input: UpdateProductReviewInput!) {
+    updateProductReview(input: $input) {
+      review {
+        id
+        rating
+        title
+        body
+        moderationStatus
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 type CommunityProduct = NonNullable<ProductCommunityQuery["response"]["product"]>;
 type Review = CommunityProduct["reviews"]["edges"][number]["node"];
@@ -178,7 +245,7 @@ function useCommunityItemState() {
 type CommunityItemState = ReturnType<typeof useCommunityItemState>;
 
 function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductReviewMutation>(updateProductReviewMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductReviewMutation>(updateProductReviewMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -205,7 +272,7 @@ function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityIte
 }
 
 function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductQuestionMutation>(updateProductQuestionMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductQuestionMutation>(updateProductQuestionMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -231,7 +298,7 @@ function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: Com
 }
 
 function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<UpdateProductAnswerMutation>(updateProductAnswerMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductAnswerMutation>(updateProductAnswerMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -274,12 +341,14 @@ function ReviewEditForm({ editing, pending, review, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit review rating<select name="rating" defaultValue={review.rating} {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
-    <label {...props(styles.field)}>Edit review title<input name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit review body<textarea name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>Edit review rating<Select id={`${fieldId}-rating`} name="rating" defaultValue={String(review.rating)} options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Edit review title<TextField id={`${fieldId}-title`} name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit review body<TextArea id={`${fieldId}-body`} name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></Label>
     <EditActions label="review" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -291,11 +360,13 @@ function QuestionEditForm({ editing, pending, question, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit question title<input name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit question body<textarea name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Edit question title<TextField id={`${fieldId}-title`} name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit question body<TextArea id={`${fieldId}-body`} name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <EditActions label="question" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -307,10 +378,12 @@ function AnswerEditForm({ answer, editing, pending, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit answer body<textarea name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit answer body<TextArea id={`${fieldId}-body`} name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <EditActions label="answer" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -360,7 +433,7 @@ function RemoveCommunityControl({
   label: CommunityContentLabel;
   onRemoved: () => void;
 }) {
-  const [commitRemove, pending] = useMutation<RemoveCommunityContentMutation>(removeCommunityContentMutation);
+  const [commitRemove, pending] = useMutation<ProductCommunityItemsRemoveCommunityContentMutation>(removeCommunityContentMutation);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 

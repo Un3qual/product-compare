@@ -10,7 +10,7 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
           references(:source_artifacts, type: :bigint, on_delete: :nilify_all)
 
       add :url, :text, null: false
-      add :role, :text, null: false
+      add :role, :product_media_role, null: false
       add :position, :integer, null: false, default: 0
       add :alt_text, :text
       add :observed_at, :utc_datetime_usec, null: false
@@ -22,10 +22,6 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
 
     create index(:product_media, [:product_id, :position], name: :product_media_product_order_idx)
     create unique_index(:product_media, [:entropy_id])
-
-    create constraint(:product_media, :product_media_role_check,
-             check: "role IN ('primary', 'gallery')"
-           )
 
     create constraint(:product_media, :product_media_position_non_negative,
              check: "position >= 0"
@@ -46,7 +42,7 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
       add :taxon_id, references(:taxons, type: :bigint, on_delete: :nilify_all)
       add :display_path, :text, null: false
       add :normalized_path, :text, null: false
-      add :status, :text, null: false, default: "pending"
+      add :status, :category_mapping_status, null: false, default: "pending"
       add :observation_count, :integer, null: false, default: 1
       add :last_seen_at, :utc_datetime_usec, null: false
 
@@ -62,10 +58,6 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
            )
 
     create unique_index(:category_mapping_candidates, [:entropy_id])
-
-    create constraint(:category_mapping_candidates, :category_mapping_candidates_status_check,
-             check: "status IN ('pending', 'mapped', 'dismissed')"
-           )
 
     create constraint(
              :category_mapping_candidates,

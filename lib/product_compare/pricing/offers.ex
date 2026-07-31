@@ -56,17 +56,33 @@ defmodule ProductCompare.Pricing.Offers do
     now = DateTime.utc_now()
     changeset = MerchantProduct.changeset(%MerchantProduct{}, attrs)
 
-    update_fields =
-      changeset.changes
-      |> Map.drop([:merchant_id, :url])
-      |> Map.to_list()
+    if changeset.valid? do
+      product_id = Ecto.Changeset.get_field(changeset, :product_id)
+      currency = Ecto.Changeset.get_field(changeset, :currency)
 
-    Repo.insert(
-      changeset,
-      on_conflict: [set: update_fields ++ [updated_at: now]],
-      conflict_target: [:merchant_id, :url],
-      returning: true
-    )
+      update_fields =
+        changeset.changes
+        |> Map.drop([:merchant_id, :product_id, :url, :currency])
+        |> Map.to_list()
+
+      conflict_query =
+        from merchant_product in MerchantProduct,
+          where:
+            merchant_product.product_id == ^product_id and
+              merchant_product.currency == ^currency,
+          update: [set: ^(update_fields ++ [updated_at: now])]
+
+      changeset
+      |> Repo.insert(
+        on_conflict: conflict_query,
+        conflict_target: [:merchant_id, :url],
+        returning: true,
+        allow_stale: true
+      )
+      |> resolve_merchant_product_upsert(changeset)
+    else
+      Ecto.Changeset.apply_action(changeset, :insert)
+    end
   end
 
   @spec list_merchant_products_query(map()) :: Ecto.Query.t()
@@ -140,6 +156,42 @@ defmodule ProductCompare.Pricing.Offers do
       when is_integer(merchant_product_id) and merchant_product_id > 0 and
              merchant_product_id <= @max_bigint_id do
     Repo.get(MerchantProduct, merchant_product_id)
+  end
+
+  defp resolve_merchant_product_upsert(
+         {:ok, %MerchantProduct{id: nil}},
+         changeset
+       ) do
+    existing =
+      Repo.get_by!(
+        MerchantProduct,
+        merchant_id: Ecto.Changeset.get_field(changeset, :merchant_id),
+        url: Ecto.Changeset.get_field(changeset, :url)
+      )
+
+    {:error, merchant_product_identity_changeset(changeset, existing)}
+  end
+
+  defp resolve_merchant_product_upsert(result, _changeset), do: result
+
+  defp merchant_product_identity_changeset(changeset, existing) do
+    changeset
+    |> maybe_add_identity_error(
+      :product_id,
+      existing.product_id,
+      Ecto.Changeset.get_field(changeset, :product_id)
+    )
+    |> maybe_add_identity_error(
+      :currency,
+      existing.currency,
+      Ecto.Changeset.get_field(changeset, :currency)
+    )
+  end
+
+  defp maybe_add_identity_error(changeset, _field, value, value), do: changeset
+
+  defp maybe_add_identity_error(changeset, field, _existing, _requested) do
+    Ecto.Changeset.add_error(changeset, field, "does not match the existing merchant offer")
   end
 
   defp partitioned_merchant_product_pages(

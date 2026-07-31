@@ -1727,7 +1727,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
 
   defp products_query do
     """
-    query Products($first: Int, $after: String, $filters: ProductFiltersInput) {
+    query Products($first: Int! = 50, $after: String, $filters: ProductFiltersInput) {
       products(first: $first, after: $after, filters: $filters) {
         edges {
           cursor

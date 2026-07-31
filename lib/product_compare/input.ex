@@ -15,6 +15,18 @@ defmodule ProductCompare.Input do
 
   def attr_key_present?(_attrs, _key), do: false
 
+  @spec put_attr(map(), atom(), term()) :: map()
+  def put_attr(attrs, key, value) when is_map(attrs) and is_atom(key) do
+    string_key = Atom.to_string(key)
+
+    cond do
+      Map.has_key?(attrs, key) -> Map.put(attrs, key, value)
+      Map.has_key?(attrs, string_key) -> Map.put(attrs, string_key, value)
+      string_keyed?(attrs) -> Map.put(attrs, string_key, value)
+      true -> Map.put(attrs, key, value)
+    end
+  end
+
   @spec present_upsert_fields(map() | term(), Ecto.Changeset.t(), [atom()]) :: keyword()
   def present_upsert_fields(attrs, changeset, fields) when is_list(fields) do
     for field <- fields,
@@ -102,4 +114,9 @@ defmodule ProductCompare.Input do
   end
 
   defp parse_integer(_value, default), do: default
+
+  defp string_keyed?(attrs) when map_size(attrs) > 0,
+    do: Enum.all?(Map.keys(attrs), &is_binary/1)
+
+  defp string_keyed?(_attrs), do: false
 end

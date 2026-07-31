@@ -2,7 +2,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
   use ProductCompareWeb.ConnCase, async: true
 
   alias ProductCompare.Accounts
-  alias ProductCompareWeb.Resolvers.AuthResolver
+  alias ProductCompareWeb.Resolvers.Auth.ApiTokens
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "/api/graphql authentication and token lifecycle" do
@@ -138,7 +138,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert authed_user.id == user.id
 
       list_tokens_query = """
-      query ListTokens($first: Int, $after: String) {
+      query ListTokens($first: Int!, $after: String) {
         myApiTokens(first: $first, after: $after) {
           edges {
             cursor
@@ -354,7 +354,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert {:ok, _revoked} = Accounts.revoke_api_token(user.id, revoked_token.entropy_id)
 
       assert {:ok, %{edges: edges}} =
-               AuthResolver.my_api_tokens(
+               ApiTokens.my_api_tokens(
                  nil,
                  %{"status" => :active, "first" => 50},
                  %{context: %{current_user: user}}
@@ -373,7 +373,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                 api_token: %{label: "direct-create", expires_at: created_expires_at},
                 errors: []
               }} =
-               AuthResolver.create_api_token(
+               ApiTokens.create_api_token(
                  nil,
                  %{"label" => "direct-create", "expires_at" => expires_at},
                  %{context: %{current_user: user}}
@@ -390,7 +390,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                 api_token: %{label: "no-expiry", expires_at: nil},
                 errors: []
               }} =
-               AuthResolver.create_api_token(
+               ApiTokens.create_api_token(
                  nil,
                  %{"label" => "no-expiry", "expires_at" => nil},
                  %{context: %{current_user: user}}
@@ -412,7 +412,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                 errors: [],
                 plain_text_token: new_plain_text_token
               }} =
-               AuthResolver.rotate_api_token(
+               ApiTokens.rotate_api_token(
                  nil,
                  %{
                    :token_id => old_token_id,
@@ -440,7 +440,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
                 errors: [],
                 plain_text_token: new_plain_text_token
               }} =
-               AuthResolver.rotate_api_token(
+               ApiTokens.rotate_api_token(
                  nil,
                  %{
                    :token_id => old_token_id,
@@ -488,7 +488,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
 
       query = """
-      query InvalidFirst($first: Int) {
+      query InvalidFirst($first: Int!) {
         myApiTokens(first: $first) {
           edges {
             node {

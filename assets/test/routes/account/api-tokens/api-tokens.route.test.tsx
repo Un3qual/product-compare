@@ -144,11 +144,11 @@ beforeEach(() => {
   mockedUseRoutePreloadedQuery.mockReset();
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
-    if (name === "RevokeApiTokenMutation") {
+    if (name === "ApiTokensRouteRevokeApiTokenMutation") {
       return [commitRevokeMutationMock, false];
     }
 
-    if (name === "RotateApiTokenMutation") {
+    if (name === "ApiTokensRouteRotateApiTokenMutation") {
       return [commitRotateMutationMock, false];
     }
 

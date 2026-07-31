@@ -1,17 +1,17 @@
 defmodule ProductCompareSchemas.Catalog.ProductIdentifier do
   use ProductCompareSchemas.Schema, :relational
 
-  @schemes ["gtin", "mpn"]
-  @verification_statuses ["unverified", "validated", "rejected"]
+  @schemes [:gtin, :mpn]
+  @verification_statuses [:unverified, :validated, :rejected]
 
   @type t :: %__MODULE__{}
 
   schema "product_identifiers" do
     field :entropy_id, Ecto.UUID
-    field :scheme, :string
+    field :scheme, Ecto.Enum, values: @schemes
     field :normalized_value, :string
     field :display_value, :string
-    field :verification_status, :string
+    field :verification_status, Ecto.Enum, values: @verification_statuses
     field :verified_at, :utc_datetime_usec
 
     belongs_to :product, ProductCompareSchemas.Catalog.Product
@@ -39,8 +39,6 @@ defmodule ProductCompareSchemas.Catalog.ProductIdentifier do
       :display_value,
       :verification_status
     ])
-    |> validate_inclusion(:scheme, @schemes)
-    |> validate_inclusion(:verification_status, @verification_statuses)
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:source_artifact_id)
     |> unique_constraint([:scheme, :normalized_value],

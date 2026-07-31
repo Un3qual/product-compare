@@ -10,6 +10,10 @@ import {
 } from "../../../../src/routes/affiliate/setup/AffiliateSetupForms";
 import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
 import type { AffiliateSetupLoaderData } from "../../../../src/routes/affiliate/setup/loader";
+import {
+  chooseSelectOption,
+  openSelect
+} from "../../../helpers/radix-select";
 
 const {
   commitCouponMutationMock,
@@ -104,15 +108,15 @@ beforeEach(() => {
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
 
-    if (name === "UpsertAffiliateProgramMutation") {
+    if (name === "AffiliateSetupRouteUpsertAffiliateProgramMutation") {
       return [commitProgramMutationMock, false];
     }
 
-    if (name === "UpsertAffiliateLinkMutation") {
+    if (name === "AffiliateSetupRouteUpsertAffiliateLinkMutation") {
       return [commitLinkMutationMock, false];
     }
 
-    if (name === "CreateCouponMutation") {
+    if (name === "AffiliateSetupRouteCreateCouponMutation") {
       return [commitCouponMutationMock, false];
     }
 
@@ -133,12 +137,9 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   expect(screen.getByRole("form", { name: "Save affiliate program" })).toBeInTheDocument();
 
   const merchantSelect = screen.getByLabelText("Merchant");
-  expect(within(merchantSelect).getByRole("option", { name: "Acme Market" })).toHaveValue(
-    MERCHANT_ID
-  );
-  expect(within(merchantSelect).getByRole("option", { name: "Globex Supply" })).toHaveValue(
-    SECOND_MERCHANT_ID
-  );
+  openSelect(merchantSelect);
+  expect(screen.getByRole("option", { name: "Acme Market" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "Globex Supply" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     AFFILIATE_SETUP_QUERY_DESCRIPTOR
@@ -265,12 +266,8 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
   fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
     target: { value: "new-network-id" }
   });
-  fireEvent.change(screen.getByLabelText("Merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
-  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
+  chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
+  chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
   fireEvent.submit(screen.getByRole("form", { name: "Save affiliate network" }));
   fireEvent.submit(screen.getByRole("form", { name: "Save affiliate program" }));
   fireEvent.submit(screen.getByRole("form", { name: "Save affiliate link" }));
@@ -315,9 +312,7 @@ test("affiliate setup route updates selected merchant context when the program m
   const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
   const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
 
-  fireEvent.change(screen.getByLabelText("Merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
+  chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
 
   expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
   expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
@@ -331,9 +326,7 @@ test("affiliate setup route updates selected merchant context when the coupon me
   const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
   const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
 
-  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
+  chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
 
   expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
   expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
@@ -454,9 +447,7 @@ test("affiliate setup route commits program upsert and displays the saved progra
   fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
     target: { value: NETWORK_ID }
   });
-  fireEvent.change(screen.getByLabelText("Merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
+  chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
   fireEvent.change(screen.getByLabelText("Program code"), {
     target: { value: "CJ-123" }
   });
@@ -617,18 +608,14 @@ test("affiliate setup route renders link payload errors", async () => {
 test("affiliate setup route commits coupon creation and displays the created coupon", async () => {
   renderAffiliateSetupRoute();
 
-  fireEvent.change(screen.getByLabelText("Coupon merchant"), {
-    target: { value: SECOND_MERCHANT_ID }
-  });
+  chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
   fireEvent.change(screen.getByLabelText("Coupon affiliate network ID"), {
     target: { value: NETWORK_ID }
   });
   fireEvent.change(screen.getByLabelText("Coupon code"), {
     target: { value: "SAVE-20" }
   });
-  fireEvent.change(screen.getByLabelText("Discount type"), {
-    target: { value: "AMOUNT" }
-  });
+  chooseSelectOption(screen.getByLabelText("Discount type"), "AMOUNT");
   fireEvent.change(screen.getByLabelText("Discount value"), {
     target: { value: "20.00" }
   });
@@ -694,9 +681,7 @@ test("affiliate setup route displays percent coupon discount details without cur
   fireEvent.change(screen.getByLabelText("Coupon code"), {
     target: { value: "SAVE-20PCT" }
   });
-  fireEvent.change(screen.getByLabelText("Discount type"), {
-    target: { value: "PERCENT" }
-  });
+  chooseSelectOption(screen.getByLabelText("Discount type"), "PERCENT");
   fireEvent.change(screen.getByLabelText("Discount value"), {
     target: { value: "20.00" }
   });
@@ -735,9 +720,6 @@ test("affiliate setup route displays other coupon discount details without an am
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
     target: { value: "MEMBER-PERK" }
-  });
-  fireEvent.change(screen.getByLabelText("Discount type"), {
-    target: { value: "OTHER" }
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -799,9 +781,6 @@ test("affiliate setup route normalizes optional link and coupon inputs", async (
   fireEvent.change(screen.getByLabelText("Coupon code"), {
     target: { value: "INFO-ONLY" }
   });
-  fireEvent.change(screen.getByLabelText("Discount type"), {
-    target: { value: "OTHER" }
-  });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
   await waitFor(() => {
@@ -826,9 +805,6 @@ test("affiliate setup route renders coupon payload errors", async () => {
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
     target: { value: "INVALID-SHAPE" }
-  });
-  fireEvent.change(screen.getByLabelText("Discount type"), {
-    target: { value: "OTHER" }
   });
   fireEvent.change(screen.getByLabelText("Discount value"), {
     target: { value: "10.00" }

@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.CurrencyCode
+
   @rule_types [:target_price, :percentage_drop, :back_in_stock, :newly_available]
 
   @type t :: %__MODULE__{}
@@ -8,7 +10,7 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
   schema "price_watch_rules" do
     field :entropy_id, Ecto.UUID
     field :rule_type, Ecto.Enum, values: @rule_types
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :target_amount, :decimal
     field :percentage_drop, :decimal
     field :baseline_landed_price, :decimal
@@ -49,9 +51,7 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
       :last_condition_met,
       :cooldown_seconds
     ])
-    |> normalize_currency()
     |> validate_required([:user_id, :product_id, :rule_type, :currency, :enabled])
-    |> validate_format(:currency, ~r/^[A-Z]{3}$/)
     |> validate_number(:target_amount, greater_than_or_equal_to: 0)
     |> validate_number(:percentage_drop, greater_than: 0, less_than_or_equal_to: 100)
     |> validate_number(:cooldown_seconds,
@@ -62,8 +62,7 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
     |> foreign_key_constraint(:user_id)
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:merchant_product_id)
-    |> check_constraint(:rule_type, name: :price_watch_rules_type_check)
-    |> check_constraint(:currency, name: :price_watch_rules_currency_check)
+    |> foreign_key_constraint(:currency, name: :price_watch_rules_currency_id_fkey)
     |> check_constraint(:rule_type, name: :price_watch_rules_target_check)
     |> check_constraint(:cooldown_seconds, name: :price_watch_rules_cooldown_check)
   end
@@ -91,10 +90,6 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
       :last_evaluated_at,
       :last_event_at
     ])
-  end
-
-  defp normalize_currency(changeset) do
-    update_change(changeset, :currency, &String.upcase/1)
   end
 
   defp validate_rule_fields(changeset) do

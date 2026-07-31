@@ -1,26 +1,23 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../src/relay/environment";
-import {
-  createRelayRouterContext,
-  preloadRouteQuery
-} from "../../../src/relay/route-preload";
+import { createRelayRouterContext, preloadRouteQuery } from "../../../src/relay/route-preload";
 import { offerDiscoveryLoader } from "../../../src/routes/offers/loader";
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    preloadRouteQuery: vi.fn()
+    preloadRouteQuery: vi.fn(),
   };
 });
 
 const preloadRouteQueryMock = vi.mocked(preloadRouteQuery);
 
 const OFFER_DISCOVERY_QUERY_TEXT =
-  "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(input: $input) { edges { node { id } } } }";
+  "query OfferDiscoveryRouteQuery($after: String, $first: Int!, $input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(after: $after, first: $first, input: $input) { edges { node { id } } } }";
 
 const PRODUCT_ID = "UHJvZHVjdDoxMjM=";
 const MERCHANT_ID = "TWVyY2hhbnQ6NDU2";
@@ -34,7 +31,7 @@ test("offerDiscoveryLoader asks for a product before preloading offers", async (
   const request = new Request("https://app.example.test/offers");
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "missingProduct",
     filters: {
@@ -43,8 +40,8 @@ test("offerDiscoveryLoader asks for a product before preloading offers", async (
       first: 6,
       merchantId: null,
       productId: null,
-      sort: "default"
-    }
+      sort: "default",
+    },
   });
 
   expect(preloadRouteQueryMock).not.toHaveBeenCalled();
@@ -53,20 +50,21 @@ test("offerDiscoveryLoader asks for a product before preloading offers", async (
 test("offerDiscoveryLoader preloads active offers for a product by default", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}`
+    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
     input: {
       activeOnly: true,
-      first: 6,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -75,23 +73,24 @@ test("offerDiscoveryLoader preloads active offers for a product by default", asy
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: null,
+      first: 6,
       productId: PRODUCT_ID,
       input: {
         activeOnly: true,
-        first: 6,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -99,23 +98,23 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
   const environment = createRelayEnvironment();
   const request = new Request(
     `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&merchantId=${encodeURIComponent(MERCHANT_ID)}&activeOnly=false&first=12&after=cursor-1`
+      PRODUCT_ID,
+    )}&merchantId=${encodeURIComponent(MERCHANT_ID)}&activeOnly=false&first=12&after=cursor-1`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: "cursor-1",
+    first: 12,
     input: {
       activeOnly: false,
-      after: "cursor-1",
-      first: 12,
       merchantId: MERCHANT_ID,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -124,25 +123,25 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
       first: 12,
       merchantId: MERCHANT_ID,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: "cursor-1",
+      first: 12,
       productId: PRODUCT_ID,
       input: {
         activeOnly: false,
-        after: "cursor-1",
-        first: 12,
         merchantId: MERCHANT_ID,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -150,21 +149,22 @@ test("offerDiscoveryLoader preserves inactive-only filter and page-size", async 
   const environment = createRelayEnvironment();
   const request = new Request(
     `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&activeOnly=false&first=12`
+      PRODUCT_ID,
+    )}&activeOnly=false&first=12`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 12,
     input: {
       activeOnly: false,
-      first: 12,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -173,23 +173,24 @@ test("offerDiscoveryLoader preserves inactive-only filter and page-size", async 
       first: 12,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: null,
+      first: 12,
       productId: PRODUCT_ID,
       input: {
         activeOnly: false,
-        first: 12,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -197,21 +198,22 @@ test("offerDiscoveryLoader normalizes blank cursor values", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
     `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&after=%20&first=12`
+      PRODUCT_ID,
+    )}&after=%20&first=12`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 12,
     input: {
       activeOnly: true,
-      first: 12,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -220,23 +222,24 @@ test("offerDiscoveryLoader normalizes blank cursor values", async () => {
       first: 12,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: null,
+      first: 12,
       productId: PRODUCT_ID,
       input: {
         activeOnly: true,
-        first: 12,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -244,21 +247,22 @@ test("offerDiscoveryLoader drops invalid page-size and active-only params", asyn
   const environment = createRelayEnvironment();
   const request = new Request(
     `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&activeOnly=maybe&first=500`
+      PRODUCT_ID,
+    )}&activeOnly=maybe&first=500`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
     input: {
       activeOnly: true,
-      first: 6,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -267,31 +271,30 @@ test("offerDiscoveryLoader drops invalid page-size and active-only params", asyn
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 });
 
 test("offerDiscoveryLoader normalizes sort without changing GraphQL input", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&sort=price_desc`
+    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}&sort=price_desc`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
     input: {
       activeOnly: true,
-      first: 6,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -300,45 +303,45 @@ test("offerDiscoveryLoader normalizes sort without changing GraphQL input", asyn
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "price_desc"
+      sort: "price_desc",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: null,
+      first: 6,
       productId: PRODUCT_ID,
       input: {
         activeOnly: true,
-        first: 6,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
 test("offerDiscoveryLoader drops unsupported sort params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&sort=lowest`
+    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}&sort=lowest`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
     input: {
       activeOnly: true,
-      first: 6,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -347,31 +350,30 @@ test("offerDiscoveryLoader drops unsupported sort params", async () => {
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 });
 
 test("offerDiscoveryLoader drops malformed page-size params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&first=12abc`
+    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}&first=12abc`,
   );
   const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
     input: {
       activeOnly: true,
-      first: 6,
-      productId: PRODUCT_ID
-    }
+      productId: PRODUCT_ID,
+    },
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     filters: {
@@ -380,23 +382,24 @@ test("offerDiscoveryLoader drops malformed page-size params", async () => {
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
-      sort: "default"
+      sort: "default",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     {
+      after: null,
+      first: 6,
       productId: PRODUCT_ID,
       input: {
         activeOnly: true,
-        first: 6,
-        productId: PRODUCT_ID
-      }
+        productId: PRODUCT_ID,
+      },
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -404,8 +407,8 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
   const environment = createRelayEnvironment();
   const request = new Request(
     `https://app.example.test/offers?productId=${encodeURIComponent(
-      PRODUCT_ID
-    )}&after=cursor-2&first=3`
+      PRODUCT_ID,
+    )}&after=cursor-2&first=3`,
   );
   const preloadError = new Error("Network request failed: offers boom");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -414,7 +417,7 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
 
   try {
     await expect(
-      offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+      offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
     ).resolves.toEqual({
       status: "error",
       filters: {
@@ -423,16 +426,13 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
         first: 3,
         merchantId: null,
         productId: PRODUCT_ID,
-        sort: "default"
-      }
+        sort: "default",
+      },
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Failed to preload offer discovery route query.",
-      {
-        error: preloadError
-      }
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload offer discovery route query.", {
+      error: preloadError,
+    });
   } finally {
     consoleErrorSpy.mockRestore();
   }
@@ -442,7 +442,7 @@ test("offerDiscoveryLoader rethrows aborted preloads", async () => {
   const environment = createRelayEnvironment();
   const request = {
     signal: new AbortController().signal,
-    url: `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}`
+    url: `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}`,
   } as Request;
   const abortError = new DOMException("The operation was aborted.", "AbortError");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -451,7 +451,7 @@ test("offerDiscoveryLoader rethrows aborted preloads", async () => {
 
   try {
     await expect(
-      offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request }))
+      offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
     ).rejects.toBe(abortError);
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
@@ -462,7 +462,7 @@ test("offerDiscoveryLoader rethrows aborted preloads", async () => {
 
 function buildOfferDiscoveryLoaderArgs({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.test/offers")
+  request = new Request("https://app.example.test/offers"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -470,15 +470,17 @@ function buildOfferDiscoveryLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/offers",
+    url: new URL(request.url),
+  };
 }
 
 function offerDiscoveryQueryDescriptor(variables: {
+  after: string | null;
+  first: number;
   input: {
     activeOnly: boolean;
-    after?: string;
-    first: number;
     merchantId?: string;
     productId: string;
   };
@@ -489,8 +491,8 @@ function offerDiscoveryQueryDescriptor(variables: {
       text: OFFER_DISCOVERY_QUERY_TEXT,
       variables: {
         ...variables,
-        productId: variables.input.productId
-      }
-    }
+        productId: variables.input.productId,
+      },
+    },
   };
 }

@@ -1,12 +1,13 @@
 import { type FormEvent, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { useMutation } from "react-relay";
-import type { CreatePriceWatchMutation } from "../../__generated__/CreatePriceWatchMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { PriceWatchControlCreatePriceWatchMutation } from "../../__generated__/PriceWatchControlCreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
-import createPriceWatchMutation from "../account/alerts/queries/CreatePriceWatchMutation";
 import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
@@ -14,6 +15,27 @@ import {
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
+
+const createPriceWatchMutation = graphql`
+  mutation PriceWatchControlCreatePriceWatchMutation($input: CreatePriceWatchInput!) {
+    createPriceWatch(input: $input) {
+      watch {
+        id
+        productName
+        ruleType
+        currency
+        targetAmount
+        percentageDrop
+        enabled
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   details: {
@@ -44,7 +66,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const ruleId = useId();
   const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
   const [message, setMessage] = useState<string | null>(null);
-  const [commitCreate, mutationPending] = useMutation<CreatePriceWatchMutation>(createPriceWatchMutation);
+  const [commitCreate, mutationPending] = useMutation<PriceWatchControlCreatePriceWatchMutation>(createPriceWatchMutation);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -74,29 +96,36 @@ function PriceWatchForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} {...props(styles.form)}>
         <label htmlFor={ruleId} {...props(styles.field)}>
           Alert when
-          <select
+          <Select
             id={ruleId}
             name="ruleType"
-            value={ruleType}
-            onChange={(event) =>
-              setRuleType(priceWatchRuleTypeFromValue(event.currentTarget.value))
+            onValueChange={(value) =>
+              setRuleType(priceWatchRuleTypeFromValue(value))
             }
+            options={[
+              { label: "Landed price reaches a target", value: "TARGET_PRICE" },
+              {
+                label: "Landed price drops by a percentage",
+                value: "PERCENTAGE_DROP"
+              },
+              { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
+              {
+                label: "A qualifying offer becomes available",
+                value: "NEWLY_AVAILABLE"
+              }
+            ]}
+            value={ruleType}
             {...props(styles.input)}
-          >
-            <option value="TARGET_PRICE">Landed price reaches a target</option>
-            <option value="PERCENTAGE_DROP">Landed price drops by a percentage</option>
-            <option value="BACK_IN_STOCK">An offer returns in stock</option>
-            <option value="NEWLY_AVAILABLE">A qualifying offer becomes available</option>
-          </select>
+          />
         </label>
         <label htmlFor={currencyId} {...props(styles.field)}>
           Currency
-          <input id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
+          <TextField id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
         </label>
         {amountField.visible ? (
           <label htmlFor={amountId} {...props(styles.field)}>
             {amountField.label}
-            <input id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
+            <TextField id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
           </label>
         ) : null}
         <Button disabled={mutationPending} type="submit">

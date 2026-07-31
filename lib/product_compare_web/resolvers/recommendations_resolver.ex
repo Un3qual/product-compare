@@ -17,9 +17,9 @@ defmodule ProductCompareWeb.Resolvers.RecommendationsResolver do
     request = {slugs, profile}
 
     loader
-    |> Dataloader.load(source, :recommendation, request)
+    |> Loader.load(source, :recommendation, request)
     |> on_load(fn loader ->
-      case Dataloader.get(loader, source, :recommendation, request) do
+      case Loader.get(loader, source, :recommendation, request) do
         {:error, message} -> {:error, message}
         recommendation -> {:ok, recommendation}
       end

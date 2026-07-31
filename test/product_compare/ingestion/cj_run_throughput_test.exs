@@ -56,15 +56,6 @@ defmodule ProductCompare.Ingestion.CJRunThroughputTest do
       })
 
       import_run_fixture(source, %{
-        provider: "awin",
-        surface: "shoppingProducts",
-        status: "succeeded",
-        started_at: ~U[2026-07-02 09:00:00Z],
-        pages_fetched: 99,
-        records_fetched: 99
-      })
-
-      import_run_fixture(source, %{
         surface: "shoppingProducts",
         status: "succeeded",
         started_at: ~U[2026-06-01 09:00:00Z],

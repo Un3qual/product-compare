@@ -1,13 +1,21 @@
 defmodule ProductCompareSchemas.Ingestion.ImportRun do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Reference.ReferenceCode
+
   @type t :: %__MODULE__{}
 
-  @statuses ~w(running succeeded failed)
-  @reconciliation_statuses ~w(
-    not_requested pending succeeded skipped_partial skipped_failed skipped_superseded
-  )
-  @required_fields [:source_id, :provider, :surface, :query, :status, :started_at]
+  @surface_codes %{"shoppingProducts" => 1, "shoppingProductFeeds" => 2}
+  @statuses [:running, :succeeded, :failed]
+  @reconciliation_statuses [
+    :not_requested,
+    :pending,
+    :succeeded,
+    :skipped_partial,
+    :skipped_failed,
+    :skipped_superseded
+  ]
+  @required_fields [:source_id, :surface, :query, :status, :started_at]
   @count_fields [
     :pages_fetched,
     :records_fetched,
@@ -18,10 +26,15 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
 
   schema "ingestion_runs" do
     field :entropy_id, Ecto.UUID
-    field :provider, :string
-    field :surface, :string
+    field :provider, :string, virtual: true
+
+    field :surface, ReferenceCode,
+      codes: @surface_codes,
+      normalization: :none,
+      source: :integration_surface_id
+
     field :query, :map, default: %{}
-    field :status, :string
+    field :status, Ecto.Enum, values: @statuses
     field :started_at, :utc_datetime_usec
     field :finished_at, :utc_datetime_usec
     field :cursor_start, :integer
@@ -35,7 +48,11 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     field :records_failed, :integer, default: 0
     field :error_summary, :string
     field :scope_fingerprint, :string
-    field :reconciliation_status, :string, default: "not_requested"
+
+    field :reconciliation_status, Ecto.Enum,
+      values: @reconciliation_statuses,
+      default: :not_requested
+
     field :reconciled_at, :utc_datetime_usec
     field :offers_deactivated, :integer, default: 0
 
@@ -72,14 +89,29 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
       :offers_deactivated
     ])
     |> validate_required(@required_fields)
-    |> validate_inclusion(:status, @statuses)
-    |> validate_inclusion(:reconciliation_status, @reconciliation_statuses)
     |> validate_number(:page_size, greater_than: 0)
     |> validate_number(:pages_requested, greater_than: 0)
     |> validate_counts()
     |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
     |> foreign_key_constraint(:source_id)
+    |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
+  end
+
+  @spec completion_changeset(t(), map()) :: Ecto.Changeset.t()
+  def completion_changeset(import_run, attrs) do
+    import_run
+    |> changeset(attrs)
+    |> validate_required(:finished_at)
+    |> validate_inclusion(:status, [:succeeded, :failed])
+  end
+
+  @spec normalize_surface(term()) :: String.t() | nil
+  def normalize_surface(value), do: ReferenceCode.normalize(value, @surface_codes, :none)
+
+  @spec provider_for_surface(term()) :: String.t() | nil
+  def provider_for_surface(value) do
+    if normalize_surface(value), do: "cj"
   end
 
   defp validate_counts(changeset) do

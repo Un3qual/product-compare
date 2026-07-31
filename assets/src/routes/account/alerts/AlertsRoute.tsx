@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
-import { useMutation } from "react-relay";
-import type { DeletePriceWatchMutation } from "../../../__generated__/DeletePriceWatchMutation.graphql";
-import type { MarkAlertReadMutation } from "../../../__generated__/MarkAlertReadMutation.graphql";
-import type { UpdatePriceWatchMutation } from "../../../__generated__/UpdatePriceWatchMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { AlertsRouteDeletePriceWatchMutation } from "../../../__generated__/AlertsRouteDeletePriceWatchMutation.graphql";
+import type { AlertsRouteMarkAlertReadMutation } from "../../../__generated__/AlertsRouteMarkAlertReadMutation.graphql";
+import type { AlertsRouteUpdatePriceWatchMutation } from "../../../__generated__/AlertsRouteUpdatePriceWatchMutation.graphql";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { Button } from "../../../ui/primitives/Button";
@@ -16,9 +16,6 @@ import {
   resolveMarkAlertReadMutationError,
   resolveTogglePriceWatchMutationError
 } from "./alerts-mutation-data";
-import deletePriceWatchMutation from "./queries/DeletePriceWatchMutation";
-import markAlertReadMutation from "./queries/MarkAlertReadMutation";
-import updatePriceWatchMutation from "./queries/UpdatePriceWatchMutation";
 import type { AlertsRouteLoaderData, AlertSummary, WatchSummary } from "./loader";
 import {
   alertRuleLabel,
@@ -27,6 +24,51 @@ import {
   priceWatchToggleControl,
   priceWatchLabel
 } from "./alerts-view-data";
+
+const deletePriceWatchMutation = graphql`
+  mutation AlertsRouteDeletePriceWatchMutation($id: ID!) {
+    deletePriceWatch(id: $id) {
+      deletedWatchId
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+const markAlertReadMutation = graphql`
+  mutation AlertsRouteMarkAlertReadMutation($id: ID!) {
+    markAlertRead(id: $id) {
+      event {
+        id
+        readAt
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+const updatePriceWatchMutation = graphql`
+  mutation AlertsRouteUpdatePriceWatchMutation($input: UpdatePriceWatchInput!) {
+    updatePriceWatch(input: $input) {
+      watch {
+        id
+        enabled
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   actions: { display: "flex", flexWrap: "wrap", gap: "0.6rem" },
@@ -64,9 +106,9 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   const revalidator = useRevalidator();
   const [errorsById, setErrorsById] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [commitMarkRead] = useMutation<MarkAlertReadMutation>(markAlertReadMutation);
-  const [commitUpdate] = useMutation<UpdatePriceWatchMutation>(updatePriceWatchMutation);
-  const [commitDelete] = useMutation<DeletePriceWatchMutation>(deletePriceWatchMutation);
+  const [commitMarkRead] = useMutation<AlertsRouteMarkAlertReadMutation>(markAlertReadMutation);
+  const [commitUpdate] = useMutation<AlertsRouteUpdatePriceWatchMutation>(updatePriceWatchMutation);
+  const [commitDelete] = useMutation<AlertsRouteDeletePriceWatchMutation>(deletePriceWatchMutation);
   const viewData = buildAlertsViewData(alerts, watches);
 
   async function run(id: string, operation: () => Promise<string | null>) {

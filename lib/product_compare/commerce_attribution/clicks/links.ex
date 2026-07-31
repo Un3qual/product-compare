@@ -5,7 +5,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Links do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
 
-  @upsert_fields [:network, :campaign_params, :backfilled_from_affiliate_links, :is_active]
+  @upsert_fields [:campaign_params, :backfilled_from_affiliate_links, :is_active]
   @conflict_target {:unsafe_fragment,
                     "(destination_url, COALESCE(affiliate_program_id, 0), merchant_id, link_type)"}
 
@@ -32,11 +32,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Links do
     destination
     |> commerce_link_attrs()
     |> Map.delete(:is_active)
-    |> drop_nil_network()
   end
-
-  defp drop_nil_network(%{network: nil} = attrs), do: Map.delete(attrs, :network)
-  defp drop_nil_network(attrs), do: attrs
 
   defp commerce_link_attrs(destination) do
     %{
@@ -44,7 +40,6 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Links do
       affiliate_program_id: destination.affiliate_program_id,
       destination_url: destination.destination_url,
       link_type: destination.link_type,
-      network: destination.network,
       backfilled_from_affiliate_links: destination.backfilled_from_affiliate_links,
       is_active: true
     }

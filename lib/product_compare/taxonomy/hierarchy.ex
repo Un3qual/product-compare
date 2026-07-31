@@ -5,29 +5,32 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
 
   alias ProductCompare.Input
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
+  alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure, Taxonomy}
 
   def create_taxon(attrs) do
-    parent_id = Input.fetch_attr(attrs, :parent_id)
-    taxonomy_id = Input.fetch_attr(attrs, :taxonomy_id)
+    changeset = Taxon.changeset(%Taxon{}, attrs)
 
-    with :ok <- validate_parent_taxonomy(parent_id, taxonomy_id) do
+    if changeset.valid? do
+      parent_id = Ecto.Changeset.get_field(changeset, :parent_id)
+      taxonomy_id = Ecto.Changeset.get_field(changeset, :taxonomy_id)
       now = DateTime.utc_now()
 
       Repo.transaction(fn ->
-        case Repo.insert(Taxon.changeset(%Taxon{}, attrs)) do
-          {:ok, taxon} ->
-            insert_closure_rows(taxon, parent_id, now)
-            taxon
-
-          {:error, changeset} ->
-            Repo.rollback(changeset)
+        with {:ok, _taxonomy} <- lock_taxonomy(taxonomy_id),
+             :ok <- validate_parent_taxonomy(parent_id, taxonomy_id),
+             {:ok, taxon} <- Repo.insert(changeset) do
+          insert_closure_rows(taxon, parent_id, now)
+          taxon
+        else
+          {:error, reason} -> Repo.rollback(reason)
         end
       end)
       |> case do
         {:ok, taxon} -> {:ok, taxon}
         {:error, reason} -> {:error, reason}
       end
+    else
+      {:error, changeset}
     end
   end
 
@@ -38,16 +41,20 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
   end
 
   def move_taxon(taxon_id, new_parent_id) do
-    with {:ok, taxon} <- fetch_taxon(taxon_id),
-         :ok <- validate_move_target(taxon, new_parent_id),
-         :ok <- ensure_not_cycle(taxon_id, new_parent_id) do
-      now = DateTime.utc_now()
-
-      Repo.transaction(fn -> move_taxon_transaction(taxon, taxon_id, new_parent_id, now) end)
-      |> case do
-        {:ok, moved_taxon} -> {:ok, moved_taxon}
-        {:error, reason} -> {:error, reason}
+    Repo.transaction(fn ->
+      with {:ok, initial_taxon} <- fetch_taxon(taxon_id),
+           {:ok, _taxonomy} <- lock_taxonomy(initial_taxon.taxonomy_id),
+           {:ok, taxon} <- fetch_taxon_for_update(taxon_id),
+           :ok <- validate_move_target(taxon, new_parent_id),
+           :ok <- ensure_not_cycle(taxon_id, new_parent_id) do
+        move_taxon_transaction(taxon, taxon_id, new_parent_id, DateTime.utc_now())
+      else
+        {:error, reason} -> Repo.rollback(reason)
       end
+    end)
+    |> case do
+      {:ok, moved_taxon} -> {:ok, moved_taxon}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -79,7 +86,7 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
   end
 
   defp move_taxon_transaction(taxon, taxon_id, new_parent_id, now) do
-    case Repo.update(Taxon.changeset(taxon, %{parent_id: new_parent_id})) do
+    case Repo.update(Taxon.move_changeset(taxon, new_parent_id)) do
       {:ok, moved_taxon} ->
         subtree = subtree(taxon_id)
         remove_old_paths(taxon_id, subtree)
@@ -165,6 +172,24 @@ defmodule ProductCompare.Taxonomy.Hierarchy do
     case Repo.get(Taxon, taxon_id) do
       nil -> {:error, :taxon_not_found}
       taxon -> {:ok, taxon}
+    end
+  end
+
+  defp fetch_taxon_for_update(taxon_id) do
+    case Repo.one(from taxon in Taxon, where: taxon.id == ^taxon_id, lock: "FOR UPDATE") do
+      nil -> {:error, :taxon_not_found}
+      taxon -> {:ok, taxon}
+    end
+  end
+
+  defp lock_taxonomy(taxonomy_id) do
+    case Repo.one(
+           from taxonomy in Taxonomy,
+             where: taxonomy.id == ^taxonomy_id,
+             lock: "FOR UPDATE"
+         ) do
+      nil -> {:error, :taxonomy_not_found}
+      taxonomy -> {:ok, taxonomy}
     end
   end
 

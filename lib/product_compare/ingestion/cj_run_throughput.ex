@@ -81,18 +81,26 @@ defmodule ProductCompare.Ingestion.CJRunThroughput do
     start_at = DateTime.new!(start_date, ~T[00:00:00], "Etc/UTC")
 
     ImportRun
-    |> where(
-      [run],
-      run.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> join(:inner, [run, _source], surface in "integration_surfaces",
+      on: surface.id == run.surface
     )
-    |> group_by([run], [fragment("?::date", run.started_at), run.surface])
-    |> order_by([run], desc: fragment("?::date", run.started_at), asc: run.surface)
-    |> select([run], %{
+    |> where(
+      [run, source],
+      source.provider == @provider and run.started_at >= ^start_at and run.started_at <= ^now
+    )
+    |> group_by([run, _source, surface], [fragment("?::date", run.started_at), surface.code])
+    |> order_by(
+      [run, _source, surface],
+      desc: fragment("?::date", run.started_at),
+      asc: surface.code
+    )
+    |> select([run, _source, surface], %{
       date: fragment("?::date", run.started_at),
-      surface: run.surface,
+      surface: surface.code,
       run_count: count(run.id),
-      succeeded_run_count: filter(count(run.id), run.status == "succeeded"),
-      failed_run_count: filter(count(run.id), run.status == "failed"),
+      succeeded_run_count: filter(count(run.id), run.status == :succeeded),
+      failed_run_count: filter(count(run.id), run.status == :failed),
       pages_fetched: sum(run.pages_fetched),
       records_fetched: sum(run.records_fetched),
       records_normalized: sum(run.records_normalized),

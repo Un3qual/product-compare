@@ -59,11 +59,13 @@ test("alertsLoader disposes its Relay query after copying route summaries", asyn
     dispose
   });
 
+  const request = new Request("https://product.test/account/alerts");
   const result = await alertsLoader({
     context: {},
     params: {},
-    request: new Request("https://product.test/account/alerts"),
-    unstable_pattern: "/account/alerts"
+    pattern: "/account/alerts",
+    request,
+    url: new URL(request.url)
   });
 
   expect(result).toEqual({

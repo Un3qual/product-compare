@@ -9,7 +9,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
-  alias ProductCompareWeb.Resolvers.AffiliateResolver
+  alias ProductCompareWeb.Resolvers.Affiliate.Mutations
+  alias ProductCompareWeb.Resolvers.Affiliate.Reads
 
   import ProductCompare.Fixtures.AccountsFixtures
 
@@ -658,7 +659,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
         })
 
       assert {:ok, %{coupons: %{edges: [%{node: %{code: ^code}}]}}} =
-               AffiliateResolver.active_coupons(
+               Reads.active_coupons(
                  nil,
                  %{input: %{"merchant_id" => merchant_id, "at" => future_at, "first" => 10}},
                  %{context: %{current_user: operator_fixture()}}
@@ -669,7 +670,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       name = "String Key Network #{System.unique_integer([:positive])}"
 
       assert {:ok, %{network: %{name: ^name}, errors: []}} =
-               AffiliateResolver.upsert_affiliate_network(
+               Mutations.upsert_affiliate_network(
                  nil,
                  %{input: %{"name" => name}},
                  %{context: %{current_user: operator_fixture()}}
@@ -681,7 +682,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       {:ok, network} = Affiliate.upsert_network(%{name: "String Program Network"})
 
       assert {:ok, %{program: %{program_code: "DIRECT-PROGRAM", status: "active"}, errors: []}} =
-               AffiliateResolver.upsert_affiliate_program(
+               Mutations.upsert_affiliate_program(
                  nil,
                  %{
                    input: %{
@@ -695,12 +696,12 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                )
     end
 
-    test "upsertAffiliateProgram resolver preserves explicit nil attrs on conflict" do
+    test "upsertAffiliateProgram resolver rejects clearing the controlled status" do
       merchant = merchant_fixture()
       {:ok, network} = Affiliate.upsert_network(%{name: "Nullable Program Network"})
 
       assert {:ok, %{program: %{status: "active"}, errors: []}} =
-               AffiliateResolver.upsert_affiliate_program(
+               Mutations.upsert_affiliate_program(
                  nil,
                  %{
                    input: %{
@@ -713,8 +714,14 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  %{context: %{current_user: operator_fixture()}}
                )
 
-      assert {:ok, %{program: %{status: nil}, errors: []}} =
-               AffiliateResolver.upsert_affiliate_program(
+      assert {:ok,
+              %{
+                program: nil,
+                errors: [
+                  %{code: "INVALID_ARGUMENT", field: "status", message: "can't be blank"}
+                ]
+              }} =
+               Mutations.upsert_affiliate_program(
                  nil,
                  %{
                    input: %{
@@ -726,6 +733,13 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                  },
                  %{context: %{current_user: operator_fixture()}}
                )
+
+      assert Affiliate.get_affiliate_program(
+               Repo.get_by!(AffiliateProgram,
+                 affiliate_network_id: network.id,
+                 merchant_id: merchant.id
+               ).id
+             ).status == "active"
     end
 
     test "upsertAffiliateLink resolver preserves explicit nil attrs on conflict" do
@@ -739,7 +753,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                 link: %{affiliate_network_id: network_id, last_verified_at: created_verified_at},
                 errors: []
               }} =
-               AffiliateResolver.upsert_affiliate_link(
+               Mutations.upsert_affiliate_link(
                  nil,
                  %{
                    input: %{
@@ -757,7 +771,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert DateTime.compare(created_verified_at, verified_at) == :eq
 
       assert {:ok, %{link: %{affiliate_network_id: nil, last_verified_at: nil}, errors: []}} =
-               AffiliateResolver.upsert_affiliate_link(
+               Mutations.upsert_affiliate_link(
                  nil,
                  %{
                    input: %{

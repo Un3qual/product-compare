@@ -11,9 +11,10 @@ defmodule ProductCompare.Ingestion.CJRunReadiness do
   @spec latest_success(String.t()) :: ImportRun.t() | nil
   def latest_success(surface) do
     ImportRun
-    |> where([run], run.provider == @provider)
+    |> join(:inner, [run], source in assoc(run, :source))
+    |> where([_run, source], source.provider == @provider)
     |> where([run], run.surface == ^surface)
-    |> where([run], run.status == "succeeded")
+    |> where([run], run.status == :succeeded)
     |> order_by([run], desc_nulls_last: run.finished_at, desc: run.started_at, desc: run.id)
     |> limit(1)
     |> Repo.one()

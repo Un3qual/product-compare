@@ -21,15 +21,26 @@ defmodule ProductCompare.Accounts.ApiTokens.Lifecycle do
   @spec revoke(pos_integer(), Ecto.UUID.t()) ::
           {:ok, ApiToken.t()} | {:error, :not_found | Ecto.Changeset.t()}
   def revoke(user_id, token_entropy_id) do
-    case Repo.get_by(ApiToken, user_id: user_id, entropy_id: token_entropy_id) do
-      nil ->
-        {:error, :not_found}
+    now = current_time()
 
-      %ApiToken{revoked_at: revoked_at} = token when not is_nil(revoked_at) ->
-        {:ok, token}
+    case Repo.transaction(fn ->
+           case lock_api_token_for_rotation(user_id, token_entropy_id) do
+             nil ->
+               Repo.rollback(:not_found)
 
-      %ApiToken{} = token ->
-        revoke_api_token_record(token, current_time())
+             %ApiToken{revoked_at: revoked_at} = token when not is_nil(revoked_at) ->
+               token
+
+             %ApiToken{} = token ->
+               case revoke_api_token_record(token, now) do
+                 {:ok, revoked_token} -> revoked_token
+                 {:error, changeset} -> Repo.rollback(changeset)
+               end
+           end
+         end) do
+      {:ok, %ApiToken{} = token} -> {:ok, token}
+      {:error, :not_found} -> {:error, :not_found}
+      {:error, %Ecto.Changeset{} = changeset} -> {:error, changeset}
     end
   end
 

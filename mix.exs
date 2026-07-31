@@ -60,6 +60,7 @@ defmodule ProductCompare.MixProject do
       {:argon2_elixir, "~> 4.0"},
       {:absinthe, "~> 1.7"},
       {:absinthe_plug, "~> 1.5"},
+      {:absinthe_relay, "~> 1.5"},
       {:dataloader, "~> 2.0"},
       {:oban, "~> 2.23"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
@@ -91,7 +92,7 @@ defmodule ProductCompare.MixProject do
         "reach.check --smells --strict --baseline .reach-baseline.json",
         "dialyzer"
       ],
-      frontend_check: ["cmd --cd assets bun run check"],
+      frontend_check: ["cmd --cd assets pnpm run check"],
       ci: [
         "work_queue.validate",
         "format --check-formatted",

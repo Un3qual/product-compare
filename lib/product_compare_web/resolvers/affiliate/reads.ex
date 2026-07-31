@@ -32,9 +32,9 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
       batch_key = {:active_coupons, operator.id, merchant_id, observation_time, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        connection = Dataloader.get(loader, source, batch_key, :root)
+        connection = Loader.get(loader, source, batch_key, :root)
         {:ok, %{coupons: connection}}
       end)
     else
@@ -72,9 +72,9 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
       batch_key = {:active_coupons, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, merchant_product)
+      |> Loader.load(source, batch_key, merchant_product)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, merchant_product)}
+        {:ok, Loader.get(loader, source, batch_key, merchant_product)}
       end)
     end
   end

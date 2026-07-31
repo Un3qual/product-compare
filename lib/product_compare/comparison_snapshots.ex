@@ -5,7 +5,6 @@ defmodule ProductCompare.ComparisonSnapshots do
   """
 
   alias ProductCompare.ComparisonSnapshots.Lifecycle
-  alias ProductCompare.ComparisonSnapshots.PayloadCodec
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
 
   @spec publish(pos_integer(), map(), keyword()) ::
@@ -36,7 +35,10 @@ defmodule ProductCompare.ComparisonSnapshots do
   def revoke(_user_id, _entropy_id, _opts), do: {:error, :not_found}
 
   @spec hydrate(ComparisonSnapshot.t() | nil) :: ComparisonSnapshot.t() | nil
-  def hydrate(nil), do: PayloadCodec.hydrate(nil)
+  def hydrate(nil), do: nil
 
-  def hydrate(%ComparisonSnapshot{} = snapshot), do: PayloadCodec.hydrate(snapshot)
+  def hydrate(%ComparisonSnapshot{} = snapshot), do: Lifecycle.hydrate(snapshot)
+
+  @spec hydrate_many([ComparisonSnapshot.t()]) :: [ComparisonSnapshot.t()]
+  def hydrate_many(snapshots) when is_list(snapshots), do: Lifecycle.hydrate_many(snapshots)
 end

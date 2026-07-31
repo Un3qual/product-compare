@@ -1,6 +1,8 @@
 defmodule ProductCompare.SeoTest do
   use ProductCompare.DataCase, async: true
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.ComparisonSnapshots
@@ -408,14 +410,6 @@ defmodule ProductCompare.SeoTest do
   test "comparison sitemap qualification is resolved in one bounded database read" do
     owner = AccountsFixtures.user_fixture()
 
-    thin_payload = %{
-      version: 1,
-      products: [
-        %{name: "Thin first", slug: "thin-first", attributes: [], offers: []},
-        %{name: "Thin second", slug: "thin-second", attributes: [], offers: []}
-      ]
-    }
-
     thin_snapshots =
       Enum.map(1..200, fn index ->
         %{
@@ -425,7 +419,8 @@ defmodule ProductCompare.SeoTest do
             |> :crypto.hash("thin-snapshot-#{index}")
             |> Base.url_encode64(padding: false),
           user_id: owner.id,
-          payload: thin_payload,
+          version: 1,
+          captured_at: DateTime.add(@now, index, :microsecond),
           search_indexable: true,
           inserted_at: DateTime.add(@now, index, :microsecond)
         }

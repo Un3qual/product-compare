@@ -9,6 +9,20 @@ defmodule ProductCompare.Accounts.UserEmailTokenTest do
   import ProductCompare.Fixtures.AccountsFixtures
 
   describe "password reset tokens" do
+    test "runs delivery outside the token persistence transaction" do
+      user = user_fixture(%{password: "supersecretpass123"})
+      parent = self()
+
+      assert :ok =
+               Accounts.deliver_user_reset_password_instructions(user, fn token ->
+                 send(parent, {:delivery_transaction_state, Repo.in_transaction?(), token})
+               end)
+
+      assert_receive {:delivery_transaction_state, false, token}
+      assert %User{id: user_id} = Accounts.get_user_by_reset_password_token(token)
+      assert user_id == user.id
+    end
+
     test "delivery hook config raises when present but malformed" do
       user = user_fixture(%{password: "supersecretpass123"})
       original_config = Application.get_env(:product_compare, ProductCompare.Accounts, [])

@@ -177,7 +177,7 @@ function ApiTokenActions({
           </div>
           <label>
             {`Replacement expiry for ${displayLabel}`}
-            <input
+            <TextField
               name="expiresAt"
               onChange={() => {
                 if (rotateExpiresAtPresetInputRef.current) {

@@ -1,0 +1,8 @@
+[tools]
+erlang = "28.3"
+elixir = "1.19.4-otp-28"
+node = "24.18.1"
+pnpm = "11.18.0"
+
+[settings]
+disable_tools = ["ruby"]

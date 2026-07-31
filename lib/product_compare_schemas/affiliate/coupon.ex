@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.DecimalInput
+  alias ProductCompareSchemas.Reference.CurrencyCode
 
   @discount_types [:percent, :amount, :free_shipping, :other]
 
@@ -13,7 +14,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     field :description, :string
     field :discount_type, Ecto.Enum, values: @discount_types
     field :discount_value, :decimal
-    field :currency, :string
+    field :currency, CurrencyCode, source: :currency_id
     field :valid_from, :utc_datetime_usec
     field :valid_to, :utc_datetime_usec
     field :terms, :string
@@ -45,7 +46,6 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
       :artifact_id
     ])
     |> validate_required([:merchant_id, :code, :discount_type])
-    |> validate_length(:currency, is: 3)
     |> validate_coupon_window()
     |> validate_discount_invariants()
     |> check_constraint(:discount_value, name: :coupons_discount_shape_check)
@@ -53,6 +53,7 @@ defmodule ProductCompareSchemas.Affiliate.Coupon do
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:affiliate_network_id)
     |> foreign_key_constraint(:artifact_id)
+    |> foreign_key_constraint(:currency, name: :coupons_currency_id_fkey)
   end
 
   defp validate_coupon_window(changeset) do

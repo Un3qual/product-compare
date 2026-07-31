@@ -10,6 +10,7 @@ defmodule ProductCompare.Ingestion.SourceHealth do
 
   alias ProductCompare.Ingestion.OptionNormalization
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Specs.Source
 
   @default_recent_failure_hours 168
   @min_recent_failure_hours 1
@@ -64,14 +65,14 @@ defmodule ProductCompare.Ingestion.SourceHealth do
   end
 
   defp sources do
-    "sources"
+    Source
     |> from(as: :source)
-    |> order_by([source: source], asc: field(source, :id))
+    |> order_by([source: source], asc: source.id)
     |> select([source: source], %{
-      source_id: field(source, :id),
-      source_kind: field(source, :kind),
-      source_name: field(source, :name),
-      source_domain: field(source, :domain)
+      source_id: source.id,
+      source_kind: source.kind,
+      source_name: source.name,
+      source_domain: source.domain
     })
     |> Repo.all()
   end
@@ -110,7 +111,7 @@ defmodule ProductCompare.Ingestion.SourceHealth do
     |> from(as: :run)
     |> where(
       [run: run],
-      field(run, :status) == "failed" and
+      fragment("? = 'failed'::ingestion_run_status", field(run, :status)) and
         not is_nil(field(run, :finished_at)) and
         field(run, :finished_at) >= ^recent_failure_since
     )

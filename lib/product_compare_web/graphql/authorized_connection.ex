@@ -42,9 +42,9 @@ defmodule ProductCompareWeb.GraphQL.AuthorizedConnection do
     source = Loader.authorized_connection_source()
 
     loader
-    |> Dataloader.load(source, batch_key, :connection)
+    |> Loader.load(source, batch_key, :connection)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, :connection)}
+      {:ok, Loader.get(loader, source, batch_key, :connection)}
     end)
   end
 

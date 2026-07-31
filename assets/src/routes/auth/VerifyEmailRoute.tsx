@@ -1,9 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useMutation, type MutationCommitFn } from "react-relay";
+import { graphql, useMutation, type MutationCommitFn } from "react-relay";
 import { useSearchParams } from "react-router-dom";
-import verifyEmailMutation, {
-  type VerifyEmailMutation
-} from "../../__generated__/VerifyEmailMutation.graphql";
+import type { VerifyEmailRouteMutation } from "../../__generated__/VerifyEmailRouteMutation.graphql";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import {
   type AuthActionResult,
@@ -19,8 +17,21 @@ import {
   VERIFY_EMAIL_SUCCESS_MESSAGE
 } from "./verify-email-data";
 
+const verifyEmailMutation = graphql`
+  mutation VerifyEmailRouteMutation($token: String!) {
+    verifyEmail(token: $token) {
+      ok
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
-type VerifyEmailCommit = MutationCommitFn<VerifyEmailMutation>;
+type VerifyEmailCommit = MutationCommitFn<VerifyEmailRouteMutation>;
 
 export function VerifyEmailRoute() {
   const [searchParams] = useSearchParams();
@@ -29,7 +40,7 @@ export function VerifyEmailRoute() {
   const [errors, setErrors] = useState<MutationError[]>(requestData.initialErrors);
   const [isLoading, setIsLoading] = useState(requestData.isLoading);
   const [message, setMessage] = useState<string | null>(null);
-  const [commitVerifyEmail] = useMutation<VerifyEmailMutation>(verifyEmailMutation);
+  const [commitVerifyEmail] = useMutation<VerifyEmailRouteMutation>(verifyEmailMutation);
   // Only token changes should restart verification; still call the latest Relay commit.
   const commitVerifyEmailRef = useRef(commitVerifyEmail);
   commitVerifyEmailRef.current = commitVerifyEmail;

@@ -20,7 +20,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     case {incoming_click_identifier?(attrs), existing_conversion} do
       {false, %CommerceConversion{click_session_id: click_session_id}}
       when not is_nil(click_session_id) ->
-        put_attr(attrs, :click_session_id, click_session_id)
+        Input.put_attr(attrs, :click_session_id, click_session_id)
 
       _incoming_or_unattributed ->
         attrs
@@ -36,7 +36,9 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
         {:ok, attrs}
 
       %CommerceClickSession{} = click_session ->
-        click_session = Repo.preload(click_session, [:commerce_link, :merchant_product])
+        click_session =
+          Repo.preload(click_session, [:merchant_product, commerce_link: :affiliate_program])
+
         dimensions = click_session_attribution_dimensions(click_session)
 
         case conflicts(attrs, changeset, dimensions) do
@@ -66,15 +68,15 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
   end
 
   defp existing_conversion_for_update(changeset) do
-    source_network = Ecto.Changeset.get_field(changeset, :source_network)
+    affiliate_network_id = Ecto.Changeset.get_field(changeset, :affiliate_network_id)
     network_conversion_ref = Ecto.Changeset.get_field(changeset, :network_conversion_ref)
 
-    if is_nil(source_network) or is_nil(network_conversion_ref) do
+    if is_nil(affiliate_network_id) or is_nil(network_conversion_ref) do
       nil
     else
       from(conversion in CommerceConversion,
         where:
-          conversion.source_network == ^source_network and
+          conversion.affiliate_network_id == ^affiliate_network_id and
             conversion.network_conversion_ref == ^network_conversion_ref,
         lock: "FOR UPDATE"
       )
@@ -88,7 +90,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
 
   defp put_click_session_attribution_attrs(attrs, click_session, dimensions) do
     attrs
-    |> put_attr(:click_session_id, click_session.id)
+    |> Input.put_attr(:click_session_id, click_session.id)
     |> put_attr_if_missing(:merchant_id, dimensions.merchant_id)
     |> put_attr_if_missing(:affiliate_program_id, dimensions.affiliate_program_id)
     |> put_attr_if_missing(:merchant_product_id, dimensions.merchant_product_id)
@@ -99,6 +101,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     %{
       merchant_id: click_session_merchant_id(click_session),
       affiliate_program_id: click_session_affiliate_program_id(click_session),
+      affiliate_network_id: click_session_affiliate_network_id(click_session),
       merchant_product_id: click_session.merchant_product_id,
       product_id: click_session_product_id(click_session)
     }
@@ -199,6 +202,15 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
 
   defp click_session_affiliate_program_id(_click_session), do: nil
 
+  defp click_session_affiliate_network_id(%CommerceClickSession{
+         commerce_link: %CommerceLink{
+           affiliate_program: %AffiliateProgram{affiliate_network_id: affiliate_network_id}
+         }
+       }),
+       do: affiliate_network_id
+
+  defp click_session_affiliate_network_id(_click_session), do: nil
+
   defp click_session_product_id(%CommerceClickSession{
          merchant_product: %MerchantProduct{} = product
        }),
@@ -216,15 +228,13 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     end
   end
 
-  defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
-
   defp put_attr_if_missing(attrs, _key, nil), do: attrs
 
   defp put_attr_if_missing(attrs, key, value) do
     if attr_present?(attrs, key) do
       attrs
     else
-      put_attr(attrs, key, value)
+      Input.put_attr(attrs, key, value)
     end
   end
 

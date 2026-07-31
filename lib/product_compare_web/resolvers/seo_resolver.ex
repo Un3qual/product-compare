@@ -14,9 +14,9 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     source = Loader.category_source()
 
     loader
-    |> Dataloader.load(source, :lookup, slug)
+    |> Loader.load(source, :lookup, slug)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :lookup, slug)}
+      {:ok, Loader.get(loader, source, :lookup, slug)}
     end)
   end
 
@@ -37,9 +37,9 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
       batch_key = {:products, connection_args, now}
 
       loader
-      |> Dataloader.load(source, batch_key, category)
+      |> Loader.load(source, batch_key, category)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, category)}
+        {:ok, Loader.get(loader, source, batch_key, category)}
       end)
     end
   end
@@ -55,9 +55,9 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     source = Loader.product_evidence_source()
 
     loader
-    |> Dataloader.load(source, :seo, product)
+    |> Loader.load(source, :seo, product)
     |> on_load(fn loader ->
-      metadata = Dataloader.get(loader, source, :seo, product)
+      metadata = Loader.get(loader, source, :seo, product)
       {:ok, serialized_metadata(metadata)}
     end)
   end
@@ -69,9 +69,9 @@ defmodule ProductCompareWeb.Resolvers.SeoResolver do
     source = Loader.merchant_detail_source()
 
     loader
-    |> Dataloader.load(source, :summary, merchant)
+    |> Loader.load(source, :summary, merchant)
     |> on_load(fn loader ->
-      detail = Dataloader.get(loader, source, :summary, merchant)
+      detail = Loader.get(loader, source, :summary, merchant)
       {:ok, serialized_metadata(Seo.merchant_metadata(merchant, detail: detail))}
     end)
   end

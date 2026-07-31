@@ -203,7 +203,9 @@ defmodule ProductCompare.Alerts.Evaluation do
       shipping: fact.shipping,
       landed_price: fact.landed_price,
       observed_at: fact.observed_at,
-      fact_snapshot: fact_snapshot(watch, fact)
+      baseline_landed_price: watch.baseline_landed_price,
+      target_amount: watch.target_amount,
+      percentage_drop: watch.percentage_drop
     }
 
     case %AlertEvent{}
@@ -234,22 +236,6 @@ defmodule ProductCompare.Alerts.Evaluation do
     end
   end
 
-  defp fact_snapshot(watch, fact) do
-    %{
-      "rule_type" => Atom.to_string(watch.rule_type),
-      "currency" => watch.currency,
-      "merchant_product_id" => fact.merchant_product_id,
-      "price_point_id" => fact.price_point_id,
-      "item_price" => Decimal.to_string(fact.item_price, :normal),
-      "shipping" => Decimal.to_string(fact.shipping, :normal),
-      "landed_price" => Decimal.to_string(fact.landed_price, :normal),
-      "observed_at" => DateTime.to_iso8601(fact.observed_at),
-      "baseline_landed_price" => decimal_string(watch.baseline_landed_price),
-      "target_amount" => decimal_string(watch.target_amount),
-      "percentage_drop" => decimal_string(watch.percentage_drop)
-    }
-  end
-
   defp condition_met?(%PriceWatchRule{rule_type: :target_price} = watch, fact) do
     fact.eligible and decimal_lte?(fact.landed_price, watch.target_amount)
   end
@@ -276,7 +262,4 @@ defmodule ProductCompare.Alerts.Evaluation do
     do: Decimal.compare(left, right) in [:lt, :eq]
 
   defp decimal_lte?(_left, _right), do: false
-
-  defp decimal_string(%Decimal{} = value), do: Decimal.to_string(value, :normal)
-  defp decimal_string(_value), do: nil
 end

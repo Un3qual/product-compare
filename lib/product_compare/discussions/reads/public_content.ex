@@ -73,9 +73,7 @@ defmodule ProductCompare.Discussions.Reads.PublicContent do
 
     Repo.all(
       from thread in ProductThread,
-        where:
-          thread.product_id == ^product_id and thread.kind == :question and
-            thread.moderation_status == :published,
+        where: thread.product_id == ^product_id and thread.moderation_status == :published,
         order_by: [desc: thread.inserted_at, desc: thread.id],
         limit: ^limit,
         offset: ^offset,
@@ -86,9 +84,7 @@ defmodule ProductCompare.Discussions.Reads.PublicContent do
   @spec questions_query(pos_integer()) :: Ecto.Query.t()
   def questions_query(product_id) do
     from thread in ProductThread,
-      where:
-        thread.product_id == ^product_id and thread.kind == :question and
-          thread.moderation_status == :published,
+      where: thread.product_id == ^product_id and thread.moderation_status == :published,
       order_by: [desc: thread.inserted_at, desc: thread.id],
       preload: [:accepted_post]
   end
@@ -114,7 +110,7 @@ defmodule ProductCompare.Discussions.Reads.PublicContent do
       ProductThread
       |> where(
         [question],
-        question.entropy_id in ^validated_entropy_ids and question.kind == :question and
+        question.entropy_id in ^validated_entropy_ids and
           question.moderation_status == :published
       )
       |> preload(:accepted_post)

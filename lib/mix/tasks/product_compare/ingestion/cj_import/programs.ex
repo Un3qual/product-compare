@@ -39,7 +39,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
     program_stages = Keyword.fetch!(opts, :program_stages)
 
     MerchantFeedCandidate
-    |> where([feed], feed.provider == "cj")
+    |> join(:inner, [feed], source in assoc(feed, :source))
+    |> where([_feed, source], source.provider == "cj")
     |> maybe_filter_provider_feed_ids(provider_feed_ids)
     |> maybe_filter_program_stages(provider_feed_ids, program_stages)
     |> order_by([feed],
@@ -48,7 +49,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
       asc: feed.id
     )
     |> limit(^feed_limit(provider_feed_ids, Keyword.get(opts, :feed_limit)))
-    |> preload(:source)
+    |> preload([_feed, source], source: source)
   end
 
   defp maybe_filter_provider_feed_ids(query, []), do: query
@@ -62,7 +63,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Programs do
   defp maybe_filter_program_stages(query, [], program_stages) do
     query
     |> join(:inner, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
-    |> where([_feed, program], program.stage in ^program_stages)
+    |> where([_feed, _source, program], program.stage in ^program_stages)
   end
 
   defp feed_limit([_first | _rest] = provider_feed_ids, _feed_limit),

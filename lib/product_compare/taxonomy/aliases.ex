@@ -69,4 +69,36 @@ defmodule ProductCompare.Taxonomy.Aliases do
         )
     end
   end
+
+  @spec resolve_type_alias_for_write([String.t()] | String.t()) :: Taxon.t() | nil
+  def resolve_type_alias_for_write(path) do
+    if Repo.in_transaction?() do
+      case normalize_category_path(path) do
+        nil ->
+          nil
+
+        normalized_path ->
+          case Repo.one(
+                 from taxon_alias in TaxonAlias,
+                   where: taxon_alias.alias == ^normalized_path,
+                   lock: "FOR SHARE"
+               ) do
+            nil -> nil
+            %TaxonAlias{taxon_id: taxon_id} -> get_type_taxon(taxon_id)
+          end
+      end
+    else
+      raise ArgumentError, "resolve_type_alias_for_write/1 requires a database transaction"
+    end
+  end
+
+  defp get_type_taxon(taxon_id) do
+    Repo.one(
+      from taxon in Taxon,
+        join: taxonomy in Taxonomy,
+        on: taxonomy.id == taxon.taxonomy_id,
+        where: taxon.id == ^taxon_id and taxonomy.code == "type",
+        select: taxon
+    )
+  end
 end

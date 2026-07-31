@@ -8,7 +8,6 @@ defmodule ProductCompareSchemas.Alerts.AlertDeliveryAttempt do
     field :state, Ecto.Enum, values: [:pending, :delivered, :failed]
     field :attempted_at, :utc_datetime_usec
     field :delivered_at, :utc_datetime_usec
-    field :failure_category, :string
 
     belongs_to :alert_event, ProductCompareSchemas.Alerts.AlertEvent
     timestamps(updated_at: false)
@@ -22,8 +21,7 @@ defmodule ProductCompareSchemas.Alerts.AlertDeliveryAttempt do
       :transport,
       :state,
       :attempted_at,
-      :delivered_at,
-      :failure_category
+      :delivered_at
     ])
     |> validate_required([:alert_event_id, :transport, :state, :attempted_at])
     |> unique_constraint([:alert_event_id, :transport],

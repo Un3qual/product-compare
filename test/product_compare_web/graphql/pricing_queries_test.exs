@@ -8,7 +8,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.Pricing.Merchants
+  alias ProductCompareWeb.Resolvers.Pricing.Offers
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -136,9 +137,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } =
                graphql(conn, merchant_products_query(), %{
                  "input" => %{
-                   "productId" => relay_id(:product, product.id),
-                   "first" => 1
-                 }
+                   "productId" => relay_id(:product, product.id)
+                 },
+                 "first" => 1
                })
 
       assert first_id == relay_id(:merchant_product, merchant_product_a.id)
@@ -164,10 +165,10 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } =
                graphql(conn, merchant_products_query(), %{
                  "input" => %{
-                   "productId" => relay_id(:product, product.id),
-                   "first" => 10,
-                   "after" => first_cursor
-                 }
+                   "productId" => relay_id(:product, product.id)
+                 },
+                 "first" => 10,
+                 "after" => first_cursor
                })
 
       assert second_id == relay_id(:merchant_product, merchant_product_b.id)
@@ -189,7 +190,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
                    "merchantId" => relay_id(:merchant, merchant_b.id)
-                 }
+                 },
+                 "first" => 50
                })
 
       assert only_merchant_id == relay_id(:merchant_product, merchant_product_b.id)
@@ -211,7 +213,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
                    "activeOnly" => true
-                 }
+                 },
+                 "first" => 50
                })
 
       assert only_active_id == relay_id(:merchant_product, merchant_product_a.id)
@@ -222,9 +225,10 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } =
                graphql(conn, merchant_products_query(), %{
                  "input" => %{
-                   "productId" => relay_id(:product, product.id),
-                   "after" => "bad-cursor"
-                 }
+                   "productId" => relay_id(:product, product.id)
+                 },
+                 "first" => 50,
+                 "after" => "bad-cursor"
                })
 
       assert %{
@@ -235,9 +239,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
              } =
                graphql(conn, merchant_products_query(), %{
                  "input" => %{
-                   "productId" => relay_id(:product, product.id),
-                   "first" => -1
-                 }
+                   "productId" => relay_id(:product, product.id)
+                 },
+                 "first" => -1
                })
     end
 
@@ -258,7 +262,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
               %{
                 edges: [%{cursor: cursor, node: first_node}],
                 page_info: %{has_next_page: true, has_previous_page: false}
-              }} = PricingResolver.merchants(nil, %{first: 1}, %{})
+              }} = Merchants.merchants(nil, %{first: 1}, %{})
 
       assert first_node.id == first_merchant.id
 
@@ -266,7 +270,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
               %{
                 edges: [%{node: second_node}],
                 page_info: %{has_next_page: false, has_previous_page: true}
-              }} = PricingResolver.merchants(nil, %{first: 1, after: cursor}, %{})
+              }} = Merchants.merchants(nil, %{first: 1, after: cursor}, %{})
 
       assert second_node.id == second_merchant.id
     end
@@ -286,15 +290,15 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                 edges: [%{node: offer}],
                 page_info: %{has_next_page: false, has_previous_page: false}
               }} =
-               PricingResolver.merchant_products(
+               Offers.merchant_products(
                  nil,
                  %{
                    input: %{
                      product_id: relay_id(:product, product.id),
                      merchant_id: relay_id(:merchant, merchant.id),
-                     active_only: true,
-                     first: 1
-                   }
+                     active_only: true
+                   },
+                   first: 1
                  },
                  %{}
                )
@@ -339,23 +343,32 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       merchant = merchant_fixture(%{name: unique_name("Validation Merchant")})
 
       invalid_inputs = [
-        {%{"productId" => product.id}, "invalid product id"},
+        {%{"input" => %{"productId" => product.id}}, "invalid product id"},
         {
           %{
-            "productId" => relay_id(:product, product.id),
-            "merchantId" => merchant.id
+            "input" => %{
+              "productId" => relay_id(:product, product.id),
+              "merchantId" => merchant.id
+            }
           },
           "invalid merchant id"
         },
-        {%{"productId" => relay_id(:product, product.id), "first" => -1}, "invalid first"},
-        {%{"productId" => relay_id(:product, product.id), "after" => "bad-cursor"},
-         "invalid cursor"}
+        {%{
+           "input" => %{"productId" => relay_id(:product, product.id)},
+           "first" => -1
+         }, "invalid first"},
+        {%{
+           "input" => %{"productId" => relay_id(:product, product.id)},
+           "after" => "bad-cursor"
+         }, "invalid cursor"}
       ]
 
-      Enum.each(invalid_inputs, fn {input, message} ->
+      Enum.each(invalid_inputs, fn {variables, message} ->
+        variables = Map.put_new(variables, "first", 50)
+
         {response, queries} =
           capture_select_queries(fn ->
-            graphql(conn, merchant_products_query(), %{"input" => input})
+            graphql(conn, merchant_products_query(), variables)
           end)
 
         assert %{
@@ -481,7 +494,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                ]
              } =
                graphql(conn, merchant_products_query(), %{
-                 "input" => %{"productId" => product.id}
+                 "input" => %{"productId" => product.id},
+                 "first" => 50
                })
 
       assert %{
@@ -494,7 +508,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
                    "merchantId" => merchant.id
-                 }
+                 },
+                 "first" => 50
                })
     end
 
@@ -543,9 +558,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       variables = %{
         "input" => %{
           "productId" => relay_id(:product, product.id),
-          "merchantId" => relay_id(:merchant, merchant.id),
-          "first" => 1
+          "merchantId" => relay_id(:merchant, merchant.id)
         },
+        "first" => 1,
         "historyFirst" => 1,
         "from" => DateTime.to_iso8601(one_hour_ago),
         "to" => DateTime.to_iso8601(now)
@@ -748,9 +763,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                graphql(conn, merchant_product_active_coupons_query(), %{
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
-                   "activeOnly" => true,
-                   "first" => 1
+                   "activeOnly" => true
                  },
+                 "first" => 1,
                  "couponFirst" => 2
                })
 
@@ -801,9 +816,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                graphql(conn, merchant_product_active_coupons_query(), %{
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
-                   "activeOnly" => true,
-                   "first" => 1
+                   "activeOnly" => true
                  },
+                 "first" => 1,
                  "couponFirst" => -1
                })
     end
@@ -849,9 +864,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                graphql(conn, merchant_product_active_coupons_with_at_query(), %{
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
-                   "activeOnly" => true,
-                   "first" => 1
+                   "activeOnly" => true
                  },
+                 "first" => 1,
                  "couponFirst" => 10,
                  "at" => DateTime.utc_now() |> DateTime.add(365, :day) |> DateTime.to_iso8601()
                })
@@ -899,9 +914,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
         capture_select_queries(fn ->
           graphql(conn, merchant_products_with_nested_fields_query(), %{
             "input" => %{
-              "productId" => relay_id(:product, product.id),
-              "first" => 10
-            }
+              "productId" => relay_id(:product, product.id)
+            },
+            "first" => 10
           })
         end)
 
@@ -1066,9 +1081,9 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                  "slug" => product.slug,
                  "input" => %{
                    "productId" => relay_id(:product, product.id),
-                   "merchantId" => relay_id(:merchant, higher_item_merchant.id),
-                   "first" => 1
-                 }
+                   "merchantId" => relay_id(:merchant, higher_item_merchant.id)
+                 },
+                 "first" => 1
                })
 
       assert best_offer_id == relay_id(:merchant_product, higher_item_offer.id)
@@ -1115,7 +1130,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
   defp merchants_query do
     """
-    query Merchants($first: Int, $after: String) {
+    query Merchants($first: Int!, $after: String) {
       merchants(first: $first, after: $after) {
         edges {
           cursor
@@ -1138,8 +1153,12 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
   defp merchant_products_query do
     """
-    query MerchantProducts($input: MerchantProductsInput!) {
-      merchantProducts(input: $input) {
+    query MerchantProducts(
+      $input: MerchantProductsInput!
+      $first: Int!
+      $after: String
+    ) {
+      merchantProducts(input: $input, first: $first, after: $after) {
         edges {
           cursor
           node {
@@ -1194,12 +1213,13 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     """
     query MerchantProductPricing(
       $input: MerchantProductsInput!
-      $historyFirst: Int
+      $first: Int!
+      $historyFirst: Int!
       $historyAfter: String
       $from: DateTime
       $to: DateTime
     ) {
-      merchantProducts(input: $input) {
+      merchantProducts(input: $input, first: $first) {
         edges {
           node {
             id
@@ -1235,9 +1255,10 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     """
     query MerchantProductActiveCoupons(
       $input: MerchantProductsInput!
+      $first: Int!
       $couponFirst: Int!
     ) {
-      merchantProducts(input: $input) {
+      merchantProducts(input: $input, first: $first) {
         edges {
           node {
             id
@@ -1285,10 +1306,11 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
     """
     query MerchantProductActiveCouponsWithAt(
       $input: MerchantProductsInput!
+      $first: Int!
       $couponFirst: Int!
       $at: DateTime!
     ) {
-      merchantProducts(input: $input) {
+      merchantProducts(input: $input, first: $first) {
         edges {
           node {
             activeCoupons(first: $couponFirst, at: $at) {
@@ -1307,8 +1329,11 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
   defp merchant_products_with_nested_fields_query do
     """
-    query MerchantProductsWithNestedFields($input: MerchantProductsInput!) {
-      merchantProducts(input: $input) {
+    query MerchantProductsWithNestedFields(
+      $input: MerchantProductsInput!
+      $first: Int!
+    ) {
+      merchantProducts(input: $input, first: $first) {
         edges {
           node {
             id
@@ -1333,7 +1358,11 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
 
   defp complete_offer_truth_query do
     """
-    query CompleteOfferTruth($slug: String!, $input: MerchantProductsInput!) {
+    query CompleteOfferTruth(
+      $slug: String!
+      $input: MerchantProductsInput!
+      $first: Int!
+    ) {
       product(slug: $slug) {
         offerTruth {
           offerCount
@@ -1362,7 +1391,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           }
         }
       }
-      merchantProducts(input: $input) {
+      merchantProducts(input: $input, first: $first) {
         edges {
           node {
             latestPrice {

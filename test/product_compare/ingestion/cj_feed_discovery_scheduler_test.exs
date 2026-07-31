@@ -14,6 +14,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       {:ok, report()}
     end
 
+    scheduler = controlled_scheduler(parent)
+
     pid =
       start_supervised!(
         {CJFeedDiscoveryScheduler,
@@ -25,11 +27,15 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
            interval_ms: 1_000,
            limit: 10,
            pages: 2,
-           runner: runner
+           runner: runner,
+           scheduler: scheduler
          ]}
       )
 
-    assert_receive {:run, opts}, 250
+    assert_receive {:scheduled, ^pid, :run_discovery, 0}
+    send(pid, :run_discovery)
+    :sys.get_state(pid)
+    assert_receive {:run, opts}
 
     assert opts == [
              advertiser_country: "CA",
@@ -39,7 +45,8 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
              schedule_window: "2026-07-20T19:00:00Z"
            ]
 
-    refute_receive {:run, _opts}, 50
+    assert_receive {:scheduled, ^pid, :run_discovery, 1_000}
+    refute_received {:run, _opts}
 
     GenServer.stop(pid)
   end
@@ -201,7 +208,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
           )
         )
 
-      assert_receive {:run, ^invalid_cursor, opts}, 250
+      assert_receive {:run, ^invalid_cursor, opts}, 1_000
       assert opts[:cursor] == nil
 
       GenServer.stop(pid)
@@ -400,5 +407,12 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       feeds_fetched: 1,
       pages_fetched: 1
     }
+  end
+
+  defp controlled_scheduler(parent) do
+    fn recipient, message, delay_ms ->
+      send(parent, {:scheduled, recipient, message, delay_ms})
+      make_ref()
+    end
   end
 end

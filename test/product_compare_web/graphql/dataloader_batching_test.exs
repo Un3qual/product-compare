@@ -1,6 +1,8 @@
 defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.{
@@ -85,9 +87,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
             "firstSlug" => first_product.slug,
             "secondSlug" => second_product.slug,
             "input" => %{
-              "productId" => relay_id(:product, first_product.id),
-              "first" => 10
-            }
+              "productId" => relay_id(:product, first_product.id)
+            },
+            "offerFirst" => 10
           })
         end)
 
@@ -967,9 +969,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         "input" => %{
           "productId" => relay_id(:product, product.id),
           "merchantId" => relay_id(:merchant, merchant.id),
-          "activeOnly" => true,
-          "first" => 1
-        }
+          "activeOnly" => true
+        },
+        "first" => 1
       }
 
       {two_response, two_queries} =
@@ -1064,23 +1066,19 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         })
 
       variables = %{
-        "productFirst" => %{"productId" => relay_id(:product, first_product.id), "first" => 1},
+        "first" => 1,
+        "nextAfter" => cursor_for(0),
+        "productFirst" => %{"productId" => relay_id(:product, first_product.id)},
         "merchantFiltered" => %{
           "productId" => relay_id(:product, first_product.id),
-          "merchantId" => relay_id(:merchant, second_merchant.id),
-          "first" => 1
+          "merchantId" => relay_id(:merchant, second_merchant.id)
         },
         "activeOnly" => %{
           "productId" => relay_id(:product, first_product.id),
-          "activeOnly" => true,
-          "first" => 1
+          "activeOnly" => true
         },
-        "otherProduct" => %{"productId" => relay_id(:product, second_product.id), "first" => 1},
-        "productNext" => %{
-          "productId" => relay_id(:product, first_product.id),
-          "first" => 1,
-          "after" => cursor_for(0)
-        }
+        "otherProduct" => %{"productId" => relay_id(:product, second_product.id)},
+        "productNext" => %{"productId" => relay_id(:product, first_product.id)}
       }
 
       {response, queries} =
@@ -1482,6 +1480,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       $firstSlug: String!
       $secondSlug: String!
       $input: MerchantProductsInput!
+      $offerFirst: Int!
     ) {
       firstProduct: product(slug: $firstSlug) {
         id
@@ -1497,7 +1496,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         }
       }
 
-      merchantProducts(input: $input) {
+      merchantProducts(input: $input, first: $offerFirst) {
         edges {
           node {
             id
@@ -1728,7 +1727,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     selections =
       Enum.map_join(1..alias_count, "\n", fn index ->
         """
-        merchantProducts#{index}: merchantProducts(input: $input) {
+        merchantProducts#{index}: merchantProducts(input: $input, first: $first) {
           edges {
             cursor
             node {
@@ -1777,7 +1776,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end)
 
     """
-    query OfferDiscoveryAliases($input: MerchantProductsInput!) {
+    query OfferDiscoveryAliases($input: MerchantProductsInput!, $first: Int!) {
       #{selections}
     }
     """
@@ -1791,28 +1790,30 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       $activeOnly: MerchantProductsInput!
       $otherProduct: MerchantProductsInput!
       $productNext: MerchantProductsInput!
+      $first: Int!
+      $nextAfter: String!
     ) {
-      productFirst: merchantProducts(input: $productFirst) {
+      productFirst: merchantProducts(input: $productFirst, first: $first) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
-      productFirstDuplicate: merchantProducts(input: $productFirst) {
+      productFirstDuplicate: merchantProducts(input: $productFirst, first: $first) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
-      merchantFiltered: merchantProducts(input: $merchantFiltered) {
+      merchantFiltered: merchantProducts(input: $merchantFiltered, first: $first) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
-      activeOnly: merchantProducts(input: $activeOnly) {
+      activeOnly: merchantProducts(input: $activeOnly, first: $first) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
-      otherProduct: merchantProducts(input: $otherProduct) {
+      otherProduct: merchantProducts(input: $otherProduct, first: $first) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }
-      productNext: merchantProducts(input: $productNext) {
+      productNext: merchantProducts(input: $productNext, first: $first, after: $nextAfter) {
         edges { cursor node { id merchantId productId isActive } }
         pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
       }

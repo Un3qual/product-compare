@@ -210,8 +210,10 @@ function buildRevenueSummaryLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/commerce/revenue",
+    url: new URL(request.url)
+  };
 }
 
 function revenueSummaryQueryDescriptor(variables: {

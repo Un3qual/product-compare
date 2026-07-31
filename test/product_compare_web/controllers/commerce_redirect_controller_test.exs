@@ -74,6 +74,12 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
       affiliate_network = affiliate_network_fixture(%{name: "Impact"})
 
+      {:ok, _affiliate_program} =
+        Affiliate.upsert_program(%{
+          affiliate_network_id: affiliate_network.id,
+          merchant_id: merchant_product.merchant_id
+        })
+
       {:ok, _affiliate_link} =
         Affiliate.upsert_link(%{
           merchant_product_id: merchant_product.id,
@@ -293,7 +299,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
           %{
             merchant_id: merchant.id,
             destination_url: destination_url,
-            link_type: "affiliate",
+            link_type: "non_affiliate",
             inserted_at: now,
             updated_at: now
           }

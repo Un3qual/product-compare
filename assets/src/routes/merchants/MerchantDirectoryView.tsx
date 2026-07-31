@@ -6,6 +6,7 @@ import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { SectionHeading } from "../../ui/components/layout/SectionHeading";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { getMerchantDirectoryViewData } from "./merchant-directory-view-data";
@@ -115,11 +116,15 @@ export function MerchantDirectoryControls({
     <form action={formAction} method="get" {...props(styles.controls)}>
       <label>
         Page size
-        <select key={pageSize} name="first" defaultValue={String(pageSize)}>
-          <option value="20">20</option>
-          <option value="35">35</option>
-          <option value="50">50</option>
-        </select>
+        <Select
+          key={pageSize}
+          name="first"
+          defaultValue={String(pageSize)}
+          options={[20, 35, 50].map((size) => ({
+            label: String(size),
+            value: String(size)
+          }))}
+        />
       </label>
       <Button type="submit">Apply</Button>
     </form>

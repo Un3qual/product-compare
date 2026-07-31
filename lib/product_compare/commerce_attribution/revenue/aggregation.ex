@@ -5,6 +5,8 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   alias ProductCompare.CommerceAttribution.Revenue.Filters
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
@@ -33,7 +35,9 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     CommerceClickSession
     |> from(as: :session)
     |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
+    |> maybe_join_click_link_network(filters)
     |> maybe_join_click_conversions(filters)
+    |> maybe_join_click_conversion_network(filters)
     |> maybe_join_click_session_merchant_product(filters)
     |> maybe_join_click_conversion_merchant_product(filters)
     |> maybe_where_click_merchant(filters.merchant_id)
@@ -56,6 +60,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
       as: :merchant_product,
       on: merchant_product.id == conversion.merchant_product_id
     )
+    |> maybe_join_conversion_network(filters.network)
     |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
     |> maybe_where_conversion_merchant(filters.merchant_id)
     |> maybe_where_conversion_product(filters.product_id)
@@ -92,6 +97,29 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     join(query, :left, [session: session], conversion in CommerceConversion,
       as: :conversion,
       on: conversion.click_session_id == session.id
+    )
+  end
+
+  defp maybe_join_click_link_network(query, %{network: nil}), do: query
+
+  defp maybe_join_click_link_network(query, _filters) do
+    query
+    |> join(:left, [link: link], program in AffiliateProgram,
+      as: :link_program,
+      on: program.id == link.affiliate_program_id
+    )
+    |> join(:left, [link_program: program], network in AffiliateNetwork,
+      as: :link_network,
+      on: network.id == program.affiliate_network_id
+    )
+  end
+
+  defp maybe_join_click_conversion_network(query, %{network: nil}), do: query
+
+  defp maybe_join_click_conversion_network(query, _filters) do
+    join(query, :left, [conversion: conversion], network in AffiliateNetwork,
+      as: :conversion_network,
+      on: network.id == conversion.affiliate_network_id
     )
   end
 
@@ -135,8 +163,19 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   defp maybe_where_conversion_network(query, nil), do: query
 
-  defp maybe_where_conversion_network(query, network),
-    do: where(query, [conversion: conversion], conversion.source_network == ^network)
+  defp maybe_where_conversion_network(query, network) do
+    code = Atom.to_string(network)
+    where(query, [conversion_network: network], network.code == ^code)
+  end
+
+  defp maybe_join_conversion_network(query, nil), do: query
+
+  defp maybe_join_conversion_network(query, _network) do
+    join(query, :inner, [conversion: conversion], network in AffiliateNetwork,
+      as: :conversion_network,
+      on: network.id == conversion.affiliate_network_id
+    )
+  end
 
   defp maybe_where_conversion_currency(query, nil), do: query
 
@@ -192,10 +231,12 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
   defp maybe_where_click_network(query, nil), do: query
 
   defp maybe_where_click_network(query, network) do
+    code = Atom.to_string(network)
+
     where(
       query,
-      [link: link, conversion: conversion],
-      link.network == ^network or (is_nil(link.network) and conversion.source_network == ^network)
+      [link_network: link_network, conversion_network: conversion_network],
+      link_network.code == ^code or conversion_network.code == ^code
     )
   end
 

@@ -11,31 +11,30 @@ defmodule ProductCompare.Repo.Migrations.AddComparisonSnapshotSearchQualificatio
     flush()
 
     execute("""
-    UPDATE comparison_snapshots
+    UPDATE comparison_snapshots AS snapshot
     SET search_qualified = TRUE
-    WHERE CASE
-      WHEN jsonb_typeof(payload->'products') = 'array'
-        AND jsonb_array_length(payload->'products') BETWEEN 2 AND 3
-      THEN NOT EXISTS (
+    WHERE (
+      SELECT count(*)
+      FROM comparison_snapshot_products AS product
+      WHERE product.comparison_snapshot_id = snapshot.id
+    ) BETWEEN 2 AND 3
+      AND NOT EXISTS (
         SELECT 1
-        FROM jsonb_array_elements(payload->'products') AS product
-        WHERE jsonb_array_length(
-                CASE
-                  WHEN jsonb_typeof(product->'attributes') = 'array'
-                  THEN product->'attributes'
-                  ELSE '[]'::jsonb
-                END
-              ) = 0
-           OR jsonb_array_length(
-                CASE
-                  WHEN jsonb_typeof(product->'offers') = 'array'
-                  THEN product->'offers'
-                  ELSE '[]'::jsonb
-                END
-              ) = 0
+        FROM comparison_snapshot_products AS product
+        WHERE product.comparison_snapshot_id = snapshot.id
+          AND (
+            NOT EXISTS (
+              SELECT 1
+              FROM comparison_snapshot_attributes AS attribute
+              WHERE attribute.snapshot_product_id = product.id
+            )
+            OR NOT EXISTS (
+              SELECT 1
+              FROM comparison_snapshot_offers AS offer
+              WHERE offer.snapshot_product_id = product.id
+            )
+          )
       )
-      ELSE FALSE
-    END
     """)
 
     drop_if_exists index(:comparison_snapshots, [:inserted_at, :id], name: @index_name)

@@ -45,18 +45,35 @@ defmodule ProductCompare.Discussions.Moderation do
           {:ok, ProductReview.t() | ProductThread.t() | ThreadPost.t()}
           | {:error, :forbidden | :not_found | :invalid_lifecycle | Ecto.Changeset.t()}
   def moderate(operator_id, type, entropy_id, status, note) do
-    with %User{is_operator: true} <- Repo.get(User, operator_id) do
-      moderate_record(
-        type,
-        entropy_id,
-        status,
-        operator_id,
-        note,
-        DateTime.utc_now() |> DateTime.truncate(:microsecond)
-      )
-    else
-      %User{} -> {:error, :forbidden}
-      nil -> {:error, :not_found}
+    transaction_result(fn ->
+      operator =
+        Repo.one(
+          from user in User,
+            where: user.id == ^operator_id,
+            lock: "FOR UPDATE"
+        )
+
+      case operator do
+        %User{is_operator: true} ->
+          moderate_record(
+            type,
+            entropy_id,
+            status,
+            operator_id,
+            note,
+            DateTime.utc_now() |> DateTime.truncate(:microsecond)
+          )
+
+        %User{} ->
+          Repo.rollback(:forbidden)
+
+        nil ->
+          Repo.rollback(:not_found)
+      end
+    end)
+    |> case do
+      {:ok, record} -> {:ok, record}
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -80,36 +97,32 @@ defmodule ProductCompare.Discussions.Moderation do
     do: record_by_entropy(ThreadPost, entropy_id)
 
   defp moderate_record(:answer, entropy_id, status, moderator_id, note, now) do
-    transaction_result(fn ->
-      with_locked_answer(entropy_id, fn answer, question ->
-        ensure_moderatable!(answer)
+    with_locked_answer(entropy_id, fn answer, question ->
+      ensure_moderatable!(answer)
 
-        updated_answer =
-          answer
-          |> moderation_changeset(status, moderator_id, note, now)
-          |> update_or_rollback()
+      updated_answer =
+        answer
+        |> moderation_changeset(status, moderator_id, note, now)
+        |> update_or_rollback()
 
-        if status != :published and question.accepted_post_id == answer.id do
-          question
-          |> Ecto.Changeset.change(accepted_post_id: nil)
-          |> update_or_rollback()
-        end
+      if status != :published and question.accepted_post_id == answer.id do
+        question
+        |> Ecto.Changeset.change(accepted_post_id: nil)
+        |> update_or_rollback()
+      end
 
-        updated_answer
-      end)
+      updated_answer
     end)
   end
 
   defp moderate_record(type, entropy_id, status, moderator_id, note, now)
        when type in [:review, :question] do
-    transaction_result(fn ->
-      record = locked_content_or_rollback!(type, entropy_id)
-      ensure_moderatable!(record)
+    record = locked_content_or_rollback!(type, entropy_id)
+    ensure_moderatable!(record)
 
-      record
-      |> moderation_changeset(status, moderator_id, note, now)
-      |> update_or_rollback()
-    end)
+    record
+    |> moderation_changeset(status, moderator_id, note, now)
+    |> update_or_rollback()
   end
 
   @doc false

@@ -1,11 +1,8 @@
 defmodule ProductCompare.Specs.Claims.Imports do
   @moduledoc false
 
-  import Ecto.Query
-
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
-  alias ProductCompare.Specs.Claims.Moderation
   alias ProductCompare.Specs.TypedValues
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.ClaimEvidence
@@ -28,7 +25,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
          :ok <- ensure_observation_type(attribute, observation),
          {:ok, typed_value} <- observation_typed_value(attribute, observation),
          {:ok, normalized_value} <- TypedValues.normalize(attribute, typed_value) do
-      accepted = auto_accept_import?(product_id, attribute, provider, observation.confidence)
+      auto_accept? = auto_accept_import?(attribute, provider, observation.confidence)
       fingerprint = claim_fingerprint(product_id, attribute.id, artifact_id, normalized_value)
 
       attrs =
@@ -37,7 +34,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
           product_id: product_id,
           attribute_id: attribute.id,
           source_type: :import,
-          status: if(accepted, do: :accepted, else: :proposed),
+          status: :proposed,
           confidence: observation.confidence,
           fingerprint: fingerprint
         })
@@ -45,7 +42,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
       Repo.transaction(fn ->
         with {:ok, claim, replayed} <- insert_or_fetch_imported_claim(attrs, fingerprint),
              :ok <- insert_import_evidence(claim, artifact_id, observation.evidence_excerpt),
-             {:ok, claim} <- maybe_select_imported_claim(claim, accepted) do
+             {:ok, claim} <- maybe_auto_accept_imported_claim(claim, auto_accept?, replayed) do
           %{claim: claim, accepted: claim.status == :accepted, replayed: replayed}
         else
           {:error, reason} -> Repo.rollback(reason)
@@ -112,7 +109,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
 
   defp observation_typed_value(_attribute, _observation), do: {:error, :invalid_typed_value}
 
-  defp auto_accept_import?(product_id, attribute, provider, confidence) do
+  defp auto_accept_import?(attribute, provider, confidence) do
     configured_codes =
       :product_compare
       |> Application.get_env(:ingestion_auto_accept_attributes, %{})
@@ -121,11 +118,7 @@ defmodule ProductCompare.Specs.Claims.Imports do
     confidence_high_enough? =
       match?(%Decimal{}, confidence) and Decimal.compare(confidence, Decimal.new("0.90")) != :lt
 
-    attribute.code in configured_codes and confidence_high_enough? and
-      not Repo.exists?(
-        from current in ProductAttributeCurrent,
-          where: current.product_id == ^product_id and current.attribute_id == ^attribute.id
-      )
+    attribute.code in configured_codes and confidence_high_enough?
   end
 
   defp claim_fingerprint(product_id, attribute_id, artifact_id, normalized_value) do
@@ -187,12 +180,32 @@ defmodule ProductCompare.Specs.Claims.Imports do
   defp truncate_excerpt(value) when is_binary(value), do: String.slice(value, 0, 500)
   defp truncate_excerpt(_value), do: nil
 
-  defp maybe_select_imported_claim(%ProductAttributeClaim{status: :accepted} = claim, true) do
-    case Moderation.select_current(claim.product_id, claim.attribute_id, claim.id, nil) do
-      {:ok, _current} -> {:ok, claim}
-      {:error, reason} -> {:error, reason}
+  defp maybe_auto_accept_imported_claim(claim, true, false) do
+    %ProductAttributeCurrent{}
+    |> ProductAttributeCurrent.changeset(%{
+      product_id: claim.product_id,
+      attribute_id: claim.attribute_id,
+      claim_id: claim.id,
+      selected_by: nil
+    })
+    |> Repo.insert(
+      on_conflict: :nothing,
+      conflict_target: [:product_id, :attribute_id],
+      returning: true
+    )
+    |> case do
+      {:ok, %ProductAttributeCurrent{id: nil}} ->
+        {:ok, claim}
+
+      {:ok, %ProductAttributeCurrent{}} ->
+        claim
+        |> ProductAttributeClaim.changeset(%{status: :accepted})
+        |> Repo.update()
+
+      {:error, reason} ->
+        {:error, reason}
     end
   end
 
-  defp maybe_select_imported_claim(claim, _accepted), do: {:ok, claim}
+  defp maybe_auto_accept_imported_claim(claim, _auto_accept?, _replayed), do: {:ok, claim}
 end

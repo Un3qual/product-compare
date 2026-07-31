@@ -3,6 +3,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   alias ProductCompare.Ingestion.CJPrograms
   alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
+  alias ProductCompareSchemas.Reference.CurrencyCode
 
   @credential_requirements [
     {"CJ_API_TOKEN", :api_token},
@@ -49,6 +50,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
     opts
     |> Keyword.delete(:provider_feed_id)
     |> Keyword.delete(:stage)
+    |> Keyword.put(:currency, normalize_currency!(Keyword.get(opts, :currency, "USD")))
     |> Keyword.put(:provider_feed_ids, normalize_provider_feed_ids(opts))
     |> Keyword.put(:program_stages, normalize_program_stages!(program_stages))
   end
@@ -88,6 +90,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
 
   defp normalize_program_stages!(values) do
     pursued_stages = CJPrograms.pursued_stages()
+    pursued_stage_by_name = Map.new(pursued_stages, &{Atom.to_string(&1), &1})
 
     stages =
       values
@@ -98,13 +101,18 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       |> Enum.map(&String.downcase/1)
       |> Enum.uniq()
 
-    case Enum.find(stages, &(&1 not in pursued_stages)) do
+    case Enum.find(stages, &(not Map.has_key?(pursued_stage_by_name, &1))) do
       nil ->
-        if(stages == [], do: pursued_stages, else: stages)
+        if stages == [] do
+          pursued_stages
+        else
+          Enum.map(stages, &Map.fetch!(pursued_stage_by_name, &1))
+        end
 
       invalid_stage ->
         Mix.raise(
-          "invalid --stage: #{inspect(invalid_stage)}; expected one of #{Enum.join(pursued_stages, ", ")}"
+          "invalid --stage: #{inspect(invalid_stage)}; expected one of " <>
+            Enum.map_join(pursued_stages, ", ", &Atom.to_string/1)
         )
     end
   end
@@ -176,6 +184,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImport.Options do
       values -> values
     end
     |> maybe_uniq_ids()
+  end
+
+  defp normalize_currency!(value) do
+    case CurrencyCode.cast(value) do
+      {:ok, currency} -> currency
+      :error -> Mix.raise("unsupported CJ import currency: #{inspect(value)}")
+    end
   end
 
   defp maybe_uniq_ids(nil), do: nil

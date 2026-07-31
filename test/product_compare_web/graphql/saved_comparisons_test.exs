@@ -5,7 +5,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
-  alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.Catalog.SavedComparisons
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
 
   describe "/api/graphql saved comparisons" do
@@ -117,14 +117,14 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
               %{
                 edges: [%{cursor: cursor, node: first_node}],
                 page_info: %{has_next_page: true, has_previous_page: false}
-              }} = CatalogResolver.my_saved_comparison_sets(nil, %{first: 1}, resolution)
+              }} = SavedComparisons.my_saved_comparison_sets(nil, %{first: 1}, resolution)
 
       assert {:ok,
               %{
                 edges: [%{node: second_node}],
                 page_info: %{has_next_page: false, has_previous_page: true}
               }} =
-               CatalogResolver.my_saved_comparison_sets(
+               SavedComparisons.my_saved_comparison_sets(
                  nil,
                  %{first: 1, after: cursor},
                  resolution
@@ -305,7 +305,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
 
   defp my_saved_comparison_sets_query do
     """
-    query MySavedComparisonSets($first: Int) {
+    query MySavedComparisonSets($first: Int! = 50) {
       mySavedComparisonSets(first: $first) {
         edges {
           node {

@@ -9,7 +9,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
   alias ProductCompare.Fixtures.TaxonomyFixtures
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy
-  alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.Catalog.Discovery
 
   describe "productFilterMetadata" do
     test "returns display-safe filter metadata with Relay IDs and selected state", %{conn: conn} do
@@ -445,7 +445,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogFilterMetadataTest do
       })
 
       assert {:ok, %{result_count: 1, type_options: type_options}} =
-               CatalogResolver.product_filter_metadata(
+               Discovery.product_filter_metadata(
                  nil,
                  %{filters: %{primary_type_taxon_id: relay_id(:taxon, monitor_taxon.id)}},
                  %{}

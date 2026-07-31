@@ -3,8 +3,6 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
-  alias ProductCompare.Accounts
-  alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
   alias ProductCompare.Pricing
   alias ProductCompare.Specs
@@ -17,7 +15,9 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Specs.SourceArtifact
 
-  @public_types [
+  alias ProductCompareWeb.GraphQL.Loader.RootSources
+
+  @public_integer_types [
     :product,
     :brand,
     :merchant,
@@ -25,8 +25,24 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     :price_point,
     :source_artifact
   ]
-  @operator_types [:affiliate_network, :affiliate_program, :affiliate_link, :coupon]
-  @owner_scoped_types [:saved_comparison_set, :api_token]
+  @community_uuid_types [:product_review, :product_question, :product_answer]
+  @operator_integer_types [
+    :affiliate_network,
+    :affiliate_program,
+    :affiliate_link,
+    :coupon,
+    :merchant_feed_candidate
+  ]
+  @operator_uuid_types [:cj_program]
+  @owner_uuid_types [
+    :saved_comparison_set,
+    :api_token,
+    :comparison_snapshot,
+    :price_watch,
+    :alert_event
+  ]
+  @owner_integer_types [:specification_correction]
+  @self_uuid_types [:user]
 
   @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, term() | nil}
@@ -39,15 +55,24 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     end
   end
 
+  @spec relay_node(%{type: atom(), id: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, term() | nil}
+          | {:error, String.t() | GraphQLErrors.top_level_error()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def relay_node(%{type: type, id: id}, resolution) do
+    node(nil, %{id: GlobalId.encode(type, id)}, resolution)
+  end
+
   defp decode_node_id(id) do
     GlobalId.decode_typed_local_id(
       id,
-      @public_types ++ @operator_types,
-      @owner_scoped_types
+      @public_integer_types ++ @operator_integer_types ++ @owner_integer_types,
+      @community_uuid_types ++ @operator_uuid_types ++ @owner_uuid_types ++ @self_uuid_types
     )
   end
 
-  defp fetch_node(type, local_id, %{context: %{loader: loader}}) when type in @public_types do
+  defp fetch_node(type, local_id, %{context: %{loader: loader}})
+       when type in @public_integer_types do
     {source, schema} = public_batch(type)
     batch = {:one, schema}
     item = [id: local_id]
@@ -59,19 +84,60 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     end)
   end
 
-  defp fetch_node(type, local_id, _resolution) when type in @public_types do
+  defp fetch_node(type, local_id, _resolution) when type in @public_integer_types do
     type
     |> fetch_public_node(local_id)
     |> node_result()
   end
 
-  defp fetch_node(type, local_id, resolution) when type in @operator_types do
+  defp fetch_node(type, local_id, resolution)
+       when type in @community_uuid_types do
+    viewer_id = current_user_id(resolution)
+
+    fetch_authorized_node(
+      {:viewer, type, viewer_id},
+      local_id,
+      resolution
+    )
+  end
+
+  defp fetch_node(type, local_id, resolution)
+       when type in @operator_integer_types or type in @operator_uuid_types do
     fetch_operator_node(type, local_id, resolution)
   end
 
-  defp fetch_node(type, local_id, resolution) when type in @owner_scoped_types do
+  defp fetch_node(:specification_correction, local_id, resolution) do
+    case Authorization.require_operator(resolution) do
+      {:ok, %User{id: operator_id}} ->
+        fetch_authorized_node(
+          {:operator, :specification_correction, operator_id},
+          local_id,
+          resolution
+        )
+
+      {:error, :forbidden} ->
+        fetch_owner_scoped_node(:specification_correction, local_id, resolution)
+
+      {:error, :unauthenticated} ->
+        node_result(:not_found)
+    end
+  end
+
+  defp fetch_node(type, local_id, resolution) when type in @owner_uuid_types do
     fetch_owner_scoped_node(type, local_id, resolution)
   end
+
+  defp fetch_node(
+         :user,
+         entropy_id,
+         %{
+           context: %{current_user: %User{id: user_id}}
+         } = resolution
+       ) do
+    fetch_authorized_node({:self, :user, user_id}, entropy_id, resolution)
+  end
+
+  defp fetch_node(:user, _entropy_id, _resolution), do: node_result(:not_found)
 
   defp public_batch(:product), do: {Catalog, Product}
   defp public_batch(:brand), do: {Catalog, Brand}
@@ -95,62 +161,52 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
       fetch_authorized_node(
         {:operator, type, operator_id},
         id,
-        resolution,
-        fn -> fetch_affiliate_node(type, id) end
+        resolution
       )
     else
       error -> node_result(error)
     end
   end
 
-  defp fetch_affiliate_node(:affiliate_network, id), do: Affiliate.get_affiliate_network(id)
-  defp fetch_affiliate_node(:affiliate_program, id), do: Affiliate.get_affiliate_program(id)
-  defp fetch_affiliate_node(:affiliate_link, id), do: Affiliate.get_affiliate_link(id)
-  defp fetch_affiliate_node(:coupon, id), do: Affiliate.get_coupon(id)
-
   defp fetch_owner_scoped_node(
          type,
-         entropy_id,
+         local_id,
          %{
-           context: %{current_user: %User{id: user_id} = user}
+           context: %{current_user: %User{id: user_id}}
          } = resolution
        )
-       when type in @owner_scoped_types do
+       when type in @owner_uuid_types or type in @owner_integer_types do
     fetch_authorized_node(
       {:owner, type, user_id},
-      entropy_id,
-      resolution,
-      fn -> fetch_owner_scoped_record(type, user, entropy_id) end
+      local_id,
+      resolution
     )
   end
 
-  defp fetch_owner_scoped_node(type, _entropy_id, _resolution)
-       when type in @owner_scoped_types,
+  defp fetch_owner_scoped_node(type, _local_id, _resolution)
+       when type in @owner_uuid_types or type in @owner_integer_types,
        do: node_result(:not_found)
 
-  defp fetch_owner_scoped_record(:saved_comparison_set, user, entropy_id) do
-    Catalog.get_saved_comparison_set_for_user(user, entropy_id)
-  end
-
-  defp fetch_owner_scoped_record(:api_token, user, token_entropy_id) do
-    Accounts.get_api_token_for_user(user, token_entropy_id)
-  end
-
-  defp fetch_authorized_node(batch, item, %{context: %{loader: loader}}, _fallback) do
+  defp fetch_authorized_node(batch, item, %{context: %{loader: loader}}) do
     source = Loader.authorized_node_source()
 
     loader
-    |> Dataloader.load(source, batch, item)
+    |> Loader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch, item)}
+      {:ok, Loader.get(loader, source, batch, item)}
     end)
   end
 
-  defp fetch_authorized_node(_batch, _item, _resolution, fallback) do
-    fallback.()
+  defp fetch_authorized_node(batch, item, _resolution) do
+    batch
+    |> RootSources.authorized_node_results([item])
+    |> Map.get(item)
     |> fetch_record()
     |> node_result()
   end
+
+  defp current_user_id(%{context: %{current_user: %User{id: user_id}}}), do: user_id
+  defp current_user_id(_resolution), do: nil
 
   defp node_result({:ok, record}), do: {:ok, record}
   defp node_result(:not_found), do: {:ok, nil}

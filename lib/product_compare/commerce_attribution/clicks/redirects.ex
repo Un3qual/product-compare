@@ -5,6 +5,8 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Redirects do
 
   alias ProductCompare.CommerceAttribution.Clicks.Destinations
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
+  alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
 
@@ -24,12 +26,16 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Redirects do
     Repo.one(
       from session in CommerceClickSession,
         join: link in assoc(session, :commerce_link),
+        left_join: program in AffiliateProgram,
+        on: program.id == link.affiliate_program_id,
+        left_join: network in AffiliateNetwork,
+        on: network.id == program.affiliate_network_id,
         where: session.click_id == ^click_id and link.is_active == true,
         select: %{
           click_id: session.click_id,
           destination_url: link.destination_url,
           link_type: link.link_type,
-          network: link.network
+          network: network.code
         },
         limit: 1
     )
@@ -38,7 +44,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Redirects do
   defp destination_url(%{
          destination_url: destination_url,
          link_type: :affiliate,
-         network: :impact,
+         network: "impact",
          click_id: click_id
        }) do
     Destinations.append_public_click_id(destination_url, click_id)

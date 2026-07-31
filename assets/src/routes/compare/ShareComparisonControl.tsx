@@ -1,12 +1,14 @@
 import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
 import type { OwnedComparisonSnapshotsQuery } from "../../__generated__/OwnedComparisonSnapshotsQuery.graphql";
-import type { PublishComparisonSnapshotMutation } from "../../__generated__/PublishComparisonSnapshotMutation.graphql";
-import type { RevokeComparisonSnapshotMutation } from "../../__generated__/RevokeComparisonSnapshotMutation.graphql";
+import type { ShareComparisonControlPublishComparisonSnapshotMutation } from "../../__generated__/ShareComparisonControlPublishComparisonSnapshotMutation.graphql";
+import type { ShareComparisonControlRevokeComparisonSnapshotMutation } from "../../__generated__/ShareComparisonControlRevokeComparisonSnapshotMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
+import { Checkbox } from "../../ui/primitives/Checkbox";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./loader";
@@ -15,8 +17,6 @@ import {
   type RecommendationProfile
 } from "./recommendation-route-data";
 import ownedComparisonSnapshotsQuery from "./queries/OwnedComparisonSnapshotsQuery";
-import publishComparisonSnapshotMutation from "./queries/PublishComparisonSnapshotMutation";
-import revokeComparisonSnapshotMutation from "./queries/RevokeComparisonSnapshotMutation";
 import {
   appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
@@ -33,6 +33,38 @@ import {
   type ComparisonSnapshotState,
   type PublishedComparisonSnapshot
 } from "./share-comparison-data";
+
+export const publishComparisonSnapshotMutation = graphql`
+  mutation ShareComparisonControlPublishComparisonSnapshotMutation($input: PublishComparisonSnapshotInput!) {
+    publishComparisonSnapshot(input: $input) {
+      snapshot {
+        id
+        title
+        searchIndexable
+        capturedAt
+      }
+      sharePath
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const revokeComparisonSnapshotMutation = graphql`
+  mutation ShareComparisonControlRevokeComparisonSnapshotMutation($snapshotId: ID!) {
+    revokeComparisonSnapshot(snapshotId: $snapshotId) {
+      revokedSnapshotId
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const SNAPSHOT_PAGE_SIZE = 20;
 
@@ -141,10 +173,10 @@ function SnapshotControlView({
       <form onSubmit={handlePublish} {...props(styles.form)}>
         <label htmlFor={titleId} {...props(styles.field)}>
           Optional title
-          <input id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+          <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
         </label>
         <label htmlFor={searchIndexableId} {...props(styles.field)}>
-          <span><input id={searchIndexableId} name="searchIndexable" type="checkbox" /> Allow search engines to discover this immutable snapshot</span>
+          <span><Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to discover this immutable snapshot</span>
           <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
         </label>
         <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>
@@ -204,7 +236,7 @@ function useSnapshotPublisher(
   onPublished: (snapshot: PublishedComparisonSnapshot) => void,
   onMessage: (message: string | null) => void
 ) {
-  const [commitPublish, publishing] = useMutation<PublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
+  const [commitPublish, publishing] = useMutation<ShareComparisonControlPublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
 
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -241,7 +273,7 @@ function useSnapshotPublisher(
 function useSnapshotRevoker(
   onRevoked: (snapshot: PublishedComparisonSnapshot) => void
 ) {
-  const [commitRevoke] = useMutation<RevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+  const [commitRevoke] = useMutation<ShareComparisonControlRevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
   const pendingSnapshotIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [pendingSnapshotIds, setPendingSnapshotIds] = useState<ReadonlySet<string>>(
     pendingSnapshotIdsRef.current

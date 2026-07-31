@@ -177,6 +177,22 @@ defmodule ProductCompare.IngestionTest do
   end
 
   describe "import run observability" do
+    test "returns source validation errors before starting a run" do
+      required_attrs = %{
+        provider: "cj",
+        surface: "shoppingProducts",
+        query: %{"keywords" => ["shoe"]},
+        started_at: ~U[2026-06-04 19:10:00Z]
+      }
+
+      for attrs <- [required_attrs, Map.put(required_attrs, :source_id, nil)] do
+        assert {:error, changeset} = Ingestion.start_import_run(attrs)
+        assert errors_on(changeset).source_id == ["can't be blank"]
+      end
+
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+    end
+
     test "starts and completes a source-scoped import run" do
       source = source_fixture()
       started_at = ~U[2026-06-04 19:10:00Z]
@@ -197,7 +213,7 @@ defmodule ProductCompare.IngestionTest do
       assert run.source_id == source.id
       assert run.provider == "cj"
       assert run.surface == "shoppingProducts"
-      assert run.status == "running"
+      assert run.status == :running
       assert run.query == %{"keywords" => ["shoe"], "limit" => 2}
       assert run.cursor_start == 0
       assert run.page_size == 2
@@ -216,7 +232,7 @@ defmodule ProductCompare.IngestionTest do
                  finished_at: finished_at
                })
 
-      assert completed.status == "succeeded"
+      assert completed.status == :succeeded
       assert completed.cursor_end == 4
       assert completed.pages_fetched == 2
       assert completed.records_fetched == 4
@@ -267,6 +283,21 @@ defmodule ProductCompare.IngestionTest do
       assert is_integer(candidate.cj_program_id)
       assert DateTime.compare(candidate.provider_last_updated_at, provider_last_updated_at) == :eq
       assert DateTime.compare(candidate.last_seen_at, last_seen_at) == :eq
+    end
+
+    test "rejects an unsupported explicit provider instead of inheriting source ownership" do
+      source = source_fixture(%{provider: "cj"})
+
+      assert {:error, changeset} =
+               Ingestion.upsert_merchant_feed_candidate(source, %{
+                 advertiser_id: "adv-unsupported-provider",
+                 provider: "rakuten",
+                 provider_feed_id: "feed-unsupported-provider",
+                 source_feed_type: "SHOPPING"
+               })
+
+      assert "is not a supported integration provider" in errors_on(changeset).provider
+      assert Repo.aggregate(MerchantFeedCandidate, :count, :id) == 0
     end
 
     test "replays candidates idempotently, preserves program link, and lists them by source" do
@@ -564,10 +595,10 @@ defmodule ProductCompare.IngestionTest do
 
       assert %ProductIdentifier{
                product_id: product_id,
-               scheme: "gtin",
+               scheme: :gtin,
                normalized_value: "00012345678905",
                display_value: "00012345678905",
-               verification_status: "validated",
+               verification_status: :validated,
                source_artifact_id: source_artifact_id
              } = Repo.one!(ProductIdentifier)
 
@@ -1035,6 +1066,36 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1
       assert Repo.aggregate(ExternalProduct, :count, :id) == 1
       assert Repo.aggregate(MerchantProduct, :count, :id) == 1
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
+    test "does not reinterpret existing merchant product history in a new currency" do
+      source = source_fixture()
+      listing_url = "https://trail.example/products/currency-stable"
+
+      original_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-CURRENCY-STABLE",
+          listing_url: listing_url,
+          currency: "USD"
+        })
+
+      changed_currency_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-CURRENCY-STABLE",
+          listing_url: listing_url,
+          currency: "EUR",
+          observed_at: ~U[2026-05-24 15:00:00Z]
+        })
+
+      assert {:ok, original} =
+               Ingestion.persist_normalized_listing(source, original_listing)
+
+      assert {:error, {:merchant_product_currency_conflict, merchant_product_id, "USD", "EUR"}} =
+               Ingestion.persist_normalized_listing(source, changed_currency_listing)
+
+      assert merchant_product_id == original.merchant_product.id
+      assert Repo.get!(MerchantProduct, merchant_product_id).currency == "USD"
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 

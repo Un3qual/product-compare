@@ -19,9 +19,9 @@ defmodule ProductCompareWeb.Resolvers.Catalog.Discovery do
     source = Loader.public_slug_source()
 
     loader
-    |> Dataloader.load(source, :product, slug)
+    |> Loader.load(source, :product, slug)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :product, slug)}
+      {:ok, Loader.get(loader, source, :product, slug)}
     end)
   end
 
@@ -39,9 +39,9 @@ defmodule ProductCompareWeb.Resolvers.Catalog.Discovery do
       source = Loader.comparison_source()
 
       loader
-      |> Dataloader.load(source, :products, slugs)
+      |> Loader.load(source, :products, slugs)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, :products, slugs)}
+        {:ok, Loader.get(loader, source, :products, slugs)}
       end)
     end
   end
@@ -64,9 +64,9 @@ defmodule ProductCompareWeb.Resolvers.Catalog.Discovery do
       batch_key = {:products, filters, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+        {:ok, Loader.get(loader, source, batch_key, :root)}
       end)
     end
   end
@@ -91,9 +91,9 @@ defmodule ProductCompareWeb.Resolvers.Catalog.Discovery do
       batch_key = {:product_filter_metadata, filters}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+        {:ok, Loader.get(loader, source, batch_key, :root)}
       end)
     end
   end

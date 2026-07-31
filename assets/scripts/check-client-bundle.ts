@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 interface ManifestChunk {
   dynamicImports?: string[];
@@ -14,8 +15,9 @@ interface ManifestChunk {
 
 type Manifest = Record<string, ManifestChunk>;
 
-const manifestPath = resolve(import.meta.dir, "../dist/.vite/manifest.json");
-const distPath = resolve(import.meta.dir, "../dist");
+const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
+const manifestPath = resolve(scriptDirectory, "../dist/.vite/manifest.json");
+const distPath = resolve(scriptDirectory, "../dist");
 
 // Set from the measured post-split closure (180,879 bytes gzip) with roughly
 // 10.6% headroom for ordinary Vite and dependency patch drift.
@@ -26,26 +28,26 @@ const requiredDynamicRoutes = [
   [
     "affiliate setup loader",
     "src/routes/affiliate/setup/loader.ts",
-    "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"
+    "src/routes/affiliate/setup/AffiliateSetupRoute.tsx",
   ],
   ["CJ programs screen", "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"],
   [
     "CJ programs loader",
     "src/routes/ingestion/cj-programs/loader.ts",
-    "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"
+    "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx",
   ],
   ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
   [
     "revenue loader",
     "src/routes/commerce/revenue/loader.ts",
-    "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"
+    "src/routes/commerce/revenue/RevenueSummaryRoute.tsx",
   ],
   ["API tokens screen", "src/routes/account/api-tokens/ApiTokensRoute.tsx"],
   [
     "API tokens loader",
     "src/routes/account/api-tokens/loader.ts",
-    "src/routes/account/api-tokens/ApiTokensRoute.tsx"
-  ]
+    "src/routes/account/api-tokens/ApiTokensRoute.tsx",
+  ],
 ] as const;
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Manifest;
@@ -54,7 +56,7 @@ const clientEntries = manifestEntries.filter(([, chunk]) => chunk.isEntry);
 
 if (clientEntries.length !== 1) {
   throw new Error(
-    `Expected exactly one client entry in ${manifestPath}, found ${clientEntries.length}.`
+    `Expected exactly one client entry in ${manifestPath}, found ${clientEntries.length}.`,
   );
 }
 
@@ -77,7 +79,7 @@ const failures: string[] = [];
 if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
   failures.push(
     `initial static JavaScript closure is ${initialGzipBytes.toLocaleString()} gzip bytes, ` +
-      `above the ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()}-byte budget`
+      `above the ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()}-byte budget`,
   );
 }
 
@@ -90,8 +92,8 @@ for (const [label, expectedSource, relatedScreenSource] of requiredDynamicRoutes
   }
 
   const [chunkKey, chunk] = match;
-  if (!chunk.isDynamicEntry) {
-    failures.push(`${label} route chunk ${chunk.file} is not marked as a dynamic entry`);
+  if (!chunk.isDynamicEntry && !entryDynamicImports.has(chunkKey)) {
+    failures.push(`${label} route chunk ${chunk.file} is not reachable through a dynamic import`);
   }
   if (initialClosure.has(chunkKey)) {
     failures.push(`${label} route chunk ${chunk.file} is in the initial static import closure`);
@@ -104,14 +106,14 @@ if (failures.length > 0) {
       "Client bundle contract failed:",
       ...failures.map((failure) => `- ${failure}`),
       `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript file(s).`,
-      "Build the client after moving every non-root route and loader behind direct React Router lazy imports."
-    ].join("\n")
+      "Build the client after moving every non-root route and loader behind direct React Router lazy imports.",
+    ].join("\n"),
   );
 }
 
 process.stdout.write(
   `Client bundle contract passed: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes ` +
-    `across ${initialJavaScriptFiles.length} initial JavaScript file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`
+    `across ${initialJavaScriptFiles.length} initial JavaScript file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
 );
 
 function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
@@ -140,22 +142,26 @@ function normalizeSource(source: string) {
 
 function findManifestEntry(expectedSource: string, relatedScreenSource?: string) {
   const directMatch = manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource
+    ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource,
   );
   if (directMatch || !relatedScreenSource) return directMatch;
 
-  // Rollup omits `src` when a directly imported loader is also shared with its
-  // screen. Associate that facade through the screen's static imports and the
-  // client entry's dynamic-import graph instead of relying on output hashes.
+  // Rolldown can omit `src` and `isDynamicEntry` when a directly imported
+  // loader is also shared with its screen. Associate that output chunk through
+  // both the screen's static imports and the client entry's dynamic-import
+  // graph instead of relying on output hashes.
   const screenMatch = manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === relatedScreenSource
+    ([key, chunk]) => normalizeSource(chunk.src ?? key) === relatedScreenSource,
   );
   if (!screenMatch) return undefined;
 
-  const loaderName = expectedSource.split("/").at(-1)?.replace(/\.[^.]+$/, "");
+  const loaderName = expectedSource
+    .split("/")
+    .at(-1)
+    ?.replace(/\.[^.]+$/, "");
   const candidates = (screenMatch[1].imports ?? []).filter((key) => {
     const chunk = manifest[key];
-    return chunk?.name === loaderName && chunk.isDynamicEntry && entryDynamicImports.has(key);
+    return chunk?.name === loaderName && entryDynamicImports.has(key);
   });
 
   return candidates.length === 1 ? ([candidates[0], manifest[candidates[0]]] as const) : undefined;

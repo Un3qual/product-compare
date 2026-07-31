@@ -56,8 +56,10 @@ defmodule ProductCompare.WorkQueue.Validator do
       rows = ready_rows(ready_section)
 
       errors =
-        ready_count_errors(rows) ++
+        terminal_status_errors(markdown) ++
+          ready_count_errors(rows) ++
           incomplete_row_errors(rows) ++
+          trailing_row_content_errors(rows) ++
           empty_state_errors(ready_section) ++
           additional_errors.(rows)
 
@@ -183,6 +185,14 @@ defmodule ProductCompare.WorkQueue.Validator do
     ["Ready Work requires at least #{@minimum_ready_rows} complete rows; found #{length(rows)}"]
   end
 
+  defp terminal_status_errors(markdown) do
+    ~r/^Status:[ \t]*(complete|done)[ \t]*$/m
+    |> Regex.scan(markdown, capture: :all_but_first)
+    |> List.flatten()
+    |> Enum.uniq()
+    |> Enum.map(&"live queue contains terminal work status `#{&1}`")
+  end
+
   defp incomplete_row_errors(rows) do
     rows
     |> Enum.with_index(1)
@@ -203,6 +213,28 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   defp field_content_errors(row, index) do
     scalar_field_errors(row, index) ++ list_field_errors(row, index)
+  end
+
+  defp trailing_row_content_errors(rows) do
+    rows
+    |> Enum.with_index(1)
+    |> Enum.filter(fn {row, _index} -> content_after_exit_condition?(row) end)
+    |> Enum.map(fn {_row, index} ->
+      "ready row #{index} contains content after its Exit condition"
+    end)
+  end
+
+  defp content_after_exit_condition?(row) do
+    case Regex.run(~r/^Exit condition:[^\r\n]*\r?\n(?<tail>.*)\z/ms, row, capture: :all_names) do
+      [tail] ->
+        case Regex.split(~r/\r?\n[ \t]*\r?\n/, "\n" <> tail, parts: 2) do
+          [_continuation, trailing] -> String.trim(trailing) != ""
+          [_continuation] -> false
+        end
+
+      _missing_exit_condition ->
+        false
+    end
   end
 
   defp scalar_field_errors(row, index) do

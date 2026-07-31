@@ -100,7 +100,7 @@ function CreateApiTokenForm({
       </div>
       <label>
         Expires at
-        <input
+        <TextField
           name="expiresAt"
           onChange={() => {
             if (expiresAtPresetInputRef.current) {

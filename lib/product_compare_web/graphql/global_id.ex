@@ -74,6 +74,10 @@ defmodule ProductCompareWeb.GraphQL.GlobalId do
     Base.encode64("#{type_name}:#{local_id}")
   end
 
+  @doc false
+  @spec fetch_entropy_id(%{required(:entropy_id) => term()}, Absinthe.Resolution.t()) :: term()
+  def fetch_entropy_id(%{entropy_id: entropy_id}, _resolution), do: entropy_id
+
   @spec encode_required(type(), String.t() | integer()) ::
           {:ok, String.t()} | {:error, String.t()}
   def encode_required(type, local_id) when is_integer(local_id) or is_binary(local_id) do

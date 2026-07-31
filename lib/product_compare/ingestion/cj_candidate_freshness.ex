@@ -86,7 +86,8 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
   defp bucket_counts(now, %{fresh_hours: fresh_hours, stale_hours: stale_hours}) do
     MerchantFeedCandidate
     |> join(:left, [feed], program in CJProgram, on: program.id == feed.cj_program_id)
-    |> where([feed], feed.provider == @provider)
+    |> join(:inner, [feed, _program], source in assoc(feed, :source))
+    |> where([_feed, _program, source], source.provider == @provider)
     |> select([feed, program], %{
       id: feed.id,
       bucket:
@@ -105,7 +106,7 @@ defmodule ProductCompare.Ingestion.CJCandidateFreshness do
           feed.last_seen_at,
           ^stale_hours
         ),
-      stage: fragment("COALESCE(?, 'unmatched')", program.stage)
+      stage: fragment("COALESCE(?::text, 'unmatched')", program.stage)
     })
     |> subquery()
     |> group_by([feed], [feed.bucket, feed.stage])

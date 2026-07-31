@@ -1,9 +1,7 @@
 import { useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
-import deleteSavedComparisonSetMutation, {
-  type DeleteSavedComparisonSetMutation
-} from "../../__generated__/DeleteSavedComparisonSetMutation.graphql";
+import { graphql, useMutation } from "react-relay";
+import type { SavedComparisonsRouteDeleteSavedComparisonSetMutation } from "../../__generated__/SavedComparisonsRouteDeleteSavedComparisonSetMutation.graphql";
 import savedComparisonsRouteQuery, {
   type SavedComparisonsRouteQuery
 } from "../../__generated__/SavedComparisonsRouteQuery.graphql";
@@ -37,6 +35,21 @@ import {
   type SavedComparisonSortMode
 } from "./saved-view-state";
 
+const deleteSavedComparisonSetMutation = graphql`
+  mutation SavedComparisonsRouteDeleteSavedComparisonSetMutation($savedComparisonSetId: ID!) {
+    deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
@@ -45,7 +58,7 @@ export function SavedComparisonsRoute() {
   const [filterText, setFilterText] = useState("");
   const [sortMode, setSortMode] = useState<SavedComparisonSortMode>("current");
   const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
-  const [commitDeleteSavedComparisonSet] = useMutation<DeleteSavedComparisonSetMutation>(
+  const [commitDeleteSavedComparisonSet] = useMutation<SavedComparisonsRouteDeleteSavedComparisonSetMutation>(
     deleteSavedComparisonSetMutation
   );
 

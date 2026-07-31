@@ -4,7 +4,9 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   alias ProductCompare.MixTasks.CliOptions
   alias ProductCompareSchemas.Ingestion.CJProgram
 
-  @allowed_stages CJProgram.stages() ++ ["all"]
+  @allowed_stage_by_name CJProgram.stages()
+                         |> Map.new(&{Atom.to_string(&1), &1})
+                         |> Map.put("all", :all)
   @default_limit 25
   @max_limit 100
   @default_max_age_hours 168
@@ -49,10 +51,10 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
     ]
   end
 
-  @spec query_stage(keyword()) :: String.t() | nil
+  @spec query_stage(keyword()) :: atom() | nil
   def query_stage(opts) do
     case Keyword.fetch!(opts, :stage) do
-      "all" -> nil
+      :all -> nil
       stage -> stage
     end
   end
@@ -68,18 +70,17 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjCandidates.Options do
   defp normalize_stage(stage, report) when is_binary(stage) do
     stage = stage |> String.trim() |> String.downcase()
 
-    if stage in @allowed_stages do
-      normalize_stage_for_report(stage, report)
-    else
-      Mix.raise("invalid program stage: #{stage}")
+    case Map.fetch(@allowed_stage_by_name, stage) do
+      {:ok, stage} -> normalize_stage_for_report(stage, report)
+      :error -> Mix.raise("invalid program stage: #{stage}")
     end
   end
 
-  defp normalize_stage(_stage, "fit-gaps"), do: "new"
-  defp normalize_stage(_stage, "application-cohort"), do: "selected"
-  defp normalize_stage(_stage, _report), do: "all"
+  defp normalize_stage(_stage, "fit-gaps"), do: :new
+  defp normalize_stage(_stage, "application-cohort"), do: :selected
+  defp normalize_stage(_stage, _report), do: :all
 
-  defp normalize_stage_for_report(_stage, "application-cohort"), do: "selected"
+  defp normalize_stage_for_report(_stage, "application-cohort"), do: :selected
   defp normalize_stage_for_report(stage, _report), do: stage
 
   defp normalize_format(nil), do: @default_format

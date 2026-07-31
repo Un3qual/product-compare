@@ -12,6 +12,7 @@ import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../../ui/primitives/Button";
+import { Select } from "../../../ui/primitives/Select";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { CJProgramList } from "./CJProgramList";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
@@ -106,24 +107,30 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
       ) : null}
       <label {...props(styles.field)}>
         <span {...props(styles.label)}>Stage</span>
-        <select defaultValue={stageValue} key={stageValue} name="stage">
-          <option value="">All stages</option>
-          {CJ_PROGRAM_STAGES.map(({ label, urlValue }) => (
-            <option key={urlValue} value={urlValue}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <Select
+          defaultValue={stageValue}
+          key={stageValue}
+          name="stage"
+          options={[
+            { label: "All stages", value: "" },
+            ...CJ_PROGRAM_STAGES.map(({ label, urlValue }) => ({
+              label,
+              value: urlValue
+            }))
+          ]}
+        />
       </label>
       <label {...props(styles.field)}>
         <span {...props(styles.label)}>Sort programs</span>
-        <select defaultValue={sortValue} key={sortValue} name="sort">
-          {CJ_PROGRAM_SORTS.map(({ label, urlValue }) => (
-            <option key={urlValue} value={urlValue}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <Select
+          defaultValue={sortValue}
+          key={sortValue}
+          name="sort"
+          options={CJ_PROGRAM_SORTS.map(({ label, urlValue }) => ({
+            label,
+            value: urlValue
+          }))}
+        />
       </label>
       <Button type="submit">Apply</Button>
     </form>

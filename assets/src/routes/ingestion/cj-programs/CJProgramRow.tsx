@@ -2,6 +2,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useRevalidator } from "react-router-dom";
 import {
+  graphql,
   useMutation,
   usePreloadedQuery,
   useQueryLoader,
@@ -12,8 +13,7 @@ import cjProgramFeedsQuery, {
   type CJProgramFeedsQuery
 } from "../../../__generated__/CJProgramFeedsQuery.graphql";
 import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
-import type { UpdateCJProgramMutation } from "../../../__generated__/UpdateCJProgramMutation.graphql";
-import updateCJProgramMutation from "../../../__generated__/UpdateCJProgramMutation.graphql";
+import type { CJProgramRowUpdateCJProgramMutation } from "../../../__generated__/CJProgramRowUpdateCJProgramMutation.graphql";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import {
   Collapsible,
@@ -21,6 +21,8 @@ import {
   CollapsibleTrigger
 } from "../../../ui/primitives/Collapsible";
 import { Button } from "../../../ui/primitives/Button";
+import { Select } from "../../../ui/primitives/Select";
+import { TextArea } from "../../../ui/primitives/TextArea";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
@@ -33,6 +35,18 @@ import {
 import { CJFeedRow } from "./CJFeedRow";
 
 type CJProgram = CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"];
+
+const updateCJProgramMutation = graphql`
+  mutation CJProgramRowUpdateCJProgramMutation($input: UpdateCjProgramInput!) {
+    updateCjProgram(input: $input) {
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   item: {
@@ -119,7 +133,7 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
   const [feedRetryToken, setFeedRetryToken] = useState(0);
   const hasLoadedFeeds = useRef(false);
   const revalidator = useRevalidator();
-  const [commitUpdate, isUpdateInFlight] = useMutation<UpdateCJProgramMutation>(
+  const [commitUpdate, isUpdateInFlight] = useMutation<CJProgramRowUpdateCJProgramMutation>(
     updateCJProgramMutation
   );
   const [feedQueryRef, loadFeedQuery, disposeFeedQuery] = useQueryLoader<CJProgramFeedsQuery>(
@@ -210,28 +224,26 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
       <div {...props(styles.controls)}>
         <label {...props(styles.field)}>
           <span {...props(styles.label)}>Stage for {programName}</span>
-          <select
+          <Select
             disabled={isUpdateInFlight || !stage}
-            onChange={(event) => {
-              const nextStage = event.currentTarget.value;
-
+            onValueChange={(nextStage) => {
               if (isCJProgramStage(nextStage)) {
                 setStage(nextStage);
               }
             }}
+            options={[
+              ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
+              ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({
+                label,
+                value
+              }))
+            ]}
             value={stage ?? ""}
-          >
-            {stage ? null : <option value="">Stage unavailable</option>}
-            {CJ_PROGRAM_STAGES.map(({ label, value }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label {...props(styles.field)}>
           <span {...props(styles.label)}>Note for {programName}</span>
-          <textarea
+          <TextArea
             disabled={isUpdateInFlight || !stage}
             onChange={(event) => setNote(event.currentTarget.value)}
             value={note}

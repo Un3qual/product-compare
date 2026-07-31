@@ -6,7 +6,7 @@ defmodule ProductCompareSchemas.Catalog.ProductMedia do
   schema "product_media" do
     field :entropy_id, Ecto.UUID
     field :url, :string
-    field :role, :string
+    field :role, Ecto.Enum, values: [:primary, :gallery]
     field :position, :integer, default: 0
     field :alt_text, :string
     field :observed_at, :utc_datetime_usec
@@ -30,7 +30,6 @@ defmodule ProductCompareSchemas.Catalog.ProductMedia do
       :observed_at
     ])
     |> validate_required([:product_id, :url, :role, :position, :observed_at])
-    |> validate_inclusion(:role, ["primary", "gallery"])
     |> validate_number(:position, greater_than_or_equal_to: 0)
     |> validate_length(:alt_text, max: 300)
     |> validate_change(:url, &validate_http_url/2)

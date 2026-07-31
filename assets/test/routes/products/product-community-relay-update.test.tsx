@@ -15,7 +15,7 @@ const mockedFetchGraphQL = vi.mocked(fetchGraphQL);
 beforeEach(() => {
   mockedFetchGraphQL.mockReset();
   mockedFetchGraphQL.mockImplementation((query) => {
-    if (query.includes("mutation UpdateProductReviewMutation")) {
+    if (query.includes("mutation ProductCommunityItemsUpdateProductReviewMutation")) {
       return Promise.resolve(graphQLResponse({
         updateProductReview: {
           review: {
@@ -30,7 +30,7 @@ beforeEach(() => {
       }));
     }
 
-    if (query.includes("mutation UpdateProductQuestionMutation")) {
+    if (query.includes("mutation ProductCommunityItemsUpdateProductQuestionMutation")) {
       return Promise.resolve(graphQLResponse({
         updateProductQuestion: {
           question: {
@@ -44,7 +44,7 @@ beforeEach(() => {
       }));
     }
 
-    if (query.includes("mutation UpdateProductAnswerMutation")) {
+    if (query.includes("mutation ProductCommunityItemsUpdateProductAnswerMutation")) {
       return Promise.resolve(graphQLResponse({
         updateProductAnswer: {
           answer: {

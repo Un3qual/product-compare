@@ -1,14 +1,22 @@
 defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   alias ProductCompare.Accounts
+  alias ProductCompare.Alerts
   alias ProductCompare.Affiliate
   alias ProductCompare.Catalog
+  alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
+  alias ProductCompare.Fixtures.CJIngestionFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompare.Specs
   alias ProductCompareWeb.Schema
+  alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -440,11 +448,177 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
       end
     end
 
+    test "user nodes are visible only to the current user", %{conn: conn} do
+      user = AccountsFixtures.user_fixture() |> then(&Accounts.get_user!(&1.id))
+      other_user = AccountsFixtures.user_fixture() |> then(&Accounts.get_user!(&1.id))
+      anonymous_conn = conn
+      conn = conn |> log_in_user(user) |> put_req_header_same_origin()
+
+      assert %{"data" => %{"node" => %{"__typename" => "User", "id" => user_id}}} =
+               graphql(conn, node_id_query(), %{"id" => relay_id(:user, user.entropy_id)})
+
+      assert user_id == relay_id(:user, user.entropy_id)
+
+      assert %{"data" => %{"node" => nil}} =
+               graphql(conn, node_id_query(), %{
+                 "id" => relay_id(:user, other_user.entropy_id)
+               })
+
+      assert %{"data" => %{"node" => nil}} =
+               graphql(anonymous_conn, node_id_query(), %{
+                 "id" => relay_id(:user, user.entropy_id)
+               })
+    end
+
+    test "community nodes preserve publication and owner visibility", %{conn: conn} do
+      owner = AccountsFixtures.user_fixture()
+      viewer = AccountsFixtures.user_fixture()
+      operator = AccountsFixtures.operator_fixture()
+      public_product = SpecsFixtures.product_fixture()
+      private_product = SpecsFixtures.product_fixture()
+
+      assert {:ok, review} =
+               Discussions.submit_review(owner.id, public_product.id, %{rating: 5})
+
+      assert {:ok, question} =
+               Discussions.ask_question(owner.id, public_product.id, %{title: "Relay question"})
+
+      assert {:ok, _question} =
+               Discussions.moderate(
+                 operator.id,
+                 :question,
+                 question.entropy_id,
+                 :published
+               )
+
+      assert {:ok, answer} =
+               Discussions.answer_question(owner.id, question.entropy_id, "Relay answer")
+
+      assert {:ok, _review} =
+               Discussions.moderate(operator.id, :review, review.entropy_id, :published)
+
+      assert {:ok, _answer} =
+               Discussions.moderate(operator.id, :answer, answer.entropy_id, :published)
+
+      for {type, entropy_id, typename} <- [
+            {:product_review, review.entropy_id, "ProductReview"},
+            {:product_question, question.entropy_id, "ProductQuestion"},
+            {:product_answer, answer.entropy_id, "ProductAnswer"}
+          ] do
+        assert %{"data" => %{"node" => %{"__typename" => ^typename}}} =
+                 graphql(conn, node_id_query(), %{"id" => relay_id(type, entropy_id)})
+      end
+
+      assert {:ok, private_review} =
+               Discussions.submit_review(owner.id, private_product.id, %{rating: 4})
+
+      owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+      viewer_conn = conn |> log_in_user(viewer) |> put_req_header_same_origin()
+      private_id = relay_id(:product_review, private_review.entropy_id)
+
+      assert %{"data" => %{"node" => %{"__typename" => "ProductReview"}}} =
+               graphql(owner_conn, node_id_query(), %{"id" => private_id})
+
+      assert %{"data" => %{"node" => nil}} =
+               graphql(viewer_conn, node_id_query(), %{"id" => private_id})
+
+      assert {:ok, _private_review} =
+               Discussions.moderate(
+                 operator.id,
+                 :review,
+                 private_review.entropy_id,
+                 :hidden
+               )
+
+      assert %{"data" => %{"node" => %{"__typename" => "ProductReview"}}} =
+               graphql(owner_conn, node_id_query(), %{"id" => private_id})
+
+      assert %{"data" => %{"node" => nil}} =
+               graphql(viewer_conn, node_id_query(), %{"id" => private_id})
+    end
+
+    test "owner nodes preserve isolation and snapshot revocation", %{conn: conn} do
+      owner = AccountsFixtures.user_fixture()
+      viewer = AccountsFixtures.user_fixture()
+
+      %{snapshot: snapshot, correction: correction, watch: watch, event: event} =
+        owner_node_records(owner)
+
+      owner_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+      viewer_conn = conn |> log_in_user(viewer) |> put_req_header_same_origin()
+
+      nodes = [
+        {:comparison_snapshot, snapshot.entropy_id, "ComparisonSnapshot"},
+        {:specification_correction, correction.id, "SpecificationCorrection"},
+        {:price_watch, watch.entropy_id, "PriceWatch"},
+        {:alert_event, event.entropy_id, "AlertEvent"}
+      ]
+
+      for {type, local_id, typename} <- nodes do
+        global_id = relay_id(type, local_id)
+
+        assert %{"data" => %{"node" => %{"__typename" => ^typename}}} =
+                 graphql(owner_conn, node_id_query(), %{"id" => global_id})
+
+        assert %{"data" => %{"node" => nil}} =
+                 graphql(viewer_conn, node_id_query(), %{"id" => global_id})
+
+        assert %{"data" => %{"node" => nil}} =
+                 graphql(conn, node_id_query(), %{"id" => global_id})
+      end
+
+      assert {:ok, _snapshot} = ComparisonSnapshots.revoke(owner.id, snapshot.entropy_id)
+
+      assert %{"data" => %{"node" => nil}} =
+               graphql(owner_conn, node_id_query(), %{
+                 "id" => relay_id(:comparison_snapshot, snapshot.entropy_id)
+               })
+
+      assert %{"data" => %{"node" => %{"__typename" => "SpecificationCorrection"}}} =
+               graphql(operator_conn(conn), node_id_query(), %{
+                 "id" => relay_id(:specification_correction, correction.id)
+               })
+    end
+
+    test "ingestion nodes remain operator-only", %{conn: conn} do
+      source = CJIngestionFixtures.source_fixture()
+      candidate = CJIngestionFixtures.merchant_feed_candidate_fixture(source)
+      program = Repo.get!(CJProgram, candidate.cj_program_id)
+      operator_conn = operator_conn(conn)
+      member_conn = member_conn(conn)
+
+      for {type, local_id, typename} <- [
+            {:cj_program, program.entropy_id, "CJProgram"},
+            {:merchant_feed_candidate, candidate.id, "MerchantFeedCandidate"}
+          ] do
+        global_id = relay_id(type, local_id)
+
+        assert %{"data" => %{"node" => %{"__typename" => ^typename}}} =
+                 graphql(operator_conn, node_id_query(), %{"id" => global_id})
+
+        assert %{
+                 "data" => %{"node" => nil},
+                 "errors" => [
+                   %{"extensions" => %{"code" => "UNAUTHENTICATED"}, "path" => ["node"]} | _
+                 ]
+               } = graphql(conn, node_id_query(), %{"id" => global_id})
+
+        assert %{
+                 "data" => %{"node" => nil},
+                 "errors" => [
+                   %{"extensions" => %{"code" => "FORBIDDEN"}, "path" => ["node"]} | _
+                 ]
+               } = graphql(member_conn, node_id_query(), %{"id" => global_id})
+      end
+    end
+
     test "node rejects invalid ids", %{conn: conn} do
       assert %{
                "data" => %{"node" => nil},
-               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+               "errors" => [%{"message" => message, "path" => ["node"]} | _]
              } = graphql(conn, node_query(), %{"id" => "bad-node-id"})
+
+      assert message =~ "Could not decode ID value"
     end
 
     test "node rejects public ids outside the database bigint range", %{conn: conn} do
@@ -731,6 +905,77 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
   end
 
   defp unique_domain(prefix), do: "#{prefix}-#{System.unique_integer([:positive])}.example.com"
+
+  defp owner_node_records(owner) do
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+
+    assert {:ok, snapshot} =
+             ComparisonSnapshots.publish(owner.id, %{
+               title: "Relay owner snapshot",
+               product_ids: [first_product.id, second_product.id],
+               recommendation_profile: :lowest_current_cost
+             })
+
+    attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: "relay-node-correction-#{System.unique_integer([:positive])}",
+        data_type: :text
+      })
+
+    assert {:ok, correction} =
+             Specs.propose_correction(
+               first_product.id,
+               attribute.id,
+               owner.id,
+               %{value_text: "Relay node value"},
+               %{
+                 reason: "Relay node correction evidence.",
+                 explanation: "The published specification needs this corrected value."
+               }
+             )
+
+    assert {:ok, watch} =
+             Alerts.create_watch(owner.id, %{
+               product_id: first_product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "50"
+             })
+
+    merchant = merchant_fixture()
+
+    merchant_product =
+      merchant_product_fixture(%{
+        merchant: merchant,
+        product: second_product,
+        currency: "USD"
+      })
+
+    assert {:ok, _event_watch} =
+             Alerts.create_watch(owner.id, %{
+               product_id: second_product.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "50"
+             })
+
+    now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    assert {:ok, price_point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: merchant_product.id,
+               observed_at: now,
+               price: "40",
+               shipping: "5",
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: 1}} = Alerts.evaluate_price_point(price_point.id, now: now)
+    [event] = owner.id |> Alerts.list_alert_events_query() |> Repo.all()
+
+    %{snapshot: snapshot, correction: correction, watch: watch, event: event}
+  end
 
   defp affiliate_node_records do
     merchant = merchant_fixture(%{name: "Node Affiliate Merchant"})

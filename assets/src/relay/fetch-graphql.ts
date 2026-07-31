@@ -1,3 +1,4 @@
+import * as Micro from "effect/Micro";
 import type { GraphQLResponse } from "relay-runtime";
 
 const DEFAULT_DEV_API_BASE_URL = "http://localhost:4000";
@@ -16,67 +17,127 @@ interface ResolveGraphQLEndpointOptions {
   locationOrigin?: string | null;
 }
 
-export async function fetchGraphQL(
+interface GraphQLTransportOptions {
+  endpoint?: ResolveGraphQLEndpointOptions;
+  fetch?: typeof globalThis.fetch;
+}
+
+export interface GraphQLConfigurationFailure {
+  readonly _tag: "GraphQLConfigurationFailure";
+  readonly cause: unknown;
+  readonly message: string;
+}
+
+export interface GraphQLNetworkFailure {
+  readonly _tag: "GraphQLNetworkFailure";
+  readonly cause: unknown;
+  readonly message: string;
+}
+
+export interface GraphQLHTTPFailure {
+  readonly _tag: "GraphQLHTTPFailure";
+  readonly body: string;
+  readonly status: number;
+}
+
+export interface GraphQLResponseDecodingFailure {
+  readonly _tag: "GraphQLResponseDecodingFailure";
+  readonly cause: unknown;
+}
+
+export interface GraphQLAbortFailure {
+  readonly _tag: "GraphQLAbortFailure";
+  readonly cause: unknown;
+}
+
+export type GraphQLTransportFailure =
+  | GraphQLAbortFailure
+  | GraphQLConfigurationFailure
+  | GraphQLHTTPFailure
+  | GraphQLNetworkFailure
+  | GraphQLResponseDecodingFailure;
+
+export function fetchGraphQL(
   query: string,
   variables: Record<string, unknown>,
-  ssrContext?: SSRContext
+  ssrContext?: SSRContext,
 ): Promise<GraphQLResponse> {
-  let response: Response;
+  return Micro.runPromise(Micro.either(graphqlTransportEffect(query, variables, ssrContext))).then(
+    (result) => {
+      if (result._tag === "Left") {
+        throw promiseFailure(result.left);
+      }
+
+      return result.right;
+    },
+  );
+}
+
+/** @internal Exposed only for focused transport contract tests. */
+export function graphqlTransportEffect(
+  query: string,
+  variables: Record<string, unknown>,
+  ssrContext?: SSRContext,
+  options: GraphQLTransportOptions = {},
+) {
+  return Micro.try({
+    try: () => resolveGraphQLEndpoint(options.endpoint),
+    catch: configurationFailure,
+  }).pipe(
+    Micro.flatMap((endpoint) =>
+      Micro.tryPromise({
+        try: () =>
+          (options.fetch ?? globalThis.fetch)(
+            endpoint,
+            graphQLRequest(query, variables, ssrContext),
+          ),
+        catch: requestFailure,
+      }),
+    ),
+    Micro.flatMap(responseEffect),
+  );
+}
+
+function graphQLRequest(
+  query: string,
+  variables: Record<string, unknown>,
+  ssrContext?: SSRContext,
+): RequestInit {
   const usesSSRContext = hasSSRContext(ssrContext);
 
+  return {
+    method: "POST",
+    credentials: usesSSRContext ? undefined : "include",
+    headers: graphQLRequestHeaders(usesSSRContext ? ssrContext : undefined),
+    body: JSON.stringify({ query, variables }),
+    signal: ssrContext?.signal ?? ssrContext?.request?.signal,
+  };
+}
+
+function graphQLRequestHeaders(ssrContext?: SSRContext) {
   const headers: Record<string, string> = {
-    "content-type": "application/json"
+    "content-type": "application/json",
   };
 
-  // For SSR requests, forward cookies from the incoming request
-  if (usesSSRContext && ssrContext) {
-    const cookieValue =
-      ssrContext.cookieString ??
-      ssrContext.request?.headers.get("cookie") ??
-      ssrContext.headers?.cookie;
-
-    const trustedOrigin = resolveSSRRequestOrigin(ssrContext);
-
-    if (cookieValue) {
-      headers.cookie = cookieValue;
-    }
-
-    if (trustedOrigin) {
-      headers.origin = trustedOrigin;
-    }
+  if (!ssrContext) {
+    return headers;
   }
 
-  try {
-    response = await fetch(resolveGraphQLEndpoint(), {
-      method: "POST",
-      credentials: usesSSRContext ? undefined : "include", // credentials only for browser
-      headers,
-      body: JSON.stringify({ query, variables }),
-      signal: ssrContext?.signal ?? ssrContext?.request?.signal
-    });
-  } catch (error) {
-    if (
-      (error instanceof DOMException && error.name === "AbortError") ||
-      (error &&
-        typeof error === "object" &&
-        "name" in error &&
-        (error as { name: unknown }).name === "AbortError")
-    ) {
-      throw error;
-    }
+  const cookieValue =
+    ssrContext.cookieString ??
+    ssrContext.request?.headers.get("cookie") ??
+    ssrContext.headers?.cookie;
+  const trustedOrigin = resolveSSRRequestOrigin(ssrContext);
 
-    const message = error instanceof Error ? error.message : "Unknown error";
-    throw new Error(`Network request failed: ${message}`);
+  if (cookieValue) {
+    headers.cookie = cookieValue;
   }
 
-  if (!response.ok) {
-    const responseBody = await response.text();
-    throw new Error(`GraphQL request failed (${response.status}): ${responseBody}`);
+  if (trustedOrigin) {
+    headers.origin = trustedOrigin;
   }
 
-  const body = (await response.json()) as GraphQLResponse;
-
-  return body;
+  return headers;
 }
 
 export function resolveGraphQLEndpoint(options: ResolveGraphQLEndpointOptions = {}) {
@@ -134,7 +195,7 @@ function resolveSSRRequestOrigin(ssrContext: SSRContext) {
       ssrContext.request?.headers.get("origin") ??
       ssrContext.request?.url ??
       ssrContext.headers?.referer ??
-      ssrContext.request?.headers.get("referer")
+      ssrContext.request?.headers.get("referer"),
   );
 }
 
@@ -154,4 +215,86 @@ function normalizeOrigin(value?: string | null) {
 
 function hasSSRContext(ssrContext?: SSRContext) {
   return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
+}
+
+function decodeResponse<A>(decode: () => Promise<A>) {
+  return Micro.tryPromise({
+    try: decode,
+    catch: responseDecodingFailure,
+  });
+}
+
+function promiseFailure(failure: GraphQLTransportFailure): unknown {
+  switch (failure._tag) {
+    case "GraphQLAbortFailure":
+    case "GraphQLResponseDecodingFailure":
+      return failure.cause;
+    case "GraphQLConfigurationFailure":
+    case "GraphQLNetworkFailure":
+      return new Error(`Network request failed: ${failure.message}`);
+    case "GraphQLHTTPFailure":
+      return new Error(`GraphQL request failed (${failure.status}): ${failure.body}`);
+  }
+}
+
+function errorMessage(cause: unknown) {
+  return cause instanceof Error ? cause.message : "Unknown error";
+}
+
+function isAbortFailure(cause: unknown) {
+  return (
+    (cause instanceof DOMException && cause.name === "AbortError") ||
+    (cause !== null && typeof cause === "object" && "name" in cause && cause.name === "AbortError")
+  );
+}
+
+function isGraphQLResponse(value: unknown): value is GraphQLResponse {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function responseEffect(response: Response) {
+  if (!response.ok) {
+    return decodeResponse(() => response.text()).pipe(
+      Micro.flatMap((body) =>
+        Micro.fail<GraphQLHTTPFailure>({
+          _tag: "GraphQLHTTPFailure",
+          body,
+          status: response.status,
+        }),
+      ),
+    );
+  }
+
+  return decodeResponse(() => response.json()).pipe(
+    Micro.flatMap((body) =>
+      isGraphQLResponse(body)
+        ? Micro.succeed(body)
+        : Micro.fail(responseDecodingFailure(new TypeError("GraphQL response must be an object"))),
+    ),
+  );
+}
+
+function configurationFailure(cause: unknown): GraphQLConfigurationFailure {
+  return {
+    _tag: "GraphQLConfigurationFailure",
+    cause,
+    message: errorMessage(cause),
+  };
+}
+
+function requestFailure(cause: unknown): GraphQLAbortFailure | GraphQLNetworkFailure {
+  return isAbortFailure(cause)
+    ? { _tag: "GraphQLAbortFailure", cause }
+    : {
+        _tag: "GraphQLNetworkFailure",
+        cause,
+        message: errorMessage(cause),
+      };
+}
+
+function responseDecodingFailure(cause: unknown): GraphQLResponseDecodingFailure {
+  return {
+    _tag: "GraphQLResponseDecodingFailure",
+    cause,
+  };
 }
