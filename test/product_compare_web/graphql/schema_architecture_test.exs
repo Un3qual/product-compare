@@ -69,6 +69,24 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     refute root_operation_body(source, "mutation") =~ ~r/\bfield\s+:/
   end
 
+  test "schema fields reference resolver owners without pass-through facades" do
+    facades = ~w(
+      affiliate_resolver.ex
+      alerts_resolver.ex
+      auth_resolver.ex
+      commerce_attribution_resolver.ex
+      discussions_resolver.ex
+      pricing_resolver.ex
+      specs_resolver.ex
+    )
+
+    assert Enum.all?(facades, fn filename ->
+             not File.exists?(
+               Path.join(@project_root, "lib/product_compare_web/resolvers/#{filename}")
+             )
+           end)
+  end
+
   defp source_files(paths) when is_list(paths) do
     Enum.flat_map(paths, &source_files/1)
   end

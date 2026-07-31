@@ -6,9 +6,9 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
 
   alias ProductCompare.Catalog
   alias ProductCompareWeb.GraphQL.GlobalId
-  alias ProductCompareWeb.Resolvers.CatalogResolver
-  alias ProductCompareWeb.Resolvers.DiscussionsResolver
-  alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.Catalog.CurrentAttributes
+  alias ProductCompareWeb.Resolvers.Discussions.Reads, as: DiscussionReads
+  alias ProductCompareWeb.Resolvers.Pricing.Offers
   alias ProductCompareWeb.Resolvers.SeoResolver
 
   input_object :product_numeric_filter_input do
@@ -210,32 +210,32 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
       resolve: dataloader(Catalog, use_parent: true)
 
     field :current_attributes, non_null(list_of(non_null(:product_attribute_value))) do
-      resolve(&CatalogResolver.current_attributes/3)
+      resolve(&CurrentAttributes.current_attributes/3)
     end
 
     field :offer_truth, non_null(:product_offer_truth) do
-      resolve(&PricingResolver.product_offer_truth/3)
+      resolve(&Offers.product_offer_truth/3)
     end
 
     field :review_summary, non_null(:product_review_summary),
-      resolve: &DiscussionsResolver.review_summary/3
+      resolve: &DiscussionReads.review_summary/3
 
     connection field :reviews, node_type: :product_review, non_null_connection: true do
-      resolve(&DiscussionsResolver.reviews/3)
+      resolve(&DiscussionReads.reviews/3)
     end
 
     connection field :questions, node_type: :product_question, non_null_connection: true do
-      resolve(&DiscussionsResolver.questions/3)
+      resolve(&DiscussionReads.questions/3)
     end
 
     field :viewer_community_submissions, non_null(:viewer_community_submissions),
-      resolve: &DiscussionsResolver.viewer_community_submissions/3
+      resolve: &DiscussionReads.viewer_community_submissions/3
 
     connection field :merchant_products, node_type: :merchant_product do
       arg(:merchant_id, :id)
       arg(:active_only, :boolean)
 
-      resolve(&PricingResolver.product_merchant_products/3)
+      resolve(&Offers.product_merchant_products/3)
     end
   end
 

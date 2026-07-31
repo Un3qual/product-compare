@@ -73,9 +73,9 @@ PostgreSQL, ExUnit, Relay Compiler.
 - [x] Inline every ordinary association field with Ecto Dataloader.
 - [x] Re-express all 13 KV sources as Ecto-backed batches or set-based root
   reads, retaining deterministic batching tests.
-- [ ] Delete shallow one-line resolver facades and point schema fields at the
+- [x] Delete shallow one-line resolver facades and point schema fields at the
   actual context-specific resolver owner.
-- [ ] Prove no `Dataloader.KV` or dataloader-only wrapper remains.
+- [x] Prove no `Dataloader.KV` or dataloader-only wrapper remains.
 
 ### Task 6: Verify And Commit
 

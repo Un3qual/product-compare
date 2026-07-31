@@ -7,7 +7,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareWeb.Resolvers.CommerceAttributionResolver
+  alias ProductCompareWeb.Resolvers.CommerceAttribution.Reads
 
   setup %{conn: conn} do
     {:ok, conn: operator_conn(conn), anonymous_conn: conn}
@@ -83,7 +83,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                 },
                 suppression: %{suppressed: true, threshold: 2}
               }} =
-               CommerceAttributionResolver.revenue_summary(
+               Reads.revenue_summary(
                  nil,
                  %{input: %{"currency" => "usd", "merchant_id" => merchant_id}},
                  %{context: %{current_user: operator}}

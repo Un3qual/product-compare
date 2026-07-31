@@ -6,8 +6,10 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
 
   alias ProductCompare.Pricing
   alias ProductCompareWeb.GraphQL.GlobalId
-  alias ProductCompareWeb.Resolvers.AffiliateResolver
-  alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.Affiliate.Reads, as: AffiliateReads
+  alias ProductCompareWeb.Resolvers.Pricing.Evidence
+  alias ProductCompareWeb.Resolvers.Pricing.Merchants
+  alias ProductCompareWeb.Resolvers.Pricing.Offers
   alias ProductCompareWeb.Resolvers.SeoResolver
 
   input_object :merchant_products_input do
@@ -25,12 +27,12 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :seo, non_null(:seo_metadata), resolve: &SeoResolver.merchant_metadata/3
 
     field :detail_summary, non_null(:merchant_detail_summary),
-      resolve: &PricingResolver.merchant_detail_summary/3
+      resolve: &Merchants.merchant_detail_summary/3
 
     connection field :merchant_products,
                  node_type: :merchant_product,
                  non_null_connection: true do
-      resolve(&PricingResolver.merchant_offers/3)
+      resolve(&Merchants.merchant_offers/3)
     end
 
     field :inserted_at, non_null(:datetime)
@@ -71,17 +73,17 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :is_active, non_null(:boolean)
     field :merchant, :merchant, resolve: dataloader(Pricing, use_parent: true)
     field :product, :product, resolve: dataloader(Pricing, use_parent: true)
-    field :latest_price, :price_point, resolve: &PricingResolver.latest_price/3
+    field :latest_price, :price_point, resolve: &Offers.latest_price/3
 
     connection field :active_coupons, node_type: :active_coupon do
-      resolve(&AffiliateResolver.merchant_product_active_coupons/3)
+      resolve(&AffiliateReads.merchant_product_active_coupons/3)
     end
 
     connection field :price_history, node_type: :price_point do
       arg(:from, :datetime)
       arg(:to, :datetime)
 
-      resolve(&PricingResolver.price_history/3)
+      resolve(&Offers.price_history/3)
     end
 
     field :inserted_at, non_null(:datetime)
@@ -101,7 +103,7 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :in_stock, :boolean
 
     field :source_artifact, :source_artifact do
-      resolve(&PricingResolver.source_artifact/3)
+      resolve(&Evidence.source_artifact/3)
     end
 
     field :inserted_at, non_null(:datetime)

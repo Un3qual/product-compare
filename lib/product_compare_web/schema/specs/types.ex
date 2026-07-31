@@ -3,7 +3,7 @@ defmodule ProductCompareWeb.Schema.Specs.Types do
   use Absinthe.Relay.Schema.Notation, :modern
 
   alias ProductCompareWeb.GraphQL.GlobalId
-  alias ProductCompareWeb.Resolvers.SpecsResolver
+  alias ProductCompareWeb.Resolvers.Specs.Corrections
 
   input_object :specification_correction_value_input do
     field :value_bool, :boolean
@@ -88,8 +88,8 @@ defmodule ProductCompareWeb.Schema.Specs.Types do
     field :reason, non_null(:string)
     field :source_url, :string
     field :explanation, :string
-    field :value_text, non_null(:string), resolve: &SpecsResolver.correction_value_text/3
-    field :moderation_note, :string, resolve: &SpecsResolver.moderation_note/3
+    field :value_text, non_null(:string), resolve: &Corrections.value_text/3
+    field :moderation_note, :string, resolve: &Corrections.moderation_note/3
 
     field :submitted_at, non_null(:datetime),
       resolve: fn correction, _, _ -> {:ok, correction.inserted_at} end

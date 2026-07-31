@@ -8,7 +8,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.Pricing.Merchants
+  alias ProductCompareWeb.Resolvers.Pricing.Offers
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
@@ -258,7 +259,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
               %{
                 edges: [%{cursor: cursor, node: first_node}],
                 page_info: %{has_next_page: true, has_previous_page: false}
-              }} = PricingResolver.merchants(nil, %{first: 1}, %{})
+              }} = Merchants.merchants(nil, %{first: 1}, %{})
 
       assert first_node.id == first_merchant.id
 
@@ -266,7 +267,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
               %{
                 edges: [%{node: second_node}],
                 page_info: %{has_next_page: false, has_previous_page: true}
-              }} = PricingResolver.merchants(nil, %{first: 1, after: cursor}, %{})
+              }} = Merchants.merchants(nil, %{first: 1, after: cursor}, %{})
 
       assert second_node.id == second_merchant.id
     end
@@ -286,7 +287,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                 edges: [%{node: offer}],
                 page_info: %{has_next_page: false, has_previous_page: false}
               }} =
-               PricingResolver.merchant_products(
+               Offers.merchant_products(
                  nil,
                  %{
                    input: %{

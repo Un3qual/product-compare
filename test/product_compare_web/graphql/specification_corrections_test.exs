@@ -8,7 +8,7 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
   alias ProductCompare.Specs
-  alias ProductCompareWeb.Resolvers.SpecsResolver
+  alias ProductCompareWeb.Resolvers.Specs.Reads
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   describe "specification correction GraphQL workflow" do
@@ -250,7 +250,7 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                 edges: [%{cursor: cursor, node: first_node}],
                 page_info: %{has_next_page: true, has_previous_page: false}
               }} =
-               SpecsResolver.my_specification_corrections(
+               Reads.my_specification_corrections(
                  nil,
                  %{status: :pending, first: 1},
                  resolution
@@ -261,7 +261,7 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                 edges: [%{node: second_node}],
                 page_info: %{has_next_page: false, has_previous_page: true}
               }} =
-               SpecsResolver.my_specification_corrections(
+               Reads.my_specification_corrections(
                  nil,
                  %{status: :pending, first: 1, after: cursor},
                  resolution
@@ -291,7 +291,7 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                 edges: [%{cursor: cursor, node: first_node}],
                 page_info: %{has_next_page: true, has_previous_page: false}
               }} =
-               SpecsResolver.specification_correction_moderation_queue(
+               Reads.specification_correction_moderation_queue(
                  nil,
                  %{status: :pending, first: 1},
                  resolution
@@ -302,7 +302,7 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
                 edges: [%{node: second_node}],
                 page_info: %{has_next_page: false, has_previous_page: true}
               }} =
-               SpecsResolver.specification_correction_moderation_queue(
+               Reads.specification_correction_moderation_queue(
                  nil,
                  %{status: :pending, first: 1, after: cursor},
                  resolution

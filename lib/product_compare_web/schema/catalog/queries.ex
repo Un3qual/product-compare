@@ -3,6 +3,8 @@ defmodule ProductCompareWeb.Schema.Catalog.Queries do
   use Absinthe.Relay.Schema.Notation, :modern
 
   alias ProductCompareWeb.Resolvers.CatalogResolver
+  alias ProductCompareWeb.Resolvers.Catalog.Discovery
+  alias ProductCompareWeb.Resolvers.Catalog.SavedComparisons
   alias ProductCompareWeb.Resolvers.RecommendationsResolver
 
   object :catalog_queries do
@@ -34,12 +36,12 @@ defmodule ProductCompareWeb.Schema.Catalog.Queries do
     @desc "Returns display-safe metadata for product filter controls."
     field :product_filter_metadata, non_null(:product_filter_metadata) do
       arg(:filters, :product_filters_input)
-      resolve(&CatalogResolver.product_filter_metadata/3)
+      resolve(&Discovery.product_filter_metadata/3)
     end
 
     @desc "Returns the current authenticated user's saved comparison sets."
     connection field :my_saved_comparison_sets, node_type: :saved_comparison_set do
-      resolve(&CatalogResolver.my_saved_comparison_sets/3)
+      resolve(&SavedComparisons.my_saved_comparison_sets/3)
     end
   end
 end

@@ -3,7 +3,8 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
   use Absinthe.Relay.Schema.Notation, :modern
 
   alias ProductCompareWeb.GraphQL.GlobalId
-  alias ProductCompareWeb.Resolvers.DiscussionsResolver
+  alias ProductCompareWeb.Resolvers.Discussions.ContentFields
+  alias ProductCompareWeb.Resolvers.Discussions.Reads
 
   input_object :submit_product_review_input do
     field :product_id, non_null(:id)
@@ -126,14 +127,13 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
 
     field :rating, non_null(:integer)
     field :title, :string
-    field :body, :string, resolve: &DiscussionsResolver.body/3
+    field :body, :string, resolve: &ContentFields.body/3
     field :verified_purchase, non_null(:boolean)
     field :moderation_status, non_null(:community_moderation_status)
-    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
-    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+    field :author_label, non_null(:string), resolve: &ContentFields.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &ContentFields.viewer_can_edit/3
 
-    field :viewer_can_remove, non_null(:boolean),
-      resolve: &DiscussionsResolver.viewer_can_remove/3
+    field :viewer_can_remove, non_null(:boolean), resolve: &ContentFields.viewer_can_remove/3
 
     field :created_at, non_null(:datetime),
       resolve: fn review, _, _ -> {:ok, review.inserted_at} end
@@ -149,13 +149,12 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
     end
 
     field :title, non_null(:string)
-    field :body, :string, resolve: &DiscussionsResolver.body/3
+    field :body, :string, resolve: &ContentFields.body/3
     field :moderation_status, non_null(:community_moderation_status)
-    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
-    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+    field :author_label, non_null(:string), resolve: &ContentFields.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &ContentFields.viewer_can_edit/3
 
-    field :viewer_can_remove, non_null(:boolean),
-      resolve: &DiscussionsResolver.viewer_can_remove/3
+    field :viewer_can_remove, non_null(:boolean), resolve: &ContentFields.viewer_can_remove/3
 
     field :accepted_answer_id, :id do
       resolve(fn question, _, _ ->
@@ -179,7 +178,7 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
     end
 
     connection field :answers, node_type: :product_answer, non_null_connection: true do
-      resolve(&DiscussionsResolver.answers/3)
+      resolve(&Reads.answers/3)
     end
 
     field :created_at, non_null(:datetime),
@@ -193,13 +192,12 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
       resolve(fn answer, _, _ -> GlobalId.encode_required(:product_answer, answer.entropy_id) end)
     end
 
-    field :body, non_null(:string), resolve: &DiscussionsResolver.body/3
+    field :body, non_null(:string), resolve: &ContentFields.body/3
     field :moderation_status, non_null(:community_moderation_status)
-    field :author_label, non_null(:string), resolve: &DiscussionsResolver.author_label/3
-    field :viewer_can_edit, non_null(:boolean), resolve: &DiscussionsResolver.viewer_can_edit/3
+    field :author_label, non_null(:string), resolve: &ContentFields.author_label/3
+    field :viewer_can_edit, non_null(:boolean), resolve: &ContentFields.viewer_can_edit/3
 
-    field :viewer_can_remove, non_null(:boolean),
-      resolve: &DiscussionsResolver.viewer_can_remove/3
+    field :viewer_can_remove, non_null(:boolean), resolve: &ContentFields.viewer_can_remove/3
 
     field :created_at, non_null(:datetime),
       resolve: fn answer, _, _ -> {:ok, answer.inserted_at} end
