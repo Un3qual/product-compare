@@ -89,50 +89,58 @@ Exit condition: no visible native disclosure remains under `assets/src`, the
 five affected controls use the existing Radix wrapper, lazy and submission
 behavior is unchanged, StyleX remains in place, and every frontend gate passes.
 
-### 15. Ecto Dataloader Policy Guard
+### 15. Operator Mutation Authorization Freshness
 
 Status: ready
-Lane: GraphQL architecture
-Plan: `docs/superpowers/plans/2026-07-30-ecto-dataloader-policy-guard-implementation-plan.md`
-Batch outcome: first-party KV Dataloader use fails at source and runtime
-boundaries, while ordinary Ecto associations remain direct inline Dataloader
-fields without pass-through resolvers.
-Next action: characterize the current scan-boundary gap and runtime source
-types before broadening the architecture contract.
+Lane: GraphQL authorization and concurrency
+Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
+Batch outcome: every operator-only GraphQL mutation serializes its protected
+write with operator-role revocation instead of trusting the request-context
+user snapshot.
+Next action: add the failing revocation-first and mutation-first lock-order
+regressions, then prove all six affected mutation resolvers reject a stale
+operator snapshot without changing domain state.
 Owned paths:
 
-- `lib/product_compare_web/graphql/loader.ex`
-- `lib/product_compare_web/graphql/loader/**`
-- affected schema association declarations only if characterization exposes a
-  violation
-- `test/product_compare_web/graphql/schema_architecture_test.exs`
-- affected Dataloader architecture and batching tests
-- `docs/work/ecto-dataloader-policy-guard.md`
+- `lib/product_compare/accounts.ex`
+- `lib/product_compare/accounts/users.ex`
+- `lib/product_compare_web/resolvers/affiliate/mutations.ex`
+- `lib/product_compare/specs/corrections.ex`
+- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
+- `test/product_compare/accounts/concurrency_test.exs`
+- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
+- `test/product_compare_web/graphql/specification_corrections_test.exs`
+- `test/product_compare_web/graphql/cj_program_queries_test.exs`
+- `docs/work/operator-mutation-authorization-freshness.md`
 
 Internal slices:
 
-- Whole-library KV source policy.
-- Runtime Ecto source-type assertion.
-- Inline ordinary-association resolver contract.
+- Transaction-required operator-row authorization lock and both serialization
+  orders.
+- Affiliate network, program, link, and coupon mutation adoption.
+- Specification-correction and CJ-program mutation adoption.
 
 Prerequisites:
 
-- No active row owns the GraphQL request loader or schema architecture suite.
-- A KV exception requires a new explicit user decision; this row does not
-  create an exception mechanism.
+- No active row owns Accounts operator access, affiliate mutations,
+  specification correction moderation, or CJ program lifecycle mutation paths.
+- Community moderation remains the proven reference and stays behaviorally
+  unchanged.
+- Operator-only reads remain outside this write-authorization batch.
 
 Verification:
 
-- schema architecture and Dataloader batching suites
-- complete GraphQL suite
-- full backend tests, typecheck, and quality
+- Accounts and Discussions concurrency suites
+- affiliate workflow, specification correction, and CJ program GraphQL suites
+- complete GraphQL suite and full backend tests
+- typecheck, quality, and formatting gates
 - `mix work_queue.validate`
-- `mix format --check-formatted`
 - `git diff --check`
 
-Exit condition: no first-party library path can hide a KV source, every
-registered request source is Ecto-backed, ordinary associations keep the
-inline Dataloader shorthand, and all backend gates pass.
+Exit condition: a revocation that commits first makes every affected mutation
+return its existing forbidden payload without a domain write, a mutation that
+locks first may commit before revocation, lock ordering is operator row before
+domain rows, and all backend gates pass.
 
 ### 16. Application JSON Storage Policy Guard
 

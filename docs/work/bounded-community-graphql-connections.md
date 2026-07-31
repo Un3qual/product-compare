@@ -21,8 +21,9 @@ count.
 
 - `Discussions.public_connection_pages/3` performs one bounded, partitioned
   query per review, question, or answer connection kind.
-- `DiscussionsResolver.reviews/3`, `questions/3`, and `answers/3` share a
-  request-scoped KV Dataloader source keyed by kind and connection arguments.
+- Product review, question, and answer fields share a genuine
+  `Dataloader.Ecto` parent-set source keyed by actual parent schema, operation
+  kind, and connection arguments.
 - Questions retain accepted-answer preload parity, and public review, question,
   and answer rows retain their visibility, order, cursor, and page-info
   contracts.
@@ -94,7 +95,7 @@ count.
 
 - Status: done
 - What changed: shared prefetched Relay windows, parent-partitioned published
-  community reads, and one request-scoped Dataloader source now bound review,
+  community reads, and one request-scoped Ecto source now binds review,
   question, and nested answer connections independently of parent count.
 - Verification run: focused 43-test lane gate plus the full `mix ci` matrix
   recorded above.

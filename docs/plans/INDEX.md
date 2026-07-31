@@ -175,6 +175,11 @@ alias budgets are products 2/4 to 1/1, filter metadata 6/12 to 3/3, merchants
 suite gate passed 95 tests with 0 failures. Catalog filters and metadata,
 merchant-directory pagination, offer filters, nested values, and growing-alias
 budgets remained internal slices of one discovery-entry acceptance boundary.
+The 2026-07-31 GraphQL simplification later removed all singleton root sources:
+comparison, discovery, operator-reporting, public-slug, public-opaque-key, and
+authorized-connection roots now resolve directly. The earlier identical-alias
+budgets remain historical completion evidence rather than current loader
+contracts; genuine parent-set and authorized-node batching remains enforced.
 An eleventh claim-floor audit promoted GraphQL schema type decomposition after
 verifying that the only project schema module is 2,004 lines and combines root
 runtime behavior with 151 type, input, enum, and interface declarations. The
@@ -502,6 +507,7 @@ batch and should not be recreated or promoted.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | completed | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the former native-enum test depended on a hand-maintained column list. | Completed in `7efad083`; compiled schema reflection now checks every persisted `Ecto.Enum`, and PostgreSQL catalog validation rejects string-backed enum fields and closed-domain text constraints. |
+| promoted | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trust a request-context user snapshot while community moderation already serializes its write with role revocation. | Promoted to `docs/work/index.md`; one Accounts-owned transaction-required user-row lock, three domain adoption slices, and deterministic revocation-first/mutation-first tests form one independently reviewable authorization invariant. Operator reads remain outside the batch. |
 | promoted | Application JSON storage policy guard | The normalized snapshot and alert test still names only the two removed columns, while six legitimate persisted map fields define the current JSON boundary. | Promoted to `docs/work/index.md`; compiled schema reflection plus PostgreSQL catalog coverage can reject new opaque application dumps without banning raw evidence or explicitly open JSON contracts. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
@@ -524,15 +530,16 @@ batch and should not be recreated or promoted.
   products 2/4 to 1/1 SELECT budgets, with 95 focused tests passing. Bounded
   operator reporting root GraphQL reads is complete: top-level active-coupon
   and revenue-summary aliases now share one authorization-keyed request source.
-  GraphQL request loader decomposition is complete: the facade and source keys
-  remain stable while association, parent-collection, and root-request source
-  ownership now lives across focused modules for two Ecto and thirteen KV
-  domains, including discovery and operator-reporting roots. Its exact focused
-  gate passed 222 tests and full `mix ci` passed 902 backend tests, 1,507
-  frontend tests, ExDNA at 6/6, and Dialyzer. These are
-  reviewer-sized domain outcomes; their set-based context, Dataloader, shared-
-  fact, and query-budget steps remain internal slices rather than separate
-  queue rows.
+  GraphQL request loader decomposition remains complete, and the later
+  simplification removed its synthetic KV implementation. The facade now
+  registers two ordinary association sources, six genuine parent-set sources,
+  and one authorized-node source, all real `Dataloader.Ecto` values over
+  domain schemas. Discovery, operator-reporting, comparison, public-key, and
+  authorized-connection roots resolve directly. The post-review GraphQL suite
+  passes 328 tests; set-based parent/node query budgets remain behavior gates.
+  These are reviewer-sized domain outcomes; their context queries, Dataloader,
+  shared-fact, and query-budget steps remain internal slices rather than
+  separate queue rows.
 - GraphQL schema type decomposition is the path-disjoint structural successor:
   the root facade stays stable while shared/account, commerce, catalog, and
   trust/community declarations move to five domain notation modules under the

@@ -34,6 +34,18 @@
 - GraphQL schema, commerce attribution, and ConnCase callers now pass integer local IDs directly to `GlobalId.encode/2` instead of performing caller-side string conversion.
 - `docs/work/frontend-relay-route-data.md` remains active in the frontend lane, and this backend slice still lands without touching `assets/**`.
 
+## 2026-07-31 Reconciliation
+
+- The Relay-native schema now exposes 22 supported Node object types, including
+  `SourceArtifact`, community UUID nodes, CJ programs, alerts, comparison
+  snapshots, specification corrections, and the earlier catalog, pricing,
+  owner, and affiliate types.
+- `NodeResolver` consumes Relay's already-decoded local ID directly and keeps
+  integer/UUID validation, visibility, operator/owner/self scopes, missing-node
+  behavior, and request batching for authorized nodes.
+- The checked-in SDL has 17 macro-owned forward connections. Connection cursor,
+  query, list, and slice mechanics delegate to `Absinthe.Relay.Connection`.
+
 ## Next Batch
 
 - Status: none queued
@@ -52,8 +64,8 @@
 
 ## Planned Follow-Up
 
-- No immediate backend follow-up is required for the current frontend Relay migration.
-- Decide separately whether future node support should include `SourceArtifact`; it remains intentionally unsupported by root `node(id:)` until a public GraphQL object contract exists.
+- No node-surface follow-up remains from this historical slice. Current work is
+  dispatched only through `docs/work/index.md`.
 
 ## Verification Commands
 

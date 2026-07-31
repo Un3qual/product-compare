@@ -5,8 +5,9 @@
 - Status: complete
 - Priority: P1
 - Source of truth: `docs/superpowers/plans/2026-07-30-database-domain-types-implementation-plan.md`
-- Last verified: 2026-07-30 against a clean test-database rebuild and the
-  complete repository storage-contract suite.
+- Last verified: 2026-07-31 against a clean test-database rebuild, reference
+  codec/database parity, table-driven affiliate networks, and slug/reputation
+  migration contracts.
 
 ## Target Outcome
 
@@ -23,8 +24,9 @@ normalized domain state.
   `Ecto.Enum`.
 - Existing lifecycle, transaction, GraphQL, and query behavior remains covered
   by the focused context suites.
-- Currency codes, affiliate-program statuses, and affiliate-network identities
-  are controlled reference rows.
+- Currency codes and affiliate-program statuses are controlled reference rows.
+  Affiliate networks are open table-backed identities whose normalized string
+  codes resolve through the database rather than a closed application list.
 - Seven operational currency owners, affiliate programs, and conversions store
   numeric foreign keys while Ecto and GraphQL continue to expose stable codes.
 - Commerce links derive network identity through their required affiliate
@@ -40,7 +42,8 @@ normalized domain state.
   foreign keys. Unknown provider-owned values remain only in raw evidence and
   never become invented controlled rows.
 - CJ source resolution and provider claiming use conflict-safe insert/fetch and
-  `FOR UPDATE` locking rather than read-modify-write updates.
+  a conditional `UPDATE ... WHERE provider_id IS NULL` claim rather than an
+  unconditional source-row mutex.
 - Reputation events reference controlled event-type rows and no longer carry a
   free-form reason or polymorphic table-name/id pair. No subject column was
   invented because the repository has no concrete reputation event producer.
@@ -65,14 +68,33 @@ normalized domain state.
   not carry passive one-table Ecto modules or duplicate code-normalization
   implementations.
 
+## Simplification Reconciliation
+
+- A self-checking parity matrix now discovers every production
+  `ReferenceCode` field and compares each deterministic codec directly with its
+  seeded database rows, including comparison-snapshot evidence source kinds.
+- Affiliate network filters and conversion ingestion accept normalized string
+  codes only when a matching `affiliate_networks` row exists; no atom
+  conversion or closed provider vocabulary remains.
+- Unused reputation event add/list behavior and the event-type default delta
+  are removed. The relational event/type foundation remains for a future real
+  producer.
+- Slug reservations no longer persist the unused `is_alias` discriminator.
+  Namespace uniqueness, canonical rotation, historical alias immutability, and
+  deletion cleanup remain trigger-protected.
+- The categorical storage oracle now lives only in `test/support` as
+  `ProductCompare.TestSupport.CategoricalStoragePolicy`; production carries no
+  test-policy module.
+
 ## Active Batch
 
 - None. The database-domain program is complete.
 
 ## Dependent Successors
 
-- The remaining approved GraphQL, frontend, naming, Effect, toolchain, and RMW
-  batches follow the database-domain program.
+- Application JSON storage policy and operator mutation authorization
+  freshness remain ready successors. The frontend and GraphQL simplification
+  outcomes are reconciled in their lane docs.
 
 ## Verification
 

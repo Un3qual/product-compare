@@ -13,7 +13,16 @@
   not lane implementation blockers.
 - Owner: `codex/bounded-comparison-root-reads`
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification removed the singleton discovery-root
+source. These four root fields now call their context query APIs directly, so
+identical aliases intentionally execute independently. The query budgets below
+are preserved as historical completion evidence, not a current loader
+contract; value, filter, validation, Relay-page, and nested-field coverage
+remains current.
+
+## Historical Batch Outcome
 
 Identical catalog, filter-metadata, merchant-directory, and offer-discovery
 root aliases reuse one database read per normalized field, filters, and page

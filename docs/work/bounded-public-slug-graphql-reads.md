@@ -10,7 +10,15 @@
   canonical and historical product slug lookups, merchant slug lookups, alias
   GraphQL coverage, and request-scoped Dataloader sources.
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification removed the singleton public-slug source.
+Product and merchant slug entry points now resolve directly per root field, so
+identical aliases intentionally execute independently. The prior reuse budgets
+remain historical completion evidence; canonical/history behavior, merchant
+identity, missing results, and GraphQL errors remain current.
+
+## Historical Batch Outcome
 
 Aliased public `product(slug:)` and `merchant(slug:)` entry-point reads keep a
 fixed SELECT budget per entity type as alias count grows, without changing

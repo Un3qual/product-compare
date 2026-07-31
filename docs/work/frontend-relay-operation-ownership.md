@@ -6,13 +6,14 @@
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
-- Last verified: 2026-07-30 after the full frontend verification gate.
+- Last verified: 2026-07-31 against the five feature-family modules, their
+  consumers, generated artifacts, and affected route behavior.
 
 ## Target Outcome
 
-Every authored Relay mutation used by one route, component, loader, or action
-is colocated with that execution owner. Dedicated operation files remain only
-for operations with multiple real consumers.
+Related Relay mutations live in feature-family modules that match real route
+ownership. Queries remain dedicated data-contract modules where route render,
+preload, pagination, or loader consumers share them.
 
 ## Boundaries
 
@@ -25,25 +26,22 @@ for operations with multiple real consumers.
 
 ## Completed Outcome
 
-- The import graph contains 51 authored operations: 30 mutations and 21
-  queries.
-- All 30 mutations had one execution owner. They now use owner-prefixed Relay
-  names, live with that route, component, row, or action, and no longer require
-  mutation-only source modules.
-- The query set has no orphaned documents: 7 have one execution consumer and
-  14 are shared between route rendering, preload, pagination, or loader
-  boundaries. Query modules remain separate because they define those data
-  contracts rather than mutation execution units.
-- A focused architecture test rejects mutation-only modules with zero or one
-  runtime owner while permitting genuinely shared operation modules.
-- Relay regenerated all 30 renamed mutation artifacts from their colocated
-  definitions.
+- Five feature-family modules own 22 affected mutation documents: alerts (3),
+  API tokens (3), affiliate setup (4), compare (4), and products (8).
+- Consumers and behavioral tests import those family documents directly. The
+  unreleased operation names use the lower-camel family prefixes required by
+  Relay, and the matching generated artifacts were regenerated.
+- Source-regex ownership policy was removed. Ordinary route, submission,
+  mutation-variable, cache-update, and unknown-document behavior now provides
+  the acceptance boundary.
+- Queries remain separate data-contract modules when route rendering, preload,
+  pagination, or loader ownership makes that separation real.
 
 ## Verification
 
-- operation-ownership and affected route tests: passed
-- Relay validation, TypeScript, and Oxc checks: passed
-- full frontend suite: 1,508 tests passed
-- Vite client and SSR production builds: passed
-- client bundle contract: 167,670 gzip bytes across the initial JavaScript
-  closure, under the 200,000-byte budget
+- Focused primitive, auth submission, and affected route set: 8 files and 129
+  tests passed.
+- Relay validation compiled 52 reader, 51 normalization, and 51 operation
+  documents after the approved family-prefix rename.
+- The complete frontend check passed with TypeScript, authored-source Oxc,
+  Vitest, client/SSR builds, and the combined JavaScript/CSS bundle contract.

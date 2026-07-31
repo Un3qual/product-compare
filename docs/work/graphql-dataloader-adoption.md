@@ -36,11 +36,24 @@
 - Task 2 complete: the hot GraphQL field paths now resolve through Dataloader-backed batches instead of eager preloads or per-parent `latest_price/1` lookups.
 - Task 3 complete: a request-level batching regression test now proves the combined product and pricing graph stays bounded and protects against regressions back to per-node queries.
 
+## 2026-07-31 Reconciliation
+
+- The request-scoped loader remains in the Absinthe context, but its current
+  shape is broader and simpler than the original 2026-03-18 slice: two ordinary
+  association sources, six genuine parent-set sources, and one authorized-node
+  source are all `Dataloader.Ecto` values.
+- Singleton root sources and generic loader delegates were removed. Root fields
+  resolve directly; only genuine associations, growing parent sets, and
+  authorized nodes retain request batching.
+- Ordinary associations still use inline Dataloader declarations, and the
+  current growing-parent/node query-budget suites preserve the original
+  anti-fan-out intent.
+
 ## Closure
 
-- This work item is complete.
-- No next active batch is queued under `docs/work/index.md`.
-- The repo-level fallback for creating the next plan remains blocked because `docs/plans/INDEX.md` and `ARCHITECTURE.md` are absent.
+- This original adoption slice remains complete. Current dispatch state lives
+  only in `docs/work/index.md`; this file is completion and reconciliation
+  evidence, not a second queue.
 
 ## Verification Commands
 

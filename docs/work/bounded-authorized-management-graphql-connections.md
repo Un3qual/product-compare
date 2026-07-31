@@ -9,7 +9,16 @@
 - Last verified: 2026-07-21 against the live schema, management resolvers,
   request-scoped loader, and 84 passing focused GraphQL tests.
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification deleted the singleton authorized-
+connection source and its wrapper. Owner and operator management roots now
+authorize, validate, and call their context queries directly, so identical
+root aliases intentionally execute independently. The former reuse budgets are
+historical completion evidence; privacy, authorization-before-validation,
+filters, Relay projection, and error behavior remain current.
+
+## Historical Batch Outcome
 
 Identical owner-scoped and operator-only management Relay connection aliases
 reuse one authorized database read per collection, filter, and page within a

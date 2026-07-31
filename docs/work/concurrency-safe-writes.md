@@ -15,9 +15,11 @@
 
 ## Batch Outcome
 
-Every first-party modifying action has an explicit atomicity mechanism, and
-every confirmed read-modify-write race is fixed at the database boundary with
-a deterministic concurrency regression.
+Every first-party modifying action in the completed write-state audit has an
+explicit atomicity mechanism, and every confirmed read-modify-write race in
+that scope is fixed at the database boundary with a deterministic concurrency
+regression. A later cross-domain authorization pass identified one separate
+operator-mutation freshness outcome, recorded below and promoted independently.
 
 ## Audit Result
 
@@ -27,7 +29,17 @@ write. Search passes covered direct Repo writes, lower-case callback-repo
 writes, `Ecto.Multi` and transaction callbacks, `Oban.insert/1`, and manual
 inspection of every raw `Repo.query/2,3` and `Repo.query!/2,3` call under
 `lib/product_compare`. The inventory below has no unclassified modifying
-action and no remaining confirmed unsafe read-modify-write path.
+action in that write-state scope and no remaining confirmed unsafe domain-state
+read-modify-write path.
+
+The 2026-07-31 authorization reconciliation found that the GraphQL
+`require_operator/1` boundary trusts the request-context user snapshot. Six
+operator-only mutations can therefore reach an otherwise atomic domain write
+after operator access has been revoked: four affiliate writes, specification
+correction moderation, and CJ-program lifecycle update. Community moderation
+already locks and rechecks the operator row. The missing cross-domain invariant
+is ready as `docs/work/operator-mutation-authorization-freshness.md`; it is not
+hidden by this completed audit's prior exit claim.
 
 Classification terms:
 
@@ -51,7 +63,7 @@ Classification terms:
 | --- | --- | --- | --- |
 | API-token lifecycle | Revoke/rotate authenticated a stale token struct; authentication could touch a token revoked after its read. | Token transitions reload under `FOR UPDATE`; `/1` authentication always conditionally touches and revalidates an active, unexpired row. | `accounts/concurrency_test.exs`; commits `7800e438`, `75c44be3`. |
 | First-writer lifecycle timestamps | Alert reads, comparison revocation, and claim moderation could overwrite a committed transition. | Each transition locks and rechecks the current row before updating. | Context-owned `alerts`, `comparison_snapshots`, and `specs` concurrency suites; commit `7800e438`. |
-| Moderation authorization | Operator access could be revoked after authorization but before the moderation write. | The user authorization row is locked and rechecked in the moderation transaction. | `discussions/concurrency_test.exs`; commit `138ff479`. |
+| Community moderation authorization | Operator access could be revoked after authorization but before the community moderation write. | The user authorization row is locked and rechecked in the community moderation transaction. | `discussions/concurrency_test.exs`; commit `138ff479`. |
 | Delivered email-token replacement | A delivery callback ran inside the transaction, and concurrent deliveries could leave multiple active replacement tokens. | Delivery runs outside locks; activation locks the user and deletes competing context tokens atomically. | `accounts/concurrency_test.exs`; commit `138ff479`. |
 | Product slug namespace | Product slugs and historical aliases used separate unique indexes, allowing cross-table collisions. | A trigger-maintained namespace relation owns both forms; product updates reload under lock and preserve the public conflict result. | Product slug namespace and stale-update regressions; commits `ed8c57fa`, `0aad4352`. |
 | Taxonomy hierarchy | Cross-moves could both pass a stale cycle check, and a taxon could change taxonomy identity. | Taxonomy and involved taxons are locked in deterministic order; taxonomy identity is immutable. | `taxonomy/concurrency_test.exs`; commit `49478b4a`. |
@@ -69,11 +81,11 @@ Classification terms:
 | --- | --- | --- | --- |
 | `Accounts.ApiTokens.Authentication` | `authenticate/1` touch | A revoked or expired token is never returned after the dependent touch. | Conditional active-row `UPDATE`; **statement**. |
 | `Accounts.ApiTokens.Lifecycle` | `create/2`, `revoke/2`, `rotate/3` | Token issue is append-only; revoke/rotate consume the current active state once. | Unique token hash plus locked reload for transitions; **constraint + lock**. |
-| `Accounts.Users` | `create_user/1`, `register_user/1`, `bootstrap_operator_user/3`, `ensure_user_with_password/2`, `set_operator_access/2` | Email identity is unique; bootstrap/password repair cannot overwrite a concurrent user; operator writes are serialized with moderation checks. | Email unique constraint, user-row locks, conflict insert, and partial one-field update; **constraint + lock + partial last-write**. |
+| `Accounts.Users` | `create_user/1`, `register_user/1`, `bootstrap_operator_user/3`, `ensure_user_with_password/2`, `set_operator_access/2` | Email identity is unique; bootstrap/password repair cannot overwrite a concurrent user; community moderation serializes with operator changes. | Email unique constraint, user-row locks, conflict insert, and partial one-field update; **constraint + lock + partial last-write**. |
 | `Accounts.Reputation` | `upsert_user_reputation/2` | One absolute reputation summary exists per user. | `ON CONFLICT` absolute set; **statement**. |
 | `Accounts.UserAuth.Sessions` | issue/generate, activate, delete/discard, and clear token actions | Session issue uses the authenticated password state; one delivered context token becomes active; token deletion is idempotent. | User-row lock, token uniqueness, and predicate `DELETE`; **lock + statement**. |
 | `Accounts.UserAuth.EmailTokens` | deliver confirmation/reset, `confirm_user/1`, `reset_user_password/2` | One token is consumed once and password/session changes share that consumption. | Token/user locking, delete-and-update transaction, and atomic context clearing; **lock**. |
-| `Affiliate` | `upsert_network/1`, `upsert_program/1`, `upsert_link/1`, `create_coupon/1` | Network/program/link identities converge; coupons are independent records. | Unique conflict targets and single conflict updates; **statement + constraint**. |
+| `Affiliate` | `upsert_network/1`, `upsert_program/1`, `upsert_link/1`, `create_coupon/1` | Network/program/link identities converge; coupons are independent records. | Unique conflict targets and single conflict updates protect domain state; GraphQL operator-revocation serialization is the promoted authorization successor. **statement + constraint**. |
 | `Alerts.WatchRules` | `create_watch/2`, `update_watch/3`, `delete_watch/2` | Watch scope references one stable product/currency offer; evaluation state resets with rule edits. | Product FK plus immutable offer identity; partial update/reset statement and stale-aware delete; **constraint + partial last-write**. |
 | `Alerts.Evaluation` | `evaluate_price_point/2` | Cooldown/condition decisions and event creation use one current watch state; a price point emits at most one event per watch. | Watch-row lock and unique `(watch_rule_id, triggering_price_point_id)` insert; **lock + constraint**. |
 | `Alerts.Inbox` | `mark_alert_read/2` | The first committed read timestamp is preserved. | Locked reload and idempotent transition; **lock**. |
@@ -97,7 +109,7 @@ Classification terms:
 | `Discussions.Submissions.Reports` | report `create/4` | A user reports a target once and duplicate attempts do not consume quota. | Target FK and unique report constraint inside the write-limit transaction; **constraint + lock**. |
 | `Discussions.Submissions.WriteLimits` | `increment!/2` | Concurrent writes cannot exceed a per-user/action/hour limit. | Conflict-created window followed by `FOR UPDATE` increment; **lock + constraint**. |
 | `Ingestion.FeedCandidates` | `upsert_merchant_feed_candidate/2` | Candidate provider agrees with its source and feed type; source/feed identity converges. | Transaction-scoped conditional provider claim plus unique conflict upsert; **statement + constraint**. |
-| `Ingestion.CJPrograms` | ensure and lifecycle update actions | Source/advertiser identity converges and stale lifecycle editors cannot overwrite a newer decision. | Unique conflict insert and `changed_at` optimistic lock/conditional no-op; **constraint + stale**. |
+| `Ingestion.CJPrograms` | ensure and lifecycle update actions | Source/advertiser identity converges and stale lifecycle editors cannot overwrite a newer decision. | Unique conflict insert and `changed_at` optimistic lock/conditional no-op protect lifecycle state; GraphQL operator-revocation serialization is the promoted authorization successor. **constraint + stale**. |
 | `Ingestion.Jobs.CJFeedDiscoveryWorker` | enqueue bounded feed discovery | Equivalent normalized arguments in one schedule window identify one durable discovery job; later windows remain distinct. | Oban uniqueness for worker/queue/selected args uses a transaction-scoped advisory lock; **lock + statement**. |
 | `Ingestion.Jobs.CJProductImportWorker` | enqueue bounded product import | Equivalent normalized arguments in one schedule window identify one durable import job; later windows remain distinct. | Oban uniqueness for worker/queue/selected args uses a transaction-scoped advisory lock; **lock + statement**. |
 | `Ingestion.Runs` | `start_import_run/1`, `complete_import_run/2` | Provider agrees with the source; exactly one terminal completion and reconciliation outcome wins. | Conditional provider claim on start and import-run lock on completion; **statement + lock**. |
@@ -114,7 +126,7 @@ Classification terms:
 | `Specs.Claims.Proposals` | `propose/4` | Typed values match stable attribute/unit/enum semantics and evidence commits with the claim. | Immutable definition semantics, FKs, and claim/evidence transaction; **constraint**. |
 | `Specs.Claims.Imports` | `import_observation/4` | Replays deduplicate; evidence commits; only the claim that creates current truth is auto-accepted. | Fingerprint unique insert, evidence conflict insert, and unique current-row insert in one transaction; **constraint + statement**. |
 | `Specs.Claims.Moderation` | accept/reject/select current actions | One lifecycle transition uses current status; selected claim is accepted and matches product/attribute. | Claim/current row locks and current-row conflict update; **lock + constraint**. |
-| `Specs.Corrections` | `propose_correction/5`, `moderate_correction/4` | Proposal records the observed current claim; acceptance fails if current truth changed and moves claim/current/correction together. | Correction/claim/current row locks, supersedes comparison, and one transaction; **lock**. |
+| `Specs.Corrections` | `propose_correction/5`, `moderate_correction/4` | Proposal records the observed current claim; acceptance fails if current truth changed and moves claim/current/correction together. | Correction/claim/current row locks, supersedes comparison, and one transaction protect correction state; operator-revocation serialization is the promoted authorization successor. **lock**. |
 | `Taxonomy.Taxonomies` | seed/upsert taxonomy | Taxonomy code identity converges. | Unique code conflict update; **statement + constraint**. |
 | `Taxonomy.Hierarchy` | create/update/move taxon | Taxonomy identity is fixed; closure rows match one acyclic parent graph under concurrent moves. | Taxonomy/taxon deterministic locks, immutable taxonomy field, and transactional closure rebuild; **lock + constraint**. |
 | `Taxonomy.Aliases` | `upsert_taxon_alias/2` and write resolution | Alias identity converges; enrichment uses the mapping current at its dependent product write. | Unique normalized path upsert and `FOR SHARE` alias read retained by the outer transaction; **statement + lock**. |
@@ -133,8 +145,9 @@ Classification terms:
 
 ## Next Action
 
-None. The audit exit condition is satisfied and the active queue row is
-closed.
+The original write-state audit is closed. Execute the separately validated
+operator mutation authorization freshness row to make the six protected
+GraphQL writes serialize with role revocation.
 
 ## Verification
 

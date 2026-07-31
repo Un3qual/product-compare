@@ -11,7 +11,7 @@
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
   - `docs/plans/2026-03-18-frontend-compare-baseline-implementation-plan.md`
 - Definition of done:
-  - The Bun frontend exposes an SSR-safe `/compare` route driven by repeated `slug` query params.
+  - The frontend exposes an SSR-safe `/compare` route driven by repeated `slug` query params.
   - The route guards empty and over-limit selection states locally, then renders up to three compared products from the existing GraphQL product-detail surface.
   - Route-level tests cover the compare route's empty, limit, ready, and unavailable states without reopening saved-comparison persistence.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
