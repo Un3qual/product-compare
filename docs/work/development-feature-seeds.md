@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P0
 - Plan:
   `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
@@ -49,6 +49,9 @@ mailer, or network call.
 ## Internal Slices
 
 1. Transactional seed runtime, role accounts, and local auth artifacts.
+   Completed in the account milestone: six reserved accounts, restored roles
+   and reputations, local confirmation/reset tokens, and active/revoked API
+   token examples now pass the real account boundaries without delivery hooks.
 2. Catalog/specification and marketplace/affiliate state matrices.
 3. Saved/shared comparison, alert, community, and correction lifecycles.
 4. Synthetic CJ/attribution history, testing guide, route smoke coverage, and
@@ -56,6 +59,9 @@ mailer, or network call.
 
 ## Verification
 
+- 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs` — 2 tests,
+  0 failures after the account milestone.
+- 2026-07-31: `git diff --check` — clean after the account milestone.
 - seed entry-point and development-seed GraphQL suites
 - affected account, catalog, pricing, affiliate, alert, discussion,
   specification, comparison, ingestion, attribution, and GraphQL suites

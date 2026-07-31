@@ -45,7 +45,8 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ### 14. Development Feature Seeds
 
-Status: ready
+Status: active
+Owner: Codex inline execution in the managed detached worktree
 Lane: Development environment
 Plan: `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
 Batch outcome: every delivered shopper, account, community, operator,

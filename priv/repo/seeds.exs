@@ -1,7 +1,7 @@
 import Ecto.Query
 
-alias ProductCompare.Accounts
 alias ProductCompare.Catalog
+alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
 alias ProductCompare.Pricing
 alias ProductCompare.Repo
 alias ProductCompare.Specs
@@ -11,6 +11,9 @@ alias ProductCompareSchemas.Pricing.PricePoint
 alias ProductCompareSchemas.Specs.EnumOption
 alias ProductCompareSchemas.Taxonomy.Taxon
 alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
+
+Code.require_file("seeds/support.exs", __DIR__)
+Code.require_file("seeds/accounts.exs", __DIR__)
 
 seed_user_password =
   case System.get_env("SEED_USER_PASSWORD") do
@@ -27,24 +30,10 @@ seed_user_password =
       end
   end
 
-bootstrap_operator = fn email, reputation_points ->
-  case Accounts.bootstrap_operator_user(email, seed_user_password, reputation_points) do
-    {:ok, user} ->
-      user
-
-    {:error, :existing_non_operator} ->
-      raise """
-      Refusing to bootstrap #{email}: an existing non-operator account already owns this email.
-      Resolve the account conflict explicitly before rerunning seeds.
-      """
-
-    {:error, %Ecto.Changeset{} = changeset} ->
-      raise "Failed to bootstrap #{email}: #{inspect(changeset.errors)}"
-  end
-end
-
-admin = bootstrap_operator.("admin@example.com", 1_000)
-moderator = bootstrap_operator.("moderator@example.com", 500)
+seed_anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+seed_accounts = DevSeedAccounts.seed!(seed_user_password, seed_anchor)
+admin = seed_accounts.admin
+moderator = seed_accounts.moderator
 
 {:ok, _} = Taxonomy.seed_default_taxonomies()
 
