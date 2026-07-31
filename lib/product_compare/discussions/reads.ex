@@ -4,6 +4,7 @@ defmodule ProductCompare.Discussions.Reads do
   alias ProductCompare.Input
   alias ProductCompare.Discussions.Reads.Connections
   alias ProductCompare.Discussions.Reads.Legacy
+  alias ProductCompare.Discussions.Reads.Nodes
   alias ProductCompare.Discussions.Reads.PublicContent
   alias ProductCompare.Discussions.Reads.ViewerSubmissions
   alias ProductCompareSchemas.Discussions.ProductReview
@@ -112,6 +113,15 @@ defmodule ProductCompare.Discussions.Reads do
   @spec get_public_questions([term()]) :: %{optional(term()) => ProductThread.t() | nil}
   def get_public_questions(entropy_ids) when is_list(entropy_ids) do
     PublicContent.get_questions(entropy_ids)
+  end
+
+  @spec get_visible_nodes(
+          :product_review | :product_question | :product_answer,
+          [term()],
+          pos_integer() | nil
+        ) :: %{optional(term()) => ProductReview.t() | ProductThread.t() | ThreadPost.t() | nil}
+  def get_visible_nodes(type, entropy_ids, viewer_id) do
+    Nodes.get_visible(type, entropy_ids, viewer_id)
   end
 
   defp normalize_pagination(opts) do

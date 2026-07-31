@@ -120,11 +120,7 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
     field :answers, non_null(list_of(non_null(:product_answer)))
   end
 
-  object :product_review do
-    field :id, non_null(:id) do
-      resolve(fn review, _, _ -> GlobalId.encode_required(:product_review, review.entropy_id) end)
-    end
-
+  node object(:product_review, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :rating, non_null(:integer)
     field :title, :string
     field :body, :string, resolve: &ContentFields.body/3
@@ -146,13 +142,7 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
     end
   end
 
-  object :product_question do
-    field :id, non_null(:id) do
-      resolve(fn question, _, _ ->
-        GlobalId.encode_required(:product_question, question.entropy_id)
-      end)
-    end
-
+  node object(:product_question, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :title, non_null(:string)
     field :body, :string, resolve: &ContentFields.body/3
     field :moderation_status, non_null(:community_moderation_status)
@@ -200,11 +190,7 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
     end
   end
 
-  object :product_answer do
-    field :id, non_null(:id) do
-      resolve(fn answer, _, _ -> GlobalId.encode_required(:product_answer, answer.entropy_id) end)
-    end
-
+  node object(:product_answer, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :body, non_null(:string), resolve: &ContentFields.body/3
     field :moderation_status, non_null(:community_moderation_status)
     field :author_label, non_null(:string), resolve: &ContentFields.author_label/3

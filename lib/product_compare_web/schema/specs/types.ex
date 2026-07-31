@@ -59,13 +59,7 @@ defmodule ProductCompareWeb.Schema.Specs.Types do
     value(:rejected)
   end
 
-  object :specification_correction do
-    field :id, non_null(:id) do
-      resolve(fn correction, _, _ ->
-        GlobalId.encode_required(:specification_correction, correction.id)
-      end)
-    end
-
+  node object(:specification_correction) do
     field :product_id, non_null(:id) do
       resolve(fn correction, _, _ ->
         GlobalId.encode_required(:product, correction.product_id)

@@ -31,11 +31,7 @@ defmodule ProductCompareWeb.Schema.Accounts.Types do
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
-  object :user do
-    field :id, non_null(:id) do
-      resolve(fn user, _, _ -> {:ok, GlobalId.encode(:user, user.entropy_id)} end)
-    end
-
+  node object(:user, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :email, non_null(:string)
     field :is_operator, non_null(:boolean)
 

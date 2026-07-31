@@ -40,18 +40,19 @@ defmodule ProductCompareWeb.Schema do
   alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareWeb.Resolvers.CatalogResolver
   alias ProductCompareWeb.Resolvers.NodeResolver
-  alias ProductCompareSchemas.Accounts.ApiToken
+  alias ProductCompareSchemas.Accounts.{ApiToken, User}
+  alias ProductCompareSchemas.Alerts.{AlertEvent, PriceWatchRule}
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
-  alias ProductCompareSchemas.Catalog.Brand
-  alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Catalog.{Brand, ComparisonSnapshot, Product, SavedComparisonSet}
+  alias ProductCompareSchemas.Discussions.{ProductReview, ProductThread, ThreadPost}
+  alias ProductCompareSchemas.Ingestion.{CJProgram, MerchantFeedCandidate}
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
-  alias ProductCompareSchemas.Specs.SourceArtifact
+  alias ProductCompareSchemas.Specs.{SourceArtifact, SpecificationCorrection}
 
   object :mutation_error do
     field :code, non_null(:string)
@@ -72,6 +73,16 @@ defmodule ProductCompareWeb.Schema do
     resolve_type(fn
       %Product{}, _ -> :product
       %Brand{}, _ -> :brand
+      %User{}, _ -> :user
+      %ComparisonSnapshot{}, _ -> :comparison_snapshot
+      %ProductReview{}, _ -> :product_review
+      %ProductThread{}, _ -> :product_question
+      %ThreadPost{}, _ -> :product_answer
+      %CJProgram{}, _ -> :cj_program
+      %MerchantFeedCandidate{}, _ -> :merchant_feed_candidate
+      %SpecificationCorrection{}, _ -> :specification_correction
+      %PriceWatchRule{}, _ -> :price_watch
+      %AlertEvent{}, _ -> :alert_event
       %Merchant{}, _ -> :merchant
       %MerchantProduct{}, _ -> :merchant_product
       %PricePoint{}, _ -> :price_point

@@ -44,11 +44,7 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
-  object :price_watch do
-    field :id, non_null(:id) do
-      resolve(fn watch, _, _ -> GlobalId.encode_required(:price_watch, watch.entropy_id) end)
-    end
-
+  node object(:price_watch, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :product_id, non_null(:id) do
       resolve(fn watch, _, _ -> GlobalId.encode_required(:product, watch.product_id) end)
     end
@@ -90,11 +86,7 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
     end
   end
 
-  object :alert_event do
-    field :id, non_null(:id) do
-      resolve(fn event, _, _ -> GlobalId.encode_required(:alert_event, event.entropy_id) end)
-    end
-
+  node object(:alert_event, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :rule_type, non_null(:price_watch_rule_type)
     field :currency, non_null(:string)
     field :item_price, non_null(:decimal)

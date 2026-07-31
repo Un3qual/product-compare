@@ -41,11 +41,7 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
     value(:non_english_language, as: "non_english_language")
   end
 
-  object :cj_program, name: "CJProgram" do
-    field :id, non_null(:id) do
-      resolve(fn program, _, _ -> GlobalId.encode_required(:cj_program, program.entropy_id) end)
-    end
-
+  node object(:cj_program, name: "CJProgram", id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :advertiser_id, non_null(:string)
     field :advertiser_name, :string, resolve: &IngestionResolver.cj_program_advertiser_name/3
     field :stage, non_null(:cj_program_stage)
@@ -84,13 +80,7 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
     end
   end
 
-  object :merchant_feed_candidate do
-    field :id, non_null(:id) do
-      resolve(fn candidate, _, _ ->
-        GlobalId.encode_required(:merchant_feed_candidate, candidate.id)
-      end)
-    end
-
+  node object(:merchant_feed_candidate) do
     field :provider, non_null(:string)
     field :provider_feed_id, non_null(:string)
     field :advertiser_id, :string

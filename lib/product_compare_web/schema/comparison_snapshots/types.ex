@@ -24,13 +24,7 @@ defmodule ProductCompareWeb.Schema.ComparisonSnapshots.Types do
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
-  object :comparison_snapshot do
-    field :id, non_null(:id) do
-      resolve(fn snapshot, _, _ ->
-        GlobalId.encode_required(:comparison_snapshot, snapshot.entropy_id)
-      end)
-    end
-
+  node object(:comparison_snapshot, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :title, :string
     field :share_path, non_null(:string), resolve: &ComparisonSnapshotsResolver.share_path/3
     field :search_indexable, non_null(:boolean)

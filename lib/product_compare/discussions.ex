@@ -216,6 +216,18 @@ defmodule ProductCompare.Discussions do
   def get_public_questions(entropy_ids) when is_list(entropy_ids),
     do: Reads.get_public_questions(entropy_ids)
 
+  @spec get_visible_nodes(
+          :product_review | :product_question | :product_answer,
+          [term()],
+          pos_integer() | nil
+        ) :: %{optional(term()) => ProductReview.t() | ProductThread.t() | ThreadPost.t() | nil}
+  def get_visible_nodes(type, entropy_ids, viewer_id)
+      when type in [:product_review, :product_question, :product_answer] and
+             is_list(entropy_ids) and
+             (is_nil(viewer_id) or (is_integer(viewer_id) and viewer_id > 0)) do
+    Reads.get_visible_nodes(type, entropy_ids, viewer_id)
+  end
+
   @spec accept_answer(pos_integer(), Ecto.UUID.t(), Ecto.UUID.t()) ::
           {:ok, ProductThread.t()}
           | {:error, :not_found | :forbidden | :answer_not_published}

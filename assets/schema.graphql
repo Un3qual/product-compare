@@ -265,18 +265,30 @@ enum SpecificationCorrectionStatus {
   REJECTED
 }
 
-type SpecificationCorrection {
+type SpecificationCorrection implements Node {
+  "The ID of an object"
   id: ID!
+
   productId: ID!
+
   attributeId: ID!
+
   claimId: ID!
+
   status: SpecificationCorrectionStatus!
+
   reason: String!
+
   sourceUrl: String
+
   explanation: String
+
   valueText: String!
+
   moderationNote: String
+
   submittedAt: DateTime!
+
   reviewedAt: DateTime
 }
 
@@ -510,15 +522,24 @@ enum CJProgramWarningCode {
   NON_ENGLISH_LANGUAGE
 }
 
-type CJProgram {
+type CJProgram implements Node {
+  "The ID of an object"
   id: ID!
+
   advertiserId: String!
+
   advertiserName: String
+
   stage: CJProgramStage!
+
   note: String
+
   lastChanged: DateTime!
+
   feedCount: Int
+
   warningCodes: [CJProgramWarningCode!]!
+
   feeds(after: String, first: Int!): MerchantFeedCandidateConnection!
 }
 
@@ -542,19 +563,32 @@ type CjProgramConnection {
   edges: [CjProgramEdge!]!
 }
 
-type MerchantFeedCandidate {
+type MerchantFeedCandidate implements Node {
+  "The ID of an object"
   id: ID!
+
   provider: String!
+
   providerFeedId: String!
+
   advertiserId: String
+
   advertiserName: String
+
   advertiserCountry: String
+
   sourceFeedType: String
+
   currency: String
+
   language: String
+
   feedName: String
+
   productCount: Int
+
   providerLastUpdatedAt: DateTime
+
   lastSeenAt: DateTime!
 }
 
@@ -682,16 +716,26 @@ type ViewerCommunitySubmissions {
   answers: [ProductAnswer!]!
 }
 
-type ProductReview {
+type ProductReview implements Node {
+  "The ID of an object"
   id: ID!
+
   rating: Int!
+
   title: String
+
   body: String
+
   verifiedPurchase: Boolean!
+
   moderationStatus: CommunityModerationStatus!
+
   authorLabel: String!
+
   viewerCanEdit: Boolean!
+
   viewerCanRemove: Boolean!
+
   createdAt: DateTime!
 }
 
@@ -705,16 +749,26 @@ type ProductReviewConnection {
   edges: [ProductReviewEdge!]!
 }
 
-type ProductQuestion {
+type ProductQuestion implements Node {
+  "The ID of an object"
   id: ID!
+
   title: String!
+
   body: String
+
   moderationStatus: CommunityModerationStatus!
+
   authorLabel: String!
+
   viewerCanEdit: Boolean!
+
   viewerCanRemove: Boolean!
+
   acceptedAnswerId: ID
+
   answers(after: String, first: Int!): ProductAnswerConnection!
+
   createdAt: DateTime!
 }
 
@@ -728,13 +782,20 @@ type ProductQuestionConnection {
   edges: [ProductQuestionEdge!]!
 }
 
-type ProductAnswer {
+type ProductAnswer implements Node {
+  "The ID of an object"
   id: ID!
+
   body: String!
+
   moderationStatus: CommunityModerationStatus!
+
   authorLabel: String!
+
   viewerCanEdit: Boolean!
+
   viewerCanRemove: Boolean!
+
   createdAt: DateTime!
 }
 
@@ -813,15 +874,24 @@ type RevokeComparisonSnapshotPayload {
   errors: [MutationError!]!
 }
 
-type ComparisonSnapshot {
+type ComparisonSnapshot implements Node {
+  "The ID of an object"
   id: ID!
+
   title: String
+
   sharePath: String!
+
   searchIndexable: Boolean!
+
   seo: SeoMetadata!
+
   capturedAt: DateTime!
+
   disclaimer: String!
+
   products: [ComparisonSnapshotProduct!]!
+
   recommendation: ComparisonRecommendation!
 }
 
@@ -1153,21 +1223,36 @@ type AlertEventPayload {
   errors: [MutationError!]!
 }
 
-type PriceWatch {
+type PriceWatch implements Node {
+  "The ID of an object"
   id: ID!
+
   productId: ID!
+
   merchantProductId: ID
+
   productName: String!
+
   productSlug: String!
+
   merchantName: String
+
   ruleType: PriceWatchRuleType!
+
   currency: String!
+
   targetAmount: Decimal
+
   percentageDrop: Decimal
+
   baselineLandedPrice: Decimal
+
   enabled: Boolean!
+
   cooldownSeconds: Int!
+
   lastEvaluatedAt: DateTime
+
   createdAt: DateTime!
 }
 
@@ -1181,20 +1266,34 @@ type PriceWatchConnection {
   edges: [PriceWatchEdge!]!
 }
 
-type AlertEvent {
+type AlertEvent implements Node {
+  "The ID of an object"
   id: ID!
+
   ruleType: PriceWatchRuleType!
+
   currency: String!
+
   itemPrice: Decimal!
+
   shipping: Decimal!
+
   landedPrice: Decimal!
+
   observedAt: DateTime!
+
   readAt: DateTime
+
   createdAt: DateTime!
+
   triggeringPricePointId: ID!
+
   merchantProductId: ID!
+
   productName: String!
+
   productSlug: String!
+
   merchantName: String!
 }
 
@@ -1413,10 +1512,14 @@ type RevokeApiTokenPayload {
   errors: [MutationError!]!
 }
 
-type User {
+type User implements Node {
+  "The ID of an object"
   id: ID!
+
   email: String!
+
   isOperator: Boolean!
+
   comparisonSnapshots(after: String, first: Int!): ComparisonSnapshotConnection!
 }
 

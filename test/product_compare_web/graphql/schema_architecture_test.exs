@@ -20,6 +20,30 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     seo
     specs
   )
+  @stable_node_types ~w(
+    affiliate_link
+    affiliate_network
+    affiliate_program
+    alert_event
+    api_token
+    brand
+    cj_program
+    comparison_snapshot
+    coupon
+    merchant
+    merchant_feed_candidate
+    merchant_product
+    price_point
+    price_watch
+    product
+    product_answer
+    product_question
+    product_review
+    saved_comparison_set
+    source_artifact
+    specification_correction
+    user
+  )a
 
   test "the GraphQL loader contains no KV source" do
     offenders =
@@ -47,9 +71,14 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     refute schema_source =~ ~r/\bobject\s+:page_info\b/
     refute schema_source =~ ~r/\bobject\s+:[a-z0-9_]+_(connection|edge)\b/
 
-    assert schema_source
-           |> then(&Regex.scan(~r/\bnode\s+object(?:\s+|\():/, &1))
-           |> Enum.count_until(12) == 12
+    declared_node_types =
+      schema_source
+      |> then(&Regex.scan(~r/\bnode\s+object\(\s*:([a-z0-9_]+)/, &1, capture: :all_but_first))
+      |> List.flatten()
+      |> Enum.map(&String.to_existing_atom/1)
+      |> Enum.sort()
+
+    assert declared_node_types == Enum.sort(@stable_node_types)
 
     assert schema_source
            |> then(&Regex.scan(~r/\bconnection(?:\s+|\(\s*)node_type:/, &1))
