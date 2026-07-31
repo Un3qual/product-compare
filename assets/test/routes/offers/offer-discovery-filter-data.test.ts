@@ -1,7 +1,7 @@
 import {
   buildOfferDiscoveryPaginationData,
   offerDiscoverySelectedProductContext,
-  getOfferDiscoveryFilterData
+  getOfferDiscoveryFilterData,
 } from "../../../src/routes/offers/offer-discovery-filter-data";
 
 const DEFAULT_FILTERS = {
@@ -10,12 +10,12 @@ const DEFAULT_FILTERS = {
   first: 6,
   merchantId: null,
   productId: null,
-  sort: "default"
+  sort: "default",
 } as const;
 
 test.each([
   [true, { label: "Active offers", tone: "positive" }],
-  [false, { label: "All offers", tone: "neutral" }]
+  [false, { label: "All offers", tone: "neutral" }],
 ] as const)(
   "projects the %s offer-discovery scope badge without mutating filters",
   (activeOnly, scopeBadge) => {
@@ -23,16 +23,15 @@ test.each([
 
     expect(getOfferDiscoveryFilterData(filters).scopeBadge).toEqual(scopeBadge);
     expect(filters).toEqual({ ...DEFAULT_FILTERS, activeOnly });
-  }
+  },
 );
 
-test.each([
-  null,
-  undefined,
-  { __typename: "Brand" }
-])("returns no selected-product context for %j", (node) => {
-  expect(offerDiscoverySelectedProductContext(node)).toBeNull();
-});
+test.each([null, undefined, { __typename: "Brand" }])(
+  "returns no selected-product context for %j",
+  (node) => {
+    expect(offerDiscoverySelectedProductContext(node)).toBeNull();
+  },
+);
 
 test("projects exact selected-product context and preserves brand identity", () => {
   const brand = Object.freeze({ id: "brand-1", name: "Example Brand" });
@@ -41,7 +40,7 @@ test("projects exact selected-product context and preserves brand identity", () 
     brand,
     id: "product-1",
     name: "Detail Product",
-    slug: "detail-product"
+    slug: "detail-product",
   });
 
   const context = offerDiscoverySelectedProductContext(node);
@@ -50,7 +49,7 @@ test("projects exact selected-product context and preserves brand identity", () 
     brand: { id: "brand-1", name: "Example Brand" },
     id: "product-1",
     name: "Detail Product",
-    slug: "detail-product"
+    slug: "detail-product",
   });
   expect(context?.brand).toBe(brand);
 });
@@ -61,21 +60,21 @@ test("projects a selected product with no brand without mutating its input", () 
     brand: null,
     id: "product-1",
     name: "Detail Product",
-    slug: "detail-product"
+    slug: "detail-product",
   });
 
   expect(offerDiscoverySelectedProductContext(node)).toEqual({
     brand: null,
     id: "product-1",
     name: "Detail Product",
-    slug: "detail-product"
+    slug: "detail-product",
   });
   expect(node).toEqual({
     __typename: "Product",
     brand: null,
     id: "product-1",
     name: "Detail Product",
-    slug: "detail-product"
+    slug: "detail-product",
   });
 });
 
@@ -89,30 +88,44 @@ test("buildOfferDiscoveryPaginationData preserves every filter in first and next
         first: 12,
         merchantId: "merchant/+ id",
         productId: "product/+ id",
-        sort: "price_desc"
+        sort: "price_desc",
       },
       hasNextPage: true,
-      hasPreviousPage: true
-    })
+      hasPreviousPage: true,
+    }),
   ).toEqual({
     firstHref:
       "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc",
     nextHref:
-      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&after=next+cursor%2F%2B"
+      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&after=next+cursor%2F%2B",
   });
 });
 
 test("buildOfferDiscoveryPaginationData rejects blank and repeated next cursors", () => {
   const filters = { ...DEFAULT_FILTERS, after: "same-cursor" };
 
-  expect(buildOfferDiscoveryPaginationData({ endCursor: "same-cursor", filters, hasNextPage: true, hasPreviousPage: true }).nextHref).toBeNull();
-  expect(buildOfferDiscoveryPaginationData({ endCursor: "  ", filters, hasNextPage: true, hasPreviousPage: true }).nextHref).toBeNull();
+  expect(
+    buildOfferDiscoveryPaginationData({
+      endCursor: "same-cursor",
+      filters,
+      hasNextPage: true,
+      hasPreviousPage: true,
+    }).nextHref,
+  ).toBeNull();
+  expect(
+    buildOfferDiscoveryPaginationData({
+      endCursor: "  ",
+      filters,
+      hasNextPage: true,
+      hasPreviousPage: true,
+    }).nextHref,
+  ).toBeNull();
 });
 
 test.each([
   [false, "current-cursor"],
   [true, null],
-  [true, ""]
+  [true, ""],
 ] as const)(
   "buildOfferDiscoveryPaginationData hides incomplete first-page facts",
   (hasPreviousPage, after) => {
@@ -121,19 +134,19 @@ test.each([
         endCursor: null,
         filters: {
           ...DEFAULT_FILTERS,
-          after
+          after,
         },
         hasNextPage: false,
-        hasPreviousPage
-      }).firstHref
+        hasPreviousPage,
+      }).firstHref,
     ).toBeNull();
-  }
+  },
 );
 
 test.each([
   [false, "next-cursor"],
   [true, null],
-  [true, ""]
+  [true, ""],
 ] as const)(
   "buildOfferDiscoveryPaginationData hides incomplete next-page facts",
   (hasNextPage, endCursor) => {
@@ -142,10 +155,10 @@ test.each([
         endCursor,
         filters: DEFAULT_FILTERS,
         hasNextPage,
-        hasPreviousPage: false
-      }).nextHref
+        hasPreviousPage: false,
+      }).nextHref,
     ).toBeNull();
-  }
+  },
 );
 
 test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
@@ -153,10 +166,10 @@ test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
     endCursor: "next-cursor",
     filters: Object.freeze({
       ...DEFAULT_FILTERS,
-      after: "current-cursor"
+      after: "current-cursor",
     }),
     hasNextPage: true,
-    hasPreviousPage: true
+    hasPreviousPage: true,
   });
 
   buildOfferDiscoveryPaginationData(input);
@@ -165,10 +178,10 @@ test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
     endCursor: "next-cursor",
     filters: {
       ...DEFAULT_FILTERS,
-      after: "current-cursor"
+      after: "current-cursor",
     },
     hasNextPage: true,
-    hasPreviousPage: true
+    hasPreviousPage: true,
   });
 });
 
@@ -184,8 +197,8 @@ test("builds the default form reset key and active-filter summary without action
       { label: "Product ID", value: "Not selected" },
       { label: "Offer status", value: "Active offers only" },
       { label: "Page size", value: "6" },
-      { label: "Sort", value: "Default order" }
-    ]
+      { label: "Sort", value: "Default order" },
+    ],
   });
 });
 
@@ -198,18 +211,17 @@ test("orders selected-product, brand, merchant, and filter summaries with route 
         first: 12,
         merchantId: "merchant-1",
         productId: "product-1",
-        sort: "price_asc"
+        sort: "price_asc",
       },
       {
         brand: { name: "Example Brand" },
         id: "product-1",
         name: "Detail Product",
-        slug: "detail product / 2026"
-      }
-    )
+        slug: "detail product / 2026",
+      },
+    ),
   ).toEqual({
-    clearMerchantFilterPath:
-      "/offers?productId=product-1&activeOnly=false&first=12&sort=price_asc",
+    clearMerchantFilterPath: "/offers?productId=product-1&activeOnly=false&first=12&sort=price_asc",
     formKey: JSON.stringify(["product-1", "merchant-1", false, 12, "price_asc"]),
     productDetailsPath: "/products/detail%20product%20%2F%202026",
     showReset: true,
@@ -221,8 +233,8 @@ test("orders selected-product, brand, merchant, and filter summaries with route 
       { label: "Merchant ID", value: "merchant-1" },
       { label: "Offer status", value: "All offers included" },
       { label: "Page size", value: "12" },
-      { label: "Sort", value: "Price: low to high" }
-    ]
+      { label: "Sort", value: "Price: low to high" },
+    ],
   });
 });
 
@@ -232,14 +244,14 @@ test("normalizes unknown sorts before building summaries, form keys, and merchan
       ...DEFAULT_FILTERS,
       merchantId: "merchant-1",
       productId: "product-1",
-      sort: "future_sort"
+      sort: "future_sort",
     },
     {
       brand: null,
       id: "product-1",
       name: "Detail Product",
-      slug: "detail-product"
-    }
+      slug: "detail-product",
+    },
   );
 
   expect(data.sortLabel).toBe("Default order");
@@ -249,7 +261,7 @@ test("normalizes unknown sorts before building summaries, form keys, and merchan
     { label: "Merchant ID", value: "merchant-1" },
     { label: "Offer status", value: "Active offers only" },
     { label: "Page size", value: "6" },
-    { label: "Sort", value: "Default order" }
+    { label: "Sort", value: "Default order" },
   ]);
   expect(data.clearMerchantFilterPath).toBe("/offers?productId=product-1&activeOnly=true&first=6");
   expect(data.showReset).toBe(true);
@@ -259,7 +271,7 @@ test.each([
   ["default", "Default order"],
   ["price_asc", "Price: low to high"],
   ["price_desc", "Price: high to low"],
-  ["merchant_name", "Merchant name"]
+  ["merchant_name", "Merchant name"],
 ])("uses the canonical %s sort label", (sort, sortLabel) => {
   expect(getOfferDiscoveryFilterData({ ...DEFAULT_FILTERS, sort }).sortLabel).toBe(sortLabel);
 });
@@ -268,7 +280,7 @@ test("keeps reset hidden when sort is the only active filter", () => {
   expect(
     getOfferDiscoveryFilterData({
       ...DEFAULT_FILTERS,
-      sort: "price_desc"
-    }).showReset
+      sort: "price_desc",
+    }).showReset,
   ).toBe(false);
 });

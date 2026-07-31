@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 interface ManifestChunk {
+  css?: string[];
   dynamicImports?: string[];
   file: string;
   imports?: string[];
@@ -19,9 +20,9 @@ const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const manifestPath = resolve(scriptDirectory, "../dist/.vite/manifest.json");
 const distPath = resolve(scriptDirectory, "../dist");
 
-// Set from the measured post-split closure (180,879 bytes gzip) with roughly
-// 10.6% headroom for ordinary Vite and dependency patch drift.
-const INITIAL_GZIP_BUDGET_BYTES = 200_000;
+// The measured initial JS/CSS closure is 270,072 gzip bytes. The 300 KB
+// ceiling leaves room for ordinary Vite and dependency patch drift.
+const INITIAL_GZIP_BUDGET_BYTES = 300_000;
 
 const requiredDynamicRoutes = [
   ["affiliate setup screen", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
@@ -63,12 +64,23 @@ if (clientEntries.length !== 1) {
 const [entryKey] = clientEntries[0];
 const entryDynamicImports = new Set(manifest[entryKey]?.dynamicImports ?? []);
 const initialClosure = collectStaticImportClosure(manifest, entryKey);
-const initialFiles = [...initialClosure].map((key) => manifest[key]?.file).filter(Boolean);
-const initialJavaScriptFiles = initialFiles.filter((file) => file.endsWith(".js"));
+const initialFiles = [
+  ...new Set(
+    [...initialClosure].flatMap((key) => {
+      const chunk = manifest[key];
+      return chunk ? [chunk.file, ...(chunk.css ?? [])] : [];
+    }),
+  ),
+];
+const initialBundleFiles = initialFiles.filter(
+  (file) => file.endsWith(".js") || file.endsWith(".css"),
+);
+const initialJavaScriptFiles = initialBundleFiles.filter((file) => file.endsWith(".js"));
+const initialCssFiles = initialBundleFiles.filter((file) => file.endsWith(".css"));
 let initialRawBytes = 0;
 let initialGzipBytes = 0;
 
-for (const file of initialJavaScriptFiles) {
+for (const file of initialBundleFiles) {
   const contents = await readFile(resolve(distPath, file));
   initialRawBytes += contents.byteLength;
   initialGzipBytes += gzipSync(contents).byteLength;
@@ -78,7 +90,7 @@ const failures: string[] = [];
 
 if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
   failures.push(
-    `initial static JavaScript closure is ${initialGzipBytes.toLocaleString()} gzip bytes, ` +
+    `initial static JavaScript/CSS closure is ${initialGzipBytes.toLocaleString()} gzip bytes, ` +
       `above the ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()}-byte budget`,
   );
 }
@@ -105,7 +117,7 @@ if (failures.length > 0) {
     [
       "Client bundle contract failed:",
       ...failures.map((failure) => `- ${failure}`),
-      `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript file(s).`,
+      `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript and ${initialCssFiles.length} CSS file(s).`,
       "Build the client after moving every non-root route and loader behind direct React Router lazy imports.",
     ].join("\n"),
   );
@@ -113,7 +125,7 @@ if (failures.length > 0) {
 
 process.stdout.write(
   `Client bundle contract passed: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes ` +
-    `across ${initialJavaScriptFiles.length} initial JavaScript file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
+    `across ${initialJavaScriptFiles.length} initial JavaScript and ${initialCssFiles.length} CSS file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
 );
 
 function collectStaticImportClosure(manifest: Manifest, entryKey: string) {

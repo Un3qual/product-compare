@@ -1,17 +1,17 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import browseProductsRouteQuery, {
-  type BrowseProductsRouteQuery
+  type BrowseProductsRouteQuery,
 } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
 import {
   catalogFiltersFromUrl,
   catalogFiltersToProductFiltersInput,
-  type CatalogFilters
+  type CatalogFilters,
 } from "./filters";
 
 const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
@@ -31,7 +31,7 @@ export type BrowseProductsLoaderData =
 
 export async function browseLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const requestUrl = new URL(request.url);
@@ -39,7 +39,7 @@ export async function browseLoader({
   const productFiltersInput = catalogFiltersToProductFiltersInput(filters);
   const pageSize = browseProductsPageSizeFromUrl(requestUrl);
   const variables: BrowseProductsRouteQuery["variables"] = {
-    first: pageSize
+    first: pageSize,
   };
   const after = nonBlankParam(requestUrl, "after");
 
@@ -56,22 +56,22 @@ export async function browseLoader({
       environment,
       browseProductsRouteQuery,
       variables,
-      { signal: request.signal }
+      { signal: request.signal },
     );
 
     return {
       status: "ready",
       filters,
       pageSize,
-      query: queryResult.descriptor
+      query: queryResult.descriptor,
     };
   } catch (error) {
     return recoverRouteLoaderError<BrowseProductsLoaderData>(
       error,
       "Failed to preload browse products route query.",
       {
-        status: "error"
-      }
+        status: "error",
+      },
     );
   }
 }
@@ -89,9 +89,7 @@ function browseProductsPageSizeFromUrl(url: URL) {
 
   const parsedValue = Number.parseInt(value, 10);
 
-  return isBrowseProductsPageSize(parsedValue)
-    ? parsedValue
-    : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+  return isBrowseProductsPageSize(parsedValue) ? parsedValue : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
 }
 
 function isBrowseProductsPageSize(value: number): value is BrowseProductsPageSize {

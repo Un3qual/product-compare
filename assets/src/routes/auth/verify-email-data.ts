@@ -1,10 +1,7 @@
-import {
-  invalidTokenMutationError,
-  type MutationError
-} from "./errors";
+import { invalidTokenMutationError, type MutationError } from "./errors";
 
 export const VERIFY_EMAIL_MISSING_TOKEN_ERROR = invalidTokenMutationError(
-  "This verification link is missing or invalid."
+  "This verification link is missing or invalid.",
 );
 
 export const VERIFY_EMAIL_SUCCESS_MESSAGE = "Your email address is verified.";
@@ -16,14 +13,14 @@ export type VerifyEmailRequestData = {
 };
 
 export function buildVerifyEmailRequestData(
-  rawToken: string | null | undefined
+  rawToken: string | null | undefined,
 ): VerifyEmailRequestData {
   const token = normalizeVerifyEmailToken(rawToken);
 
   return {
     initialErrors: token ? [] : [VERIFY_EMAIL_MISSING_TOKEN_ERROR],
     isLoading: Boolean(token),
-    token
+    token,
   };
 }
 

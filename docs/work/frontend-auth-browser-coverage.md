@@ -11,7 +11,7 @@
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
 - Definition of done:
   - Browser-level Playwright coverage exists for the existing frontend auth flows: `login`, `register`, `forgot-password`, `reset-password`, and `verify-email`.
-  - The Playwright tests exercise the Bun frontend against intercepted GraphQL responses and assert the browser-visible success, redirect, and error states.
+  - The Playwright tests exercise the frontend against intercepted GraphQL responses and assert the browser-visible success, redirect, and error states.
   - `docs/work/index.md` and `docs/work/graphql-auth-migration.md` reflect the resulting steady state.
 
 ## Verified Current State
@@ -21,7 +21,7 @@
   - `assets/src/routes/auth/__tests__/session.route.test.tsx`
   - `assets/src/routes/auth/__tests__/recovery.route.test.tsx`
 - The Playwright suite now contains `assets/tests/e2e/smoke.spec.ts` and `assets/tests/e2e/auth.spec.ts`.
-- `assets/playwright.config.ts` starts only the Bun frontend dev server, so browser-level auth tests must stub `/api/graphql` rather than depending on a live Phoenix backend.
+- `assets/playwright.config.ts` starts only the frontend Vite dev server, so browser-level auth tests must stub `/api/graphql` rather than depending on a live Phoenix backend.
 - The root shell exposes entry points for `Sign in` and `Create account`; recovery and verification flows are reached from auth route links or query-string URLs.
 
 ## Completed

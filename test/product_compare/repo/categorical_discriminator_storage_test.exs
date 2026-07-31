@@ -17,7 +17,7 @@ defmodule ProductCompare.Repo.CategoricalDiscriminatorStorageTest do
 
     assert column_exists?("reputation_event_types", "code")
     assert column_exists?("reputation_event_types", "name")
-    assert column_exists?("reputation_event_types", "default_delta")
+    refute column_exists?("reputation_event_types", "default_delta")
     assert unique_columns?("reputation_event_types", ["code"])
   end
 

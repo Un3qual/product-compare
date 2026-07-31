@@ -3,7 +3,7 @@ import type { SharedComparisonRouteQuery } from "../../../__generated__/SharedCo
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "../../loader-errors";
 import { routeMetadataFromSeo } from "../../seo";
@@ -11,7 +11,11 @@ import type { RouteDocumentMetadata } from "../../RouteMetadata";
 import sharedComparisonRouteQuery from "./queries/SharedComparisonRouteQuery";
 
 export type SharedComparisonLoaderData =
-  | { status: "ready"; metadata: RouteDocumentMetadata; query: RelayRouteQueryDescriptor<SharedComparisonRouteQuery["variables"]> }
+  | {
+      status: "ready";
+      metadata: RouteDocumentMetadata;
+      query: RelayRouteQueryDescriptor<SharedComparisonRouteQuery["variables"]>;
+    }
   | { status: "not_found" };
 
 export async function sharedComparisonLoader({ context, params, request }: LoaderFunctionArgs) {
@@ -24,13 +28,19 @@ export async function sharedComparisonLoader({ context, params, request }: Loade
       environment,
       sharedComparisonRouteQuery,
       { token },
-      { signal: request.signal }
+      { signal: request.signal },
     );
     if (!fetched.data.comparisonSnapshot) {
       fetched.dispose();
       return notFound();
     }
-    return { status: "ready" as const, metadata: routeMetadataFromSeo(fetched.data.comparisonSnapshot.seo, request.url, { allowIndexing: new URL(request.url).search === "" }), query: fetched.descriptor };
+    return {
+      status: "ready" as const,
+      metadata: routeMetadataFromSeo(fetched.data.comparisonSnapshot.seo, request.url, {
+        allowIndexing: new URL(request.url).search === "",
+      }),
+      query: fetched.descriptor,
+    };
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Shared comparison fetch failed");
   }

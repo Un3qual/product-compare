@@ -86,13 +86,13 @@ function exactDecimalParts(value: string): ExactDecimalParts | null {
   return {
     digits: digits.slice(firstSignificantIndex).replace(/0+$/, ""),
     magnitude,
-    sign
+    sign,
   };
 }
 
 function compareAbsoluteExactDecimals(
   left: ExactDecimalParts,
-  right: ExactDecimalParts
+  right: ExactDecimalParts,
 ): -1 | 0 | 1 {
   if (left.digits === "0" || right.digits === "0") {
     return left.digits === right.digits ? 0 : left.digits === "0" ? -1 : 1;

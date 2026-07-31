@@ -2,7 +2,7 @@ import {
   MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
   selectedCompareSlugsAfterAdding,
-  type CompareSpecMode
+  type CompareSpecMode,
 } from "./paths";
 import { nextRelayPageCursor } from "../relay-pagination";
 
@@ -27,14 +27,14 @@ export type ComparePickerPageInfo = {
 
 export function comparePickerResetToken(
   specMode: CompareSpecMode,
-  selectedSlugs: readonly string[]
+  selectedSlugs: readonly string[],
 ) {
   return `${specMode}:${selectedSlugs.join("|")}`;
 }
 
 export function appendUniqueComparePickerProducts<Product extends ComparePickerProduct>(
   existingProducts: Product[],
-  newProducts: readonly Product[]
+  newProducts: readonly Product[],
 ): Product[] {
   if (newProducts.length === 0) {
     return existingProducts;
@@ -57,7 +57,7 @@ export function appendUniqueComparePickerProducts<Product extends ComparePickerP
 
 export function availableComparePickerProducts<Product extends ComparePickerProduct>(
   products: readonly Product[],
-  selectedSlugs: readonly string[]
+  selectedSlugs: readonly string[],
 ): Product[] {
   return products.filter((product) => !selectedSlugs.includes(product.slug));
 }
@@ -65,29 +65,29 @@ export function availableComparePickerProducts<Product extends ComparePickerProd
 export function buildComparePickerOptions(
   availableProducts: readonly ComparePickerProduct[],
   selectedSlugs: readonly string[],
-  specMode: CompareSpecMode
+  specMode: CompareSpecMode,
 ): ComparePickerOption[] {
   return availableProducts.map((product) => ({
     brandName: product.brand?.name ?? "Unknown brand",
     href: buildComparePathFromSlugs(
       selectedCompareSlugsAfterAdding(selectedSlugs, product.slug, MAX_COMPARE_PRODUCTS),
-      { specMode }
+      { specMode },
     ),
     id: product.id,
-    name: product.name
+    name: product.name,
   }));
 }
 
 export function nextComparePickerPageCursor(
   pageInfo: ComparePickerPageInfo | null | undefined,
-  currentAfter: string | null = null
+  currentAfter: string | null = null,
 ) {
   return nextRelayPageCursor(pageInfo, currentAfter);
 }
 
 export function isComparePickerEmpty(
   availableProducts: readonly ComparePickerProduct[],
-  nextCursor: string | null | undefined
+  nextCursor: string | null | undefined,
 ) {
   return availableProducts.length === 0 && !nextCursor;
 }

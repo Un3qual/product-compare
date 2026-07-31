@@ -48,21 +48,17 @@ type SharedComparisonSnapshotInput = Pick<
   readonly recommendation: SharedComparisonRecommendationInput;
 };
 
-export function buildSharedComparisonViewData(
-  snapshot: SharedComparisonSnapshotInput
-) {
+export function buildSharedComparisonViewData(snapshot: SharedComparisonSnapshotInput) {
   const products = snapshot.products;
   const recommendation = snapshot.recommendation;
   const winner = recommendation.rankings.find(
-    ({ productId }) => productId === recommendation.winnerProductId
+    ({ productId }) => productId === recommendation.winnerProductId,
   );
 
   return {
     capturedAt: snapshot.capturedAt,
     disclaimer: snapshot.disclaimer,
-    liveComparisonPath: buildComparePathFromSlugs(
-      products.map(({ slug }) => slug)
-    ),
+    liveComparisonPath: buildComparePathFromSlugs(products.map(({ slug }) => slug)),
     products: products.map(projectProduct),
     recommendation: winner
       ? {
@@ -70,16 +66,16 @@ export function buildSharedComparisonViewData(
           evaluatedAt: recommendation.evaluatedAt,
           kind: "winner" as const,
           label: winner.productName,
-          reasons: [...winner.reasons]
+          reasons: [...winner.reasons],
         }
       : {
           algorithmVersion: recommendation.algorithmVersion,
           evaluatedAt: recommendation.evaluatedAt,
           kind: "unsupported" as const,
           label: "No supported winner",
-          reasons: [...recommendation.missingInputs]
+          reasons: [...recommendation.missingInputs],
         },
-    title: nonBlankText(snapshot.title) ?? "Shared product comparison"
+    title: nonBlankText(snapshot.title) ?? "Shared product comparison",
   };
 }
 
@@ -101,7 +97,7 @@ function projectProduct(product: SharedComparisonProductInput) {
         valueText: attribute.valueText,
         evidenceLabel: sourceName
           ? `Accepted claim ${attribute.claimId} · ${sourceName}`
-          : `Accepted claim ${attribute.claimId}`
+          : `Accepted claim ${attribute.claimId}`,
       };
     }),
     offers: product.offers.map((offer) => {
@@ -115,9 +111,9 @@ function projectProduct(product: SharedComparisonProductInput) {
           landedPrice && currency
             ? `${merchantName}: ${landedPrice} ${currency} landed`
             : `${merchantName}: Landed price unavailable`,
-        observedAt: nonBlankText(offer.observedAt)
+        observedAt: nonBlankText(offer.observedAt),
       };
-    })
+    }),
   };
 }
 

@@ -22,16 +22,16 @@ export type RouteMetadataTagPolicy = {
 };
 
 export function projectRouteMetadataTagPolicy(
-  metadata: Pick<RouteDocumentMetadata, "imageUrl" | "indexable">
+  metadata: Pick<RouteDocumentMetadata, "imageUrl" | "indexable">,
 ): RouteMetadataTagPolicy {
   return {
     robots: metadata.indexable === true ? "index,follow" : "noindex,follow",
-    twitterCard: metadata.imageUrl ? "summary_large_image" : "summary"
+    twitterCard: metadata.imageUrl ? "summary_large_image" : "summary",
   };
 }
 
 export function resolveRouteDocumentMetadata(
-  matches: ReadonlyArray<RouteMetadataMatch>
+  matches: ReadonlyArray<RouteMetadataMatch>,
 ): RouteDocumentMetadata | null {
   for (let index = matches.length - 1; index >= 0; index -= 1) {
     const match = matches[index];
@@ -51,7 +51,9 @@ function metadataFromContainer(value: unknown): RouteDocumentMetadata | null {
   return container ? metadataFromRecord(recordFromUnknown(container.metadata)) : null;
 }
 
-function metadataFromRecord(metadata: Record<string, unknown> | null): RouteDocumentMetadata | null {
+function metadataFromRecord(
+  metadata: Record<string, unknown> | null,
+): RouteDocumentMetadata | null {
   if (!metadata) return null;
   const description = stringProperty(metadata, "description");
   const title = stringProperty(metadata, "title");
@@ -63,14 +65,12 @@ function metadataFromRecord(metadata: Record<string, unknown> | null): RouteDocu
     imageUrl: optionalStringProperty(metadata, "imageUrl"),
     indexable: metadata.indexable === true,
     structuredData: optionalStringProperty(metadata, "structuredData"),
-    title
+    title,
   };
 }
 
 function recordFromUnknown(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object"
-    ? (value as Record<string, unknown>)
-    : null;
+  return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : null;
 }
 
 function stringProperty(record: Record<string, unknown>, key: string) {

@@ -29,7 +29,7 @@
 - Recently completed shopper decision-confidence plan:
   - `docs/plans/2026-07-09-catalog-result-guidance-and-removable-filters-implementation-plan.md`
 - Definition of done:
-  - The Bun frontend exposes a `/products` route with SSR-safe rendering.
+  - The frontend exposes a `/products` route with SSR-safe rendering.
   - The route loads the first page of products from the existing GraphQL `products` connection.
   - Root navigation and route-level tests cover the browse entry point plus success, empty, and unavailable states.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.
@@ -384,7 +384,7 @@
 - `assets/test/routes/catalog/browse.route.test.tsx` now covers the decision-card
   action labels/destinations while keeping page-size and pagination regressions
   covered.
-- The frontend already has Bun SSR, route-level tests, and a shared GraphQL transport helper in `assets/src/relay/fetch-graphql.ts`.
+- The frontend already has Vite SSR, route-level tests, and a shared GraphQL transport helper in `assets/src/relay/fetch-graphql.ts`.
 - The backend already exposes the paginated `products` query in `lib/product_compare_web/schema.ex` with coverage in `test/product_compare_web/graphql/catalog_queries_test.exs`.
 
 ## Completed

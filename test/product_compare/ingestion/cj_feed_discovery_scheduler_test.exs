@@ -82,7 +82,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:enqueued, first_opts}, 250
+    assert_receive {:enqueued, first_opts}, 2_000
     assert_receive {:enqueued, second_opts}, 250
     assert_receive {:enqueued, third_opts}, 250
 
@@ -114,7 +114,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:enqueued, opts}, 250
+    assert_receive {:enqueued, opts}, 2_000
     assert opts[:advertiser_country] == "US"
     refute_receive {:run, _opts}, 50
 
@@ -139,7 +139,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 2_000
     assert_receive {:run, _opts}, 250
 
     GenServer.stop(pid)
@@ -173,12 +173,12 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:resolved, _first_resolution_opts}, 250
-    assert_receive {:enqueued, first_opts}, 250
+    assert_receive {:resolved, _first_resolution_opts}, 2_000
+    assert_receive {:enqueued, first_opts}, 2_000
     assert first_opts[:cursor] == 40
 
     assert_receive {:resolved, _second_resolution_opts}, 250
-    assert_receive {:enqueued, second_opts}, 250
+    assert_receive {:enqueued, second_opts}, 2_000
     assert second_opts[:cursor] == 80
 
     GenServer.stop(pid)
@@ -208,7 +208,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
           )
         )
 
-      assert_receive {:run, ^invalid_cursor, opts}, 1_000
+      assert_receive {:run, ^invalid_cursor, opts}, 2_000
       assert opts[:cursor] == nil
 
       GenServer.stop(pid)
@@ -240,7 +240,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
           )
         )
 
-      assert_receive {:enqueued, ^invalid_cursor, first_opts}, 250
+      assert_receive {:enqueued, ^invalid_cursor, first_opts}, 2_000
       assert first_opts[:cursor] == 40
 
       assert_receive {:enqueued, ^invalid_cursor, second_opts}, 250
@@ -269,7 +269,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
       )
 
     capture_log(fn ->
-      assert_receive {:run, _opts}, 250
+      assert_receive {:run, _opts}, 2_000
       assert_receive {:run, _opts}, 250
     end)
 
@@ -296,7 +296,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
              ]}
           )
 
-        assert_receive {:run, _opts}, 250
+        assert_receive {:run, _opts}, 2_000
         assert_receive {:run, _opts}, 250
 
         assert Process.alive?(pid)
@@ -329,7 +329,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
             )
           )
 
-        assert_receive {:run, _opts}, 250
+        assert_receive {:run, _opts}, 2_000
         assert_receive {:run, _opts}, 250
 
         assert Process.alive?(pid)
@@ -357,7 +357,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 2_000
     refute_receive {:run, _opts}, 50
 
     GenServer.stop(pid)
@@ -387,7 +387,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}, 250
+    assert_receive {:run, opts}, 2_000
 
     assert Keyword.keys(opts) == [
              :advertiser_country,

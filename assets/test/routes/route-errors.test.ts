@@ -3,7 +3,7 @@ import {
   hasRouteGraphQLErrors,
   isRouteRecord,
   isRouteMutationError,
-  routeMutationErrorMessage
+  routeMutationErrorMessage,
 } from "../../src/routes/route-errors";
 
 test("hasRouteGraphQLErrors detects non-empty top-level GraphQL error arrays", () => {
@@ -17,23 +17,23 @@ test("hasRouteGraphQLErrors detects non-empty top-level GraphQL error arrays", (
 
 test("isRouteMutationError validates typed GraphQL mutation error entries", () => {
   expect(
-    isRouteMutationError({ code: "INVALID_ARGUMENT", message: "Name is required", field: null })
+    isRouteMutationError({ code: "INVALID_ARGUMENT", message: "Name is required", field: null }),
   ).toBe(true);
   expect(
     isRouteMutationError({
       code: "INVALID_ARGUMENT",
       message: "Name is required",
-      field: "name"
-    })
+      field: "name",
+    }),
   ).toBe(true);
 
   expect(isRouteMutationError({ message: "missing code" })).toBe(false);
-  expect(isRouteMutationError({ code: "INVALID_ARGUMENT", message: "invalid field", field: 1 })).toBe(
-    false
-  );
-  expect(isRouteMutationError(Object.assign([], { code: "INVALID_ARGUMENT", message: "array" }))).toBe(
-    false
-  );
+  expect(
+    isRouteMutationError({ code: "INVALID_ARGUMENT", message: "invalid field", field: 1 }),
+  ).toBe(false);
+  expect(
+    isRouteMutationError(Object.assign([], { code: "INVALID_ARGUMENT", message: "array" })),
+  ).toBe(false);
 });
 
 test("isRouteRecord accepts object-shaped route payloads", () => {
@@ -55,8 +55,8 @@ test("routeMutationErrorMessage returns the first typed mutation error message",
   expect(
     routeMutationErrorMessage([
       { code: "INVALID_ARGUMENT", message: "Name is required", field: "name" },
-      { code: "INVALID_ARGUMENT", message: "Product is required", field: "productIds" }
-    ])
+      { code: "INVALID_ARGUMENT", message: "Product is required", field: "productIds" },
+    ]),
   ).toBe("Name is required");
 });
 
@@ -66,15 +66,13 @@ test("routeMutationErrorMessage falls back when errors are missing or malformed"
   expect(routeMutationErrorMessage(missingErrors)).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage([])).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage([{ code: "INVALID_ARGUMENT" }])).toBe(
-    DEFAULT_ROUTE_ERROR_MESSAGE
+    DEFAULT_ROUTE_ERROR_MESSAGE,
   );
   expect(routeMutationErrorMessage([{ message: "Message without code" }])).toBe(
-    DEFAULT_ROUTE_ERROR_MESSAGE
+    DEFAULT_ROUTE_ERROR_MESSAGE,
   );
   expect(
-    routeMutationErrorMessage([
-      { code: "INVALID_ARGUMENT", message: "Invalid field", field: 123 }
-    ])
+    routeMutationErrorMessage([{ code: "INVALID_ARGUMENT", message: "Invalid field", field: 123 }]),
   ).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(routeMutationErrorMessage(["Name is required"])).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
 
@@ -86,7 +84,7 @@ test("routeMutationErrorMessage hides payload details when Relay reports top-lev
   expect(
     routeMutationErrorMessage(
       [{ code: "INVALID_ARGUMENT", message: "Name is required", field: "name" }],
-      [{ message: "database stacktrace" }]
-    )
+      [{ message: "database stacktrace" }],
+    ),
   ).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
 });

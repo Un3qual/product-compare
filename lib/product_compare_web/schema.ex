@@ -104,6 +104,8 @@ defmodule ProductCompareWeb.Schema do
         {CatalogResolver, :base_unit_symbols_by_dimension, make_ref()}
       end)
 
+    context = Map.put_new_lazy(context, :graphql_observed_at, &DateTime.utc_now/0)
+
     Map.put_new_lazy(context, :loader, fn -> Loader.new(context) end)
   end
 

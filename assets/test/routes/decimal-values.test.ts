@@ -1,7 +1,7 @@
 import {
   canComparePriceCurrencies,
   compareDecimalStrings,
-  decimalStringToNumber
+  decimalStringToNumber,
 } from "../../src/routes/decimal-values";
 
 test("decimalStringToNumber normalizes finite decimal values", () => {
@@ -47,7 +47,7 @@ test.each([
   ["1E-20", "0", 1],
   [".75", "0.7500", 0],
   ["-4.5e-2", "-0.04", -1],
-  ["-0", "+0.000", 0]
+  ["-0", "+0.000", 0],
 ] as const)("compareDecimalStrings compares %s and %s exactly", (left, right, expected) => {
   expect(compareDecimalStrings(left, right)).toBe(expected);
 });

@@ -1,11 +1,10 @@
 defmodule ProductCompare.Accounts do
   @moduledoc """
-  Accounts context for users and reputation events.
+  Accounts context for users, authentication, API tokens, and reputation totals.
   """
 
   alias ProductCompare.Accounts.{ApiTokens, Reputation, UserAuth, Users}
   alias ProductCompareSchemas.Accounts.ApiToken
-  alias ProductCompareSchemas.Accounts.ReputationEvent
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Accounts.UserReputation
 
@@ -108,16 +107,16 @@ defmodule ProductCompare.Accounts do
           | {:error, Ecto.Changeset.t()}
   def create_api_token(user_id, attrs \\ %{}), do: ApiTokens.create_api_token(user_id, attrs)
 
-  @spec authenticate_api_token(String.t(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
-  def authenticate_api_token(plain_text_token, opts \\ [])
+  @spec authenticate_api_token(String.t()) :: {:ok, User.t(), ApiToken.t()} | :error
+  def authenticate_api_token(plain_text_token)
 
-  def authenticate_api_token("", _opts), do: :error
+  def authenticate_api_token(""), do: :error
 
-  def authenticate_api_token(plain_text_token, _opts) when not is_binary(plain_text_token),
+  def authenticate_api_token(plain_text_token) when not is_binary(plain_text_token),
     do: :error
 
-  def authenticate_api_token(plain_text_token, opts),
-    do: ApiTokens.authenticate_api_token(plain_text_token, opts)
+  def authenticate_api_token(plain_text_token),
+    do: ApiTokens.authenticate_api_token(plain_text_token)
 
   @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
   def list_api_tokens_query(user_id, opts \\ []),
@@ -170,14 +169,6 @@ defmodule ProductCompare.Accounts do
           {:ok, UserReputation.t()} | {:error, Ecto.Changeset.t()}
   def upsert_user_reputation(user_id, points),
     do: Reputation.upsert_user_reputation(user_id, points)
-
-  @spec add_reputation_event(pos_integer(), map()) ::
-          {:ok, ReputationEvent.t()} | {:error, Ecto.Changeset.t()}
-  def add_reputation_event(user_id, attrs), do: Reputation.add_reputation_event(user_id, attrs)
-
-  @spec list_reputation_events(pos_integer(), keyword() | map()) :: [ReputationEvent.t()]
-  def list_reputation_events(user_id, opts \\ []),
-    do: Reputation.list_reputation_events(user_id, opts)
 
   # Browser auth recovery flows stay mailer-agnostic here; production delivery
   # can be injected later without changing the GraphQL contract or the token logic.

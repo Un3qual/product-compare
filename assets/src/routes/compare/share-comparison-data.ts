@@ -1,7 +1,4 @@
-import {
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../route-errors";
+import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
 
 export interface PublishedComparisonSnapshot {
   id: string;
@@ -59,7 +56,7 @@ export function buildComparisonSnapshotPublishInput({
   productIds,
   recommendationProfile,
   searchIndexable,
-  title: rawTitle
+  title: rawTitle,
 }: {
   productIds: readonly string[];
   recommendationProfile: "best_value" | "lowest_current_cost";
@@ -73,13 +70,13 @@ export function buildComparisonSnapshotPublishInput({
     recommendationProfile:
       recommendationProfile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
     searchIndexable,
-    ...(title ? { title } : {})
+    ...(title ? { title } : {}),
   };
 }
 
 export function publishedSnapshotFromPayload(
   payload: ComparisonSnapshotPublishPayload | null | undefined,
-  title: string | null
+  title: string | null,
 ): PublishedComparisonSnapshot | null {
   return payload?.snapshot?.id && payload.sharePath
     ? { id: payload.snapshot.id, path: payload.sharePath, title }
@@ -89,7 +86,7 @@ export function publishedSnapshotFromPayload(
 export function resolvePublishComparisonSnapshotMutationOutcome(
   payload: ComparisonSnapshotPublishPayload | null | undefined,
   title: string | null,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): ComparisonSnapshotMutationOutcome {
   const snapshot = publishedSnapshotFromPayload(payload, title);
 
@@ -97,55 +94,52 @@ export function resolvePublishComparisonSnapshotMutationOutcome(
     ? { error: null, snapshot }
     : {
         error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-        snapshot: null
+        snapshot: null,
       };
 }
 
 export function resolveRevokeComparisonSnapshotMutationOutcome(
   payload: ComparisonSnapshotRevokePayload | null | undefined,
   snapshot: PublishedComparisonSnapshot,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): ComparisonSnapshotMutationOutcome {
-  return payload?.revokedSnapshotId === snapshot.id &&
-    !hasRouteGraphQLErrors(graphQLErrors)
+  return payload?.revokedSnapshotId === snapshot.id && !hasRouteGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
         error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-        snapshot: null
+        snapshot: null,
       };
 }
 
-export function snapshotFromNode(
-  node: ComparisonSnapshotSourceNode
-): PublishedComparisonSnapshot {
+export function snapshotFromNode(node: ComparisonSnapshotSourceNode): PublishedComparisonSnapshot {
   return { id: node.id, path: node.sharePath, title: node.title ?? null };
 }
 
 export function publishComparisonSnapshotState(
   state: ComparisonSnapshotState,
-  snapshot: PublishedComparisonSnapshot
+  snapshot: PublishedComparisonSnapshot,
 ) {
   return {
     published: [snapshot, ...state.published.filter(({ id }) => id !== snapshot.id)],
     revokedSnapshotIds: removeComparisonSnapshotId(state.revokedSnapshotIds, snapshot.id),
-    message: PUBLISHED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE
+    message: PUBLISHED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE,
   };
 }
 
 export function revokeComparisonSnapshotState(
   state: ComparisonSnapshotState,
-  snapshot: PublishedComparisonSnapshot
+  snapshot: PublishedComparisonSnapshot,
 ) {
   return {
     published: state.published.filter(({ id }) => id !== snapshot.id),
     revokedSnapshotIds: new Set(state.revokedSnapshotIds).add(snapshot.id),
-    message: REVOKED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE
+    message: REVOKED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE,
   };
 }
 
 export function mergeComparisonSnapshots(
   groups: ReadonlyArray<readonly PublishedComparisonSnapshot[]>,
-  revokedSnapshotIds: ReadonlySet<string> = new Set()
+  revokedSnapshotIds: ReadonlySet<string> = new Set(),
 ) {
   const snapshots: PublishedComparisonSnapshot[] = [];
   const seen = new Set<string>();
@@ -164,7 +158,7 @@ export function mergeComparisonSnapshots(
 
 export function appendComparisonSnapshotPage(
   current: PublishedComparisonSnapshot[],
-  page: readonly PublishedComparisonSnapshot[]
+  page: readonly PublishedComparisonSnapshot[],
 ) {
   const seen = new Set(current.map(({ id }) => id));
   const additions: PublishedComparisonSnapshot[] = [];
@@ -181,7 +175,7 @@ export function appendComparisonSnapshotPage(
 
 export function nextComparisonSnapshotCursor(
   connection: ComparisonSnapshotPageConnection | null | undefined,
-  after: string | null
+  after: string | null,
 ) {
   const pageInfo = connection?.pageInfo;
   const endCursor = pageInfo?.endCursor;
@@ -202,7 +196,7 @@ export function removeComparisonSnapshotId(ids: ReadonlySet<string>, id: string)
 
 export function snapshotRevocationCanStart(
   pendingSnapshotIds: ReadonlySet<string>,
-  snapshotId: string
+  snapshotId: string,
 ) {
   return !pendingSnapshotIds.has(snapshotId);
 }
@@ -210,14 +204,14 @@ export function snapshotRevocationCanStart(
 export function snapshotRevocationRowState(
   snapshotId: string,
   pendingSnapshotIds: ReadonlySet<string>,
-  errorsBySnapshotId: ReadonlyMap<string, string>
+  errorsBySnapshotId: ReadonlyMap<string, string>,
 ) {
   const pending = pendingSnapshotIds.has(snapshotId);
 
   return {
     buttonCopy: pending ? "Revoking…" : "Revoke public link",
     disabled: pending,
-    error: errorsBySnapshotId.get(snapshotId) ?? null
+    error: errorsBySnapshotId.get(snapshotId) ?? null,
   };
 }
 

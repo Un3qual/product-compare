@@ -1,17 +1,14 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import merchantDirectoryRouteQuery, {
-  type MerchantDirectoryRouteQuery
+  type MerchantDirectoryRouteQuery,
 } from "../../__generated__/MerchantDirectoryRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
-import {
-  merchantPaginationFromUrl,
-  type MerchantPagination
-} from "./pagination";
+import { merchantPaginationFromUrl, type MerchantPagination } from "./pagination";
 
 export type MerchantDirectoryPagination = MerchantPagination;
 
@@ -28,7 +25,7 @@ export type MerchantDirectoryLoaderData =
 
 export async function merchantDirectoryLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<MerchantDirectoryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = merchantPaginationFromUrl(new URL(request.url));
@@ -41,8 +38,8 @@ export async function merchantDirectoryLoader({
         environment,
         merchantDirectoryRouteQuery,
         pagination,
-        { signal: request.signal }
-      )
+        { signal: request.signal },
+      ),
     };
   } catch (error) {
     return recoverRouteLoaderError<MerchantDirectoryLoaderData>(
@@ -50,8 +47,8 @@ export async function merchantDirectoryLoader({
       "Failed to preload merchant directory route query.",
       {
         status: "error",
-        pagination
-      }
+        pagination,
+      },
     );
   }
 }

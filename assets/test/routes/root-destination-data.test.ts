@@ -1,6 +1,6 @@
 import {
   getRootDestinationData,
-  type RootDestination
+  type RootDestination,
 } from "../../src/routes/root-destination-data";
 
 test("guest destinations expose public routes and guest authentication actions", () => {
@@ -10,15 +10,11 @@ test("guest destinations expose public routes and guest authentication actions",
     "/products",
     "/merchants",
     "/offers",
-    "/compare"
+    "/compare",
   ]);
   expect(paths(data.primary.authDestinations)).toEqual(["/auth/login", "/auth/register"]);
   expect(paths(data.home.secondary.destinations)).toEqual(["/merchants"]);
-  expect(paths(data.home.shopperDestinations)).toEqual([
-    "/products",
-    "/compare",
-    "/offers"
-  ]);
+  expect(paths(data.home.shopperDestinations)).toEqual(["/products", "/compare", "/offers"]);
 });
 
 test("authenticated members gain account routes without operator routes", () => {
@@ -31,14 +27,14 @@ test("authenticated members gain account routes without operator routes", () => 
     "/compare",
     "/account/alerts",
     "/compare/saved",
-    "/account/api-tokens"
+    "/account/api-tokens",
   ]);
   expect(paths(data.primary.authDestinations)).toEqual(["/auth/logout"]);
   expect(paths(data.home.secondary.destinations)).toEqual([
     "/merchants",
     "/account/alerts",
     "/compare/saved",
-    "/account/api-tokens"
+    "/account/api-tokens",
   ]);
 });
 
@@ -55,12 +51,12 @@ test("operators gain operator routes after authenticated destinations", () => {
     "/account/api-tokens",
     "/affiliate/setup",
     "/commerce/revenue",
-    "/ingestion/cj-programs"
+    "/ingestion/cj-programs",
   ]);
   expect(paths(data.home.secondary.destinations).slice(-3)).toEqual([
     "/affiliate/setup",
     "/commerce/revenue",
-    "/ingestion/cj-programs"
+    "/ingestion/cj-programs",
   ]);
 });
 

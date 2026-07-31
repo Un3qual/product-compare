@@ -80,8 +80,8 @@ const COUPON_ID = "Q291cG9uOjE=";
 
 const AFFILIATE_SETUP_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "AffiliateSetupRouteQuery",
-    text: "query AffiliateSetupRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "AffiliateSetupOperationsQuery",
+    text: "query AffiliateSetupOperationsQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
       after: null
@@ -108,15 +108,15 @@ beforeEach(() => {
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
 
-    if (name === "AffiliateSetupRouteUpsertAffiliateProgramMutation") {
+    if (name === "AffiliateSetupOperationsUpsertAffiliateProgramMutation") {
       return [commitProgramMutationMock, false];
     }
 
-    if (name === "AffiliateSetupRouteUpsertAffiliateLinkMutation") {
+    if (name === "AffiliateSetupOperationsUpsertAffiliateLinkMutation") {
       return [commitLinkMutationMock, false];
     }
 
-    if (name === "AffiliateSetupRouteCreateCouponMutation") {
+    if (name === "AffiliateSetupOperationsCreateCouponMutation") {
       return [commitCouponMutationMock, false];
     }
 

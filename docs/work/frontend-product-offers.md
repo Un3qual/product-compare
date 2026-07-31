@@ -13,7 +13,7 @@
   - `docs/plans/2026-03-05-frontend-fullstack-implementation-plan.md`
   - `docs/plans/2026-03-18-frontend-product-offers-baseline-implementation-plan.md`
 - Definition of done:
-  - The Bun frontend renders an `Active offers` section on `/products/:slug` from the existing GraphQL pricing surface.
+  - The frontend renders an `Active offers` section on `/products/:slug` from the existing GraphQL pricing surface.
   - The detail route preserves product-level ready/not-found/unavailable behavior while distinguishing offers ready, empty, and unavailable states locally.
   - Route-level tests cover offer success, empty, and unavailable states without widening the route beyond the current pricing baseline.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.

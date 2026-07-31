@@ -1,32 +1,34 @@
-# Frontend Effect GraphQL Transport
+# Frontend GraphQL Transport
 
 ## Snapshot
 
-- Status: complete
+- Status: complete; Effect pilot removed
 - Priority: P1
-- Plan:
+- Original plan:
   `docs/superpowers/plans/2026-07-30-effect-graphql-transport-pilot-implementation-plan.md`
-- Last verified: 2026-07-30 with the complete frontend verification gate.
+- Reconciliation plan:
+  `docs/superpowers/plans/2026-07-31-platform-modernization-simplification.md`
+- Last verified: 2026-07-31 against the direct Promise transport and focused
+  Relay transport tests.
 
-## Target Outcome
+## Batch Outcome
 
-The GraphQL transport uses one internal Effect workflow to model configuration,
-network, HTTP, and response-decoding failures while Relay continues consuming
-the stable Promise-returning `fetchGraphQL/3` interface.
+Relay consumes the stable Promise-returning `fetchGraphQL/3` interface through
+one direct `async`/`await` transport. Configuration, network, HTTP,
+response-decoding, and abort behavior remain explicit without a second runtime
+or tagged-failure adapter.
 
-## Validated Scope
+## Reconciled State
 
-- `assets/src/relay/fetch-graphql.ts` currently combines endpoint resolution,
-  browser/SSR request construction, network exception normalization, HTTP
-  validation, and unchecked JSON decoding in one async function.
-- The boundary already has focused browser credential, SSR cookie/origin,
-  AbortSignal, endpoint, and GraphQL-response tests.
-- Effect `3.22.0` is exact-pinned and only the lightweight `effect/Micro`
-  runtime is imported. The full Effect runtime exceeded the client bundle
-  contract; Micro preserves typed effect failures while keeping the initial
-  client bundle at 173,129 gzip bytes.
-- The pilot remains limited to the transport and its tests. Route loaders,
-  components, mutations, and Relay environment APIs are not Effect consumers.
+- `assets/src/relay/fetch-graphql.ts` directly owns endpoint resolution,
+  browser/SSR request construction, network and HTTP failures, JSON validation,
+  and abort identity.
+- Browser credentials, SSR cookie/origin forwarding, GraphQL top-level error
+  pass-through, configured endpoints, malformed/nonobject response handling,
+  and abort signals remain covered at the Promise boundary.
+- The former Effect/Micro workflow, tagged failures, package dependency, and
+  lockfile entries are removed. Route loaders, components, mutations, and
+  Relay environment APIs remain ordinary Promise consumers.
 
 ## Boundaries
 
@@ -35,29 +37,26 @@ the stable Promise-returning `fetchGraphQL/3` interface.
 - Preserve top-level GraphQL error responses for Relay to interpret.
 - Do not create a service registry, dependency-injection framework, route
   wrapper, or generic error utility.
-- The client bundle must remain below its existing 200,000-byte gzip budget.
+- The transport must remain inside the combined initial JavaScript/CSS bundle
+  contract.
 
 ## Verification
 
-- Focused transport and Relay environment tests: 23 passing.
-- Effect import-boundary scan: only
-  `assets/src/relay/fetch-graphql.ts` and its focused test import Effect.
-- Relay validation, TypeScript, Oxlint, and Oxfmt: passing.
-- Full frontend suite: 105 files and 1,512 tests passing.
-- Vite client and SSR production builds: passing.
-- Bundle contract: 589,055 raw / 173,129 gzip bytes across three initial
-  JavaScript files, below the 200,000-byte gzip budget.
-- Frozen pnpm install and `git diff --check`: passing.
+- Focused Select, transport, and community mutation run: 3 files and 26 tests
+  passed.
+- TypeScript and focused Oxfmt checks passed.
+- The complete frontend check passed after dependency removal, including Relay,
+  Oxc, Vitest, client/SSR builds, and the combined bundle contract.
 
 ## Delivered
 
 - `fetchGraphQL/3` remains the stable Promise-returning Relay adapter.
-- Configuration, network, HTTP, abort, and response-decoding failures are
-  narrow tagged values inside one Effect Micro workflow.
 - The Promise boundary retains existing public messages and returns original
   abort and decode failures by identity.
 - Browser credentials, SSR cookie/origin forwarding, endpoint rules, and
   top-level GraphQL response behavior remain unchanged.
 - No retries, services, dependency injection, React integration, route wrapper,
   or shared error abstraction was introduced.
-- Implementation milestone: `17ad60f9`.
+- The original pilot milestone is preserved in repository history; the current
+  direct transport landed in `ae8cb75e` with keyboard-regression follow-up in
+  `cd966429`.

@@ -6,7 +6,7 @@ import {
   Store,
   type GraphQLResponse,
   type RequestParameters,
-  type Variables
+  type Variables,
 } from "relay-runtime";
 import { fetchGraphQL, type SSRContext } from "./fetch-graphql";
 import { RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
@@ -32,25 +32,29 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
   const recordSource = new RecordSource(options.records ?? {});
 
   return new Environment({
-    network: Network.create((params: RequestParameters, variables: Variables, cacheConfig: CacheConfig) => {
-      if (!params.text) {
-        throw new Error(`Relay operation text is missing for request: ${params.name ?? "unknown"}`);
-      }
-
-      const routeSignal = routeLoaderSignal(cacheConfig);
-
-      return fetchGraphQL(params.text, variables as Record<string, unknown>, {
-        ...options.ssrContext,
-        signal: routeSignal ?? options.ssrContext?.signal
-      }).then((response) => {
-        if (routeSignal && hasGraphQLErrors(response)) {
-          throw new RouteLoaderGraphQLError(response);
+    network: Network.create(
+      (params: RequestParameters, variables: Variables, cacheConfig: CacheConfig) => {
+        if (!params.text) {
+          throw new Error(
+            `Relay operation text is missing for request: ${params.name ?? "unknown"}`,
+          );
         }
 
-        return response;
-      });
-    }),
-    store: new Store(recordSource)
+        const routeSignal = routeLoaderSignal(cacheConfig);
+
+        return fetchGraphQL(params.text, variables as Record<string, unknown>, {
+          ...options.ssrContext,
+          signal: routeSignal ?? options.ssrContext?.signal,
+        }).then((response) => {
+          if (routeSignal && hasGraphQLErrors(response)) {
+            throw new RouteLoaderGraphQLError(response);
+          }
+
+          return response;
+        });
+      },
+    ),
+    store: new Store(recordSource),
   });
 }
 

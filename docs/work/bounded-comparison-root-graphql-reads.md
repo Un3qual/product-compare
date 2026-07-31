@@ -9,7 +9,16 @@
 - Last verified: 2026-07-21 against live catalog comparison and recommendation
   GraphQL/context suites.
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification removed the singleton comparison-root
+source. Comparison products and recommendations now call their set-based
+context APIs directly for each root field; identical aliases intentionally
+execute independently. The fixed alias budgets below are historical evidence,
+while ordering, selection, evidence, timestamp, and error behavior remains
+covered.
+
+## Historical Batch Outcome
 
 Public comparison-product and comparison-recommendation root aliases keep fixed
 SELECT budgets as aliases grow within one GraphQL request, without changing

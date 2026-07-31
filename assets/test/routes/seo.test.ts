@@ -8,9 +8,10 @@ test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision
       canonicalPath: "/products/careful-product",
       indexable: true,
       imageUrl: "/images/careful.jpg",
-      structuredData: '{"@type":"Product","name":"</script><script>bad()</script>","url":"/products/careful-product"}'
+      structuredData:
+        '{"@type":"Product","name":"</script><script>bad()</script>","url":"/products/careful-product"}',
     },
-    "https://app.example.com/products/careful-product?offersAfter=cursor"
+    "https://app.example.com/products/careful-product?offersAfter=cursor",
   );
 
   expect(metadata.canonicalUrl).toBe("https://app.example.com/products/careful-product");
@@ -28,10 +29,10 @@ test("routeMetadataFromSeo can force parameterized variants to noindex without c
       description: "Product description",
       canonicalPath: "/products/product",
       indexable: true,
-      structuredData: null
+      structuredData: null,
     },
     "https://app.example.com/products/product?offersAfter=cursor",
-    { allowIndexing: false }
+    { allowIndexing: false },
   );
 
   expect(metadata.indexable).toBe(false);

@@ -1,75 +1,60 @@
-import * as Micro from "effect/Micro";
-import { readdirSync, readFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
 import {
   fetchGraphQL,
-  graphqlTransportEffect,
+  graphqlTransport,
   resolveGraphQLEndpoint,
 } from "../../src/relay/fetch-graphql";
 
-test("models configuration, network, HTTP, and decoding failures as tagged Effect values", async () => {
-  const failures = [
-    await transportFailure({
+test("rejects Promise transport failures with the established public errors", async () => {
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
       endpoint: { apiBaseUrl: null, isDev: false },
     }),
-    await transportFailure({
-      fetch: () => Promise.reject(new TypeError("offline")),
-    }),
-    await transportFailure({
-      fetch: () => Promise.resolve(new Response("maintenance", { status: 503 })),
-    }),
-    await transportFailure({
-      fetch: () => Promise.resolve(new Response("{not-json", { status: 200 })),
-    }),
-    await transportFailure({
-      fetch: () => Promise.resolve(Response.json([])),
-    }),
-  ];
-
-  expect(failures).toMatchObject([
-    {
-      _tag: "GraphQLConfigurationFailure",
-      message: "VITE_API_BASE_URL must be set outside local development",
-    },
-    {
-      _tag: "GraphQLNetworkFailure",
-      message: "offline",
-    },
-    {
-      _tag: "GraphQLHTTPFailure",
-      body: "maintenance",
-      status: 503,
-    },
-    {
-      _tag: "GraphQLResponseDecodingFailure",
-    },
-    {
-      _tag: "GraphQLResponseDecodingFailure",
-      cause: expect.objectContaining({
-        message: "GraphQL response must be an object",
-      }),
-    },
-  ]);
-});
-
-test("captures request serialization errors as typed transport failures", async () => {
-  const result = await Micro.runPromise(
-    Micro.either(
-      graphqlTransportEffect(
-        "query Viewer { viewer { id } }",
-        { unsupported: 1n },
-        undefined,
-        { fetch: vi.fn() }
-      )
-    )
+  ).rejects.toThrow(
+    "Network request failed: VITE_API_BASE_URL must be set outside local development",
   );
 
-  expect(result).toMatchObject({
-    _tag: "Left",
-    left: {
-      _tag: "GraphQLNetworkFailure"
-    }
-  });
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", { unsupported: 1n }, undefined, {
+      fetch: vi.fn(),
+    }),
+  ).rejects.toThrow("Network request failed: Do not know how to serialize a BigInt");
+
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
+      fetch: () => Promise.reject(new TypeError("offline")),
+    }),
+  ).rejects.toThrow("Network request failed: offline");
+
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
+      fetch: () => Promise.resolve(new Response("maintenance", { status: 503 })),
+    }),
+  ).rejects.toThrow("GraphQL request failed (503): maintenance");
+});
+
+test("preserves malformed JSON, nonobject response, and abort identities at the Promise boundary", async () => {
+  const decodingFailure = new SyntaxError("invalid GraphQL JSON");
+  const nonobjectFailure = new TypeError("GraphQL response must be an object");
+  const abortFailure = new DOMException("request aborted", "AbortError");
+
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
+      fetch: () =>
+        Promise.resolve({ ok: true, json: () => Promise.reject(decodingFailure) } as Response),
+    }),
+  ).rejects.toBe(decodingFailure);
+
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
+      fetch: () => Promise.resolve(Response.json([])),
+    }),
+  ).rejects.toEqual(nonobjectFailure);
+
+  await expect(
+    graphqlTransport("query Viewer { viewer { id } }", {}, undefined, {
+      fetch: () => Promise.reject(abortFailure),
+    }),
+  ).rejects.toBe(abortFailure);
 });
 
 test("preserves Promise adapter messages for network and HTTP failures", async () => {
@@ -320,47 +305,3 @@ test("requires VITE_API_BASE_URL outside local dev", () => {
     "VITE_API_BASE_URL must be set outside local development",
   );
 });
-
-test("confines Effect imports to the GraphQL transport boundary", () => {
-  const assetsRoot = process.cwd();
-
-  const effectImports = ["src", "test"]
-    .flatMap((directory) => sourceFiles(resolve(assetsRoot, directory)))
-    .filter((path) =>
-      /\b(?:from|import)\s*(?:\([^)]*)?["']effect(?:\/[^"']*)?["']/.test(
-        readFileSync(path, "utf8"),
-      ),
-    )
-    .map((path) => relative(assetsRoot, path))
-    .sort();
-
-  expect(effectImports).toEqual(["src/relay/fetch-graphql.ts", "test/relay/fetch-graphql.test.ts"]);
-});
-
-async function transportFailure(
-  options: NonNullable<Parameters<typeof graphqlTransportEffect>[3]>,
-) {
-  const result = await Micro.runPromise(
-    Micro.either(graphqlTransportEffect("query Viewer { viewer { id } }", {}, undefined, options)),
-  );
-
-  expect(result._tag).toBe("Left");
-
-  if (result._tag === "Right") {
-    throw new Error("expected GraphQL transport failure");
-  }
-
-  return result.left;
-}
-
-function sourceFiles(directory: string): string[] {
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const path = resolve(directory, entry.name);
-
-    if (entry.isDirectory()) {
-      return sourceFiles(path);
-    }
-
-    return /\.[cm]?[jt]sx?$/.test(entry.name) ? [path] : [];
-  });
-}

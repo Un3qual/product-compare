@@ -14,17 +14,17 @@ type SavedComparisonSetPayload = {
 export const SAVED_COMPARISON_SUCCESS_MESSAGE = "Comparison saved.";
 
 export function buildSavedComparisonSetMutationInput(
-  products: readonly SavedComparisonMutationProduct[]
+  products: readonly SavedComparisonMutationProduct[],
 ) {
   return {
     name: buildSavedComparisonName(products),
-    productIds: products.map((product) => product.id)
+    productIds: products.map((product) => product.id),
   };
 }
 
 export function resolveSavedComparisonSetMutationOutcome(
   payload: SavedComparisonSetPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   if (payload?.savedComparisonSet?.id && !hasRouteGraphQLErrors(graphQLErrors)) {
     return { error: null, message: SAVED_COMPARISON_SUCCESS_MESSAGE };
@@ -32,6 +32,6 @@ export function resolveSavedComparisonSetMutationOutcome(
 
   return {
     error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-    message: null
+    message: null,
   };
 }

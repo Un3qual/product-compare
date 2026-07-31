@@ -43,13 +43,19 @@ const styles = create({
     maxHeight: "var(--radix-select-content-available-height)",
     minWidth: "var(--radix-select-trigger-width)",
     overflow: "hidden",
-    zIndex: 50
+    zIndex: 50,
   },
   item: {
+    backgroundColor: {
+      ":where([data-highlighted])": tokens.surfaceInteractive,
+    },
+    color: {
+      ":where([data-highlighted])": tokens.text,
+    },
     cursor: "pointer",
     outline: "none",
     paddingBlock: "0.45rem",
-    paddingInline: "0.7rem"
+    paddingInline: "0.7rem",
   },
   trigger: {
     alignItems: "center",
@@ -63,11 +69,11 @@ const styles = create({
     justifyContent: "space-between",
     minHeight: "2.6rem",
     minWidth: "8rem",
-    paddingInline: "0.7rem"
+    paddingInline: "0.7rem",
   },
   viewport: {
-    paddingBlock: "0.25rem"
-  }
+    paddingBlock: "0.25rem",
+  },
 });
 
 export function Select(selectProps: SelectProps) {

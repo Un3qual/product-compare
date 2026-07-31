@@ -117,8 +117,8 @@ const EXPIRED_TOKEN: ApiTokenSummary = {
 
 const API_TOKENS_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "ApiTokensRouteQuery",
-    text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
+    operationName: "ApiTokenOperationsQuery",
+    text: "query ApiTokenOperationsQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
     variables: {
       first: 20,
       status: "ALL" as const
@@ -144,11 +144,11 @@ beforeEach(() => {
   mockedUseRoutePreloadedQuery.mockReset();
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
-    if (name === "ApiTokensRouteRevokeApiTokenMutation") {
+    if (name === "ApiTokenOperationsRevokeApiTokenMutation") {
       return [commitRevokeMutationMock, false];
     }
 
-    if (name === "ApiTokensRouteRotateApiTokenMutation") {
+    if (name === "ApiTokenOperationsRotateApiTokenMutation") {
       return [commitRotateMutationMock, false];
     }
 

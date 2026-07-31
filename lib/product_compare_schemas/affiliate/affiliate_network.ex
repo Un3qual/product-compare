@@ -1,8 +1,6 @@
 defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
   use ProductCompareSchemas.Schema, :relational
 
-  @provider_codes [:impact, :awin, :rakuten, :cj, :amazon_associates]
-
   @type t :: %__MODULE__{}
 
   schema "affiliate_networks" do
@@ -12,9 +10,6 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
 
     timestamps()
   end
-
-  @spec provider_codes() :: [atom()]
-  def provider_codes, do: @provider_codes
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(network, attrs) do
@@ -27,6 +22,15 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
     |> unique_constraint(:name)
   end
 
+  @spec normalize_code(String.t()) :: String.t()
+  def normalize_code(value) when is_binary(value) do
+    value
+    |> String.trim()
+    |> String.downcase()
+    |> String.replace(~r/[^a-z0-9]+/, "_")
+    |> String.trim("_")
+  end
+
   defp put_default_code(changeset) do
     case {get_change(changeset, :code), get_field(changeset, :name)} do
       {nil, name} when is_binary(name) -> put_change(changeset, :code, code_from_name(name))
@@ -36,10 +40,6 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
   end
 
   defp code_from_name(value) do
-    value
-    |> String.trim()
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/, "_")
-    |> String.trim("_")
+    normalize_code(value)
   end
 end

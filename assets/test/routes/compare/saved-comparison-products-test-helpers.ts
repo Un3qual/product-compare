@@ -13,15 +13,15 @@ const DEFAULT_SAVED_PRODUCTS: readonly SavedProductFixture[] = [
   { name: "Rucksack", slug: "rucksack" },
   { name: "Storage Bin", slug: "storage-bin" },
   { name: "Table", slug: "table" },
-  { name: "Tent", slug: "tent" }
+  { name: "Tent", slug: "tent" },
 ];
 
 export function savedProductsForSlugs(
   slugs: readonly string[],
-  additionalProducts: readonly SavedProductFixture[] = []
+  additionalProducts: readonly SavedProductFixture[] = [],
 ) {
   const productsBySlug = new Map(
-    [...DEFAULT_SAVED_PRODUCTS, ...additionalProducts].map((product) => [product.slug, product])
+    [...DEFAULT_SAVED_PRODUCTS, ...additionalProducts].map((product) => [product.slug, product]),
   );
 
   return slugs.map((slug) => {

@@ -22,6 +22,6 @@ export function projectRootViewer(viewer: unknown): RootViewer | null {
   return {
     id: candidate.id,
     email: candidate.email,
-    isOperator: candidate.isOperator
+    isOperator: candidate.isOperator,
   };
 }

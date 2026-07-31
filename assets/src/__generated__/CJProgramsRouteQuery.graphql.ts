@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<f363dd11c19cf96584af18681aa38856>>
+ * @generated SignedSource<<5a05db8c7f409a310a44db6dbe4b93cc>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -238,7 +238,7 @@ v9 = [
         "variableName": "stage"
       }
     ],
-    "concreteType": "CjProgramConnection",
+    "concreteType": "CJProgramConnection",
     "kind": "LinkedField",
     "name": "cjPrograms",
     "plural": false,
@@ -246,7 +246,7 @@ v9 = [
       {
         "alias": null,
         "args": null,
-        "concreteType": "CjProgramEdge",
+        "concreteType": "CJProgramEdge",
         "kind": "LinkedField",
         "name": "edges",
         "plural": true,

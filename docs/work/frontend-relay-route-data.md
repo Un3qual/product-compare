@@ -27,8 +27,18 @@
 - `assets/src/relay/load-query.ts` and `assets/src/relay/route-preload.ts` provide route-preload primitives for serializable descriptors plus in-memory query-ref reuse.
 - `/products` now uses `assets/src/routes/catalog/loader.ts`, `assets/src/routes/catalog/queries/BrowseProductsRouteQuery.ts`, and `assets/src/__generated__/BrowseProductsRouteQuery.graphql.ts` instead of `assets/src/routes/catalog/api.ts`.
 - `/products/:slug` now uses `assets/src/routes/products/loader.ts`, `assets/src/routes/products/queries/ProductDetailRouteQuery.ts`, `assets/src/routes/products/queries/ProductOffersRouteQuery.ts`, and generated Relay artifacts instead of `assets/src/routes/products/api.ts`.
-- `/compare` now uses `assets/src/routes/compare/loader.ts`, reuses the generated `ProductDetailRouteQuery` artifact through Relay route preloading, renders selected products from Relay preloaded queries, and saves ready selections through `CreateSavedComparisonSetMutation`.
-- `/compare/saved` now uses `SavedComparisonsRouteQuery` route-preload descriptors for saved-set pages and `DeleteSavedComparisonSetMutation` for deletion while preserving local status, unauthorized, reopen, and pending-delete behavior.
+- `assets/src/routes/compare/SavedComparisonOperations.ts` owns the primary
+  saved-set query plus create/delete mutations. Its exact generated family
+  artifacts are `SavedComparisonOperationsQuery.graphql.ts`,
+  `SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql.ts`, and
+  `SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql.ts`.
+- `/compare` now uses `assets/src/routes/compare/loader.ts`, reuses the generated
+  `ProductDetailRouteQuery` artifact through Relay route preloading, renders
+  selected products from Relay preloaded queries, and saves ready selections
+  through the family-owned create mutation.
+- `/compare/saved` now uses the family-owned `SavedComparisonOperationsQuery`
+  route-preload descriptors and delete mutation while preserving local status,
+  unauthorized, reopen, and pending-delete behavior.
 - `assets/src/routes/compare/api.ts` and `assets/src/routes/compare/product-detail.ts` have been removed. `assets/src/routes/compare/saved-data.ts` now only owns saved-route loader orchestration, pagination guards, unauthorized detection, and Relay page summarization.
 - Browser auth routes now commit `LoginMutation`, `RegisterMutation`, `ForgotPasswordMutation`, `ResetPasswordMutation`, and `VerifyEmailMutation` through Relay `useMutation`, with shared payload/error normalization in `assets/src/routes/auth/errors.ts`.
 - `assets/src/routes/compare/saved-data.ts` no longer owns raw saved-comparison GraphQL strings, direct `fetchGraphQL(...)` calls, or mutation payload normalization.

@@ -1,12 +1,12 @@
 import {
   buildMerchantDirectoryRows,
-  getMerchantDirectoryViewData
+  getMerchantDirectoryViewData,
 } from "../../../src/routes/merchants/merchant-directory-view-data";
 
 const MERCHANTS = [
   { id: "merchant-1", name: "Acme Market" },
   { id: "merchant-2", name: "Globex Supply" },
-  { id: "merchant-3", name: "Acme Outlet" }
+  { id: "merchant-3", name: "Acme Outlet" },
 ] as const;
 
 test("projects merchant rows in source order with encoded details and safe destinations", () => {
@@ -15,14 +15,14 @@ test("projects merchant rows in source order with encoded details and safe desti
       id: "merchant-1",
       name: "Acme Market",
       domain: "acme.example",
-      slug: "acme / outlet?"
+      slug: "acme / outlet?",
     },
     {
       id: "merchant-2",
       name: "Unsafe Seller",
       domain: "http://127.0.0.1/private",
-      slug: "unsafe-seller"
-    }
+      slug: "unsafe-seller",
+    },
   ] as const;
 
   expect(buildMerchantDirectoryRows(merchants)).toEqual([
@@ -31,15 +31,15 @@ test("projects merchant rows in source order with encoded details and safe desti
       name: "Acme Market",
       domain: "acme.example",
       detailHref: "/merchants/acme%20%2F%20outlet%3F",
-      websiteHref: "https://acme.example"
+      websiteHref: "https://acme.example",
     },
     {
       id: "merchant-2",
       name: "Unsafe Seller",
       domain: "http://127.0.0.1/private",
       detailHref: "/merchants/unsafe-seller",
-      websiteHref: null
-    }
+      websiteHref: null,
+    },
   ]);
 });
 
@@ -49,8 +49,8 @@ test("leaves merchant result nodes unchanged while projecting rows", () => {
       id: "merchant-1",
       name: "Acme Market",
       domain: "acme.example",
-      slug: "acme"
-    }
+      slug: "acme",
+    },
   ];
   const original = structuredClone(merchants);
 
@@ -62,7 +62,7 @@ test("leaves merchant result nodes unchanged while projecting rows", () => {
 test("returns every merchant and the page heading for blank or whitespace-only filters", () => {
   expect(getMerchantDirectoryViewData(MERCHANTS, "   ")).toEqual({
     heading: "3 merchants on this page",
-    visibleMerchants: MERCHANTS
+    visibleMerchants: MERCHANTS,
   });
 });
 
@@ -76,14 +76,14 @@ test("filters names case-insensitively after trimming while preserving source or
 test("returns the existing filtered heading when no merchant names match", () => {
   expect(getMerchantDirectoryViewData(MERCHANTS, "missing")).toEqual({
     heading: "0 of 3 merchants shown",
-    visibleMerchants: []
+    visibleMerchants: [],
   });
 });
 
 test("leaves merchant records and the input array unchanged", () => {
   const merchants = [
     { id: "merchant-1", name: "Acme Market" },
-    { id: "merchant-2", name: "Globex Supply" }
+    { id: "merchant-2", name: "Globex Supply" },
   ];
   const originalMerchants = [...merchants];
   const originalRecords = merchants.map((merchant) => ({ ...merchant }));

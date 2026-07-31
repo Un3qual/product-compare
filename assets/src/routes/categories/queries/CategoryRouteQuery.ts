@@ -9,7 +9,14 @@ export default graphql`
       description
       qualifiedProductCount
       indexable
-      seo { title description canonicalPath indexable imageUrl structuredData }
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
       products(first: $first, after: $after) {
         edges {
           node {
@@ -17,11 +24,22 @@ export default graphql`
             name
             slug
             description
-            brand { id name }
-            currentAttributes { attributeId displayName valueText sortOrder }
+            brand {
+              id
+              name
+            }
+            currentAttributes {
+              attributeId
+              displayName
+              valueText
+              sortOrder
+            }
           }
         }
-        pageInfo { hasNextPage endCursor }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }

@@ -1,6 +1,7 @@
 defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
   @moduledoc false
 
+  alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Reference.CurrencyCode
 
@@ -8,12 +9,15 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
 
   @spec normalize(map() | keyword()) :: map()
   def normalize(opts) do
+    {network, affiliate_network_id} = normalize_network(get(opts, :network))
+
     %{
+      affiliate_network_id: affiliate_network_id,
       currency: normalize_currency(get(opts, :currency)),
       from: normalize_date(get(opts, :from)),
       merchant_id: normalize_dimension_id(get(opts, :merchant_id), :merchant_id),
       min_conversions: normalize_min_conversions(get(opts, :min_conversions)),
-      network: normalize_network(get(opts, :network)),
+      network: network,
       product_id: normalize_dimension_id(get(opts, :product_id), :product_id),
       to: normalize_date(get(opts, :to))
     }
@@ -25,7 +29,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
       "currency" => filters.currency,
       "from" => date_string(filters.from),
       "merchant_id" => filters.merchant_id,
-      "network" => network_string(filters.network),
+      "network" => filters.network,
       "product_id" => filters.product_id,
       "to" => date_string(filters.to)
     }
@@ -111,30 +115,19 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
 
   defp normalize_currency(_currency), do: raise(ArgumentError, "invalid revenue summary currency")
 
-  defp normalize_network(nil), do: nil
-
-  defp normalize_network(network) when is_atom(network) do
-    if network in AffiliateNetwork.provider_codes() do
-      network
-    else
-      raise ArgumentError, "invalid revenue summary network"
-    end
-  end
+  defp normalize_network(nil), do: {nil, nil}
 
   defp normalize_network(network) when is_binary(network) do
-    network =
-      Enum.find(AffiliateNetwork.provider_codes(), fn supported_network ->
-        Atom.to_string(supported_network) == network
-      end)
+    code = AffiliateNetwork.normalize_code(network)
 
-    network || raise ArgumentError, "invalid revenue summary network"
+    case Repo.get_by(AffiliateNetwork, code: code) do
+      %AffiliateNetwork{id: id} -> {code, id}
+      nil -> raise ArgumentError, "invalid revenue summary network"
+    end
   end
 
   defp normalize_network(_network), do: raise(ArgumentError, "invalid revenue summary network")
 
   defp date_string(nil), do: nil
   defp date_string(%Date{} = date), do: Date.to_iso8601(date)
-
-  defp network_string(nil), do: nil
-  defp network_string(network), do: Atom.to_string(network)
 end

@@ -20,12 +20,12 @@ const COMPARE_SPEC_MODE_OPTIONS: ReadonlyArray<{
 }> = [
   { label: "Shared specs", mode: "shared" },
   { label: "Differences", mode: "differences" },
-  { label: "All specs", mode: "all" }
+  { label: "All specs", mode: "all" },
 ];
 
 export function buildCompareSpecModeNavigationData({
   selectedSlugs,
-  specMode
+  specMode,
 }: CompareSpecModeNavigationInput): {
   readonly modes: readonly CompareSpecModeNavigationItem[];
 } {
@@ -34,7 +34,7 @@ export function buildCompareSpecModeNavigationData({
       isCurrent: mode === specMode,
       label,
       mode,
-      path: buildComparePathFromSlugs(selectedSlugs, { specMode: mode })
-    }))
+      path: buildComparePathFromSlugs(selectedSlugs, { specMode: mode }),
+    })),
   };
 }

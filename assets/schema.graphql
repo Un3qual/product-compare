@@ -31,7 +31,7 @@ type RootQueryType {
   myApiTokens(after: String, first: Int!, status: ApiTokenStatusFilter): ApiTokenConnection!
 
   "Returns active coupons for a merchant at a specific timestamp (or now by default)."
-  activeCoupons(input: ActiveCouponsInput!): ActiveCouponsPayload
+  activeCoupons(after: String, first: Int!, merchantId: ID!, at: DateTime): CouponConnection
 
   "Returns price watches owned by the current authenticated user."
   myPriceWatches(after: String, first: Int!, enabled: Boolean): PriceWatchConnection!
@@ -67,7 +67,7 @@ type RootQueryType {
   productQuestion(id: ID!): ProductQuestion
 
   "Returns CJ advertiser programs for lifecycle management."
-  cjPrograms(after: String, first: Int!, stage: CJProgramStage, sort: CJProgramSort): CjProgramConnection!
+  cjPrograms(after: String, first: Int!, stage: CJProgramStage, sort: CJProgramSort): CJProgramConnection!
 
   "Returns one CJ advertiser program by its opaque lifecycle ID."
   cjProgram(id: ID!): CJProgram
@@ -553,14 +553,15 @@ type CJProgramStageCounts {
   declined: Int!
 }
 
-type CjProgramEdge {
+"A CJ program connection edge."
+type CJProgramEdge {
   node: CJProgram!
   cursor: String!
 }
 
-type CjProgramConnection {
+type CJProgramConnection {
   pageInfo: PageInfo!
-  edges: [CjProgramEdge!]!
+  edges: [CJProgramEdge!]!
 }
 
 type MerchantFeedCandidate implements Node {
@@ -1340,13 +1341,6 @@ input CreateCouponInput {
   terms: String
 }
 
-input ActiveCouponsInput {
-  merchantId: ID!
-  at: DateTime
-  first: Int
-  after: String
-}
-
 type UpsertAffiliateNetworkPayload {
   network: AffiliateNetwork
   errors: [MutationError!]!
@@ -1365,10 +1359,6 @@ type UpsertAffiliateLinkPayload {
 type CreateCouponPayload {
   coupon: Coupon
   errors: [MutationError!]!
-}
-
-type ActiveCouponsPayload {
-  coupons: CouponConnection!
 }
 
 type AffiliateNetwork implements Node {

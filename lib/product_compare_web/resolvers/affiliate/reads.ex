@@ -10,43 +10,15 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.Loader
+  alias ProductCompareSchemas.Pricing.Merchant
 
   @spec active_coupons(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
           | {:error, String.t() | GraphQLErrors.top_level_error()}
-          | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def active_coupons(
-        _parent,
-        %{input: input},
-        %{context: %{loader: %Dataloader{} = loader}} = resolution
-      ) do
-    with {:ok, operator, merchant_id, attrs, connection_args} <-
-           normalize_active_coupon_request(input, resolution) do
-      observation_time =
-        case Input.fetch_value(attrs, :at) do
-          %DateTime{} = at -> at
-          _other -> nil
-        end
-
-      source = Loader.operator_reporting_source()
-      batch_key = {:active_coupons, operator.id, merchant_id, observation_time, connection_args}
-
-      loader
-      |> Loader.load(source, batch_key, :root)
-      |> on_load(fn loader ->
-        connection = Loader.get(loader, source, batch_key, :root)
-        {:ok, %{coupons: connection}}
-      end)
-    else
-      {:error, reason} -> active_coupon_error(reason)
-    end
-  end
-
-  def active_coupons(_parent, %{input: input}, resolution) do
-    with {:ok, _operator, merchant_id, attrs, _connection_args} <-
-           normalize_active_coupon_request(input, resolution),
+  def active_coupons(_parent, args, resolution) when is_map(args) do
+    with {:ok, merchant_id, attrs} <- normalize_active_coupon_request(args, resolution),
          {:ok, connection} <- active_coupon_connection(merchant_id, attrs) do
-      {:ok, %{coupons: connection}}
+      {:ok, connection}
     else
       {:error, reason} -> active_coupon_error(reason)
     end
@@ -60,7 +32,7 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
   @spec merchant_product_active_coupons(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def merchant_product_active_coupons(
-        %{merchant_id: merchant_id} = merchant_product,
+        %{merchant_id: merchant_id},
         args,
         %{context: %{loader: loader}}
       )
@@ -69,28 +41,23 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
 
     with {:ok, _window} <- Connection.batch_window_result(connection_args) do
       source = Loader.offer_connection_source()
-      batch_key = {:active_coupons, connection_args}
+      operation = {:active_coupons, connection_args}
+      batch = {:one, Merchant}
+      item = [{operation, merchant_id}]
 
       loader
-      |> Loader.load(source, batch_key, merchant_product)
+      |> Dataloader.load(source, batch, item)
       |> on_load(fn loader ->
-        {:ok, Loader.get(loader, source, batch_key, merchant_product)}
+        {:ok, Dataloader.get(loader, source, batch, item)}
       end)
     end
   end
 
-  def merchant_product_active_coupons(_parent, _args, _resolution),
-    do: {:error, "invalid merchant product"}
-
-  defp active_coupon_connection(merchant_id, args, opts \\ []) do
+  defp active_coupon_connection(merchant_id, args) do
     now =
-      if Keyword.get(opts, :allow_at?, true) do
-        case Input.fetch_value(args, :at) do
-          %DateTime{} = at -> at
-          _ -> DateTime.utc_now()
-        end
-      else
-        DateTime.utc_now()
+      case Input.fetch_value(args, :at) do
+        %DateTime{} = at -> at
+        _ -> DateTime.utc_now()
       end
 
     merchant_id
@@ -99,11 +66,11 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Reads do
   end
 
   defp normalize_active_coupon_request(input, resolution) do
-    with {:ok, operator} <- Authorization.require_operator(resolution),
+    with {:ok, _operator} <- Authorization.require_operator(resolution),
          {:ok, %{merchant_id: merchant_id} = attrs} <- normalize_merchant_id(input),
          connection_args = Input.connection_args(attrs),
          {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      {:ok, operator, merchant_id, attrs, connection_args}
+      {:ok, merchant_id, attrs}
     end
   end
 

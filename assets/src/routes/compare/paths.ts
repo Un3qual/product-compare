@@ -12,7 +12,7 @@ export interface NormalizeCompareSlugsOptions {
 
 export function selectedCompareSlugsFromSearch(
   search: string,
-  options: NormalizeCompareSlugsOptions = {}
+  options: NormalizeCompareSlugsOptions = {},
 ): string[] {
   return normalizedCompareSlugs(new URLSearchParams(search).getAll("slug"), options);
 }
@@ -20,7 +20,7 @@ export function selectedCompareSlugsFromSearch(
 export function selectedCompareSlugsAfterAdding(
   selectedSlugs: readonly string[],
   slug: string,
-  maxProducts: number
+  maxProducts: number,
 ): string[] {
   const nextSelectedSlugs = normalizedCompareSlugs(selectedSlugs, { maxProducts });
   const normalizedSlug = slug.trim();
@@ -40,7 +40,7 @@ export function buildCurrentRoutePathWithCompareSlugs(
   pathname: string,
   search: string,
   selectedSlugs: readonly string[],
-  options: NormalizeCompareSlugsOptions = {}
+  options: NormalizeCompareSlugsOptions = {},
 ): string {
   const currentParams = new URLSearchParams(search);
   const nextParams = new URLSearchParams();
@@ -60,7 +60,7 @@ export function buildCurrentRoutePathWithCompareSlugs(
 
 export function buildComparePathFromSlugs(
   selectedSlugs: readonly string[],
-  options: BuildComparePathOptions = {}
+  options: BuildComparePathOptions = {},
 ) {
   const params = new URLSearchParams();
 
@@ -78,7 +78,7 @@ export function buildComparePathFromSlugs(
 export function buildComparePathAfterRemovingSlugIndex(
   selectedSlugs: readonly string[],
   removeIndex: number,
-  options: BuildComparePathOptions = {}
+  options: BuildComparePathOptions = {},
 ) {
   const nextSelectedSlugs = selectedSlugs.filter((_, index) => index !== removeIndex);
 
@@ -88,10 +88,10 @@ export function buildComparePathAfterRemovingSlugIndex(
 function appendNormalizedCompareSlugParams(
   params: URLSearchParams,
   slugs: readonly string[],
-  options: NormalizeCompareSlugsOptions = {}
+  options: NormalizeCompareSlugsOptions = {},
 ) {
   for (const slug of normalizedCompareSlugs(slugs, {
-    maxProducts: options.maxProducts ?? MAX_COMPARE_PRODUCTS
+    maxProducts: options.maxProducts ?? MAX_COMPARE_PRODUCTS,
   })) {
     params.append("slug", slug);
   }
@@ -99,16 +99,13 @@ function appendNormalizedCompareSlugParams(
 
 export function normalizedCompareSlugs(
   slugs: readonly string[],
-  options: NormalizeCompareSlugsOptions = {}
+  options: NormalizeCompareSlugsOptions = {},
 ): string[] {
   const selectedSlugs: string[] = [];
   const seenSlugs = new Set<string>();
 
   for (const slug of slugs) {
-    if (
-      options.maxProducts !== undefined &&
-      selectedSlugs.length >= options.maxProducts
-    ) {
+    if (options.maxProducts !== undefined && selectedSlugs.length >= options.maxProducts) {
       break;
     }
 

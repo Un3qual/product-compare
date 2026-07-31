@@ -1,21 +1,20 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
-import affiliateSetupRouteQuery, {
-  type AffiliateSetupRouteQuery
-} from "../../../__generated__/AffiliateSetupRouteQuery.graphql";
+import type { AffiliateSetupOperationsQuery } from "../../../__generated__/AffiliateSetupOperationsQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
 import { merchantPaginationFromUrl } from "../../merchants/pagination";
+import { affiliateSetupOperationsQuery } from "./AffiliateSetupOperations";
 import type { AffiliateSetupMerchantPagination } from "./pagination";
 
 export type AffiliateSetupLoaderData =
   | {
       status: "ready";
       merchantPagination: AffiliateSetupMerchantPagination;
-      merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
+      merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupOperationsQuery["variables"]>;
     }
   | {
       status: "error";
@@ -24,7 +23,7 @@ export type AffiliateSetupLoaderData =
 
 export async function affiliateSetupLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<AffiliateSetupLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const merchantPagination = merchantPaginationFromUrl(new URL(request.url));
@@ -33,12 +32,12 @@ export async function affiliateSetupLoader({
     return {
       status: "ready",
       merchantPagination,
-      merchantQuery: await preloadRouteQuery<AffiliateSetupRouteQuery>(
+      merchantQuery: await preloadRouteQuery<AffiliateSetupOperationsQuery>(
         environment,
-        affiliateSetupRouteQuery,
+        affiliateSetupOperationsQuery,
         merchantPagination,
-        { signal: request.signal }
-      )
+        { signal: request.signal },
+      ),
     };
   } catch (error) {
     return recoverRouteLoaderError<AffiliateSetupLoaderData>(
@@ -46,8 +45,8 @@ export async function affiliateSetupLoader({
       "Failed to preload affiliate setup merchant choices.",
       {
         status: "error",
-        merchantPagination
-      }
+        merchantPagination,
+      },
     );
   }
 }

@@ -5,7 +5,7 @@ describe("compare specification-mode navigation data", () => {
   test("projects stable ordered labels, canonical destinations, and one current mode", () => {
     const data = buildCompareSpecModeNavigationData({
       selectedSlugs: ["first-product", "second-product"],
-      specMode: "differences"
+      specMode: "differences",
     });
 
     expect(data.modes).toEqual([
@@ -13,20 +13,20 @@ describe("compare specification-mode navigation data", () => {
         isCurrent: false,
         label: "Shared specs",
         mode: "shared",
-        path: "/compare?slug=first-product&slug=second-product"
+        path: "/compare?slug=first-product&slug=second-product",
       },
       {
         isCurrent: true,
         label: "Differences",
         mode: "differences",
-        path: "/compare?slug=first-product&slug=second-product&specs=differences"
+        path: "/compare?slug=first-product&slug=second-product&specs=differences",
       },
       {
         isCurrent: false,
         label: "All specs",
         mode: "all",
-        path: "/compare?slug=first-product&slug=second-product&specs=all"
-      }
+        path: "/compare?slug=first-product&slug=second-product&specs=all",
+      },
     ]);
     expect(data.modes.filter((mode) => mode.isCurrent)).toHaveLength(1);
   });
@@ -36,13 +36,13 @@ describe("compare specification-mode navigation data", () => {
 
     const data = buildCompareSpecModeNavigationData({
       selectedSlugs,
-      specMode: "shared"
+      specMode: "shared",
     });
 
     expect(data.modes.map((mode) => mode.path)).toEqual([
       "/compare?slug=second+product&slug=first-product",
       "/compare?slug=second+product&slug=first-product&specs=differences",
-      "/compare?slug=second+product&slug=first-product&specs=all"
+      "/compare?slug=second+product&slug=first-product&specs=all",
     ]);
     expect(selectedSlugs).toEqual(["second product", "first-product"]);
   });

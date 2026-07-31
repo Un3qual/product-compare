@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   buildSavedComparisonReopenPath,
-  buildSavedComparisonsPagination
+  buildSavedComparisonsPagination,
 } from "../../../src/routes/compare/saved-comparisons-route-data";
 
 describe("buildSavedComparisonReopenPath", () => {
@@ -11,13 +11,13 @@ describe("buildSavedComparisonReopenPath", () => {
 
   test("preserves saved product order in repeated slug parameters", () => {
     expect(buildSavedComparisonReopenPath(["chair", "desk", "lamp"])).toBe(
-      "/compare?slug=chair&slug=desk&slug=lamp"
+      "/compare?slug=chair&slug=desk&slug=lamp",
     );
   });
 
   test("encodes reserved product slugs with URLSearchParams semantics", () => {
     expect(buildSavedComparisonReopenPath(["desk lamp", "chair/plus+?&"])).toBe(
-      "/compare?slug=desk+lamp&slug=chair%2Fplus%2B%3F%26"
+      "/compare?slug=desk+lamp&slug=chair%2Fplus%2B%3F%26",
     );
   });
 });
@@ -29,8 +29,8 @@ describe("buildSavedComparisonsPagination", () => {
         after: "cursor-current",
         endCursor: "cursor-next",
         hasNextPage: true,
-        status: "unauthorized"
-      })
+        status: "unauthorized",
+      }),
     ).toEqual({ firstHref: null, nextHref: null });
   });
 
@@ -40,8 +40,8 @@ describe("buildSavedComparisonsPagination", () => {
         after: null,
         endCursor: "cursor-next",
         hasNextPage: true,
-        status: "ready"
-      })
+        status: "ready",
+      }),
     ).toEqual({ firstHref: null, nextHref: "/compare/saved?after=cursor-next" });
   });
 
@@ -51,12 +51,12 @@ describe("buildSavedComparisonsPagination", () => {
         after: "cursor-current",
         endCursor: null,
         hasNextPage: false,
-        status: "empty"
-      })
+        status: "empty",
+      }),
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
-  test.each([null, "", undefined]) (
+  test.each([null, "", undefined])(
     "hides the next-page path when its cursor is absent or empty (%j)",
     (endCursor) => {
       expect(
@@ -64,10 +64,10 @@ describe("buildSavedComparisonsPagination", () => {
           after: null,
           endCursor,
           hasNextPage: true,
-          status: "ready"
-        })
+          status: "ready",
+        }),
       ).toEqual({ firstHref: null, nextHref: null });
-    }
+    },
   );
 
   test("hides the next-page path when its cursor does not advance", () => {
@@ -76,8 +76,8 @@ describe("buildSavedComparisonsPagination", () => {
         after: "cursor-current",
         endCursor: "cursor-current",
         hasNextPage: true,
-        status: "ready"
-      })
+        status: "ready",
+      }),
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
@@ -87,8 +87,8 @@ describe("buildSavedComparisonsPagination", () => {
         after: "cursor-current",
         endCursor: "cursor-next",
         hasNextPage: false,
-        status: "ready"
-      })
+        status: "ready",
+      }),
     ).toEqual({ firstHref: "/compare/saved", nextHref: null });
   });
 
@@ -98,11 +98,11 @@ describe("buildSavedComparisonsPagination", () => {
         after: "cursor-current",
         endCursor: "next page/+?&",
         hasNextPage: true,
-        status: "ready"
-      })
+        status: "ready",
+      }),
     ).toEqual({
       firstHref: "/compare/saved",
-      nextHref: "/compare/saved?after=next+page%2F%2B%3F%26"
+      nextHref: "/compare/saved?after=next+page%2F%2B%3F%26",
     });
   });
 });

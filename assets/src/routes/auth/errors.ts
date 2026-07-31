@@ -3,7 +3,7 @@ import {
   hasRouteGraphQLErrors,
   isRouteRecord,
   isRouteMutationError,
-  type RouteMutationError
+  type RouteMutationError,
 } from "../route-errors";
 import type { RootViewer } from "../root/viewer-data";
 
@@ -25,7 +25,7 @@ export function findMutationError(errors: MutationError[], field: string) {
 
 export function selectGlobalMutationErrors(
   errors: readonly MutationError[],
-  fieldNames: readonly string[]
+  fieldNames: readonly string[],
 ): MutationError[] {
   const renderedFields = new Set(fieldNames);
 
@@ -44,7 +44,7 @@ export function transportMutationError(error: unknown): MutationError {
   return {
     code: "NETWORK_ERROR",
     field: null,
-    message: sanitizeTransportError(error)
+    message: sanitizeTransportError(error),
   };
 }
 
@@ -56,7 +56,7 @@ export function invalidTokenMutationError(message: string): MutationError {
   return {
     code: "INVALID_TOKEN",
     field: "token",
-    message
+    message,
   };
 }
 
@@ -70,7 +70,7 @@ function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
 
 export function resolveSessionMutationResult(
   payload: unknown,
-  graphQLErrors: readonly unknown[] | null | undefined
+  graphQLErrors: readonly unknown[] | null | undefined,
 ): AuthSessionResult {
   const graphQLError = relayGraphQLError(graphQLErrors);
 
@@ -83,7 +83,7 @@ export function resolveSessionMutationResult(
 
 export function resolveActionMutationResult(
   payload: unknown,
-  graphQLErrors: readonly unknown[] | null | undefined
+  graphQLErrors: readonly unknown[] | null | undefined,
 ): AuthActionResult {
   const graphQLError = relayGraphQLError(graphQLErrors);
 
@@ -105,7 +105,7 @@ export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
 
   return {
     viewer,
-    errors: viewer ? errors : ensureFailureErrors(errors)
+    errors: viewer ? errors : ensureFailureErrors(errors),
   };
 }
 
@@ -116,7 +116,7 @@ export function normalizeActionPayload(payload: unknown): AuthActionResult {
 
   return {
     ok,
-    errors: ok ? errors : ensureFailureErrors(errors)
+    errors: ok ? errors : ensureFailureErrors(errors),
   };
 }
 
@@ -141,16 +141,16 @@ function ensureFailureErrors(errors: MutationError[]) {
     {
       code: "UNKNOWN_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE
-    }
+      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+    },
   ];
 }
 
 function isViewer(value: unknown): value is RootViewer {
   return Boolean(
     isRouteRecord(value) &&
-      typeof value.id === "string" &&
-      typeof value.email === "string" &&
-      typeof value.isOperator === "boolean"
+    typeof value.id === "string" &&
+    typeof value.email === "string" &&
+    typeof value.isOperator === "boolean",
   );
 }

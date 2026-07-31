@@ -21,7 +21,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     payload
     |> click_id_attrs()
     |> Map.merge(%{
-      source_network: :impact,
+      source_network: "impact",
       network_conversion_ref: value(payload, :action_id, "ActionId", "actionId"),
       status: normalize_status(value(payload, :status, "Status")),
       currency: value(payload, :currency, "Currency"),

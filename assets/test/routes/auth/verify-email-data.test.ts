@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildVerifyEmailRequestData,
   VERIFY_EMAIL_MISSING_TOKEN_ERROR,
-  VERIFY_EMAIL_SUCCESS_MESSAGE
+  VERIFY_EMAIL_SUCCESS_MESSAGE,
 } from "../../../src/routes/auth/verify-email-data";
 
 describe("verify email data", () => {
@@ -10,7 +10,7 @@ describe("verify email data", () => {
     expect(buildVerifyEmailRequestData("  confirmation-token  ")).toEqual({
       initialErrors: [],
       isLoading: true,
-      token: "confirmation-token"
+      token: "confirmation-token",
     });
   });
 
@@ -24,14 +24,14 @@ describe("verify email data", () => {
           {
             code: "INVALID_TOKEN",
             field: "token",
-            message: "This verification link is missing or invalid."
-          }
+            message: "This verification link is missing or invalid.",
+          },
         ],
         isLoading: false,
-        token: ""
+        token: "",
       });
       expect(requestData.initialErrors[0]).toBe(VERIFY_EMAIL_MISSING_TOKEN_ERROR);
-    }
+    },
   );
 
   test("owns the exact success copy", () => {

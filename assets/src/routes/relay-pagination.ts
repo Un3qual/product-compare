@@ -5,7 +5,7 @@ export type RelayPageInfo = {
 
 export function nextRelayPageCursor(
   pageInfo: RelayPageInfo | null | undefined,
-  currentAfter: string | null = null
+  currentAfter: string | null = null,
 ) {
   const endCursor = pageInfo?.endCursor;
 

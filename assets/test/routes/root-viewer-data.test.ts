@@ -18,7 +18,10 @@ test.each([
   ["null id", { id: null, email: "person@example.com", isOperator: false }],
   ["numeric email", { id: "viewer-1", email: 1, isOperator: false }],
   ["null email", { id: "viewer-1", email: null, isOperator: false }],
-  ["non-boolean operator state", { id: "viewer-1", email: "person@example.com", isOperator: "false" }]
+  [
+    "non-boolean operator state",
+    { id: "viewer-1", email: "person@example.com", isOperator: "false" },
+  ],
 ])("projects no viewer for an incomplete or invalid viewer with %s", (_, viewer) => {
   expect(projectRootViewer(viewer)).toBeNull();
 });
@@ -28,12 +31,12 @@ test("projects the exact valid viewer fields", () => {
     projectRootViewer({
       id: "viewer-1",
       email: "person@example.com",
-      isOperator: true
-    })
+      isOperator: true,
+    }),
   ).toEqual({
     id: "viewer-1",
     email: "person@example.com",
-    isOperator: true
+    isOperator: true,
   });
 });
 
@@ -42,7 +45,7 @@ test("does not mutate a valid viewer input", () => {
     id: "viewer-1",
     email: "person@example.com",
     isOperator: false,
-    extra: "preserved"
+    extra: "preserved",
   };
   const before = { ...viewer };
 

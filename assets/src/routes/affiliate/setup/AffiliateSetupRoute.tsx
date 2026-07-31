@@ -1,13 +1,11 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
 import { useLoaderData } from "react-router-dom";
-import { graphql, useMutation, usePreloadedQuery } from "react-relay";
-import type { AffiliateSetupRouteCreateCouponMutation } from "../../../__generated__/AffiliateSetupRouteCreateCouponMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateLinkMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateLinkMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateNetworkMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateProgramMutation.graphql";
-import affiliateSetupRouteQuery, {
-  type AffiliateSetupRouteQuery
-} from "../../../__generated__/AffiliateSetupRouteQuery.graphql";
+import { useMutation, usePreloadedQuery } from "react-relay";
+import type { AffiliateSetupOperationsCreateCouponMutation } from "../../../__generated__/AffiliateSetupOperationsCreateCouponMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
+import type { AffiliateSetupOperationsQuery } from "../../../__generated__/AffiliateSetupOperationsQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
@@ -27,6 +25,13 @@ import {
   type NetworkResult,
   type ProgramResult
 } from "./AffiliateSetupForms";
+import {
+  affiliateSetupOperationsQuery,
+  createCouponMutation,
+  upsertAffiliateLinkMutation,
+  upsertAffiliateNetworkMutation,
+  upsertAffiliateProgramMutation
+} from "./AffiliateSetupOperations";
 import { affiliateSetupLoader, type AffiliateSetupLoaderData } from "./loader";
 import {
   buildCouponVariables,
@@ -41,84 +46,6 @@ import {
   resolveAffiliateProgramMutationOutcome
 } from "./affiliate-setup-data";
 import { buildAffiliateSetupPaginationData } from "./pagination";
-
-const createCouponMutation = graphql`
-  mutation AffiliateSetupRouteCreateCouponMutation($input: CreateCouponInput!) {
-    createCoupon(input: $input) {
-      coupon {
-        id
-        merchantId
-        affiliateNetworkId
-        code
-        discountType
-        discountValue
-        currency
-        validFrom
-        validTo
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-const upsertAffiliateLinkMutation = graphql`
-  mutation AffiliateSetupRouteUpsertAffiliateLinkMutation($input: UpsertAffiliateLinkInput!) {
-    upsertAffiliateLink(input: $input) {
-      link {
-        id
-        merchantProductId
-        affiliateNetworkId
-        originalUrl
-        affiliateUrl
-        lastVerifiedAt
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-const upsertAffiliateNetworkMutation = graphql`
-  mutation AffiliateSetupRouteUpsertAffiliateNetworkMutation($input: UpsertAffiliateNetworkInput!) {
-    upsertAffiliateNetwork(input: $input) {
-      network {
-        id
-        name
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-const upsertAffiliateProgramMutation = graphql`
-  mutation AffiliateSetupRouteUpsertAffiliateProgramMutation($input: UpsertAffiliateProgramInput!) {
-    upsertAffiliateProgram(input: $input) {
-      program {
-        id
-        affiliateNetworkId
-        merchantId
-        programCode
-        status
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -155,11 +82,11 @@ function AffiliateSetupPanel({
   merchantPagination: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantPagination"];
   merchantQuery: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantQuery"];
 }) {
-  const queryRef = useRoutePreloadedQuery<AffiliateSetupRouteQuery>(
-    affiliateSetupRouteQuery,
+  const queryRef = useRoutePreloadedQuery<AffiliateSetupOperationsQuery>(
+    affiliateSetupOperationsQuery,
     merchantQuery
   );
-  const data = usePreloadedQuery<AffiliateSetupRouteQuery>(affiliateSetupRouteQuery, queryRef);
+  const data = usePreloadedQuery<AffiliateSetupOperationsQuery>(affiliateSetupOperationsQuery, queryRef);
   const [networkResult, setNetworkResult] = useState<NetworkResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [networkPending, setNetworkPending] = useState(false);
@@ -178,16 +105,16 @@ function AffiliateSetupPanel({
   const couponInFlightRef = useRef(false);
   const [affiliateNetworkId, setAffiliateNetworkId] = useState("");
   const [selectedMerchantId, setSelectedMerchantId] = useState("");
-  const [commitUpsertAffiliateNetwork] = useMutation<AffiliateSetupRouteUpsertAffiliateNetworkMutation>(
+  const [commitUpsertAffiliateNetwork] = useMutation<AffiliateSetupOperationsUpsertAffiliateNetworkMutation>(
     upsertAffiliateNetworkMutation
   );
-  const [commitUpsertAffiliateProgram] = useMutation<AffiliateSetupRouteUpsertAffiliateProgramMutation>(
+  const [commitUpsertAffiliateProgram] = useMutation<AffiliateSetupOperationsUpsertAffiliateProgramMutation>(
     upsertAffiliateProgramMutation
   );
-  const [commitUpsertAffiliateLink] = useMutation<AffiliateSetupRouteUpsertAffiliateLinkMutation>(
+  const [commitUpsertAffiliateLink] = useMutation<AffiliateSetupOperationsUpsertAffiliateLinkMutation>(
     upsertAffiliateLinkMutation
   );
-  const [commitCreateCoupon] = useMutation<AffiliateSetupRouteCreateCouponMutation>(createCouponMutation);
+  const [commitCreateCoupon] = useMutation<AffiliateSetupOperationsCreateCouponMutation>(createCouponMutation);
 
   const merchantChoices = useMemo(
     () => buildMerchantChoices(data.merchants),

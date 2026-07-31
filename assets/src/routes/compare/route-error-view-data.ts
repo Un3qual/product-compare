@@ -15,7 +15,7 @@ export type RouteErrorViewData = {
 
 export function getRouteErrorViewData({
   error,
-  resourceName
+  resourceName,
 }: RouteErrorViewDataInput): RouteErrorViewData {
   if (error.kind === "response") {
     return routeResponseViewData(error.status, resourceName);
@@ -27,7 +27,7 @@ export function getRouteErrorViewData({
 
   return {
     errorMessage: `${capitalizeResourceName(resourceName)} unavailable.`,
-    retryGuidance: "Please try again later."
+    retryGuidance: "Please try again later.",
   };
 }
 
@@ -35,27 +35,27 @@ function routeResponseViewData(status: number, resourceName: string): RouteError
   if (status >= 500) {
     return {
       errorMessage: `A server error occurred while loading the ${resourceName}.`,
-      retryGuidance: "Please try refreshing the page or come back later."
+      retryGuidance: "Please try refreshing the page or come back later.",
     };
   }
 
   if (status === 404) {
     return {
       errorMessage: `The requested ${resourceName} could not be found.`,
-      retryGuidance: "Please check the URL and try again."
+      retryGuidance: "Please check the URL and try again.",
     };
   }
 
   if (status === 401 || status === 403) {
     return {
       errorMessage: `You don't have permission to view this ${resourceName}.`,
-      retryGuidance: "Please sign in or contact support if you believe this is an error."
+      retryGuidance: "Please sign in or contact support if you believe this is an error.",
     };
   }
 
   return {
     errorMessage: `An error occurred while loading the ${resourceName}.`,
-    retryGuidance: "Please try refreshing the page."
+    retryGuidance: "Please try refreshing the page.",
   };
 }
 
@@ -69,13 +69,13 @@ function routeExceptionViewData(error: Error, resourceName: string): RouteErrorV
   if (isNetworkError) {
     return {
       errorMessage: `A network error occurred while loading the ${resourceName}.`,
-      retryGuidance: "Please check your internet connection and try again."
+      retryGuidance: "Please check your internet connection and try again.",
     };
   }
 
   return {
     errorMessage: `An unexpected error occurred while loading the ${resourceName}.`,
-    retryGuidance: "Please try refreshing the page or come back later."
+    retryGuidance: "Please try refreshing the page or come back later.",
   };
 }
 

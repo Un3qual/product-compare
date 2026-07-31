@@ -1,6 +1,6 @@
 import {
   buildOfferSnapshotSummary,
-  type OfferSnapshotSelectors
+  type OfferSnapshotSelectors,
 } from "../../src/routes/offer-snapshot";
 
 type TestOffer = {
@@ -13,7 +13,7 @@ type TestOffer = {
 const selectors: OfferSnapshotSelectors<TestOffer> = {
   currency: (offer) => offer.currency,
   hasCoupons: (offer) => offer.hasCoupons,
-  numericPrice: (offer) => offer.price
+  numericPrice: (offer) => offer.price,
 };
 
 test("summarizes an empty offer page", () => {
@@ -22,7 +22,7 @@ test("summarizes an empty offer page", () => {
     lowestPricedOffer: null,
     missingPriceCount: 0,
     priceState: "none",
-    visibleOfferCount: 0
+    visibleOfferCount: 0,
   });
 });
 
@@ -36,7 +36,7 @@ test("summarizes comparable offers in one pass", () => {
     lowestPricedOffer: budget,
     missingPriceCount: 1,
     priceState: "comparable",
-    visibleOfferCount: 3
+    visibleOfferCount: 3,
   });
 });
 
@@ -46,6 +46,6 @@ test("refuses comparison across visible currencies", () => {
 
   expect(buildOfferSnapshotSummary([usd, eur], selectors)).toMatchObject({
     lowestPricedOffer: eur,
-    priceState: "mixed"
+    priceState: "mixed",
   });
 });

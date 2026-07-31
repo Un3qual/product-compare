@@ -7,7 +7,7 @@ declare module "react-relay" {
     GraphQLTaggedNode as RelayGraphQLTaggedNode,
     MutationConfig,
     MutationParameters,
-    OperationType
+    OperationType,
   } from "relay-runtime";
 
   export type GraphQLTaggedNode = RelayGraphQLTaggedNode;
@@ -43,29 +43,26 @@ declare module "react-relay" {
     environment: Environment,
     query: GraphQLTaggedNode,
     variables: TQuery["variables"],
-    options?: LoadQueryOptions
+    options?: LoadQueryOptions,
   ): PreloadedQuery<TQuery>;
 
   export function usePreloadedQuery<TQuery extends OperationType>(
     query: GraphQLTaggedNode,
-    preloadedQuery: PreloadedQuery<TQuery>
+    preloadedQuery: PreloadedQuery<TQuery>,
   ): TQuery["response"];
 
   export function useQueryLoader<TQuery extends OperationType>(
-    query: GraphQLTaggedNode
+    query: GraphQLTaggedNode,
   ): [
     PreloadedQuery<TQuery> | null,
-    (
-      variables: TQuery["variables"],
-      options?: LoadQueryOptions
-    ) => void,
-    () => void
+    (variables: TQuery["variables"], options?: LoadQueryOptions) => void,
+    () => void,
   ];
 
   export function useLazyLoadQuery<TQuery extends OperationType>(
     query: GraphQLTaggedNode,
     variables: TQuery["variables"],
-    options?: LazyLoadQueryOptions
+    options?: LazyLoadQueryOptions,
   ): TQuery["response"];
 
   export interface MutationCommitFn<TMutation extends MutationParameters> {
@@ -73,7 +70,7 @@ declare module "react-relay" {
   }
 
   export function useMutation<TMutation extends MutationParameters>(
-    mutation: GraphQLTaggedNode
+    mutation: GraphQLTaggedNode,
   ): [MutationCommitFn<TMutation>, boolean];
 
   export function useRelayEnvironment(): Environment;

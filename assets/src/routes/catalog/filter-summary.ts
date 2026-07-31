@@ -1,7 +1,7 @@
 import {
   catalogProductSortLabel,
   type CatalogFilterMetadata,
-  type CatalogFilters
+  type CatalogFilters,
 } from "./filters";
 
 export type CatalogFilterRemoval =
@@ -21,7 +21,7 @@ export type CatalogFilterSummaryItem = {
 
 export function catalogFiltersWithout(
   filters: CatalogFilters,
-  removal: CatalogFilterRemoval
+  removal: CatalogFilterRemoval,
 ): CatalogFilters {
   const copied = copyCatalogFilters(filters);
 
@@ -49,7 +49,7 @@ function removeQueryFilter(filters: CatalogFilters): CatalogFilters {
   return {
     ...filters,
     query: undefined,
-    sort: filters.sort === "RELEVANCE" ? undefined : filters.sort
+    sort: filters.sort === "RELEVANCE" ? undefined : filters.sort,
   };
 }
 
@@ -61,35 +61,35 @@ function removeTypeFilter(filters: CatalogFilters): CatalogFilters {
   return {
     ...filters,
     typeTaxonId: undefined,
-    includeTypeDescendants: undefined
+    includeTypeDescendants: undefined,
   };
 }
 
 function removeUseCaseFilter(filters: CatalogFilters, taxonId: string): CatalogFilters {
   return {
     ...filters,
-    useCaseTaxonIds: filters.useCaseTaxonIds.filter((candidateId) => candidateId !== taxonId)
+    useCaseTaxonIds: filters.useCaseTaxonIds.filter((candidateId) => candidateId !== taxonId),
   };
 }
 
 function removeNumericFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
   return {
     ...filters,
-    numeric: filters.numeric.filter((filter) => filter.attributeId !== attributeId)
+    numeric: filters.numeric.filter((filter) => filter.attributeId !== attributeId),
   };
 }
 
 function removeBooleanFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
   return {
     ...filters,
-    booleans: filters.booleans.filter((filter) => filter.attributeId !== attributeId)
+    booleans: filters.booleans.filter((filter) => filter.attributeId !== attributeId),
   };
 }
 
 function removeEnumFilter(filters: CatalogFilters, attributeId: string): CatalogFilters {
   return {
     ...filters,
-    enums: filters.enums.filter((filter) => filter.attributeId !== attributeId)
+    enums: filters.enums.filter((filter) => filter.attributeId !== attributeId),
   };
 }
 
@@ -103,13 +103,13 @@ function copyCatalogFilters(filters: CatalogFilters): CatalogFilters {
     useCaseTaxonIds: [...filters.useCaseTaxonIds],
     numeric: [...filters.numeric],
     booleans: [...filters.booleans],
-    enums: [...filters.enums]
+    enums: [...filters.enums],
   };
 }
 
 export function catalogFilterSummaryItems(
   metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
+  filters: CatalogFilters,
 ): CatalogFilterSummaryItem[] {
   return [
     ...(filters.query
@@ -117,8 +117,8 @@ export function catalogFilterSummaryItems(
           {
             key: "query",
             label: `Search: "${filters.query}"`,
-            removal: { kind: "query" } as const
-          }
+            removal: { kind: "query" } as const,
+          },
         ]
       : []),
     ...(filters.sort !== undefined && filters.sort !== "RELEVANCE"
@@ -126,21 +126,21 @@ export function catalogFilterSummaryItems(
           {
             key: "sort",
             label: `Sort: ${catalogProductSortLabel(filters.sort)}`,
-            removal: { kind: "sort" } as const
-          }
+            removal: { kind: "sort" } as const,
+          },
         ]
       : []),
     ...typeFilterSummaryItems(metadata, filters),
     ...selectedUseCaseSummaryItems(metadata),
     ...numericFilterSummaryItems(metadata),
     ...booleanFilterSummaryItems(metadata),
-    ...enumFilterSummaryItems(metadata)
+    ...enumFilterSummaryItems(metadata),
   ];
 }
 
 function typeFilterSummaryItems(
   metadata: CatalogFilterMetadata,
-  filters: CatalogFilters
+  filters: CatalogFilters,
 ): CatalogFilterSummaryItem[] {
   const selectedType = metadata.typeOptions.find((option) => option.selected);
 
@@ -151,27 +151,23 @@ function typeFilterSummaryItems(
           label: filters.includeTypeDescendants
             ? `Type: ${selectedType.label} and descendants`
             : `Type: ${selectedType.label}`,
-          removal: { kind: "type" } as const
-        }
+          removal: { kind: "type" } as const,
+        },
       ]
     : [];
 }
 
-function selectedUseCaseSummaryItems(
-  metadata: CatalogFilterMetadata
-): CatalogFilterSummaryItem[] {
+function selectedUseCaseSummaryItems(metadata: CatalogFilterMetadata): CatalogFilterSummaryItem[] {
   return metadata.useCaseOptions
     .filter((option) => option.selected)
     .map((option) => ({
       key: `use-case:${option.id}`,
       label: `Use case: ${option.label}`,
-      removal: { kind: "useCase", taxonId: option.id } as const
+      removal: { kind: "useCase", taxonId: option.id } as const,
     }));
 }
 
-function numericFilterSummaryItems(
-  metadata: CatalogFilterMetadata
-): CatalogFilterSummaryItem[] {
+function numericFilterSummaryItems(metadata: CatalogFilterMetadata): CatalogFilterSummaryItem[] {
   return metadata.numericFilters.flatMap((filter) => {
     const summary = numericFilterSummary(filter);
 
@@ -180,40 +176,36 @@ function numericFilterSummaryItems(
           {
             key: `numeric:${filter.attributeId}`,
             label: `${filter.displayName}: ${summary}`,
-            removal: { kind: "numeric", attributeId: filter.attributeId } as const
-          }
+            removal: { kind: "numeric", attributeId: filter.attributeId } as const,
+          },
         ]
       : [];
   });
 }
 
-function booleanFilterSummaryItems(
-  metadata: CatalogFilterMetadata
-): CatalogFilterSummaryItem[] {
+function booleanFilterSummaryItems(metadata: CatalogFilterMetadata): CatalogFilterSummaryItem[] {
   return metadata.booleanFilters.flatMap((filter) =>
     typeof filter.selectedValue === "boolean"
       ? [
           {
             key: `boolean:${filter.attributeId}`,
             label: `${filter.displayName}: ${filter.selectedValue ? "Yes" : "No"}`,
-            removal: { kind: "boolean", attributeId: filter.attributeId } as const
-          }
+            removal: { kind: "boolean", attributeId: filter.attributeId } as const,
+          },
         ]
-      : []
+      : [],
   );
 }
 
-function enumFilterSummaryItems(
-  metadata: CatalogFilterMetadata
-): CatalogFilterSummaryItem[] {
+function enumFilterSummaryItems(metadata: CatalogFilterMetadata): CatalogFilterSummaryItem[] {
   return metadata.enumFilters.flatMap((filter) =>
     filter.options
       .filter((option) => option.selected)
       .map((option) => ({
         key: `enum:${filter.attributeId}:${option.id}`,
         label: `${filter.displayName}: ${option.label}`,
-        removal: { kind: "enum", attributeId: filter.attributeId } as const
-      }))
+        removal: { kind: "enum", attributeId: filter.attributeId } as const,
+      })),
   );
 }
 
@@ -238,7 +230,7 @@ function numericFilterSummary(filter: CatalogFilterMetadata["numericFilters"][nu
 
 function formatNumericValue(
   value: string | null | undefined,
-  unitSymbol: string | null | undefined
+  unitSymbol: string | null | undefined,
 ) {
   if (!value) {
     return null;

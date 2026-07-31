@@ -1,11 +1,11 @@
 import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { props } from "@stylexjs/stylex";
-import { graphql, useMutation } from "react-relay";
-import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
-import type { ProductCommunityItemsRemoveCommunityContentMutation } from "../../__generated__/ProductCommunityItemsRemoveCommunityContentMutation.graphql";
-import type { ProductCommunityItemsUpdateProductAnswerMutation } from "../../__generated__/ProductCommunityItemsUpdateProductAnswerMutation.graphql";
-import type { ProductCommunityItemsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityItemsUpdateProductQuestionMutation.graphql";
-import type { ProductCommunityItemsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityItemsUpdateProductReviewMutation.graphql";
+import { useMutation } from "react-relay";
+import type { ProductCommunityOperationsQuery } from "../../__generated__/ProductCommunityOperationsQuery.graphql";
+import type { ProductCommunityOperationsRemoveCommunityContentMutation } from "../../__generated__/ProductCommunityOperationsRemoveCommunityContentMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductAnswerMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductAnswerMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductReviewMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
 import { Label } from "../../ui/primitives/Label";
 import { Select } from "../../ui/primitives/Select";
@@ -22,75 +22,14 @@ import {
   resolveProductReviewUpdateMessage
 } from "./product-community-data";
 import { productCommunityStyles as styles } from "./product-community-styles";
+import {
+  removeCommunityContentMutation,
+  updateProductAnswerMutation,
+  updateProductQuestionMutation,
+  updateProductReviewMutation
+} from "./ProductCommunityOperations";
 
-export const removeCommunityContentMutation = graphql`
-  mutation ProductCommunityItemsRemoveCommunityContentMutation($input: RemoveCommunityContentInput!) {
-    removeCommunityContent(input: $input) {
-      removedContentId
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const updateProductAnswerMutation = graphql`
-  mutation ProductCommunityItemsUpdateProductAnswerMutation($input: UpdateProductAnswerInput!) {
-    updateProductAnswer(input: $input) {
-      answer {
-        id
-        body
-        moderationStatus
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const updateProductQuestionMutation = graphql`
-  mutation ProductCommunityItemsUpdateProductQuestionMutation($input: UpdateProductQuestionInput!) {
-    updateProductQuestion(input: $input) {
-      question {
-        id
-        title
-        body
-        moderationStatus
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-export const updateProductReviewMutation = graphql`
-  mutation ProductCommunityItemsUpdateProductReviewMutation($input: UpdateProductReviewInput!) {
-    updateProductReview(input: $input) {
-      review {
-        id
-        rating
-        title
-        body
-        moderationStatus
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
-
-type CommunityProduct = NonNullable<ProductCommunityQuery["response"]["product"]>;
+type CommunityProduct = NonNullable<ProductCommunityOperationsQuery["response"]["product"]>;
 type Review = CommunityProduct["reviews"]["edges"][number]["node"];
 type Question = CommunityProduct["questions"]["edges"][number]["node"];
 type Answer = Question["answers"]["edges"][number]["node"];
@@ -245,7 +184,7 @@ function useCommunityItemState() {
 type CommunityItemState = ReturnType<typeof useCommunityItemState>;
 
 function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductReviewMutation>(updateProductReviewMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityOperationsUpdateProductReviewMutation>(updateProductReviewMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -272,7 +211,7 @@ function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityIte
 }
 
 function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductQuestionMutation>(updateProductQuestionMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityOperationsUpdateProductQuestionMutation>(updateProductQuestionMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -298,7 +237,7 @@ function useQuestionUpdate(question: QuestionRow, ownerView: boolean, state: Com
 }
 
 function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityItemState) {
-  const [commitUpdate, pending] = useMutation<ProductCommunityItemsUpdateProductAnswerMutation>(updateProductAnswerMutation);
+  const [commitUpdate, pending] = useMutation<ProductCommunityOperationsUpdateProductAnswerMutation>(updateProductAnswerMutation);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -433,7 +372,7 @@ function RemoveCommunityControl({
   label: CommunityContentLabel;
   onRemoved: () => void;
 }) {
-  const [commitRemove, pending] = useMutation<ProductCommunityItemsRemoveCommunityContentMutation>(removeCommunityContentMutation);
+  const [commitRemove, pending] = useMutation<ProductCommunityOperationsRemoveCommunityContentMutation>(removeCommunityContentMutation);
   const [confirming, setConfirming] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 

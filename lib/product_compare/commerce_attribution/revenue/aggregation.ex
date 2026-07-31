@@ -5,7 +5,6 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   alias ProductCompare.CommerceAttribution.Revenue.Filters
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -35,14 +34,13 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     CommerceClickSession
     |> from(as: :session)
     |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
-    |> maybe_join_click_link_network(filters)
+    |> maybe_join_click_link_program(filters)
     |> maybe_join_click_conversions(filters)
-    |> maybe_join_click_conversion_network(filters)
     |> maybe_join_click_session_merchant_product(filters)
     |> maybe_join_click_conversion_merchant_product(filters)
     |> maybe_where_click_merchant(filters.merchant_id)
     |> maybe_where_click_product(filters.product_id)
-    |> maybe_where_click_network(filters.network)
+    |> maybe_where_click_network(filters.affiliate_network_id)
     |> maybe_where_click_from(filters.from)
     |> maybe_where_click_to(filters.to)
     |> select([session: session], count(session.id, :distinct))
@@ -60,11 +58,10 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
       as: :merchant_product,
       on: merchant_product.id == conversion.merchant_product_id
     )
-    |> maybe_join_conversion_network(filters.network)
     |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
     |> maybe_where_conversion_merchant(filters.merchant_id)
     |> maybe_where_conversion_product(filters.product_id)
-    |> maybe_where_conversion_network(filters.network)
+    |> maybe_where_conversion_network(filters.affiliate_network_id)
     |> maybe_where_conversion_currency(filters.currency)
     |> maybe_where_conversion_from(filters.from)
     |> maybe_where_conversion_to(filters.to)
@@ -91,7 +88,8 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     raise ArgumentError, "revenue summary currency filter is required for mixed currencies"
   end
 
-  defp maybe_join_click_conversions(query, %{network: nil, product_id: nil}), do: query
+  defp maybe_join_click_conversions(query, %{affiliate_network_id: nil, product_id: nil}),
+    do: query
 
   defp maybe_join_click_conversions(query, _filters) do
     join(query, :left, [session: session], conversion in CommerceConversion,
@@ -100,26 +98,12 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     )
   end
 
-  defp maybe_join_click_link_network(query, %{network: nil}), do: query
+  defp maybe_join_click_link_program(query, %{affiliate_network_id: nil}), do: query
 
-  defp maybe_join_click_link_network(query, _filters) do
-    query
-    |> join(:left, [link: link], program in AffiliateProgram,
+  defp maybe_join_click_link_program(query, _filters) do
+    join(query, :left, [link: link], program in AffiliateProgram,
       as: :link_program,
       on: program.id == link.affiliate_program_id
-    )
-    |> join(:left, [link_program: program], network in AffiliateNetwork,
-      as: :link_network,
-      on: network.id == program.affiliate_network_id
-    )
-  end
-
-  defp maybe_join_click_conversion_network(query, %{network: nil}), do: query
-
-  defp maybe_join_click_conversion_network(query, _filters) do
-    join(query, :left, [conversion: conversion], network in AffiliateNetwork,
-      as: :conversion_network,
-      on: network.id == conversion.affiliate_network_id
     )
   end
 
@@ -163,19 +147,13 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   defp maybe_where_conversion_network(query, nil), do: query
 
-  defp maybe_where_conversion_network(query, network) do
-    code = Atom.to_string(network)
-    where(query, [conversion_network: network], network.code == ^code)
-  end
-
-  defp maybe_join_conversion_network(query, nil), do: query
-
-  defp maybe_join_conversion_network(query, _network) do
-    join(query, :inner, [conversion: conversion], network in AffiliateNetwork,
-      as: :conversion_network,
-      on: network.id == conversion.affiliate_network_id
-    )
-  end
+  defp maybe_where_conversion_network(query, affiliate_network_id),
+    do:
+      where(
+        query,
+        [conversion: conversion],
+        conversion.affiliate_network_id == ^affiliate_network_id
+      )
 
   defp maybe_where_conversion_currency(query, nil), do: query
 
@@ -230,13 +208,12 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   defp maybe_where_click_network(query, nil), do: query
 
-  defp maybe_where_click_network(query, network) do
-    code = Atom.to_string(network)
-
+  defp maybe_where_click_network(query, affiliate_network_id) do
     where(
       query,
-      [link_network: link_network, conversion_network: conversion_network],
-      link_network.code == ^code or conversion_network.code == ^code
+      [link_program: link_program, conversion: conversion],
+      link_program.affiliate_network_id == ^affiliate_network_id or
+        conversion.affiliate_network_id == ^affiliate_network_id
     )
   end
 

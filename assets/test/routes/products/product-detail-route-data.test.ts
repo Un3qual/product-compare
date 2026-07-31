@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { createProductDetailRouteData, overviewSummaryItems } from "../../../src/routes/products/product-detail-route-data";
+import {
+  createProductDetailRouteData,
+  overviewSummaryItems,
+} from "../../../src/routes/products/product-detail-route-data";
 
 describe("createProductDetailRouteData", () => {
   test.each([
@@ -8,27 +11,30 @@ describe("createProductDetailRouteData", () => {
     ["#offers", "", "offers"],
     ["#community", "", "community"],
     ["#unknown", "", "overview"],
-    ["", "?offersAfter=next-page", "offers"]
-  ])("uses explicit tabs and falls back to offers for an offer cursor", (hash, search, detailView) => {
-    expect(
-      createProductDetailRouteData({
-        hash,
-        productSlug: "detail-product",
-        search
-      }).detailView
-    ).toBe(detailView);
-  });
+    ["", "?offersAfter=next-page", "offers"],
+  ])(
+    "uses explicit tabs and falls back to offers for an offer cursor",
+    (hash, search, detailView) => {
+      expect(
+        createProductDetailRouteData({
+          hash,
+          productSlug: "detail-product",
+          search,
+        }).detailView,
+      ).toBe(detailView);
+    },
+  );
 
   test("builds overview counts", () => {
     expect(
       overviewSummaryItems({
         attributeCount: 8,
         hasMoreOffers: true,
-        loadedOfferCount: 6
-      })
+        loadedOfferCount: 6,
+      }),
     ).toEqual([
       { label: "Specifications available", value: 8 },
-      { label: "Active offers loaded", value: "6+" }
+      { label: "Active offers loaded", value: "6+" },
     ]);
   });
 
@@ -36,7 +42,7 @@ describe("createProductDetailRouteData", () => {
     const routeData = createProductDetailRouteData({
       hash: "#specifications",
       productSlug: "reserved/product?variant=1",
-      search: "?offersAfter=next-page&slug=first-product&slug=second+product"
+      search: "?offersAfter=next-page&slug=first-product&slug=second+product",
     });
 
     expect(routeData.productPath).toBe("/products/reserved%2Fproduct%3Fvariant%3D1");
@@ -48,12 +54,12 @@ describe("createProductDetailRouteData", () => {
     const routeData = createProductDetailRouteData({
       hash: "#specifications",
       productSlug: "detail-product",
-      search: "?offersAfter=cursor-next-page&q=oled&slug=second-product"
+      search: "?offersAfter=cursor-next-page&q=oled&slug=second-product",
     });
 
     expect(routeData.compareAction).toEqual({
       href: "/products/detail-product?offersAfter=cursor-next-page&q=oled&slug=second-product&slug=detail-product#specifications",
-      kind: "add"
+      kind: "add",
     });
   });
 
@@ -61,12 +67,12 @@ describe("createProductDetailRouteData", () => {
     const selectedRouteData = createProductDetailRouteData({
       hash: "",
       productSlug: "detail-product",
-      search: "?slug=detail-product"
+      search: "?slug=detail-product",
     });
     const fullRouteData = createProductDetailRouteData({
       hash: "",
       productSlug: "detail-product",
-      search: "?slug=first-product&slug=second-product&slug=third-product"
+      search: "?slug=first-product&slug=second-product&slug=third-product",
     });
 
     expect(selectedRouteData.compareAction).toEqual({ kind: "selected" });
@@ -78,16 +84,16 @@ describe("createProductDetailRouteData", () => {
       hash: "",
       productSlug: "detail-product",
       search:
-        "?slug=first-product&slug=&slug=first-product&slug=second-product&slug=third-product&slug=fourth-product"
+        "?slug=first-product&slug=&slug=first-product&slug=second-product&slug=third-product&slug=fourth-product",
     });
 
     expect(routeData.selectedCompareSlugs).toEqual([
       "first-product",
       "second-product",
-      "third-product"
+      "third-product",
     ]);
     expect(routeData.comparePath).toBe(
-      "/compare?slug=first-product&slug=second-product&slug=third-product"
+      "/compare?slug=first-product&slug=second-product&slug=third-product",
     );
     expect(routeData.compareAction).toEqual({ kind: "full" });
   });
@@ -96,11 +102,12 @@ describe("createProductDetailRouteData", () => {
     const routeData = createProductDetailRouteData({
       hash: "#offers",
       productSlug: "detail-product",
-      search: "?offersAfter=cursor-next-page&q=oled&slug=first-product&slug=second-product&slug=third-product"
+      search:
+        "?offersAfter=cursor-next-page&q=oled&slug=first-product&slug=second-product&slug=third-product",
     });
 
     expect(routeData.removeSelectedPathForIndex(1)).toBe(
-      "/products/detail-product?offersAfter=cursor-next-page&q=oled&slug=first-product&slug=third-product#offers"
+      "/products/detail-product?offersAfter=cursor-next-page&q=oled&slug=first-product&slug=third-product#offers",
     );
   });
 });

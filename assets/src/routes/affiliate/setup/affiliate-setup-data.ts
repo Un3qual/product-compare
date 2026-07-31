@@ -1,7 +1,4 @@
-import {
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../../route-errors";
+import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../../route-errors";
 
 export type AffiliateSetupFormValues = Readonly<Record<string, string | undefined>>;
 
@@ -45,47 +42,35 @@ export type AffiliateSetupMutationOutcome<T> =
   | { readonly error: string; readonly result: null };
 
 export function resolveAffiliateNetworkMutationOutcome<T extends object>(
-  payload:
-    | (AffiliateSetupMutationPayload & { readonly network?: T | null })
-    | null
-    | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  payload: (AffiliateSetupMutationPayload & { readonly network?: T | null }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.network, payload?.errors, graphQLErrors);
 }
 
 export function resolveAffiliateProgramMutationOutcome<T extends object>(
-  payload:
-    | (AffiliateSetupMutationPayload & { readonly program?: T | null })
-    | null
-    | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  payload: (AffiliateSetupMutationPayload & { readonly program?: T | null }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.program, payload?.errors, graphQLErrors);
 }
 
 export function resolveAffiliateLinkMutationOutcome<T extends object>(
-  payload:
-    | (AffiliateSetupMutationPayload & { readonly link?: T | null })
-    | null
-    | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  payload: (AffiliateSetupMutationPayload & { readonly link?: T | null }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors, graphQLErrors);
 }
 
 export function resolveAffiliateCouponMutationOutcome<T extends object>(
-  payload:
-    | (AffiliateSetupMutationPayload & { readonly coupon?: T | null })
-    | null
-    | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  payload: (AffiliateSetupMutationPayload & { readonly coupon?: T | null }) | null | undefined,
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.coupon, payload?.errors, graphQLErrors);
 }
 
 export function buildMerchantChoices(
-  merchants: AffiliateSetupMerchantConnection | null | undefined
+  merchants: AffiliateSetupMerchantConnection | null | undefined,
 ): MerchantChoice[] {
   if (!merchants) {
     return [];
@@ -100,15 +85,15 @@ export function buildMerchantChoices(
       {
         id: node.id,
         name: node.name,
-        domain: node.domain
-      }
+        domain: node.domain,
+      },
     ];
   });
 }
 
 export function getMerchantChoiceById(
   merchantChoices: readonly MerchantChoice[],
-  merchantId: string
+  merchantId: string,
 ) {
   return merchantChoices.find((merchant) => merchant.id === merchantId);
 }
@@ -123,7 +108,7 @@ export function getMerchantSummary(merchantChoice?: MerchantChoice) {
 
 export function getAffiliateMerchantContext(
   merchantChoices: readonly MerchantChoice[],
-  selectedMerchantId: string
+  selectedMerchantId: string,
 ) {
   const selectedMerchant =
     getMerchantChoiceById(merchantChoices, selectedMerchantId) ?? merchantChoices[0];
@@ -132,15 +117,15 @@ export function getAffiliateMerchantContext(
   return {
     currentMerchantCopy: summary ? `Current merchant: ${summary}` : null,
     selectedMerchantCopy: summary ? `Selected merchant: ${summary}` : null,
-    selectedMerchantValue: selectedMerchant?.id ?? ""
+    selectedMerchantValue: selectedMerchant?.id ?? "",
   };
 }
 
 export function buildNetworkVariables(formValues: AffiliateSetupFormValues) {
   return {
     input: {
-      name: requiredFormString(formValues, "networkName")
-    }
+      name: requiredFormString(formValues, "networkName"),
+    },
   };
 }
 
@@ -150,8 +135,8 @@ export function buildProgramVariables(formValues: AffiliateSetupFormValues) {
       affiliateNetworkId: requiredFormString(formValues, "affiliateNetworkId"),
       merchantId: requiredFormString(formValues, "merchantId"),
       programCode: optionalFormString(formValues, "programCode"),
-      status: optionalFormString(formValues, "programStatus")
-    }
+      status: optionalFormString(formValues, "programStatus"),
+    },
   };
 }
 
@@ -162,8 +147,8 @@ export function buildLinkVariables(formValues: AffiliateSetupFormValues) {
       affiliateNetworkId: optionalFormString(formValues, "linkAffiliateNetworkId"),
       originalUrl: requiredFormString(formValues, "originalUrl"),
       affiliateUrl: requiredFormString(formValues, "affiliateUrl"),
-      lastVerifiedAt: optionalDateTimeString(formValues, "lastVerifiedAt")
-    }
+      lastVerifiedAt: optionalDateTimeString(formValues, "lastVerifiedAt"),
+    },
   };
 }
 
@@ -180,8 +165,8 @@ export function buildCouponVariables(formValues: AffiliateSetupFormValues) {
       currency: optionalCurrencyString(formValues, "currency"),
       validFrom: optionalDateTimeString(formValues, "validFrom"),
       validTo: optionalDateTimeString(formValues, "validTo"),
-      terms: optionalFormString(formValues, "terms")
-    }
+      terms: optionalFormString(formValues, "terms"),
+    },
   };
 }
 
@@ -206,10 +191,7 @@ function couponDiscountValue(discountValue: unknown | null | undefined) {
   return discountValue == null ? null : String(discountValue);
 }
 
-function amountCouponDiscountText(
-  value: string | null,
-  currency: string | null | undefined
-) {
+function amountCouponDiscountText(value: string | null, currency: string | null | undefined) {
   return value && currency ? `${value} ${currency}` : null;
 }
 
@@ -242,7 +224,7 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
 function resolveAffiliateSetupMutationOutcome<T extends object>(
   result: T | null | undefined,
   errors: unknown,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): AffiliateSetupMutationOutcome<T> {
   if (result && !hasRouteGraphQLErrors(graphQLErrors)) {
     return { error: null, result };
@@ -250,6 +232,6 @@ function resolveAffiliateSetupMutationOutcome<T extends object>(
 
   return {
     error: routeMutationErrorMessage(errors, graphQLErrors),
-    result: null
+    result: null,
   };
 }

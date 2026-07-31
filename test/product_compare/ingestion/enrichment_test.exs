@@ -1,11 +1,14 @@
 defmodule ProductCompare.Ingestion.EnrichmentTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
   import ProductCompare.Fixtures.CJIngestionFixtures
 
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Fixtures.TaxonomyFixtures
   alias ProductCompare.Ingestion
+  alias ProductCompare.Ingestion.ListingPersistence.Enrichment
   alias ProductCompare.Ingestion.MediaObservation
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Ingestion.SpecificationObservation
@@ -18,6 +21,7 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
   alias ProductCompareSchemas.Specs.ClaimEvidence
   alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
+  alias ProductCompareSchemas.Taxonomy.Taxon
 
   setup do
     previous = Application.get_env(:product_compare, :ingestion_auto_accept_attributes, :not_set)
@@ -246,6 +250,78 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
     assert updated.product.description == "Curated description"
     assert updated.product.model_number == "CURATED-1"
     assert updated.product.primary_type_taxon_id == running_shoes.id
+  end
+
+  test "combined enrichment resolves taxonomy before one locked product reload" do
+    source = source_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    placeholder =
+      case Repo.get_by(Taxon, taxonomy_id: type_taxonomy.id, code: "ingested-product") do
+        nil ->
+          TaxonomyFixtures.taxon_fixture(%{
+            taxonomy_id: type_taxonomy.id,
+            code: "ingested-product",
+            name: "Ingested Product"
+          })
+
+        taxon ->
+          taxon
+      end
+
+    mapped_type =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "combined-enrichment-#{Ecto.UUID.generate()}",
+        name: "Combined Enrichment"
+      })
+
+    category_path = ["Combined", Ecto.UUID.generate()]
+    assert {:ok, _alias} = Taxonomy.upsert_taxon_alias(mapped_type.id, category_path)
+
+    product =
+      SpecsFixtures.product_fixture(%{
+        primary_type_taxon: placeholder,
+        description: nil,
+        model_number: nil
+      })
+
+    {transaction_result, queries} =
+      capture_select_queries(fn ->
+        Repo.transaction(fn ->
+          Enrichment.enrich_product(
+            product,
+            %{source_id: source.id},
+            %{
+              description: "Provider description",
+              manufacturer_category_path: category_path,
+              model_number: "PROVIDER-1",
+              observed_at: ~U[2026-07-31 18:00:00.000000Z]
+            }
+          )
+        end)
+      end)
+
+    assert {:ok, result} = transaction_result
+    assert {:ok, enriched, %{status: :mapped, taxon_id: mapped_type_id}} = result
+    assert mapped_type_id == mapped_type.id
+    assert enriched.description == "Provider description"
+    assert enriched.model_number == "PROVIDER-1"
+    assert enriched.primary_type_taxon_id == mapped_type.id
+
+    alias_query_index =
+      Enum.find_index(queries, &String.contains?(&1, ~s(FROM "taxon_aliases")))
+
+    product_lock_queries =
+      Enum.with_index(queries)
+      |> Enum.filter(fn {query, _index} ->
+        String.contains?(query, ~s(FROM "products")) and
+          String.contains?(query, "FOR UPDATE")
+      end)
+
+    assert is_integer(alias_query_index)
+    assert [{_query, product_lock_query_index}] = product_lock_queries
+    assert alias_query_index < product_lock_query_index
   end
 
   test "unconfigured imported attributes remain proposed and never replace current truth" do

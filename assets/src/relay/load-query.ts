@@ -6,7 +6,7 @@ import {
   type Environment,
   type FetchPolicy,
   type FetchQueryFetchPolicy,
-  type OperationType
+  type OperationType,
 } from "relay-runtime";
 
 export const RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY = "routeLoaderSignal";
@@ -25,7 +25,7 @@ export async function fetchAppQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
-  options?: FetchAppQueryOptions
+  options?: FetchAppQueryOptions,
 ) {
   const response = await fetchQuery<TQuery>(environment, query, variables, options).toPromise();
 
@@ -40,7 +40,7 @@ export function loadAppQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
-  options?: LoadAppQueryOptions
+  options?: LoadAppQueryOptions,
 ) {
   // Keep a thin wrapper so route loaders can centralize defaults here later.
   return loadQuery<TQuery>(environment, query, variables, options);

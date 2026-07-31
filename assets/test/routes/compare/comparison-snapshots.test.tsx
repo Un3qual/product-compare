@@ -5,9 +5,9 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
   publishComparisonSnapshotMutation,
-  revokeComparisonSnapshotMutation,
-  ShareComparisonControl
-} from "../../../src/routes/compare/ShareComparisonControl";
+  revokeComparisonSnapshotMutation
+} from "../../../src/routes/compare/ComparisonSharingOperations";
+import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
 import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";
 
@@ -63,11 +63,17 @@ beforeEach(() => {
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({ viewer: null } as never);
-  mockedUseMutation.mockImplementation((mutation) =>
-    (mutation === publishComparisonSnapshotMutation
-      ? [publishMutationMock, false]
-      : [revokeMutationMock, false]) as never
-  );
+  mockedUseMutation.mockImplementation((mutation) => {
+    if (mutation === publishComparisonSnapshotMutation) {
+      return [publishMutationMock, false] as never;
+    }
+
+    if (mutation === revokeComparisonSnapshotMutation) {
+      return [revokeMutationMock, false] as never;
+    }
+
+    throw new Error("Unexpected comparison snapshot mutation");
+  });
 });
 
 test("ShareComparisonControl publishes the ordered products and selected profile", async () => {

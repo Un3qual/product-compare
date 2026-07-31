@@ -12,7 +12,7 @@ type GraphQLSeoMetadata = {
 export function routeMetadataFromSeo(
   seo: GraphQLSeoMetadata,
   requestUrl: string,
-  options: { allowIndexing?: boolean } = {}
+  options: { allowIndexing?: boolean } = {},
 ): RouteDocumentMetadata {
   const canonicalUrl = new URL(seo.canonicalPath, requestUrl).toString();
 
@@ -22,7 +22,7 @@ export function routeMetadataFromSeo(
     imageUrl: seo.imageUrl ? new URL(seo.imageUrl, requestUrl).toString() : null,
     indexable: seo.indexable && options.allowIndexing !== false,
     structuredData: absoluteStructuredData(seo.structuredData, requestUrl),
-    title: seo.title
+    title: seo.title,
   };
 }
 
@@ -54,8 +54,8 @@ function absolutizeUrls(value: unknown, requestUrl: string, key?: string): unkno
     return Object.fromEntries(
       Object.entries(value).map(([nestedKey, nestedValue]) => [
         nestedKey,
-        absolutizeUrls(nestedValue, requestUrl, nestedKey)
-      ])
+        absolutizeUrls(nestedValue, requestUrl, nestedKey),
+      ]),
     );
   }
 

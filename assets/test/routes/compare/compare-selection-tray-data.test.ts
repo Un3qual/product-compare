@@ -9,13 +9,13 @@ describe("compare selection tray data", () => {
       items: [],
       maxProducts: 3,
       removePathForIndex,
-      selectedSlugs: []
+      selectedSlugs: [],
     });
     const second = buildCompareSelectionTrayViewData({
       items: [],
       maxProducts: 3,
       removePathForIndex,
-      selectedSlugs: []
+      selectedSlugs: [],
     });
 
     expect(first.selectionCountCopy).toBe("0 of 3 products selected.");
@@ -29,24 +29,24 @@ describe("compare selection tray data", () => {
     const items = [
       { label: "Uppercase product", slug: "EXACT" },
       { label: "Lowercase product", slug: "exact" },
-      { label: "Unselected product", slug: "other" }
+      { label: "Unselected product", slug: "other" },
     ] as const;
 
     const data = buildCompareSelectionTrayViewData({
       items,
       maxProducts: 3,
       removePathForIndex: (index) => `/compare/remove/${index}`,
-      selectedSlugs: ["exact", "missing", "EXACT"]
+      selectedSlugs: ["exact", "missing", "EXACT"],
     });
 
     expect(data).toEqual({
       rows: [
         { label: "Lowercase product", removePath: "/compare/remove/0", slug: "exact" },
         { label: "missing", removePath: "/compare/remove/1", slug: "missing" },
-        { label: "Uppercase product", removePath: "/compare/remove/2", slug: "EXACT" }
+        { label: "Uppercase product", removePath: "/compare/remove/2", slug: "EXACT" },
       ],
       selectionCountCopy: "3 of 3 products selected.",
-      showOpenAction: true
+      showOpenAction: true,
     });
   });
 
@@ -57,14 +57,14 @@ describe("compare selection tray data", () => {
       items: [{ label: "First product", slug: "first" }],
       maxProducts: 3,
       removePathForIndex,
-      selectedSlugs: ["first", "second"]
+      selectedSlugs: ["first", "second"],
     });
 
     expect(data.selectionCountCopy).toBe("2 of 3 products selected.");
     expect(data.showOpenAction).toBe(true);
     expect(data.rows.map(({ removePath }) => removePath)).toEqual([
       "/browse?remove=0",
-      "/browse?remove=1"
+      "/browse?remove=1",
     ]);
     expect(removePathForIndex.mock.calls).toEqual([[0], [1]]);
   });
@@ -78,7 +78,7 @@ describe("compare selection tray data", () => {
       items,
       maxProducts: 3,
       removePathForIndex: (index) => `/remove/${index}`,
-      selectedSlugs
+      selectedSlugs,
     });
 
     expect(items).toEqual([firstItem]);

@@ -24,11 +24,20 @@
 ## Verified Current State
 
 - `/products`, `/products/:slug`, `/compare`, and browser auth flows already use Relay query or mutation APIs with SSR store hydration.
-- `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts` and `assets/src/__generated__/SavedComparisonsRouteQuery.graphql.ts` now define the paginated Relay route query for saved-set list data.
-- `assets/src/routes/compare/saved-data.ts` now preloads saved-set pages through `fetchRouteQuery`, returns Relay route query descriptors plus fallback summaries, and preserves pagination guards without owning saved-comparison mutation strings.
-- `assets/src/routes/compare/mutations/DeleteSavedComparisonSetMutation.ts` and `assets/src/__generated__/DeleteSavedComparisonSetMutation.graphql.ts` now define the Relay delete mutation.
+- `assets/src/routes/compare/SavedComparisonOperations.ts` now owns the primary
+  saved-set query plus create/delete mutations. Its exact generated family
+  artifacts are `SavedComparisonOperationsQuery.graphql.ts`,
+  `SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql.ts`, and
+  `SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql.ts`.
+- `assets/src/routes/compare/saved-data.ts` now preloads saved-set pages through
+  the family-owned `savedComparisonOperationsQuery`, returns Relay route query
+  descriptors plus fallback summaries, and preserves pagination guards without
+  owning saved-comparison mutation strings.
 - `assets/src/router.tsx` mounts `/compare/saved` through `savedComparisonsLoader`, which now requires the router Relay context like the other Relay-backed route loaders.
-- `assets/src/routes/compare/saved.tsx` now renders ready-state rows from Relay preloaded saved-set query data with loader summaries as the error-boundary fallback, and commits deletes through `useMutation(DeleteSavedComparisonSetMutation)`.
+- `assets/src/routes/compare/saved.tsx` now renders ready-state rows from Relay
+  preloaded saved-set query data with loader summaries as the error-boundary
+  fallback, and commits deletes through the family-owned
+  `deleteSavedComparisonSetMutation`.
 - `assets/src/routes/compare/saved-data.ts` treats structured `UNAUTHENTICATED` and `FORBIDDEN` GraphQL errors as saved-route auth state, and no longer accepts the legacy `UNAUTHORIZED` code.
 - Existing saved-route coverage lives in `assets/src/routes/compare/__tests__/compare.route.test.tsx`, `assets/src/routes/compare/__tests__/saved-comparisons-loader-auth.test.ts`, and `assets/src/routes/compare/__tests__/saved-comparisons-route-state.test.tsx`.
 

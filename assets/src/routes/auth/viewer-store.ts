@@ -1,8 +1,4 @@
-import {
-  commitLocalUpdate,
-  type Environment,
-  type RecordSourceProxy
-} from "relay-runtime";
+import { commitLocalUpdate, type Environment, type RecordSourceProxy } from "relay-runtime";
 import type { RootViewer } from "../root/loader";
 
 export function setRootViewer(environment: Environment, viewer: RootViewer) {

@@ -1,30 +1,8 @@
 defmodule ProductCompareWeb.Resolvers.RecommendationsResolver do
   @moduledoc false
 
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
-
   alias ProductCompare.Catalog
   alias ProductCompare.Recommendations
-  alias ProductCompareWeb.GraphQL.Loader
-
-  def comparison_recommendation(
-        _parent,
-        %{slugs: slugs, profile: profile},
-        %{context: %{loader: loader}}
-      )
-      when is_list(slugs) do
-    source = Loader.comparison_source()
-    request = {slugs, profile}
-
-    loader
-    |> Loader.load(source, :recommendation, request)
-    |> on_load(fn loader ->
-      case Loader.get(loader, source, :recommendation, request) do
-        {:error, message} -> {:error, message}
-        recommendation -> {:ok, recommendation}
-      end
-    end)
-  end
 
   def comparison_recommendation(_parent, %{slugs: slugs, profile: profile}, _resolution)
       when is_list(slugs) do

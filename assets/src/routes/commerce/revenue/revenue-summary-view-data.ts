@@ -28,24 +28,17 @@ type RevenueSummaryMetricSource = {
   };
 };
 
-export function buildRevenueSummaryFilterFormData(
-  filters: RevenueSummaryFilters
-) {
+export function buildRevenueSummaryFilterFormData(filters: RevenueSummaryFilters) {
   const values: RevenueSummaryFilterFormValues = {
     currency: revenueFilterFormValue(filters.currency),
     from: revenueFilterFormValue(filters.from),
     network: revenueFilterFormValue(filters.network),
-    to: revenueFilterFormValue(filters.to)
+    to: revenueFilterFormValue(filters.to),
   };
 
   return {
-    key: JSON.stringify([
-      values.network,
-      values.currency,
-      values.from,
-      values.to
-    ]),
-    values
+    key: JSON.stringify([values.network, values.currency, values.from, values.to]),
+    values,
   };
 }
 
@@ -55,27 +48,27 @@ function revenueFilterFormValue(value: string | null | undefined) {
 
 export function buildRevenueSummaryControls(
   filters: RevenueSummaryFilters,
-  currentDate: Date | null = new Date()
+  currentDate: Date | null = new Date(),
 ): {
   activeFilters: RevenueActiveFilter[];
   datePresetLinks: RevenueDatePresetLink[];
 } {
   return {
     activeFilters: buildActiveFilterItems(filters),
-    datePresetLinks: buildRevenueDatePresetLinks(filters, currentDate)
+    datePresetLinks: buildRevenueDatePresetLinks(filters, currentDate),
   };
 }
 
 export function buildRevenueDatePresetLinks(
   filters: Pick<RevenueSummaryFilters, "network" | "currency">,
-  currentDate: Date | null = new Date()
+  currentDate: Date | null = new Date(),
 ): RevenueDatePresetLink[] {
   if (currentDate === null) {
     return [
       {
         label: "Clear dates",
-        to: buildRevenueDatePresetSearchPath(filters, null, null)
-      }
+        to: buildRevenueDatePresetSearchPath(filters, null, null),
+      },
     ];
   }
 
@@ -86,23 +79,23 @@ export function buildRevenueDatePresetLinks(
     {
       label: "Last 7 days",
       from: formatDate(shiftDate(baseDate, -6)),
-      to: toDate
+      to: toDate,
     },
     {
       label: "Last 30 days",
       from: formatDate(shiftDate(baseDate, -29)),
-      to: toDate
+      to: toDate,
     },
     {
       label: "Month to date",
       from: formatDate(monthStartDate),
-      to: toDate
+      to: toDate,
     },
     {
       label: "Clear dates",
       from: null,
-      to: null
-    }
+      to: null,
+    },
   ] as const;
   const links: RevenueDatePresetLink[] = [];
 
@@ -113,7 +106,7 @@ export function buildRevenueDatePresetLinks(
 
     links.push({
       label,
-      to: buildRevenueDatePresetSearchPath(filters, from, to)
+      to: buildRevenueDatePresetSearchPath(filters, from, to),
     });
   }
 
@@ -122,33 +115,37 @@ export function buildRevenueDatePresetLinks(
 
 export function buildRevenueSummaryMetrics(
   summary: RevenueSummaryMetricSource,
-  currency: string
+  currency: string,
 ): RevenueSummaryMetric[] {
   const suppressed = summary.suppression.suppressed;
 
   return [
     {
       label: "Clicks",
-      value: suppressed ? "Hidden" : formatCount(summary.metrics.clicks)
+      value: suppressed ? "Hidden" : formatCount(summary.metrics.clicks),
     },
     {
       label: "Conversions",
-      value: suppressed ? "Hidden" : formatCount(summary.metrics.conversions)
+      value: suppressed ? "Hidden" : formatCount(summary.metrics.conversions),
     },
     {
       label: "Gross order value",
-      value: suppressed ? "Hidden" : formatCurrencyAmount(summary.metrics.grossOrderValue, currency)
+      value: suppressed
+        ? "Hidden"
+        : formatCurrencyAmount(summary.metrics.grossOrderValue, currency),
     },
     {
       label: "Commission revenue",
       value: suppressed
         ? "Hidden"
-        : formatCurrencyAmount(summary.metrics.commissionRevenue, currency)
+        : formatCurrencyAmount(summary.metrics.commissionRevenue, currency),
     },
     {
       label: "Average paid price",
-      value: suppressed ? "Hidden" : formatCurrencyAmount(summary.metrics.averagePaidPrice, currency)
-    }
+      value: suppressed
+        ? "Hidden"
+        : formatCurrencyAmount(summary.metrics.averagePaidPrice, currency),
+    },
   ];
 }
 
@@ -159,16 +156,16 @@ function buildActiveFilterItems(filters: RevenueSummaryFilters): RevenueActiveFi
     filters.from || filters.to
       ? {
           label: "Date range",
-          value: `${filters.from ?? "Any start"} to ${filters.to ?? "Any end"}`
+          value: `${filters.from ?? "Any start"} to ${filters.to ?? "Any end"}`,
         }
-      : null
+      : null,
   ].filter((filter): filter is RevenueActiveFilter => filter !== null);
 }
 
 function buildRevenueDatePresetSearchPath(
   filters: Pick<RevenueSummaryFilters, "network" | "currency">,
   from: string | null,
-  to: string | null
+  to: string | null,
 ) {
   const search = new URLSearchParams();
 

@@ -1,12 +1,12 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import type { Environment } from "relay-runtime";
 import rootViewerRouteQuery, {
-  type RootViewerRouteQuery
+  type RootViewerRouteQuery,
 } from "../../__generated__/RootViewerRouteQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { projectRootViewer, type RootViewer } from "./viewer-data";
 
@@ -34,7 +34,7 @@ export type RootLoaderData =
 
 export async function rootLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<RootLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
 
@@ -43,13 +43,13 @@ export async function rootLoader({
       environment,
       rootViewerRouteQuery,
       {},
-      { signal: request.signal }
+      { signal: request.signal },
     );
 
     return {
       status: "ready",
       viewer: projectRootViewer(fetchedViewer.data.viewer),
-      viewerQuery: fetchedViewer.descriptor
+      viewerQuery: fetchedViewer.descriptor,
     };
   } catch {
     throwIfAborted(request.signal);
@@ -57,7 +57,7 @@ export async function rootLoader({
     return {
       status: "degraded",
       viewer: readCachedRootViewer(environment),
-      viewerQuery: null
+      viewerQuery: null,
     };
   }
 }

@@ -51,8 +51,8 @@ test("alertsLoader disposes its Relay query after copying route summaries", asyn
     },
     descriptor: {
       __relayQuery: {
-        operationName: "AlertsRouteQuery",
-        text: "query AlertsRouteQuery { myAlertEvents { edges { node { id } } } }",
+        operationName: "AlertOperationsQuery",
+        text: "query AlertOperationsQuery { myAlertEvents { edges { node { id } } } }",
         variables: { first: 50 }
       }
     },

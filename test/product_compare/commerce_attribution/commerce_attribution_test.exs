@@ -544,7 +544,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       {:ok, inserted} = ImpactAdapter.ingest_action(payload)
 
-      assert inserted.source_network == :impact
+      assert inserted.source_network == "impact"
       assert inserted.network_conversion_ref == "impact-action-1"
       assert inserted.click_session_id == click_session.id
       assert inserted.public_click_id == click_session.click_id
@@ -616,7 +616,7 @@ defmodule ProductCompare.CommerceAttributionTest do
     test "rejects a conflicting merchant product on an identifier-free follow-up" do
       clicked_merchant = merchant_fixture()
       clicked_merchant_product = merchant_product_fixture(%{merchant: clicked_merchant})
-      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       payload = %{
@@ -650,11 +650,11 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     test "rejects a conflicting direct dimension on an identifier-free follow-up" do
       clicked_merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       attrs = %{
-        source_network: :impact,
+        source_network: "impact",
         network_conversion_ref: "direct-follow-up-#{System.unique_integer([:positive])}",
         public_click_id: click_session.click_id,
         merchant_id: clicked_merchant.id,
@@ -702,7 +702,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
 
       {:ok, click_session} =
         CommerceAttribution.create_click_session(%{
@@ -736,7 +736,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "conversions" => 1,
                  "gross_order_value" => "129.99"
                }
-             } = CommerceAttribution.product_revenue_summary(product.id, network: :impact)
+             } = CommerceAttribution.product_revenue_summary(product.id, network: "impact")
     end
 
     test "rejects provider dimensions that conflict with the resolved click" do
@@ -756,7 +756,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         commerce_link_fixture(%{
           merchant: clicked_merchant,
           affiliate_program_id: clicked_program.id,
-          network: :impact
+          network: "impact"
         })
 
       {:ok, click_session} =
@@ -788,7 +788,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       for {field, conflicting_id} <- conflicts do
         attrs = %{
-          source_network: :impact,
+          source_network: "impact",
           network_conversion_ref: "conflicting-#{field}-#{System.unique_integer([:positive])}",
           public_click_id: click_session.click_id,
           status: :approved,
@@ -809,7 +809,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     test "rejects provider relations that conflict with a click-known merchant" do
       clicked_merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       other_merchant = merchant_fixture()
@@ -829,7 +829,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       for {field, conflicting_id} <- conflicts do
         attrs = %{
-          source_network: :impact,
+          source_network: "impact",
           network_conversion_ref:
             "relational-conflict-#{field}-#{System.unique_integer([:positive])}",
           public_click_id: click_session.click_id,
@@ -860,12 +860,12 @@ defmodule ProductCompare.CommerceAttributionTest do
           merchant: merchant
         })
 
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       assert {:ok, conversion} =
                CommerceAttribution.ingest_conversion(%{
-                 source_network: :impact,
+                 source_network: "impact",
                  network_conversion_ref:
                    "compatible-relations-#{System.unique_integer([:positive])}",
                  public_click_id: click_session.click_id,
@@ -885,13 +885,13 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     test "resolves a castable string click session id before validating dimensions" do
       clicked_merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
       other_merchant = merchant_fixture()
 
       assert {:error, changeset} =
                CommerceAttribution.ingest_conversion(%{
-                 source_network: :impact,
+                 source_network: "impact",
                  network_conversion_ref:
                    "string-click-session-#{System.unique_integer([:positive])}",
                  click_session_id: Integer.to_string(click_session.id),
@@ -918,14 +918,14 @@ defmodule ProductCompare.CommerceAttributionTest do
         commerce_link_fixture(%{
           merchant: merchant,
           affiliate_program_id: affiliate_program.id,
-          network: :impact
+          network: "impact"
         })
 
       click_session = click_session_fixture(commerce_link)
 
       assert {:ok, conversion} =
                CommerceAttribution.ingest_conversion(%{
-                 source_network: :impact,
+                 source_network: "impact",
                  network_conversion_ref: "link-only-#{System.unique_integer([:positive])}",
                  public_click_id: click_session.click_id,
                  status: :approved,
@@ -1107,9 +1107,55 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "ingest_conversion/1" do
+    test "resolves a configured custom network code through affiliate_networks" do
+      {:ok, network} =
+        Affiliate.upsert_network(%{code: "partnerize", name: "Partnerize"})
+
+      assert {:ok, conversion} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: "  PARTNERIZE  ",
+                 network_conversion_ref:
+                   "partnerize-conversion-#{System.unique_integer([:positive])}",
+                 status: :approved,
+                 currency: "USD",
+                 order_amount: Decimal.new("75.00"),
+                 commission_amount: Decimal.new("7.50"),
+                 reported_at: ~U[2026-05-20 12:00:00.000000Z]
+               })
+
+      assert conversion.affiliate_network_id == network.id
+
+      assert %{
+               "filters" => %{"network" => "partnerize"},
+               "metrics" => %{
+                 "commission_revenue" => "7.50",
+                 "conversions" => 1,
+                 "gross_order_value" => "75.00"
+               }
+             } = CommerceAttribution.network_revenue_summary(" PARTNERIZE ")
+    end
+
+    test "rejects an unconfigured affiliate network code" do
+      assert {:error, changeset} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: "unconfigured_network",
+                 network_conversion_ref:
+                   "unconfigured-conversion-#{System.unique_integer([:positive])}",
+                 status: :approved,
+                 currency: "USD",
+                 reported_at: ~U[2026-05-20 12:00:00.000000Z]
+               })
+
+      assert "is not configured as an affiliate network" in errors_on(changeset).source_network
+
+      assert_raise ArgumentError, "invalid revenue summary network", fn ->
+        CommerceAttribution.network_revenue_summary("unconfigured_network")
+      end
+    end
+
     test "accepts string-keyed integration attributes through attribution resolution" do
       merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       attrs = %{
@@ -1132,7 +1178,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
     test "updates status and attribution confidence back to schema defaults" do
       attrs = %{
-        source_network: :impact,
+        source_network: "impact",
         network_conversion_ref: "conversion-#{System.unique_integer([:positive])}",
         status: :approved,
         currency: "USD",
@@ -1213,7 +1259,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
       _unconverted_click_session = click_session_fixture(commerce_link)
 
@@ -1221,7 +1267,7 @@ defmodule ProductCompare.CommerceAttributionTest do
         conversion_fixture(%{
           click_session_id: click_session.id,
           public_click_id: click_session.click_id,
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           merchant_product_id: merchant_product.id,
@@ -1233,7 +1279,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       paid =
         conversion_fixture(%{
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           merchant_product_id: merchant_product.id,
@@ -1245,7 +1291,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       _pending =
         conversion_fixture(%{
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           status: :pending,
@@ -1278,20 +1324,20 @@ defmodule ProductCompare.CommerceAttributionTest do
       }
 
       assert %{"metrics" => ^expected_metrics} =
-               CommerceAttribution.merchant_revenue_summary(merchant.id, network: :impact)
+               CommerceAttribution.merchant_revenue_summary(merchant.id, network: "impact")
 
       assert %{"metrics" => %{"clicks" => 1, "conversions" => 2}} =
-               CommerceAttribution.product_revenue_summary(product.id, network: :impact)
+               CommerceAttribution.product_revenue_summary(product.id, network: "impact")
 
       assert %{"metrics" => ^expected_metrics} =
-               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+               CommerceAttribution.network_revenue_summary("impact", merchant_id: merchant.id)
     end
 
     test "uses merchant product dimensions for adapter-ingested conversions" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       {:ok, conversion} =
@@ -1400,7 +1446,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       conversion_fixture(%{
         click_session_id: click_session.id,
         public_click_id: click_session.click_id,
-        source_network: :impact,
+        source_network: "impact",
         merchant_id: merchant.id,
         status: :approved,
         order_amount: Decimal.new("80.00"),
@@ -1415,19 +1461,19 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "currency" => "USD",
                  "gross_order_value" => "80.00"
                }
-             } = CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+             } = CommerceAttribution.network_revenue_summary("impact", merchant_id: merchant.id)
     end
 
     test "rejects a conversion network that conflicts with the link's affiliate program" do
       merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       assert {:error, changeset} =
                CommerceAttribution.ingest_conversion(%{
                  click_session_id: click_session.id,
                  public_click_id: click_session.click_id,
-                 source_network: :awin,
+                 source_network: "awin",
                  network_conversion_ref: "conversion-#{System.unique_integer([:positive])}",
                  merchant_id: merchant.id,
                  status: :pending,
@@ -1441,10 +1487,10 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert "does not match resolved click" in errors_on(changeset).affiliate_network_id
 
       assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
-               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+               CommerceAttribution.network_revenue_summary("impact", merchant_id: merchant.id)
 
       assert %{"metrics" => %{"clicks" => 0, "conversions" => 0, "currency" => nil}} =
-               CommerceAttribution.network_revenue_summary(:awin, merchant_id: merchant.id)
+               CommerceAttribution.network_revenue_summary("awin", merchant_id: merchant.id)
     end
 
     test "counts attributed clicks even when conversions are not revenue-statused" do
@@ -1460,7 +1506,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       conversion_fixture(%{
         click_session_id: click_session.id,
         public_click_id: click_session.click_id,
-        source_network: :impact,
+        source_network: "impact",
         merchant_id: merchant.id,
         merchant_product_id: merchant_product.id,
         status: :pending,
@@ -1468,7 +1514,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       })
 
       assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
-               CommerceAttribution.network_revenue_summary(:impact, merchant_id: merchant.id)
+               CommerceAttribution.network_revenue_summary("impact", merchant_id: merchant.id)
 
       assert %{"metrics" => %{"clicks" => 1, "conversions" => 0, "currency" => nil}} =
                CommerceAttribution.product_revenue_summary(product.id)
@@ -1559,7 +1605,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       end
 
       assert_raise ArgumentError, "invalid revenue summary network", fn ->
-        CommerceAttribution.network_revenue_summary(:unknown_network)
+        CommerceAttribution.network_revenue_summary("unknown_network")
       end
 
       assert_raise ArgumentError, "invalid revenue summary currency", fn ->
@@ -1571,7 +1617,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       merchant = merchant_fixture()
 
       conversion_fixture(%{
-        source_network: :impact,
+        source_network: "impact",
         merchant_id: merchant.id,
         status: :approved,
         order_amount: Decimal.new("90.00"),
@@ -1607,7 +1653,7 @@ defmodule ProductCompare.CommerceAttributionTest do
   defp conversion_fixture(attrs \\ %{}) do
     {:ok, conversion} =
       attrs
-      |> Map.put_new(:source_network, :impact)
+      |> Map.put_new(:source_network, "impact")
       |> Map.put_new(:network_conversion_ref, "conversion-#{System.unique_integer([:positive])}")
       |> Map.put_new(:status, :pending)
       |> Map.put_new(:currency, "USD")
@@ -1643,7 +1689,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       |> Map.put_new(:merchant_id, merchant_id)
       |> Map.put_new(:destination_url, "https://merchant.example.com/products/#{suffix}")
       |> Map.put_new(:link_type, link_type)
-      |> put_fixture_affiliate_program(link_type, merchant_id, Map.get(attrs, :network, :impact))
+      |> put_fixture_affiliate_program(link_type, merchant_id, Map.get(attrs, :network, "impact"))
       |> CommerceAttribution.upsert_commerce_link()
 
     commerce_link
@@ -1663,7 +1709,6 @@ defmodule ProductCompare.CommerceAttributionTest do
     else
       network_name =
         network
-        |> Atom.to_string()
         |> String.replace("_", " ")
         |> String.split()
         |> Enum.map_join(" ", &String.capitalize/1)

@@ -2,7 +2,7 @@ import {
   MAX_COMPARE_PRODUCTS,
   buildCurrentRoutePathWithCompareSlugs,
   normalizedCompareSlugs,
-  selectedCompareSlugsAfterAdding
+  selectedCompareSlugsAfterAdding,
 } from "../compare/paths";
 
 export type BrowseCompareAction =
@@ -21,16 +21,15 @@ export interface BrowseRouteData {
 export function createBrowseRouteData({
   pathname,
   search,
-  selectedCompareSlugs
+  selectedCompareSlugs,
 }: {
   pathname: string;
   search: string;
   selectedCompareSlugs: readonly string[];
 }): BrowseRouteData {
-  const normalizedSelectedCompareSlugs = normalizedCompareSlugs(
-    selectedCompareSlugs,
-    { maxProducts: MAX_COMPARE_PRODUCTS }
-  );
+  const normalizedSelectedCompareSlugs = normalizedCompareSlugs(selectedCompareSlugs, {
+    maxProducts: MAX_COMPARE_PRODUCTS,
+  });
   const canonicalPathname = pathname === "/" ? "/products" : pathname;
 
   return {
@@ -52,11 +51,11 @@ export function createBrowseRouteData({
           selectedCompareSlugsAfterAdding(
             normalizedSelectedCompareSlugs,
             productSlug,
-            MAX_COMPARE_PRODUCTS
+            MAX_COMPARE_PRODUCTS,
           ),
-          { maxProducts: MAX_COMPARE_PRODUCTS }
+          { maxProducts: MAX_COMPARE_PRODUCTS },
         ),
-        kind: "add"
+        kind: "add",
       };
     },
     productDetailPathFor(productSlug) {
@@ -64,7 +63,7 @@ export function createBrowseRouteData({
         `/products/${encodeURIComponent(productSlug)}`,
         "",
         normalizedSelectedCompareSlugs,
-        { maxProducts: MAX_COMPARE_PRODUCTS }
+        { maxProducts: MAX_COMPARE_PRODUCTS },
       );
     },
     removeSelectedPathForIndex(index) {
@@ -72,8 +71,8 @@ export function createBrowseRouteData({
         canonicalPathname,
         search,
         normalizedSelectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
-        { maxProducts: MAX_COMPARE_PRODUCTS }
+        { maxProducts: MAX_COMPARE_PRODUCTS },
       );
-    }
+    },
   };
 }

@@ -1,15 +1,14 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import apiTokensRouteQuery, {
-  type ApiTokensRouteQuery
-} from "../../../__generated__/ApiTokensRouteQuery.graphql";
+import type { ApiTokenOperationsQuery } from "../../../__generated__/ApiTokenOperationsQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../../relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
+import { apiTokenOperationsQuery } from "./ApiTokenOperations";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
 
@@ -24,7 +23,7 @@ export interface ApiTokenSummary {
 }
 
 export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<
-  ApiTokensRouteQuery["variables"]
+  ApiTokenOperationsQuery["variables"]
 >;
 
 export type ApiTokensRouteLoaderData =
@@ -44,7 +43,7 @@ export type ApiTokensRouteLoaderData =
       tokenStatus: ApiTokenStatus;
     };
 
-type ApiTokenStatusVariable = NonNullable<ApiTokensRouteQuery["variables"]["status"]>;
+type ApiTokenStatusVariable = NonNullable<ApiTokenOperationsQuery["variables"]["status"]>;
 
 export const API_TOKENS_PAGE_SIZE = 20;
 const API_TOKENS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
@@ -52,26 +51,27 @@ const API_TOKENS_PARSE_ERROR = "Failed to parse API tokens response";
 const API_TOKEN_STATUS_VARIABLES: Record<ApiTokenStatus, ApiTokenStatusVariable> = {
   active: "ACTIVE",
   all: "ALL",
-  revoked: "REVOKED"
+  revoked: "REVOKED",
 };
 
 export async function apiTokensLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<ApiTokensRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const searchParams = new URL(request.url).searchParams;
   const tokenStatus = parseApiTokenStatus(searchParams.get("status"));
   const after = nonBlankSearchParam(searchParams.get("after"));
-  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<ApiTokensRouteQuery>>> | null = null;
+  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<ApiTokenOperationsQuery>>> | null =
+    null;
 
   try {
     throwIfAborted(request.signal);
-    fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
+    fetchedPage = await fetchRouteQuery<ApiTokenOperationsQuery>(
       environment,
-      apiTokensRouteQuery,
+      apiTokenOperationsQuery,
       apiTokensQueryVariables(tokenStatus, after ?? undefined),
-      { signal: request.signal }
+      { signal: request.signal },
     );
     throwIfAborted(request.signal);
     const page = summarizeApiTokensPage(fetchedPage.data);
@@ -87,7 +87,7 @@ export async function apiTokensLoader({
       tokenStatus,
       after,
       hasNextPage: page.hasNextPage,
-      endCursor: page.endCursor
+      endCursor: page.endCursor,
     };
   } catch (error) {
     fetchedPage?.dispose();
@@ -97,13 +97,12 @@ export async function apiTokensLoader({
         status: "unauthorized",
         tokenQueries: [],
         tokens: [],
-        tokenStatus: "all"
+        tokenStatus: "all",
       };
     }
 
     throw error;
   }
-
 }
 
 function nonBlankSearchParam(value: string | null) {
@@ -114,11 +113,11 @@ function nonBlankSearchParam(value: string | null) {
 
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
-  after: string | undefined
-): ApiTokensRouteQuery["variables"] {
-  const variables: ApiTokensRouteQuery["variables"] = {
+  after: string | undefined,
+): ApiTokenOperationsQuery["variables"] {
+  const variables: ApiTokenOperationsQuery["variables"] = {
     first: API_TOKENS_PAGE_SIZE,
-    status: API_TOKEN_STATUS_VARIABLES[tokenStatus]
+    status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
   };
 
   if (after !== undefined) {
@@ -190,7 +189,7 @@ export function summarizeApiTokensPage(data: unknown): {
   return {
     tokens: connection.edges.map(summarizeApiTokenEdge),
     hasNextPage,
-    endCursor: endCursor ?? null
+    endCursor: endCursor ?? null,
   };
 }
 
@@ -223,7 +222,7 @@ function summarizeApiToken(node: unknown): ApiTokenSummary {
     lastUsedAt: node.lastUsedAt ?? null,
     expiresAt: node.expiresAt ?? null,
     revokedAt: node.revokedAt ?? null,
-    insertedAt: node.insertedAt
+    insertedAt: node.insertedAt,
   };
 }
 

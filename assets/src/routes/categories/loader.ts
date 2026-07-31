@@ -3,7 +3,7 @@ import type { CategoryRouteQuery } from "../../__generated__/CategoryRouteQuery.
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import { isCanonicalSlug } from "../route-params";
@@ -31,7 +31,7 @@ export async function categoryLoader({ context, params, request }: LoaderFunctio
       environment,
       categoryRouteQuery,
       { slug, first: 12, after },
-      { signal: request.signal }
+      { signal: request.signal },
     );
 
     if (!fetched.data.category) {
@@ -42,9 +42,9 @@ export async function categoryLoader({ context, params, request }: LoaderFunctio
     return {
       status: "ready" as const,
       metadata: routeMetadataFromSeo(fetched.data.category.seo, request.url, {
-        allowIndexing: new URL(request.url).search === ""
+        allowIndexing: new URL(request.url).search === "",
       }),
-      query: fetched.descriptor
+      query: fetched.descriptor,
     };
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Category fetch failed");

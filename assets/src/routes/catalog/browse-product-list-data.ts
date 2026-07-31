@@ -8,7 +8,7 @@ export interface BrowseProductSpecificationHighlight {
 const SPECIFICATION_HIGHLIGHT_LIMIT = 3;
 
 export function selectBrowseProductSpecificationHighlights<
-  T extends BrowseProductSpecificationHighlight
+  T extends BrowseProductSpecificationHighlight,
 >(attributes: ReadonlyArray<T>): T[] {
   return attributes
     .map((attribute, index) => ({ attribute, index }))

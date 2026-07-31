@@ -285,29 +285,29 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert %{
                "data" => %{
                  "activeCoupons" => %{
-                   "coupons" => %{
-                     "edges" => [
-                       %{
-                         "cursor" => first_coupon_cursor,
-                         "node" => %{
-                           "id" => ^created_coupon_id,
-                           "code" => "SAVE-20",
-                           "discountType" => "AMOUNT"
-                         }
+                   "edges" => [
+                     %{
+                       "cursor" => first_coupon_cursor,
+                       "node" => %{
+                         "id" => ^created_coupon_id,
+                         "code" => "SAVE-20",
+                         "discountType" => "AMOUNT"
                        }
-                     ],
-                     "pageInfo" => %{
-                       "hasNextPage" => true,
-                       "hasPreviousPage" => false,
-                       "startCursor" => first_start_cursor,
-                       "endCursor" => first_end_cursor
                      }
+                   ],
+                   "pageInfo" => %{
+                     "hasNextPage" => true,
+                     "hasPreviousPage" => false,
+                     "startCursor" => first_start_cursor,
+                     "endCursor" => first_end_cursor
                    }
                  }
                }
              } =
                graphql(authed_conn, active_coupons_query(), %{
-                 "input" => %{"merchantId" => merchant_id, "at" => now_iso, "first" => 1}
+                 "merchantId" => merchant_id,
+                 "at" => now_iso,
+                 "first" => 1
                })
 
       assert first_coupon_cursor == first_start_cursor
@@ -316,44 +316,39 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       assert %{
                "data" => %{
                  "activeCoupons" => %{
-                   "coupons" => %{
-                     "edges" => [
-                       %{
-                         "node" => %{
-                           "id" => ^second_coupon_id,
-                           "code" => "SAVE-10",
-                           "discountType" => "PERCENT"
-                         }
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "id" => ^second_coupon_id,
+                         "code" => "SAVE-10",
+                         "discountType" => "PERCENT"
                        }
-                     ],
-                     "pageInfo" => %{
-                       "hasNextPage" => false,
-                       "hasPreviousPage" => true
                      }
+                   ],
+                   "pageInfo" => %{
+                     "hasNextPage" => false,
+                     "hasPreviousPage" => true
                    }
                  }
                }
              } =
                graphql(authed_conn, active_coupons_query(), %{
-                 "input" => %{
-                   "merchantId" => merchant_id,
-                   "at" => now_iso,
-                   "first" => 10,
-                   "after" => first_coupon_cursor
-                 }
+                 "merchantId" => merchant_id,
+                 "at" => now_iso,
+                 "first" => 10,
+                 "after" => first_coupon_cursor
                })
 
       assert %{
                "data" => %{
                  "activeCoupons" => %{
-                   "coupons" => %{
-                     "edges" => coupons_without_at
-                   }
+                   "edges" => coupons_without_at
                  }
                }
              } =
                graphql(authed_conn, active_coupons_query(), %{
-                 "input" => %{"merchantId" => merchant_id}
+                 "merchantId" => merchant_id,
+                 "first" => 50
                })
 
       assert Enum.map(coupons_without_at, &get_in(&1, ["node", "code"])) == ["SAVE-20", "SAVE-10"]
@@ -420,7 +415,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       response =
         graphql(conn, active_coupons_query(), %{
-          "input" => %{"merchantId" => merchant_id}
+          "merchantId" => merchant_id,
+          "first" => 50
         })
 
       assert %{
@@ -489,7 +485,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
                "errors" => [%{"extensions" => %{"code" => "FORBIDDEN"}} | _]
              } =
                graphql(member_conn, active_coupons_query(), %{
-                 "input" => %{"merchantId" => merchant_id}
+                 "merchantId" => merchant_id,
+                 "first" => 50
                })
 
       assert {Repo.aggregate(AffiliateNetwork, :count), Repo.aggregate(AffiliateProgram, :count),
@@ -603,7 +600,9 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       response =
         graphql(authed_conn, active_coupons_query(), %{
-          "input" => %{"merchantId" => merchant_id, "first" => 10, "after" => "bad-cursor"}
+          "merchantId" => merchant_id,
+          "first" => 10,
+          "after" => "bad-cursor"
         })
 
       assert %{
@@ -619,7 +618,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       response =
         graphql(authed_conn, active_coupons_query(), %{
-          "input" => %{"merchantId" => merchant_id, "first" => -1}
+          "merchantId" => merchant_id,
+          "first" => -1
         })
 
       assert %{
@@ -634,7 +634,8 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
       response =
         graphql(authed_conn, active_coupons_query(), %{
-          "input" => %{"merchantId" => merchant.id}
+          "merchantId" => merchant.id,
+          "first" => 50
         })
 
       assert %{
@@ -658,10 +659,10 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
           valid_to: DateTime.add(future_at, 60, :second)
         })
 
-      assert {:ok, %{coupons: %{edges: [%{node: %{code: ^code}}]}}} =
+      assert {:ok, %{edges: [%{node: %{code: ^code}}]}} =
                Reads.active_coupons(
                  nil,
-                 %{input: %{"merchant_id" => merchant_id, "at" => future_at, "first" => 10}},
+                 %{"merchant_id" => merchant_id, "at" => future_at, "first" => 10},
                  %{context: %{current_user: operator_fixture()}}
                )
     end
@@ -919,23 +920,21 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
   defp active_coupons_query do
     """
-    query ActiveCoupons($input: ActiveCouponsInput!) {
-      activeCoupons(input: $input) {
-        coupons {
-          edges {
-            cursor
-            node {
-              id
-              code
-              discountType
-            }
+    query ActiveCoupons($merchantId: ID!, $at: DateTime, $first: Int!, $after: String) {
+      activeCoupons(merchantId: $merchantId, at: $at, first: $first, after: $after) {
+        edges {
+          cursor
+          node {
+            id
+            code
+            discountType
           }
-          pageInfo {
-            hasNextPage
-            hasPreviousPage
-            startCursor
-            endCursor
-          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          startCursor
+          endCursor
         }
       }
     }

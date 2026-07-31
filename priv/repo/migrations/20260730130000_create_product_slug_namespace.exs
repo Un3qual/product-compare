@@ -5,7 +5,6 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
     create table(:product_slug_reservations) do
       add :slug, :text, null: false
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
-      add :is_alias, :boolean, null: false
 
       timestamps(updated_at: false)
     end
@@ -17,14 +16,14 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
            )
 
     execute("""
-    INSERT INTO product_slug_reservations (slug, product_id, is_alias, inserted_at)
-    SELECT slug, id, false, now()
+    INSERT INTO product_slug_reservations (slug, product_id, inserted_at)
+    SELECT slug, id, now()
     FROM products
     """)
 
     execute("""
-    INSERT INTO product_slug_reservations (slug, product_id, is_alias, inserted_at)
-    SELECT slug, product_id, true, now()
+    INSERT INTO product_slug_reservations (slug, product_id, inserted_at)
+    SELECT slug, product_id, now()
     FROM product_slug_aliases
     """)
 
@@ -35,22 +34,22 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
     AS $$
     BEGIN
       IF TG_OP = 'INSERT' THEN
-        INSERT INTO product_slug_reservations (slug, product_id, is_alias, inserted_at)
-        VALUES (NEW.slug, NEW.id, false, now());
+        INSERT INTO product_slug_reservations (slug, product_id, inserted_at)
+        VALUES (NEW.slug, NEW.id, now());
         RETURN NEW;
       ELSIF TG_OP = 'UPDATE' THEN
         IF NEW.slug IS DISTINCT FROM OLD.slug THEN
           DELETE FROM product_slug_reservations
-          WHERE slug = OLD.slug AND product_id = OLD.id AND is_alias = false;
+          WHERE slug = OLD.slug AND product_id = OLD.id;
 
-          INSERT INTO product_slug_reservations (slug, product_id, is_alias, inserted_at)
-          VALUES (NEW.slug, NEW.id, false, now());
+          INSERT INTO product_slug_reservations (slug, product_id, inserted_at)
+          VALUES (NEW.slug, NEW.id, now());
         END IF;
 
         RETURN NEW;
       ELSE
         DELETE FROM product_slug_reservations
-        WHERE slug = OLD.slug AND product_id = OLD.id AND is_alias = false;
+        WHERE slug = OLD.slug AND product_id = OLD.id;
         RETURN OLD;
       END IF;
     END
@@ -64,12 +63,12 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
     AS $$
     BEGIN
       IF TG_OP = 'INSERT' THEN
-        INSERT INTO product_slug_reservations (slug, product_id, is_alias, inserted_at)
-        VALUES (NEW.slug, NEW.product_id, true, now());
+        INSERT INTO product_slug_reservations (slug, product_id, inserted_at)
+        VALUES (NEW.slug, NEW.product_id, now());
         RETURN NEW;
       ELSE
         DELETE FROM product_slug_reservations
-        WHERE slug = OLD.slug AND product_id = OLD.product_id AND is_alias = true;
+        WHERE slug = OLD.slug AND product_id = OLD.product_id;
         RETURN OLD;
       END IF;
     END

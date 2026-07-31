@@ -2,14 +2,14 @@ export const API_TOKEN_EXPIRES_AT_PRESETS = [
   { label: "30 days" },
   { label: "90 days" },
   { label: "1 year" },
-  { label: "No expiration" }
+  { label: "No expiration" },
 ] as const;
 
 export type ApiTokenExpiresAtPreset = (typeof API_TOKEN_EXPIRES_AT_PRESETS)[number]["label"];
 
 export function buildApiTokenExpiresAtInputValue(
   preset: ApiTokenExpiresAtPreset,
-  currentDate: Date
+  currentDate: Date,
 ) {
   if (preset === "No expiration") {
     return "";
@@ -25,9 +25,9 @@ export function buildApiTokenExpiresAtInputValue(
   }
 
   return `${expiryDate.getFullYear()}-${padDateTimePart(
-    expiryDate.getMonth() + 1
+    expiryDate.getMonth() + 1,
   )}-${padDateTimePart(expiryDate.getDate())}T${padDateTimePart(
-    expiryDate.getHours()
+    expiryDate.getHours(),
   )}:${padDateTimePart(expiryDate.getMinutes())}`;
 }
 

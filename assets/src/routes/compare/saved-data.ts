@@ -1,21 +1,20 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import savedComparisonsRouteQuery, {
-  type SavedComparisonsRouteQuery
-} from "../../__generated__/SavedComparisonsRouteQuery.graphql";
+import type { SavedComparisonOperationsQuery } from "../../__generated__/SavedComparisonOperationsQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { isRouteRecord } from "../route-errors";
+import { savedComparisonOperationsQuery } from "./SavedComparisonOperations";
 import type { SavedComparisonSetSummary } from "./saved-view-state";
 
 export type { SavedComparisonSetSummary } from "./saved-view-state";
 
 export type SavedComparisonSetQueryDescriptor = RelayRouteQueryDescriptor<
-  SavedComparisonsRouteQuery["variables"]
+  SavedComparisonOperationsQuery["variables"]
 >;
 
 export type SavedComparisonsRouteLoaderData =
@@ -39,21 +38,23 @@ const SAVED_COMPARISONS_PARSE_ERROR = "Failed to parse saved comparison sets res
 
 export async function savedComparisonsLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
-  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null = null;
+  let fetchedPage: Awaited<
+    ReturnType<typeof fetchRouteQuery<SavedComparisonOperationsQuery>>
+  > | null = null;
 
   try {
     throwIfAborted(request.signal);
-    fetchedPage = await fetchRouteQuery<SavedComparisonsRouteQuery>(
+    fetchedPage = await fetchRouteQuery<SavedComparisonOperationsQuery>(
       environment,
-      savedComparisonsRouteQuery,
+      savedComparisonOperationsQuery,
       after === null
         ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
         : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
-      { signal: request.signal }
+      { signal: request.signal },
     );
     throwIfAborted(request.signal);
     const page = summarizeSavedComparisonSetsPage(fetchedPage.data);
@@ -68,7 +69,7 @@ export async function savedComparisonsLoader({
       savedSets: page.savedSets,
       after,
       hasNextPage: page.hasNextPage,
-      endCursor: page.endCursor
+      endCursor: page.endCursor,
     };
   } catch (error) {
     fetchedPage?.dispose();
@@ -77,13 +78,12 @@ export async function savedComparisonsLoader({
       return {
         status: "unauthorized",
         savedSetQueries: [],
-        savedSets: []
+        savedSets: [],
       };
     }
 
     throw error;
   }
-
 }
 
 function nonBlankSearchParam(value: string | null) {
@@ -104,9 +104,7 @@ function throwIfAborted(signal?: AbortSignal) {
   throw new Error("Request aborted");
 }
 
-export function summarizeSavedComparisonSetsPage(
-  data: unknown
-): {
+export function summarizeSavedComparisonSetsPage(data: unknown): {
   savedSets: SavedComparisonSetSummary[];
   hasNextPage: boolean;
   endCursor: string | null;
@@ -130,7 +128,7 @@ export function summarizeSavedComparisonSetsPage(
   return {
     savedSets: connection.edges.map(summarizeSavedComparisonEdge),
     hasNextPage,
-    endCursor: endCursor ?? null
+    endCursor: endCursor ?? null,
   };
 }
 
@@ -158,18 +156,16 @@ function summarizeSavedComparisonSet(node: unknown): SavedComparisonSetSummary {
     products: node.items
       .map(summarizeSavedComparisonItem)
       .sort((left, right) => left.position - right.position)
-      .map(({ name, slug }) => ({ name, slug }))
+      .map(({ name, slug }) => ({ name, slug })),
   };
 }
 
-function summarizeSavedComparisonItem(
-  item: unknown
-): { name: string; position: number; slug: string } {
-  if (
-    !isRouteRecord(item) ||
-    typeof item.position !== "number" ||
-    !isRouteRecord(item.product)
-  ) {
+function summarizeSavedComparisonItem(item: unknown): {
+  name: string;
+  position: number;
+  slug: string;
+} {
+  if (!isRouteRecord(item) || typeof item.position !== "number" || !isRouteRecord(item.product)) {
     throwSavedComparisonsParseError();
   }
 
@@ -182,7 +178,7 @@ function summarizeSavedComparisonItem(
   return {
     name: name ?? slug,
     position: item.position,
-    slug
+    slug,
   };
 }
 

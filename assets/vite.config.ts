@@ -5,7 +5,7 @@ export default defineConfig({
   build: {
     manifest: true,
   },
-  plugins: [reactWithStyleX()],
+  plugins: reactWithStyleX(),
   server: {
     port: 5173,
   },

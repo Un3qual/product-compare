@@ -148,7 +148,7 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
     end
   end
 
-  describe "authenticate_api_token/2" do
+  describe "authenticate_api_token/1" do
     test "returns user and touches last_used_at for active token" do
       user = user_fixture()
 
@@ -163,25 +163,6 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
 
       persisted = Repo.get!(ApiToken, api_token.id)
       refute is_nil(persisted.last_used_at)
-    end
-
-    test "returns the persisted last_used_at when touching is disabled" do
-      user = user_fixture()
-      persisted_last_used_at = ~U[2026-07-31 12:00:00.000000Z]
-
-      assert {:ok, %{plain_text_token: plain_text_token, api_token: api_token}} =
-               Accounts.create_api_token(user.id, %{})
-
-      api_token
-      |> Ecto.Changeset.change(last_used_at: persisted_last_used_at)
-      |> Repo.update!()
-
-      assert {:ok, authed_user, authed_token} =
-               Accounts.authenticate_api_token(plain_text_token, touch_last_used?: false)
-
-      assert authed_user.id == user.id
-      assert authed_token.last_used_at == persisted_last_used_at
-      assert Repo.get!(ApiToken, api_token.id).last_used_at == persisted_last_used_at
     end
 
     test "rejects revoked and expired tokens" do

@@ -37,13 +37,6 @@ defmodule ProductCompareWeb.Schema.Affiliate.Types do
     field :terms, :string
   end
 
-  input_object :active_coupons_input do
-    field :merchant_id, non_null(:id)
-    field :at, :datetime
-    field :first, :integer
-    field :after, :string
-  end
-
   object :upsert_affiliate_network_payload do
     field :network, :affiliate_network
     field :errors, non_null(list_of(non_null(:mutation_error)))
@@ -62,10 +55,6 @@ defmodule ProductCompareWeb.Schema.Affiliate.Types do
   object :create_coupon_payload do
     field :coupon, :coupon
     field :errors, non_null(list_of(non_null(:mutation_error)))
-  end
-
-  object :active_coupons_payload do
-    field :coupons, non_null(:coupon_connection)
   end
 
   node object(:affiliate_network) do

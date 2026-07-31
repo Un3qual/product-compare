@@ -4,89 +4,57 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
   import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ProductCompare.Discussions
-  alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.Loader
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Discussions.ProductThread
 
-  def review_summary(%{id: product_id} = product, _args, %{context: %{loader: loader}})
+  def review_summary(%{id: product_id}, _args, %{context: %{loader: loader}})
       when is_integer(product_id) do
     source = Loader.product_evidence_source()
+    batch = {:one, Product}
+    item = [review_summary: product_id]
 
     loader
-    |> Loader.load(source, :review_summary, product)
+    |> Dataloader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, :review_summary, product)}
+      {:ok, Dataloader.get(loader, source, batch, item)}
     end)
   end
 
-  def review_summary(product, _args, _resolution),
-    do: {:ok, Discussions.review_summary(product.id)}
-
-  def reviews(product, args, %{context: %{loader: loader}}) do
-    public_connection(:reviews, product, args, loader)
+  def reviews(%{id: product_id}, args, %{context: %{loader: loader}}) do
+    public_connection(Product, :reviews, product_id, args, loader)
   end
 
-  def reviews(product, args, _resolution) do
-    product.id
-    |> Discussions.public_reviews_query()
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
-  end
-
-  def questions(product, args, %{context: %{loader: loader}}) do
-    public_connection(:questions, product, args, loader)
-  end
-
-  def questions(product, args, _resolution) do
-    product.id
-    |> Discussions.public_questions_query()
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
+  def questions(%{id: product_id}, args, %{context: %{loader: loader}}) do
+    public_connection(Product, :questions, product_id, args, loader)
   end
 
   def viewer_community_submissions(
-        %{id: product_id} = product,
+        %{id: product_id},
         _args,
         %{context: %{current_user: user, loader: loader}}
       )
       when is_integer(product_id) do
     source = Loader.viewer_submission_source()
+    batch = {:one, Product}
+    operation = {:viewer_submissions, user.id}
+    item = [{operation, product_id}]
 
     loader
-    |> Loader.load(source, user.id, product)
+    |> Dataloader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, user.id, product)}
+      {:ok, Dataloader.get(loader, source, batch, item)}
     end)
   end
-
-  def viewer_community_submissions(product, _args, %{context: %{current_user: user}}),
-    do: {:ok, Discussions.viewer_community_submissions(user.id, product.id)}
 
   def viewer_community_submissions(_product, _args, _resolution),
     do: {:ok, %{reviews: [], questions: [], answers: []}}
 
-  def answers(question, args, %{context: %{loader: loader}}) do
-    public_connection(:answers, question, args, loader)
-  end
-
-  def answers(question, args, _resolution) do
-    question.id
-    |> Discussions.public_answers_query()
-    |> Connection.from_query_result(Input.connection_args(args), Repo)
-  end
-
-  def question(_parent, %{id: id}, %{context: %{loader: loader}}) do
-    with {:ok, entropy_id} <- GlobalId.decode_uuid(id, :product_question) do
-      source = Loader.public_opaque_source()
-
-      loader
-      |> Loader.load(source, :product_question, entropy_id)
-      |> on_load(fn loader ->
-        {:ok, Loader.get(loader, source, :product_question, entropy_id)}
-      end)
-    else
-      :error -> {:error, "invalid product question id"}
-    end
+  def answers(%{id: question_id}, args, %{context: %{loader: loader}}) do
+    public_connection(ProductThread, :answers, question_id, args, loader)
   end
 
   def question(_parent, %{id: id}, _resolution) do
@@ -97,19 +65,21 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
     end
   end
 
-  defp public_connection(kind, %{id: parent_id} = parent, args, loader)
+  defp public_connection(schema, kind, parent_id, args, loader)
        when kind in [:reviews, :questions, :answers] and is_integer(parent_id) do
     connection_args = Input.connection_args(args)
 
     case Connection.batch_window(connection_args) do
       {:ok, _window} ->
         source = Loader.community_connection_source()
-        batch_key = {kind, connection_args}
+        operation = {kind, connection_args}
+        batch = {:one, schema}
+        item = [{operation, parent_id}]
 
         loader
-        |> Loader.load(source, batch_key, parent)
+        |> Dataloader.load(source, batch, item)
         |> on_load(fn loader ->
-          {:ok, Loader.get(loader, source, batch_key, parent)}
+          {:ok, Dataloader.get(loader, source, batch, item)}
         end)
 
       {:error, :invalid_first} ->

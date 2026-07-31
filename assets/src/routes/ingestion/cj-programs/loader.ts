@@ -1,17 +1,14 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import cjProgramsRouteQuery, {
-  type CJProgramsRouteQuery
+  type CJProgramsRouteQuery,
 } from "../../../__generated__/CJProgramsRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
-import {
-  cjProgramsPaginationFromUrl,
-  type CJProgramsPagination
-} from "./pagination";
+import { cjProgramsPaginationFromUrl, type CJProgramsPagination } from "./pagination";
 
 export type CJProgramsLoaderData =
   | {
@@ -26,7 +23,7 @@ export type CJProgramsLoaderData =
 
 export async function cjProgramsLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<CJProgramsLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const pagination = cjProgramsPaginationFromUrl(new URL(request.url));
@@ -39,8 +36,8 @@ export async function cjProgramsLoader({
         environment,
         cjProgramsRouteQuery,
         pagination,
-        { signal: request.signal }
-      )
+        { signal: request.signal },
+      ),
     };
   } catch (error) {
     return recoverRouteLoaderError<CJProgramsLoaderData>(
@@ -48,8 +45,8 @@ export async function cjProgramsLoader({
       "Failed to preload CJ programs route query.",
       {
         status: "error",
-        pagination
-      }
+        pagination,
+      },
     );
   }
 }

@@ -1,7 +1,4 @@
-import {
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../route-errors";
+import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
 
 export type PriceWatchRuleType =
   | "TARGET_PRICE"
@@ -50,7 +47,7 @@ export function priceWatchRuleTypeFromValue(value: string): PriceWatchRuleType {
 
 export function resolveCreatePriceWatchMutationMessage(
   payload: CreatePriceWatchPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.watch && !hasRouteGraphQLErrors(graphQLErrors)
     ? PRICE_WATCH_CREATED_MESSAGE
@@ -58,7 +55,7 @@ export function resolveCreatePriceWatchMutationMessage(
 }
 
 export function getPriceWatchAmountFieldData(
-  ruleType: PriceWatchRuleType
+  ruleType: PriceWatchRuleType,
 ): PriceWatchAmountFieldData {
   switch (ruleType) {
     case "TARGET_PRICE":
@@ -74,16 +71,18 @@ export function buildCreatePriceWatchInput({
   productId,
   ruleType,
   amount: rawAmount,
-  currency: rawCurrency
+  currency: rawCurrency,
 }: PriceWatchInputSource): CreatePriceWatchInput {
   const amount = String(rawAmount ?? "").trim();
-  const currency = String(rawCurrency ?? "USD").trim().toUpperCase();
+  const currency = String(rawCurrency ?? "USD")
+    .trim()
+    .toUpperCase();
 
   return {
     productId,
     ruleType,
     currency,
     ...(ruleType === "TARGET_PRICE" ? { targetAmount: amount } : {}),
-    ...(ruleType === "PERCENTAGE_DROP" ? { percentageDrop: amount } : {})
+    ...(ruleType === "PERCENTAGE_DROP" ? { percentageDrop: amount } : {}),
   };
 }

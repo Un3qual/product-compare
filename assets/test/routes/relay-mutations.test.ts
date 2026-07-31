@@ -1,8 +1,5 @@
 import type { MutationCommitFn } from "react-relay";
-import {
-  commitRouteMutation,
-  commitRouteMutationPromise
-} from "../../src/routes/relay-mutations";
+import { commitRouteMutation, commitRouteMutationPromise } from "../../src/routes/relay-mutations";
 
 type TestMutation = {
   variables: {
@@ -22,10 +19,10 @@ test("commitRouteMutation returns the Relay disposable when commit succeeds", ()
     commitRouteMutation(
       commitMutation,
       {
-        variables: { id: "record-1" }
+        variables: { id: "record-1" },
       },
-      onCommitError
-    )
+      onCommitError,
+    ),
   ).toBe(disposable);
   expect(onCommitError).not.toHaveBeenCalled();
 });
@@ -41,10 +38,10 @@ test("commitRouteMutation handles synchronous commit failures", () => {
     commitRouteMutation(
       commitMutation,
       {
-        variables: { id: "record-1" }
+        variables: { id: "record-1" },
       },
-      onCommitError
-    )
+      onCommitError,
+    ),
   ).toBeNull();
   expect(onCommitError).toHaveBeenCalledWith(commitError);
 });
@@ -58,11 +55,11 @@ test("commitRouteMutationPromise resolves completed Relay responses", async () =
 
   await expect(
     commitRouteMutationPromise(commitMutation, {
-      variables: { id: "record-1" }
-    })
+      variables: { id: "record-1" },
+    }),
   ).resolves.toEqual({
     response: { ok: true },
-    graphQLErrors
+    graphQLErrors,
   });
 });
 
@@ -75,8 +72,8 @@ test("commitRouteMutationPromise rejects Relay async failures", async () => {
 
   await expect(
     commitRouteMutationPromise(commitMutation, {
-      variables: { id: "record-1" }
-    })
+      variables: { id: "record-1" },
+    }),
   ).rejects.toBe(relayError);
 });
 
@@ -88,7 +85,7 @@ test("commitRouteMutationPromise rejects synchronous commit failures", async () 
 
   await expect(
     commitRouteMutationPromise(commitMutation, {
-      variables: { id: "record-1" }
-    })
+      variables: { id: "record-1" },
+    }),
   ).rejects.toBe(commitError);
 });

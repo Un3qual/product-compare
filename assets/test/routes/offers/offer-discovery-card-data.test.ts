@@ -2,19 +2,17 @@ import { getOfferDiscoveryCardData } from "../../../src/routes/offers/offer-disc
 import type {
   ActiveCouponsConnection,
   OfferNode,
-  PriceHistoryConnection
+  PriceHistoryConnection,
 } from "../../../src/routes/offers/offer-discovery-data";
 
 test("preserves present empty labels while defaulting nullish product and merchant fields", () => {
   const emptyLabels = getOfferDiscoveryCardData(
     buildOffer({
       merchant: { id: "merchant-empty", name: "", domain: "" },
-      product: { id: "product-empty", name: "", slug: "empty-product" }
-    })
+      product: { id: "product-empty", name: "", slug: "empty-product" },
+    }),
   );
-  const missingLabels = getOfferDiscoveryCardData(
-    buildOffer({ merchant: null, product: null })
-  );
+  const missingLabels = getOfferDiscoveryCardData(buildOffer({ merchant: null, product: null }));
 
   expect(emptyLabels.productName).toBe("");
   expect(emptyLabels.summaryMerchantName).toBe("");
@@ -26,7 +24,7 @@ test("preserves present empty labels while defaulting nullish product and mercha
 
 test.each([
   [true, { label: "Active", tone: "positive" }],
-  [false, { label: "Inactive", tone: "neutral" }]
+  [false, { label: "Inactive", tone: "neutral" }],
 ])("uses canonical %s offer status presentation", (isActive, status) => {
   expect(getOfferDiscoveryCardData(buildOffer({ isActive })).status).toEqual(status);
 });
@@ -34,15 +32,14 @@ test.each([
 test("formats valid latest prices and falls back only when the current formatter returns null", () => {
   expect(
     getOfferDiscoveryCardData(buildOffer({ latestPrice: buildLatestPrice("price-valid", "0") }))
-      .latestPriceLabel
+      .latestPriceLabel,
   ).toBe("0 USD");
   expect(getOfferDiscoveryCardData(buildOffer({ latestPrice: null })).latestPriceLabel).toBe(
-    "No latest price."
+    "No latest price.",
   );
   expect(
-    getOfferDiscoveryCardData(
-      buildOffer({ latestPrice: buildLatestPrice("price-invalid", "") })
-    ).latestPriceLabel
+    getOfferDiscoveryCardData(buildOffer({ latestPrice: buildLatestPrice("price-invalid", "") }))
+      .latestPriceLabel,
   ).toBe("No latest price.");
 });
 
@@ -51,7 +48,7 @@ test("uses empty connections only for nullish values and keeps existing connecti
   const priceHistory = buildPriceHistoryConnection([]);
   const existing = getOfferDiscoveryCardData(buildOffer({ activeCoupons: coupons, priceHistory }));
   const missing = getOfferDiscoveryCardData(
-    buildOffer({ activeCoupons: null, priceHistory: null })
+    buildOffer({ activeCoupons: null, priceHistory: null }),
   );
 
   expect(existing.activeCoupons).toBe(coupons);
@@ -65,7 +62,7 @@ test("keeps valid price-history rows in source order and leaves offer connection
     { node: { id: "valid-first", observedAt: "2026-05-30T10:00:00Z", price: "189.99" } },
     { node: { id: "invalid-price", observedAt: "2026-05-29T10:00:00Z", price: "" } },
     { node: { id: "invalid-date", observedAt: "not-a-date", price: "179.99" } },
-    { node: { id: "valid-last", observedAt: "2026-05-28T10:00:00Z", price: "169.99" } }
+    { node: { id: "valid-last", observedAt: "2026-05-28T10:00:00Z", price: "169.99" } },
   ]);
   const offer = buildOffer({ priceHistory });
   const originalEdges = [...priceHistory.edges];
@@ -77,14 +74,14 @@ test("keeps valid price-history rows in source order and leaves offer connection
       id: "valid-first",
       observedAt: "2026-05-30T10:00:00Z",
       observedDate: "2026-05-30",
-      price: "189.99 USD"
+      price: "189.99 USD",
     },
     {
       id: "valid-last",
       observedAt: "2026-05-28T10:00:00Z",
       observedDate: "2026-05-28",
-      price: "169.99 USD"
-    }
+      price: "169.99 USD",
+    },
   ]);
   expect(offer.priceHistory).toBe(priceHistory);
   expect(priceHistory.edges).toEqual(originalEdges);
@@ -102,7 +99,7 @@ function buildOffer(overrides: Partial<OfferNode> = {}): OfferNode {
     latestPrice: buildLatestPrice("price-1", "199.99"),
     activeCoupons: buildCouponConnection([]),
     priceHistory: buildPriceHistoryConnection([]),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -110,14 +107,12 @@ function buildLatestPrice(id: string, price: string): NonNullable<OfferNode["lat
   return { id, price, observedAt: "2026-06-01T00:00:00Z" };
 }
 
-function buildCouponConnection(
-  edges: ActiveCouponsConnection["edges"]
-): ActiveCouponsConnection {
+function buildCouponConnection(edges: ActiveCouponsConnection["edges"]): ActiveCouponsConnection {
   return { edges, pageInfo: { hasNextPage: false } };
 }
 
 function buildPriceHistoryConnection(
-  edges: PriceHistoryConnection["edges"]
+  edges: PriceHistoryConnection["edges"],
 ): PriceHistoryConnection {
   return { edges, pageInfo: { hasNextPage: false } };
 }

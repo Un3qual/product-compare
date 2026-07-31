@@ -10,7 +10,15 @@
   and comparison-snapshot resolvers, their visibility rules, existing behavior
   suites, and request-scoped Dataloader construction.
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification removed the singleton public-opaque-key
+source. Source-artifact IDs, published-question IDs, and comparison-snapshot
+tokens now resolve directly per root field. The former fixed alias budgets are
+historical completion evidence; ID handling, visibility, preload, hydration,
+publication/revocation, and nullable missing behavior remains current.
+
+## Historical Batch Outcome
 
 Aliased public `sourceArtifact(id:)`, `productQuestion(id:)`, and
 `comparisonSnapshot(token:)` entry-point reads keep fixed SELECT budgets per

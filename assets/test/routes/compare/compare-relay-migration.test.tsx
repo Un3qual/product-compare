@@ -178,8 +178,8 @@ function buildEmptyOfferContextSummary(productId: string) {
 
 const savedComparisonsRouteQueryDescriptor = {
   __relayQuery: {
-    operationName: "SavedComparisonsRouteQuery",
-    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "SavedComparisonOperationsQuery",
+    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables: { first: 20 }
   }
 };

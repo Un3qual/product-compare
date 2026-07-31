@@ -5,7 +5,7 @@ export function isAbortError(error: unknown) {
 export function recoverRouteLoaderError<TFallback>(
   error: unknown,
   message: string,
-  fallback: TFallback
+  fallback: TFallback,
 ): TFallback {
   if (isAbortError(error)) {
     throw error;

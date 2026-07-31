@@ -1,64 +1,62 @@
 import {
   projectRouteMetadataTagPolicy,
-  resolveRouteDocumentMetadata
+  resolveRouteDocumentMetadata,
 } from "../../src/routes/route-metadata-data";
 
 function metadata(title: string) {
   return {
     description: `${title} description`,
-    title
+    title,
   };
 }
 
 test("projectRouteMetadataTagPolicy only indexes explicitly indexable metadata", () => {
   expect(projectRouteMetadataTagPolicy({ indexable: true })).toEqual({
     robots: "index,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
   expect(projectRouteMetadataTagPolicy({})).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
   expect(projectRouteMetadataTagPolicy({ indexable: false })).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
 });
 
 test("projectRouteMetadataTagPolicy uses a large Twitter card only for a non-empty image URL", () => {
-  expect(
-    projectRouteMetadataTagPolicy({ imageUrl: "https://example.test/product.jpg" })
-  ).toEqual({
+  expect(projectRouteMetadataTagPolicy({ imageUrl: "https://example.test/product.jpg" })).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary_large_image"
+    twitterCard: "summary_large_image",
   });
   expect(projectRouteMetadataTagPolicy({ imageUrl: undefined })).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
   expect(projectRouteMetadataTagPolicy({ imageUrl: null })).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
   expect(projectRouteMetadataTagPolicy({ imageUrl: "" })).toEqual({
     robots: "noindex,follow",
-    twitterCard: "summary"
+    twitterCard: "summary",
   });
 });
 
 test("projectRouteMetadataTagPolicy does not mutate frozen normalized metadata", () => {
   const normalizedMetadata = Object.freeze({
     imageUrl: "https://example.test/product.jpg",
-    indexable: true
+    indexable: true,
   });
 
   expect(projectRouteMetadataTagPolicy(normalizedMetadata)).toEqual({
     robots: "index,follow",
-    twitterCard: "summary_large_image"
+    twitterCard: "summary_large_image",
   });
   expect(normalizedMetadata).toEqual({
     imageUrl: "https://example.test/product.jpg",
-    indexable: true
+    indexable: true,
   });
 });
 
@@ -66,17 +64,17 @@ test("resolveRouteDocumentMetadata selects the deepest valid route metadata", ()
   const matches = [
     { handle: { metadata: metadata("Root") } },
     { handle: { metadata: metadata("Catalog") } },
-    { handle: { metadata: metadata("Product") } }
+    { handle: { metadata: metadata("Product") } },
   ];
 
   expect(resolveRouteDocumentMetadata(matches)).toEqual({
     ...metadata("Product"),
-    indexable: false
+    indexable: false,
   });
   expect(matches.map((match) => match.handle.metadata.title)).toEqual([
     "Root",
     "Catalog",
-    "Product"
+    "Product",
   ]);
 });
 
@@ -87,12 +85,12 @@ test("resolveRouteDocumentMetadata skips an invalid deepest match", () => {
       { data: { metadata: metadata("Loaded catalog") } },
       {
         data: { metadata: { description: "Missing a title" } },
-        handle: { metadata: { title: "Missing a description" } }
-      }
-    ])
+        handle: { metadata: { title: "Missing a description" } },
+      },
+    ]),
   ).toEqual({
     ...metadata("Loaded catalog"),
-    indexable: false
+    indexable: false,
   });
 });
 
@@ -101,12 +99,12 @@ test("resolveRouteDocumentMetadata prefers loader metadata over the same match h
     resolveRouteDocumentMetadata([
       {
         data: { metadata: metadata("Loaded product") },
-        handle: { metadata: metadata("Static product") }
-      }
-    ])
+        handle: { metadata: metadata("Static product") },
+      },
+    ]),
   ).toEqual({
     ...metadata("Loaded product"),
-    indexable: false
+    indexable: false,
   });
 });
 
@@ -116,15 +114,15 @@ test("resolveRouteDocumentMetadata falls back to the same match handle when load
       {
         data: {
           metadata: {
-            description: "Missing a title"
-          }
+            description: "Missing a title",
+          },
         },
-        handle: { metadata: metadata("Static fallback") }
-      }
-    ])
+        handle: { metadata: metadata("Static fallback") },
+      },
+    ]),
   ).toEqual({
     ...metadata("Static fallback"),
-    indexable: false
+    indexable: false,
   });
 });
 
@@ -132,8 +130,8 @@ test("resolveRouteDocumentMetadata requires string title and description fields"
   expect(
     resolveRouteDocumentMetadata([
       { handle: { metadata: { description: "Valid", title: 42 } } },
-      { handle: { metadata: { description: null, title: "Invalid" } } }
-    ])
+      { handle: { metadata: { description: null, title: "Invalid" } } },
+    ]),
   ).toBeNull();
 });
 
@@ -148,18 +146,18 @@ test("resolveRouteDocumentMetadata parses optional strings and only explicit tru
             imageUrl: "https://example.test/example.jpg",
             indexable: true,
             structuredData: '{"@type":"Product"}',
-            title: "Example product"
-          }
-        }
-      }
-    ])
+            title: "Example product",
+          },
+        },
+      },
+    ]),
   ).toEqual({
     canonicalUrl: "https://example.test/products/example",
     description: "Example description",
     imageUrl: "https://example.test/example.jpg",
     indexable: true,
     structuredData: '{"@type":"Product"}',
-    title: "Example product"
+    title: "Example product",
   });
 
   expect(
@@ -172,18 +170,18 @@ test("resolveRouteDocumentMetadata parses optional strings and only explicit tru
             imageUrl: null,
             indexable: "true",
             structuredData: {},
-            title: "Example product"
-          }
-        }
-      }
-    ])
+            title: "Example product",
+          },
+        },
+      },
+    ]),
   ).toEqual({
     canonicalUrl: undefined,
     description: "Example description",
     imageUrl: undefined,
     indexable: false,
     structuredData: undefined,
-    title: "Example product"
+    title: "Example product",
   });
 });
 
@@ -192,7 +190,7 @@ test("resolveRouteDocumentMetadata returns null when no match contains valid met
     resolveRouteDocumentMetadata([
       {},
       { data: null, handle: "not a handle" },
-      { data: { metadata: [] } }
-    ])
+      { data: { metadata: [] } },
+    ]),
   ).toBeNull();
 });

@@ -139,7 +139,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end)
 
       assert query_counts == %{
-               products: 2,
+               products: 3,
                brands: 1,
                merchant_products: 1,
                merchants: 1,
@@ -181,7 +181,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              }
     end
 
-    test "comparison root aliases preserve values and fixed SELECT budgets as aliases grow",
+    test "comparison root aliases preserve values across independent direct reads",
          %{conn: conn, test: test_name} do
       records =
         for index <- 1..4 do
@@ -204,19 +204,11 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_comparison_root_values(four_response, records)
       four_budget = comparison_root_query_budget(four_queries)
 
-      assert {two_budget, four_budget} == {
-               %{
-                 products: 3,
-                 product_attribute_current: 1,
-                 merchant_products: 1,
-                 price_points: 1
-               },
-               two_budget
-             }
+      assert four_budget == Map.new(two_budget, fn {table, count} -> {table, count * 2} end)
     end
 
     for collection <- @owner_management_collections do
-      test "#{collection} owner connection aliases preserve values, authorization, and fixed SELECT budgets as aliases grow",
+      test "#{collection} owner connection aliases preserve values and authorization as direct reads",
            %{conn: conn} do
         collection = unquote(collection)
         owner = AccountsFixtures.user_fixture()
@@ -253,12 +245,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         two_budget = owner_management_connection_query_budget(two_queries, collection)
         four_budget = owner_management_connection_query_budget(four_queries, collection)
 
-        assert {two_budget, four_budget} == {1, two_budget}
+        assert {two_budget, four_budget} == {2, 4}
       end
     end
 
     for collection <- @owner_management_collections do
-      test "#{collection} owner connection keeps filter and Relay page keys distinct while identical aliases coalesce",
+      test "#{collection} owner connection keeps filter and Relay page keys distinct across direct reads",
            %{conn: conn} do
         collection = unquote(collection)
         owner = AccountsFixtures.user_fixture()
@@ -277,14 +269,14 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
         assert_owner_management_mixed_key_values(response, collection, expected)
 
-        expected_budget = if Map.has_key?(expected, :alternate), do: 3, else: 2
+        expected_budget = if Map.has_key?(expected, :alternate), do: 4, else: 3
 
         assert owner_management_connection_query_budget(queries, collection) == expected_budget
       end
     end
 
     for collection <- @operator_management_collections do
-      test "#{collection} operator connection aliases preserve values, filters, pagination, authorization, and fixed SELECT budgets as aliases grow",
+      test "#{collection} operator connection aliases preserve values, filters, pagination, and authorization as direct reads",
            %{conn: conn} do
         collection = unquote(collection)
         operator = AccountsFixtures.operator_fixture()
@@ -337,12 +329,12 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         two_budget = operator_management_connection_query_budget(two_queries, collection)
         four_budget = operator_management_connection_query_budget(four_queries, collection)
 
-        assert {two_budget, four_budget} == {1, two_budget}
+        assert {two_budget, four_budget} == {2, 4}
       end
     end
 
     for collection <- @operator_management_collections do
-      test "#{collection} operator connection keeps filter, sort, and Relay page keys distinct while identical aliases coalesce",
+      test "#{collection} operator connection keeps filter, sort, and Relay page keys distinct across direct reads",
            %{conn: conn} do
         collection = unquote(collection)
         operator = AccountsFixtures.operator_fixture()
@@ -399,7 +391,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       end
     end
 
-    test "operator active-coupon aliases preserve values and fixed SELECT budgets as aliases grow",
+    test "operator active-coupon aliases preserve values across independent direct reads",
          %{conn: conn, test: test_name} do
       operator = AccountsFixtures.operator_fixture()
       anchor = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -430,10 +422,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_operator_active_coupon_alias_values(four_response, records, 4)
 
       assert {operator_active_coupon_query_budget(two_queries),
-              operator_active_coupon_query_budget(four_queries)} == {1, 1}
+              operator_active_coupon_query_budget(four_queries)} == {2, 4}
     end
 
-    test "operator active-coupon aliases keep merchant, observation time, and Relay page keys distinct while identical aliases coalesce",
+    test "operator active-coupon aliases keep merchant, observation time, and Relay page keys distinct",
          %{conn: conn, test: test_name} do
       operator = AccountsFixtures.operator_fixture()
       anchor = DateTime.utc_now() |> DateTime.truncate(:second)
@@ -455,10 +447,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         end)
 
       assert_operator_active_coupon_mixed_key_values(response, records)
-      assert operator_active_coupon_query_budget(queries) == 4
+      assert operator_active_coupon_query_budget(queries) == 5
     end
 
-    test "operator revenue-summary aliases preserve values and fixed SELECT budgets as aliases grow",
+    test "operator revenue-summary aliases preserve values across independent direct reads",
          %{conn: conn} do
       operator = AccountsFixtures.operator_fixture()
 
@@ -481,14 +473,15 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
       assert_operator_revenue_summary_alias_values(four_response, 4)
 
-      expected_budget = %{commerce_conversions: 2, commerce_click_sessions: 1}
+      two_budget = %{commerce_conversions: 4, commerce_click_sessions: 2}
+      four_budget = %{commerce_conversions: 8, commerce_click_sessions: 4}
 
       assert {operator_revenue_summary_query_budget(two_queries),
               operator_revenue_summary_query_budget(four_queries)} ==
-               {expected_budget, expected_budget}
+               {two_budget, four_budget}
     end
 
-    test "operator revenue-summary aliases coalesce normalized inputs while distinct filters stay isolated",
+    test "operator revenue-summary aliases normalize inputs while distinct filters stay isolated",
          %{conn: conn, test: test_name} do
       operator = AccountsFixtures.operator_fixture()
 
@@ -513,8 +506,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_operator_revenue_summary_mixed_key_values(response, merchant)
 
       assert operator_revenue_summary_query_budget(queries) == %{
-               commerce_conversions: 5,
-               commerce_click_sessions: 3
+               commerce_conversions: 6,
+               commerce_click_sessions: 4
              }
     end
 
@@ -603,7 +596,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                Map.new(@authorized_node_tables, &{&1, 0})
     end
 
-    test "public product and merchant slug aliases keep values and SELECT budgets fixed as aliases grow",
+    test "public product and merchant slug aliases preserve values across direct reads",
          %{conn: conn, test: test_name} do
       prefix = canonical_slug("public-slugs-#{test_name}-#{System.unique_integer([:positive])}")
       products = public_slug_product_records(prefix)
@@ -629,20 +622,26 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_public_slug_values(grown_response, products, merchants)
       grown_budget = public_slug_query_budget(grown_queries)
 
-      assert {initial_budget, grown_budget} == {
-               %{
-                 products: 2,
-                 product_slug_aliases: 1,
-                 brands: 1,
-                 merchants: 1,
-                 merchant_products: 1,
-                 price_points: 1
-               },
-               initial_budget
+      assert initial_budget == %{
+               products: 3,
+               product_slug_aliases: 1,
+               brands: 1,
+               merchants: 3,
+               merchant_products: 1,
+               price_points: 1
+             }
+
+      assert grown_budget == %{
+               products: 6,
+               product_slug_aliases: 2,
+               brands: 1,
+               merchants: 5,
+               merchant_products: 1,
+               price_points: 1
              }
     end
 
-    test "catalog discovery root aliases preserve exact values and fixed SELECT budgets as aliases grow",
+    test "catalog discovery root aliases preserve exact values across direct reads",
          %{conn: conn, test: test_name} do
       {monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
       filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
@@ -676,10 +675,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert {
                catalog_discovery_product_query_budget(two_queries),
                catalog_discovery_product_query_budget(four_queries)
-             } == {4, 4}
+             } == {8, 16}
     end
 
-    test "products discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+    test "products discovery root aliases preserve exact Relay values across direct reads",
          %{conn: conn, test: test_name} do
       {monitor_product, monitor_taxon, _laptop_taxon} = catalog_discovery_records(test_name)
       filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
@@ -701,10 +700,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert {
                catalog_discovery_product_query_budget(two_queries),
                catalog_discovery_product_query_budget(four_queries)
-             } == {1, 1}
+             } == {2, 4}
     end
 
-    test "implicit and explicit relevance share one request-scoped products loader key", %{
+    test "implicit and explicit relevance return the same direct-read page", %{
       conn: conn
     } do
       product =
@@ -742,10 +741,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert is_binary(cursor)
       assert product_id == relay_id(:product, product.id)
       assert product_slug == product.slug
-      assert catalog_discovery_product_query_budget(queries) == 1
+      assert catalog_discovery_product_query_budget(queries) == 2
     end
 
-    test "product filter metadata root aliases preserve exact selected values and fixed SELECT budgets as aliases grow",
+    test "product filter metadata root aliases preserve selected values across direct reads",
          %{conn: conn, test: test_name} do
       {_monitor_product, monitor_taxon, laptop_taxon} = catalog_discovery_records(test_name)
       filters = %{"primaryTypeTaxonId" => relay_id(:taxon, monitor_taxon.id)}
@@ -767,7 +766,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert {
                catalog_discovery_product_query_budget(two_queries),
                catalog_discovery_product_query_budget(four_queries)
-             } == {3, 3}
+             } == {6, 12}
     end
 
     test "catalog discovery roots keep normalized filters and Relay pages isolated in one request",
@@ -832,7 +831,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert catalog_discovery_product_query_budget(queries) == 3
     end
 
-    test "merchant discovery root aliases preserve exact Relay values and fixed SELECT budgets as aliases grow",
+    test "merchant discovery root aliases preserve exact Relay values across direct reads",
          %{conn: conn} do
       first_merchant =
         merchant_fixture(%{
@@ -863,10 +862,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert {
                merchant_discovery_query_budget(two_queries),
                merchant_discovery_query_budget(four_queries)
-             } == {1, 1}
+             } == {2, 4}
     end
 
-    test "merchant discovery root keeps duplicate aliases coalesced while Relay pages stay isolated",
+    test "merchant discovery root returns equal duplicate aliases while Relay pages stay isolated",
          %{conn: conn} do
       first_merchant =
         merchant_fixture(%{
@@ -896,10 +895,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_merchant_discovery_page(first_page, first_merchant, 0, true, false)
       assert first_duplicate_page == first_page
       assert_merchant_discovery_page(next_page, second_merchant, 1, false, true)
-      assert merchant_discovery_query_budget(queries) == 2
+      assert merchant_discovery_query_budget(queries) == 3
     end
 
-    test "offer discovery root aliases preserve nested values and fixed SELECT budgets as aliases grow",
+    test "offer discovery root aliases preserve nested values across direct reads",
          %{conn: conn, test: test_name} do
       product =
         SpecsFixtures.product_fixture(%{
@@ -1015,10 +1014,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert {
                offer_discovery_query_budget(two_queries),
                offer_discovery_query_budget(four_queries)
-             } == {1, 1}
+             } == {2, 4}
     end
 
-    test "offer discovery root keeps duplicate aliases coalesced while filters and Relay pages stay isolated",
+    test "offer discovery root returns equal duplicate aliases while filters and Relay pages stay isolated",
          %{conn: conn, test: test_name} do
       first_product =
         SpecsFixtures.product_fixture(%{
@@ -1103,10 +1102,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_offer_discovery_page(active_only_page, first_offer, 0, false, false)
       assert_offer_discovery_page(other_product_page, other_product_offer, 0, false, false)
       assert_offer_discovery_page(product_next_page, second_offer, 1, false, true)
-      assert offer_discovery_query_budget(queries) == 5
+      assert offer_discovery_query_budget(queries) == 6
     end
 
-    test "public opaque-key aliases keep values and SELECT budgets fixed per lookup kind as aliases grow",
+    test "public opaque-key aliases preserve values across direct reads",
          %{conn: conn} do
       prefix = "public-opaque-#{System.unique_integer([:positive])}"
       records = public_opaque_records(prefix, 1..4)
@@ -1127,15 +1126,20 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_public_opaque_values(grown_response, records)
       grown_budget = public_opaque_query_budget(grown_queries)
 
-      assert {initial_budget, grown_budget} == {
-               %{
-                 source_artifacts: 1,
-                 sources: 1,
-                 product_threads: 1,
-                 thread_posts: 1,
-                 comparison_snapshots: 1
-               },
-               initial_budget
+      assert initial_budget == %{
+               source_artifacts: 3,
+               sources: 2,
+               product_threads: 3,
+               thread_posts: 2,
+               comparison_snapshots: 3
+             }
+
+      assert grown_budget == %{
+               source_artifacts: 5,
+               sources: 4,
+               product_threads: 5,
+               thread_posts: 4,
+               comparison_snapshots: 5
              }
     end
 
@@ -1280,7 +1284,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_offer_as_of_is_shared(grown_nodes)
     end
 
-    test "category aliases keep qualification, Relay pages, and SELECT budgets fixed as aliases grow",
+    test "direct category aliases keep qualification while nested product sets batch",
          %{conn: conn, test: test_name} do
       operator = AccountsFixtures.operator_fixture()
 
@@ -1305,10 +1309,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       assert_category_batch_values(grown_response, categories)
       grown_budget = category_query_budget(grown_queries)
 
-      assert {initial_budget, grown_budget} == {
-               %{taxons: 1, products: 2},
-               initial_budget
-             }
+      assert initial_budget == %{taxons: 3, products: 3}
+      assert grown_budget == %{taxons: 5, products: 5}
     end
 
     test "community connections keep their public Relay values and SELECT budgets fixed as parents grow",
@@ -2145,17 +2147,13 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     """
     #{alias_name}: activeCoupons(
-      input: {
-        merchantId: "#{relay_id(:merchant, merchant.id)}"
-        at: "#{DateTime.to_iso8601(at)}"
-        first: #{first}
-        #{after_argument}
-      }
+      merchantId: "#{relay_id(:merchant, merchant.id)}"
+      at: "#{DateTime.to_iso8601(at)}"
+      first: #{first}
+      #{after_argument}
     ) {
-      coupons {
-        edges { cursor node { id code discountType } }
-        pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
-      }
+      edges { cursor node { id code discountType } }
+      pageInfo { hasNextPage hasPreviousPage startCursor endCursor }
     }
     """
   end
@@ -3000,7 +2998,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     }
   end
 
-  defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 3
+  defp operator_management_mixed_key_budget(:specification_correction_moderation_queue), do: 4
 
   defp assert_owner_management_connection_values(response, collection, alias_count, expected) do
     assert %{"data" => data} = response
@@ -3057,7 +3055,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   end
 
   defp assert_operator_management_connection_values(response, collection, alias_count, expected) do
-    cursor = Base.encode64("cursor:0")
+    cursor = cursor_for(0)
 
     expected_connection = %{
       "edges" => [%{"cursor" => cursor, "node" => expected}],
@@ -3084,7 +3082,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     expected = operator_active_coupon_page(records.first, 0, true, false)
 
     Enum.each(1..alias_count, fn index ->
-      assert data["activeCoupons#{index}"] == %{"coupons" => expected}
+      assert data["activeCoupons#{index}"] == expected
     end)
   end
 
@@ -3094,19 +3092,14 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     assert data["sameOne"] == data["sameTwo"]
 
-    assert data["sameOne"] == %{
-             "coupons" => operator_active_coupon_page(records.first, 0, true, false)
-           }
+    assert data["sameOne"] == operator_active_coupon_page(records.first, 0, true, false)
 
-    assert data["nextPage"] == %{
-             "coupons" => operator_active_coupon_page(records.second, 1, false, true)
-           }
+    assert data["nextPage"] == operator_active_coupon_page(records.second, 1, false, true)
 
-    assert data["alternateTime"] == %{"coupons" => empty_connection_page()}
+    assert data["alternateTime"] == empty_connection_page()
 
-    assert data["alternateMerchant"] == %{
-             "coupons" => operator_active_coupon_page(records.other_coupon, 0, false, false)
-           }
+    assert data["alternateMerchant"] ==
+             operator_active_coupon_page(records.other_coupon, 0, false, false)
   end
 
   defp operator_active_coupon_page(coupon, cursor_index, has_next, has_previous) do
@@ -4190,7 +4183,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     end)
   end
 
-  defp cursor_for(index), do: Base.encode64("cursor:#{index}")
+  defp cursor_for(index), do: Absinthe.Relay.Connection.offset_to_cursor(index)
 
   defp assert_product_evidence_values(nodes, products) do
     Enum.each(Enum.chunk_every(products, 3), &assert_product_evidence_group(nodes, &1))

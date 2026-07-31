@@ -183,7 +183,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       refute Map.has_key?(response, "errors")
     end
 
-    test "product batches brand lookups across aliased selections", %{conn: conn} do
+    test "aliased product roots read directly while brand associations batch", %{conn: conn} do
       first_product =
         SpecsFixtures.product_fixture(%{
           slug: "batched-product-first",
@@ -223,7 +223,8 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
       assert second_product_id == relay_id(:product, second_product.id)
       assert first_brand_id == relay_id(:brand, first_product.brand_id)
       assert second_brand_id == relay_id(:brand, second_product.brand_id)
-      assert [_, _] = queries
+      assert Enum.count(queries, &String.contains?(&1, ~s(FROM "products"))) == 2
+      assert Enum.count(queries, &String.contains?(&1, ~s(FROM "brands"))) == 1
     end
 
     test "product returns null for a non-existent slug", %{conn: conn} do

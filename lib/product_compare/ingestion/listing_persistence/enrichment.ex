@@ -6,6 +6,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   import Ecto.Query
 
   alias ProductCompare.Catalog
+  alias ProductCompare.Catalog.SearchDocuments
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy, as: TaxonomyContext
@@ -16,8 +17,12 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   @spec enrich_product(map(), map(), map()) ::
           {:ok, map(), map()} | {:error, term()}
   def enrich_product(product, source_artifact, listing) do
-    with {:ok, product} <- fill_missing_product_enrichment(product, listing) do
-      apply_category_mapping(source_artifact, product, listing)
+    with {:ok, taxonomy_resolution} <- resolve_category_mapping(source_artifact, listing),
+         {:ok, current_product} <- lock_product(product.id),
+         {attrs, taxonomy_result} <-
+           enrichment_changes(current_product, listing, taxonomy_resolution),
+         {:ok, enriched_product} <- persist_enrichment(current_product, attrs) do
+      {:ok, enriched_product, taxonomy_result}
     end
   end
 
@@ -40,31 +45,6 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
     }
   end
 
-  defp fill_missing_product_enrichment(product, listing) do
-    requested_attrs =
-      %{}
-      |> put_present_product_field(:model_number, listing.model_number)
-      |> put_present_product_field(:description, listing.description)
-
-    case map_size(requested_attrs) do
-      0 ->
-        {:ok, product}
-
-      _count ->
-        with {:ok, current_product} <- lock_product(product.id) do
-          attrs =
-            Map.reject(requested_attrs, fn {field, _incoming} ->
-              present_product_field?(Map.fetch!(current_product, field))
-            end)
-
-          case map_size(attrs) do
-            0 -> {:ok, current_product}
-            _count -> Catalog.update_product(current_product, attrs)
-          end
-        end
-    end
-  end
-
   defp put_present_product_field(attrs, field, incoming) when is_binary(incoming) do
     case String.trim(incoming) do
       "" -> attrs
@@ -77,16 +57,16 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   defp present_product_field?(value) when is_binary(value), do: value != ""
   defp present_product_field?(_value), do: false
 
-  defp apply_category_mapping(_source_artifact, product, %{manufacturer_category_path: path})
+  defp resolve_category_mapping(_source_artifact, %{manufacturer_category_path: path})
        when path in [nil, []],
-       do: {:ok, product, %{status: :none}}
+       do: {:ok, :none}
 
-  defp apply_category_mapping(source_artifact, product, listing) do
+  defp resolve_category_mapping(source_artifact, listing) do
     path = listing.manufacturer_category_path
 
     case TaxonomyContext.resolve_type_alias_for_write(path) do
       %Taxon{} = taxon ->
-        maybe_assign_mapped_type(product, taxon)
+        {:ok, {:mapped, taxon}}
 
       nil ->
         case upsert_category_mapping_candidate(
@@ -94,27 +74,54 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
                path,
                listing.observed_at
              ) do
-          {:ok, _candidate} -> {:ok, product, %{status: :candidate}}
-          {:error, _reason} -> {:ok, product, %{status: :candidate_rejected}}
+          {:ok, _candidate} -> {:ok, :candidate}
+          {:error, _reason} -> {:ok, :candidate_rejected}
         end
     end
   end
 
-  defp maybe_assign_mapped_type(product, taxon) do
-    with {:ok, current_product} <- lock_product(product.id) do
-      current_taxon = Repo.get(Taxon, current_product.primary_type_taxon_id)
+  defp enrichment_changes(current_product, listing, taxonomy_resolution) do
+    attrs =
+      %{}
+      |> put_present_product_field(:model_number, listing.model_number)
+      |> put_present_product_field(:description, listing.description)
+      |> Map.reject(fn {field, _incoming} ->
+        present_product_field?(Map.fetch!(current_product, field))
+      end)
 
-      if current_taxon && current_taxon.code == "ingested-product" do
-        case Catalog.update_product(current_product, %{primary_type_taxon_id: taxon.id}) do
-          {:ok, updated_product} ->
-            {:ok, updated_product, %{status: :mapped, taxon_id: taxon.id}}
+    mapped_type_changes(current_product, attrs, taxonomy_resolution)
+  end
 
-          {:error, reason} ->
-            {:error, reason}
-        end
-      else
-        {:ok, current_product, %{status: :mapped_not_applied, taxon_id: taxon.id}}
-      end
+  defp mapped_type_changes(_current_product, attrs, :none),
+    do: {attrs, %{status: :none}}
+
+  defp mapped_type_changes(_current_product, attrs, :candidate),
+    do: {attrs, %{status: :candidate}}
+
+  defp mapped_type_changes(_current_product, attrs, :candidate_rejected),
+    do: {attrs, %{status: :candidate_rejected}}
+
+  defp mapped_type_changes(current_product, attrs, {:mapped, taxon}) do
+    current_taxon =
+      Repo.one(
+        from current_taxon in Taxon,
+          where: current_taxon.id == ^current_product.primary_type_taxon_id,
+          lock: "FOR SHARE"
+      )
+
+    if current_taxon && current_taxon.code == "ingested-product" do
+      {Map.put(attrs, :primary_type_taxon_id, taxon.id), %{status: :mapped, taxon_id: taxon.id}}
+    else
+      {attrs, %{status: :mapped_not_applied, taxon_id: taxon.id}}
+    end
+  end
+
+  defp persist_enrichment(product, attrs) when map_size(attrs) == 0, do: {:ok, product}
+
+  defp persist_enrichment(product, attrs) do
+    with {:ok, updated_product} <- product |> Product.changeset(attrs) |> Repo.update(),
+         :ok <- SearchDocuments.refresh_product(updated_product.id) do
+      {:ok, updated_product}
     end
   end
 

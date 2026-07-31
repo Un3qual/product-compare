@@ -3,7 +3,7 @@ import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
-  selectedCompareSlugsFromSearch
+  selectedCompareSlugsFromSearch,
 } from "../compare/paths";
 
 export type ProductDetailView = "overview" | "specifications" | "offers" | "community";
@@ -32,30 +32,27 @@ export interface ProductDetailRouteData {
 export function createProductDetailRouteData({
   hash,
   productSlug,
-  search
+  search,
 }: {
   hash: string;
   productSlug: string;
   search: string;
 }): ProductDetailRouteData {
   const selectedCompareSlugs = selectedCompareSlugsFromSearch(search, {
-    maxProducts: MAX_COMPARE_PRODUCTS
+    maxProducts: MAX_COMPARE_PRODUCTS,
   });
   const productPath = productDetailPath(productSlug);
 
   return {
-    browsePath: buildCurrentRoutePathWithCompareSlugs(
-      "/products",
-      "",
-      selectedCompareSlugs,
-      { maxProducts: MAX_COMPARE_PRODUCTS }
-    ),
+    browsePath: buildCurrentRoutePathWithCompareSlugs("/products", "", selectedCompareSlugs, {
+      maxProducts: MAX_COMPARE_PRODUCTS,
+    }),
     compareAction: productDetailCompareAction({
       hash,
       productPath,
       productSlug,
       search,
-      selectedCompareSlugs
+      selectedCompareSlugs,
     }),
     comparePath: buildComparePathFromSlugs(selectedCompareSlugs),
     detailView: detailViewFromLocation(hash, search),
@@ -67,16 +64,16 @@ export function createProductDetailRouteData({
         productPath,
         search,
         selectedCompareSlugs.filter((_, selectedIndex) => selectedIndex !== index),
-        hash
+        hash,
       );
-    }
+    },
   };
 }
 
 export function overviewSummaryItems({
   attributeCount,
   hasMoreOffers,
-  loadedOfferCount
+  loadedOfferCount,
 }: {
   attributeCount: number;
   hasMoreOffers: boolean;
@@ -86,8 +83,8 @@ export function overviewSummaryItems({
     { label: "Specifications available", value: attributeCount },
     {
       label: "Active offers loaded",
-      value: hasMoreOffers ? `${loadedOfferCount}+` : loadedOfferCount
-    }
+      value: hasMoreOffers ? `${loadedOfferCount}+` : loadedOfferCount,
+    },
   ];
 }
 
@@ -100,7 +97,7 @@ function productDetailCompareAction({
   productPath,
   productSlug,
   search,
-  selectedCompareSlugs
+  selectedCompareSlugs,
 }: {
   hash: string;
   productPath: string;
@@ -120,14 +117,10 @@ function productDetailCompareAction({
     href: productPathWithCompareSlugs(
       productPath,
       search,
-      selectedCompareSlugsAfterAdding(
-        selectedCompareSlugs,
-        productSlug,
-        MAX_COMPARE_PRODUCTS
-      ),
-      hash
+      selectedCompareSlugsAfterAdding(selectedCompareSlugs, productSlug, MAX_COMPARE_PRODUCTS),
+      hash,
     ),
-    kind: "add"
+    kind: "add",
   };
 }
 
@@ -150,14 +143,11 @@ function productPathWithCompareSlugs(
   productPath: string,
   search: string,
   selectedCompareSlugs: readonly string[],
-  hash: string
+  hash: string,
 ) {
-  const path = buildCurrentRoutePathWithCompareSlugs(
-    productPath,
-    search,
-    selectedCompareSlugs,
-    { maxProducts: MAX_COMPARE_PRODUCTS }
-  );
+  const path = buildCurrentRoutePathWithCompareSlugs(productPath, search, selectedCompareSlugs, {
+    maxProducts: MAX_COMPARE_PRODUCTS,
+  });
 
   return `${path}${hash}`;
 }

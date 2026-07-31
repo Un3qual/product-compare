@@ -14,7 +14,7 @@ export const CATALOG_PRODUCT_SORTS = [
   "ID_ASC",
   "NAME_ASC",
   "BRAND_NAME_ASC",
-  "NEWEST"
+  "NEWEST",
 ] as const;
 
 export type CatalogProductSort = (typeof CATALOG_PRODUCT_SORTS)[number];
@@ -77,8 +77,7 @@ export interface CatalogFilterMetadata {
 const NUMERIC_FILTER_PARAM_PATTERN = /^numeric\.(.+)\.(min|max)$/;
 const BOOLEAN_FILTER_PARAM_PATTERN = /^boolean\.(.+)$/;
 const ENUM_FILTER_PARAM_PATTERN = /^enum\.(.+)$/;
-const DECIMAL_FILTER_VALUE_PATTERN =
-  /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+const DECIMAL_FILTER_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 const MAX_DECIMAL_EXPONENT_SHIFT = 1_000;
 export const MAX_CATALOG_SEARCH_QUERY_LENGTH = 100;
 
@@ -87,7 +86,7 @@ const CATALOG_PRODUCT_SORT_LABELS: Record<CatalogProductSort, string> = {
   ID_ASC: "Catalog order",
   NAME_ASC: "Product name",
   BRAND_NAME_ASC: "Brand name",
-  NEWEST: "Newest"
+  NEWEST: "Newest",
 };
 
 export function catalogProductSortLabel(sort: CatalogProductSort) {
@@ -112,7 +111,7 @@ function supportedCatalogProductSort(value: string): CatalogProductSort | null {
 }
 
 export function catalogProductSortParam(
-  filters: Pick<CatalogFilters, "query" | "sort">
+  filters: Pick<CatalogFilters, "query" | "sort">,
 ): CatalogProductSort | undefined {
   if (filters.query) {
     return filters.sort === "RELEVANCE" ? undefined : filters.sort;
@@ -168,14 +167,14 @@ export function catalogFiltersFromUrl(url: URL): CatalogFilters {
     useCaseTaxonIds,
     numeric: validCatalogNumericFilters(Array.from(numericFilters.values())),
     booleans: Array.from(booleanFilters.values()),
-    enums: Array.from(enumFilters.values())
+    enums: Array.from(enumFilters.values()),
   };
 }
 
 function storeNumericFilter(
   numericFilters: Map<string, CatalogNumericFilter>,
   name: string,
-  rawValue: string
+  rawValue: string,
 ) {
   const numericMatch = NUMERIC_FILTER_PARAM_PATTERN.exec(name);
   const value = rawValue.trim();
@@ -199,7 +198,7 @@ function storeNumericFilter(
 function storeBooleanFilter(
   booleanFilters: Map<string, CatalogBooleanFilter>,
   name: string,
-  rawValue: string
+  rawValue: string,
 ) {
   const booleanMatch = BOOLEAN_FILTER_PARAM_PATTERN.exec(name);
   const value = booleanFilterValue(rawValue);
@@ -210,7 +209,7 @@ function storeBooleanFilter(
 
   booleanFilters.set(booleanMatch[1], {
     attributeId: booleanMatch[1],
-    value
+    value,
   });
 
   return true;
@@ -219,7 +218,7 @@ function storeBooleanFilter(
 function storeEnumFilter(
   enumFilters: Map<string, CatalogEnumFilter>,
   name: string,
-  rawValue: string
+  rawValue: string,
 ) {
   const enumMatch = ENUM_FILTER_PARAM_PATTERN.exec(name);
   const enumOptionId = rawValue.trim();
@@ -230,14 +229,14 @@ function storeEnumFilter(
 
   enumFilters.set(enumMatch[1], {
     attributeId: enumMatch[1],
-    enumOptionId
+    enumOptionId,
   });
 
   return true;
 }
 
 export function catalogFiltersToProductFiltersInput(
-  filters: CatalogFilters
+  filters: CatalogFilters,
 ): ProductFiltersInput | undefined {
   if (!hasActiveCatalogFilters(filters) && !filters.sort) {
     return undefined;
@@ -256,7 +255,7 @@ export function catalogFiltersToProductFiltersInput(
     ...(filters.useCaseTaxonIds.length > 0 ? { useCaseTaxonIds: filters.useCaseTaxonIds } : {}),
     ...(numericFilters.length > 0 ? { numeric: numericFilters } : {}),
     ...(filters.booleans.length > 0 ? { booleans: filters.booleans } : {}),
-    ...(enumFilters.length > 0 ? { enums: enumFilters } : {})
+    ...(enumFilters.length > 0 ? { enums: enumFilters } : {}),
   };
 }
 
@@ -393,7 +392,7 @@ function splitDecimalDigits(digits: string, decimalPoint: number) {
 
 function compareAbsoluteDecimalFilterValues(
   left: DecimalFilterValueParts,
-  right: DecimalFilterValueParts
+  right: DecimalFilterValueParts,
 ) {
   if (left.integer.length !== right.integer.length) {
     return left.integer.length > right.integer.length ? 1 : -1;
@@ -420,10 +419,7 @@ function catalogSearchQuery(rawValue: string | null) {
   return value === "" ? null : value.slice(0, MAX_CATALOG_SEARCH_QUERY_LENGTH);
 }
 
-function catalogProductSort(
-  rawValue: string | null,
-  hasQuery: boolean
-): CatalogProductSort | null {
+function catalogProductSort(rawValue: string | null, hasQuery: boolean): CatalogProductSort | null {
   const value = rawValue?.trim() ?? "";
   const parsed = supportedCatalogProductSort(value);
 
@@ -435,7 +431,7 @@ function catalogProductSort(
 }
 
 function catalogProductSortWithoutQuery(
-  parsed: CatalogProductSort | null
+  parsed: CatalogProductSort | null,
 ): CatalogProductSort | null {
   switch (parsed) {
     case "NAME_ASC":

@@ -9,14 +9,23 @@
 - Last verified: 2026-07-22 against live affiliate-workflow, commerce-revenue,
   and Dataloader GraphQL suites.
 
-## Batch Outcome
+## Current Reconciliation
+
+The 2026-07-31 GraphQL simplification removed the singleton
+operator-reporting source. Root `activeCoupons` and revenue-summary fields now
+authorize and call their context query paths directly, so identical root
+aliases intentionally execute independently. The prior reuse budgets remain
+historical completion evidence; authorization, filtering, suppression,
+pagination, values, and errors remain behavior contracts.
+
+## Historical Batch Outcome
 
 Identical operator-only active-coupon and revenue-summary root aliases now
 reuse one authorized database read per normalized input within a GraphQL request
 without changing authorization, time/filter semantics, pagination, suppression,
 metrics, errors, or schema behavior.
 
-## Implementation Evidence
+## Historical Implementation Evidence
 
 - `Loader.operator_reporting_source/0` exposes one request-scoped KV source
   keyed by operator ID, field kind, normalized filters, and connection

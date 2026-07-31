@@ -29,66 +29,60 @@ const PUBLIC_DESTINATIONS = [
   { label: "Browse products", to: "/products" },
   { label: "Merchants", to: "/merchants" },
   { label: "Offers", to: "/offers" },
-  { end: true, label: "Compare products", to: "/compare" }
+  { end: true, label: "Compare products", to: "/compare" },
 ] as const satisfies readonly RootDestination[];
 
 const AUTHENTICATED_DESTINATIONS = [
   { label: "Price alerts", to: "/account/alerts" },
   { label: "Saved comparisons", to: "/compare/saved" },
-  { label: "API tokens", to: "/account/api-tokens" }
+  { label: "API tokens", to: "/account/api-tokens" },
 ] as const satisfies readonly RootDestination[];
 
 const OPERATOR_DESTINATIONS = [
   { label: "Affiliate setup", to: "/affiliate/setup" },
   { label: "Revenue preview", to: "/commerce/revenue" },
-  { label: "CJ programs", to: "/ingestion/cj-programs" }
+  { label: "CJ programs", to: "/ingestion/cj-programs" },
 ] as const satisfies readonly RootDestination[];
 
 const SHOPPER_DESTINATIONS = [
   {
     description: "Explore the catalog and narrow by what matters.",
     label: "Browse products",
-    to: "/products"
+    to: "/products",
   },
   {
     description: "Line up the meaningful differences side by side.",
     label: "Compare products",
-    to: "/compare"
+    to: "/compare",
   },
   {
     description: "Check current prices, availability, and coupons.",
     label: "Review offers",
-    to: "/offers"
-  }
+    to: "/offers",
+  },
 ] as const satisfies readonly RootShopperDestination[];
 
 const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
-  ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to)
+  ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to),
 );
 
 const GUEST_AUTH_DESTINATIONS = [
   { label: "Sign in", to: "/auth/login" },
-  { label: "Create account", to: "/auth/register" }
+  { label: "Create account", to: "/auth/register" },
 ] as const satisfies readonly RootDestination[];
 const AUTHENTICATED_AUTH_DESTINATIONS = [
-  { label: "Sign out", to: "/auth/logout" }
+  { label: "Sign out", to: "/auth/logout" },
 ] as const satisfies readonly RootDestination[];
 
 export function getRootDestinationData(viewer: RootDestinationViewer | null): RootDestinationData {
   const authenticatedDestinations = viewer ? AUTHENTICATED_DESTINATIONS : [];
   const operatorDestinations = viewer?.isOperator ? OPERATOR_DESTINATIONS : [];
-  const authDestinations = viewer
-    ? AUTHENTICATED_AUTH_DESTINATIONS
-    : GUEST_AUTH_DESTINATIONS;
+  const authDestinations = viewer ? AUTHENTICATED_AUTH_DESTINATIONS : GUEST_AUTH_DESTINATIONS;
 
   return {
     primary: {
-      destinations: [
-        ...PUBLIC_DESTINATIONS,
-        ...authenticatedDestinations,
-        ...operatorDestinations
-      ],
-      authDestinations
+      destinations: [...PUBLIC_DESTINATIONS, ...authenticatedDestinations, ...operatorDestinations],
+      authDestinations,
     },
     home: {
       shopperDestinations: SHOPPER_DESTINATIONS,
@@ -96,10 +90,10 @@ export function getRootDestinationData(viewer: RootDestinationViewer | null): Ro
         destinations: [
           ...SECONDARY_PUBLIC_DESTINATIONS,
           ...authenticatedDestinations,
-          ...operatorDestinations
+          ...operatorDestinations,
         ],
-        authDestinations
-      }
-    }
+        authDestinations,
+      },
+    },
   };
 }

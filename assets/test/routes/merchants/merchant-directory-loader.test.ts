@@ -1,20 +1,17 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../src/relay/environment";
-import {
-  createRelayRouterContext,
-  preloadRouteQuery
-} from "../../../src/relay/route-preload";
+import { createRelayRouterContext, preloadRouteQuery } from "../../../src/relay/route-preload";
 import { merchantDirectoryLoader } from "../../../src/routes/merchants/loader";
 import { buildMerchantDirectoryPaginationData } from "../../../src/routes/merchants/pagination";
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    preloadRouteQuery: vi.fn()
+    preloadRouteQuery: vi.fn(),
   };
 });
 
@@ -35,18 +32,18 @@ test("buildMerchantDirectoryPaginationData returns page-size-preserving first an
       hasPreviousPage: true,
       pagination: {
         after: "current-cursor",
-        first: 35
-      }
-    })
+        first: 35,
+      },
+    }),
   ).toEqual({
     firstHref: "/merchants?first=35",
-    nextHref: "/merchants?first=35&after=next+cursor%2F%2B"
+    nextHref: "/merchants?first=35&after=next+cursor%2F%2B",
   });
 });
 
 test.each([
   [false, "current-cursor"],
-  [true, null]
+  [true, null],
 ] as const)(
   "buildMerchantDirectoryPaginationData hides incomplete first-page facts",
   (hasPreviousPage, after) => {
@@ -57,16 +54,16 @@ test.each([
         hasPreviousPage,
         pagination: {
           after,
-          first: 20
-        }
-      }).firstHref
+          first: 20,
+        },
+      }).firstHref,
     ).toBeNull();
-  }
+  },
 );
 
 test.each([
   [false, "next-cursor"],
-  [true, null]
+  [true, null],
 ] as const)(
   "buildMerchantDirectoryPaginationData hides incomplete next-page facts",
   (hasNextPage, endCursor) => {
@@ -77,11 +74,11 @@ test.each([
         hasPreviousPage: false,
         pagination: {
           after: null,
-          first: 20
-        }
-      }).nextHref
+          first: 20,
+        },
+      }).nextHref,
     ).toBeNull();
-  }
+  },
 );
 
 test("buildMerchantDirectoryPaginationData does not mutate its input", () => {
@@ -91,8 +88,8 @@ test("buildMerchantDirectoryPaginationData does not mutate its input", () => {
     hasPreviousPage: true,
     pagination: Object.freeze({
       after: "current-cursor",
-      first: 50
-    })
+      first: 50,
+    }),
   });
 
   buildMerchantDirectoryPaginationData(input);
@@ -103,8 +100,8 @@ test("buildMerchantDirectoryPaginationData does not mutate its input", () => {
     hasPreviousPage: true,
     pagination: {
       after: "current-cursor",
-      first: 50
-    }
+      first: 50,
+    },
   });
 });
 
@@ -116,21 +113,21 @@ test("merchantDirectoryLoader preloads the default merchant page", async () => {
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     pagination: {
       first: 20,
-      after: null
+      after: null,
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, after: null },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -142,21 +139,21 @@ test("merchantDirectoryLoader preserves supported cursor and page-size params", 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     pagination: {
       first: 50,
-      after: "cursor-1"
+      after: "cursor-1",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 50, after: "cursor-1" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -168,21 +165,21 @@ test("merchantDirectoryLoader drops invalid page-size params instead of broadeni
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     pagination: {
       first: 20,
-      after: "cursor-2"
+      after: "cursor-2",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, after: "cursor-2" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -194,21 +191,21 @@ test("merchantDirectoryLoader drops blank page-size params", async () => {
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     pagination: {
       first: 20,
-      after: "cursor-4"
+      after: "cursor-4",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, after: "cursor-4" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -220,21 +217,21 @@ test("merchantDirectoryLoader drops malformed page-size params", async () => {
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+    merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     pagination: {
       first: 20,
-      after: "cursor-5"
+      after: "cursor-5",
     },
-    query: descriptor
+    query: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, after: "cursor-5" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -248,20 +245,20 @@ test("merchantDirectoryLoader returns error state when route preloading fails", 
 
   try {
     await expect(
-      merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request }))
+      merchantDirectoryLoader(buildMerchantDirectoryLoaderArgs({ environment, request })),
     ).resolves.toEqual({
       status: "error",
       pagination: {
         first: 30,
-        after: "cursor-3"
-      }
+        after: "cursor-3",
+      },
     });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "Failed to preload merchant directory route query.",
       {
-        error: preloadError
-      }
+        error: preloadError,
+      },
     );
   } finally {
     consoleErrorSpy.mockRestore();
@@ -270,7 +267,7 @@ test("merchantDirectoryLoader returns error state when route preloading fails", 
 
 function buildMerchantDirectoryLoaderArgs({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.test/merchants")
+  request = new Request("https://app.example.test/merchants"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -280,7 +277,7 @@ function buildMerchantDirectoryLoaderArgs({
     params: {},
     context: createRelayRouterContext(environment),
     pattern: "/merchants",
-    url: new URL(request.url)
+    url: new URL(request.url),
   };
 }
 
@@ -289,7 +286,7 @@ function merchantDirectoryQueryDescriptor(variables: { first: number; after: str
     __relayQuery: {
       operationName: "MerchantDirectoryRouteQuery",
       text: MERCHANT_DIRECTORY_QUERY_TEXT,
-      variables
-    }
+      variables,
+    },
   };
 }

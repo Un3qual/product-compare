@@ -30,7 +30,7 @@ export type CategoryViewDataInput = {
 
 export function getCategoryViewData(
   category: CategoryViewDataInput,
-  currentAfter: string | null = null
+  currentAfter: string | null = null,
 ) {
   return {
     title: `Compare ${category.name}`,
@@ -41,9 +41,9 @@ export function getCategoryViewData(
       name: node.name,
       slug: node.slug,
       brandName: node.brand?.name ?? "Unknown brand",
-      specificationHighlights: node.currentAttributes.slice(0, 3)
+      specificationHighlights: node.currentAttributes.slice(0, 3),
     })),
-    nextPagePath: categoryNextPagePath(category, currentAfter)
+    nextPagePath: categoryNextPagePath(category, currentAfter),
   };
 }
 

@@ -3,7 +3,7 @@ import {
   CJ_PROGRAM_SORTS,
   CJ_PROGRAM_STAGES,
   type CJProgramSort,
-  type CJProgramStage
+  type CJProgramStage,
 } from "./cj-program-data";
 
 const DEFAULT_PROGRAM_PAGE_SIZE = 20;
@@ -33,9 +33,9 @@ export function cjProgramsPaginationFromUrl(url: URL): CJProgramsPagination {
     sort: normalizeSort(url.searchParams.get("sort")),
     unmatchedFirst: normalizePageSize(
       url.searchParams.get("unmatchedFirst"),
-      DEFAULT_UNMATCHED_PAGE_SIZE
+      DEFAULT_UNMATCHED_PAGE_SIZE,
     ),
-    unmatchedAfter: normalizeCursor(url.searchParams.get("unmatchedAfter"))
+    unmatchedAfter: normalizeCursor(url.searchParams.get("unmatchedAfter")),
   };
 }
 
@@ -74,17 +74,14 @@ export function buildCJProgramPaginationData(
   pagination: Readonly<CJProgramsPagination>,
   {
     program,
-    unmatched
+    unmatched,
   }: {
     readonly program: ConnectionPageInfo;
     readonly unmatched: ConnectionPageInfo;
-  }
+  },
 ) {
   const programNextCursor = nextRelayPageCursor(program, pagination.after);
-  const unmatchedNextCursor = nextRelayPageCursor(
-    unmatched,
-    pagination.unmatchedAfter
-  );
+  const unmatchedNextCursor = nextRelayPageCursor(unmatched, pagination.unmatchedAfter);
 
   return {
     program: {
@@ -94,7 +91,7 @@ export function buildCJProgramPaginationData(
           : null,
       nextHref: programNextCursor
         ? cjProgramsPath({ ...pagination, after: programNextCursor })
-        : null
+        : null,
     },
     unmatched: {
       firstHref:
@@ -103,8 +100,8 @@ export function buildCJProgramPaginationData(
           : null,
       nextHref: unmatchedNextCursor
         ? cjProgramsPath({ ...pagination, unmatchedAfter: unmatchedNextCursor })
-        : null
-    }
+        : null,
+    },
   };
 }
 

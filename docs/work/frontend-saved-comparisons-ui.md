@@ -160,11 +160,21 @@
 
 ## Verified Current State
 
-- `assets/src/routes/compare/api.ts` has been removed. `/compare` now loads selected products through Relay preloaded route queries and saves ready selections through `CreateSavedComparisonSetMutation`.
+- `assets/src/routes/compare/api.ts` has been removed. `/compare` now loads
+  selected products through Relay preloaded route queries and saves ready
+  selections through the family-owned `createSavedComparisonSetMutation`.
 - `assets/src/routes/compare/saved-data.ts` now owns saved-route loader orchestration, pagination guards, unauthorized detection, and Relay page summarization without raw saved-comparison GraphQL strings.
-- `assets/src/routes/compare/queries/SavedComparisonsRouteQuery.ts` and `assets/src/routes/compare/mutations/DeleteSavedComparisonSetMutation.ts` define the saved-list query and delete mutation Relay sources.
+- `assets/src/routes/compare/SavedComparisonOperations.ts` owns the primary
+  saved-set query plus create/delete mutations. Its exact generated family
+  artifacts are `SavedComparisonOperationsQuery.graphql.ts`,
+  `SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql.ts`, and
+  `SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql.ts`.
 - `assets/src/routes/compare/index.tsx` renders a ready-state `Save comparison` action that submits the current product relay IDs with a derived saved-set name and reports local success/error feedback.
-- `assets/src/routes/compare/saved.tsx` renders `/compare/saved`, reads saved-set rows from Relay preloaded query data with loader summaries as fallback, reopens sets back into `/compare`, deletes owned sets through `useMutation(DeleteSavedComparisonSetMutation)`, and prompts unauthenticated users to sign in.
+- `assets/src/routes/compare/saved.tsx` renders `/compare/saved`, reads saved-set
+  rows from Relay preloaded query data with loader summaries as fallback,
+  reopens sets back into `/compare`, deletes owned sets through the family-owned
+  `deleteSavedComparisonSetMutation`, and prompts unauthenticated users to sign
+  in.
 - `assets/src/routes/compare/saved.tsx` now filters loaded saved sets client-side by saved-set name or product slug and renders a distinct no-match state.
 - `assets/src/routes/compare/saved.tsx` now summarizes saved-set product counts,
   scopes reopen/delete actions per card, and gives empty or filtered no-match

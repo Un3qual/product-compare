@@ -7,24 +7,24 @@ import {
   sanitizeTransportError,
   selectGlobalMutationErrors,
   transportMutationError,
-  transportMutationErrors
+  transportMutationErrors,
 } from "../../../src/routes/auth/errors";
 
 test("auth transport errors use the shared route fallback message", () => {
   expect(sanitizeTransportError(new Error("network unavailable"))).toBe(
-    DEFAULT_ROUTE_ERROR_MESSAGE
+    DEFAULT_ROUTE_ERROR_MESSAGE,
   );
   expect(transportMutationError(new Error("network unavailable"))).toMatchObject({
     code: "NETWORK_ERROR",
     field: null,
-    message: DEFAULT_ROUTE_ERROR_MESSAGE
+    message: DEFAULT_ROUTE_ERROR_MESSAGE,
   });
   expect(transportMutationErrors(new Error("network unavailable"))).toEqual([
     {
       code: "NETWORK_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE
-    }
+      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+    },
   ]);
 });
 
@@ -33,11 +33,11 @@ test("session mutation results treat top-level Relay errors as session failures"
     {
       viewer: {
         id: "viewer-1",
-        email: "user@example.com"
+        email: "user@example.com",
       },
-      errors: []
+      errors: [],
     },
-    [new Error("top-level GraphQL failure")]
+    [new Error("top-level GraphQL failure")],
   );
 
   expect(result.viewer).toBeNull();
@@ -45,8 +45,8 @@ test("session mutation results treat top-level Relay errors as session failures"
     {
       code: "NETWORK_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE
-    }
+      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+    },
   ]);
 });
 
@@ -56,28 +56,28 @@ test("session mutation results reject viewers without an operator capability", (
       {
         viewer: {
           id: "viewer-1",
-          email: "user@example.com"
+          email: "user@example.com",
         },
-        errors: []
+        errors: [],
       },
-      []
-    )
+      [],
+    ),
   ).toEqual({
     viewer: null,
     errors: [
       {
         code: "UNKNOWN_ERROR",
         field: null,
-        message: DEFAULT_ROUTE_ERROR_MESSAGE
-      }
-    ]
+        message: DEFAULT_ROUTE_ERROR_MESSAGE,
+      },
+    ],
   });
 });
 
 test("action mutation results preserve successful payloads without top-level Relay errors", () => {
   expect(resolveActionMutationResult({ ok: true, errors: [] }, [])).toEqual({
     ok: true,
-    errors: []
+    errors: [],
   });
 });
 
@@ -86,8 +86,8 @@ test("auth action success requires ok with no typed errors", () => {
   expect(
     isSuccessfulActionResult({
       ok: true,
-      errors: [{ code: "INVALID_ARGUMENT", field: null, message: "try again" }]
-    })
+      errors: [{ code: "INVALID_ARGUMENT", field: null, message: "try again" }],
+    }),
   ).toBe(false);
   expect(isSuccessfulActionResult({ ok: false, errors: [] })).toBe(false);
 });
@@ -96,7 +96,7 @@ test("invalid token mutation errors use the shared token field shape", () => {
   expect(invalidTokenMutationError("This link is missing or invalid.")).toEqual({
     code: "INVALID_TOKEN",
     field: "token",
-    message: "This link is missing or invalid."
+    message: "This link is missing or invalid.",
   });
 });
 
@@ -106,14 +106,14 @@ test("global mutation errors retain missing, null, blank, and unknown fields", (
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
     { code: "UNKNOWN", field: "username", message: "Unknown field." },
-    { code: "EMAIL", field: "email", message: "Email error." }
+    { code: "EMAIL", field: "email", message: "Email error." },
   ];
 
   expect(selectGlobalMutationErrors(errors, ["email", "password"])).toEqual([
     { code: "MISSING", message: "Missing field." },
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
-    { code: "UNKNOWN", field: "username", message: "Unknown field." }
+    { code: "UNKNOWN", field: "username", message: "Unknown field." },
   ]);
 });
 
@@ -121,7 +121,7 @@ test("global mutation errors preserve source order and inputs", () => {
   const errors = [
     { code: "USERNAME", field: "username", message: "Username error." },
     { code: "GLOBAL", field: null, message: "Global error." },
-    { code: "EMAIL", field: "email", message: "Email error." }
+    { code: "EMAIL", field: "email", message: "Email error." },
   ];
   const fieldNames = ["email"];
   const expectedErrors = structuredClone(errors);
@@ -129,7 +129,7 @@ test("global mutation errors preserve source order and inputs", () => {
 
   expect(selectGlobalMutationErrors(errors, fieldNames)).toEqual([
     { code: "USERNAME", field: "username", message: "Username error." },
-    { code: "GLOBAL", field: null, message: "Global error." }
+    { code: "GLOBAL", field: null, message: "Global error." },
   ]);
   expect(errors).toEqual(expectedErrors);
   expect(fieldNames).toEqual(expectedFieldNames);

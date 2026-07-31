@@ -19,7 +19,7 @@
 - Recently completed shopper decision-confidence plan:
   - `docs/plans/2026-07-09-product-detail-price-observation-implementation-plan.md`
 - Definition of done:
-  - The Bun frontend exposes an SSR-safe `/products/:slug` route.
+  - The frontend exposes an SSR-safe `/products/:slug` route.
   - The route loads a product's basic detail data from GraphQL by slug and the browse page links into it.
   - Route-level tests cover success, missing-product, and unavailable states for the detail route.
   - `docs/work/index.md` and `docs/plans/NOW.md` reflect the resulting steady state.

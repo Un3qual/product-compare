@@ -6,19 +6,15 @@ export type CatalogResultStatus = {
 export function catalogResultStatus({
   hasActiveFilters,
   hasVisibleProducts,
-  resultCount
+  resultCount,
 }: {
   hasActiveFilters: boolean;
   hasVisibleProducts: boolean;
   resultCount: number;
 }): CatalogResultStatus {
   return {
-    emptyMessage: catalogEmptyMessage(
-      hasActiveFilters,
-      hasVisibleProducts,
-      resultCount
-    ),
-    guidance: catalogResultGuidance(resultCount)
+    emptyMessage: catalogEmptyMessage(hasActiveFilters, hasVisibleProducts, resultCount),
+    guidance: catalogResultGuidance(resultCount),
   };
 }
 
@@ -33,7 +29,7 @@ function catalogResultGuidance(resultCount: number) {
 function catalogEmptyMessage(
   hasActiveFilters: boolean,
   hasVisibleProducts: boolean,
-  resultCount: number
+  resultCount: number,
 ) {
   if (hasVisibleProducts) {
     return null;

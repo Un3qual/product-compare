@@ -8,7 +8,7 @@ import {
   type CacheConfig,
   type Environment,
   type OperationType,
-  type PayloadData
+  type PayloadData,
 } from "relay-runtime";
 import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
 
@@ -50,16 +50,16 @@ export async function fetchRouteQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
-  options: PreloadRouteQueryOptions = {}
+  options: PreloadRouteQueryOptions = {},
 ): Promise<FetchedRelayRouteQuery<TQuery>> {
   const descriptor = createRouteQueryDescriptor<TQuery>(query, variables);
   const data = await fetchAppQuery<TQuery>(environment, query, variables, {
     fetchPolicy: "network-only",
-    ...routeLoaderNetworkOptions(options.signal)
+    ...routeLoaderNetworkOptions(options.signal),
   });
 
   const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
-    fetchPolicy: "store-only"
+    fetchPolicy: "store-only",
   });
 
   const entry = setRouteQueryRef(environment, descriptor, queryRef);
@@ -67,7 +67,7 @@ export async function fetchRouteQuery<TQuery extends OperationType>(
   return {
     data,
     descriptor,
-    dispose: () => disposeFetchedRouteQueryRef(entry)
+    dispose: () => disposeFetchedRouteQueryRef(entry),
   };
 }
 
@@ -75,7 +75,7 @@ export async function preloadRouteQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
-  options: PreloadRouteQueryOptions = {}
+  options: PreloadRouteQueryOptions = {},
 ): Promise<RelayRouteQueryDescriptor<TQuery["variables"]>> {
   const { descriptor } = await fetchRouteQuery<TQuery>(environment, query, variables, options);
 
@@ -86,14 +86,14 @@ export function cacheRouteQueryData<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
   variables: TQuery["variables"],
-  data: TQuery["response"]
+  data: TQuery["response"],
 ) {
   const operation = createOperationDescriptor(getRequest(query), variables);
   environment.commitPayload(operation, data as PayloadData);
 
   const descriptor = createRouteQueryDescriptor<TQuery>(query, variables);
   const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
-    fetchPolicy: "store-only"
+    fetchPolicy: "store-only",
   });
 
   setRouteQueryRef(environment, descriptor, queryRef);
@@ -104,14 +104,14 @@ export function cacheRouteQueryData<TQuery extends OperationType>(
 export function getRoutePreloadedQuery<TQuery extends OperationType>(
   environment: Environment,
   query: GraphQLTaggedNode,
-  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
+  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>,
 ): PreloadedQuery<TQuery> {
   const descriptorKey = relayRouteQueryDescriptorIdentity(descriptor);
   let routeQueryRefEntry = getRouteQueryRefEntry(environment, descriptorKey);
 
   if (!routeQueryRefEntry) {
     const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables, {
-      fetchPolicy: "store-only"
+      fetchPolicy: "store-only",
     });
 
     routeQueryRefEntry = setRouteQueryRef(environment, descriptorKey, queryRef);
@@ -122,13 +122,13 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
 
 export function useRoutePreloadedQuery<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
-  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>
+  descriptor: RelayRouteQueryDescriptor<TQuery["variables"]>,
 ): PreloadedQuery<TQuery> {
   const environment = useRelayEnvironment();
   const descriptorKey = relayRouteQueryDescriptorIdentity(descriptor);
   const queryRef = useMemo(
     () => getRoutePreloadedQuery<TQuery>(environment, query, descriptor),
-    [descriptorKey, environment, query]
+    [descriptorKey, environment, query],
   );
 
   useEffect(() => {
@@ -185,7 +185,7 @@ function createRouteQueryRefLease<TQuery extends OperationType>(entry: RouteQuer
 
   Object.defineProperty(lease, "dispose", {
     configurable: true,
-    value: () => releaseRouteQueryRefLease(lease)
+    value: () => releaseRouteQueryRefLease(lease),
   });
   routeQueryLeaseHandles.set(lease as PreloadedQuery<OperationType>, entry);
 
@@ -218,7 +218,9 @@ const cancelRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
   entry.disposeTimer = null;
 };
 
-function activateRouteQueryRefLease<TQuery extends OperationType>(queryRef: PreloadedQuery<TQuery>) {
+function activateRouteQueryRefLease<TQuery extends OperationType>(
+  queryRef: PreloadedQuery<TQuery>,
+) {
   const lease = queryRef as PreloadedQuery<OperationType>;
   const entry = routeQueryLeaseHandles.get(lease);
 
@@ -250,7 +252,7 @@ function releaseRouteQueryRefLease<TQuery extends OperationType>(queryRef: Prelo
 function setRouteQueryRef<TQuery extends OperationType>(
   environment: Environment,
   descriptor: RelayRouteQueryDescriptor<TQuery["variables"]> | string,
-  queryRef: PreloadedQuery<TQuery>
+  queryRef: PreloadedQuery<TQuery>,
 ) {
   let environmentQueryRefs = routeQueryRefs.get(environment);
 
@@ -260,9 +262,7 @@ function setRouteQueryRef<TQuery extends OperationType>(
   }
 
   const descriptorKey =
-    typeof descriptor === "string"
-      ? descriptor
-      : relayRouteQueryDescriptorIdentity(descriptor);
+    typeof descriptor === "string" ? descriptor : relayRouteQueryDescriptorIdentity(descriptor);
   const existingEntry = environmentQueryRefs.get(descriptorKey);
 
   if (existingEntry?.queryRef === queryRef) {
@@ -280,7 +280,7 @@ function setRouteQueryRef<TQuery extends OperationType>(
     disposeTimer: null,
     environment,
     isDisposed: false,
-    queryRef: queryRef as PreloadedQuery<OperationType>
+    queryRef: queryRef as PreloadedQuery<OperationType>,
   };
 
   environmentQueryRefs.set(descriptorKey, entry);
@@ -334,7 +334,9 @@ function disposeRouteQueryRefEntry(entry: RouteQueryRefEntry) {
   entry.isDisposed = true;
 }
 
-function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: CacheConfig } | Record<string, never> {
+function routeLoaderNetworkOptions(
+  signal?: AbortSignal,
+): { networkCacheConfig: CacheConfig } | Record<string, never> {
   if (!signal) {
     return {};
   }
@@ -342,15 +344,15 @@ function routeLoaderNetworkOptions(signal?: AbortSignal): { networkCacheConfig: 
   return {
     networkCacheConfig: {
       metadata: {
-        [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
-      }
-    }
+        [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal,
+      },
+    },
   };
 }
 
 function createRouteQueryDescriptor<TQuery extends OperationType>(
   query: GraphQLTaggedNode,
-  variables: TQuery["variables"]
+  variables: TQuery["variables"],
 ) {
   const request = getRequest(query);
 
@@ -358,18 +360,18 @@ function createRouteQueryDescriptor<TQuery extends OperationType>(
     __relayQuery: {
       operationName: request.params.name,
       text: request.params.text,
-      variables
-    }
+      variables,
+    },
   };
 }
 
 export function relayRouteQueryDescriptorIdentity<TVariables>(
-  descriptor: RelayRouteQueryDescriptor<TVariables>
+  descriptor: RelayRouteQueryDescriptor<TVariables>,
 ) {
   return JSON.stringify([
     descriptor.__relayQuery.operationName,
     descriptor.__relayQuery.text,
-    stableJsonValue(descriptor.__relayQuery.variables)
+    stableJsonValue(descriptor.__relayQuery.variables),
   ]);
 }
 
@@ -382,7 +384,7 @@ function stableJsonValue(value: unknown): unknown {
     return Object.fromEntries(
       Object.entries(value as Record<string, unknown>)
         .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
-        .map(([key, nestedValue]) => [key, stableJsonValue(nestedValue)])
+        .map(([key, nestedValue]) => [key, stableJsonValue(nestedValue)]),
     );
   }
 

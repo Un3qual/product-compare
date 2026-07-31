@@ -1,8 +1,4 @@
-const DOCUMENTATION_IPV4_RANGES = new Set([
-  "192.0.2",
-  "198.51.100",
-  "203.0.113"
-]);
+const DOCUMENTATION_IPV4_RANGES = new Set(["192.0.2", "198.51.100", "203.0.113"]);
 // Browser destination policy snapshot: IANA IPv6 Special-Purpose Address
 // Registry reviewed 2026-07-14. Rules model non-global parents and their
 // globally reachable exceptions, plus intentional transition exclusions.
@@ -11,25 +7,25 @@ const IPV6_DESTINATION_RULES = [
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000],
     bits: 96,
-    decision: "block"
+    decision: "block",
   },
   // RFC 4291: IPv4-mapped forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xffff],
     bits: 96,
-    decision: "block"
+    decision: "block",
   },
   // RFC 6052: IPv4-translatable forms.
   {
     prefix: [0x0000, 0x0000, 0x0000, 0x0000, 0xffff, 0x0000],
     bits: 96,
-    decision: "block"
+    decision: "block",
   },
   // RFC 6052: NAT64 well-known translation prefix.
   {
     prefix: [0x0064, 0xff9b, 0x0000, 0x0000, 0x0000, 0x0000],
     bits: 96,
-    decision: "block"
+    decision: "block",
   },
   // RFC 8215: NAT64 local-use translation prefix.
   { prefix: [0x0064, 0xff9b, 0x0001], bits: 48, decision: "block" },
@@ -37,13 +33,13 @@ const IPV6_DESTINATION_RULES = [
   {
     prefix: [0x0100, 0x0000, 0x0000, 0x0000],
     bits: 64,
-    decision: "block"
+    decision: "block",
   },
   // RFC 9780: dummy IPv6 prefix.
   {
     prefix: [0x0100, 0x0000, 0x0000, 0x0001],
     bits: 64,
-    decision: "block"
+    decision: "block",
   },
   // IANA 2001::/23 is non-global by default. This parent covers Teredo
   // (RFC 4380), benchmarking (RFC 5180), deprecated ORCHID (RFC 4843), and
@@ -51,46 +47,19 @@ const IPV6_DESTINATION_RULES = [
   { prefix: [0x2001, 0x0000], bits: 23, decision: "block" },
   // IANA globally reachable PCP, TURN, and DNS-SD anycast exceptions.
   {
-    prefix: [
-      0x2001,
-      0x0001,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0001
-    ],
+    prefix: [0x2001, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0001],
     bits: 128,
-    decision: "allow"
+    decision: "allow",
   },
   {
-    prefix: [
-      0x2001,
-      0x0001,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0002
-    ],
+    prefix: [0x2001, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0002],
     bits: 128,
-    decision: "allow"
+    decision: "allow",
   },
   {
-    prefix: [
-      0x2001,
-      0x0001,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0000,
-      0x0003
-    ],
+    prefix: [0x2001, 0x0001, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0003],
     bits: 128,
-    decision: "allow"
+    decision: "allow",
   },
   // RFC 7450: AMT globally reachable exception.
   { prefix: [0x2001, 0x0003], bits: 32, decision: "allow" },
@@ -113,7 +82,7 @@ const IPV6_DESTINATION_RULES = [
   // RFC 4291: link-local range.
   { prefix: [0xfe80], bits: 10, decision: "block" },
   // RFC 4291: multicast range.
-  { prefix: [0xff00], bits: 8, decision: "block" }
+  { prefix: [0xff00], bits: 8, decision: "block" },
 ] as const;
 
 export function externalHttpUrlHref(value: string) {
@@ -179,10 +148,7 @@ function isHttpProtocol(protocol: string) {
 function isPublicHostname(hostname: string) {
   const normalizedHostname = hostname.toLowerCase();
 
-  return (
-    !isLocalhostHostname(normalizedHostname) &&
-    !isReservedIpHostname(normalizedHostname)
-  );
+  return !isLocalhostHostname(normalizedHostname) && !isReservedIpHostname(normalizedHostname);
 }
 
 function isLocalhostHostname(hostname: string) {
@@ -239,12 +205,7 @@ function parseIPv4Octet(value: string) {
   return octet <= 255 ? octet : null;
 }
 
-function isReservedIPv4Address([first, second, third]: [
-  number,
-  number,
-  number,
-  number
-]) {
+function isReservedIPv4Address([first, second, third]: [number, number, number, number]) {
   return (
     isReservedFirstIPv4Octet(first) ||
     isPrivateIPv4Range(first, second) ||
@@ -284,9 +245,7 @@ function isBenchmarkIPv4Range(first: number, second: number) {
 }
 
 function parseBracketedIPv6Address(hostname: string) {
-  return hostname.startsWith("[") && hostname.endsWith("]")
-    ? hostname.slice(1, -1)
-    : null;
+  return hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : null;
 }
 
 function isReservedIPv6Address(address: string) {
@@ -327,10 +286,7 @@ function isBlockedIPv6Destination(address: number[]) {
 function parseIPv6AddressWords(address: string) {
   const compressionIndex = address.indexOf("::");
 
-  if (
-    compressionIndex !== -1 &&
-    address.indexOf("::", compressionIndex + 2) !== -1
-  ) {
+  if (compressionIndex !== -1 && address.indexOf("::", compressionIndex + 2) !== -1) {
     return null;
   }
 
@@ -340,12 +296,8 @@ function parseIPv6AddressWords(address: string) {
     return words?.length === 8 ? words : null;
   }
 
-  const leadingWords = parseIPv6WordSequence(
-    address.slice(0, compressionIndex)
-  );
-  const trailingWords = parseIPv6WordSequence(
-    address.slice(compressionIndex + 2)
-  );
+  const leadingWords = parseIPv6WordSequence(address.slice(0, compressionIndex));
+  const trailingWords = parseIPv6WordSequence(address.slice(compressionIndex + 2));
 
   if (!leadingWords || !trailingWords) {
     return null;
@@ -357,11 +309,7 @@ function parseIPv6AddressWords(address: string) {
     return null;
   }
 
-  return [
-    ...leadingWords,
-    ...Array.from({ length: omittedWordCount }, () => 0),
-    ...trailingWords
-  ];
+  return [...leadingWords, ...Array.from({ length: omittedWordCount }, () => 0), ...trailingWords];
 }
 
 function parseIPv6WordSequence(value: string) {
@@ -384,11 +332,7 @@ function parseIPv6WordSequence(value: string) {
   return words;
 }
 
-function matchesIPv6Prefix(
-  address: number[],
-  prefix: readonly number[],
-  prefixLength: number
-) {
+function matchesIPv6Prefix(address: number[], prefix: readonly number[], prefixLength: number) {
   const completeWords = Math.floor(prefixLength / 16);
 
   for (let index = 0; index < completeWords; index += 1) {
@@ -443,10 +387,7 @@ function hasAbsoluteUrlScheme(value: string) {
 function parseRawHttpAuthority(value: string) {
   const separatorIndex = value.indexOf("://");
 
-  if (
-    separatorIndex === -1 ||
-    !isRawHttpProtocol(value.slice(0, separatorIndex))
-  ) {
+  if (separatorIndex === -1 || !isRawHttpProtocol(value.slice(0, separatorIndex))) {
     return null;
   }
 
@@ -507,10 +448,7 @@ function parseRawHostnameAndPort(authority: string) {
     return { hostname: authority };
   }
 
-  if (
-    authority.indexOf(":") !== colonIndex ||
-    !isValidPort(authority.slice(colonIndex + 1))
-  ) {
+  if (authority.indexOf(":") !== colonIndex || !isValidPort(authority.slice(colonIndex + 1))) {
     return null;
   }
 
@@ -541,11 +479,7 @@ function parseRawBracketedHostnameAndPort(authority: string) {
 }
 
 function hasDottedIPv4Tail(hostname: string) {
-  return (
-    hostname.startsWith("[") &&
-    hostname.endsWith("]") &&
-    hostname.includes(".")
-  );
+  return hostname.startsWith("[") && hostname.endsWith("]") && hostname.includes(".");
 }
 
 function isHostnameShapedBareDomain(value: string) {
@@ -602,12 +536,7 @@ function isValidHostname(hostname: string) {
 }
 
 function isValidHostnameLabel(label: string) {
-  if (
-    label.length === 0 ||
-    label.length > 63 ||
-    label.startsWith("-") ||
-    label.endsWith("-")
-  ) {
+  if (label.length === 0 || label.length > 63 || label.startsWith("-") || label.endsWith("-")) {
     return false;
   }
 

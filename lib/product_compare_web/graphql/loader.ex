@@ -5,12 +5,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.{Catalog, Pricing}
 
-  alias ProductCompareWeb.GraphQL.Loader.{
-    AssociationSources,
-    EctoBatchSource,
-    ParentSources,
-    RootSources
-  }
+  alias ProductCompareWeb.GraphQL.Loader.{AssociationSources, ParentSources, RootSources}
 
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
@@ -18,13 +13,7 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
   @category_source {__MODULE__, :categories}
-  @comparison_source {__MODULE__, :comparison}
-  @public_slug_source {__MODULE__, :public_slugs}
-  @public_opaque_source {__MODULE__, :public_opaque_keys}
   @authorized_node_source {__MODULE__, :authorized_nodes}
-  @authorized_connection_source {__MODULE__, :authorized_connections}
-  @operator_reporting_source {__MODULE__, :operator_reporting}
-  @discovery_root_source {__MODULE__, :discovery_roots}
 
   @spec new(map()) :: Dataloader.t()
   def new(params \\ %{}) do
@@ -56,32 +45,8 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       ParentSources.categories()
     )
     |> Dataloader.add_source(
-      @comparison_source,
-      RootSources.comparison()
-    )
-    |> Dataloader.add_source(
-      @public_slug_source,
-      RootSources.public_slugs()
-    )
-    |> Dataloader.add_source(
-      @public_opaque_source,
-      RootSources.public_opaque_keys()
-    )
-    |> Dataloader.add_source(
       @authorized_node_source,
       RootSources.authorized_nodes()
-    )
-    |> Dataloader.add_source(
-      @authorized_connection_source,
-      RootSources.authorized_connections()
-    )
-    |> Dataloader.add_source(
-      @operator_reporting_source,
-      RootSources.operator_reporting()
-    )
-    |> Dataloader.add_source(
-      @discovery_root_source,
-      RootSources.discovery_roots()
     )
   end
 
@@ -103,30 +68,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @spec category_source() :: {module(), :categories}
   def category_source, do: @category_source
 
-  @spec comparison_source() :: {module(), :comparison}
-  def comparison_source, do: @comparison_source
-
-  @spec public_slug_source() :: {module(), :public_slugs}
-  def public_slug_source, do: @public_slug_source
-
-  @spec public_opaque_source() :: {module(), :public_opaque_keys}
-  def public_opaque_source, do: @public_opaque_source
-
   @spec authorized_node_source() :: {module(), :authorized_nodes}
   def authorized_node_source, do: @authorized_node_source
-
-  @spec authorized_connection_source() :: {module(), :authorized_connections}
-  def authorized_connection_source, do: @authorized_connection_source
-
-  @spec operator_reporting_source() :: {module(), :operator_reporting}
-  def operator_reporting_source, do: @operator_reporting_source
-
-  @spec discovery_root_source() :: {module(), :discovery_roots}
-  def discovery_root_source, do: @discovery_root_source
-
-  @spec load(Dataloader.t(), Dataloader.source_name(), term(), term()) :: Dataloader.t()
-  defdelegate load(loader, source, operation, item), to: EctoBatchSource
-
-  @spec get(Dataloader.t(), Dataloader.source_name(), term(), term()) :: term()
-  defdelegate get(loader, source, operation, item), to: EctoBatchSource
 end

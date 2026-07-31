@@ -1,8 +1,10 @@
 defmodule ProductCompare.DatabaseTestHelpers do
   @moduledoc false
 
-  import ExUnit.Assertions, only: [flunk: 1]
+  import Ecto.Query
+  import ExUnit.Assertions, only: [assert: 1, assert_receive: 2, flunk: 1]
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Repo
 
   def capture_select_queries(fun) when is_function(fun, 0) do
@@ -48,6 +50,64 @@ defmodule ProductCompare.DatabaseTestHelpers do
   def assert_backend_blocked(waiting_backend_pid) do
     deadline = System.monotonic_time(:millisecond) + 2_000
     wait_until_backend_blocked(waiting_backend_pid, deadline)
+  end
+
+  def assert_not_blocked_by(waiting_backend_pid, blocking_backend_pid) do
+    deadline = System.monotonic_time(:millisecond) + 2_000
+    wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+  end
+
+  def hold_row_lock(schema, id, transition) when is_function(transition, 1) do
+    parent = self()
+
+    task =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          Repo.transaction(fn ->
+            backend_pid = database_backend_pid()
+            record = Repo.one!(from record in schema, where: record.id == ^id, lock: "FOR UPDATE")
+            send(parent, {:row_lock_held, self(), backend_pid})
+
+            receive do
+              :commit_transition -> transition.(record)
+            after
+              5_000 -> flunk("timed out waiting to commit the competing transition")
+            end
+          end)
+        end)
+      end)
+
+    assert_receive {:row_lock_held, task_pid, backend_pid}, 2_000
+    assert(task_pid == task.pid)
+    {task, backend_pid}
+  end
+
+  def release_row_lock(task) do
+    send(task.pid, :commit_transition)
+    assert {:ok, _record} = Task.await(task)
+  end
+
+  def start_unboxed_action(action) when is_function(action, 0) do
+    parent = self()
+
+    task =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          Repo.checkout(fn ->
+            backend_pid = database_backend_pid()
+            send(parent, {:action_started, self(), backend_pid})
+            action.()
+          end)
+        end)
+      end)
+
+    assert_receive {:action_started, task_pid, backend_pid}, 2_000
+    assert(task_pid == task.pid)
+    {task, backend_pid}
+  end
+
+  def database_backend_pid do
+    Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
   end
 
   defp drain_queries(ref, acc) do
@@ -137,6 +197,39 @@ defmodule ProductCompare.DatabaseTestHelpers do
 
       true ->
         flunk("expected database backend #{waiting_backend_pid} to be blocked")
+    end
+  end
+
+  defp wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline) do
+    status =
+      Sandbox.unboxed_run(Repo, fn ->
+        Repo.query!(
+          """
+          SELECT activity.state, $1 = ANY(pg_blocking_pids(activity.pid))
+          FROM pg_stat_activity AS activity
+          WHERE activity.pid = $2
+          """,
+          [blocking_backend_pid, waiting_backend_pid]
+        ).rows
+      end)
+
+    case status do
+      [[_state, true]] ->
+        flunk(
+          "expected database backend #{waiting_backend_pid} not to wait for #{blocking_backend_pid}"
+        )
+
+      [["idle in transaction", false]] ->
+        :ok
+
+      _other ->
+        if System.monotonic_time(:millisecond) < deadline do
+          wait_until_idle_or_blocked(waiting_backend_pid, blocking_backend_pid, deadline)
+        else
+          flunk(
+            "expected database backend #{waiting_backend_pid} to finish without waiting for #{blocking_backend_pid}"
+          )
+        end
     end
   end
 end

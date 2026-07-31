@@ -1,15 +1,11 @@
 defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @moduledoc false
 
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
-
   alias ProductCompare.CommerceAttribution
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
-  alias ProductCompareWeb.GraphQL.Loader
-  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @invalid_filters_error "invalid revenue summary filters"
@@ -18,36 +14,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
           | {:error, String.t() | GraphQLErrors.top_level_error()}
-          | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def revenue_summary(
-        _parent,
-        args,
-        %{context: %{loader: %Dataloader{} = loader}} = resolution
-      ) do
-    input = Input.fetch_value(args || %{}, :input, %{}) || %{}
-
-    with {:ok, operator} <- Authorization.require_operator(resolution),
-         {:ok, filters} <- normalize_revenue_summary_input(input) do
-      source = Loader.operator_reporting_source()
-      connection_args = %{}
-      batch_key = {:revenue_summary, operator.id, filters, connection_args}
-
-      loader
-      |> Loader.load(source, batch_key, :root)
-      |> on_load(fn loader ->
-        loader
-        |> Loader.get(source, batch_key, :root)
-        |> revenue_summary_result()
-      end)
-    else
-      {:error, reason} when reason in [:unauthenticated, :forbidden] ->
-        {:error, GraphQLErrors.authorization_error(reason)}
-
-      {:error, _reason} ->
-        {:error, @invalid_filters_error}
-    end
-  end
-
   def revenue_summary(_parent, args, resolution) do
     input = Input.fetch_value(args || %{}, :input, %{}) || %{}
 
@@ -121,24 +87,11 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
 
   defp normalize_revenue_network(nil), do: {:ok, nil}
 
-  defp normalize_revenue_network(network) when is_atom(network) do
-    if network in AffiliateNetwork.provider_codes(),
-      do: {:ok, network},
-      else: {:error, :invalid_network}
-  end
-
   defp normalize_revenue_network(network) when is_binary(network) do
-    case Enum.find(AffiliateNetwork.provider_codes(), &(Atom.to_string(&1) == network)) do
-      nil -> {:error, :invalid_network}
-      network -> {:ok, network}
-    end
+    {:ok, network}
   end
 
   defp normalize_revenue_network(_network), do: {:error, :invalid_network}
-
-  defp revenue_summary_result({:ok, summary}), do: graphql_summary(summary)
-  defp revenue_summary_result({:error, _reason}), do: {:error, @invalid_filters_error}
-  defp revenue_summary_result(_result), do: {:error, @invalid_filters_error}
 
   defp graphql_summary(%{
          "filters" => filters,

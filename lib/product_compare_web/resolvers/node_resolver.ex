@@ -8,14 +8,22 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
-  alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Loader
-  alias ProductCompareSchemas.Accounts.User
-  alias ProductCompareSchemas.Catalog.{Brand, Product}
-  alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
-  alias ProductCompareSchemas.Specs.SourceArtifact
+  alias ProductCompareSchemas.Accounts.{ApiToken, User}
 
-  alias ProductCompareWeb.GraphQL.Loader.RootSources
+  alias ProductCompareSchemas.Affiliate.{
+    AffiliateLink,
+    AffiliateNetwork,
+    AffiliateProgram,
+    Coupon
+  }
+
+  alias ProductCompareSchemas.Alerts.{AlertEvent, PriceWatchRule}
+  alias ProductCompareSchemas.Catalog.{Brand, ComparisonSnapshot, Product, SavedComparisonSet}
+  alias ProductCompareSchemas.Discussions.{ProductReview, ProductThread, ThreadPost}
+  alias ProductCompareSchemas.Ingestion.{CJProgram, MerchantFeedCandidate}
+  alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
+  alias ProductCompareSchemas.Specs.{SourceArtifact, SpecificationCorrection}
 
   @public_integer_types [
     :product,
@@ -43,33 +51,38 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   ]
   @owner_integer_types [:specification_correction]
   @self_uuid_types [:user]
-
-  @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, term() | nil}
-          | {:error, String.t() | GraphQLErrors.top_level_error()}
-          | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def node(_parent, %{id: id}, resolution) do
-    case decode_node_id(id) do
-      {:ok, {type, local_id}} -> fetch_node(type, local_id, resolution)
-      error -> node_result(error)
-    end
-  end
+  @max_bigint_id 9_223_372_036_854_775_807
 
   @spec relay_node(%{type: atom(), id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, term() | nil}
           | {:error, String.t() | GraphQLErrors.top_level_error()}
           | Absinthe.Resolution.Helpers.dataloader_tuple()
   def relay_node(%{type: type, id: id}, resolution) do
-    node(nil, %{id: GlobalId.encode(type, id)}, resolution)
+    case parse_local_node_id(type, id) do
+      {:ok, local_id} -> fetch_node(type, local_id, resolution)
+      error -> node_result(error)
+    end
   end
 
-  defp decode_node_id(id) do
-    GlobalId.decode_typed_local_id(
-      id,
-      @public_integer_types ++ @operator_integer_types ++ @owner_integer_types,
-      @community_uuid_types ++ @operator_uuid_types ++ @owner_uuid_types ++ @self_uuid_types
-    )
+  defp parse_local_node_id(type, id)
+       when type in @public_integer_types or type in @operator_integer_types or
+              type in @owner_integer_types do
+    case Integer.parse(id) do
+      {parsed_id, ""} when parsed_id > 0 and parsed_id <= @max_bigint_id -> {:ok, parsed_id}
+      _ -> {:error, :invalid_id}
+    end
   end
+
+  defp parse_local_node_id(type, id)
+       when type in @community_uuid_types or type in @operator_uuid_types or
+              type in @owner_uuid_types or type in @self_uuid_types do
+    case Ecto.UUID.cast(id) do
+      {:ok, parsed_id} -> {:ok, parsed_id}
+      :error -> {:error, :invalid_id}
+    end
+  end
+
+  defp parse_local_node_id(_type, _id), do: {:error, :unsupported_type}
 
   defp fetch_node(type, local_id, %{context: %{loader: loader}})
        when type in @public_integer_types do
@@ -189,21 +202,43 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
 
   defp fetch_authorized_node(batch, item, %{context: %{loader: loader}}) do
     source = Loader.authorized_node_source()
+    {schema, operation} = authorized_batch(batch)
+    dataloader_batch = {:one, schema}
+    dataloader_item = [{operation, item}]
 
     loader
-    |> Loader.load(source, batch, item)
+    |> Dataloader.load(source, dataloader_batch, dataloader_item)
     |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, batch, item)}
+      {:ok, Dataloader.get(loader, source, dataloader_batch, dataloader_item)}
     end)
   end
 
-  defp fetch_authorized_node(batch, item, _resolution) do
-    batch
-    |> RootSources.authorized_node_results([item])
-    |> Map.get(item)
-    |> fetch_record()
-    |> node_result()
-  end
+  defp authorized_batch({:viewer, type, viewer_id}),
+    do: {authorized_schema(type), {:visible_to, viewer_id}}
+
+  defp authorized_batch({:operator, type, operator_id}),
+    do: {authorized_schema(type), {:operator, operator_id}}
+
+  defp authorized_batch({:owner, type, user_id}),
+    do: {authorized_schema(type), {:owner, user_id}}
+
+  defp authorized_batch({:self, :user, user_id}), do: {User, {:self, user_id}}
+
+  defp authorized_schema(:product_review), do: ProductReview
+  defp authorized_schema(:product_question), do: ProductThread
+  defp authorized_schema(:product_answer), do: ThreadPost
+  defp authorized_schema(:affiliate_network), do: AffiliateNetwork
+  defp authorized_schema(:affiliate_program), do: AffiliateProgram
+  defp authorized_schema(:affiliate_link), do: AffiliateLink
+  defp authorized_schema(:coupon), do: Coupon
+  defp authorized_schema(:cj_program), do: CJProgram
+  defp authorized_schema(:merchant_feed_candidate), do: MerchantFeedCandidate
+  defp authorized_schema(:saved_comparison_set), do: SavedComparisonSet
+  defp authorized_schema(:api_token), do: ApiToken
+  defp authorized_schema(:comparison_snapshot), do: ComparisonSnapshot
+  defp authorized_schema(:price_watch), do: PriceWatchRule
+  defp authorized_schema(:alert_event), do: AlertEvent
+  defp authorized_schema(:specification_correction), do: SpecificationCorrection
 
   defp current_user_id(%{context: %{current_user: %User{id: user_id}}}), do: user_id
   defp current_user_id(_resolution), do: nil
