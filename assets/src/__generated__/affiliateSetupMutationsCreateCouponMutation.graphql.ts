@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d690c37ecd091f9c73a89d516accaf67>>
+ * @generated SignedSource<<ba204e53f5a442e66efe21d8b918b58d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -23,10 +23,10 @@ export type CreateCouponInput = {
   validFrom?: any | null | undefined;
   validTo?: any | null | undefined;
 };
-export type AffiliateSetupRouteCreateCouponMutation$variables = {
+export type affiliateSetupMutationsCreateCouponMutation$variables = {
   input: CreateCouponInput;
 };
-export type AffiliateSetupRouteCreateCouponMutation$data = {
+export type affiliateSetupMutationsCreateCouponMutation$data = {
   readonly createCoupon: {
     readonly coupon: {
       readonly affiliateNetworkId: string | null | undefined;
@@ -46,9 +46,9 @@ export type AffiliateSetupRouteCreateCouponMutation$data = {
     }>;
   } | null | undefined;
 };
-export type AffiliateSetupRouteCreateCouponMutation = {
-  response: AffiliateSetupRouteCreateCouponMutation$data;
-  variables: AffiliateSetupRouteCreateCouponMutation$variables;
+export type affiliateSetupMutationsCreateCouponMutation = {
+  response: affiliateSetupMutationsCreateCouponMutation$data;
+  variables: affiliateSetupMutationsCreateCouponMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -184,7 +184,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AffiliateSetupRouteCreateCouponMutation",
+    "name": "affiliateSetupMutationsCreateCouponMutation",
     "selections": (v2/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -193,20 +193,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AffiliateSetupRouteCreateCouponMutation",
+    "name": "affiliateSetupMutationsCreateCouponMutation",
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "2bbcacb8f52379ff1f1ec6d3fecad879",
+    "cacheID": "9a3837db5f8d6b14d0338a547688f609",
     "id": null,
     "metadata": {},
-    "name": "AffiliateSetupRouteCreateCouponMutation",
+    "name": "affiliateSetupMutationsCreateCouponMutation",
     "operationKind": "mutation",
-    "text": "mutation AffiliateSetupRouteCreateCouponMutation(\n  $input: CreateCouponInput!\n) {\n  createCoupon(input: $input) {\n    coupon {\n      id\n      merchantId\n      affiliateNetworkId\n      code\n      discountType\n      discountValue\n      currency\n      validFrom\n      validTo\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation affiliateSetupMutationsCreateCouponMutation(\n  $input: CreateCouponInput!\n) {\n  createCoupon(input: $input) {\n    coupon {\n      id\n      merchantId\n      affiliateNetworkId\n      code\n      discountType\n      discountValue\n      currency\n      validFrom\n      validTo\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "5dc558eb7e86c2454ce36c17b9896029";
+(node as any).hash = "c1da5492cd2d0669121852075608434e";
 
 export default node;

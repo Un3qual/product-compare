@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5dca78cb9fee4e80266768780eb3ee68>>
+ * @generated SignedSource<<69a9d96e64e6c97000d03013af9fd5f3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,33 +10,30 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type SubmitProductReviewInput = {
-  body?: string | null | undefined;
+export type AnswerProductQuestionInput = {
+  body: string;
   idempotencyKey?: string | null | undefined;
-  merchantProductId?: string | null | undefined;
-  productId: string;
-  rating: number;
-  title?: string | null | undefined;
+  questionId: string;
 };
-export type ProductCommunityPanelSubmitProductReviewMutation$variables = {
-  input: SubmitProductReviewInput;
+export type productMutationsAnswerProductQuestionMutation$variables = {
+  input: AnswerProductQuestionInput;
 };
-export type ProductCommunityPanelSubmitProductReviewMutation$data = {
-  readonly submitProductReview: {
+export type productMutationsAnswerProductQuestionMutation$data = {
+  readonly answerProductQuestion: {
+    readonly answer: {
+      readonly id: string;
+      readonly moderationStatus: CommunityModerationStatus;
+    } | null | undefined;
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly review: {
-      readonly id: string;
-      readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
   };
 };
-export type ProductCommunityPanelSubmitProductReviewMutation = {
-  response: ProductCommunityPanelSubmitProductReviewMutation$data;
-  variables: ProductCommunityPanelSubmitProductReviewMutation$variables;
+export type productMutationsAnswerProductQuestionMutation = {
+  response: productMutationsAnswerProductQuestionMutation$data;
+  variables: productMutationsAnswerProductQuestionMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -57,17 +54,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ProductReviewPayload",
+    "concreteType": "ProductAnswerPayload",
     "kind": "LinkedField",
-    "name": "submitProductReview",
+    "name": "answerProductQuestion",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductReview",
+        "concreteType": "ProductAnswer",
         "kind": "LinkedField",
-        "name": "review",
+        "name": "answer",
         "plural": false,
         "selections": [
           {
@@ -128,7 +125,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityPanelSubmitProductReviewMutation",
+    "name": "productMutationsAnswerProductQuestionMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -137,20 +134,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityPanelSubmitProductReviewMutation",
+    "name": "productMutationsAnswerProductQuestionMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "54a1db3093daf7b3d0cefd4c26b60694",
+    "cacheID": "3c5fd09bcbb11aa2ab03947bd64cca3f",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityPanelSubmitProductReviewMutation",
+    "name": "productMutationsAnswerProductQuestionMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityPanelSubmitProductReviewMutation(\n  $input: SubmitProductReviewInput!\n) {\n  submitProductReview(input: $input) {\n    review {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsAnswerProductQuestionMutation(\n  $input: AnswerProductQuestionInput!\n) {\n  answerProductQuestion(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "629e43ab35edb1fb2230728ad4bf1846";
+(node as any).hash = "075e4f0f86bef93c3cffb24781a72891";
 
 export default node;

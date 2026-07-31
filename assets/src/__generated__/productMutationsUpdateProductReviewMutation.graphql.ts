@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6c7f12c6ab6ff9b02e488334733b03d9>>
+ * @generated SignedSource<<eb2b686db9dd7421e5addab9bc7c19e3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,25 +9,35 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type AlertsRouteMarkAlertReadMutation$variables = {
+export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
+export type UpdateProductReviewInput = {
+  body?: string | null | undefined;
   id: string;
+  rating?: number | null | undefined;
+  title?: string | null | undefined;
 };
-export type AlertsRouteMarkAlertReadMutation$data = {
-  readonly markAlertRead: {
+export type productMutationsUpdateProductReviewMutation$variables = {
+  input: UpdateProductReviewInput;
+};
+export type productMutationsUpdateProductReviewMutation$data = {
+  readonly updateProductReview: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly event: {
+    readonly review: {
+      readonly body: string | null | undefined;
       readonly id: string;
-      readonly readAt: any | null | undefined;
+      readonly moderationStatus: CommunityModerationStatus;
+      readonly rating: number;
+      readonly title: string | null | undefined;
     } | null | undefined;
   };
 };
-export type AlertsRouteMarkAlertReadMutation = {
-  response: AlertsRouteMarkAlertReadMutation$data;
-  variables: AlertsRouteMarkAlertReadMutation$variables;
+export type productMutationsUpdateProductReviewMutation = {
+  response: productMutationsUpdateProductReviewMutation$data;
+  variables: productMutationsUpdateProductReviewMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -35,7 +45,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "id"
+    "name": "input"
   }
 ],
 v1 = [
@@ -44,21 +54,21 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "id",
-        "variableName": "id"
+        "name": "input",
+        "variableName": "input"
       }
     ],
-    "concreteType": "AlertEventPayload",
+    "concreteType": "ProductReviewPayload",
     "kind": "LinkedField",
-    "name": "markAlertRead",
+    "name": "updateProductReview",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "AlertEvent",
+        "concreteType": "ProductReview",
         "kind": "LinkedField",
-        "name": "event",
+        "name": "review",
         "plural": false,
         "selections": [
           {
@@ -72,7 +82,28 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "readAt",
+            "name": "rating",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "body",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "moderationStatus",
             "storageKey": null
           }
         ],
@@ -119,7 +150,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AlertsRouteMarkAlertReadMutation",
+    "name": "productMutationsUpdateProductReviewMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -128,20 +159,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AlertsRouteMarkAlertReadMutation",
+    "name": "productMutationsUpdateProductReviewMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "33dac9de8d6c385592f10e96440b566d",
+    "cacheID": "95da543ac84ce3937a4daf0b383b29db",
     "id": null,
     "metadata": {},
-    "name": "AlertsRouteMarkAlertReadMutation",
+    "name": "productMutationsUpdateProductReviewMutation",
     "operationKind": "mutation",
-    "text": "mutation AlertsRouteMarkAlertReadMutation(\n  $id: ID!\n) {\n  markAlertRead(id: $id) {\n    event {\n      id\n      readAt\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsUpdateProductReviewMutation(\n  $input: UpdateProductReviewInput!\n) {\n  updateProductReview(input: $input) {\n    review {\n      id\n      rating\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "59d0570f118afacc3201364d15177a05";
+(node as any).hash = "9ec2500fda8d3bb4ce7b540972a70f37";
 
 export default node;

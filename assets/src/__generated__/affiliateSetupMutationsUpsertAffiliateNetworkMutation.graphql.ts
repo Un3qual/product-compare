@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7db809e34e03387ea1e15ccd869d4d71>>
+ * @generated SignedSource<<eb89ecee9a7d39cccd2d79966992ab3a>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,36 +9,28 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type UpsertAffiliateLinkInput = {
-  affiliateNetworkId?: string | null | undefined;
-  affiliateUrl: string;
-  lastVerifiedAt?: any | null | undefined;
-  merchantProductId: string;
-  originalUrl: string;
+export type UpsertAffiliateNetworkInput = {
+  name: string;
 };
-export type AffiliateSetupRouteUpsertAffiliateLinkMutation$variables = {
-  input: UpsertAffiliateLinkInput;
+export type affiliateSetupMutationsUpsertAffiliateNetworkMutation$variables = {
+  input: UpsertAffiliateNetworkInput;
 };
-export type AffiliateSetupRouteUpsertAffiliateLinkMutation$data = {
-  readonly upsertAffiliateLink: {
+export type affiliateSetupMutationsUpsertAffiliateNetworkMutation$data = {
+  readonly upsertAffiliateNetwork: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly link: {
-      readonly affiliateNetworkId: string | null | undefined;
-      readonly affiliateUrl: string;
+    readonly network: {
       readonly id: string;
-      readonly lastVerifiedAt: any | null | undefined;
-      readonly merchantProductId: string;
-      readonly originalUrl: string;
+      readonly name: string;
     } | null | undefined;
   } | null | undefined;
 };
-export type AffiliateSetupRouteUpsertAffiliateLinkMutation = {
-  response: AffiliateSetupRouteUpsertAffiliateLinkMutation$data;
-  variables: AffiliateSetupRouteUpsertAffiliateLinkMutation$variables;
+export type affiliateSetupMutationsUpsertAffiliateNetworkMutation = {
+  response: affiliateSetupMutationsUpsertAffiliateNetworkMutation$data;
+  variables: affiliateSetupMutationsUpsertAffiliateNetworkMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -59,17 +51,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "UpsertAffiliateLinkPayload",
+    "concreteType": "UpsertAffiliateNetworkPayload",
     "kind": "LinkedField",
-    "name": "upsertAffiliateLink",
+    "name": "upsertAffiliateNetwork",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "AffiliateLink",
+        "concreteType": "AffiliateNetwork",
         "kind": "LinkedField",
-        "name": "link",
+        "name": "network",
         "plural": false,
         "selections": [
           {
@@ -83,35 +75,7 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "merchantProductId",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "affiliateNetworkId",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "originalUrl",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "affiliateUrl",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "lastVerifiedAt",
+            "name": "name",
             "storageKey": null
           }
         ],
@@ -158,7 +122,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AffiliateSetupRouteUpsertAffiliateLinkMutation",
+    "name": "affiliateSetupMutationsUpsertAffiliateNetworkMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -167,20 +131,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AffiliateSetupRouteUpsertAffiliateLinkMutation",
+    "name": "affiliateSetupMutationsUpsertAffiliateNetworkMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "2a31852a9c1346ae00c6828c906ba9f7",
+    "cacheID": "3e170ee2aa4936a8407e697153855139",
     "id": null,
     "metadata": {},
-    "name": "AffiliateSetupRouteUpsertAffiliateLinkMutation",
+    "name": "affiliateSetupMutationsUpsertAffiliateNetworkMutation",
     "operationKind": "mutation",
-    "text": "mutation AffiliateSetupRouteUpsertAffiliateLinkMutation(\n  $input: UpsertAffiliateLinkInput!\n) {\n  upsertAffiliateLink(input: $input) {\n    link {\n      id\n      merchantProductId\n      affiliateNetworkId\n      originalUrl\n      affiliateUrl\n      lastVerifiedAt\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation affiliateSetupMutationsUpsertAffiliateNetworkMutation(\n  $input: UpsertAffiliateNetworkInput!\n) {\n  upsertAffiliateNetwork(input: $input) {\n    network {\n      id\n      name\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "767e5514b6e1562a693f33c39e588ad2";
+(node as any).hash = "0a926bfa9e1264a678cb2b4463415428";
 
 export default node;

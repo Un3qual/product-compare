@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<5cb07366dd3e9413da187c8799afb8f5>>
+ * @generated SignedSource<<399c46a7015fc552f71148a2f1818358>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,27 +9,32 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CommunityContentType = "ANSWER" | "QUESTION" | "REVIEW" | "%future added value";
-export type RemoveCommunityContentInput = {
-  contentId: string;
-  contentType: CommunityContentType;
+export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
+export type AskProductQuestionInput = {
+  body?: string | null | undefined;
+  idempotencyKey?: string | null | undefined;
+  productId: string;
+  title: string;
 };
-export type ProductCommunityItemsRemoveCommunityContentMutation$variables = {
-  input: RemoveCommunityContentInput;
+export type productMutationsAskProductQuestionMutation$variables = {
+  input: AskProductQuestionInput;
 };
-export type ProductCommunityItemsRemoveCommunityContentMutation$data = {
-  readonly removeCommunityContent: {
+export type productMutationsAskProductQuestionMutation$data = {
+  readonly askProductQuestion: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly removedContentId: string | null | undefined;
+    readonly question: {
+      readonly id: string;
+      readonly moderationStatus: CommunityModerationStatus;
+    } | null | undefined;
   };
 };
-export type ProductCommunityItemsRemoveCommunityContentMutation = {
-  response: ProductCommunityItemsRemoveCommunityContentMutation$data;
-  variables: ProductCommunityItemsRemoveCommunityContentMutation$variables;
+export type productMutationsAskProductQuestionMutation = {
+  response: productMutationsAskProductQuestionMutation$data;
+  variables: productMutationsAskProductQuestionMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -50,16 +55,34 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "RemoveCommunityContentPayload",
+    "concreteType": "ProductQuestionPayload",
     "kind": "LinkedField",
-    "name": "removeCommunityContent",
+    "name": "askProductQuestion",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "kind": "ScalarField",
-        "name": "removedContentId",
+        "concreteType": "ProductQuestion",
+        "kind": "LinkedField",
+        "name": "question",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "moderationStatus",
+            "storageKey": null
+          }
+        ],
         "storageKey": null
       },
       {
@@ -103,7 +126,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityItemsRemoveCommunityContentMutation",
+    "name": "productMutationsAskProductQuestionMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -112,20 +135,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityItemsRemoveCommunityContentMutation",
+    "name": "productMutationsAskProductQuestionMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "d0f4ec15feae3e57550a633bc1f5e2b4",
+    "cacheID": "0ae789ac79a6ac0332b2627f58496f8e",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityItemsRemoveCommunityContentMutation",
+    "name": "productMutationsAskProductQuestionMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityItemsRemoveCommunityContentMutation(\n  $input: RemoveCommunityContentInput!\n) {\n  removeCommunityContent(input: $input) {\n    removedContentId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsAskProductQuestionMutation(\n  $input: AskProductQuestionInput!\n) {\n  askProductQuestion(input: $input) {\n    question {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "27f8b70370e9afb3e0b62078fa77ecc1";
+(node as any).hash = "fe4848e8620841bead2cad4454dd41b9";
 
 export default node;

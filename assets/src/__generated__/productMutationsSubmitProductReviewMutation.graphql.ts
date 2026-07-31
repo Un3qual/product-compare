@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d7bb482f9f721f146d99c3ddfbfec95a>>
+ * @generated SignedSource<<f8f44b0bf376c05b25498430bc8129d3>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,32 +10,33 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type UpdateProductQuestionInput = {
+export type SubmitProductReviewInput = {
   body?: string | null | undefined;
-  id: string;
+  idempotencyKey?: string | null | undefined;
+  merchantProductId?: string | null | undefined;
+  productId: string;
+  rating: number;
   title?: string | null | undefined;
 };
-export type ProductCommunityItemsUpdateProductQuestionMutation$variables = {
-  input: UpdateProductQuestionInput;
+export type productMutationsSubmitProductReviewMutation$variables = {
+  input: SubmitProductReviewInput;
 };
-export type ProductCommunityItemsUpdateProductQuestionMutation$data = {
-  readonly updateProductQuestion: {
+export type productMutationsSubmitProductReviewMutation$data = {
+  readonly submitProductReview: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly question: {
-      readonly body: string | null | undefined;
+    readonly review: {
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
-      readonly title: string;
     } | null | undefined;
   };
 };
-export type ProductCommunityItemsUpdateProductQuestionMutation = {
-  response: ProductCommunityItemsUpdateProductQuestionMutation$data;
-  variables: ProductCommunityItemsUpdateProductQuestionMutation$variables;
+export type productMutationsSubmitProductReviewMutation = {
+  response: productMutationsSubmitProductReviewMutation$data;
+  variables: productMutationsSubmitProductReviewMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -56,17 +57,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ProductQuestionPayload",
+    "concreteType": "ProductReviewPayload",
     "kind": "LinkedField",
-    "name": "updateProductQuestion",
+    "name": "submitProductReview",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductQuestion",
+        "concreteType": "ProductReview",
         "kind": "LinkedField",
-        "name": "question",
+        "name": "review",
         "plural": false,
         "selections": [
           {
@@ -74,20 +75,6 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "title",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "body",
             "storageKey": null
           },
           {
@@ -141,7 +128,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityItemsUpdateProductQuestionMutation",
+    "name": "productMutationsSubmitProductReviewMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -150,20 +137,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityItemsUpdateProductQuestionMutation",
+    "name": "productMutationsSubmitProductReviewMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "1b2702f3527e28bbba9f938c3a680eee",
+    "cacheID": "6b000ccdf4a0b0eefe758f8520c98113",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityItemsUpdateProductQuestionMutation",
+    "name": "productMutationsSubmitProductReviewMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityItemsUpdateProductQuestionMutation(\n  $input: UpdateProductQuestionInput!\n) {\n  updateProductQuestion(input: $input) {\n    question {\n      id\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsSubmitProductReviewMutation(\n  $input: SubmitProductReviewInput!\n) {\n  submitProductReview(input: $input) {\n    review {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "ec143337dcee0dd3142b61f226d63baf";
+(node as any).hash = "88ede273be8170b782e1d24744e08779";
 
 export default node;

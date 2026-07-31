@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<06b61ffa14e1ea1e0cee777732f2f225>>
+ * @generated SignedSource<<a0fbf947ff23d0784b6df75fdb78ecd5>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,31 +9,28 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type AnswerProductQuestionInput = {
-  body: string;
-  idempotencyKey?: string | null | undefined;
-  questionId: string;
+export type CreateSavedComparisonSetInput = {
+  name: string;
+  productIds: ReadonlyArray<string>;
 };
-export type ProductCommunityPanelAnswerProductQuestionMutation$variables = {
-  input: AnswerProductQuestionInput;
+export type compareMutationsCreateSavedComparisonSetMutation$variables = {
+  input: CreateSavedComparisonSetInput;
 };
-export type ProductCommunityPanelAnswerProductQuestionMutation$data = {
-  readonly answerProductQuestion: {
-    readonly answer: {
-      readonly id: string;
-      readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+export type compareMutationsCreateSavedComparisonSetMutation$data = {
+  readonly createSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
+    readonly savedComparisonSet: {
+      readonly id: string;
+    } | null | undefined;
   };
 };
-export type ProductCommunityPanelAnswerProductQuestionMutation = {
-  response: ProductCommunityPanelAnswerProductQuestionMutation$data;
-  variables: ProductCommunityPanelAnswerProductQuestionMutation$variables;
+export type compareMutationsCreateSavedComparisonSetMutation = {
+  response: compareMutationsCreateSavedComparisonSetMutation$data;
+  variables: compareMutationsCreateSavedComparisonSetMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -54,17 +51,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ProductAnswerPayload",
+    "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
-    "name": "answerProductQuestion",
+    "name": "createSavedComparisonSet",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductAnswer",
+        "concreteType": "SavedComparisonSet",
         "kind": "LinkedField",
-        "name": "answer",
+        "name": "savedComparisonSet",
         "plural": false,
         "selections": [
           {
@@ -72,13 +69,6 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "moderationStatus",
             "storageKey": null
           }
         ],
@@ -125,7 +115,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityPanelAnswerProductQuestionMutation",
+    "name": "compareMutationsCreateSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -134,20 +124,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityPanelAnswerProductQuestionMutation",
+    "name": "compareMutationsCreateSavedComparisonSetMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "1dd72dac7e8db1731324d65c73539529",
+    "cacheID": "6158f1d1a073fbb907422714b44029b4",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityPanelAnswerProductQuestionMutation",
+    "name": "compareMutationsCreateSavedComparisonSetMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityPanelAnswerProductQuestionMutation(\n  $input: AnswerProductQuestionInput!\n) {\n  answerProductQuestion(input: $input) {\n    answer {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation compareMutationsCreateSavedComparisonSetMutation(\n  $input: CreateSavedComparisonSetInput!\n) {\n  createSavedComparisonSet(input: $input) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "0089e3f3922e2a52149f2366e4cddf6a";
+(node as any).hash = "41b948fa136dff156e0abbb9df6ceaaa";
 
 export default node;

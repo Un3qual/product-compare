@@ -1,8 +1,8 @@
 import { defineConfig } from "vitest/config";
-import { reactWithStyleX } from "./stylex-plugin.ts";
+import { reactWithStyleX } from "./stylex-plugin";
 
 export default defineConfig({
-  plugins: [reactWithStyleX()],
+  plugins: reactWithStyleX(),
   test: {
     globals: true,
     environment: "jsdom",

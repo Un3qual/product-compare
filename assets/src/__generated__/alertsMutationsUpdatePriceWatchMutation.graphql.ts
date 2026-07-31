@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<50ede97704d4a6f0286c05f890094d47>>
+ * @generated SignedSource<<93ec0eb081fc9667fc86ff78f6cee743>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,24 +9,32 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type SavedComparisonsRouteDeleteSavedComparisonSetMutation$variables = {
-  savedComparisonSetId: string;
+export type UpdatePriceWatchInput = {
+  cooldownSeconds?: number | null | undefined;
+  enabled?: boolean | null | undefined;
+  id: string;
+  percentageDrop?: any | null | undefined;
+  targetAmount?: any | null | undefined;
 };
-export type SavedComparisonsRouteDeleteSavedComparisonSetMutation$data = {
-  readonly deleteSavedComparisonSet: {
+export type alertsMutationsUpdatePriceWatchMutation$variables = {
+  input: UpdatePriceWatchInput;
+};
+export type alertsMutationsUpdatePriceWatchMutation$data = {
+  readonly updatePriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly savedComparisonSet: {
+    readonly watch: {
+      readonly enabled: boolean;
       readonly id: string;
     } | null | undefined;
   };
 };
-export type SavedComparisonsRouteDeleteSavedComparisonSetMutation = {
-  response: SavedComparisonsRouteDeleteSavedComparisonSetMutation$data;
-  variables: SavedComparisonsRouteDeleteSavedComparisonSetMutation$variables;
+export type alertsMutationsUpdatePriceWatchMutation = {
+  response: alertsMutationsUpdatePriceWatchMutation$data;
+  variables: alertsMutationsUpdatePriceWatchMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -34,7 +42,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "savedComparisonSetId"
+    "name": "input"
   }
 ],
 v1 = [
@@ -43,21 +51,21 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "savedComparisonSetId",
-        "variableName": "savedComparisonSetId"
+        "name": "input",
+        "variableName": "input"
       }
     ],
-    "concreteType": "SavedComparisonSetPayload",
+    "concreteType": "PriceWatchPayload",
     "kind": "LinkedField",
-    "name": "deleteSavedComparisonSet",
+    "name": "updatePriceWatch",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "SavedComparisonSet",
+        "concreteType": "PriceWatch",
         "kind": "LinkedField",
-        "name": "savedComparisonSet",
+        "name": "watch",
         "plural": false,
         "selections": [
           {
@@ -65,6 +73,13 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "enabled",
             "storageKey": null
           }
         ],
@@ -111,7 +126,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "SavedComparisonsRouteDeleteSavedComparisonSetMutation",
+    "name": "alertsMutationsUpdatePriceWatchMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -120,20 +135,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "SavedComparisonsRouteDeleteSavedComparisonSetMutation",
+    "name": "alertsMutationsUpdatePriceWatchMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "6433a6e577d1032155b97159d963f5d7",
+    "cacheID": "82c3edc32f191936ff7cc27d6e46a628",
     "id": null,
     "metadata": {},
-    "name": "SavedComparisonsRouteDeleteSavedComparisonSetMutation",
+    "name": "alertsMutationsUpdatePriceWatchMutation",
     "operationKind": "mutation",
-    "text": "mutation SavedComparisonsRouteDeleteSavedComparisonSetMutation(\n  $savedComparisonSetId: ID!\n) {\n  deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation alertsMutationsUpdatePriceWatchMutation(\n  $input: UpdatePriceWatchInput!\n) {\n  updatePriceWatch(input: $input) {\n    watch {\n      id\n      enabled\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "e1056ac2d17ea51c74305ff4b4676658";
+(node as any).hash = "b5b7c7d4492185a6d613fae60cda4204";
 
 export default node;

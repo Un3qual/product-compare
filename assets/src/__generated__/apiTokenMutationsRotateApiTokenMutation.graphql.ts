@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<89fd1c00522b21a7f81e645b0be553dc>>
+ * @generated SignedSource<<135e85cd62f3596b7154d057018293f0>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,12 +9,13 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type ApiTokensRouteCreateApiTokenMutation$variables = {
+export type apiTokenMutationsRotateApiTokenMutation$variables = {
   expiresAt?: any | null | undefined;
   label?: string | null | undefined;
+  tokenId: string;
 };
-export type ApiTokensRouteCreateApiTokenMutation$data = {
-  readonly createApiToken: {
+export type apiTokenMutationsRotateApiTokenMutation$data = {
+  readonly rotateApiToken: {
     readonly apiToken: {
       readonly expiresAt: any | null | undefined;
       readonly id: string;
@@ -32,9 +33,9 @@ export type ApiTokensRouteCreateApiTokenMutation$data = {
     readonly plainTextToken: string | null | undefined;
   };
 };
-export type ApiTokensRouteCreateApiTokenMutation = {
-  response: ApiTokensRouteCreateApiTokenMutation$data;
-  variables: ApiTokensRouteCreateApiTokenMutation$variables;
+export type apiTokenMutationsRotateApiTokenMutation = {
+  response: apiTokenMutationsRotateApiTokenMutation$data;
+  variables: apiTokenMutationsRotateApiTokenMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -48,7 +49,12 @@ v1 = {
   "kind": "LocalArgument",
   "name": "label"
 },
-v2 = [
+v2 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "tokenId"
+},
+v3 = [
   {
     "alias": null,
     "args": [
@@ -61,11 +67,16 @@ v2 = [
         "kind": "Variable",
         "name": "label",
         "variableName": "label"
+      },
+      {
+        "kind": "Variable",
+        "name": "tokenId",
+        "variableName": "tokenId"
       }
     ],
     "concreteType": "CreateApiTokenPayload",
     "kind": "LinkedField",
-    "name": "createApiToken",
+    "name": "rotateApiToken",
     "plural": false,
     "selections": [
       {
@@ -175,36 +186,38 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*: any*/),
-      (v1/*: any*/)
+      (v1/*: any*/),
+      (v2/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "ApiTokensRouteCreateApiTokenMutation",
-    "selections": (v2/*: any*/),
+    "name": "apiTokenMutationsRotateApiTokenMutation",
+    "selections": (v3/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
+      (v2/*: any*/),
       (v1/*: any*/),
       (v0/*: any*/)
     ],
     "kind": "Operation",
-    "name": "ApiTokensRouteCreateApiTokenMutation",
-    "selections": (v2/*: any*/)
+    "name": "apiTokenMutationsRotateApiTokenMutation",
+    "selections": (v3/*: any*/)
   },
   "params": {
-    "cacheID": "7951203a8ec6a0796d89819a0e70e96d",
+    "cacheID": "33a3775aab9c9db91e9a5d229289de2c",
     "id": null,
     "metadata": {},
-    "name": "ApiTokensRouteCreateApiTokenMutation",
+    "name": "apiTokenMutationsRotateApiTokenMutation",
     "operationKind": "mutation",
-    "text": "mutation ApiTokensRouteCreateApiTokenMutation(\n  $label: String\n  $expiresAt: DateTime\n) {\n  createApiToken(label: $label, expiresAt: $expiresAt) {\n    plainTextToken\n    apiToken {\n      id\n      label\n      tokenPrefix\n      lastUsedAt\n      expiresAt\n      revokedAt\n      insertedAt\n    }\n    errors {\n      code\n      message\n      field\n    }\n  }\n}\n"
+    "text": "mutation apiTokenMutationsRotateApiTokenMutation(\n  $tokenId: ID!\n  $label: String\n  $expiresAt: DateTime\n) {\n  rotateApiToken(tokenId: $tokenId, label: $label, expiresAt: $expiresAt) {\n    plainTextToken\n    apiToken {\n      id\n      label\n      tokenPrefix\n      lastUsedAt\n      expiresAt\n      revokedAt\n      insertedAt\n    }\n    errors {\n      code\n      message\n      field\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "5806e93bd2f2c5205eda02aafd432c79";
+(node as any).hash = "87b408947747baf1a23ee0e649b02b58";
 
 export default node;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<72b98637de5499765403798db1c0f46a>>
+ * @generated SignedSource<<bda7eca7e91d0311f4f437f098e28c8f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,10 +9,10 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type AlertsRouteDeletePriceWatchMutation$variables = {
+export type alertsMutationsDeletePriceWatchMutation$variables = {
   id: string;
 };
-export type AlertsRouteDeletePriceWatchMutation$data = {
+export type alertsMutationsDeletePriceWatchMutation$data = {
   readonly deletePriceWatch: {
     readonly deletedWatchId: string | null | undefined;
     readonly errors: ReadonlyArray<{
@@ -22,9 +22,9 @@ export type AlertsRouteDeletePriceWatchMutation$data = {
     }>;
   };
 };
-export type AlertsRouteDeletePriceWatchMutation = {
-  response: AlertsRouteDeletePriceWatchMutation$data;
-  variables: AlertsRouteDeletePriceWatchMutation$variables;
+export type alertsMutationsDeletePriceWatchMutation = {
+  response: alertsMutationsDeletePriceWatchMutation$data;
+  variables: alertsMutationsDeletePriceWatchMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -98,7 +98,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AlertsRouteDeletePriceWatchMutation",
+    "name": "alertsMutationsDeletePriceWatchMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -107,20 +107,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AlertsRouteDeletePriceWatchMutation",
+    "name": "alertsMutationsDeletePriceWatchMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "272b1775bc8d02d28094434b0e5fbf8c",
+    "cacheID": "d4fdfa3e6fc2d24b1440e63c67c5063a",
     "id": null,
     "metadata": {},
-    "name": "AlertsRouteDeletePriceWatchMutation",
+    "name": "alertsMutationsDeletePriceWatchMutation",
     "operationKind": "mutation",
-    "text": "mutation AlertsRouteDeletePriceWatchMutation(\n  $id: ID!\n) {\n  deletePriceWatch(id: $id) {\n    deletedWatchId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation alertsMutationsDeletePriceWatchMutation(\n  $id: ID!\n) {\n  deletePriceWatch(id: $id) {\n    deletedWatchId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4223f199418562ec48a07cf0f39a3ec0";
+(node as any).hash = "3ed89c82186b7e65fd26e3d1cc18b0c4";
 
 export default node;

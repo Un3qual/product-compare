@@ -1,9 +1,9 @@
 import { type FormEventHandler, type ReactElement } from "react";
 import { create, props } from "@stylexjs/stylex";
-import type { AffiliateSetupRouteCreateCouponMutation } from "../../../__generated__/AffiliateSetupRouteCreateCouponMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateLinkMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateLinkMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateNetworkMutation.graphql";
-import type { AffiliateSetupRouteUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateProgramMutation.graphql";
+import type { affiliateSetupMutationsCreateCouponMutation } from "../../../__generated__/affiliateSetupMutationsCreateCouponMutation.graphql";
+import type { affiliateSetupMutationsUpsertAffiliateLinkMutation } from "../../../__generated__/affiliateSetupMutationsUpsertAffiliateLinkMutation.graphql";
+import type { affiliateSetupMutationsUpsertAffiliateNetworkMutation } from "../../../__generated__/affiliateSetupMutationsUpsertAffiliateNetworkMutation.graphql";
+import type { affiliateSetupMutationsUpsertAffiliateProgramMutation } from "../../../__generated__/affiliateSetupMutationsUpsertAffiliateProgramMutation.graphql";
 import { Button } from "../../../ui/primitives/Button";
 import { Select } from "../../../ui/primitives/Select";
 import { TextField } from "../../../ui/primitives/TextField";
@@ -18,22 +18,22 @@ export type MerchantChoice = {
 
 export type NetworkResult = NonNullable<
   NonNullable<
-    AffiliateSetupRouteUpsertAffiliateNetworkMutation["response"]["upsertAffiliateNetwork"]
+    affiliateSetupMutationsUpsertAffiliateNetworkMutation["response"]["upsertAffiliateNetwork"]
   >["network"]
 >;
 
 export type ProgramResult = NonNullable<
   NonNullable<
-    AffiliateSetupRouteUpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"]
+    affiliateSetupMutationsUpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"]
   >["program"]
 >;
 
 export type LinkResult = NonNullable<
-  NonNullable<AffiliateSetupRouteUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]>["link"]
+  NonNullable<affiliateSetupMutationsUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]>["link"]
 >;
 
 export type CouponResult = NonNullable<
-  NonNullable<AffiliateSetupRouteCreateCouponMutation["response"]["createCoupon"]>["coupon"]
+  NonNullable<affiliateSetupMutationsCreateCouponMutation["response"]["createCoupon"]>["coupon"]
 >;
 
 const styles = create({

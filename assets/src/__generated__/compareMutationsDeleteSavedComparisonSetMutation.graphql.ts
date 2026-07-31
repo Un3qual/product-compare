@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4cee04dd9ea51d9db30c289586eb9234>>
+ * @generated SignedSource<<fdb4abf8d0dbafb817c125fc6c99aed2>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,31 +9,24 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type UpdateProductAnswerInput = {
-  body?: string | null | undefined;
-  id: string;
+export type compareMutationsDeleteSavedComparisonSetMutation$variables = {
+  savedComparisonSetId: string;
 };
-export type ProductCommunityItemsUpdateProductAnswerMutation$variables = {
-  input: UpdateProductAnswerInput;
-};
-export type ProductCommunityItemsUpdateProductAnswerMutation$data = {
-  readonly updateProductAnswer: {
-    readonly answer: {
-      readonly body: string;
-      readonly id: string;
-      readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+export type compareMutationsDeleteSavedComparisonSetMutation$data = {
+  readonly deleteSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
+    readonly savedComparisonSet: {
+      readonly id: string;
+    } | null | undefined;
   };
 };
-export type ProductCommunityItemsUpdateProductAnswerMutation = {
-  response: ProductCommunityItemsUpdateProductAnswerMutation$data;
-  variables: ProductCommunityItemsUpdateProductAnswerMutation$variables;
+export type compareMutationsDeleteSavedComparisonSetMutation = {
+  response: compareMutationsDeleteSavedComparisonSetMutation$data;
+  variables: compareMutationsDeleteSavedComparisonSetMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -41,7 +34,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "input"
+    "name": "savedComparisonSetId"
   }
 ],
 v1 = [
@@ -50,21 +43,21 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "input",
-        "variableName": "input"
+        "name": "savedComparisonSetId",
+        "variableName": "savedComparisonSetId"
       }
     ],
-    "concreteType": "ProductAnswerPayload",
+    "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
-    "name": "updateProductAnswer",
+    "name": "deleteSavedComparisonSet",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductAnswer",
+        "concreteType": "SavedComparisonSet",
         "kind": "LinkedField",
-        "name": "answer",
+        "name": "savedComparisonSet",
         "plural": false,
         "selections": [
           {
@@ -72,20 +65,6 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "body",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "moderationStatus",
             "storageKey": null
           }
         ],
@@ -132,7 +111,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityItemsUpdateProductAnswerMutation",
+    "name": "compareMutationsDeleteSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -141,20 +120,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityItemsUpdateProductAnswerMutation",
+    "name": "compareMutationsDeleteSavedComparisonSetMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "532e93a6b83df65014e343eb65fe8cf7",
+    "cacheID": "153ab1a9af2cb75f27d47edf241a1375",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityItemsUpdateProductAnswerMutation",
+    "name": "compareMutationsDeleteSavedComparisonSetMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityItemsUpdateProductAnswerMutation(\n  $input: UpdateProductAnswerInput!\n) {\n  updateProductAnswer(input: $input) {\n    answer {\n      id\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation compareMutationsDeleteSavedComparisonSetMutation(\n  $savedComparisonSetId: ID!\n) {\n  deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "5d34b246b03345a135adf761cc587dac";
+(node as any).hash = "7bf0c1638b19ab74c921a1fc2e369bff";
 
 export default node;

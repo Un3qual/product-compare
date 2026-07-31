@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c8b8090995617d0049d104309523f004>>
+ * @generated SignedSource<<485a4c5a36c318e6a1c1b5eaff037eea>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,28 +9,27 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CreateSavedComparisonSetInput = {
-  name: string;
-  productIds: ReadonlyArray<string>;
+export type CommunityContentType = "ANSWER" | "QUESTION" | "REVIEW" | "%future added value";
+export type RemoveCommunityContentInput = {
+  contentId: string;
+  contentType: CommunityContentType;
 };
-export type CompareRouteCreateSavedComparisonSetMutation$variables = {
-  input: CreateSavedComparisonSetInput;
+export type productMutationsRemoveCommunityContentMutation$variables = {
+  input: RemoveCommunityContentInput;
 };
-export type CompareRouteCreateSavedComparisonSetMutation$data = {
-  readonly createSavedComparisonSet: {
+export type productMutationsRemoveCommunityContentMutation$data = {
+  readonly removeCommunityContent: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly savedComparisonSet: {
-      readonly id: string;
-    } | null | undefined;
+    readonly removedContentId: string | null | undefined;
   };
 };
-export type CompareRouteCreateSavedComparisonSetMutation = {
-  response: CompareRouteCreateSavedComparisonSetMutation$data;
-  variables: CompareRouteCreateSavedComparisonSetMutation$variables;
+export type productMutationsRemoveCommunityContentMutation = {
+  response: productMutationsRemoveCommunityContentMutation$data;
+  variables: productMutationsRemoveCommunityContentMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -51,27 +50,16 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "SavedComparisonSetPayload",
+    "concreteType": "RemoveCommunityContentPayload",
     "kind": "LinkedField",
-    "name": "createSavedComparisonSet",
+    "name": "removeCommunityContent",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "SavedComparisonSet",
-        "kind": "LinkedField",
-        "name": "savedComparisonSet",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "id",
-            "storageKey": null
-          }
-        ],
+        "kind": "ScalarField",
+        "name": "removedContentId",
         "storageKey": null
       },
       {
@@ -115,7 +103,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "CompareRouteCreateSavedComparisonSetMutation",
+    "name": "productMutationsRemoveCommunityContentMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -124,20 +112,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "CompareRouteCreateSavedComparisonSetMutation",
+    "name": "productMutationsRemoveCommunityContentMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "9186b19ed6208d6b6b59f34ad1d1c492",
+    "cacheID": "045fc6902c2d81a3f700cca3b3513b6b",
     "id": null,
     "metadata": {},
-    "name": "CompareRouteCreateSavedComparisonSetMutation",
+    "name": "productMutationsRemoveCommunityContentMutation",
     "operationKind": "mutation",
-    "text": "mutation CompareRouteCreateSavedComparisonSetMutation(\n  $input: CreateSavedComparisonSetInput!\n) {\n  createSavedComparisonSet(input: $input) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsRemoveCommunityContentMutation(\n  $input: RemoveCommunityContentInput!\n) {\n  removeCommunityContent(input: $input) {\n    removedContentId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a13f1b1f64a9e1d9f4a1ef4f4e334f0d";
+(node as any).hash = "8f683644c5594be1cecbe45d019bd3e2";
 
 export default node;

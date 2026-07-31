@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<914470da1c020fe88df16d45bb9162f6>>
+ * @generated SignedSource<<1e799ad67b08d1a7ab8a7f3c6000c4f9>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,35 +9,40 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type RecommendationProfile = "BEST_VALUE" | "LOWEST_CURRENT_COST" | "%future added value";
-export type PublishComparisonSnapshotInput = {
-  productIds: ReadonlyArray<string>;
-  recommendationProfile: RecommendationProfile;
-  searchIndexable?: boolean | null | undefined;
-  title?: string | null | undefined;
+export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
+export type CreatePriceWatchInput = {
+  cooldownSeconds?: number | null | undefined;
+  currency: string;
+  merchantProductId?: string | null | undefined;
+  percentageDrop?: any | null | undefined;
+  productId: string;
+  ruleType: PriceWatchRuleType;
+  targetAmount?: any | null | undefined;
 };
-export type ShareComparisonControlPublishComparisonSnapshotMutation$variables = {
-  input: PublishComparisonSnapshotInput;
+export type productMutationsCreatePriceWatchMutation$variables = {
+  input: CreatePriceWatchInput;
 };
-export type ShareComparisonControlPublishComparisonSnapshotMutation$data = {
-  readonly publishComparisonSnapshot: {
+export type productMutationsCreatePriceWatchMutation$data = {
+  readonly createPriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly sharePath: string | null | undefined;
-    readonly snapshot: {
-      readonly capturedAt: any;
+    readonly watch: {
+      readonly currency: string;
+      readonly enabled: boolean;
       readonly id: string;
-      readonly searchIndexable: boolean;
-      readonly title: string | null | undefined;
+      readonly percentageDrop: any | null | undefined;
+      readonly productName: string;
+      readonly ruleType: PriceWatchRuleType;
+      readonly targetAmount: any | null | undefined;
     } | null | undefined;
   };
 };
-export type ShareComparisonControlPublishComparisonSnapshotMutation = {
-  response: ShareComparisonControlPublishComparisonSnapshotMutation$data;
-  variables: ShareComparisonControlPublishComparisonSnapshotMutation$variables;
+export type productMutationsCreatePriceWatchMutation = {
+  response: productMutationsCreatePriceWatchMutation$data;
+  variables: productMutationsCreatePriceWatchMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -58,17 +63,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "PublishComparisonSnapshotPayload",
+    "concreteType": "PriceWatchPayload",
     "kind": "LinkedField",
-    "name": "publishComparisonSnapshot",
+    "name": "createPriceWatch",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ComparisonSnapshot",
+        "concreteType": "PriceWatch",
         "kind": "LinkedField",
-        "name": "snapshot",
+        "name": "watch",
         "plural": false,
         "selections": [
           {
@@ -82,31 +87,45 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "title",
+            "name": "productName",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "searchIndexable",
+            "name": "ruleType",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "capturedAt",
+            "name": "currency",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "targetAmount",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "percentageDrop",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "enabled",
             "storageKey": null
           }
         ],
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "sharePath",
         "storageKey": null
       },
       {
@@ -150,7 +169,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ShareComparisonControlPublishComparisonSnapshotMutation",
+    "name": "productMutationsCreatePriceWatchMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -159,20 +178,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ShareComparisonControlPublishComparisonSnapshotMutation",
+    "name": "productMutationsCreatePriceWatchMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "65ebbf6f34822fdd9955719aa7208c49",
+    "cacheID": "e57542f9c9adfb2bd07c86b721e25ea8",
     "id": null,
     "metadata": {},
-    "name": "ShareComparisonControlPublishComparisonSnapshotMutation",
+    "name": "productMutationsCreatePriceWatchMutation",
     "operationKind": "mutation",
-    "text": "mutation ShareComparisonControlPublishComparisonSnapshotMutation(\n  $input: PublishComparisonSnapshotInput!\n) {\n  publishComparisonSnapshot(input: $input) {\n    snapshot {\n      id\n      title\n      searchIndexable\n      capturedAt\n    }\n    sharePath\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsCreatePriceWatchMutation(\n  $input: CreatePriceWatchInput!\n) {\n  createPriceWatch(input: $input) {\n    watch {\n      id\n      productName\n      ruleType\n      currency\n      targetAmount\n      percentageDrop\n      enabled\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "e88faba5e1b661c9a3c53b7e16f15966";
+(node as any).hash = "b72d24592fd4a1db78a07c072a40efc6";
 
 export default node;

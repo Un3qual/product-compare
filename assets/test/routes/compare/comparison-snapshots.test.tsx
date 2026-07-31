@@ -5,9 +5,9 @@ import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
   publishComparisonSnapshotMutation,
-  revokeComparisonSnapshotMutation,
-  ShareComparisonControl
-} from "../../../src/routes/compare/ShareComparisonControl";
+  revokeComparisonSnapshotMutation
+} from "../../../src/routes/compare/compare-mutations";
+import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
 import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";
 

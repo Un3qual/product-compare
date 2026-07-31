@@ -108,15 +108,15 @@ beforeEach(() => {
   mockedUseMutation.mockImplementation((mutation) => {
     const name = (mutation as { params?: { name?: string } }).params?.name;
 
-    if (name === "AffiliateSetupRouteUpsertAffiliateProgramMutation") {
+    if (name === "affiliateSetupMutationsUpsertAffiliateProgramMutation") {
       return [commitProgramMutationMock, false];
     }
 
-    if (name === "AffiliateSetupRouteUpsertAffiliateLinkMutation") {
+    if (name === "affiliateSetupMutationsUpsertAffiliateLinkMutation") {
       return [commitLinkMutationMock, false];
     }
 
-    if (name === "AffiliateSetupRouteCreateCouponMutation") {
+    if (name === "affiliateSetupMutationsCreateCouponMutation") {
       return [commitCouponMutationMock, false];
     }
 

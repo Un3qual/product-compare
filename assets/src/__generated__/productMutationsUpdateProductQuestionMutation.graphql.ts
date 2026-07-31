@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<11096ca019ea6ce064cd35be8830052e>>
+ * @generated SignedSource<<b8f928ba129235fbaac9e89ac8f72fed>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,31 +10,32 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type AskProductQuestionInput = {
+export type UpdateProductQuestionInput = {
   body?: string | null | undefined;
-  idempotencyKey?: string | null | undefined;
-  productId: string;
-  title: string;
+  id: string;
+  title?: string | null | undefined;
 };
-export type ProductCommunityPanelAskProductQuestionMutation$variables = {
-  input: AskProductQuestionInput;
+export type productMutationsUpdateProductQuestionMutation$variables = {
+  input: UpdateProductQuestionInput;
 };
-export type ProductCommunityPanelAskProductQuestionMutation$data = {
-  readonly askProductQuestion: {
+export type productMutationsUpdateProductQuestionMutation$data = {
+  readonly updateProductQuestion: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
     readonly question: {
+      readonly body: string | null | undefined;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
+      readonly title: string;
     } | null | undefined;
   };
 };
-export type ProductCommunityPanelAskProductQuestionMutation = {
-  response: ProductCommunityPanelAskProductQuestionMutation$data;
-  variables: ProductCommunityPanelAskProductQuestionMutation$variables;
+export type productMutationsUpdateProductQuestionMutation = {
+  response: productMutationsUpdateProductQuestionMutation$data;
+  variables: productMutationsUpdateProductQuestionMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -57,7 +58,7 @@ v1 = [
     ],
     "concreteType": "ProductQuestionPayload",
     "kind": "LinkedField",
-    "name": "askProductQuestion",
+    "name": "updateProductQuestion",
     "plural": false,
     "selections": [
       {
@@ -73,6 +74,20 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "title",
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "body",
             "storageKey": null
           },
           {
@@ -126,7 +141,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityPanelAskProductQuestionMutation",
+    "name": "productMutationsUpdateProductQuestionMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -135,20 +150,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityPanelAskProductQuestionMutation",
+    "name": "productMutationsUpdateProductQuestionMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "4890a9e0512b99c43485095e2ada27fe",
+    "cacheID": "c0240bc8cd8b5d45195cd35d13ab3581",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityPanelAskProductQuestionMutation",
+    "name": "productMutationsUpdateProductQuestionMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityPanelAskProductQuestionMutation(\n  $input: AskProductQuestionInput!\n) {\n  askProductQuestion(input: $input) {\n    question {\n      id\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsUpdateProductQuestionMutation(\n  $input: UpdateProductQuestionInput!\n) {\n  updateProductQuestion(input: $input) {\n    question {\n      id\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "83b6756a357d9ee9da97d1d30dcb4936";
+(node as any).hash = "fc48c450bea7a1cf1bf1fa4cb1e6b621";
 
 export default node;

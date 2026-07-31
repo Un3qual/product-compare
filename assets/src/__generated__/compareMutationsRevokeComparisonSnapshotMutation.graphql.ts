@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9a427c1a7904b15254c40ce11fb4a012>>
+ * @generated SignedSource<<f69c1b3893430555b21a1ef86141ab7f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,10 +9,10 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type ShareComparisonControlRevokeComparisonSnapshotMutation$variables = {
+export type compareMutationsRevokeComparisonSnapshotMutation$variables = {
   snapshotId: string;
 };
-export type ShareComparisonControlRevokeComparisonSnapshotMutation$data = {
+export type compareMutationsRevokeComparisonSnapshotMutation$data = {
   readonly revokeComparisonSnapshot: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
@@ -22,9 +22,9 @@ export type ShareComparisonControlRevokeComparisonSnapshotMutation$data = {
     readonly revokedSnapshotId: string | null | undefined;
   };
 };
-export type ShareComparisonControlRevokeComparisonSnapshotMutation = {
-  response: ShareComparisonControlRevokeComparisonSnapshotMutation$data;
-  variables: ShareComparisonControlRevokeComparisonSnapshotMutation$variables;
+export type compareMutationsRevokeComparisonSnapshotMutation = {
+  response: compareMutationsRevokeComparisonSnapshotMutation$data;
+  variables: compareMutationsRevokeComparisonSnapshotMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -98,7 +98,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ShareComparisonControlRevokeComparisonSnapshotMutation",
+    "name": "compareMutationsRevokeComparisonSnapshotMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -107,20 +107,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ShareComparisonControlRevokeComparisonSnapshotMutation",
+    "name": "compareMutationsRevokeComparisonSnapshotMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "c36d28ed5c9d27da0f0ddea7375a1334",
+    "cacheID": "7d11e970f2c5c3e1e0c6f6f1ec391106",
     "id": null,
     "metadata": {},
-    "name": "ShareComparisonControlRevokeComparisonSnapshotMutation",
+    "name": "compareMutationsRevokeComparisonSnapshotMutation",
     "operationKind": "mutation",
-    "text": "mutation ShareComparisonControlRevokeComparisonSnapshotMutation(\n  $snapshotId: ID!\n) {\n  revokeComparisonSnapshot(snapshotId: $snapshotId) {\n    revokedSnapshotId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation compareMutationsRevokeComparisonSnapshotMutation(\n  $snapshotId: ID!\n) {\n  revokeComparisonSnapshot(snapshotId: $snapshotId) {\n    revokedSnapshotId\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "29044ae2a77c456c9727ca3bf499c0df";
+(node as any).hash = "ec823c94f0ebf1a87a5a596e3e01a722";
 
 export default node;

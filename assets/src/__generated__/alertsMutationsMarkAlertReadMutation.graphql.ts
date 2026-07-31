@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<446f3184fc6004b4b0c5f5967370ad92>>
+ * @generated SignedSource<<f1f7d70a199a2a7a1ee0ba5d54813227>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,32 +9,25 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type UpdatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
-  enabled?: boolean | null | undefined;
+export type alertsMutationsMarkAlertReadMutation$variables = {
   id: string;
-  percentageDrop?: any | null | undefined;
-  targetAmount?: any | null | undefined;
 };
-export type AlertsRouteUpdatePriceWatchMutation$variables = {
-  input: UpdatePriceWatchInput;
-};
-export type AlertsRouteUpdatePriceWatchMutation$data = {
-  readonly updatePriceWatch: {
+export type alertsMutationsMarkAlertReadMutation$data = {
+  readonly markAlertRead: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly watch: {
-      readonly enabled: boolean;
+    readonly event: {
       readonly id: string;
+      readonly readAt: any | null | undefined;
     } | null | undefined;
   };
 };
-export type AlertsRouteUpdatePriceWatchMutation = {
-  response: AlertsRouteUpdatePriceWatchMutation$data;
-  variables: AlertsRouteUpdatePriceWatchMutation$variables;
+export type alertsMutationsMarkAlertReadMutation = {
+  response: alertsMutationsMarkAlertReadMutation$data;
+  variables: alertsMutationsMarkAlertReadMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -42,7 +35,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "input"
+    "name": "id"
   }
 ],
 v1 = [
@@ -51,21 +44,21 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "input",
-        "variableName": "input"
+        "name": "id",
+        "variableName": "id"
       }
     ],
-    "concreteType": "PriceWatchPayload",
+    "concreteType": "AlertEventPayload",
     "kind": "LinkedField",
-    "name": "updatePriceWatch",
+    "name": "markAlertRead",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "PriceWatch",
+        "concreteType": "AlertEvent",
         "kind": "LinkedField",
-        "name": "watch",
+        "name": "event",
         "plural": false,
         "selections": [
           {
@@ -79,7 +72,7 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "enabled",
+            "name": "readAt",
             "storageKey": null
           }
         ],
@@ -126,7 +119,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "AlertsRouteUpdatePriceWatchMutation",
+    "name": "alertsMutationsMarkAlertReadMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -135,20 +128,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "AlertsRouteUpdatePriceWatchMutation",
+    "name": "alertsMutationsMarkAlertReadMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "dc7b4a906e0b3a8018fea7868df3c21b",
+    "cacheID": "30a43bce7f21f908da645fc29c55832c",
     "id": null,
     "metadata": {},
-    "name": "AlertsRouteUpdatePriceWatchMutation",
+    "name": "alertsMutationsMarkAlertReadMutation",
     "operationKind": "mutation",
-    "text": "mutation AlertsRouteUpdatePriceWatchMutation(\n  $input: UpdatePriceWatchInput!\n) {\n  updatePriceWatch(input: $input) {\n    watch {\n      id\n      enabled\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation alertsMutationsMarkAlertReadMutation(\n  $id: ID!\n) {\n  markAlertRead(id: $id) {\n    event {\n      id\n      readAt\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "89e3b71a6d4350dca1a57f66e47ea898";
+(node as any).hash = "4c56a8c5f3c89d2dabfc399908bc89e9";
 
 export default node;

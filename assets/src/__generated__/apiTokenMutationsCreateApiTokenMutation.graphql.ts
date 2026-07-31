@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<21bdbd2bd57c0291e9545aa1ec1ad2f9>>
+ * @generated SignedSource<<14bdaef8df48cb0e62fa957cdfad2a99>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,71 +9,78 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
-export type CreatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
-  currency: string;
-  merchantProductId?: string | null | undefined;
-  percentageDrop?: any | null | undefined;
-  productId: string;
-  ruleType: PriceWatchRuleType;
-  targetAmount?: any | null | undefined;
+export type apiTokenMutationsCreateApiTokenMutation$variables = {
+  expiresAt?: any | null | undefined;
+  label?: string | null | undefined;
 };
-export type PriceWatchControlCreatePriceWatchMutation$variables = {
-  input: CreatePriceWatchInput;
-};
-export type PriceWatchControlCreatePriceWatchMutation$data = {
-  readonly createPriceWatch: {
+export type apiTokenMutationsCreateApiTokenMutation$data = {
+  readonly createApiToken: {
+    readonly apiToken: {
+      readonly expiresAt: any | null | undefined;
+      readonly id: string;
+      readonly insertedAt: any;
+      readonly label: string | null | undefined;
+      readonly lastUsedAt: any | null | undefined;
+      readonly revokedAt: any | null | undefined;
+      readonly tokenPrefix: string;
+    } | null | undefined;
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly watch: {
-      readonly currency: string;
-      readonly enabled: boolean;
-      readonly id: string;
-      readonly percentageDrop: any | null | undefined;
-      readonly productName: string;
-      readonly ruleType: PriceWatchRuleType;
-      readonly targetAmount: any | null | undefined;
-    } | null | undefined;
+    readonly plainTextToken: string | null | undefined;
   };
 };
-export type PriceWatchControlCreatePriceWatchMutation = {
-  response: PriceWatchControlCreatePriceWatchMutation$data;
-  variables: PriceWatchControlCreatePriceWatchMutation$variables;
+export type apiTokenMutationsCreateApiTokenMutation = {
+  response: apiTokenMutationsCreateApiTokenMutation$data;
+  variables: apiTokenMutationsCreateApiTokenMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = [
-  {
-    "defaultValue": null,
-    "kind": "LocalArgument",
-    "name": "input"
-  }
-],
-v1 = [
+var v0 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "expiresAt"
+},
+v1 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "label"
+},
+v2 = [
   {
     "alias": null,
     "args": [
       {
         "kind": "Variable",
-        "name": "input",
-        "variableName": "input"
+        "name": "expiresAt",
+        "variableName": "expiresAt"
+      },
+      {
+        "kind": "Variable",
+        "name": "label",
+        "variableName": "label"
       }
     ],
-    "concreteType": "PriceWatchPayload",
+    "concreteType": "CreateApiTokenPayload",
     "kind": "LinkedField",
-    "name": "createPriceWatch",
+    "name": "createApiToken",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "PriceWatch",
+        "kind": "ScalarField",
+        "name": "plainTextToken",
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "concreteType": "ApiToken",
         "kind": "LinkedField",
-        "name": "watch",
+        "name": "apiToken",
         "plural": false,
         "selections": [
           {
@@ -87,42 +94,42 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "productName",
+            "name": "label",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "ruleType",
+            "name": "tokenPrefix",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "currency",
+            "name": "lastUsedAt",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "targetAmount",
+            "name": "expiresAt",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "percentageDrop",
+            "name": "revokedAt",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "enabled",
+            "name": "insertedAt",
             "storageKey": null
           }
         ],
@@ -147,14 +154,14 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "field",
+            "name": "message",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "message",
+            "name": "field",
             "storageKey": null
           }
         ],
@@ -166,32 +173,38 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [
+      (v0/*: any*/),
+      (v1/*: any*/)
+    ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "PriceWatchControlCreatePriceWatchMutation",
-    "selections": (v1/*: any*/),
+    "name": "apiTokenMutationsCreateApiTokenMutation",
+    "selections": (v2/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": [
+      (v1/*: any*/),
+      (v0/*: any*/)
+    ],
     "kind": "Operation",
-    "name": "PriceWatchControlCreatePriceWatchMutation",
-    "selections": (v1/*: any*/)
+    "name": "apiTokenMutationsCreateApiTokenMutation",
+    "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "4ca6eb525fbad7d400da0dddaadd7c1f",
+    "cacheID": "a107361230c9211bebf84c32169bb6bb",
     "id": null,
     "metadata": {},
-    "name": "PriceWatchControlCreatePriceWatchMutation",
+    "name": "apiTokenMutationsCreateApiTokenMutation",
     "operationKind": "mutation",
-    "text": "mutation PriceWatchControlCreatePriceWatchMutation(\n  $input: CreatePriceWatchInput!\n) {\n  createPriceWatch(input: $input) {\n    watch {\n      id\n      productName\n      ruleType\n      currency\n      targetAmount\n      percentageDrop\n      enabled\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation apiTokenMutationsCreateApiTokenMutation(\n  $label: String\n  $expiresAt: DateTime\n) {\n  createApiToken(label: $label, expiresAt: $expiresAt) {\n    plainTextToken\n    apiToken {\n      id\n      label\n      tokenPrefix\n      lastUsedAt\n      expiresAt\n      revokedAt\n      insertedAt\n    }\n    errors {\n      code\n      message\n      field\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "d8ccc28636b6b21750cd6d8234aef0c0";
+(node as any).hash = "f0ae6da381532bb81b75d78ae1d19f7b";
 
 export default node;

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4318ce52babcf7875188eb674c129243>>
+ * @generated SignedSource<<c6e83b694a559f59d593523ddc3c05fb>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,34 +10,30 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
-export type UpdateProductReviewInput = {
+export type UpdateProductAnswerInput = {
   body?: string | null | undefined;
   id: string;
-  rating?: number | null | undefined;
-  title?: string | null | undefined;
 };
-export type ProductCommunityItemsUpdateProductReviewMutation$variables = {
-  input: UpdateProductReviewInput;
+export type productMutationsUpdateProductAnswerMutation$variables = {
+  input: UpdateProductAnswerInput;
 };
-export type ProductCommunityItemsUpdateProductReviewMutation$data = {
-  readonly updateProductReview: {
+export type productMutationsUpdateProductAnswerMutation$data = {
+  readonly updateProductAnswer: {
+    readonly answer: {
+      readonly body: string;
+      readonly id: string;
+      readonly moderationStatus: CommunityModerationStatus;
+    } | null | undefined;
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
-    readonly review: {
-      readonly body: string | null | undefined;
-      readonly id: string;
-      readonly moderationStatus: CommunityModerationStatus;
-      readonly rating: number;
-      readonly title: string | null | undefined;
-    } | null | undefined;
   };
 };
-export type ProductCommunityItemsUpdateProductReviewMutation = {
-  response: ProductCommunityItemsUpdateProductReviewMutation$data;
-  variables: ProductCommunityItemsUpdateProductReviewMutation$variables;
+export type productMutationsUpdateProductAnswerMutation = {
+  response: productMutationsUpdateProductAnswerMutation$data;
+  variables: productMutationsUpdateProductAnswerMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -58,17 +54,17 @@ v1 = [
         "variableName": "input"
       }
     ],
-    "concreteType": "ProductReviewPayload",
+    "concreteType": "ProductAnswerPayload",
     "kind": "LinkedField",
-    "name": "updateProductReview",
+    "name": "updateProductAnswer",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ProductReview",
+        "concreteType": "ProductAnswer",
         "kind": "LinkedField",
-        "name": "review",
+        "name": "answer",
         "plural": false,
         "selections": [
           {
@@ -76,20 +72,6 @@ v1 = [
             "args": null,
             "kind": "ScalarField",
             "name": "id",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "rating",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "title",
             "storageKey": null
           },
           {
@@ -150,7 +132,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityItemsUpdateProductReviewMutation",
+    "name": "productMutationsUpdateProductAnswerMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -159,20 +141,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ProductCommunityItemsUpdateProductReviewMutation",
+    "name": "productMutationsUpdateProductAnswerMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "4caab90ac62b818ee2f514cc689fcba0",
+    "cacheID": "2e47a4058f3a53779efda099629236bf",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityItemsUpdateProductReviewMutation",
+    "name": "productMutationsUpdateProductAnswerMutation",
     "operationKind": "mutation",
-    "text": "mutation ProductCommunityItemsUpdateProductReviewMutation(\n  $input: UpdateProductReviewInput!\n) {\n  updateProductReview(input: $input) {\n    review {\n      id\n      rating\n      title\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation productMutationsUpdateProductAnswerMutation(\n  $input: UpdateProductAnswerInput!\n) {\n  updateProductAnswer(input: $input) {\n    answer {\n      id\n      body\n      moderationStatus\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "107df680e65ae27772f9932ea667daa0";
+(node as any).hash = "e0383dec18bb017788dfaad7b556db90";
 
 export default node;

@@ -1,9 +1,9 @@
 import { type FormEvent, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
-import { graphql, useMutation } from "react-relay";
-import type { ApiTokensRouteCreateApiTokenMutation } from "../../../__generated__/ApiTokensRouteCreateApiTokenMutation.graphql";
-import type { ApiTokensRouteRevokeApiTokenMutation } from "../../../__generated__/ApiTokensRouteRevokeApiTokenMutation.graphql";
-import type { ApiTokensRouteRotateApiTokenMutation } from "../../../__generated__/ApiTokensRouteRotateApiTokenMutation.graphql";
+import { useMutation } from "react-relay";
+import type { apiTokenMutationsCreateApiTokenMutation } from "../../../__generated__/apiTokenMutationsCreateApiTokenMutation.graphql";
+import type { apiTokenMutationsRevokeApiTokenMutation } from "../../../__generated__/apiTokenMutationsRevokeApiTokenMutation.graphql";
+import type { apiTokenMutationsRotateApiTokenMutation } from "../../../__generated__/apiTokenMutationsRotateApiTokenMutation.graphql";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
@@ -25,6 +25,11 @@ import {
 } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
 import {
+  createApiTokenMutation,
+  revokeApiTokenMutation,
+  rotateApiTokenMutation
+} from "./api-token-mutations";
+import {
   apiTokensRouteLocationIdentity,
   buildApiTokenPaginationData,
   buildApiTokensViewState,
@@ -39,71 +44,6 @@ import {
 import { apiTokenIsActive } from "./api-token-status";
 import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import type { apiTokensLoader } from "./loader";
-
-const createApiTokenMutation = graphql`
-  mutation ApiTokensRouteCreateApiTokenMutation($label: String, $expiresAt: DateTime) {
-    createApiToken(label: $label, expiresAt: $expiresAt) {
-      plainTextToken
-      apiToken {
-        id
-        label
-        tokenPrefix
-        lastUsedAt
-        expiresAt
-        revokedAt
-        insertedAt
-      }
-      errors {
-        code
-        message
-        field
-      }
-    }
-  }
-`;
-
-const revokeApiTokenMutation = graphql`
-  mutation ApiTokensRouteRevokeApiTokenMutation($tokenId: ID!) {
-    revokeApiToken(tokenId: $tokenId) {
-      apiToken {
-        id
-        label
-        tokenPrefix
-        lastUsedAt
-        expiresAt
-        revokedAt
-        insertedAt
-      }
-      errors {
-        code
-        message
-        field
-      }
-    }
-  }
-`;
-
-const rotateApiTokenMutation = graphql`
-  mutation ApiTokensRouteRotateApiTokenMutation($tokenId: ID!, $label: String, $expiresAt: DateTime) {
-    rotateApiToken(tokenId: $tokenId, label: $label, expiresAt: $expiresAt) {
-      plainTextToken
-      apiToken {
-        id
-        label
-        tokenPrefix
-        lastUsedAt
-        expiresAt
-        revokedAt
-        insertedAt
-      }
-      errors {
-        code
-        message
-        field
-      }
-    }
-  }
-`;
 
 export function ApiTokensRoute() {
   const loaderData = useLoaderData<typeof apiTokensLoader>();
@@ -142,11 +82,11 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     () => new Set()
   );
   const inFlightRotateIdsRef = useRef<Set<string>>(new Set());
-  const [commitCreateApiToken, createMutationPending] = useMutation<ApiTokensRouteCreateApiTokenMutation>(
+  const [commitCreateApiToken, createMutationPending] = useMutation<apiTokenMutationsCreateApiTokenMutation>(
     createApiTokenMutation
   );
-  const [commitRevokeApiToken] = useMutation<ApiTokensRouteRevokeApiTokenMutation>(revokeApiTokenMutation);
-  const [commitRotateApiToken] = useMutation<ApiTokensRouteRotateApiTokenMutation>(rotateApiTokenMutation);
+  const [commitRevokeApiToken] = useMutation<apiTokenMutationsRevokeApiTokenMutation>(revokeApiTokenMutation);
+  const [commitRotateApiToken] = useMutation<apiTokenMutationsRotateApiTokenMutation>(rotateApiTokenMutation);
   const tokenQueries = loaderData.status === "unauthorized" ? [] : loaderData.tokenQueries;
   const viewState = useMemo(
     () => buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates),

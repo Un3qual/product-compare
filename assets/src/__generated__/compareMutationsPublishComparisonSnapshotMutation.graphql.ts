@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<369f480e5d791e8bcfa84d4225e19169>>
+ * @generated SignedSource<<ec8052d8a4e6a1919a22324cf7f43cf1>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,30 +9,35 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type ApiTokensRouteRevokeApiTokenMutation$variables = {
-  tokenId: string;
+export type RecommendationProfile = "BEST_VALUE" | "LOWEST_CURRENT_COST" | "%future added value";
+export type PublishComparisonSnapshotInput = {
+  productIds: ReadonlyArray<string>;
+  recommendationProfile: RecommendationProfile;
+  searchIndexable?: boolean | null | undefined;
+  title?: string | null | undefined;
 };
-export type ApiTokensRouteRevokeApiTokenMutation$data = {
-  readonly revokeApiToken: {
-    readonly apiToken: {
-      readonly expiresAt: any | null | undefined;
-      readonly id: string;
-      readonly insertedAt: any;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: any | null | undefined;
-      readonly revokedAt: any | null | undefined;
-      readonly tokenPrefix: string;
-    } | null | undefined;
+export type compareMutationsPublishComparisonSnapshotMutation$variables = {
+  input: PublishComparisonSnapshotInput;
+};
+export type compareMutationsPublishComparisonSnapshotMutation$data = {
+  readonly publishComparisonSnapshot: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
       readonly message: string;
     }>;
+    readonly sharePath: string | null | undefined;
+    readonly snapshot: {
+      readonly capturedAt: any;
+      readonly id: string;
+      readonly searchIndexable: boolean;
+      readonly title: string | null | undefined;
+    } | null | undefined;
   };
 };
-export type ApiTokensRouteRevokeApiTokenMutation = {
-  response: ApiTokensRouteRevokeApiTokenMutation$data;
-  variables: ApiTokensRouteRevokeApiTokenMutation$variables;
+export type compareMutationsPublishComparisonSnapshotMutation = {
+  response: compareMutationsPublishComparisonSnapshotMutation$data;
+  variables: compareMutationsPublishComparisonSnapshotMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -40,7 +45,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "tokenId"
+    "name": "input"
   }
 ],
 v1 = [
@@ -49,21 +54,21 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "tokenId",
-        "variableName": "tokenId"
+        "name": "input",
+        "variableName": "input"
       }
     ],
-    "concreteType": "RevokeApiTokenPayload",
+    "concreteType": "PublishComparisonSnapshotPayload",
     "kind": "LinkedField",
-    "name": "revokeApiToken",
+    "name": "publishComparisonSnapshot",
     "plural": false,
     "selections": [
       {
         "alias": null,
         "args": null,
-        "concreteType": "ApiToken",
+        "concreteType": "ComparisonSnapshot",
         "kind": "LinkedField",
-        "name": "apiToken",
+        "name": "snapshot",
         "plural": false,
         "selections": [
           {
@@ -77,45 +82,31 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "label",
+            "name": "title",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "tokenPrefix",
+            "name": "searchIndexable",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "lastUsedAt",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "expiresAt",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "revokedAt",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "insertedAt",
+            "name": "capturedAt",
             "storageKey": null
           }
         ],
+        "storageKey": null
+      },
+      {
+        "alias": null,
+        "args": null,
+        "kind": "ScalarField",
+        "name": "sharePath",
         "storageKey": null
       },
       {
@@ -137,14 +128,14 @@ v1 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "message",
+            "name": "field",
             "storageKey": null
           },
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "field",
+            "name": "message",
             "storageKey": null
           }
         ],
@@ -159,7 +150,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "ApiTokensRouteRevokeApiTokenMutation",
+    "name": "compareMutationsPublishComparisonSnapshotMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -168,20 +159,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "ApiTokensRouteRevokeApiTokenMutation",
+    "name": "compareMutationsPublishComparisonSnapshotMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "137a9dca54b3cbd8f830590b3d46f219",
+    "cacheID": "4ce62a11ecd9aa295973b58bea7bc949",
     "id": null,
     "metadata": {},
-    "name": "ApiTokensRouteRevokeApiTokenMutation",
+    "name": "compareMutationsPublishComparisonSnapshotMutation",
     "operationKind": "mutation",
-    "text": "mutation ApiTokensRouteRevokeApiTokenMutation(\n  $tokenId: ID!\n) {\n  revokeApiToken(tokenId: $tokenId) {\n    apiToken {\n      id\n      label\n      tokenPrefix\n      lastUsedAt\n      expiresAt\n      revokedAt\n      insertedAt\n    }\n    errors {\n      code\n      message\n      field\n    }\n  }\n}\n"
+    "text": "mutation compareMutationsPublishComparisonSnapshotMutation(\n  $input: PublishComparisonSnapshotInput!\n) {\n  publishComparisonSnapshot(input: $input) {\n    snapshot {\n      id\n      title\n      searchIndexable\n      capturedAt\n    }\n    sharePath\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "265baeff0d30176865727bacb1087e0b";
+(node as any).hash = "1280d49608cb3295ed32f3ceebf9beef";
 
 export default node;

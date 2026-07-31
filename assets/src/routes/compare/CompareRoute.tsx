@@ -2,8 +2,8 @@ import { Suspense, type ReactNode, useRef, useState } from "react";
 import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as TabsTrigger } from "@radix-ui/react-tabs";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
-import { graphql, useMutation } from "react-relay";
-import type { CompareRouteCreateSavedComparisonSetMutation } from "../../__generated__/CompareRouteCreateSavedComparisonSetMutation.graphql";
+import { useMutation } from "react-relay";
+import type { compareMutationsCreateSavedComparisonSetMutation } from "../../__generated__/compareMutationsCreateSavedComparisonSetMutation.graphql";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
@@ -27,6 +27,7 @@ import {
 } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
 import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
+import { createSavedComparisonSetMutation } from "./compare-mutations";
 import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
@@ -38,21 +39,6 @@ import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome
 } from "./saved-comparison-mutation-data";
-
-const createSavedComparisonSetMutation = graphql`
-  mutation CompareRouteCreateSavedComparisonSetMutation($input: CreateSavedComparisonSetInput!) {
-    createSavedComparisonSet(input: $input) {
-      savedComparisonSet {
-        id
-      }
-      errors {
-        code
-        field
-        message
-      }
-    }
-  }
-`;
 
 const styles = create({
   tabList: {
@@ -106,7 +92,7 @@ function CompareSelectionRoute({
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+    useMutation<compareMutationsCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
 
   function handleSave() {
     if (loaderData.status !== "ready") {

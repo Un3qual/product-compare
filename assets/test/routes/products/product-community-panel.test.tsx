@@ -5,13 +5,13 @@ import {
   updateProductAnswerMutation,
   updateProductQuestionMutation,
   updateProductReviewMutation
-} from "../../../src/routes/products/ProductCommunityItems";
+} from "../../../src/routes/products/product-mutations";
 import {
   answerProductQuestionMutation,
   askProductQuestionMutation,
-  ProductCommunityPanel,
   submitProductReviewMutation
-} from "../../../src/routes/products/ProductCommunityPanel";
+} from "../../../src/routes/products/product-mutations";
+import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
 import { chooseSelectOption } from "../../helpers/radix-select";
 
 const {
