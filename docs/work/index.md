@@ -469,6 +469,51 @@ Exit condition: no visible native disclosure remains under `assets/src`, the
 five affected controls use the existing Radix wrapper, lazy and submission
 behavior is unchanged, StyleX remains in place, and every frontend gate passes.
 
+### 15. Ecto Dataloader Policy Guard
+
+Status: ready
+Lane: GraphQL architecture
+Plan: `docs/superpowers/plans/2026-07-30-ecto-dataloader-policy-guard-implementation-plan.md`
+Batch outcome: first-party KV Dataloader use fails at source and runtime
+boundaries, while ordinary Ecto associations remain direct inline Dataloader
+fields without pass-through resolvers.
+Next action: characterize the current scan-boundary gap and runtime source
+types before broadening the architecture contract.
+Owned paths:
+
+- `lib/product_compare_web/graphql/loader.ex`
+- `lib/product_compare_web/graphql/loader/**`
+- affected schema association declarations only if characterization exposes a
+  violation
+- `test/product_compare_web/graphql/schema_architecture_test.exs`
+- affected Dataloader architecture and batching tests
+- `docs/work/ecto-dataloader-policy-guard.md`
+
+Internal slices:
+
+- Whole-library KV source policy.
+- Runtime Ecto source-type assertion.
+- Inline ordinary-association resolver contract.
+
+Prerequisites:
+
+- No active row owns the GraphQL request loader or schema architecture suite.
+- A KV exception requires a new explicit user decision; this row does not
+  create an exception mechanism.
+
+Verification:
+
+- schema architecture and Dataloader batching suites
+- complete GraphQL suite
+- full backend tests, typecheck, and quality
+- `mix work_queue.validate`
+- `mix format --check-formatted`
+- `git diff --check`
+
+Exit condition: no first-party library path can hide a KV source, every
+registered request source is Ecto-backed, ordinary associations keep the
+inline Dataloader shorthand, and all backend gates pass.
+
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
 predicate and ranking, GraphQL and metadata parity, Relay pagination, and
