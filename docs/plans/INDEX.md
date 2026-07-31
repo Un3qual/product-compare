@@ -501,6 +501,7 @@ batch and should not be recreated or promoted.
 
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
+| promoted | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the current native-enum test still depends on a hand-maintained column list. | Promoted to `docs/work/index.md`; runtime schema reflection and PostgreSQL catalog checks provide a concrete drift guard without classifying raw/free-form strings. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
