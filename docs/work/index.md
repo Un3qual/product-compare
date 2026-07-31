@@ -332,52 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Work
-
-### 11. Effect GraphQL Transport Pilot
-
-Status: active
-Lane: Frontend transport
-Plan: `docs/superpowers/plans/2026-07-30-effect-graphql-transport-pilot-implementation-plan.md`
-Batch outcome: the Relay GraphQL transport models configuration, network, HTTP,
-and response-decoding failures with one internal Effect workflow while its
-stable Promise interface and browser/SSR behavior remain unchanged.
-Next action: add failing typed-failure characterization to the focused transport
-suite before introducing the Effect dependency.
-Owned paths:
-
-- `assets/package.json`
-- `assets/pnpm-lock.yaml`
-- `assets/src/relay/fetch-graphql.ts`
-- `assets/test/relay/fetch-graphql.test.ts`
-- affected `assets/test/relay/environment.test.ts`
-- `docs/work/frontend-effect-graphql-transport.md`
-
-Internal slices:
-
-- Existing transport and cancellation contract characterization.
-- Tagged Effect failure workflow and stable Promise adapter.
-- Import-boundary and bundle-cost verification.
-
-Prerequisites:
-
-- No active row owns the Relay transport or its focused tests.
-- Effect remains confined to the transport boundary unless a later separately
-  reviewed outcome proves another use.
-
-Verification:
-
-- focused transport and Relay environment tests
-- Effect import-boundary scan
-- Relay validation, TypeScript, Oxc, and the full frontend suite
-- Vite client and SSR builds plus the bundle contract
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: the internal transport workflow has typed failures, Relay still
-consumes `fetchGraphQL/3` as a Promise, browser and SSR behavior is preserved,
-Effect has not spread into route/component code, and every frontend gate passes.
-
 ## Ready Work
 
 ### 12. Radix Form Controls
