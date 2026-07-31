@@ -40,11 +40,11 @@ Mix tasks.
 - Modify: existing domain-reference storage tests only if shared catalog
   helpers are extracted.
 
-- [ ] Add a failing fixture/schema characterization proving discovery includes
+- [x] Add a failing fixture/schema characterization proving discovery includes
   parameterized `Ecto.Enum` fields without a manual table/column registry.
-- [ ] Record all discovered relational schemas, field sources, and physical
+- [x] Record all discovered relational schemas, field sources, and physical
   PostgreSQL types in deterministic order.
-- [ ] Confirm embedded schemas and virtual fields are excluded.
+- [x] Confirm embedded schemas and virtual fields are excluded.
 
 ## Task 2: Enforce Native Enum And Closed-String Constraints
 
@@ -55,21 +55,21 @@ Mix tasks.
   point.
 - Modify: repository policy tests and CI aliases.
 
-- [ ] Require every persisted `Ecto.Enum` field to report PostgreSQL
+- [x] Require every persisted `Ecto.Enum` field to report PostgreSQL
   `USER-DEFINED` storage and a real enum `typtype`.
-- [ ] Reject text/varchar columns used by database `IN (...)` or equivalent
+- [x] Reject text/varchar columns used by database `IN (...)` or equivalent
   closed-domain constraints.
-- [ ] Produce actionable violations containing schema, table, column, and
+- [x] Produce actionable violations containing schema, table, column, and
   observed storage.
-- [ ] Preserve the explicit controlled-reference tests and make their coverage
+- [x] Preserve the explicit controlled-reference tests and make their coverage
   part of the policy gate.
 
 ## Task 3: Verify The Durable Contract
 
-- [ ] Run the focused policy and reference-storage suites from a clean migrated
+- [x] Run the focused policy and reference-storage suites from a clean migrated
   test database.
-- [ ] Run backend tests, typecheck, quality, and queue validation.
-- [ ] Run `git diff --check` and record the exact evidence in the lane doc.
+- [x] Run backend tests, typecheck, quality, and queue validation.
+- [x] Run `git diff --check` and record the exact evidence in the lane doc.
 
 Exit condition: every compiled persisted `Ecto.Enum` field is automatically
 covered by native PostgreSQL enum validation, text-backed closed constraints

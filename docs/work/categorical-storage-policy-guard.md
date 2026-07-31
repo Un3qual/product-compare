@@ -2,13 +2,13 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-categorical-storage-policy-guard-implementation-plan.md`
-- Last verified: 2026-07-30 against 73 compiled schema modules, 33
-  `Ecto.Enum` declarations, and the current explicit enum/reference storage
-  tests.
+- Last verified: 2026-07-30 against 69 compiled relational schema modules, 32
+  persisted `Ecto.Enum` fields across 26 schemas, the PostgreSQL catalog, and
+  the explicit controlled-reference storage tests.
 
 ## Target Outcome
 
@@ -16,18 +16,22 @@ The repository automatically rejects a persisted `Ecto.Enum` backed by a
 free-form string column and rejects text-backed database constraints that
 encode a closed domain.
 
-## Validated Baseline
+## Delivered
 
-- `domain_enum_storage_test.exs` verifies the approved columns through a
-  hand-maintained 32-column list.
-- The commerce and ingestion reference tests explicitly verify metadata-bearing
-  domains and removed duplicate string columns.
-- Schema reflection can discover future persisted `Ecto.Enum` fields, so the
-  native-enum half of the policy does not need a second registry.
-- PostgreSQL catalogs can identify text/varchar columns participating in
-  closed-domain check constraints.
-- No automatic scanner can determine whether every arbitrary free-form string
-  is conceptually categorical; new string semantics still require review.
+- `ProductCompare.Repo.CategoricalStoragePolicy` discovers relational schemas
+  from the compiled application module set, excludes embedded and virtual
+  fields, resolves custom Ecto field sources, and returns deterministic
+  schema/table/field/column records.
+- The former hand-maintained 32-column registry is gone. Every discovered
+  persisted `Ecto.Enum` is joined to the live PostgreSQL catalog and must
+  report `data_type = 'USER-DEFINED'` and `pg_type.typtype = 'e'`.
+- Missing and non-enum columns produce schema-qualified errors with the
+  observed PostgreSQL data type, UDT, and type kind.
+- Text, varchar, and bpchar check constraints are inspected for direct
+  `IN (...)`, PostgreSQL `ANY (ARRAY[...])`, and repeated-equality closed sets.
+  Ordinary length and format checks remain valid.
+- Commerce and ingestion controlled-reference suites remain independent,
+  explicit coverage for domains whose values have metadata or identity.
 
 ## Boundaries
 
@@ -39,14 +43,15 @@ encode a closed domain.
 
 ## Next Action
 
-Replace the manual enum-column list with reflected schema coverage and add a
-red test for a text-backed closed-domain constraint before implementing the
-catalog validator.
+None. The durable categorical storage contract is complete.
 
 ## Verification
 
-- focused enum and controlled-reference storage tests
-- clean database migration
-- full backend tests, typecheck, and quality
-- `mix work_queue.validate`
-- `git diff --check`
+- `MIX_ENV=test mix ecto.reset`: passed through the complete migration history.
+- Focused enum and controlled-reference storage gate: 9 tests passed.
+- Final full backend suite: 1,026 tests passed.
+- `mix typecheck`: passed.
+- `mix quality`: Credo found no issues, ExDNA remained at its 3/3 budget,
+  Reach reported no unsuppressed smells, and Dialyzer reported zero errors.
+- `mix work_queue.validate`: passed with 3 ready rows.
+- `mix format --check-formatted` and `git diff --check`: passed.

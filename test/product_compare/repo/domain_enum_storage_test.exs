@@ -1,60 +1,93 @@
 defmodule ProductCompare.Repo.DomainEnumStorageTest do
   use ProductCompare.DataCase, async: true
 
-  @enum_columns [
-    {"users_tokens", "context", "user_token_context"},
-    {"product_taxons", "source_type", "product_taxon_source_type"},
-    {"attributes", "data_type", "attribute_data_type"},
-    {"product_attribute_claims", "source_type", "product_attribute_claim_source_type"},
-    {"product_attribute_claims", "status", "product_attribute_claim_status"},
-    {"coupons", "discount_type", "coupon_discount_type"},
-    {"commerce_links", "link_type", "commerce_link_type"},
-    {"commerce_click_sessions", "source_surface", "commerce_source_surface"},
-    {"commerce_conversions", "status", "commerce_conversion_status"},
-    {"commerce_conversions", "attribution_confidence", "commerce_attribution_confidence"},
-    {"ingestion_runs", "status", "ingestion_run_status"},
-    {"ingestion_runs", "reconciliation_status", "ingestion_reconciliation_status"},
-    {"product_identifiers", "scheme", "product_identifier_scheme"},
-    {"product_identifiers", "verification_status", "product_identifier_verification_status"},
-    {"product_media", "role", "product_media_role"},
-    {"category_mapping_candidates", "status", "category_mapping_status"},
-    {"specification_corrections", "status", "specification_correction_status"},
-    {"price_watch_rules", "rule_type", "price_watch_rule_type"},
-    {"alert_events", "rule_type", "price_watch_rule_type"},
-    {"alert_delivery_attempts", "transport", "alert_delivery_transport"},
-    {"alert_delivery_attempts", "state", "alert_delivery_state"},
-    {"product_reviews", "moderation_status", "community_moderation_status"},
-    {"product_threads", "moderation_status", "community_moderation_status"},
-    {"thread_posts", "moderation_status", "community_moderation_status"},
-    {"community_reports", "status", "community_report_status"},
-    {"community_write_receipts", "content_type", "community_content_type"},
-    {"community_write_windows", "action_kind", "community_action_kind"},
-    {"cj_programs", "stage", "cj_program_stage"},
-    {"comparison_snapshot_attributes", "source_type", "product_attribute_claim_source_type"},
-    {"comparison_snapshot_offers", "freshness", "offer_freshness"},
-    {"comparison_snapshot_recommendations", "profile", "recommendation_profile"},
-    {"comparison_snapshot_recommendations", "status", "recommendation_status"}
-  ]
+  alias ProductCompare.Repo.CategoricalStoragePolicy
 
-  test "closed domain columns use their native PostgreSQL enum types" do
-    Enum.each(@enum_columns, fn {table, column, expected_udt} ->
-      assert %{rows: [[data_type, udt_name]]} =
-               Repo.query!(
-                 """
-                 SELECT data_type, udt_name
-                 FROM information_schema.columns
-                 WHERE table_schema = current_schema()
-                   AND table_name = $1
-                   AND column_name = $2
-                 """,
-                 [table, column]
-               )
+  defmodule PersistedEnumFixture do
+    use Ecto.Schema
 
-      assert data_type == "USER-DEFINED",
-             "#{table}.#{column} uses #{data_type}, expected native enum #{expected_udt}"
+    @primary_key false
+    schema "enum_policy_fixtures" do
+      field :state, Ecto.Enum, values: [:draft, :published], source: :state_code
+      field :temporary_state, Ecto.Enum, values: [:draft, :published], virtual: true
+    end
+  end
 
-      assert udt_name == expected_udt,
-             "#{table}.#{column} uses #{udt_name}, expected #{expected_udt}"
-    end)
+  defmodule EmbeddedEnumFixture do
+    use Ecto.Schema
+
+    embedded_schema do
+      field :state, Ecto.Enum, values: [:draft, :published]
+    end
+  end
+
+  test "discovers persisted Ecto enums without a table and column registry" do
+    assert [
+             %{
+               schema: PersistedEnumFixture,
+               table: "enum_policy_fixtures",
+               field: :state,
+               column: "state_code"
+             }
+           ] =
+             CategoricalStoragePolicy.enum_fields_from_modules([
+               EmbeddedEnumFixture,
+               PersistedEnumFixture
+             ])
+  end
+
+  test "reports actionable storage violations for non-native enum columns" do
+    fields = CategoricalStoragePolicy.enum_fields_from_modules([PersistedEnumFixture])
+
+    assert [
+             "Elixir.ProductCompare.Repo.DomainEnumStorageTest.PersistedEnumFixture " <>
+               "enum_policy_fixtures.state_code (:state) uses character varying/varchar " <>
+               "with PostgreSQL type kind b, expected a native enum"
+           ] =
+             CategoricalStoragePolicy.enum_storage_violations(fields, %{
+               {"enum_policy_fixtures", "state_code"} => %{
+                 data_type: "character varying",
+                 udt_name: "varchar",
+                 type_kind: "b"
+               }
+             })
+  end
+
+  test "detects equivalent text-backed closed sets without flagging free-form checks" do
+    assert [
+             "enum_policy_fixtures.state_code uses text-backed closed-domain " <>
+               "constraint enum_policy_fixtures_state_check",
+             "enum_policy_fixtures.visibility uses text-backed closed-domain " <>
+               "constraint enum_policy_fixtures_visibility_check"
+           ] =
+             CategoricalStoragePolicy.closed_domain_constraint_violations([
+               %{
+                 table: "enum_policy_fixtures",
+                 column: "state_code",
+                 constraint: "enum_policy_fixtures_state_check",
+                 definition:
+                   "CHECK ((state_code = ANY (ARRAY['draft'::text, 'published'::text])))"
+               },
+               %{
+                 table: "enum_policy_fixtures",
+                 column: "visibility",
+                 constraint: "enum_policy_fixtures_visibility_check",
+                 definition:
+                   "CHECK (((visibility = 'private'::text) OR " <>
+                     "(visibility = 'public'::text)))"
+               },
+               %{
+                 table: "enum_policy_fixtures",
+                 column: "description",
+                 constraint: "enum_policy_fixtures_description_check",
+                 definition: "CHECK ((char_length(description) > 0))"
+               }
+             ])
+  end
+
+  test "all compiled persisted Ecto enums use native PostgreSQL enum columns" do
+    assert {:ok, fields} = CategoricalStoragePolicy.validate(Repo)
+    assert fields != []
+    assert fields == Enum.sort_by(fields, &{&1.table, &1.column, &1.schema})
   end
 end
