@@ -81,6 +81,45 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
     end
   end
 
+  test "deleting a historical alias releases its reserved slug" do
+    product = product_fixture(%{slug: "released-historical-product"})
+
+    assert {:ok, product} =
+             Catalog.update_product(product, %{slug: "released-current-product"})
+
+    alias_record =
+      Repo.get_by!(ProductSlugAlias,
+        product_id: product.id,
+        slug: "released-historical-product"
+      )
+
+    assert reservation_exists?("released-historical-product")
+    assert {:ok, _deleted_alias} = Repo.delete(alias_record)
+    refute reservation_exists?("released-historical-product")
+
+    assert %{slug: "released-historical-product"} =
+             product_fixture(%{slug: "released-historical-product"})
+  end
+
+  test "deleting a product releases its canonical and historical slugs" do
+    product = product_fixture(%{slug: "deleted-historical-product"})
+
+    assert {:ok, product} =
+             Catalog.update_product(product, %{slug: "deleted-current-product"})
+
+    assert reservation_exists?("deleted-historical-product")
+    assert reservation_exists?("deleted-current-product")
+    assert Repo.delete!(product)
+    refute reservation_exists?("deleted-historical-product")
+    refute reservation_exists?("deleted-current-product")
+
+    assert %{slug: "deleted-historical-product"} =
+             product_fixture(%{slug: "deleted-historical-product"})
+
+    assert %{slug: "deleted-current-product"} =
+             product_fixture(%{slug: "deleted-current-product"})
+  end
+
   test "batch slug lookup returns canonical and historical slugs with a fixed budget" do
     historical = product_fixture(%{slug: "batch-product-legacy"})
 
@@ -143,5 +182,12 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
     |> Map.put(:primary_type_taxon, taxon)
     |> Map.put(:brand_id, brand.id)
     |> SpecsFixtures.product_fixture()
+  end
+
+  defp reservation_exists?(slug) do
+    Repo.query!(
+      "SELECT EXISTS (SELECT 1 FROM product_slug_reservations WHERE slug = $1)",
+      [slug]
+    ).rows == [[true]]
   end
 end

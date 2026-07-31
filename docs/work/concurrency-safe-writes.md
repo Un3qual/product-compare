@@ -6,7 +6,8 @@
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-concurrency-safe-write-audit-implementation-plan.md`
-- Last verified: 2026-07-30 against the current repository write surface.
+- Last verified: 2026-07-30 against the repository write surface at that checkpoint.
+- Last reconciled: 2026-07-31 for the removed reputation-event API.
 
 ## Target Outcome
 
@@ -61,7 +62,7 @@ Classification terms:
 | `Accounts.ApiTokens.Authentication` | `authenticate/2` touch | A revoked or expired token is never returned after the dependent touch. | Conditional active-row `UPDATE`; **statement**. |
 | `Accounts.ApiTokens.Lifecycle` | `create/2`, `revoke/2`, `rotate/3` | Token issue is append-only; revoke/rotate consume the current active state once. | Unique token hash plus locked reload for transitions; **constraint + lock**. |
 | `Accounts.Users` | `create_user/1`, `register_user/1`, `bootstrap_operator_user/3`, `ensure_user_with_password/2`, `set_operator_access/2` | Email identity is unique; bootstrap/password repair cannot overwrite a concurrent user; operator writes are serialized with moderation checks. | Email unique constraint, user-row locks, conflict insert, and partial one-field update; **constraint + lock + partial last-write**. |
-| `Accounts.Reputation` | `upsert_user_reputation/2`, `add_reputation_event/2` | One absolute reputation summary exists per user; events remain historical facts. | `ON CONFLICT` absolute set and immutable insert; **statement + append-only**. |
+| `Accounts.Reputation` | `upsert_user_reputation/2` | One absolute reputation summary exists per user. | `ON CONFLICT` absolute set; **statement**. |
 | `Accounts.UserAuth.Sessions` | issue/generate, activate, delete/discard, and clear token actions | Session issue uses the authenticated password state; one delivered context token becomes active; token deletion is idempotent. | User-row lock, token uniqueness, and predicate `DELETE`; **lock + statement**. |
 | `Accounts.UserAuth.EmailTokens` | deliver confirmation/reset, `confirm_user/1`, `reset_user_password/2` | One token is consumed once and password/session changes share that consumption. | Token/user locking, delete-and-update transaction, and atomic context clearing; **lock**. |
 | `Affiliate` | `upsert_network/1`, `upsert_program/1`, `upsert_link/1`, `create_coupon/1` | Network/program/link identities converge; coupons are independent records. | Unique conflict targets and single conflict updates; **statement + constraint**. |
