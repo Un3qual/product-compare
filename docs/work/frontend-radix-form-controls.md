@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-07-30-radix-form-controls-implementation-plan.md`

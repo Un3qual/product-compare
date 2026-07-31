@@ -332,11 +332,11 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Work
 
 ### 12. Radix Form Controls
 
-Status: ready
+Status: active
 Lane: Frontend UI foundation
 Plan: `docs/superpowers/plans/2026-07-30-radix-form-controls-implementation-plan.md`
 Batch outcome: visible buttons and form controls use Radix Themes through thin
@@ -379,6 +379,8 @@ Verification:
 Exit condition: every visible control with a faithful Radix equivalent uses the
 project wrapper, native exceptions are explicit, StyleX remains in place, and
 every frontend gate passes.
+
+## Ready Work
 
 ### 13. Categorical Storage Policy Guard
 
