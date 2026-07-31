@@ -332,52 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Work
-
-### 13. Categorical Storage Policy Guard
-
-Status: active
-Lane: Database domain policy
-Plan: `docs/superpowers/plans/2026-07-30-categorical-storage-policy-guard-implementation-plan.md`
-Batch outcome: compiled relational `Ecto.Enum` fields are automatically
-required to use native PostgreSQL enums, text-backed closed-domain constraints
-are rejected, and controlled reference domains retain their explicit storage
-contracts.
-Next action: replace the manual enum-column registry with reflected schema
-coverage and add the failing text-backed closed-domain constraint
-characterization.
-Owned paths:
-
-- focused policy code under `lib/product_compare/**`
-- affected validation task and CI aliases
-- `test/product_compare/repo/domain_enum_storage_test.exs`
-- affected controlled-reference storage tests
-- `docs/work/categorical-storage-policy-guard.md`
-
-Internal slices:
-
-- Persisted `Ecto.Enum` schema and field-source discovery.
-- PostgreSQL native-enum and text-backed constraint catalog validation.
-- Controlled-reference contract integration and full-gate evidence.
-
-Prerequisites:
-
-- No active row owns repository schema-storage policy tests.
-- Raw provider evidence and genuinely free-form strings remain outside the
-  closed-domain scanner.
-
-Verification:
-
-- focused enum/reference policy suites from a clean migrated database
-- full backend tests, type checks, and quality gates
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: future persisted `Ecto.Enum` fields cannot escape native enum
-validation, text/varchar closed-domain constraints fail with actionable
-evidence, controlled-reference checks remain green, and all repository gates
-pass.
-
 ## Ready Work
 
 ### 14. Radix Disclosure Controls
