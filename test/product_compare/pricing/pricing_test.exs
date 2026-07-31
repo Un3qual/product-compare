@@ -51,6 +51,54 @@ defmodule ProductCompare.PricingTest do
     end
   end
 
+  describe "upsert_merchant_product/1" do
+    test "cannot retarget the product or currency behind an existing merchant URL" do
+      first_product = SpecsFixtures.product_fixture()
+      second_product = SpecsFixtures.product_fixture()
+
+      {:ok, merchant} =
+        Pricing.upsert_merchant(%{
+          name: "Immutable Offer Identity",
+          domain: "immutable-offer.example"
+        })
+
+      url = "https://immutable-offer.example/product"
+
+      assert {:ok, offer} =
+               Pricing.upsert_merchant_product(%{
+                 merchant_id: merchant.id,
+                 product_id: first_product.id,
+                 url: url,
+                 currency: "USD",
+                 is_active: true
+               })
+
+      assert {:error, changeset} =
+               Pricing.upsert_merchant_product(%{
+                 merchant_id: merchant.id,
+                 product_id: second_product.id,
+                 url: url,
+                 currency: "EUR",
+                 is_active: false
+               })
+
+      assert "does not match the existing merchant offer" in errors_on(changeset).product_id
+      assert "does not match the existing merchant offer" in errors_on(changeset).currency
+
+      persisted = Repo.get!(MerchantProduct, offer.id)
+      assert persisted.product_id == first_product.id
+      assert persisted.currency == "USD"
+      assert persisted.is_active
+
+      assert {:error, direct_changeset} =
+               offer
+               |> MerchantProduct.changeset(%{product_id: second_product.id})
+               |> Repo.update()
+
+      assert "merchant offer identity is immutable" in errors_on(direct_changeset).base
+    end
+  end
+
   describe "read APIs for graphql pricing surfaces" do
     test "list_merchants/0 returns merchants in stable id order" do
       {:ok, merchant_c} =

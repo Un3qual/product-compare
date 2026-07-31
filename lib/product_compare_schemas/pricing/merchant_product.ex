@@ -38,5 +38,9 @@ defmodule ProductCompareSchemas.Pricing.MerchantProduct do
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:currency, name: :merchant_products_currency_id_fkey)
+    |> check_constraint(:base,
+      name: :merchant_products_identity_immutable,
+      message: "merchant offer identity is immutable"
+    )
   end
 end

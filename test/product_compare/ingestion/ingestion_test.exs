@@ -1038,6 +1038,36 @@ defmodule ProductCompare.IngestionTest do
       assert Repo.aggregate(PricePoint, :count, :id) == 1
     end
 
+    test "does not reinterpret existing merchant product history in a new currency" do
+      source = source_fixture()
+      listing_url = "https://trail.example/products/currency-stable"
+
+      original_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-CURRENCY-STABLE",
+          listing_url: listing_url,
+          currency: "USD"
+        })
+
+      changed_currency_listing =
+        normalized_listing(%{
+          external_product_id: "CJ-CURRENCY-STABLE",
+          listing_url: listing_url,
+          currency: "EUR",
+          observed_at: ~U[2026-05-24 15:00:00Z]
+        })
+
+      assert {:ok, original} =
+               Ingestion.persist_normalized_listing(source, original_listing)
+
+      assert {:error, {:merchant_product_currency_conflict, merchant_product_id, "USD", "EUR"}} =
+               Ingestion.persist_normalized_listing(source, changed_currency_listing)
+
+      assert merchant_product_id == original.merchant_product.id
+      assert Repo.get!(MerchantProduct, merchant_product_id).currency == "USD"
+      assert Repo.aggregate(PricePoint, :count, :id) == 1
+    end
+
     test "rolls back merchant identity updates when listing persistence fails" do
       source = source_fixture()
       current_observed_at = ~U[2026-05-24 15:00:00Z]
