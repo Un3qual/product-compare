@@ -7,6 +7,8 @@ import type { ShareComparisonControlPublishComparisonSnapshotMutation } from "..
 import type { ShareComparisonControlRevokeComparisonSnapshotMutation } from "../../__generated__/ShareComparisonControlRevokeComparisonSnapshotMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
+import { Checkbox } from "../../ui/primitives/Checkbox";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./loader";
@@ -171,10 +173,10 @@ function SnapshotControlView({
       <form onSubmit={handlePublish} {...props(styles.form)}>
         <label htmlFor={titleId} {...props(styles.field)}>
           Optional title
-          <input id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+          <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
         </label>
         <label htmlFor={searchIndexableId} {...props(styles.field)}>
-          <span><input id={searchIndexableId} name="searchIndexable" type="checkbox" /> Allow search engines to discover this immutable snapshot</span>
+          <span><Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to discover this immutable snapshot</span>
           <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
         </label>
         <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>

@@ -21,6 +21,8 @@ import {
   CollapsibleTrigger
 } from "../../../ui/primitives/Collapsible";
 import { Button } from "../../../ui/primitives/Button";
+import { Select } from "../../../ui/primitives/Select";
+import { TextArea } from "../../../ui/primitives/TextArea";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
@@ -222,28 +224,26 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
       <div {...props(styles.controls)}>
         <label {...props(styles.field)}>
           <span {...props(styles.label)}>Stage for {programName}</span>
-          <select
+          <Select
             disabled={isUpdateInFlight || !stage}
-            onChange={(event) => {
-              const nextStage = event.currentTarget.value;
-
+            onValueChange={(nextStage) => {
               if (isCJProgramStage(nextStage)) {
                 setStage(nextStage);
               }
             }}
+            options={[
+              ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
+              ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({
+                label,
+                value
+              }))
+            ]}
             value={stage ?? ""}
-          >
-            {stage ? null : <option value="">Stage unavailable</option>}
-            {CJ_PROGRAM_STAGES.map(({ label, value }) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
+          />
         </label>
         <label {...props(styles.field)}>
           <span {...props(styles.label)}>Note for {programName}</span>
-          <textarea
+          <TextArea
             disabled={isUpdateInFlight || !stage}
             onChange={(event) => setNote(event.currentTarget.value)}
             value={note}

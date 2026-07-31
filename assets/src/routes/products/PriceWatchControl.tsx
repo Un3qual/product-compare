@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { graphql, useMutation } from "react-relay";
 import type { PriceWatchControlCreatePriceWatchMutation } from "../../__generated__/PriceWatchControlCreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
@@ -94,29 +96,36 @@ function PriceWatchForm({ productId }: { productId: string }) {
       <form onSubmit={handleSubmit} {...props(styles.form)}>
         <label htmlFor={ruleId} {...props(styles.field)}>
           Alert when
-          <select
+          <Select
             id={ruleId}
             name="ruleType"
-            value={ruleType}
-            onChange={(event) =>
-              setRuleType(priceWatchRuleTypeFromValue(event.currentTarget.value))
+            onValueChange={(value) =>
+              setRuleType(priceWatchRuleTypeFromValue(value))
             }
+            options={[
+              { label: "Landed price reaches a target", value: "TARGET_PRICE" },
+              {
+                label: "Landed price drops by a percentage",
+                value: "PERCENTAGE_DROP"
+              },
+              { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
+              {
+                label: "A qualifying offer becomes available",
+                value: "NEWLY_AVAILABLE"
+              }
+            ]}
+            value={ruleType}
             {...props(styles.input)}
-          >
-            <option value="TARGET_PRICE">Landed price reaches a target</option>
-            <option value="PERCENTAGE_DROP">Landed price drops by a percentage</option>
-            <option value="BACK_IN_STOCK">An offer returns in stock</option>
-            <option value="NEWLY_AVAILABLE">A qualifying offer becomes available</option>
-          </select>
+          />
         </label>
         <label htmlFor={currencyId} {...props(styles.field)}>
           Currency
-          <input id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
+          <TextField id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
         </label>
         {amountField.visible ? (
           <label htmlFor={amountId} {...props(styles.field)}>
             {amountField.label}
-            <input id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
+            <TextField id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
           </label>
         ) : null}
         <Button disabled={mutationPending} type="submit">

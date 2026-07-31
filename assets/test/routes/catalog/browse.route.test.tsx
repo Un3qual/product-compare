@@ -24,6 +24,10 @@ import {
   buildCatalogBrowsePaginationData,
   catalogBrowseNextPagePath
 } from "../../../src/routes/catalog/paths";
+import {
+  chooseSelectOption,
+  openSelect
+} from "../../helpers/radix-select";
 
 const { fetchRouteQueryMock, useLoaderDataMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
   vi.hoisted(() => ({
@@ -1437,7 +1441,7 @@ test("omits the default catalog sort until an explicit sort is selected", () => 
 
   expect(new FormData(filterForm).get("sort")).toBeNull();
 
-  fireEvent.change(sortSelect, { target: { value: "NEWEST" } });
+  chooseSelectOption(sortSelect, "Newest");
 
   expect(new FormData(filterForm).get("sort")).toBe("NEWEST");
 });
@@ -1457,7 +1461,8 @@ test("shows but does not submit implicit relevance for an active search", () => 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
-  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
+  openSelect(sortSelect);
+  expect(screen.getByRole("option", { name: "Relevance" })).toBeInTheDocument();
   expect(sortSelect).toHaveValue("RELEVANCE");
   expect(new FormData(filterForm).get("sort")).toBeNull();
 });
@@ -1468,7 +1473,8 @@ test("hides relevance and selects catalog order without a search", () => {
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
-  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  openSelect(sortSelect);
+  expect(screen.queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
   expect(sortSelect).toHaveValue("ID_ASC");
 });
 
@@ -1487,7 +1493,7 @@ test("submits explicit catalog order for an active search", () => {
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
-  fireEvent.change(sortSelect, { target: { value: "ID_ASC" } });
+  chooseSelectOption(sortSelect, "Catalog order");
 
   expect(new FormData(filterForm).get("sort")).toBe("ID_ASC");
 });
@@ -1497,12 +1503,15 @@ test("defaults a newly entered search to relevance", () => {
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const searchInput = within(filterForm).getByRole("searchbox", { name: "Search products" });
-  const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
   fireEvent.change(searchInput, { target: { value: "oled" } });
 
-  expect(within(sortSelect).getByRole("option", { name: "Relevance" })).toBeInTheDocument();
-  expect(sortSelect).toHaveValue("RELEVANCE");
+  const updatedSortSelect = within(filterForm).getByRole("combobox", {
+    name: "Sort products"
+  });
+  expect(updatedSortSelect).toHaveTextContent("Relevance");
+  openSelect(updatedSortSelect);
+  expect(screen.getByRole("option", { name: "Relevance" })).toBeInTheDocument();
   expect(new FormData(filterForm).get("q")).toBe("oled");
   expect(new FormData(filterForm).get("sort")).toBeNull();
 });
@@ -1527,8 +1536,9 @@ test("clearing an implicit relevance search restores catalog order", () => {
 
   fireEvent.change(searchInput, { target: { value: "" } });
 
-  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
-  expect(sortSelect).toHaveValue("ID_ASC");
+  expect(
+    within(filterForm).getByRole("combobox", { name: "Sort products" })
+  ).toHaveValue("ID_ASC");
   expect(new FormData(filterForm).get("q")).toBe("");
   expect(new FormData(filterForm).get("sort")).toBeNull();
 });
@@ -1546,7 +1556,8 @@ test("normalizes relevance to catalog order when no search is present", () => {
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
   const sortSelect = within(filterForm).getByRole("combobox", { name: "Sort products" });
 
-  expect(within(sortSelect).queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
+  openSelect(sortSelect);
+  expect(screen.queryByRole("option", { name: "Relevance" })).not.toBeInTheDocument();
   expect(sortSelect).toHaveValue("ID_ASC");
   expect(new FormData(filterForm).get("sort")).toBeNull();
 });
@@ -1895,7 +1906,7 @@ test("preserves in-progress filter control state when compare selection changes"
   const filterForm = screen.getByRole("form", { name: "Filter products" });
   const typeSelect = within(filterForm).getByRole("combobox", { name: "Product type" });
 
-  fireEvent.change(typeSelect, { target: { value: "type-laptops" } });
+  chooseSelectOption(typeSelect, "Laptops (6)");
   mockedUseRoutePreloadedQuery.mockReturnValueOnce({
     dispose: vi.fn(),
     variables: loaderData.query.__relayQuery.variables
@@ -1944,7 +1955,7 @@ test("clears the descendant filter from submitted data when the product type is 
   expect(includeDescendantsCheckbox).toBeChecked();
   expect(includeDescendantsCheckbox).not.toBeDisabled();
 
-  fireEvent.change(productTypeSelect, { target: { value: "" } });
+  chooseSelectOption(productTypeSelect, "All product types");
 
   expect(productTypeSelect).toHaveValue("");
   expect(includeDescendantsCheckbox).not.toBeChecked();
@@ -1985,7 +1996,7 @@ test("selects descendants by default when choosing a product type", () => {
   expect(includeDescendantsCheckbox).not.toBeChecked();
   expect(includeDescendantsCheckbox).toBeDisabled();
 
-  fireEvent.change(productTypeSelect, { target: { value: "type-laptops" } });
+  chooseSelectOption(productTypeSelect, "Laptops (6)");
 
   expect(productTypeSelect).toHaveValue("type-laptops");
   expect(includeDescendantsCheckbox).toBeChecked();
@@ -1997,7 +2008,7 @@ test("selects descendants by default when choosing a product type", () => {
   expect(includeDescendantsCheckbox).not.toBeChecked();
   expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
 
-  fireEvent.change(productTypeSelect, { target: { value: "type-monitors" } });
+  chooseSelectOption(productTypeSelect, "Monitors (3)");
 
   expect(productTypeSelect).toHaveValue("type-monitors");
   expect(includeDescendantsCheckbox).not.toBeChecked();

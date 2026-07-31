@@ -7,6 +7,9 @@ import type { ProductCommunityItemsUpdateProductAnswerMutation } from "../../__g
 import type { ProductCommunityItemsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityItemsUpdateProductQuestionMutation.graphql";
 import type { ProductCommunityItemsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityItemsUpdateProductReviewMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
+import { TextArea } from "../../ui/primitives/TextArea";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../route-errors";
 import {
@@ -340,9 +343,9 @@ function ReviewEditForm({ editing, pending, review, onCancel, onSubmit }: {
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit review rating<select name="rating" defaultValue={review.rating} {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
-    <label {...props(styles.field)}>Edit review title<input name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit review body<textarea name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit review rating<Select name="rating" defaultValue={String(review.rating)} options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit review title<TextField name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit review body<TextArea name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></label>
     <EditActions label="review" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -357,8 +360,8 @@ function QuestionEditForm({ editing, pending, question, onCancel, onSubmit }: {
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit question title<input name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit question body<textarea name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit question title<TextField name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit question body<TextArea name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></label>
     <EditActions label="question" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -373,7 +376,7 @@ function AnswerEditForm({ answer, editing, pending, onCancel, onSubmit }: {
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit answer body<textarea name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Edit answer body<TextArea name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></label>
     <EditActions label="answer" onCancel={onCancel} pending={pending} />
   </form>;
 }

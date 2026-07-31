@@ -2,6 +2,8 @@ import { Fragment } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "../../ui/primitives/Button";
+import { Checkbox } from "../../ui/primitives/Checkbox";
+import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import {
@@ -76,17 +78,16 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
         />
       </label>
       <label>
-        <input
+        <Checkbox
           defaultChecked={!filters.activeOnly}
           name="activeOnly"
-          type="checkbox"
           value="false"
         />
         Include inactive offers
       </label>
       <label>
         Page size
-        <input
+        <TextField
           autoComplete="off"
           defaultValue={String(filters.first)}
           min={1}
@@ -96,13 +97,11 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       </label>
       <label>
         Sort
-        <select defaultValue={filters.sort} name="sort">
-          {OFFER_DISCOVERY_SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <Select
+          defaultValue={filters.sort}
+          name="sort"
+          options={OFFER_DISCOVERY_SORT_OPTIONS}
+        />
       </label>
       <Button type="submit">Apply filters</Button>
     </form>

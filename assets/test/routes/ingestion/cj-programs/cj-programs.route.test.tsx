@@ -9,6 +9,10 @@ import {
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
 import { CJProgramsRoute } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import type { CJProgramsLoaderData } from "../../../../src/routes/ingestion/cj-programs/loader";
+import {
+  chooseSelectOption,
+  openSelect
+} from "../../../helpers/radix-select";
 
 const {
   commitUpdateMutationMock,
@@ -150,17 +154,17 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
 
   expect(screen.getByRole("combobox", { name: "Stage" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Sort programs" })).toBeInTheDocument();
-  expect(screen.getByRole("option", { name: "All stages" })).toHaveValue("");
-  expect(screen.getByRole("option", { name: "Last changed" })).toHaveValue(
-    "last_changed_desc"
-  );
+  expect(screen.getByRole("combobox", { name: "Stage" })).toHaveTextContent("All stages");
+  openSelect(screen.getByRole("combobox", { name: "Sort programs" }));
+  expect(screen.getByRole("option", { name: "Last changed" })).toBeInTheDocument();
 });
 
 test("CJ program rows expose every lifecycle stage and save a trimmed note", async () => {
   renderCJProgramsRoute();
 
   const stage = screen.getByRole("combobox", { name: "Stage for New Merchant" });
-  expect(within(stage).getAllByRole("option").map((option) => option.textContent)).toEqual([
+  openSelect(stage);
+  expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
     "New",
     "Considering",
     "Selected",
@@ -170,9 +174,7 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
     "Declined"
   ]);
 
-  fireEvent.change(screen.getByLabelText("Stage for New Merchant"), {
-    target: { value: "DECLINED" }
-  });
+  chooseSelectOption(stage, "Declined");
   fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
     target: { value: "  Not a fit now  " }
   });
@@ -210,9 +212,7 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
 
   const view = renderCJProgramsRoute();
 
-  fireEvent.change(screen.getByLabelText("Stage for New Merchant"), {
-    target: { value: "DECLINED" }
-  });
+  chooseSelectOption(screen.getByLabelText("Stage for New Merchant"), "Declined");
   fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
     target: { value: "Local draft" }
   });
@@ -439,9 +439,10 @@ test("a failed CJ program feed query stays in its row and retries only that row"
     expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
     expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
-    fireEvent.change(screen.getByLabelText("Stage for Considering Merchant"), {
-      target: { value: "ACCEPTED" }
-    });
+    chooseSelectOption(
+      screen.getByLabelText("Stage for Considering Merchant"),
+      "Accepted"
+    );
     expect(screen.getByLabelText("Stage for Considering Merchant")).toHaveValue("ACCEPTED");
 
     fireEvent.click(

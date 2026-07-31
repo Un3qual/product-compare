@@ -1,3 +1,6 @@
+import { Checkbox } from "../../ui/primitives/Checkbox";
+import { Radio } from "../../ui/primitives/Radio";
+import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
 import type { CatalogFilters } from "./filters";
@@ -44,12 +47,11 @@ function UseCaseFiltersFieldset({
       <legend>Use cases</legend>
       {rows.map((row) => (
         <label key={row.id}>
-          <input
+          <Checkbox
             defaultChecked={row.selected}
             disabled={row.disabled}
             id={`catalog-use-case-${row.id}`}
             name="useCaseTaxonId"
-            type="checkbox"
             value={row.id}
           />
           {row.label} ({row.count})
@@ -137,15 +139,16 @@ function BooleanFilterField({
   return (
     <label>
       {row.displayName}
-      <select
+      <Select
         defaultValue={row.defaultValue}
         id={`catalog-boolean-${row.attributeId}`}
         name={`boolean.${row.attributeId}`}
-      >
-        <option value="">Any</option>
-        <option value="true">Yes ({row.trueCount})</option>
-        <option value="false">No ({row.falseCount})</option>
-      </select>
+        options={[
+          { label: "Any", value: "" },
+          { label: `Yes (${row.trueCount})`, value: "true" },
+          { label: `No (${row.falseCount})`, value: "false" }
+        ]}
+      />
     </label>
   );
 }
@@ -180,23 +183,21 @@ function EnumFilterFieldset({
     <fieldset>
       <legend>{row.displayName}</legend>
       <label>
-        <input
+        <Radio
           defaultChecked={row.anySelected}
           id={`catalog-enum-${row.attributeId}-any`}
           name={inputName}
-          type="radio"
           value=""
         />
         Any
       </label>
       {row.options.map((option) => (
         <label key={option.id}>
-          <input
+          <Radio
             defaultChecked={option.selected}
             disabled={option.disabled}
             id={`catalog-enum-${row.attributeId}-${option.id}`}
             name={inputName}
-            type="radio"
             value={option.id}
           />
           {option.label} ({option.count})

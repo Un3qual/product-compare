@@ -5,6 +5,7 @@ import type { AffiliateSetupRouteUpsertAffiliateLinkMutation } from "../../../__
 import type { AffiliateSetupRouteUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateNetworkMutation.graphql";
 import type { AffiliateSetupRouteUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupRouteUpsertAffiliateProgramMutation.graphql";
 import { Button } from "../../../ui/primitives/Button";
+import { Select } from "../../../ui/primitives/Select";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
 import { couponDiscountText } from "./affiliate-setup-data";
@@ -285,17 +286,15 @@ function MerchantSelect({
   return (
     <label>
       {label}
-      <select
+      <Select
         name={name}
-        onChange={(event) => onSelectedMerchantIdChange(event.currentTarget.value)}
+        onValueChange={onSelectedMerchantIdChange}
+        options={merchantChoices.map((merchant) => ({
+          label: merchant.name,
+          value: merchant.id
+        }))}
         value={selectedMerchantValue}
-      >
-        {merchantChoices.map((merchant) => (
-          <option key={merchant.id} value={merchant.id}>
-            {merchant.name}
-          </option>
-        ))}
-      </select>
+      />
     </label>
   );
 }
@@ -304,12 +303,14 @@ function DiscountTypeSelect() {
   return (
     <label>
       Discount type
-      <select defaultValue="OTHER" name="discountType">
-        <option value="OTHER">OTHER</option>
-        <option value="PERCENT">PERCENT</option>
-        <option value="AMOUNT">AMOUNT</option>
-        <option value="FREE_SHIPPING">FREE_SHIPPING</option>
-      </select>
+      <Select
+        defaultValue="OTHER"
+        name="discountType"
+        options={["OTHER", "PERCENT", "AMOUNT", "FREE_SHIPPING"].map((value) => ({
+          label: value,
+          value
+        }))}
+      />
     </label>
   );
 }

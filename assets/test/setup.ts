@@ -17,3 +17,8 @@ class TestResizeObserver implements ResizeObserver {
 }
 
 globalThis.ResizeObserver ??= TestResizeObserver;
+
+Element.prototype.hasPointerCapture ??= () => false;
+Element.prototype.setPointerCapture ??= () => {};
+Element.prototype.releasePointerCapture ??= () => {};
+Element.prototype.scrollIntoView ??= () => {};

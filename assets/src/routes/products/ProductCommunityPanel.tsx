@@ -17,6 +17,9 @@ import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQue
 import type { ProductCommunityPanelSubmitProductReviewMutation } from "../../__generated__/ProductCommunityPanelSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
+import { TextArea } from "../../ui/primitives/TextArea";
+import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
@@ -269,9 +272,9 @@ function ReviewSection({
     </ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label htmlFor={ratingId} {...props(styles.field)}>Rating<select id={ratingId} name="rating" defaultValue="5" {...props(styles.input)}>{[5,4,3,2,1].map((rating) => <option key={rating} value={rating}>{rating}</option>)}</select></label>
-      <label {...props(styles.field)}>Title<input name="title" maxLength={120} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Review<textarea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
+      <label htmlFor={ratingId} {...props(styles.field)}>Rating<Select id={ratingId} name="rating" defaultValue="5" options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Title<TextField name="title" maxLength={120} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Review<TextArea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -319,8 +322,8 @@ function QuestionSection({
     </ul> : <p>No published questions yet.</p>}
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more questions</Button> : null}
     <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label {...props(styles.field)}>Question<input name="title" required maxLength={200} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Details<textarea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Question<TextField name="title" required maxLength={200} {...props(styles.input)} /></label>
+      <label {...props(styles.field)}>Details<TextArea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -402,7 +405,7 @@ function AnswerForm({ questionId }: { questionId: string }) {
   }
 
   return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Answer<textarea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <label {...props(styles.field)}>Answer<TextArea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
     <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>
     {message ? <p role="status">{message}</p> : null}
   </form></details>;

@@ -124,7 +124,7 @@ function RevenueSummaryFilterForm({
       </div>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.from}>From</span>
-        <input
+        <TextField
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.from}
           defaultValue={values.from}
           name="from"
@@ -133,7 +133,7 @@ function RevenueSummaryFilterForm({
       </div>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.to}>To</span>
-        <input
+        <TextField
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.to}
           defaultValue={values.to}
           name="to"

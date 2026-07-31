@@ -8,6 +8,7 @@ import {
   MerchantDirectoryView
 } from "../../../src/routes/merchants/MerchantDirectoryView";
 import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
+import { openSelect } from "../../helpers/radix-select";
 
 const {
   useLoaderDataMock,
@@ -113,9 +114,10 @@ test("merchant directory controls render the selected page size", () => {
   expect(pageSizeForm).toHaveAttribute("action", "/merchants");
   expect(pageSizeForm).toHaveAttribute("method", "get");
   expect(pageSizeSelect).toHaveValue("35");
-  expect(screen.getByRole("option", { name: "20" })).toHaveValue("20");
-  expect(screen.getByRole("option", { name: "35" })).toHaveValue("35");
-  expect(screen.getByRole("option", { name: "50" })).toHaveValue("50");
+  openSelect(pageSizeSelect);
+  expect(screen.getByRole("option", { name: "20" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "35" })).toBeInTheDocument();
+  expect(screen.getByRole("option", { name: "50" })).toBeInTheDocument();
 });
 
 test("merchant directory view renders only supplied safe actions", () => {

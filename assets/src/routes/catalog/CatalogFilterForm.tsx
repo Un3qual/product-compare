@@ -3,6 +3,8 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { ActiveFilterChips } from "../../ui/components/filters/ActiveFilterChips";
 import { Button } from "../../ui/primitives/Button";
+import { Checkbox } from "../../ui/primitives/Checkbox";
+import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import {
   Collapsible,
@@ -194,19 +196,17 @@ function SortField({
   return (
     <label>
       Sort products
-      <select
+      <Select
         name={sortParam ? "sort" : undefined}
-        value={sort}
-        onChange={(event) =>
-          onSortChange(catalogProductSortFromValue(event.currentTarget.value))
+        onValueChange={(value) =>
+          onSortChange(catalogProductSortFromValue(value))
         }
-      >
-        {availableSorts.map((value) => (
-          <option key={value} value={value}>
-            {catalogProductSortLabel(value)}
-          </option>
-        ))}
-      </select>
+        options={availableSorts.map((value) => ({
+          label: catalogProductSortLabel(value),
+          value
+        }))}
+        value={sort}
+      />
     </label>
   );
 }
@@ -229,13 +229,15 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
   return (
     <label>
       Products per page
-      <select key={pageSize} name="first" defaultValue={String(pageSize)}>
-        {BROWSE_PRODUCTS_PAGE_SIZES.map((size) => (
-          <option key={size} value={String(size)}>
-            {size}
-          </option>
-        ))}
-      </select>
+      <Select
+        key={pageSize}
+        name="first"
+        defaultValue={String(pageSize)}
+        options={BROWSE_PRODUCTS_PAGE_SIZES.map((size) => ({
+          label: String(size),
+          value: String(size)
+        }))}
+      />
     </label>
   );
 }
@@ -252,18 +254,19 @@ function ProductTypeField({
   return (
     <label>
       Product type
-      <select
+      <Select
         name="typeTaxonId"
+        onValueChange={onTypeTaxonIdChange}
+        options={[
+          { label: "All product types", value: "" },
+          ...metadata.typeOptions.map((option) => ({
+            disabled: option.disabled && !option.selected,
+            label: `${option.label} (${option.count})`,
+            value: option.id
+          }))
+        ]}
         value={selectedTypeTaxonId}
-        onChange={(event) => onTypeTaxonIdChange(event.currentTarget.value)}
-      >
-        <option value="">All product types</option>
-        {metadata.typeOptions.map((option) => (
-          <option key={option.id} value={option.id} disabled={option.disabled && !option.selected}>
-            {option.label} ({option.count})
-          </option>
-        ))}
-      </select>
+      />
     </label>
   );
 }
@@ -281,13 +284,12 @@ function IncludeDescendantsCheckbox({
 
   return (
     <label>
-      <input
-        type="checkbox"
+      <Checkbox
         name="includeTypeDescendants"
         value="1"
         checked={hasSelectedType && includeTypeDescendants}
         disabled={!hasSelectedType}
-        onChange={(event) => onIncludeTypeDescendantsChange(event.currentTarget.checked)}
+        onCheckedChange={(checked) => onIncludeTypeDescendantsChange(checked === true)}
       />
       Include subcategories
     </label>

@@ -12,6 +12,7 @@ import {
   ProductCommunityPanel,
   submitProductReviewMutation
 } from "../../../src/routes/products/ProductCommunityPanel";
+import { chooseSelectOption } from "../../helpers/radix-select";
 
 const {
   answerMock,
@@ -135,7 +136,7 @@ test("ProductCommunityPanel shows published trust signals and renders authored t
 test("ProductCommunityPanel reuses a create key after transport failure and replaces it after a terminal payload", async () => {
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
   fireEvent.click(screen.getByText("Write a review"));
-  fireEvent.change(screen.getByLabelText("Rating"), { target: { value: "3" } });
+  chooseSelectOption(screen.getByLabelText("Rating"), "3");
   fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Balanced" } });
   fireEvent.change(screen.getByLabelText("Review"), { target: { value: "Good, with caveats." } });
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));

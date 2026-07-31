@@ -6,6 +6,7 @@ import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
 import { Button } from "../../ui/primitives/Button";
+import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import type { SavedComparisonSetSummary } from "./saved-data";
@@ -149,15 +150,18 @@ function SavedComparisonControls({
       </div>
       <label>
         Sort saved comparisons
-        <select
-          onChange={(event) => onSortModeChange(savedComparisonSortModeFromValue(event.target.value))}
+        <Select
+          onValueChange={(value) =>
+            onSortModeChange(savedComparisonSortModeFromValue(value))
+          }
+          options={[
+            { label: "Current order", value: "current" },
+            { label: "Name A-Z", value: "name-asc" },
+            { label: "Product count high-to-low", value: "product-count-desc" },
+            { label: "Product count low-to-high", value: "product-count-asc" }
+          ]}
           value={sortMode}
-        >
-          <option value="current">Current order</option>
-          <option value="name-asc">Name A-Z</option>
-          <option value="product-count-desc">Product count high-to-low</option>
-          <option value="product-count-asc">Product count low-to-high</option>
-        </select>
+        />
       </label>
       <p {...props(styles.controlNote)}>Filtering and sorting apply to the visible page.</p>
     </div>

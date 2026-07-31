@@ -8,6 +8,7 @@ import { SavedComparisonSetList } from "../../../src/routes/compare/SavedCompari
 import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
+import { chooseSelectOption } from "../../helpers/radix-select";
 
 const {
   commitMutationMock,
@@ -366,10 +367,10 @@ test("saved comparisons route restores current order after another sort", () => 
   expect(sortSelect).toHaveValue("current");
   expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
 
-  fireEvent.change(sortSelect, { target: { value: "name-asc" } });
+  chooseSelectOption(sortSelect, "Name A-Z");
   expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
 
-  fireEvent.change(sortSelect, { target: { value: "current" } });
+  chooseSelectOption(sortSelect, "Current order");
   expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
 });
 
@@ -386,9 +387,10 @@ test("saved comparisons route sorts loaded sets by name A-Z", () => {
     </MemoryRouter>
   );
 
-  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
-    target: { value: "name-asc" }
-  });
+  chooseSelectOption(
+    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
+    "Name A-Z"
+  );
 
   expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
 });
@@ -406,9 +408,10 @@ test("saved comparisons route sorts loaded sets by product count high-to-low", (
     </MemoryRouter>
   );
 
-  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
-    target: { value: "product-count-desc" }
-  });
+  chooseSelectOption(
+    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
+    "Product count high-to-low"
+  );
 
   expect(savedComparisonNames()).toEqual(["Office suite", "Desk setup", "Alpha kit"]);
 });
@@ -429,9 +432,10 @@ test("saved comparisons route sorts filtered loaded sets by product count low-to
   fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
     target: { value: "e" }
   });
-  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
-    target: { value: "product-count-asc" }
-  });
+  chooseSelectOption(
+    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
+    "Product count low-to-high"
+  );
 
   expect(savedComparisonNames()).toEqual(["Desk setup", "Office suite"]);
 });
@@ -458,7 +462,7 @@ test("saved comparisons route keeps row actions scoped when sorting changes", as
 
   const sortSelect = screen.getByRole("combobox", { name: "Sort saved comparisons" });
 
-  fireEvent.change(sortSelect, { target: { value: "product-count-desc" } });
+  chooseSelectOption(sortSelect, "Product count high-to-low");
   const alphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
 
   expect(within(alphaActions).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
@@ -472,7 +476,7 @@ test("saved comparisons route keeps row actions scoped when sorting changes", as
     expect(commits).toHaveLength(1);
   });
 
-  fireEvent.change(sortSelect, { target: { value: "product-count-asc" } });
+  chooseSelectOption(sortSelect, "Product count low-to-high");
 
   const resortedAlphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
 
@@ -881,9 +885,10 @@ test("saved comparisons route sorts combined loader saved sets while retaining l
     </MemoryRouter>
   );
 
-  fireEvent.change(screen.getByRole("combobox", { name: "Sort saved comparisons" }), {
-    target: { value: "name-asc" }
-  });
+  chooseSelectOption(
+    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
+    "Name A-Z"
+  );
 
   expect(savedComparisonNames()).toEqual([
     "Alpha kit",
