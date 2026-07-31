@@ -12,7 +12,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
 
   test "development seeds populate public, shopper, and operator GraphQL reads", %{conn: conn} do
     capture_io(fn ->
-      Code.eval_file(Path.expand("../../../priv/repo/seeds.exs", __DIR__))
+      Code.eval_file(Path.join(File.cwd!(), "priv/repo/seeds.exs"))
     end)
 
     product = Repo.get_by!(Product, slug: "acme-vision-27g")
@@ -31,16 +31,15 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
            } =
              graphql(conn, public_query(), %{
                "productId" => relay_id(:product, product.id),
-               "merchantId" => relay_id(:merchant, merchant.id),
                "slug" => product.slug,
                "questionSlug" => "acme-beam-4k"
              })
 
-    assert length(product_edges) >= 5
-    assert length(merchant_edges) >= 2
-    assert length(offer_edges) >= 1
-    assert length(review_edges) >= 1
-    assert length(question_edges) >= 1
+    assert [_, _, _, _, _ | _] = product_edges
+    assert [_, _ | _] = merchant_edges
+    assert [_ | _] = offer_edges
+    assert [_ | _] = review_edges
+    assert [_ | _] = question_edges
 
     shopper = Repo.get_by!(User, email: "shopper@example.com")
     shopper_conn = conn |> log_in_user(shopper) |> put_req_header_same_origin()
@@ -76,8 +75,8 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
              "Home theater shortlist"
            ]
 
-    assert length(watch_edges) == 4
-    assert length(event_edges) >= 3
+    assert [_, _, _, _] = watch_edges
+    assert [_, _, _ | _] = event_edges
 
     assert Enum.sort(Enum.map(token_edges, &get_in(&1, ["node", "label"]))) == [
              "Development active",
@@ -129,8 +128,8 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
              "selected" => 1
            }
 
-    assert length(cj_program_edges) == 7
-    assert length(unmatched_feed_edges) == 1
+    assert [_, _, _, _, _, _, _] = cj_program_edges
+    assert [_] = unmatched_feed_edges
     assert Enum.any?(coupon_edges, &(get_in(&1, ["node", "code"]) == "DEV-ACTIVE-10"))
   end
 

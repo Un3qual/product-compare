@@ -1,5 +1,5 @@
-Code.require_file(Path.expand("../../../priv/repo/seeds/support.exs", __DIR__))
-Code.require_file(Path.expand("../../../priv/repo/seeds/accounts.exs", __DIR__))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/support.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
 
 defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
@@ -11,6 +11,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
   alias ProductCompare.Alerts
+  alias ProductCompare.Catalog
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
@@ -35,6 +36,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Discussions.CommunityReport
+  alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
@@ -191,6 +193,44 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert persisted.hashed_password == preclaimed.hashed_password
     assert Argon2.verify_pass(attacker_password, persisted.hashed_password)
     refute Repo.get_by(UserReputation, user_id: preclaimed.id)
+
+    refute Repo.get_by(User, email: "shopper@example.com")
+
+    assert Repo.aggregate(
+             from(product in Product,
+               where:
+                 product.slug in [
+                   "acme-vision-27g",
+                   "acme-vision-27uw",
+                   "acme-vision-27i-import",
+                   "acme-cinema-55o",
+                   "acme-beam-4k"
+                 ]
+             ),
+             :count,
+             :id
+           ) == 0
+
+    assert Repo.aggregate(
+             from(merchant in Merchant,
+               where: merchant.domain in ["examplemart.test", "valuevision.test"]
+             ),
+             :count,
+             :id
+           ) == 0
+
+    assert Repo.aggregate(
+             from(source in Source,
+               where:
+                 source.name in [
+                   "Development Manufacturer Evidence",
+                   "Development Marketplace Evidence",
+                   "CJ"
+                 ]
+             ),
+             :count,
+             :id
+           ) == 0
   end
 
   test "seeds catalog, offer truth, affiliate, coupon, and source-backed claim scenarios" do
@@ -352,8 +392,8 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Map.keys(saved_sets) |> Enum.sort() ==
              ["Gaming shortlist", "Home theater shortlist"]
 
-    assert length(saved_sets["Gaming shortlist"].items) == 3
-    assert length(saved_sets["Home theater shortlist"].items) == 2
+    assert [_, _, _] = saved_sets["Gaming shortlist"].items
+    assert [_, _] = saved_sets["Home theater shortlist"].items
 
     assert %ComparisonSnapshot{public_token: public_token, revoked_at: nil} =
              Repo.get_by(ComparisonSnapshot,
@@ -380,7 +420,7 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> Alerts.list_alert_events_query()
       |> Repo.all()
 
-    assert length(events) >= 2
+    assert [_, _ | _] = events
     assert Enum.any?(events, &match?(%DateTime{}, &1.read_at))
     assert Enum.any?(events, &is_nil(&1.read_at))
 
@@ -414,7 +454,7 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> where([post], post.thread_id == ^question.id)
       |> Repo.all()
 
-    assert length(answers) == 2
+    assert [_, _] = answers
 
     assert Enum.any?(
              answers,
@@ -465,8 +505,8 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert corrections["Development accepted correction example"].attribute_id !=
              corrections["Development rejected correction example"].attribute_id
 
-    assert Enum.count(events, &match?(%AlertEvent{}, &1)) == length(events)
-    assert length(Discussions.list_public_reviews(shopper_review.product_id)) >= 1
+    assert Enum.all?(events, &match?(%AlertEvent{}, &1))
+    assert [_ | _] = Discussions.list_public_reviews(shopper_review.product_id)
   end
 
   test "seeds synthetic CJ and attribution history and prints a complete local testing guide" do
@@ -627,6 +667,200 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert output =~ "Synthetic"
     assert output =~ "Development API token"
+  end
+
+  test "reruns restore seed-owned state without duplicating it or changing unrelated data" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    first_counts = seed_scope_counts()
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+
+    snapshot =
+      Repo.one!(
+        from(snapshot in ComparisonSnapshot,
+          where:
+            snapshot.user_id == ^shopper.id and snapshot.title == "Development comparison" and
+              is_nil(snapshot.revoked_at)
+        )
+      )
+
+    seeded_product = Repo.get_by!(Product, slug: "acme-vision-27g")
+    seeded_merchant = Repo.get_by!(Merchant, domain: "examplemart.test")
+    seeded_network = Repo.get_by!(AffiliateNetwork, name: "Development Affiliate Network")
+
+    assert {:ok, _renamed_product} =
+             Catalog.update_product(seeded_product, %{name: "Corrupted development product"})
+
+    assert {:ok, _paused_program} =
+             Affiliate.upsert_program(%{
+               affiliate_network_id: seeded_network.id,
+               merchant_id: seeded_merchant.id,
+               program_code: "DEV-EXAMPLEMART",
+               status: "paused"
+             })
+
+    assert {:ok, unrelated_user} =
+             Accounts.register_user(%{
+               email: "unrelated@example.com",
+               password: @seed_password
+             })
+
+    assert {:ok, %{api_token: unrelated_token}} =
+             Accounts.create_api_token(unrelated_user.id, %{label: "Unrelated token"})
+
+    assert {:ok, unrelated_product} =
+             Catalog.create_product(%{
+               name: "Unrelated local product",
+               slug: "unrelated-local-product",
+               primary_type_taxon_id: seeded_product.primary_type_taxon_id
+             })
+
+    assert {:ok, unrelated_merchant} =
+             Pricing.upsert_merchant(%{
+               name: "Unrelated local merchant",
+               domain: "unrelated-local.test"
+             })
+
+    assert {:ok, unrelated_review} =
+             Discussions.submit_review(
+               unrelated_user.id,
+               unrelated_product.id,
+               %{rating: 3, title: "Unrelated local review"},
+               "unrelated-review-v1"
+             )
+
+    unrelated_records = %{
+      user: Repo.get!(User, unrelated_user.id),
+      api_token: Repo.get!(ApiToken, unrelated_token.id),
+      product: Repo.get!(Product, unrelated_product.id),
+      merchant: Repo.get!(Merchant, unrelated_merchant.id),
+      review: Repo.get!(ProductReview, unrelated_review.id)
+    }
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert seed_scope_counts() == first_counts
+    assert Repo.get_by!(Product, slug: "acme-vision-27g").name == "Acme Vision 27G"
+
+    assert %AffiliateProgram{status: "active"} =
+             Repo.get_by!(AffiliateProgram,
+               affiliate_network_id: seeded_network.id,
+               merchant_id: seeded_merchant.id
+             )
+
+    assert Repo.get!(ComparisonSnapshot, snapshot.id).public_token == snapshot.public_token
+    assert Repo.get!(User, unrelated_user.id) == unrelated_records.user
+    assert Repo.get!(ApiToken, unrelated_token.id) == unrelated_records.api_token
+    assert Repo.get!(Product, unrelated_product.id) == unrelated_records.product
+    assert Repo.get!(Merchant, unrelated_merchant.id) == unrelated_records.merchant
+    assert Repo.get!(ProductReview, unrelated_review.id) == unrelated_records.review
+  end
+
+  defp seed_scope_counts do
+    reserved_emails = ~w(
+      admin@example.com
+      moderator@example.com
+      shopper@example.com
+      participant@example.com
+      unverified@example.com
+      reset@example.com
+    )
+
+    product_slugs = ~w(
+      acme-vision-27g
+      acme-vision-27uw
+      acme-vision-27i-import
+      acme-cinema-55o
+      acme-beam-4k
+    )
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    cj_source = Repo.get_by!(Source, name: "CJ", provider: "cj")
+
+    import_runs =
+      ImportRun
+      |> where([run], run.source_id == ^cj_source.id)
+      |> Repo.all()
+      |> Enum.count(&String.starts_with?(&1.query["seedScenario"] || "", "development-"))
+
+    %{
+      users:
+        Repo.aggregate(from(user in User, where: user.email in ^reserved_emails), :count, :id),
+      products:
+        Repo.aggregate(
+          from(product in Product, where: product.slug in ^product_slugs),
+          :count,
+          :id
+        ),
+      merchants:
+        Repo.aggregate(
+          from(merchant in Merchant,
+            where: merchant.domain in ["examplemart.test", "valuevision.test"]
+          ),
+          :count,
+          :id
+        ),
+      api_tokens:
+        Repo.aggregate(
+          from(token in ApiToken,
+            where:
+              token.user_id == ^shopper.id and
+                token.label in ["Development active", "Development revoked"]
+          ),
+          :count,
+          :id
+        ),
+      saved_sets:
+        Repo.aggregate(
+          from(saved_set in SavedComparisonSet,
+            where:
+              saved_set.user_id == ^shopper.id and
+                saved_set.name in ["Gaming shortlist", "Home theater shortlist"]
+          ),
+          :count,
+          :id
+        ),
+      community_receipts:
+        Repo.aggregate(
+          from(receipt in CommunityWriteReceipt,
+            where: like(receipt.idempotency_key, "dev-seed-%")
+          ),
+          :count,
+          :id
+        ),
+      cj_feeds:
+        Repo.aggregate(
+          from(feed in MerchantFeedCandidate,
+            where:
+              feed.source_id == ^cj_source.id and
+                like(feed.provider_feed_id, "DEV-CJ-FEED-%")
+          ),
+          :count,
+          :id
+        ),
+      sources:
+        Repo.aggregate(
+          from(source in Source,
+            where:
+              source.name in [
+                "Development Manufacturer Evidence",
+                "Development Marketplace Evidence",
+                "CJ"
+              ]
+          ),
+          :count,
+          :id
+        ),
+      conversions:
+        Repo.aggregate(
+          from(conversion in CommerceConversion,
+            where: like(conversion.network_conversion_ref, "DEV-CONV-%")
+          ),
+          :count,
+          :id
+        ),
+      import_runs: import_runs
+    }
   end
 
   defp current_attributes_by_code(product) do

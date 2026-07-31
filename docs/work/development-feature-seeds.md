@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P0
 - Plan:
   `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
@@ -11,29 +11,31 @@
 - Last verified: 2026-07-31 against the current seed entry point, frontend
   route map, GraphQL surface, context APIs, and persisted schemas.
 
-## Target Outcome
+## Batch Outcome
 
-Every delivered development route and backing workflow has deterministic,
-self-contained representative data immediately after seeding. Several
-documented accounts exercise ownership, participation, moderation, and operator
-policy; synthetic CJ and attribution records require no provider, scheduler,
-mailer, or network call.
+Every delivered development route and backing workflow now has deterministic,
+self-contained representative data immediately after seeding. Six documented
+accounts exercise ownership, participation, moderation, operator, unverified,
+and password-reset policies; synthetic CJ and attribution records require no
+provider, scheduler, mailer, job, or network call.
 
-## Ready Evidence
+## Observed Coverage
 
-- The current seed creates two operators, taxonomies, three monitor products,
-  current claims, one merchant offer, and three price observations.
-- Saved/shared comparisons, alerts, API-token lifecycle examples, community
-  ownership/moderation, corrections, affiliate setup, CJ program lifecycle,
-  ingestion history, and recorded revenue remain empty after a normal seed.
-- `assets/src/router.tsx` exposes shopper, account, affiliate, CJ-program, and
-  revenue routes backed by existing context and GraphQL operations.
-- Existing contexts support local token callbacks, idempotent conversion and
-  provider records, immutable comparison capture, local alert evaluation, and
-  community idempotency without external services.
-- The current `SeedsTest` protects operator bootstrap takeover but does not
-  prove a successful seed, rerun behavior, route visibility, or provider
-  isolation.
+- The catalog spans monitor, TV, and projector facets, source-backed claims,
+  offer freshness/availability states, affiliate programs/links, and
+  active/future/expired coupons.
+- Shopper state includes saved and shared comparisons, read/unread alerts,
+  active/revoked API tokens, owned community content, an accepted answer and
+  report, and pending/accepted/rejected specification corrections.
+- Operator state includes every CJ program stage, matched/unmatched feeds,
+  successful/failed import histories, correction moderation, coupons, and
+  approved/pending/reversed/paid attribution history with revenue facts.
+- The post-commit guide prints credentials, local auth tokens, and concrete
+  shopper/operator paths, while GraphQL smoke coverage proves those surfaces
+  are non-empty at public, shopper, and operator access levels.
+- Reruns restore reserved fields and counts, preserve the shared token and
+  unrelated local records, and roll back atomically on a preclaimed operator
+  email.
 
 ## Boundaries
 
@@ -69,7 +71,10 @@ mailer, or network call.
    GraphQL reads are all local-only; the guide prints credentials and concrete
    test routes after commit.
 5. Deterministic rerun restoration, unrelated-data preservation, and atomic
-   failure proof.
+   failure proof. Completed in the closeout milestone: scoped counts remain
+   fixed across two complete runs, deliberately changed seed fields return to
+   baseline, unrelated records remain byte-for-byte unchanged, and an operator
+   conflict leaves no partial seed records.
 
 ## Verification
 
@@ -90,8 +95,8 @@ mailer, or network call.
   test/product_compare/specs` — 114 tests, 0 failures.
 - 2026-07-31: `git diff --check` — clean after the engagement milestone.
 - 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs
-  test/product_compare_web/graphql/development_seeds_test.exs` — 6 tests,
-  0 failures after the synthetic operator-workflow milestone.
+  test/product_compare_web/graphql/development_seeds_test.exs` — 7 tests,
+  0 failures after deterministic-rerun closeout.
 - 2026-07-31: `mix test test/product_compare/ingestion
   test/product_compare/commerce_attribution
   test/product_compare_web/graphql/cj_program_queries_test.exs
@@ -100,10 +105,23 @@ mailer, or network call.
 - External-isolation coverage observed no configured delivery/import runner call
   and no additional CJ worker job while the complete seed populated synthetic
   CJ, import, attribution, and revenue history.
-- deterministic rerun and atomic failure regressions
-- affected account, catalog, pricing, affiliate, alert, discussion,
-  specification, comparison, ingestion, attribution, and GraphQL suites
-- full backend tests, type checks, quality, formatting, queue, and diff gates
+- The rerun regression observed unchanged scoped counts, one stable public
+  snapshot token, restored product/program fields, and byte-for-byte preserved
+  unrelated user, token, product, merchant, and review records.
+- The atomic failure regression observed no partial shopper, product, merchant,
+  or source records after the fail-closed operator conflict.
+- 2026-07-31: affected account, catalog, pricing, affiliate, alert, discussion,
+  specification, comparison, ingestion, and attribution suites — 502 tests,
+  0 failures.
+- 2026-07-31: complete GraphQL suite — 340 tests, 0 failures.
+- 2026-07-31: `mix test` — 1,066 tests, 0 failures.
+- 2026-07-31: `mix format --check-formatted` and `mix typecheck` — passed.
+- 2026-07-31: `mix quality` — Credo found no issues, the existing 3/3 clone
+  budget held, cross-function analysis found no issues, and Dialyzer reported
+  0 errors.
+- 2026-07-31: `mix work_queue.validate` — valid with 3 ready rows after
+  removing the completed batch.
+- 2026-07-31: `git diff --check` — clean at closeout.
 
 ## Blocker Rule
 
