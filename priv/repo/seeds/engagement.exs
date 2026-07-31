@@ -16,6 +16,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
   @saved_set_names ["Gaming shortlist", "Home theater shortlist"]
@@ -70,19 +72,15 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp seed_snapshot!(shopper, products, anchor) do
-    case Repo.one(
-           from snapshot in ComparisonSnapshot,
-             where:
-               snapshot.user_id == ^shopper.id and
-                 snapshot.title == "Development comparison" and
-                 is_nil(snapshot.revoked_at),
-             order_by: [asc: snapshot.id],
-             limit: 1
-         ) do
-      %ComparisonSnapshot{} = snapshot ->
-        ComparisonSnapshots.hydrate(snapshot)
+    snapshots =
+      Repo.all(
+        from snapshot in ComparisonSnapshot,
+          where: snapshot.user_id == ^shopper.id and snapshot.title == "Development comparison",
+          order_by: [asc: snapshot.id]
+      )
 
-      nil ->
+    case snapshots do
+      [] ->
         ComparisonSnapshots.publish(
           shopper.id,
           %{
@@ -94,6 +92,22 @@ defmodule ProductCompare.DevSeeds.Engagement do
           now: anchor
         )
         |> Support.expect!("public comparison snapshot")
+
+      [snapshot | duplicates] ->
+        snapshot =
+          snapshot
+          |> Ecto.Changeset.change(revoked_at: nil)
+          |> Repo.update()
+          |> Support.expect!("restore public comparison snapshot")
+
+        Enum.each(duplicates, fn duplicate ->
+          duplicate
+          |> ComparisonSnapshot.revoke_changeset(anchor)
+          |> Repo.update()
+          |> Support.expect!("revoke duplicate public comparison snapshot")
+        end)
+
+        ComparisonSnapshots.hydrate(snapshot)
     end
   end
 
@@ -148,6 +162,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
       })
       |> Support.expect!("back-in-stock watch")
 
+    # Alert setup temporarily mutates this shared observation. Restore it before operations
+    # reuse its ID and values for purchase-price attribution.
     restored_trigger =
       Repo.get!(PricePoint, trigger.id)
       |> PricePoint.changeset(%{
@@ -360,6 +376,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp maybe_restore_owned!(type, owner, record, attrs, desired_status) do
+    record = restore_removed_owned!(type, record)
+
     if owned_content_matches?(type, record, attrs) and
          (desired_status != :pending or record.moderation_status == :pending) do
       record
@@ -378,6 +396,25 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp owned_content_matches?(:answer, answer, attrs), do: answer.body_md == attrs.body
+
+  defp restore_removed_owned!(_type, %{moderation_status: status} = record)
+       when status != :removed,
+       do: record
+
+  defp restore_removed_owned!(type, record) do
+    record
+    |> Ecto.Changeset.change(
+      moderation_status: :pending,
+      moderation_note: nil,
+      moderated_by: nil,
+      moderated_at: nil
+    )
+    |> Repo.update()
+    |> Support.expect!("restore removed #{type} #{record.entropy_id}")
+  end
+
+  defp moderate_owned!(_type, _moderator, %{moderation_status: status} = record, status),
+    do: record
 
   defp moderate_owned!(type, moderator, record, status) do
     Discussions.moderate(
@@ -474,17 +511,21 @@ defmodule ProductCompare.DevSeeds.Engagement do
         Specs.propose_correction(product.id, attribute.id, submitter.id, typed_value, attrs)
         |> Support.expect!("#{status} correction #{product.slug}/#{attribute.code}")
 
+    correction = restore_correction!(correction, attrs, status, product, attribute)
+
     correction =
-      if status == :pending do
-        correction
-        |> SpecificationCorrection.changeset(attrs)
-        |> Repo.update()
-        |> Support.expect!("restore pending correction #{product.slug}/#{attribute.code}")
-      else
-        Specs.moderate_correction(correction.id, moderator.id, status, %{
-          moderation_note: "Development seed #{status} correction example"
-        })
-        |> Support.expect!("moderate correction #{product.slug}/#{attribute.code}")
+      cond do
+        status == :pending ->
+          correction
+
+        correction.status == status ->
+          correction
+
+        true ->
+          Specs.moderate_correction(correction.id, moderator.id, status, %{
+            moderation_note: "Development seed #{status} correction example"
+          })
+          |> Support.expect!("moderate correction #{product.slug}/#{attribute.code}")
       end
 
     if status == :accepted do
@@ -493,5 +534,54 @@ defmodule ProductCompare.DevSeeds.Engagement do
     end
 
     correction
+  end
+
+  defp restore_correction!(correction, attrs, desired_status, product, attribute) do
+    correction =
+      if correction.status in [:accepted, :rejected] and correction.status != desired_status do
+        reset_correction_to_pending!(correction, product, attribute)
+      else
+        correction
+      end
+
+    correction
+    |> SpecificationCorrection.changeset(attrs)
+    |> Repo.update()
+    |> Support.expect!("restore correction #{product.slug}/#{attribute.code}")
+  end
+
+  defp reset_correction_to_pending!(correction, product, attribute) do
+    claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
+    superseded_claim = Repo.get!(ProductAttributeClaim, claim.supersedes_claim_id)
+
+    superseded_claim
+    |> ProductAttributeClaim.changeset(%{status: :accepted})
+    |> Repo.update()
+    |> Support.expect!("restore superseded claim #{product.slug}/#{attribute.code}")
+
+    case Repo.get_by(ProductAttributeCurrent,
+           product_id: correction.product_id,
+           attribute_id: correction.attribute_id
+         ) do
+      nil ->
+        :ok
+
+      current ->
+        current
+        |> ProductAttributeCurrent.changeset(%{claim_id: superseded_claim.id})
+        |> Repo.update()
+        |> Support.expect!("restore current claim #{product.slug}/#{attribute.code}")
+    end
+
+    claim
+    |> ProductAttributeClaim.changeset(%{status: :proposed})
+    |> Repo.update()
+    |> Support.expect!("restore correction claim #{product.slug}/#{attribute.code}")
+
+    correction
+    |> SpecificationCorrection.changeset(%{status: :pending})
+    |> Ecto.Changeset.change(reviewed_by: nil, reviewed_at: nil, moderation_note: nil)
+    |> Repo.update()
+    |> Support.expect!("restore pending correction #{product.slug}/#{attribute.code}")
   end
 end

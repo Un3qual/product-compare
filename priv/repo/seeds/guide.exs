@@ -50,7 +50,7 @@ defmodule ProductCompare.DevSeeds.Guide do
     Synthetic data
     --------------
     CJ programs, feeds, import runs, clicks, conversions, commissions, and purchase-price facts
-    are Synthetic local examples. Seeding does not contact CJ or another external provider.
+    are synthetic local examples. Seeding does not contact CJ or another external provider.
     """)
 
     :ok

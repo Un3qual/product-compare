@@ -112,10 +112,13 @@ defmodule ProductCompare.DevSeeds.Accounts do
       |> Support.expect!("operator access for #{user.email}")
 
     user
-    |> Ecto.Changeset.change(confirmed_at: confirmed_at)
+    |> confirmation_changeset(confirmed_at)
     |> Repo.update()
     |> Support.expect!("confirmation state for #{user.email}")
   end
+
+  defp confirmation_changeset(user, %DateTime{}), do: User.confirm_changeset(user)
+  defp confirmation_changeset(user, nil), do: User.changeset(user, %{confirmed_at: nil})
 
   defp password_matches?(%User{hashed_password: "$argon2" <> _ = hash}, password) do
     Argon2.verify_pass(password, hash)

@@ -37,6 +37,7 @@
 ### Task 1: Seed Runtime And Role-Specific Accounts
 
 **Files:**
+
 - Create: `priv/repo/seeds/support.exs`
 - Create: `priv/repo/seeds/accounts.exs`
 - Modify: `priv/repo/seeds.exs`
@@ -44,6 +45,7 @@
 - Modify: `docs/work/development-feature-seeds.md`
 
 **Interfaces:**
+
 - Consumes: `SEED_USER_PASSWORD`, `Accounts.bootstrap_operator_user/3`,
   `Accounts.ensure_user_with_password/2`, explicit one-arity confirmation/reset
   delivery callbacks, `Accounts.create_api_token/2`, and
@@ -146,6 +148,7 @@ git commit -m "feat: seed development account scenarios"
 ### Task 2: Catalog, Specification, Merchant, Offer, And Affiliate Scenarios
 
 **Files:**
+
 - Create: `priv/repo/seeds/catalog.exs`
 - Create: `priv/repo/seeds/marketplace.exs`
 - Modify: `priv/repo/seeds.exs`
@@ -153,6 +156,7 @@ git commit -m "feat: seed development account scenarios"
 - Modify: `docs/work/development-feature-seeds.md`
 
 **Interfaces:**
+
 - Consumes: the Task 1 account map, one anchor timestamp, Taxonomy, Catalog,
   Specs, Pricing, Affiliate, `SpecificationObservation`, and schema changesets
   for `Source`, `SourceArtifact`, and existing coupons where no context upsert
@@ -242,12 +246,14 @@ git commit -m "feat: seed catalog and marketplace scenarios"
 ### Task 3: Comparison, Alert, Community, And Correction Scenarios
 
 **Files:**
+
 - Create: `priv/repo/seeds/engagement.exs`
 - Modify: `priv/repo/seeds.exs`
 - Modify: `test/product_compare/repo/seeds_test.exs`
 - Modify: `docs/work/development-feature-seeds.md`
 
 **Interfaces:**
+
 - Consumes: account, catalog, and marketplace result maps;
   `Catalog.create_saved_comparison_set/2`, `ComparisonSnapshots.publish/3`,
   Alerts, Discussions, Specs correction operations, and targeted schema
@@ -326,6 +332,7 @@ git commit -m "feat: seed shopper and community scenarios"
 ### Task 4: Synthetic CJ, Attribution, Guide, And GraphQL Route Coverage
 
 **Files:**
+
 - Create: `priv/repo/seeds/operations.exs`
 - Create: `priv/repo/seeds/guide.exs`
 - Modify: `priv/repo/seeds.exs`
@@ -334,6 +341,7 @@ git commit -m "feat: seed shopper and community scenarios"
 - Modify: `docs/work/development-feature-seeds.md`
 
 **Interfaces:**
+
 - Consumes: all prior result maps; local Source changesets,
   `Ingestion.upsert_merchant_feed_candidate/2`, CJ lifecycle updates, import-run
   start/complete operations, CommerceAttribution operations, and frontend route
@@ -437,6 +445,7 @@ git commit -m "feat: seed synthetic operator workflows"
 ### Task 5: Deterministic Rerun Contract And Full Closeout
 
 **Files:**
+
 - Modify: `test/product_compare/repo/seeds_test.exs`
 - Modify: `test/product_compare_web/graphql/development_seeds_test.exs`
 - Modify: `docs/work/development-feature-seeds.md`
@@ -444,6 +453,7 @@ git commit -m "feat: seed synthetic operator workflows"
 - Modify: `docs/plans/INDEX.md`
 
 **Interfaces:**
+
 - Consumes: the complete seed entry point and all stable seed keys from Tasks
   1-4.
 - Produces: regression evidence for duplicate-free reruns, restoration of

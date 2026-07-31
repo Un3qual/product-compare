@@ -11,6 +11,7 @@ defmodule ProductCompare.DevSeeds.Operations do
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Ingestion.CJProgram
   alias ProductCompareSchemas.Ingestion.ImportRun
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.Source
 
   @cj_source_attrs %{
@@ -85,16 +86,19 @@ defmodule ProductCompare.DevSeeds.Operations do
 
         program = Repo.get!(CJProgram, feed.cj_program_id)
 
+        note = "Synthetic development lifecycle example: #{stage}"
+
         program =
-          Ingestion.update_cj_program_lifecycle(
-            program.entropy_id,
-            %{
-              stage: stage,
-              note: "Synthetic development lifecycle example: #{stage}"
-            },
-            hours(anchor, -stage_index(stage))
-          )
-          |> Support.expect!("synthetic CJ program #{stage}")
+          if program.stage == stage and program.note == note do
+            program
+          else
+            Ingestion.update_cj_program_lifecycle(
+              program.entropy_id,
+              %{stage: stage, note: note},
+              hours(anchor, -stage_index(stage))
+            )
+            |> Support.expect!("synthetic CJ program #{stage}")
+          end
 
         {stage, program, feed}
       end)
@@ -123,6 +127,12 @@ defmodule ProductCompare.DevSeeds.Operations do
       })
       |> Support.expect!("synthetic unmatched CJ feed")
 
+    unmatched =
+      unmatched
+      |> MerchantFeedCandidate.changeset(%{advertiser_id: nil, cj_program_id: nil})
+      |> Repo.update()
+      |> Support.expect!("restore synthetic unmatched CJ feed identity")
+
     {programs, Map.put(feeds, :unmatched, unmatched)}
   end
 
@@ -134,12 +144,12 @@ defmodule ProductCompare.DevSeeds.Operations do
       {:feeds_failed, "shoppingProductFeeds", :failed, "development-feeds-failed"}
     ]
 
-    scenario_names = MapSet.new(scenarios, fn {_key, _surface, _status, name} -> name end)
+    scenario_names = Enum.map(scenarios, fn {_key, _surface, _status, name} -> name end)
 
     ImportRun
     |> where([run], run.source_id == ^source.id)
+    |> where([run], fragment("?->>'seedScenario'", run.query) in ^scenario_names)
     |> Repo.all()
-    |> Enum.filter(&MapSet.member?(scenario_names, &1.query["seedScenario"]))
     |> Enum.each(fn run ->
       Repo.delete(run)
       |> Support.expect!("delete synthetic import run #{run.query["seedScenario"]}")
@@ -236,7 +246,7 @@ defmodule ProductCompare.DevSeeds.Operations do
       {:approved, "00000000-0000-4000-8000-000000000001", links.example_mart, offers.fresh},
       {:pending, "00000000-0000-4000-8000-000000000002", links.example_mart, offers.out_of_stock},
       {:reversed, "00000000-0000-4000-8000-000000000003", links.example_mart, offers.stale},
-      {:paid, "00000000-0000-4000-8000-000000000004", links.value_vision, offers.aging}
+      {:paid, "00000000-0000-4000-8000-000000000004", links.value_vision, offers.inactive}
     ]
 
     clicks =
@@ -306,21 +316,22 @@ defmodule ProductCompare.DevSeeds.Operations do
 
     facts =
       [
-        {:approved, marketplace.price_points.fresh, "649.99", "639.99"},
-        {:pending, marketplace.price_points.out_of_stock, "1199.99", "1179.99"},
-        {:reversed, marketplace.price_points.stale, "849.99", "829.99"},
-        {:paid, marketplace.price_points.aging, "639.98", "1129.99"}
+        {:approved, marketplace.price_points.fresh, "639.99"},
+        {:pending, marketplace.price_points.out_of_stock, "1179.99"},
+        {:reversed, marketplace.price_points.stale, "829.99"},
+        {:paid, marketplace.price_points.inactive, "1129.99"}
       ]
-      |> Map.new(fn {status, price_point, listed_price, paid_price} ->
+      |> Map.new(fn {status, price_point, paid_price} ->
         conversion = Map.fetch!(conversions, status)
         paid = Decimal.new(paid_price)
-        observed = Decimal.new(listed_price)
+        observed = price_point.price
+        shipping = price_point.shipping || Decimal.new("0.00")
 
         attrs = %{
           conversion_id: conversion.id,
           listed_price_at_click: observed,
           reported_paid_price: paid,
-          shipping_amount: Decimal.new("0.00"),
+          shipping_amount: shipping,
           tax_amount: Decimal.new("0.00"),
           discount_amount: Decimal.max(Decimal.sub(observed, paid), Decimal.new("0.00")),
           currency: "USD",

@@ -16,6 +16,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
   alias ProductCompare.Discussions
+  alias ProductCompare.Ingestion
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
@@ -31,6 +32,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Catalog.ProductIdentifier
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
@@ -47,6 +49,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
   alias ProductCompareSchemas.Specs.ClaimEvidence
+  alias ProductCompareSchemas.Specs.ProductAttributeClaim
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
@@ -173,6 +176,37 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %ApiToken{revoked_at: nil} = shopper_tokens["Development active"]
     assert %ApiToken{revoked_at: %DateTime{}} = shopper_tokens["Development revoked"]
+  end
+
+  test "account reruns preserve the original confirmation timestamp" do
+    first_anchor = ~U[2026-07-31 12:00:00.000000Z]
+    second_anchor = DateTime.add(first_anchor, 3_600, :second)
+
+    first = DevSeedAccounts.seed!(@seed_password, first_anchor)
+    second = DevSeedAccounts.seed!(@seed_password, second_anchor)
+
+    assert second.shopper.confirmed_at == first.shopper.confirmed_at
+  end
+
+  test "development seeds refuse to run outside development and test" do
+    original_mix_env = Mix.env()
+    original_seed_password = System.get_env("SEED_USER_PASSWORD")
+
+    Mix.env(:prod)
+    System.put_env("SEED_USER_PASSWORD", @seed_password)
+
+    on_exit(fn ->
+      Mix.env(original_mix_env)
+
+      case original_seed_password do
+        nil -> System.delete_env("SEED_USER_PASSWORD")
+        password -> System.put_env("SEED_USER_PASSWORD", password)
+      end
+    end)
+
+    assert_raise RuntimeError, ~r/development and test environments only/, fn ->
+      capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+    end
   end
 
   test "seeds stop rather than promote a preclaimed operator email" do
@@ -754,6 +788,242 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(Product, unrelated_product.id) == unrelated_records.product
     assert Repo.get!(Merchant, unrelated_merchant.id) == unrelated_records.merchant
     assert Repo.get!(ProductReview, unrelated_review.id) == unrelated_records.review
+  end
+
+  test "reruns restore seed-owned records after normal feature lifecycle actions" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    participant = Repo.get_by!(User, email: "participant@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    snapshot =
+      Repo.get_by!(ComparisonSnapshot,
+        user_id: shopper.id,
+        title: "Development comparison"
+      )
+
+    review =
+      Repo.get_by!(ProductReview,
+        user_id: shopper.id,
+        title: "Excellent for fast games"
+      )
+
+    question =
+      Repo.get_by!(ProductThread,
+        created_by: shopper.id,
+        title: "Which display fits a mixed gaming and movie room?"
+      )
+
+    answer = Repo.get_by!(ThreadPost, thread_id: question.id, user_id: participant.id)
+
+    pending_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development pending correction example"
+      )
+
+    correction_claim_count =
+      Repo.aggregate(
+        from(claim in ProductAttributeClaim,
+          where:
+            claim.product_id == ^pending_correction.product_id and
+              claim.attribute_id == ^pending_correction.attribute_id
+        ),
+        :count,
+        :id
+      )
+
+    cj_source = Repo.get_by!(Source, name: "CJ", provider: "cj")
+    accepted_program = Repo.get_by!(CJProgram, source_id: cj_source.id, stage: :accepted)
+
+    unmatched_feed =
+      Repo.get_by!(MerchantFeedCandidate,
+        source_id: cj_source.id,
+        provider_feed_id: "DEV-CJ-FEED-UNMATCHED"
+      )
+
+    assert {:ok, _revoked_snapshot} =
+             ComparisonSnapshots.revoke(shopper.id, snapshot.entropy_id)
+
+    assert {:ok, _removed_review} =
+             Discussions.remove_owned(shopper.id, :review, review.entropy_id)
+
+    assert {:ok, _removed_answer} =
+             Discussions.remove_owned(participant.id, :answer, answer.entropy_id)
+
+    assert {:ok, accepted_correction} =
+             Specs.moderate_correction(
+               pending_correction.id,
+               moderator.id,
+               :accepted,
+               %{moderation_note: "Developer exercised the pending correction"}
+             )
+
+    assert accepted_correction.status == :accepted
+
+    assert {:ok, linked_feed} =
+             Ingestion.upsert_merchant_feed_candidate(cj_source, %{
+               provider: "cj",
+               provider_feed_id: unmatched_feed.provider_feed_id,
+               advertiser_id: accepted_program.advertiser_id,
+               advertiser_name: "Developer linked unmatched feed",
+               last_seen_at: DateTime.utc_now() |> DateTime.truncate(:microsecond)
+             })
+
+    assert linked_feed.cj_program_id == accepted_program.id
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    restored_snapshot = Repo.get!(ComparisonSnapshot, snapshot.id)
+    assert restored_snapshot.public_token == snapshot.public_token
+    assert is_nil(restored_snapshot.revoked_at)
+
+    assert %ProductReview{moderation_status: :published} = Repo.get!(ProductReview, review.id)
+    assert %ThreadPost{moderation_status: :published} = Repo.get!(ThreadPost, answer.id)
+    assert Repo.get!(ProductThread, question.id).accepted_post_id == answer.id
+
+    restored_correction = Repo.get!(SpecificationCorrection, pending_correction.id)
+    assert restored_correction.status == :pending
+    assert is_nil(restored_correction.reviewed_by)
+    assert is_nil(restored_correction.reviewed_at)
+    assert is_nil(restored_correction.moderation_note)
+
+    restored_claim = Repo.get!(ProductAttributeClaim, restored_correction.claim_id)
+    assert restored_claim.status == :proposed
+
+    restored_current =
+      Repo.get_by!(ProductAttributeCurrent,
+        product_id: restored_correction.product_id,
+        attribute_id: restored_correction.attribute_id
+      )
+
+    assert restored_current.claim_id == restored_claim.supersedes_claim_id
+
+    assert Repo.aggregate(
+             from(claim in ProductAttributeClaim,
+               where:
+                 claim.product_id == ^pending_correction.product_id and
+                   claim.attribute_id == ^pending_correction.attribute_id
+             ),
+             :count,
+             :id
+           ) == correction_claim_count
+
+    assert %MerchantFeedCandidate{advertiser_id: nil, cj_program_id: nil} =
+             Repo.get!(MerchantFeedCandidate, unmatched_feed.id)
+  end
+
+  test "purchase facts use the linked price observation values" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    facts =
+      PurchasePriceFact
+      |> join(:inner, [fact], conversion in assoc(fact, :conversion))
+      |> where([_fact, conversion], like(conversion.network_conversion_ref, "DEV-CONV-%"))
+      |> preload([fact, _conversion], price_observation: [])
+      |> Repo.all()
+
+    assert [_, _, _, _] = facts
+
+    for fact <- facts do
+      observation = fact.price_observation
+
+      assert Decimal.equal?(fact.observed_price, observation.price)
+      assert fact.observed_at == observation.observed_at
+      assert Decimal.equal?(fact.listed_price_at_click, observation.price)
+      assert Decimal.equal?(fact.shipping_amount, observation.shipping || Decimal.new("0.00"))
+    end
+
+    paid_conversion =
+      Repo.get_by!(CommerceConversion, network_conversion_ref: "DEV-CONV-PAID")
+
+    paid_fact = Repo.get_by!(PurchasePriceFact, conversion_id: paid_conversion.id)
+    paid_observation = Repo.get!(PricePoint, paid_fact.price_observation_id)
+
+    assert Decimal.equal?(paid_conversion.order_amount, Decimal.new("1149.99"))
+    assert Decimal.equal?(paid_observation.price, Decimal.new("1149.99"))
+    assert Decimal.equal?(paid_fact.reported_paid_price, Decimal.new("1129.99"))
+    assert Decimal.equal?(paid_fact.discount_amount, Decimal.new("20.00"))
+    assert Decimal.equal?(paid_fact.price_delta, Decimal.new("-20.00"))
+  end
+
+  test "reruns tolerate duplicate matching product claims" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    product = Repo.get_by!(Product, slug: "acme-vision-27g")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    current =
+      ProductAttributeCurrent
+      |> join(:inner, [current], attribute in assoc(current, :attribute))
+      |> where(
+        [current, attribute],
+        current.product_id == ^product.id and attribute.code == "refresh_rate"
+      )
+      |> Repo.one!()
+
+    claim = Repo.get!(ProductAttributeClaim, current.claim_id)
+
+    assert {:ok, duplicate} =
+             Specs.propose_claim(
+               product.id,
+               claim.attribute_id,
+               %{value_num: claim.value_num, unit_id: claim.unit_id},
+               %{source_type: :user, created_by: moderator.id, confidence: Decimal.new("0.50")}
+             )
+
+    assert duplicate.id != claim.id
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(ProductAttributeCurrent, current.id).claim_id == claim.id
+    assert Repo.get!(ProductAttributeClaim, duplicate.id).status == :proposed
+  end
+
+  test "seeds fail closed rather than move a conflicting validated product identifier" do
+    unrelated_product =
+      %Product{}
+      |> Product.changeset(%{
+        name: "Unrelated product with reserved MPN",
+        slug: "unrelated-reserved-mpn"
+      })
+      |> Repo.insert!()
+
+    source =
+      %Source{}
+      |> Source.changeset(%{
+        kind: "manufacturer",
+        name: "Unrelated manufacturer evidence",
+        domain: "unrelated-manufacturer.test"
+      })
+      |> Repo.insert!()
+
+    artifact =
+      %SourceArtifact{}
+      |> SourceArtifact.changeset(%{
+        source_id: source.id,
+        fetched_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
+        content_hash: "unrelated-reserved-mpn-v1"
+      })
+      |> Repo.insert!()
+
+    assert {:ok, identifier} =
+             Catalog.create_product_identifier(%{
+               product_id: unrelated_product.id,
+               scheme: :mpn,
+               normalized_value: "AV27G",
+               display_value: "AV27G",
+               verification_status: :validated,
+               source_artifact_id: artifact.id
+             })
+
+    assert_raise RuntimeError, ~r/MPN AV27G: it already belongs to product/, fn ->
+      capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+    end
+
+    assert Repo.get!(ProductIdentifier, identifier.id).product_id == unrelated_product.id
+    refute Repo.get_by(User, email: "shopper@example.com")
   end
 
   defp seed_scope_counts do

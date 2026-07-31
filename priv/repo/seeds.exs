@@ -1,3 +1,7 @@
+unless Code.ensure_loaded?(Mix) and Mix.env() in [:dev, :test] do
+  raise "Development feature seeds may run in development and test environments only."
+end
+
 alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
 alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
 alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
@@ -21,13 +25,7 @@ seed_user_password =
       password
 
     _ ->
-      if Code.ensure_loaded?(Mix) and Mix.env() in [:dev, :test] do
-        "supersecretpass123"
-      else
-        raise """
-        SEED_USER_PASSWORD must be set when seeding outside development and test environments.
-        """
-      end
+      "supersecretpass123"
   end
 
 seed_anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)

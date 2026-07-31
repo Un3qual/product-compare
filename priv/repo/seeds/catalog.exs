@@ -376,10 +376,16 @@ defmodule ProductCompare.DevSeeds.Catalog do
           nil ->
             Catalog.create_product_identifier(attrs)
 
-          identifier ->
+          %ProductIdentifier{product_id: product_id} = identifier when product_id == product.id ->
             identifier
             |> ProductIdentifier.changeset(attrs)
             |> Repo.update()
+
+          %ProductIdentifier{product_id: conflicting_product_id} ->
+            raise """
+            Refusing to seed MPN #{normalized_value}: it already belongs to product #{conflicting_product_id}.
+            Resolve the identifier conflict explicitly before rerunning seeds.
+            """
         end
         |> Support.expect!("MPN #{normalized_value}")
 
@@ -497,7 +503,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
       |> where(
         [claim],
         claim.product_id == ^product.id and claim.attribute_id == ^attribute.id and
-          claim.status in [:proposed, :accepted]
+          claim.status in [:proposed, :accepted, :superseded]
       )
       |> where(
         [claim],
@@ -506,6 +512,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
         end)
       )
       |> order_by([claim], asc: claim.id)
+      |> limit(1)
       |> Repo.one()
 
     claim =
@@ -526,6 +533,12 @@ defmodule ProductCompare.DevSeeds.Catalog do
         :proposed ->
           Specs.accept_claim(claim.id, moderator.id)
           |> Support.expect!("accept claim #{product.slug}/#{attribute.code}")
+
+        :superseded ->
+          claim
+          |> ProductAttributeClaim.changeset(%{status: :accepted})
+          |> Repo.update()
+          |> Support.expect!("restore claim #{product.slug}/#{attribute.code}")
 
         other ->
           raise "development seed claim #{product.slug}/#{attribute.code} has #{other} status"
