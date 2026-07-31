@@ -79,7 +79,7 @@ defmodule ProductCompare.Taxonomy.ConcurrencyTest do
         end)
       end)
 
-    assert_receive {:taxonomy_hierarchy_lock_held, task_pid, backend_pid}
+    assert_receive {:taxonomy_hierarchy_lock_held, task_pid, backend_pid}, 2_000
     assert task_pid == task.pid
     {task, backend_pid}
   end

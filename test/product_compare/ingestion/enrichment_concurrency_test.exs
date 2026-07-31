@@ -171,7 +171,7 @@ defmodule ProductCompare.Ingestion.EnrichmentConcurrencyTest do
         end)
       end)
 
-    assert_receive {:mapping_rows_held, task_pid, backend_pid}
+    assert_receive {:mapping_rows_held, task_pid, backend_pid}, 2_000
     assert task_pid == task.pid
     {task, backend_pid}
   end

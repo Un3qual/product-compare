@@ -6,8 +6,9 @@
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-concurrency-safe-write-audit-implementation-plan.md`
-- Last verified: 2026-07-31 against all 49 first-party write-owning files and
-  114 direct write calls.
+- Last verified: 2026-07-31 with direct Repo writes, callback-repo writes,
+  `Ecto.Multi`/transaction callbacks, `Oban.insert/1`, and raw SQL write entry
+  points included in the audit.
 - Last reconciled: 2026-07-31 for conditional source-provider claiming,
   combined enrichment locking, API-token authentication, and context-owned
   concurrency suites.
@@ -20,10 +21,13 @@ a deterministic concurrency regression.
 
 ## Audit Result
 
-The audit traced every first-party context action that inserts, updates,
-deletes, or validates mutable relational state before a dependent write. The
-inventory below has no unclassified modifying action and no remaining unsafe
-read-modify-write path.
+The audit traced first-party context actions that insert, update, delete,
+enqueue durable work, or validate mutable relational state before a dependent
+write. Search passes covered direct Repo writes, lower-case callback-repo
+writes, `Ecto.Multi` and transaction callbacks, `Oban.insert/1`, and manual
+inspection of every raw `Repo.query/2,3` and `Repo.query!/2,3` call under
+`lib/product_compare`. The inventory below has no unclassified modifying
+action and no remaining confirmed unsafe read-modify-write path.
 
 Classification terms:
 
@@ -63,7 +67,7 @@ Classification terms:
 
 | Context owner | Modifying action(s) | Protected invariant | Atomicity mechanism and classification |
 | --- | --- | --- | --- |
-| `Accounts.ApiTokens.Authentication` | `authenticate/2` touch | A revoked or expired token is never returned after the dependent touch. | Conditional active-row `UPDATE`; **statement**. |
+| `Accounts.ApiTokens.Authentication` | `authenticate/1` touch | A revoked or expired token is never returned after the dependent touch. | Conditional active-row `UPDATE`; **statement**. |
 | `Accounts.ApiTokens.Lifecycle` | `create/2`, `revoke/2`, `rotate/3` | Token issue is append-only; revoke/rotate consume the current active state once. | Unique token hash plus locked reload for transitions; **constraint + lock**. |
 | `Accounts.Users` | `create_user/1`, `register_user/1`, `bootstrap_operator_user/3`, `ensure_user_with_password/2`, `set_operator_access/2` | Email identity is unique; bootstrap/password repair cannot overwrite a concurrent user; operator writes are serialized with moderation checks. | Email unique constraint, user-row locks, conflict insert, and partial one-field update; **constraint + lock + partial last-write**. |
 | `Accounts.Reputation` | `upsert_user_reputation/2` | One absolute reputation summary exists per user. | `ON CONFLICT` absolute set; **statement**. |
@@ -73,12 +77,14 @@ Classification terms:
 | `Alerts.WatchRules` | `create_watch/2`, `update_watch/3`, `delete_watch/2` | Watch scope references one stable product/currency offer; evaluation state resets with rule edits. | Product FK plus immutable offer identity; partial update/reset statement and stale-aware delete; **constraint + partial last-write**. |
 | `Alerts.Evaluation` | `evaluate_price_point/2` | Cooldown/condition decisions and event creation use one current watch state; a price point emits at most one event per watch. | Watch-row lock and unique `(watch_rule_id, triggering_price_point_id)` insert; **lock + constraint**. |
 | `Alerts.Inbox` | `mark_alert_read/2` | The first committed read timestamp is preserved. | Locked reload and idempotent transition; **lock**. |
+| `Alerts.Jobs.AlertEvaluationWorker` | enqueue price-point evaluation | A price point has one durable evaluation job, and the fact and job commit together. | Oban worker/queue/args uniqueness uses a transaction-scoped advisory lock; `Pricing.PriceHistory` calls it inside the price-point transaction; **lock + statement**. |
 | `Catalog.Evidence` | `create_product_identifier/1`, `upsert_product_media/4` | A validated identifier has one product owner; one media URL row exists per product. | Validated identifier and product/media unique indexes; media conflict update is one statement; **constraint + statement**. |
 | `Catalog.Products` | `create_brand/1`, `upsert_brand/1`, `create_product/1`, `update_product/2` | Brand name converges; product type belongs to the type taxonomy; canonical and historical slugs share one namespace. | Conflict upsert, FK/immutable taxonomy identity, locked product reload, and slug-namespace trigger; **statement + lock + constraint**. |
 | `Catalog.SavedComparisons` | create and delete saved comparison sets | Items commit with their set, reference existing products, preserve order, and owner deletion is idempotent. | `Ecto.Multi`, product FKs, per-set uniqueness, and stale-normalized delete; **constraint + stale**. |
+| `Catalog.SearchDocuments` | refresh product, product set, brand, or full search documents | Search text is derived from product and brand state by the write statement; it does not depend on an application-side stale read. | Raw `UPDATE ... SET search_document = catalog_search_document(...)`; **statement**. |
 | `Pricing.Merchants` | `upsert_merchant/1` | Name- and domain-based imports converge without duplicate identities. | Name/domain unique constraints and savepoint-backed conflict upserts; **statement + constraint**. |
 | `Pricing.Offers` | `upsert_merchant_product/1` | Merchant/product/URL/currency identity never changes while mutable availability metadata can update. | Conditional conflict query plus immutable-identity trigger; **statement + constraint**. |
-| `Pricing.PriceHistory` | `add_price_point/1` | A price fact and its evaluation job commit together. | Insert plus job enqueue in one transaction; facts are **append-only**. |
+| `Pricing.PriceHistory` | `add_price_point/1` | A price fact and its evaluation job commit together. | Insert plus `AlertEvaluationWorker` enqueue in one transaction; fact is **append-only**, and job uniqueness is classified above. |
 | `CommerceAttribution.Clicks.Links` | link `upsert/1` | Destination/program/merchant/type identity converges while campaign metadata may refresh. | Expression unique target with conflict update; **statement + constraint**. |
 | `CommerceAttribution.Clicks.Sessions` | `create/1`, `track_outbound/1` | A tracked session refers to the resolved immutable destination and offer identity. | Link upsert and click insert share one transaction; session is **append-only**. |
 | `CommerceAttribution.Conversions` | `ingest/1` including attribution resolution | A provider conversion is unique, newer reports win, and click-derived dimensions cannot be contradicted. | Existing conversion is locked, related identities are immutable, and conflict update is conditional on `reported_at`; **lock + statement + constraint**. |
@@ -92,6 +98,8 @@ Classification terms:
 | `Discussions.Submissions.WriteLimits` | `increment!/2` | Concurrent writes cannot exceed a per-user/action/hour limit. | Conflict-created window followed by `FOR UPDATE` increment; **lock + constraint**. |
 | `Ingestion.FeedCandidates` | `upsert_merchant_feed_candidate/2` | Candidate provider agrees with its source and feed type; source/feed identity converges. | Transaction-scoped conditional provider claim plus unique conflict upsert; **statement + constraint**. |
 | `Ingestion.CJPrograms` | ensure and lifecycle update actions | Source/advertiser identity converges and stale lifecycle editors cannot overwrite a newer decision. | Unique conflict insert and `changed_at` optimistic lock/conditional no-op; **constraint + stale**. |
+| `Ingestion.Jobs.CJFeedDiscoveryWorker` | enqueue bounded feed discovery | Equivalent normalized arguments in one schedule window identify one durable discovery job; later windows remain distinct. | Oban uniqueness for worker/queue/selected args uses a transaction-scoped advisory lock; **lock + statement**. |
+| `Ingestion.Jobs.CJProductImportWorker` | enqueue bounded product import | Equivalent normalized arguments in one schedule window identify one durable import job; later windows remain distinct. | Oban uniqueness for worker/queue/selected args uses a transaction-scoped advisory lock; **lock + statement**. |
 | `Ingestion.Runs` | `start_import_run/1`, `complete_import_run/2` | Provider agrees with the source; exactly one terminal completion and reconciliation outcome wins. | Conditional provider claim on start and import-run lock on completion; **statement + lock**. |
 | `Ingestion.SourceProviders` | `ensure_in_transaction/2` | A source acquires at most one provider identity and callers observe it before dependent writes. | Required caller transaction, conditional provider claim, and ordinary reconciliation reload; **statement**. |
 | `Ingestion.Sources.CJ.SourceResolver` | `fetch_source/0` | The canonical CJ source converges and has the CJ provider/domain. | Unique conflict insert, conditional provider claim, and partial domain update in one transaction; **statement + constraint + partial last-write**. |

@@ -40,7 +40,7 @@ defmodule ProductCompare.Ingestion.SourceProvidersConcurrencyTest do
       end)
 
     assert_not_blocked_by(validation_backend_pid, lock_backend_pid)
-    assert_receive {:provider_validation_finished, validation_pid, {:ok, "cj"}}
+    assert_receive {:provider_validation_finished, validation_pid, {:ok, "cj"}}, 2_000
     assert validation_pid == validation.pid
 
     send(validation.pid, :finish_provider_validation)

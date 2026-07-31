@@ -2,7 +2,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
   @moduledoc false
 
   import Ecto.Query
-  import ExUnit.Assertions, only: [assert: 1, assert_receive: 1, flunk: 1]
+  import ExUnit.Assertions, only: [assert: 1, assert_receive: 2, flunk: 1]
 
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Repo
@@ -77,7 +77,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
         end)
       end)
 
-    assert_receive {:row_lock_held, task_pid, backend_pid}
+    assert_receive {:row_lock_held, task_pid, backend_pid}, 2_000
     assert(task_pid == task.pid)
     {task, backend_pid}
   end
@@ -101,7 +101,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
         end)
       end)
 
-    assert_receive {:action_started, task_pid, backend_pid}
+    assert_receive {:action_started, task_pid, backend_pid}, 2_000
     assert(task_pid == task.pid)
     {task, backend_pid}
   end

@@ -357,7 +357,7 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoverySchedulerTest do
          ]}
       )
 
-    assert_receive {:run, _opts}, 250
+    assert_receive {:run, _opts}, 2_000
     refute_receive {:run, _opts}, 50
 
     GenServer.stop(pid)

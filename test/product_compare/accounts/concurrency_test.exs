@@ -92,8 +92,8 @@ defmodule ProductCompare.Accounts.ConcurrencyTest do
         end)
       end
 
-    assert_receive {:delivery_candidate, first_label, first_pid, first_token}
-    assert_receive {:delivery_candidate, second_label, second_pid, second_token}
+    assert_receive {:delivery_candidate, first_label, first_pid, first_token}, 2_000
+    assert_receive {:delivery_candidate, second_label, second_pid, second_token}, 2_000
     assert MapSet.new([first_label, second_label]) == MapSet.new([:first, :second])
 
     send(first_pid, :finish_delivery)

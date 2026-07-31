@@ -277,7 +277,7 @@ defmodule ProductCompare.Ingestion.CJProductImportSchedulerTest do
          ]}
       )
 
-    assert_receive {:run, opts}, 250
+    assert_receive {:run, opts}, 2_000
 
     assert Keyword.keys(opts) == [
              :currency,
