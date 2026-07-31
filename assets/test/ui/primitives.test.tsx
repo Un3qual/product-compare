@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import {
   Button,
   Checkbox,
@@ -132,6 +132,32 @@ test("Select exposes its value and updates its form value through accessible opt
   const form = screen.getByRole("form", { name: "Select contract" }) as HTMLFormElement;
   expect(select).toHaveValue("name_asc");
   expect(new FormData(form).get("sort")).toBe("name_asc");
+});
+
+test("Select gives keyboard-highlighted options a visible background", () => {
+  render(
+    <AppProviders>
+      <Select
+        aria-label="Rating"
+        defaultValue="5"
+        options={[
+          { label: "Five", value: "5" },
+          { label: "Four", value: "4" },
+        ]}
+      />
+    </AppProviders>,
+  );
+
+  const select = screen.getByRole("combobox", { name: "Rating" });
+
+  openSelect(select);
+
+  const highlightedOption = screen.getByRole("option", { name: "Five" });
+  fireEvent.focus(highlightedOption);
+  expect(highlightedOption).toHaveAttribute("data-highlighted");
+  const backgroundColor = getComputedStyle(highlightedOption).backgroundColor;
+  expect(backgroundColor).not.toBe("transparent");
+  expect(backgroundColor).not.toMatch(/^rgba?\(0,\s*0,\s*0,\s*0\)$/);
 });
 
 test("controlled Select follows option and value updates without emitting a change", () => {

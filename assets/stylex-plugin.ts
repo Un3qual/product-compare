@@ -17,7 +17,7 @@ export function reactWithStyleX() {
           stylexPlugin,
           {
             dev: process.env.NODE_ENV !== "production",
-            test: process.env.NODE_ENV === "test",
+            test: false,
             runtimeInjection: true,
             unstable_moduleResolution: {
               type: "commonJS",

@@ -1,4 +1,3 @@
-import * as Micro from "effect/Micro";
 import type { GraphQLResponse } from "relay-runtime";
 
 const DEFAULT_DEV_API_BASE_URL = "http://localhost:4000";
@@ -22,80 +21,69 @@ interface GraphQLTransportOptions {
   fetch?: typeof globalThis.fetch;
 }
 
-export interface GraphQLConfigurationFailure {
-  readonly _tag: "GraphQLConfigurationFailure";
-  readonly cause: unknown;
-  readonly message: string;
-}
-
-export interface GraphQLNetworkFailure {
-  readonly _tag: "GraphQLNetworkFailure";
-  readonly cause: unknown;
-  readonly message: string;
-}
-
-export interface GraphQLHTTPFailure {
-  readonly _tag: "GraphQLHTTPFailure";
-  readonly body: string;
-  readonly status: number;
-}
-
-export interface GraphQLResponseDecodingFailure {
-  readonly _tag: "GraphQLResponseDecodingFailure";
-  readonly cause: unknown;
-}
-
-export interface GraphQLAbortFailure {
-  readonly _tag: "GraphQLAbortFailure";
-  readonly cause: unknown;
-}
-
-export type GraphQLTransportFailure =
-  | GraphQLAbortFailure
-  | GraphQLConfigurationFailure
-  | GraphQLHTTPFailure
-  | GraphQLNetworkFailure
-  | GraphQLResponseDecodingFailure;
-
 export function fetchGraphQL(
   query: string,
   variables: Record<string, unknown>,
   ssrContext?: SSRContext,
 ): Promise<GraphQLResponse> {
-  return Micro.runPromise(Micro.either(graphqlTransportEffect(query, variables, ssrContext))).then(
-    (result) => {
-      if (result._tag === "Left") {
-        throw promiseFailure(result.left);
-      }
-
-      return result.right;
-    },
-  );
+  return graphqlTransport(query, variables, ssrContext);
 }
 
 /** @internal Exposed only for focused transport contract tests. */
-export function graphqlTransportEffect(
+export async function graphqlTransport(
   query: string,
   variables: Record<string, unknown>,
   ssrContext?: SSRContext,
   options: GraphQLTransportOptions = {},
-) {
-  return Micro.try({
-    try: () => resolveGraphQLEndpoint(options.endpoint),
-    catch: configurationFailure,
-  }).pipe(
-    Micro.flatMap((endpoint) =>
-      Micro.tryPromise({
-        try: () =>
-          (options.fetch ?? globalThis.fetch)(
-            endpoint,
-            graphQLRequest(query, variables, ssrContext),
-          ),
-        catch: requestFailure,
-      }),
-    ),
-    Micro.flatMap(responseEffect),
-  );
+): Promise<GraphQLResponse> {
+  let endpoint: string;
+
+  try {
+    endpoint = resolveGraphQLEndpoint(options.endpoint);
+  } catch (cause) {
+    throw networkRequestFailure(cause);
+  }
+
+  let response: Response;
+
+  try {
+    response = await (options.fetch ?? globalThis.fetch)(
+      endpoint,
+      graphQLRequest(query, variables, ssrContext),
+    );
+  } catch (cause) {
+    if (isAbortFailure(cause)) {
+      throw cause;
+    }
+
+    throw networkRequestFailure(cause);
+  }
+
+  if (!response.ok) {
+    let body: string;
+
+    try {
+      body = await response.text();
+    } catch (cause) {
+      throw cause;
+    }
+
+    throw new Error(`GraphQL request failed (${response.status}): ${body}`);
+  }
+
+  let body: unknown;
+
+  try {
+    body = await response.json();
+  } catch (cause) {
+    throw cause;
+  }
+
+  if (!isGraphQLResponse(body)) {
+    throw new TypeError("GraphQL response must be an object");
+  }
+
+  return body;
 }
 
 function graphQLRequest(
@@ -217,26 +205,6 @@ function hasSSRContext(ssrContext?: SSRContext) {
   return Boolean(ssrContext?.request || ssrContext?.headers || ssrContext?.cookieString);
 }
 
-function decodeResponse<A>(decode: () => Promise<A>) {
-  return Micro.tryPromise({
-    try: decode,
-    catch: responseDecodingFailure,
-  });
-}
-
-function promiseFailure(failure: GraphQLTransportFailure): unknown {
-  switch (failure._tag) {
-    case "GraphQLAbortFailure":
-    case "GraphQLResponseDecodingFailure":
-      return failure.cause;
-    case "GraphQLConfigurationFailure":
-    case "GraphQLNetworkFailure":
-      return new Error(`Network request failed: ${failure.message}`);
-    case "GraphQLHTTPFailure":
-      return new Error(`GraphQL request failed (${failure.status}): ${failure.body}`);
-  }
-}
-
 function errorMessage(cause: unknown) {
   return cause instanceof Error ? cause.message : "Unknown error";
 }
@@ -252,49 +220,6 @@ function isGraphQLResponse(value: unknown): value is GraphQLResponse {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function responseEffect(response: Response) {
-  if (!response.ok) {
-    return decodeResponse(() => response.text()).pipe(
-      Micro.flatMap((body) =>
-        Micro.fail<GraphQLHTTPFailure>({
-          _tag: "GraphQLHTTPFailure",
-          body,
-          status: response.status,
-        }),
-      ),
-    );
-  }
-
-  return decodeResponse(() => response.json()).pipe(
-    Micro.flatMap((body) =>
-      isGraphQLResponse(body)
-        ? Micro.succeed(body)
-        : Micro.fail(responseDecodingFailure(new TypeError("GraphQL response must be an object"))),
-    ),
-  );
-}
-
-function configurationFailure(cause: unknown): GraphQLConfigurationFailure {
-  return {
-    _tag: "GraphQLConfigurationFailure",
-    cause,
-    message: errorMessage(cause),
-  };
-}
-
-function requestFailure(cause: unknown): GraphQLAbortFailure | GraphQLNetworkFailure {
-  return isAbortFailure(cause)
-    ? { _tag: "GraphQLAbortFailure", cause }
-    : {
-        _tag: "GraphQLNetworkFailure",
-        cause,
-        message: errorMessage(cause),
-      };
-}
-
-function responseDecodingFailure(cause: unknown): GraphQLResponseDecodingFailure {
-  return {
-    _tag: "GraphQLResponseDecodingFailure",
-    cause,
-  };
+function networkRequestFailure(cause: unknown) {
+  return new Error(`Network request failed: ${errorMessage(cause)}`);
 }
