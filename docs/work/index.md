@@ -468,6 +468,51 @@ validation, text/varchar closed-domain constraints fail with actionable
 evidence, controlled-reference checks remain green, and all repository gates
 pass.
 
+### 14. Radix Disclosure Controls
+
+Status: ready
+Lane: Frontend UI foundation
+Plan: `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`
+Batch outcome: price-watch creation, comparison sharing, and community
+creation forms use the existing Radix Collapsible primitive while lazy work,
+form state, accessibility, and StyleX ownership remain intact.
+Next action: characterize the five native disclosure contracts and add the
+failing visible-disclosure architecture scan before changing consumers.
+Owned paths:
+
+- `assets/src/routes/products/PriceWatchControl.tsx`
+- `assets/src/routes/compare/ShareComparisonControl.tsx`
+- `assets/src/routes/products/ProductCommunityPanel.tsx`
+- affected alert, comparison-snapshot, community, and primitive tests
+- focused frontend architecture test for native visible disclosures
+- `docs/work/frontend-radix-disclosure-controls.md`
+
+Internal slices:
+
+- Native disclosure and lazy-loading characterization.
+- Existing Radix Collapsible adoption across five consumers.
+- Accessibility, SSR, full-suite, and bundle verification.
+
+Prerequisites:
+
+- No active row owns the affected disclosure consumers.
+- The existing project Collapsible wrapper remains the only primitive boundary.
+- The separately ranked form-control migration retains ownership of inputs,
+  selects, text areas, checkboxes, and the Radix Themes provider.
+
+Verification:
+
+- focused alert, comparison snapshot, community, and primitive tests
+- native visible-disclosure architecture scan
+- TypeScript, Oxc, Oxfmt, and full frontend tests
+- Vite client and SSR builds plus bundle contract
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: no visible native disclosure remains under `assets/src`, the
+five affected controls use the existing Radix wrapper, lazy and submission
+behavior is unchanged, StyleX remains in place, and every frontend gate passes.
+
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
 predicate and ranking, GraphQL and metadata parity, Relay pagination, and
