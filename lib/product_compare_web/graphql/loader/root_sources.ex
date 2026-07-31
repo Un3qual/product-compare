@@ -17,10 +17,11 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Loader.EctoBatchSource
 
   @spec comparison() :: Dataloader.Source.t()
   def comparison do
-    Dataloader.KV.new(&comparison_batch/2, async?: false)
+    EctoBatchSource.new(&comparison_batch/2)
   end
 
   defp comparison_batch(:products, slug_selections) do
@@ -71,7 +72,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec discovery_roots() :: Dataloader.Source.t()
   def discovery_roots do
-    Dataloader.KV.new(&discovery_root_batch/2, async?: false)
+    EctoBatchSource.new(&discovery_root_batch/2)
   end
 
   defp discovery_root_batch({:products, filters, connection_args}, roots)
@@ -109,7 +110,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec operator_reporting() :: Dataloader.Source.t()
   def operator_reporting do
-    Dataloader.KV.new(&operator_reporting_batch/2, async?: false)
+    EctoBatchSource.new(&operator_reporting_batch/2)
   end
 
   defp operator_reporting_batch(
@@ -148,7 +149,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec public_slugs() :: Dataloader.Source.t()
   def public_slugs do
-    Dataloader.KV.new(&public_slug_batch/2, async?: false)
+    EctoBatchSource.new(&public_slug_batch/2)
   end
 
   defp public_slug_batch(:product, slugs) do
@@ -165,7 +166,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec public_opaque_keys() :: Dataloader.Source.t()
   def public_opaque_keys do
-    Dataloader.KV.new(&public_opaque_batch/2, async?: false)
+    EctoBatchSource.new(&public_opaque_batch/2)
   end
 
   defp public_opaque_batch(:source_artifact, ids) do
@@ -188,7 +189,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec authorized_nodes() :: Dataloader.Source.t()
   def authorized_nodes do
-    Dataloader.KV.new(&authorized_node_batch/2, async?: false)
+    EctoBatchSource.new(&authorized_node_batch/2)
   end
 
   defp authorized_node_batch({:operator, type, operator_id}, ids)
@@ -215,7 +216,7 @@ defmodule ProductCompareWeb.GraphQL.Loader.RootSources do
 
   @spec authorized_connections() :: Dataloader.Source.t()
   def authorized_connections do
-    Dataloader.KV.new(&authorized_connection_batch/2, async?: false)
+    EctoBatchSource.new(&authorized_connection_batch/2)
   end
 
   defp authorized_connection_batch(

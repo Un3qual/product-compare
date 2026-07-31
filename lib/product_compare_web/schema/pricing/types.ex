@@ -1,0 +1,163 @@
+defmodule ProductCompareWeb.Schema.Pricing.Types do
+  use Absinthe.Schema.Notation
+  use Absinthe.Relay.Schema.Notation, :modern
+
+  import Absinthe.Resolution.Helpers, only: [dataloader: 2]
+
+  alias ProductCompare.Pricing
+  alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.Resolvers.AffiliateResolver
+  alias ProductCompareWeb.Resolvers.PricingResolver
+  alias ProductCompareWeb.Resolvers.SeoResolver
+
+  input_object :merchant_products_input do
+    field :product_id, non_null(:id)
+    field :merchant_id, :id
+    field :active_only, :boolean
+    field :first, :integer
+    field :after, :string
+  end
+
+  node object(:merchant) do
+    field :name, non_null(:string)
+    field :domain, non_null(:string)
+    field :slug, non_null(:string)
+    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.merchant_metadata/3
+
+    field :detail_summary, non_null(:merchant_detail_summary),
+      resolve: &PricingResolver.merchant_detail_summary/3
+
+    connection field :merchant_products,
+                 node_type: :merchant_product,
+                 non_null_connection: true do
+      resolve(&PricingResolver.merchant_offers/3)
+    end
+
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  object :merchant_detail_summary do
+    field :active_offer_count, non_null(:integer)
+    field :distinct_product_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :fresh_offer_count, non_null(:integer)
+    field :aging_offer_count, non_null(:integer)
+    field :stale_offer_count, non_null(:integer)
+    field :unobserved_offer_count, non_null(:integer)
+    field :last_observed_at, :datetime
+  end
+
+  connection(node_type: :merchant, non_null_edges: true, non_null_edge: true)
+
+  node object(:merchant_product) do
+    field :merchant_id, non_null(:id) do
+      resolve(fn merchant_product, _, _ ->
+        GlobalId.encode_required(:merchant, merchant_product.merchant_id)
+      end)
+    end
+
+    field :product_id, non_null(:id) do
+      resolve(fn merchant_product, _, _ ->
+        GlobalId.encode_required(:product, merchant_product.product_id)
+      end)
+    end
+
+    field :external_sku, :string
+    field :url, non_null(:string)
+    field :currency, non_null(:string)
+    field :last_seen_at, :datetime
+    field :is_active, non_null(:boolean)
+    field :merchant, :merchant, resolve: dataloader(Pricing, use_parent: true)
+    field :product, :product, resolve: dataloader(Pricing, use_parent: true)
+    field :latest_price, :price_point, resolve: &PricingResolver.latest_price/3
+
+    connection field :active_coupons, node_type: :active_coupon do
+      resolve(&AffiliateResolver.merchant_product_active_coupons/3)
+    end
+
+    connection field :price_history, node_type: :price_point do
+      arg(:from, :datetime)
+      arg(:to, :datetime)
+
+      resolve(&PricingResolver.price_history/3)
+    end
+
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, non_null(:datetime)
+  end
+
+  node object(:price_point) do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn price_point, _, _ ->
+        GlobalId.encode_required(:merchant_product, price_point.merchant_product_id)
+      end)
+    end
+
+    field :observed_at, non_null(:datetime)
+    field :price, non_null(:decimal)
+    field :shipping, :decimal
+    field :in_stock, :boolean
+
+    field :source_artifact, :source_artifact do
+      resolve(&PricingResolver.source_artifact/3)
+    end
+
+    field :inserted_at, non_null(:datetime)
+    field :updated_at, :datetime
+  end
+
+  object :product_offer_truth do
+    field :as_of, non_null(:datetime)
+    field :fresh_for_seconds, non_null(:integer)
+    field :stale_after_seconds, non_null(:integer)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :currency_summaries, non_null(list_of(non_null(:offer_currency_summary)))
+  end
+
+  object :offer_currency_summary do
+    field :currency, non_null(:string)
+    field :offer_count, non_null(:integer)
+    field :observed_offer_count, non_null(:integer)
+    field :eligible_offer_count, non_null(:integer)
+    field :best_offer, :current_offer
+  end
+
+  object :current_offer do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn offer, _, _ ->
+        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
+      end)
+    end
+
+    field :currency, non_null(:string)
+    field :item_price, :decimal
+    field :shipping, :decimal
+    field :landed_price, :decimal
+    field :landed_price_complete, non_null(:boolean)
+    field :stock_status, non_null(:offer_stock_status)
+    field :freshness, non_null(:offer_freshness)
+    field :observed_at, :datetime
+    field :eligible, non_null(:boolean)
+    field :source_artifact, :source_artifact
+  end
+
+  enum :offer_stock_status do
+    value(:in_stock)
+    value(:out_of_stock)
+    value(:unknown)
+  end
+
+  enum :offer_freshness do
+    value(:fresh)
+    value(:aging)
+    value(:stale)
+    value(:unobserved)
+  end
+
+  connection(node_type: :price_point, non_null_edges: true, non_null_edge: true)
+  connection(node_type: :merchant_product, non_null_edges: true, non_null_edge: true)
+end

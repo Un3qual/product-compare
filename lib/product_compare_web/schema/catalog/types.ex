@@ -1,12 +1,12 @@
-defmodule ProductCompareWeb.Schema.Types.Catalog do
+defmodule ProductCompareWeb.Schema.Catalog.Types do
   use Absinthe.Schema.Notation
+  use Absinthe.Relay.Schema.Notation, :modern
 
   import Absinthe.Resolution.Helpers, only: [dataloader: 2]
 
   alias ProductCompare.Catalog
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Resolvers.CatalogResolver
-  alias ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver
   alias ProductCompareWeb.Resolvers.DiscussionsResolver
   alias ProductCompareWeb.Resolvers.PricingResolver
   alias ProductCompareWeb.Resolvers.SeoResolver
@@ -171,38 +171,12 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
     field :product_ids, non_null(list_of(non_null(:id)))
   end
 
-  input_object :publish_comparison_snapshot_input do
-    field :title, :string
-    field :search_indexable, :boolean, default_value: false
-    field :product_ids, non_null(list_of(non_null(:id)))
-    field :recommendation_profile, non_null(:recommendation_profile)
-  end
-
   object :saved_comparison_set_payload do
     field :saved_comparison_set, :saved_comparison_set
     field :errors, non_null(list_of(non_null(:mutation_error)))
   end
 
-  object :publish_comparison_snapshot_payload do
-    field :snapshot, :comparison_snapshot
-    field :share_path, :string
-    field :errors, non_null(list_of(non_null(:mutation_error)))
-  end
-
-  object :revoke_comparison_snapshot_payload do
-    field :revoked_snapshot_id, :id
-    field :errors, non_null(list_of(non_null(:mutation_error)))
-  end
-
-  object :saved_comparison_set do
-    interface(:node)
-
-    field :id, non_null(:id) do
-      resolve(fn saved_comparison_set, _, _ ->
-        GlobalId.encode_required(:saved_comparison_set, saved_comparison_set.entropy_id)
-      end)
-    end
-
+  node object(:saved_comparison_set, id_fetcher: &GlobalId.fetch_entropy_id/2) do
     field :name, non_null(:string)
 
     field :items, non_null(list_of(non_null(:saved_comparison_item))),
@@ -212,164 +186,19 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
     field :updated_at, non_null(:datetime)
   end
 
-  object :comparison_snapshot do
-    field :id, non_null(:id) do
-      resolve(fn snapshot, _, _ ->
-        GlobalId.encode_required(:comparison_snapshot, snapshot.entropy_id)
-      end)
-    end
-
-    field :title, :string
-    field :share_path, non_null(:string), resolve: &ComparisonSnapshotsResolver.share_path/3
-    field :search_indexable, non_null(:boolean)
-    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.snapshot_metadata/3
-    field :captured_at, non_null(:datetime), resolve: &ComparisonSnapshotsResolver.captured_at/3
-    field :disclaimer, non_null(:string), resolve: &ComparisonSnapshotsResolver.disclaimer/3
-
-    field :products, non_null(list_of(non_null(:comparison_snapshot_product))),
-      resolve: &ComparisonSnapshotsResolver.snapshot_products/3
-
-    field :recommendation, non_null(:comparison_recommendation),
-      resolve: &ComparisonSnapshotsResolver.recommendation/3
-  end
-
-  object :comparison_snapshot_product do
-    field :id, non_null(:id) do
-      resolve(fn product, _, _ -> GlobalId.encode_required(:product, product.id) end)
-    end
-
-    field :name, non_null(:string)
-    field :slug, non_null(:string)
-    field :description, :string
-    field :model_number, :string
-    field :brand_name, :string
-    field :attributes, non_null(list_of(non_null(:comparison_snapshot_attribute)))
-    field :offers, non_null(list_of(non_null(:comparison_snapshot_offer)))
-  end
-
-  object :comparison_snapshot_connection do
-    field :edges, non_null(list_of(non_null(:comparison_snapshot_edge)))
-    field :page_info, non_null(:page_info)
-  end
-
-  object :comparison_snapshot_edge do
-    field :cursor, non_null(:string)
-    field :node, non_null(:comparison_snapshot)
-  end
-
-  object :comparison_snapshot_attribute do
-    field :attribute_id, non_null(:id) do
-      resolve(fn attribute, _, _ ->
-        GlobalId.encode_required(:attribute, attribute.attribute_id)
-      end)
-    end
-
-    field :claim_id, non_null(:id) do
-      resolve(fn attribute, _, _ ->
-        GlobalId.encode_required(:product_attribute_claim, attribute.claim_id)
-      end)
-    end
-
-    field :code, non_null(:string)
-    field :display_name, non_null(:string)
-    field :value_text, non_null(:string)
-    field :source_type, non_null(:string)
-    field :confidence, :decimal
-    field :evidence, non_null(list_of(non_null(:comparison_snapshot_evidence)))
-  end
-
-  object :comparison_snapshot_evidence do
-    field :artifact_id, non_null(:id) do
-      resolve(fn evidence, _, _ ->
-        GlobalId.encode_required(:source_artifact, evidence.artifact_id)
-      end)
-    end
-
-    field :excerpt, :string
-    field :source_kind, non_null(:string)
-    field :source_name, non_null(:string)
-    field :source_domain, :string
-    field :url, :string
-
-    field :fetched_at, non_null(:datetime),
-      resolve: &ComparisonSnapshotsResolver.evidence_fetched_at/3
-  end
-
-  object :comparison_snapshot_offer do
-    field :merchant_product_id, non_null(:id) do
-      resolve(fn offer, _, _ ->
-        GlobalId.encode_required(:merchant_product, offer.merchant_product_id)
-      end)
-    end
-
-    field :price_point_id, non_null(:id) do
-      resolve(fn offer, _, _ -> GlobalId.encode_required(:price_point, offer.price_point_id) end)
-    end
-
-    field :merchant_name, non_null(:string)
-    field :merchant_domain, :string
-    field :currency, non_null(:string)
-    field :item_price, non_null(:decimal)
-    field :shipping, non_null(:decimal)
-    field :landed_price, non_null(:decimal)
-    field :freshness, non_null(:string)
-
-    field :observed_at, non_null(:datetime),
-      resolve: &ComparisonSnapshotsResolver.offer_observed_at/3
-  end
-
   object :saved_comparison_item do
     field :position, non_null(:integer)
     field :product, non_null(:product), resolve: dataloader(Catalog, use_parent: true)
     field :inserted_at, non_null(:datetime)
   end
 
-  object :saved_comparison_set_connection do
-    field :edges, non_null(list_of(non_null(:saved_comparison_set_edge)))
-    field :page_info, non_null(:page_info)
-  end
+  connection(node_type: :saved_comparison_set, non_null_edges: true, non_null_edge: true)
 
-  object :saved_comparison_set_edge do
-    field :cursor, non_null(:string)
-    field :node, non_null(:saved_comparison_set)
-  end
-
-  object :brand do
-    interface(:node)
-
-    field :id, non_null(:id) do
-      resolve(fn brand, _, _ -> GlobalId.encode_required(:brand, brand.id) end)
-    end
-
+  node object(:brand) do
     field :name, non_null(:string)
   end
 
-  object :seo_category do
-    field :id, non_null(:id) do
-      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.id) end)
-    end
-
-    field :name, non_null(:string)
-    field :slug, non_null(:string)
-    field :description, non_null(:string)
-    field :qualified_product_count, non_null(:integer)
-    field :indexable, non_null(:boolean)
-    field :seo, non_null(:seo_metadata), resolve: &SeoResolver.category_metadata/3
-
-    field :products, non_null(:product_connection) do
-      arg(:first, :integer)
-      arg(:after, :string)
-      resolve(&SeoResolver.category_products/3)
-    end
-  end
-
-  object :product do
-    interface(:node)
-
-    field :id, non_null(:id) do
-      resolve(fn product, _, _ -> GlobalId.encode_required(:product, product.id) end)
-    end
-
+  node object(:product) do
     field :name, non_null(:string)
     field :slug, non_null(:string)
     field :model_number, :string
@@ -391,24 +220,18 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
     field :review_summary, non_null(:product_review_summary),
       resolve: &DiscussionsResolver.review_summary/3
 
-    field :reviews, non_null(:product_review_connection) do
-      arg(:first, :integer)
-      arg(:after, :string)
+    connection field :reviews, node_type: :product_review, non_null_connection: true do
       resolve(&DiscussionsResolver.reviews/3)
     end
 
-    field :questions, non_null(:product_question_connection) do
-      arg(:first, :integer)
-      arg(:after, :string)
+    connection field :questions, node_type: :product_question, non_null_connection: true do
       resolve(&DiscussionsResolver.questions/3)
     end
 
     field :viewer_community_submissions, non_null(:viewer_community_submissions),
       resolve: &DiscussionsResolver.viewer_community_submissions/3
 
-    field :merchant_products, :merchant_product_connection do
-      arg(:first, :integer)
-      arg(:after, :string)
+    connection field :merchant_products, node_type: :merchant_product do
       arg(:merchant_id, :id)
       arg(:active_only, :boolean)
 
@@ -450,13 +273,5 @@ defmodule ProductCompareWeb.Schema.Types.Catalog do
     field :evidence, non_null(list_of(non_null(:product_attribute_evidence)))
   end
 
-  object :product_connection do
-    field :edges, non_null(list_of(non_null(:product_edge)))
-    field :page_info, non_null(:page_info)
-  end
-
-  object :product_edge do
-    field :cursor, non_null(:string)
-    field :node, non_null(:product)
-  end
+  connection(node_type: :product, non_null_edges: true, non_null_edge: true)
 end

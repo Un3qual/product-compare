@@ -19,9 +19,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Merchants do
       batch_key = {:merchants, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+        {:ok, Loader.get(loader, source, batch_key, :root)}
       end)
     end
   end
@@ -38,9 +38,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Merchants do
     source = Loader.public_slug_source()
 
     loader
-    |> Dataloader.load(source, :merchant, slug)
+    |> Loader.load(source, :merchant, slug)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :merchant, slug)}
+      {:ok, Loader.get(loader, source, :merchant, slug)}
     end)
   end
 
@@ -52,9 +52,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Merchants do
     source = Loader.merchant_detail_source()
 
     loader
-    |> Dataloader.load(source, :summary, merchant)
+    |> Loader.load(source, :summary, merchant)
     |> on_load(fn loader ->
-      case Dataloader.get(loader, source, :summary, merchant) do
+      case Loader.get(loader, source, :summary, merchant) do
         %{summary: summary} -> {:ok, summary}
         nil -> {:error, "merchant not found"}
       end
@@ -85,9 +85,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Merchants do
     source = Loader.offer_connection_source()
 
     loader
-    |> Dataloader.load(source, batch_key, parent)
+    |> Loader.load(source, batch_key, parent)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, parent)}
+      {:ok, Loader.get(loader, source, batch_key, parent)}
     end)
   end
 end

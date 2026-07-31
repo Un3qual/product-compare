@@ -33,10 +33,10 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       batch_key = {:revenue_summary, operator.id, filters, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
         loader
-        |> Dataloader.get(source, batch_key, :root)
+        |> Loader.get(source, batch_key, :root)
         |> revenue_summary_result()
       end)
     else

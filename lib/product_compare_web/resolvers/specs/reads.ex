@@ -22,9 +22,9 @@ defmodule ProductCompareWeb.Resolvers.Specs.Reads do
       source = Loader.public_opaque_source()
 
       loader
-      |> Dataloader.load(source, :source_artifact, artifact_id)
+      |> Loader.load(source, :source_artifact, artifact_id)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, :source_artifact, artifact_id)}
+        {:ok, Loader.get(loader, source, :source_artifact, artifact_id)}
       end)
     else
       :error -> {:error, "invalid source artifact id"}

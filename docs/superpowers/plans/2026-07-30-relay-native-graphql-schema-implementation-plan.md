@@ -35,43 +35,43 @@ PostgreSQL, ExUnit, Relay Compiler.
 
 ### Task 1: Characterize The Current Contract
 
-- [ ] Add a schema-architecture contract that fails on `Dataloader.KV`,
+- [x] Add a schema-architecture contract that fails on `Dataloader.KV`,
   `Types.Common`, manual Node declarations, manual connection objects, and
   root query/mutation declarations outside context modules.
-- [ ] Snapshot supported Node types, connection fields, authorization branches,
+- [x] Snapshot supported Node types, connection fields, authorization branches,
   query counts, and Relay artifacts before structural changes.
 
 ### Task 2: Enable Absinthe Relay Modern Mode
 
-- [ ] Add and configure `absinthe_relay`.
-- [ ] Move genuinely global types into `schema.ex`.
-- [ ] Replace the manual Node interface/root field with Relay schema and node
+- [x] Add and configure `absinthe_relay`.
+- [x] Move genuinely global types into `schema.ex`.
+- [x] Replace the manual Node interface/root field with Relay schema and node
   field macros while retaining the existing node lookup authorization.
-- [ ] Convert all supported globally identified entities to `node object`.
+- [x] Convert all supported globally identified entities to `node object`.
 
 ### Task 3: Replace Manual Connections
 
-- [ ] Replace all 17 hand-authored connection/edge pairs and the manual
+- [x] Replace all 17 hand-authored connection/edge pairs and the manual
   `page_info` object with Absinthe Relay connection macros.
-- [ ] Adapt existing bounded connection projections to the macro-owned shape
+- [x] Adapt existing bounded connection projections to the macro-owned shape
   without weakening cursor validation or query budgets.
 - [ ] Regenerate the schema snapshot and Relay artifacts after the intentional
   breaking contract update.
 
 ### Task 4: Split The Schema By Context
 
-- [ ] Create context folders with separate types, queries, and mutations
+- [x] Create context folders with separate types, queries, and mutations
   modules for accounts, affiliate, alerts, catalog, commerce attribution,
   comparison snapshots, discussions, ingestion, pricing, SEO, and specs.
-- [ ] Keep `schema.ex` limited to global types, imports, context/plugin setup,
+- [x] Keep `schema.ex` limited to global types, imports, context/plugin setup,
   and root composition.
-- [ ] Delete the broad `Types.Accounts`, `Types.Catalog`, `Types.Commerce`,
+- [x] Delete the broad `Types.Accounts`, `Types.Catalog`, `Types.Commerce`,
   `Types.Trust`, and `Types.Common` modules after their definitions move.
 
 ### Task 5: Make Data Loading Declarative
 
-- [ ] Inline every ordinary association field with Ecto Dataloader.
-- [ ] Re-express all 13 KV sources as Ecto-backed batches or set-based root
+- [x] Inline every ordinary association field with Ecto Dataloader.
+- [x] Re-express all 13 KV sources as Ecto-backed batches or set-based root
   reads, retaining deterministic batching tests.
 - [ ] Delete shallow one-line resolver facades and point schema fields at the
   actual context-specific resolver owner.

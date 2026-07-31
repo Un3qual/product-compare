@@ -5,11 +5,17 @@ defmodule ProductCompareWeb.GraphQL.SchemaSnapshotTest do
     schema_path = Path.expand("../../../assets/schema.graphql", __DIR__)
 
     for module <- [
-          ProductCompareWeb.Schema.Types.Common,
-          ProductCompareWeb.Schema.Types.Accounts,
-          ProductCompareWeb.Schema.Types.Commerce,
-          ProductCompareWeb.Schema.Types.Catalog,
-          ProductCompareWeb.Schema.Types.Trust
+          ProductCompareWeb.Schema.Accounts.Types,
+          ProductCompareWeb.Schema.Affiliate.Types,
+          ProductCompareWeb.Schema.Alerts.Types,
+          ProductCompareWeb.Schema.Catalog.Types,
+          ProductCompareWeb.Schema.CommerceAttribution.Types,
+          ProductCompareWeb.Schema.ComparisonSnapshots.Types,
+          ProductCompareWeb.Schema.Discussions.Types,
+          ProductCompareWeb.Schema.Ingestion.Types,
+          ProductCompareWeb.Schema.Pricing.Types,
+          ProductCompareWeb.Schema.Seo.Types,
+          ProductCompareWeb.Schema.Specs.Types
         ] do
       assert Code.ensure_loaded?(module)
     end

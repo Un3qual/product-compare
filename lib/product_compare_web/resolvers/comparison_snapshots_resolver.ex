@@ -18,9 +18,9 @@ defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
     source = Loader.public_opaque_source()
 
     loader
-    |> Dataloader.load(source, :comparison_snapshot, token)
+    |> Loader.load(source, :comparison_snapshot, token)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :comparison_snapshot, token)}
+      {:ok, Loader.get(loader, source, :comparison_snapshot, token)}
     end)
   end
 

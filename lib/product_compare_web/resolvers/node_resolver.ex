@@ -39,6 +39,14 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     end
   end
 
+  @spec relay_node(%{type: atom(), id: String.t()}, Absinthe.Resolution.t()) ::
+          {:ok, term() | nil}
+          | {:error, String.t() | GraphQLErrors.top_level_error()}
+          | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def relay_node(%{type: type, id: id}, resolution) do
+    node(nil, %{id: GlobalId.encode(type, id)}, resolution)
+  end
+
   defp decode_node_id(id) do
     GlobalId.decode_typed_local_id(
       id,
@@ -140,9 +148,9 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
     source = Loader.authorized_node_source()
 
     loader
-    |> Dataloader.load(source, batch, item)
+    |> Loader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch, item)}
+      {:ok, Loader.get(loader, source, batch, item)}
     end)
   end
 

@@ -15,9 +15,9 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
     source = Loader.product_evidence_source()
 
     loader
-    |> Dataloader.load(source, :review_summary, product)
+    |> Loader.load(source, :review_summary, product)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :review_summary, product)}
+      {:ok, Loader.get(loader, source, :review_summary, product)}
     end)
   end
 
@@ -53,9 +53,9 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
     source = Loader.viewer_submission_source()
 
     loader
-    |> Dataloader.load(source, user.id, product)
+    |> Loader.load(source, user.id, product)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, user.id, product)}
+      {:ok, Loader.get(loader, source, user.id, product)}
     end)
   end
 
@@ -80,9 +80,9 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
       source = Loader.public_opaque_source()
 
       loader
-      |> Dataloader.load(source, :product_question, entropy_id)
+      |> Loader.load(source, :product_question, entropy_id)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, :product_question, entropy_id)}
+        {:ok, Loader.get(loader, source, :product_question, entropy_id)}
       end)
     else
       :error -> {:error, "invalid product question id"}
@@ -107,9 +107,9 @@ defmodule ProductCompareWeb.Resolvers.Discussions.Reads do
         batch_key = {kind, connection_args}
 
         loader
-        |> Dataloader.load(source, batch_key, parent)
+        |> Loader.load(source, batch_key, parent)
         |> on_load(fn loader ->
-          {:ok, Dataloader.get(loader, source, batch_key, parent)}
+          {:ok, Loader.get(loader, source, batch_key, parent)}
         end)
 
       {:error, :invalid_first} ->

@@ -20,9 +20,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
       batch_key = {:merchant_products, attrs, connection_args}
 
       loader
-      |> Dataloader.load(source, batch_key, :root)
+      |> Loader.load(source, batch_key, :root)
       |> on_load(fn loader ->
-        {:ok, Dataloader.get(loader, source, batch_key, :root)}
+        {:ok, Loader.get(loader, source, batch_key, :root)}
       end)
     end
   end
@@ -88,9 +88,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     source = Loader.product_evidence_source()
 
     loader
-    |> Dataloader.load(source, :offer_truth, product)
+    |> Loader.load(source, :offer_truth, product)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, :offer_truth, product)}
+      {:ok, Loader.get(loader, source, :offer_truth, product)}
     end)
   end
 
@@ -129,9 +129,9 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     source = Loader.offer_connection_source()
 
     loader
-    |> Dataloader.load(source, batch_key, parent)
+    |> Loader.load(source, batch_key, parent)
     |> on_load(fn loader ->
-      {:ok, Dataloader.get(loader, source, batch_key, parent)}
+      {:ok, Loader.get(loader, source, batch_key, parent)}
     end)
   end
 

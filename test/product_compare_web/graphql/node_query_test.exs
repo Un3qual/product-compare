@@ -443,8 +443,10 @@ defmodule ProductCompareWeb.GraphQL.NodeQueryTest do
     test "node rejects invalid ids", %{conn: conn} do
       assert %{
                "data" => %{"node" => nil},
-               "errors" => [%{"message" => "invalid node id", "path" => ["node"]} | _]
+               "errors" => [%{"message" => message, "path" => ["node"]} | _]
              } = graphql(conn, node_query(), %{"id" => "bad-node-id"})
+
+      assert message =~ "Could not decode ID value"
     end
 
     test "node rejects public ids outside the database bigint range", %{conn: conn} do

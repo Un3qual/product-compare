@@ -5,7 +5,12 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   alias ProductCompare.{Catalog, Pricing}
 
-  alias ProductCompareWeb.GraphQL.Loader.{AssociationSources, ParentSources, RootSources}
+  alias ProductCompareWeb.GraphQL.Loader.{
+    AssociationSources,
+    EctoBatchSource,
+    ParentSources,
+    RootSources
+  }
 
   @merchant_detail_source {__MODULE__, :merchant_detail}
   @product_evidence_source {__MODULE__, :product_evidence}
@@ -118,4 +123,10 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec discovery_root_source() :: {module(), :discovery_roots}
   def discovery_root_source, do: @discovery_root_source
+
+  @spec load(Dataloader.t(), Dataloader.source_name(), term(), term()) :: Dataloader.t()
+  defdelegate load(loader, source, operation, item), to: EctoBatchSource
+
+  @spec get(Dataloader.t(), Dataloader.source_name(), term(), term()) :: term()
+  defdelegate get(loader, source, operation, item), to: EctoBatchSource
 end
