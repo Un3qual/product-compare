@@ -278,8 +278,10 @@ function buildMerchantDirectoryLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/merchants",
+    url: new URL(request.url)
+  };
 }
 
 function merchantDirectoryQueryDescriptor(variables: { first: number; after: string | null }) {

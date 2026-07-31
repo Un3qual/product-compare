@@ -1,4 +1,4 @@
-import { type FormEvent, type ReactNode, useState } from "react";
+import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { props } from "@stylexjs/stylex";
 import { graphql, useMutation } from "react-relay";
 import type { ProductCommunityQuery } from "../../__generated__/ProductCommunityQuery.graphql";
@@ -7,6 +7,7 @@ import type { ProductCommunityItemsUpdateProductAnswerMutation } from "../../__g
 import type { ProductCommunityItemsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityItemsUpdateProductQuestionMutation.graphql";
 import type { ProductCommunityItemsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityItemsUpdateProductReviewMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
 import { Select } from "../../ui/primitives/Select";
 import { TextArea } from "../../ui/primitives/TextArea";
 import { TextField } from "../../ui/primitives/TextField";
@@ -340,12 +341,14 @@ function ReviewEditForm({ editing, pending, review, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit review rating<Select name="rating" defaultValue={String(review.rating)} options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit review title<TextField name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit review body<TextArea name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>Edit review rating<Select id={`${fieldId}-rating`} name="rating" defaultValue={String(review.rating)} options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Edit review title<TextField id={`${fieldId}-title`} name="title" defaultValue={review.title ?? ""} maxLength={120} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit review body<TextArea id={`${fieldId}-body`} name="body" defaultValue={review.body ?? ""} maxLength={5000} rows={4} {...props(styles.input)} /></Label>
     <EditActions label="review" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -357,11 +360,13 @@ function QuestionEditForm({ editing, pending, question, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit question title<TextField name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></label>
-    <label {...props(styles.field)}>Edit question body<TextArea name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Edit question title<TextField id={`${fieldId}-title`} name="title" defaultValue={question.title} required maxLength={200} {...props(styles.input)} /></Label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit question body<TextArea id={`${fieldId}-body`} name="body" defaultValue={question.body ?? ""} maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <EditActions label="question" onCancel={onCancel} pending={pending} />
   </form>;
 }
@@ -373,10 +378,12 @@ function AnswerEditForm({ answer, editing, pending, onCancel, onSubmit }: {
   onCancel: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
 }) {
+  const fieldId = useId();
+
   if (!editing) return null;
 
   return <form onSubmit={onSubmit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Edit answer body<TextArea name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Edit answer body<TextArea id={`${fieldId}-body`} name="body" defaultValue={answer.body} required maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <EditActions label="answer" onCancel={onCancel} pending={pending} />
   </form>;
 }

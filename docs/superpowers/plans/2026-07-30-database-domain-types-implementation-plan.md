@@ -26,6 +26,7 @@
 ### Task 1: Native PostgreSQL Enum Storage
 
 **Files:**
+
 - Modify: `priv/repo/migrations/20260303222607_init_extensions.exs`
 - Create: `test/product_compare/repo/domain_enum_storage_test.exs`
 - Modify: `priv/repo/migrations/20260303222608_create_accounts_taxonomy_catalog.exs`
@@ -52,6 +53,7 @@
 - Modify: focused tests that currently assert string values for those six schemas.
 
 **Interfaces:**
+
 - Consumes: the approved enum inventory and the existing Ecto atom values.
 - Produces: 25 native PostgreSQL enum types backing 28 live columns, with all affected Ecto schemas loading atoms.
 
@@ -199,6 +201,7 @@ git commit -m "refactor: store closed domains as postgres enums"
 ### Task 2: Commerce Reference Domains
 
 **Files:**
+
 - Create: `lib/product_compare_schemas/reference/currency.ex`
 - Modify: `priv/repo/migrations/20260303222607_init_extensions.exs`
 - Modify: `priv/repo/migrations/20260303222611_create_pricing_affiliate_discussions.exs`
@@ -210,6 +213,7 @@ git commit -m "refactor: store closed domains as postgres enums"
 - Test: existing pricing, affiliate, commerce-attribution, alert, ingestion, and GraphQL suites.
 
 **Interfaces:**
+
 - Consumes: Task 1 enum-backed schemas.
 - Produces: numeric `currency_id`, `affiliate_program_status_id`, and `affiliate_network_id` foreign keys with no duplicated currency, program-status, or network strings.
 
@@ -242,6 +246,7 @@ Commit with `git commit -m "refactor: normalize commerce reference domains"`.
 ### Task 3: Source and Provider Reference Domains
 
 **Files:**
+
 - Modify: `priv/repo/migrations/20260303222607_init_extensions.exs`
 - Modify: `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
 - Modify: `priv/repo/migrations/20260604191000_create_ingestion_runs.exs`
@@ -253,6 +258,7 @@ Commit with `git commit -m "refactor: normalize commerce reference domains"`.
 - Test: existing source, ingestion, Mix-task, and GraphQL suites.
 
 **Interfaces:**
+
 - Consumes: Task 1 ingestion enums and Task 2 `currencies`.
 - Produces: controlled source-kind, provider, surface, feed-type, country, language, and currency references; provider strings are derived through `source_id`.
 
@@ -285,6 +291,7 @@ Commit with `git commit -m "refactor: normalize ingestion reference domains"`.
 ### Task 4: Remove Redundant and Unsafe Discriminators
 
 **Files:**
+
 - Create: `lib/product_compare_schemas/accounts/reputation_event_type.ex`
 - Modify: `priv/repo/migrations/20260303222608_create_accounts_taxonomy_catalog.exs`
 - Modify: `priv/repo/migrations/20260303222610_create_specs_and_sources.exs`
@@ -298,6 +305,7 @@ Commit with `git commit -m "refactor: normalize ingestion reference domains"`.
 - Test: existing account, alert, discussion, and migration suites.
 
 **Interfaces:**
+
 - Consumes: Task 1 community enums.
 - Produces: controlled reputation event types and no generic table-name, formula-language, unused failure-category, single-value thread-kind, duplicate receipt-kind, or transient feed-review strings.
 
@@ -326,6 +334,7 @@ Commit with `git commit -m "refactor: remove categorical discriminator strings"`
 ### Task 5: Normalize Application-Owned Snapshot JSON
 
 **Files:**
+
 - Create: focused comparison snapshot product, attribute, evidence, offer, recommendation, and ranking schemas under `lib/product_compare_schemas/catalog/comparison_snapshot/`.
 - Modify: `priv/repo/migrations/20260713180000_create_comparison_snapshots.exs`
 - Modify: `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
@@ -337,6 +346,7 @@ Commit with `git commit -m "refactor: remove categorical discriminator strings"`
 - Test: `test/product_compare/repo/application_json_domain_storage_test.exs`
 
 **Interfaces:**
+
 - Consumes: native profile/status/source/freshness enums and normalized currency/source-kind/recommendation-algorithm references.
 - Produces: immutable normalized snapshot records and typed alert facts with no application-owned categorical JSON state.
 

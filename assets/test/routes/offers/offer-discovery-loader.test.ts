@@ -471,7 +471,9 @@ function buildOfferDiscoveryLoaderArgs({
     request,
     params: {},
     context: createRelayRouterContext(environment),
-  } as LoaderFunctionArgs;
+    pattern: "/offers",
+    url: new URL(request.url),
+  };
 }
 
 function offerDiscoveryQueryDescriptor(variables: {

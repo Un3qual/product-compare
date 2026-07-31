@@ -624,8 +624,10 @@ function buildRootLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/",
+    url: new URL(request.url)
+  };
 }
 
 function buildAbortableRequest(url: string, signal: AbortSignal): Request {

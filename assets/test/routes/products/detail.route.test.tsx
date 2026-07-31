@@ -186,7 +186,8 @@ const buildProductDetailLoaderArgs = ({
   request,
   params: { slug },
   context: createRelayRouterContext(environment),
-  unstable_pattern: "/products/:slug"
+  pattern: "/products/:slug",
+  url: new URL(request.url)
 });
 
 beforeEach(() => {

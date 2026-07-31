@@ -17,6 +17,7 @@ import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQue
 import type { ProductCommunityPanelSubmitProductReviewMutation } from "../../__generated__/ProductCommunityPanelSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
 import { Select } from "../../ui/primitives/Select";
 import { TextArea } from "../../ui/primitives/TextArea";
 import { TextField } from "../../ui/primitives/TextField";
@@ -242,7 +243,7 @@ function ReviewSection({
 }) {
   const [commitReview, pending] = useMutation<ProductCommunityPanelSubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
-  const ratingId = useId();
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -272,9 +273,9 @@ function ReviewSection({
     </ul>
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more reviews</Button> : null}
     <details><summary>Write a review</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label htmlFor={ratingId} {...props(styles.field)}>Rating<Select id={ratingId} name="rating" defaultValue="5" options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Title<TextField name="title" maxLength={120} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Review<TextArea name="body" maxLength={5000} rows={4} {...props(styles.input)} /></label>
+      <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>Rating<Select id={`${fieldId}-rating`} name="rating" defaultValue="5" options={[5, 4, 3, 2, 1].map((rating) => ({ label: String(rating), value: String(rating) }))} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Title<TextField id={`${fieldId}-title`} name="title" maxLength={120} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Review<TextArea id={`${fieldId}-body`} name="body" maxLength={5000} rows={4} {...props(styles.input)} /></Label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit review"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -292,6 +293,7 @@ function QuestionSection({
 }) {
   const [commitQuestion, pending] = useMutation<ProductCommunityPanelAskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -322,8 +324,8 @@ function QuestionSection({
     </ul> : <p>No published questions yet.</p>}
     {onShowMore ? <Button onClick={onShowMore} type="button">Show more questions</Button> : null}
     <details><summary>Ask a question</summary><form onSubmit={submit} {...props(styles.form)}>
-      <label {...props(styles.field)}>Question<TextField name="title" required maxLength={200} {...props(styles.input)} /></label>
-      <label {...props(styles.field)}>Details<TextArea name="body" maxLength={5000} rows={3} {...props(styles.input)} /></label>
+      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>Question<TextField id={`${fieldId}-title`} name="title" required maxLength={200} {...props(styles.input)} /></Label>
+      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Details<TextArea id={`${fieldId}-body`} name="body" maxLength={5000} rows={3} {...props(styles.input)} /></Label>
       <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit question"}</Button>
       {message ? <p role="status">{message}</p> : null}
     </form></details>
@@ -384,6 +386,7 @@ function AdditionalAnswers({
 function AnswerForm({ questionId }: { questionId: string }) {
   const [commitAnswer, pending] = useMutation<ProductCommunityPanelAnswerProductQuestionMutation>(answerProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
+  const fieldId = useId();
   const submissionKey = useSubmissionKey();
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -405,7 +408,7 @@ function AnswerForm({ questionId }: { questionId: string }) {
   }
 
   return <details><summary>Answer this question</summary><form onSubmit={submit} {...props(styles.form)}>
-    <label {...props(styles.field)}>Answer<TextArea name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></label>
+    <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>Answer<TextArea id={`${fieldId}-body`} name="body" required maxLength={5000} rows={3} {...props(styles.input)} /></Label>
     <Button disabled={pending} type="submit">{pending ? "Submitting…" : "Submit answer"}</Button>
     {message ? <p role="status">{message}</p> : null}
   </form></details>;

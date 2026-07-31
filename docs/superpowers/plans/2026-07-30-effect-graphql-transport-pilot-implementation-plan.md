@@ -27,6 +27,7 @@ messages, and the client bundle budget.
 ## Task 1: Freeze The Transport Contract
 
 **Files:**
+
 - Modify: `assets/test/relay/fetch-graphql.test.ts`
 
 - [x] Add focused characterization for network failures, non-success HTTP
@@ -38,6 +39,7 @@ messages, and the client bundle budget.
 ## Task 2: Introduce The Effect Boundary
 
 **Files:**
+
 - Modify: `assets/package.json`
 - Modify: `assets/pnpm-lock.yaml`
 - Modify: `assets/src/relay/fetch-graphql.ts`

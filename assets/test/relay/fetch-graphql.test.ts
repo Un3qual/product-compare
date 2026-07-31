@@ -52,6 +52,26 @@ test("models configuration, network, HTTP, and decoding failures as tagged Effec
   ]);
 });
 
+test("captures request serialization errors as typed transport failures", async () => {
+  const result = await Micro.runPromise(
+    Micro.either(
+      graphqlTransportEffect(
+        "query Viewer { viewer { id } }",
+        { unsupported: 1n },
+        undefined,
+        { fetch: vi.fn() }
+      )
+    )
+  );
+
+  expect(result).toMatchObject({
+    _tag: "Left",
+    left: {
+      _tag: "GraphQLNetworkFailure"
+    }
+  });
+});
+
 test("preserves Promise adapter messages for network and HTTP failures", async () => {
   const originalFetch = globalThis.fetch;
 

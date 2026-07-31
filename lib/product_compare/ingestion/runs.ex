@@ -18,19 +18,21 @@ defmodule ProductCompare.Ingestion.Runs do
       |> Map.put_new(:status, :running)
       |> Map.put_new(:started_at, DateTime.utc_now())
 
-    Repo.transaction(fn ->
-      with {:ok, provider} <- run_provider(attrs),
-           {:ok, provider} <-
-             SourceProviders.ensure_in_transaction(attr(attrs, :source_id), provider),
-           {:ok, import_run} <-
-             %ImportRun{}
-             |> ImportRun.changeset(Map.put(attrs, :provider, provider))
-             |> Repo.insert() do
-        import_run
-      else
-        {:error, reason} -> Repo.rollback(reason)
-      end
-    end)
+    with {:ok, provider} <- run_provider(attrs),
+         {:ok, source_id} <- validate_import_run(attrs, provider) do
+      Repo.transaction(fn ->
+        with {:ok, provider} <-
+               SourceProviders.ensure_in_transaction(source_id, provider),
+             {:ok, import_run} <-
+               %ImportRun{}
+               |> ImportRun.changeset(Map.put(attrs, :provider, provider))
+               |> Repo.insert() do
+          import_run
+        else
+          {:error, reason} -> Repo.rollback(reason)
+        end
+      end)
+    end
   end
 
   @spec complete_import_run(ImportRun.t(), map()) ::
@@ -104,6 +106,18 @@ defmodule ProductCompare.Ingestion.Runs do
 
       true ->
         {:ok, requested || surface_provider}
+    end
+  end
+
+  defp validate_import_run(attrs, provider) do
+    changeset =
+      %ImportRun{}
+      |> ImportRun.changeset(Map.put(attrs, :provider, provider))
+
+    if changeset.valid? do
+      {:ok, Ecto.Changeset.fetch_field!(changeset, :source_id)}
+    else
+      {:error, changeset}
     end
   end
 

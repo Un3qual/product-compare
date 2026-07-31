@@ -70,22 +70,23 @@ const styles = create({
   }
 });
 
-export function Select({
-  "aria-label": ariaLabel,
-  "aria-labelledby": ariaLabelledBy,
-  className,
-  defaultValue = "",
-  disabled,
-  form,
-  id,
-  name,
-  onValueChange,
-  options,
-  placeholder,
-  required,
-  value,
-  ...rootProps
-}: SelectProps) {
+export function Select(selectProps: SelectProps) {
+  const {
+    "aria-label": ariaLabel,
+    "aria-labelledby": ariaLabelledBy,
+    className,
+    defaultValue = "",
+    disabled,
+    form,
+    id,
+    name,
+    onValueChange,
+    options,
+    placeholder,
+    required,
+    value,
+    ...rootProps
+  } = selectProps;
   const controlled = value !== undefined;
   const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
   const selectedValue = controlled ? value : uncontrolledValue;

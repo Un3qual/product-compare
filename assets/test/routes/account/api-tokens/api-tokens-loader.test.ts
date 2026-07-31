@@ -202,8 +202,10 @@ function buildApiTokensLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/account/api-tokens",
+    url: new URL(request.url)
+  };
 }
 
 function buildAbortableRequest(url: string, signal: AbortSignal): Request {

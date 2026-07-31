@@ -35,7 +35,7 @@
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-relay": "20.1.1",
-    "react-router-dom": "7.13.1",
+    "react-router-dom": "7.18.2",
     "relay-runtime": "20.1.1"
   },
   "devDependencies": {

@@ -80,28 +80,6 @@ export function graphqlTransportEffect(
   ssrContext?: SSRContext,
   options: GraphQLTransportOptions = {},
 ) {
-  const usesSSRContext = hasSSRContext(ssrContext);
-  const headers: Record<string, string> = {
-    "content-type": "application/json",
-  };
-
-  if (usesSSRContext && ssrContext) {
-    const cookieValue =
-      ssrContext.cookieString ??
-      ssrContext.request?.headers.get("cookie") ??
-      ssrContext.headers?.cookie;
-
-    const trustedOrigin = resolveSSRRequestOrigin(ssrContext);
-
-    if (cookieValue) {
-      headers.cookie = cookieValue;
-    }
-
-    if (trustedOrigin) {
-      headers.origin = trustedOrigin;
-    }
-  }
-
   return Micro.try({
     try: () => resolveGraphQLEndpoint(options.endpoint),
     catch: configurationFailure,
@@ -109,18 +87,57 @@ export function graphqlTransportEffect(
     Micro.flatMap((endpoint) =>
       Micro.tryPromise({
         try: () =>
-          (options.fetch ?? globalThis.fetch)(endpoint, {
-            method: "POST",
-            credentials: usesSSRContext ? undefined : "include",
-            headers,
-            body: JSON.stringify({ query, variables }),
-            signal: ssrContext?.signal ?? ssrContext?.request?.signal,
-          }),
+          (options.fetch ?? globalThis.fetch)(
+            endpoint,
+            graphQLRequest(query, variables, ssrContext),
+          ),
         catch: requestFailure,
       }),
     ),
     Micro.flatMap(responseEffect),
   );
+}
+
+function graphQLRequest(
+  query: string,
+  variables: Record<string, unknown>,
+  ssrContext?: SSRContext,
+): RequestInit {
+  const usesSSRContext = hasSSRContext(ssrContext);
+
+  return {
+    method: "POST",
+    credentials: usesSSRContext ? undefined : "include",
+    headers: graphQLRequestHeaders(usesSSRContext ? ssrContext : undefined),
+    body: JSON.stringify({ query, variables }),
+    signal: ssrContext?.signal ?? ssrContext?.request?.signal,
+  };
+}
+
+function graphQLRequestHeaders(ssrContext?: SSRContext) {
+  const headers: Record<string, string> = {
+    "content-type": "application/json",
+  };
+
+  if (!ssrContext) {
+    return headers;
+  }
+
+  const cookieValue =
+    ssrContext.cookieString ??
+    ssrContext.request?.headers.get("cookie") ??
+    ssrContext.headers?.cookie;
+  const trustedOrigin = resolveSSRRequestOrigin(ssrContext);
+
+  if (cookieValue) {
+    headers.cookie = cookieValue;
+  }
+
+  if (trustedOrigin) {
+    headers.origin = trustedOrigin;
+  }
+
+  return headers;
 }
 
 export function resolveGraphQLEndpoint(options: ResolveGraphQLEndpointOptions = {}) {

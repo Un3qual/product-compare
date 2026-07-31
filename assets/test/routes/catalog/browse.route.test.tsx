@@ -117,7 +117,8 @@ const buildBrowseLoaderArgs = ({
   request,
   params: {},
   context: createRelayRouterContext(environment),
-  unstable_pattern: "/products"
+  pattern: "/products",
+  url: new URL(request.url)
 });
 
 function browseQueryDescriptorFromVariables(

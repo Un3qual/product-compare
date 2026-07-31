@@ -40,6 +40,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 ### Task 1: pnpm, mise, Rolldown, and Oxc Toolchain
 
 **Files:**
+
 - Create: `.mise.toml`
 - Create: `assets/pnpm-lock.yaml`
 - Modify: `assets/package.json`
@@ -55,6 +56,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Test: existing frontend unit, Relay, SSR build, and bundle gates.
 
 **Interfaces:**
+
 - Consumes: the existing Vite/StyleX build and the approved decision to replace
   Bun and split dependency managers.
 - Produces: one mise-controlled local runtime contract and one pnpm-controlled
@@ -78,6 +80,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 ### Task 2: Colocate Single-Consumer Relay Operations
 
 **Files:**
+
 - Modify: route, component, loader, and action owners under
   `assets/src/routes/**`
 - Delete: single-export mutation modules under
@@ -85,6 +88,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Modify: affected tests and generated Relay artifacts.
 
 **Interfaces:**
+
 - Consumes: the current one-export GraphQL mutation files and their actual
   import graph.
 - Produces: operations colocated with their sole execution owner, while
@@ -106,6 +110,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 ### Task 3: Rename Persistence-Verb Domain Owners
 
 **Files:**
+
 - Move: `lib/product_compare/discussions/crud.ex` to a domain-responsibility
   name selected from its actual behavior.
 - Modify: `lib/product_compare/discussions.ex`
@@ -114,6 +119,7 @@ StyleX, Radix UI, TypeScript, Elixir, ExUnit, Vitest.
 - Modify: affected documentation references.
 
 **Interfaces:**
+
 - Consumes: the sole live `Crud`-named module and test.
 - Produces: a discussions owner named for content lifecycle behavior with the
   public `ProductCompare.Discussions` facade unchanged.

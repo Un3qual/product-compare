@@ -225,8 +225,10 @@ function buildAffiliateSetupLoaderArgs({
   return {
     request,
     params: {},
-    context: createRelayRouterContext(environment)
-  } as LoaderFunctionArgs;
+    context: createRelayRouterContext(environment),
+    pattern: "/affiliate/setup",
+    url: new URL(request.url)
+  };
 }
 
 function affiliateSetupQueryDescriptor(variables: { first: number; after: string | null }) {

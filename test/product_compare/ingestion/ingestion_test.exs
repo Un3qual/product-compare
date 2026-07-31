@@ -177,6 +177,22 @@ defmodule ProductCompare.IngestionTest do
   end
 
   describe "import run observability" do
+    test "returns source validation errors before starting a run" do
+      required_attrs = %{
+        provider: "cj",
+        surface: "shoppingProducts",
+        query: %{"keywords" => ["shoe"]},
+        started_at: ~U[2026-06-04 19:10:00Z]
+      }
+
+      for attrs <- [required_attrs, Map.put(required_attrs, :source_id, nil)] do
+        assert {:error, changeset} = Ingestion.start_import_run(attrs)
+        assert errors_on(changeset).source_id == ["can't be blank"]
+      end
+
+      assert Repo.aggregate(ImportRun, :count, :id) == 0
+    end
+
     test "starts and completes a source-scoped import run" do
       source = source_fixture()
       started_at = ~U[2026-06-04 19:10:00Z]
