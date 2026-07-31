@@ -41,6 +41,34 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
     assert "has already been taken" in errors_on(changeset).slug
   end
 
+  test "historical slug aliases are immutable in changesets and direct SQL" do
+    product = product_fixture(%{slug: "immutable-prior-product"})
+
+    assert {:ok, product} =
+             Catalog.update_product(product, %{slug: "immutable-current-product"})
+
+    alias_record =
+      Repo.get_by!(ProductSlugAlias,
+        product_id: product.id,
+        slug: "immutable-prior-product"
+      )
+
+    changeset =
+      ProductSlugAlias.changeset(alias_record, %{
+        slug: "rewritten-historical-product"
+      })
+
+    refute changeset.valid?
+    assert "cannot be changed after creation" in errors_on(changeset).slug
+
+    assert_raise Postgrex.Error, ~r/product slug aliases are immutable/, fn ->
+      Repo.query!(
+        "UPDATE product_slug_aliases SET slug = $1 WHERE id = $2",
+        ["rewritten-historical-product", alias_record.id]
+      )
+    end
+  end
+
   test "batch slug lookup returns canonical and historical slugs with a fixed budget" do
     historical = product_fixture(%{slug: "batch-product-legacy"})
 

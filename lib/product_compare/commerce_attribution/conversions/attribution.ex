@@ -20,7 +20,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     case {incoming_click_identifier?(attrs), existing_conversion} do
       {false, %CommerceConversion{click_session_id: click_session_id}}
       when not is_nil(click_session_id) ->
-        put_attr(attrs, :click_session_id, click_session_id)
+        Input.put_attr(attrs, :click_session_id, click_session_id)
 
       _incoming_or_unattributed ->
         attrs
@@ -90,7 +90,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
 
   defp put_click_session_attribution_attrs(attrs, click_session, dimensions) do
     attrs
-    |> put_attr(:click_session_id, click_session.id)
+    |> Input.put_attr(:click_session_id, click_session.id)
     |> put_attr_if_missing(:merchant_id, dimensions.merchant_id)
     |> put_attr_if_missing(:affiliate_program_id, dimensions.affiliate_program_id)
     |> put_attr_if_missing(:merchant_product_id, dimensions.merchant_product_id)
@@ -228,15 +228,13 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     end
   end
 
-  defp put_attr(attrs, key, value) when is_map(attrs), do: Map.put(attrs, key, value)
-
   defp put_attr_if_missing(attrs, _key, nil), do: attrs
 
   defp put_attr_if_missing(attrs, key, value) do
     if attr_present?(attrs, key) do
       attrs
     else
-      put_attr(attrs, key, value)
+      Input.put_attr(attrs, key, value)
     end
   end
 

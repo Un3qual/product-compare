@@ -94,7 +94,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
       source_network when is_atom(source_network) ->
         case Repo.get_by(AffiliateNetwork, code: Atom.to_string(source_network)) do
           %AffiliateNetwork{id: affiliate_network_id} ->
-            {:ok, Map.put(attrs, :affiliate_network_id, affiliate_network_id)}
+            {:ok, Input.put_attr(attrs, :affiliate_network_id, affiliate_network_id)}
 
           nil ->
             {:error,
@@ -116,7 +116,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
         attrs
 
       not is_nil(Input.fetch_attr(attrs, :click_session_id)) ->
-        Map.put(attrs, :attribution_confidence, :high)
+        Input.put_attr(attrs, :attribution_confidence, :high)
 
       true ->
         attrs

@@ -1107,6 +1107,29 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "ingest_conversion/1" do
+    test "accepts string-keyed integration attributes through attribution resolution" do
+      merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      click_session = click_session_fixture(commerce_link)
+
+      attrs = %{
+        "source_network" => "impact",
+        "network_conversion_ref" =>
+          "string-keyed-conversion-#{System.unique_integer([:positive])}",
+        "public_click_id" => click_session.click_id,
+        "status" => "pending",
+        "currency" => "USD",
+        "order_amount" => "100.00",
+        "commission_amount" => "10.00",
+        "reported_at" => "2026-05-20T12:00:00.000000Z"
+      }
+
+      assert {:ok, conversion} = CommerceAttribution.ingest_conversion(attrs)
+      assert conversion.click_session_id == click_session.id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.attribution_confidence == :high
+    end
+
     test "updates status and attribution confidence back to schema defaults" do
       attrs = %{
         source_network: :impact,

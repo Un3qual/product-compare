@@ -77,6 +77,24 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
     """)
 
     execute("""
+    CREATE FUNCTION prevent_product_slug_alias_updates()
+    RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+    BEGIN
+      IF NEW.slug IS DISTINCT FROM OLD.slug
+         OR NEW.product_id IS DISTINCT FROM OLD.product_id THEN
+        RAISE EXCEPTION 'product slug aliases are immutable'
+          USING ERRCODE = '23514',
+                CONSTRAINT = 'product_slug_aliases_identity_immutable';
+      END IF;
+
+      RETURN NEW;
+    END
+    $$;
+    """)
+
+    execute("""
     CREATE TRIGGER products_maintain_slug_reservation
     AFTER INSERT OR UPDATE OF slug OR DELETE ON products
     FOR EACH ROW EXECUTE FUNCTION maintain_product_slug_reservation();
@@ -87,11 +105,19 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugNamespace do
     AFTER INSERT OR DELETE ON product_slug_aliases
     FOR EACH ROW EXECUTE FUNCTION maintain_product_slug_alias_reservation();
     """)
+
+    execute("""
+    CREATE TRIGGER product_slug_aliases_prevent_updates
+    BEFORE UPDATE ON product_slug_aliases
+    FOR EACH ROW EXECUTE FUNCTION prevent_product_slug_alias_updates();
+    """)
   end
 
   def down do
+    execute("DROP TRIGGER product_slug_aliases_prevent_updates ON product_slug_aliases")
     execute("DROP TRIGGER product_slug_aliases_maintain_reservation ON product_slug_aliases")
     execute("DROP TRIGGER products_maintain_slug_reservation ON products")
+    execute("DROP FUNCTION prevent_product_slug_alias_updates()")
     execute("DROP FUNCTION maintain_product_slug_alias_reservation()")
     execute("DROP FUNCTION maintain_product_slug_reservation()")
 
