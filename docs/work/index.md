@@ -469,6 +469,50 @@ Exit condition: no first-party library path can hide a KV source, every
 registered request source is Ecto-backed, ordinary associations keep the
 inline Dataloader shorthand, and all backend gates pass.
 
+### 16. Application JSON Storage Policy Guard
+
+Status: ready
+Lane: Database domain policy
+Plan: `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`
+Batch outcome: every persisted Ecto map field and PostgreSQL JSON column is
+automatically inventoried and explicitly classified, so stable
+application-owned facts cannot silently regress into opaque JSON dumps.
+Next action: characterize the six current persisted map fields and add the
+failing unclassified-schema and unclassified-catalog drift cases.
+Owned paths:
+
+- `test/product_compare/repo/application_json_domain_storage_test.exs`
+- focused JSON storage policy support under `lib/product_compare/**` only if
+  test-local reflection cannot express the contract clearly
+- affected allowed-JSON owner tests only if characterization exposes a gap
+- `docs/work/application-json-storage-policy-guard.md`
+
+Internal slices:
+
+- Persisted Ecto map-field and PostgreSQL JSON catalog discovery.
+- Explicit raw/open/request/typed-JSON classifications.
+- Removed snapshot/alert dump regressions and full storage-owner evidence.
+
+Prerequisites:
+
+- Snapshot and alert JSON normalization is complete.
+- Provider raw evidence, request metadata, open campaign parameters, and
+  explicitly JSON-typed specification values remain valid JSON contracts.
+
+Verification:
+
+- clean migrated database and focused JSON storage policy suite
+- affected comparison snapshot, alert, specification, ingestion, and
+  commerce-attribution suites
+- full backend tests, type checks, and quality gates
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: all persisted Ecto map fields and PostgreSQL JSON columns are
+discovered and explicitly justified, unclassified JSON storage fails with
+actionable evidence, removed application dumps remain absent, and all
+repository gates pass.
+
 Ranked Catalog Search completed on 2026-07-27. Its application-maintained
 search document, indexed candidate-product selection, exact seven-tier
 predicate and ranking, GraphQL and metadata parity, Relay pagination, and
