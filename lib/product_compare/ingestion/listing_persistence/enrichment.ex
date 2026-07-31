@@ -9,6 +9,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompare.Taxonomy, as: TaxonomyContext
+  alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Ingestion.CategoryMappingCandidate
   alias ProductCompareSchemas.Taxonomy.Taxon
 
@@ -40,29 +41,41 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   end
 
   defp fill_missing_product_enrichment(product, listing) do
-    attrs =
+    requested_attrs =
       %{}
-      |> put_missing_product_field(:model_number, product.model_number, listing.model_number)
-      |> put_missing_product_field(:description, product.description, listing.description)
+      |> put_present_product_field(:model_number, listing.model_number)
+      |> put_present_product_field(:description, listing.description)
 
-    case map_size(attrs) do
-      0 -> {:ok, product}
-      _count -> Catalog.update_product(product, attrs)
+    case map_size(requested_attrs) do
+      0 ->
+        {:ok, product}
+
+      _count ->
+        with {:ok, current_product} <- lock_product(product.id) do
+          attrs =
+            Map.reject(requested_attrs, fn {field, _incoming} ->
+              present_product_field?(Map.fetch!(current_product, field))
+            end)
+
+          case map_size(attrs) do
+            0 -> {:ok, current_product}
+            _count -> Catalog.update_product(current_product, attrs)
+          end
+        end
     end
   end
 
-  defp put_missing_product_field(attrs, _field, current, _incoming)
-       when is_binary(current) and current != "",
-       do: attrs
-
-  defp put_missing_product_field(attrs, field, _current, incoming) when is_binary(incoming) do
+  defp put_present_product_field(attrs, field, incoming) when is_binary(incoming) do
     case String.trim(incoming) do
       "" -> attrs
       value -> Map.put(attrs, field, value)
     end
   end
 
-  defp put_missing_product_field(attrs, _field, _current, _incoming), do: attrs
+  defp put_present_product_field(attrs, _field, _incoming), do: attrs
+
+  defp present_product_field?(value) when is_binary(value), do: value != ""
+  defp present_product_field?(_value), do: false
 
   defp apply_category_mapping(_source_artifact, product, %{manufacturer_category_path: path})
        when path in [nil, []],
@@ -71,7 +84,7 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   defp apply_category_mapping(source_artifact, product, listing) do
     path = listing.manufacturer_category_path
 
-    case TaxonomyContext.resolve_type_alias(path) do
+    case TaxonomyContext.resolve_type_alias_for_write(path) do
       %Taxon{} = taxon ->
         maybe_assign_mapped_type(product, taxon)
 
@@ -88,18 +101,35 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Enrichment do
   end
 
   defp maybe_assign_mapped_type(product, taxon) do
-    current_taxon = Repo.get(Taxon, product.primary_type_taxon_id)
+    with {:ok, current_product} <- lock_product(product.id) do
+      current_taxon = Repo.get(Taxon, current_product.primary_type_taxon_id)
 
-    if current_taxon && current_taxon.code == "ingested-product" do
-      case Catalog.update_product(product, %{primary_type_taxon_id: taxon.id}) do
-        {:ok, updated_product} ->
-          {:ok, updated_product, %{status: :mapped, taxon_id: taxon.id}}
+      if current_taxon && current_taxon.code == "ingested-product" do
+        case Catalog.update_product(current_product, %{primary_type_taxon_id: taxon.id}) do
+          {:ok, updated_product} ->
+            {:ok, updated_product, %{status: :mapped, taxon_id: taxon.id}}
 
-        {:error, reason} ->
-          {:error, reason}
+          {:error, reason} ->
+            {:error, reason}
+        end
+      else
+        {:ok, current_product, %{status: :mapped_not_applied, taxon_id: taxon.id}}
+      end
+    end
+  end
+
+  defp lock_product(product_id) do
+    if Repo.in_transaction?() do
+      case Repo.one(
+             from product in Product,
+               where: product.id == ^product_id,
+               lock: "FOR UPDATE"
+           ) do
+        nil -> {:error, :product_not_found}
+        product -> {:ok, product}
       end
     else
-      {:ok, product, %{status: :mapped_not_applied, taxon_id: taxon.id}}
+      {:error, :transaction_required}
     end
   end
 
