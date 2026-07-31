@@ -81,7 +81,7 @@ defmodule ProductCompareWeb.GraphQL.NodeDataloaderBatchingTest do
   } do
     source = CJIngestionFixtures.source_fixture()
 
-    records =
+    candidates =
       Enum.map(1..4, fn index ->
         advertiser_name = "Node batch merchant #{index}"
 
@@ -93,7 +93,20 @@ defmodule ProductCompareWeb.GraphQL.NodeDataloaderBatchingTest do
             provider_feed_id: "node-summary-feed-#{index}"
           })
 
-        program = Repo.get!(CJProgram, candidate.cj_program_id)
+        %{candidate: candidate, advertiser_name: advertiser_name}
+      end)
+
+    program_ids = Enum.map(candidates, & &1.candidate.cj_program_id)
+
+    programs =
+      CJProgram
+      |> where([program], program.id in ^program_ids)
+      |> Repo.all()
+      |> Map.new(&{&1.id, &1})
+
+    records =
+      Enum.map(candidates, fn %{candidate: candidate, advertiser_name: advertiser_name} ->
+        program = Map.fetch!(programs, candidate.cj_program_id)
 
         %{
           entropy_id: program.entropy_id,
