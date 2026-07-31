@@ -6,10 +6,13 @@
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-concurrency-safe-write-audit-implementation-plan.md`
-- Last verified: 2026-07-30 against the repository write surface at that checkpoint.
-- Last reconciled: 2026-07-31 for the removed reputation-event API.
+- Last verified: 2026-07-31 against all 49 first-party write-owning files and
+  114 direct write calls.
+- Last reconciled: 2026-07-31 for conditional source-provider claiming,
+  combined enrichment locking, API-token authentication, and context-owned
+  concurrency suites.
 
-## Target Outcome
+## Batch Outcome
 
 Every first-party modifying action has an explicit atomicity mechanism, and
 every confirmed read-modify-write race is fixed at the database boundary with
@@ -42,16 +45,17 @@ Classification terms:
 
 | Invariant | Unsafe former behavior | Database-owned fix | Regression evidence |
 | --- | --- | --- | --- |
-| API-token lifecycle | Revoke/rotate authenticated a stale token struct; authentication could touch a token revoked after its read. | Token transitions reload under `FOR UPDATE`; authentication touches only an active, unexpired row. | `concurrency_safe_transitions_test.exs`; commits `7800e438`, `75c44be3`. |
-| First-writer lifecycle timestamps | Alert reads, comparison revocation, and claim moderation could overwrite a committed transition. | Each transition locks and rechecks the current row before updating. | `concurrency_safe_transitions_test.exs`; commit `7800e438`. |
-| Moderation authorization | Operator access could be revoked after authorization but before the moderation write. | The user authorization row is locked and rechecked in the moderation transaction. | `concurrency_safe_transitions_test.exs`; commit `138ff479`. |
-| Delivered email-token replacement | A delivery callback ran inside the transaction, and concurrent deliveries could leave multiple active replacement tokens. | Delivery runs outside locks; activation locks the user and deletes competing context tokens atomically. | `concurrency_safe_transitions_test.exs`; commit `138ff479`. |
+| API-token lifecycle | Revoke/rotate authenticated a stale token struct; authentication could touch a token revoked after its read. | Token transitions reload under `FOR UPDATE`; `/1` authentication always conditionally touches and revalidates an active, unexpired row. | `accounts/concurrency_test.exs`; commits `7800e438`, `75c44be3`. |
+| First-writer lifecycle timestamps | Alert reads, comparison revocation, and claim moderation could overwrite a committed transition. | Each transition locks and rechecks the current row before updating. | Context-owned `alerts`, `comparison_snapshots`, and `specs` concurrency suites; commit `7800e438`. |
+| Moderation authorization | Operator access could be revoked after authorization but before the moderation write. | The user authorization row is locked and rechecked in the moderation transaction. | `discussions/concurrency_test.exs`; commit `138ff479`. |
+| Delivered email-token replacement | A delivery callback ran inside the transaction, and concurrent deliveries could leave multiple active replacement tokens. | Delivery runs outside locks; activation locks the user and deletes competing context tokens atomically. | `accounts/concurrency_test.exs`; commit `138ff479`. |
 | Product slug namespace | Product slugs and historical aliases used separate unique indexes, allowing cross-table collisions. | A trigger-maintained namespace relation owns both forms; product updates reload under lock and preserve the public conflict result. | Product slug namespace and stale-update regressions; commits `ed8c57fa`, `0aad4352`. |
-| Taxonomy hierarchy | Cross-moves could both pass a stale cycle check, and a taxon could change taxonomy identity. | Taxonomy and involved taxons are locked in deterministic order; taxonomy identity is immutable. | `concurrency_safe_transitions_test.exs`; commit `49478b4a`. |
-| Provider enrichment | Missing-field and category-alias validation could be invalidated before the product write. | Product and alias decision rows are locked and all decisions are recomputed inside the transaction. | `concurrency_safe_transitions_test.exs`; commit `f9396d41`. |
+| Taxonomy hierarchy | Cross-moves could both pass a stale cycle check, and a taxon could change taxonomy identity. | Taxonomy and involved taxons are locked in deterministic order; taxonomy identity is immutable. | `taxonomy/concurrency_test.exs`; commit `49478b4a`. |
+| Provider enrichment | Missing-field, category-alias, and placeholder-taxon validation could be invalidated before the product write. | Alias resolution precedes one product `FOR UPDATE` reload; the current taxon is held `FOR SHARE`, and all product decisions use the locked row in one update. | `ingestion/enrichment_test.exs` and `ingestion/enrichment_concurrency_test.exs`; commit `f9396d41`. |
 | Comparison publication | Products, attributes, offers, and prices could be read from different committed database states. | Publication requires one repeatable-read or serializable snapshot, including nested callers. | Mixed-fact publication regression; commit `49149b1f`. |
-| Import completion | Concurrent success/failure completions could both derive from `running` and overwrite one another. | Completion locks and reloads the import run; the first terminal result wins and replay is idempotent. | `concurrency_safe_transitions_test.exs`; commit `b04362cd`. |
-| Imported current claim | Two eligible imports could both mark their own claim accepted although only one became current. | Current-row insertion chooses the winner atomically; only that claim is promoted. | `concurrency_safe_transitions_test.exs`; commit `b69422a9`. |
+| Import completion | Concurrent success/failure completions could both derive from `running` and overwrite one another. | Completion locks and reloads the import run; the first terminal result wins and replay is idempotent. | `ingestion/import_run_concurrency_test.exs`; commit `b04362cd`. |
+| Imported current claim | Two eligible imports could both mark their own claim accepted although only one became current. | Current-row insertion chooses the winner atomically; only that claim is promoted. | `specs/concurrency_test.exs`; commit `b69422a9`. |
+| Source-provider ownership | An unconditional source-row mutex serialized matching-provider validation with unrelated writes. | A conditional `UPDATE ... WHERE provider_id IS NULL` elects the first provider; an unlocked reload returns the winner or a deterministic mismatch inside the caller transaction. | `ingestion/source_providers_concurrency_test.exs`. |
 | Merchant-offer identity | Upsert could retarget one merchant URL to another product or currency, reinterpreting alerts, clicks, conversions, and price history. | Conditional conflict updates preserve product/currency; a database trigger makes merchant, product, URL, and currency immutable. | Pricing and ingestion identity regressions; commit `35bfd388`. |
 | Specification value semantics | Attribute type/dimension and unit conversion factors could change after typed-value validation, invalidating stored base values and claims. | Conditional upserts reject semantic conflicts; triggers make attribute and unit value semantics immutable while presentation metadata remains editable. | `definition_semantics_test.exs`; commit `64bd3848`. |
 
@@ -86,15 +90,15 @@ Classification terms:
 | `Discussions.Submissions.OwnerActions` | owner `update/4`, `remove/3` | Current ownership/lifecycle authorizes the write; accepted-answer links are cleared with answer changes. | Content/question/answer locked reloads and one transaction; **lock**. |
 | `Discussions.Submissions.Reports` | report `create/4` | A user reports a target once and duplicate attempts do not consume quota. | Target FK and unique report constraint inside the write-limit transaction; **constraint + lock**. |
 | `Discussions.Submissions.WriteLimits` | `increment!/2` | Concurrent writes cannot exceed a per-user/action/hour limit. | Conflict-created window followed by `FOR UPDATE` increment; **lock + constraint**. |
-| `Ingestion.FeedCandidates` | `upsert_merchant_feed_candidate/2` | Candidate provider agrees with its source and feed type; source/feed identity converges. | Source row lock through provider reconciliation plus unique conflict upsert; **lock + statement**. |
+| `Ingestion.FeedCandidates` | `upsert_merchant_feed_candidate/2` | Candidate provider agrees with its source and feed type; source/feed identity converges. | Transaction-scoped conditional provider claim plus unique conflict upsert; **statement + constraint**. |
 | `Ingestion.CJPrograms` | ensure and lifecycle update actions | Source/advertiser identity converges and stale lifecycle editors cannot overwrite a newer decision. | Unique conflict insert and `changed_at` optimistic lock/conditional no-op; **constraint + stale**. |
-| `Ingestion.Runs` | `start_import_run/1`, `complete_import_run/2` | Provider agrees with the source; exactly one terminal completion and reconciliation outcome wins. | Source lock on start and import-run lock on completion; **lock**. |
-| `Ingestion.SourceProviders` | `ensure_in_transaction/2` | A source acquires at most one provider identity and callers observe it before dependent writes. | Required transaction plus source-row `FOR UPDATE`; **lock**. |
-| `Ingestion.Sources.CJ.SourceResolver` | `fetch_source/0` | The canonical CJ source converges and has the CJ provider/domain. | Unique conflict insert, source lock, and same transaction update; **lock + constraint**. |
+| `Ingestion.Runs` | `start_import_run/1`, `complete_import_run/2` | Provider agrees with the source; exactly one terminal completion and reconciliation outcome wins. | Conditional provider claim on start and import-run lock on completion; **statement + lock**. |
+| `Ingestion.SourceProviders` | `ensure_in_transaction/2` | A source acquires at most one provider identity and callers observe it before dependent writes. | Required caller transaction, conditional provider claim, and ordinary reconciliation reload; **statement**. |
+| `Ingestion.Sources.CJ.SourceResolver` | `fetch_source/0` | The canonical CJ source converges and has the CJ provider/domain. | Unique conflict insert, conditional provider claim, and partial domain update in one transaction; **statement + constraint + partial last-write**. |
 | `Ingestion.MerchantIdentities` | `resolve/2`, `resolve_in_transaction/2` | Source merchant identity follows only an equal/newer observation and merchant retarget commits with it. | Freshness-predicate `UPDATE` retains the row lock through retarget; unique conflict insert handles creation; **statement + lock**. |
 | `Ingestion.ListingPersistence.Artifacts` | source artifact/external product upserts and attachment | Artifacts deduplicate by content; older observations cannot change external-product identity or attachment. | Partial unique artifact index and freshness-predicate conflict/update statements; **constraint + statement**. |
 | `Ingestion.ListingPersistence.Products` | `ensure_product/3` | Existing source identity remains bound; validated GTIN has one owner; concurrent shells converge. | External-product serialization, validated-GTIN unique index, slug namespace constraint, and loser cleanup in the outer transaction; **constraint + lock**. |
-| `Ingestion.ListingPersistence.Enrichment` | product enrichment, category mapping, media/spec evidence | Provider values fill only fields still missing; curated type and current alias mapping win. | Locked product reload, shared alias lock, atomic candidate increment/upsert, and downstream constrained inserts; **lock + statement**. |
+| `Ingestion.ListingPersistence.Enrichment` | product enrichment, category mapping, media/spec evidence | Provider values fill only fields still missing; curated type, current alias mapping, and current placeholder semantics win. | Shared alias resolution, one locked product reload, shared current-taxon recheck, one product update, atomic candidate increment/upsert, and downstream constrained inserts; **lock + statement**. |
 | `Ingestion.ListingPersistence.Offers` | `persist_offer/4` | Older observations cannot change offer state; offer identity is immutable; price artifacts deduplicate. | Freshness-predicate offer upsert, identity trigger, and partial unique price-point insert; **statement + constraint**. |
 | `Ingestion.ListingPersistence` | `persist/3` orchestration | Merchant, artifact, product, enrichment, offer, price, and reconciliation observation commit as one listing result. | One encompassing transaction; component mechanisms above retain their locks until commit; **lock + constraint**. |
 | `Ingestion.Reconciliation` | `observe/2`, `finalize/1` | One observation exists per run/external product; complete scopes reconcile serially and older runs cannot supersede newer success. | Unique observation conflict and scope-key advisory transaction lock; **constraint + lock**. |
@@ -126,19 +130,15 @@ closed.
 
 ## Verification
 
-- `MIX_ENV=test mix ecto.reset` rebuilt the database through all migrations,
-  including the slug namespace, merchant-offer identity, and specification
-  semantics triggers.
-- `mix test test/product_compare/concurrency_safe_transitions_test.exs` passed
-  ten times with seeds `101`, `211`, `307`, `401`, `503`, `601`, `709`, `809`,
-  `907`, and `1009`: 130 coordinated concurrency tests, 0 failures.
-- The focused specification/ingestion run passed 90 tests; definition
-  semantics passed 32 focused tests; both scheduler suites passed 21 tests.
-- The final full `mix test` run passed 1,008 tests with 0 failures.
+- The nine context-owned concurrency suites passed 16 tests with 0 failures,
+  including source-provider election/no-wait behavior, one-lock enrichment,
+  mutable placeholder semantics, and all 13 regressions moved from the deleted
+  monolith.
+- The focused Accounts API-token, GraphQL API-token, and ingestion run passed
+  199 tests with 0 failures.
+- The final full `mix test` run passed 1,050 tests with 0 failures.
 - `mix typecheck` passed.
-- `mix quality` passed: Credo found no issues, ExDNA stayed within its 3/3
-  baseline clone budget, the cross-function smell detector found no issues,
-  and Dialyzer reported 0 errors.
+- `mix compile --warnings-as-errors` passed.
 - `mix work_queue.validate` passed with 3 ready rows.
 - `mix format --check-formatted` and `git diff --check` passed.
 

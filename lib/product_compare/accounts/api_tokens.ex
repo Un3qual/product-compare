@@ -12,17 +12,17 @@ defmodule ProductCompare.Accounts.ApiTokens do
           | {:error, Ecto.Changeset.t()}
   def create_api_token(user_id, attrs \\ %{}), do: Lifecycle.create(user_id, attrs)
 
-  @spec authenticate_api_token(String.t(), keyword()) :: {:ok, User.t(), ApiToken.t()} | :error
-  def authenticate_api_token(plain_text_token, opts \\ [])
+  @spec authenticate_api_token(String.t()) :: {:ok, User.t(), ApiToken.t()} | :error
+  def authenticate_api_token(plain_text_token)
 
-  def authenticate_api_token("", _opts), do: Authentication.authenticate("", [])
+  def authenticate_api_token(""), do: Authentication.authenticate("")
 
-  def authenticate_api_token(plain_text_token, _opts) when not is_binary(plain_text_token) do
-    Authentication.authenticate(plain_text_token, [])
+  def authenticate_api_token(plain_text_token) when not is_binary(plain_text_token) do
+    Authentication.authenticate(plain_text_token)
   end
 
-  def authenticate_api_token(plain_text_token, opts),
-    do: Authentication.authenticate(plain_text_token, opts)
+  def authenticate_api_token(plain_text_token),
+    do: Authentication.authenticate(plain_text_token)
 
   @spec list_api_tokens_query(pos_integer(), keyword() | map()) :: Ecto.Query.t()
   def list_api_tokens_query(user_id, opts \\ []), do: Queries.list_query(user_id, opts)
