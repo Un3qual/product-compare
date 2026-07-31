@@ -1,9 +1,9 @@
 import { type FormEvent, useMemo, useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { apiTokenMutationsCreateApiTokenMutation } from "../../../__generated__/apiTokenMutationsCreateApiTokenMutation.graphql";
-import type { apiTokenMutationsRevokeApiTokenMutation } from "../../../__generated__/apiTokenMutationsRevokeApiTokenMutation.graphql";
-import type { apiTokenMutationsRotateApiTokenMutation } from "../../../__generated__/apiTokenMutationsRotateApiTokenMutation.graphql";
+import type { ApiTokenOperationsCreateApiTokenMutation } from "../../../__generated__/ApiTokenOperationsCreateApiTokenMutation.graphql";
+import type { ApiTokenOperationsRevokeApiTokenMutation } from "../../../__generated__/ApiTokenOperationsRevokeApiTokenMutation.graphql";
+import type { ApiTokenOperationsRotateApiTokenMutation } from "../../../__generated__/ApiTokenOperationsRotateApiTokenMutation.graphql";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { ContextRail } from "../../../ui/components/layout/ContextRail";
 import { PageShell } from "../../../ui/components/layout/PageShell";
@@ -28,7 +28,7 @@ import {
   createApiTokenMutation,
   revokeApiTokenMutation,
   rotateApiTokenMutation
-} from "./api-token-mutations";
+} from "./ApiTokenOperations";
 import {
   apiTokensRouteLocationIdentity,
   buildApiTokenPaginationData,
@@ -82,11 +82,11 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     () => new Set()
   );
   const inFlightRotateIdsRef = useRef<Set<string>>(new Set());
-  const [commitCreateApiToken, createMutationPending] = useMutation<apiTokenMutationsCreateApiTokenMutation>(
+  const [commitCreateApiToken, createMutationPending] = useMutation<ApiTokenOperationsCreateApiTokenMutation>(
     createApiTokenMutation
   );
-  const [commitRevokeApiToken] = useMutation<apiTokenMutationsRevokeApiTokenMutation>(revokeApiTokenMutation);
-  const [commitRotateApiToken] = useMutation<apiTokenMutationsRotateApiTokenMutation>(rotateApiTokenMutation);
+  const [commitRevokeApiToken] = useMutation<ApiTokenOperationsRevokeApiTokenMutation>(revokeApiTokenMutation);
+  const [commitRotateApiToken] = useMutation<ApiTokenOperationsRotateApiTokenMutation>(rotateApiTokenMutation);
   const tokenQueries = loaderData.status === "unauthorized" ? [] : loaderData.tokenQueries;
   const viewState = useMemo(
     () => buildApiTokensViewState(loaderData, createdTokens, apiTokenUpdates),

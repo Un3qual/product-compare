@@ -1,13 +1,12 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { RouteLoaderGraphQLError } from "../../../relay/environment";
-import alertsRouteQuery, {
-  type AlertsRouteQuery,
-} from "../../../__generated__/AlertsRouteQuery.graphql";
+import type { AlertOperationsQuery } from "../../../__generated__/AlertOperationsQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
+import { alertOperationsQuery } from "./AlertOperations";
 
 export type AlertSummary = {
   id: string;
@@ -51,12 +50,12 @@ export async function alertsLoader({
   request,
 }: LoaderFunctionArgs): Promise<AlertsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
-  let fetched: Awaited<ReturnType<typeof fetchRouteQuery<AlertsRouteQuery>>> | null = null;
+  let fetched: Awaited<ReturnType<typeof fetchRouteQuery<AlertOperationsQuery>>> | null = null;
 
   try {
-    fetched = await fetchRouteQuery<AlertsRouteQuery>(
+    fetched = await fetchRouteQuery<AlertOperationsQuery>(
       environment,
-      alertsRouteQuery,
+      alertOperationsQuery,
       { first: 50 },
       { signal: request.signal },
     );

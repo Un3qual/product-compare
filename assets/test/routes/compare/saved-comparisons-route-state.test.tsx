@@ -57,8 +57,8 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const SAVED_SET_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "SavedComparisonsRouteQuery",
-    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "SavedComparisonOperationsQuery",
+    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20
     }
@@ -66,8 +66,8 @@ const SAVED_SET_QUERY_DESCRIPTOR = {
 };
 const NEXT_SAVED_SET_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "SavedComparisonsRouteQuery",
-    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "SavedComparisonOperationsQuery",
+    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
       after: "cursor-1"

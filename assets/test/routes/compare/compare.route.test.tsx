@@ -262,8 +262,8 @@ const COMPARE_ROUTE_QUERY_REF = {
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
-    operationName: "SavedComparisonsRouteQuery",
-    text: "query SavedComparisonsRouteQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "SavedComparisonOperationsQuery",
+    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
     variables
   }
 });

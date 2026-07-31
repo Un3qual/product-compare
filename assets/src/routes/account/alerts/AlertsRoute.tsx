@@ -2,9 +2,9 @@ import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, useRevalidator } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { alertsMutationsDeletePriceWatchMutation } from "../../../__generated__/alertsMutationsDeletePriceWatchMutation.graphql";
-import type { alertsMutationsMarkAlertReadMutation } from "../../../__generated__/alertsMutationsMarkAlertReadMutation.graphql";
-import type { alertsMutationsUpdatePriceWatchMutation } from "../../../__generated__/alertsMutationsUpdatePriceWatchMutation.graphql";
+import type { AlertOperationsDeletePriceWatchMutation } from "../../../__generated__/AlertOperationsDeletePriceWatchMutation.graphql";
+import type { AlertOperationsMarkAlertReadMutation } from "../../../__generated__/AlertOperationsMarkAlertReadMutation.graphql";
+import type { AlertOperationsUpdatePriceWatchMutation } from "../../../__generated__/AlertOperationsUpdatePriceWatchMutation.graphql";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { Button } from "../../../ui/primitives/Button";
@@ -20,7 +20,7 @@ import {
   deletePriceWatchMutation,
   markAlertReadMutation,
   updatePriceWatchMutation
-} from "./alerts-mutations";
+} from "./AlertOperations";
 import type { AlertsRouteLoaderData, AlertSummary, WatchSummary } from "./loader";
 import {
   alertRuleLabel,
@@ -66,9 +66,9 @@ function AlertsWorkspace({ alerts, watches, hasMoreAlerts, hasMoreWatches }: { a
   const revalidator = useRevalidator();
   const [errorsById, setErrorsById] = useState<ReadonlyMap<string, string>>(() => new Map());
   const [pendingIds, setPendingIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [commitMarkRead] = useMutation<alertsMutationsMarkAlertReadMutation>(markAlertReadMutation);
-  const [commitUpdate] = useMutation<alertsMutationsUpdatePriceWatchMutation>(updatePriceWatchMutation);
-  const [commitDelete] = useMutation<alertsMutationsDeletePriceWatchMutation>(deletePriceWatchMutation);
+  const [commitMarkRead] = useMutation<AlertOperationsMarkAlertReadMutation>(markAlertReadMutation);
+  const [commitUpdate] = useMutation<AlertOperationsUpdatePriceWatchMutation>(updatePriceWatchMutation);
+  const [commitDelete] = useMutation<AlertOperationsDeletePriceWatchMutation>(deletePriceWatchMutation);
   const viewData = buildAlertsViewData(alerts, watches);
 
   async function run(id: string, operation: () => Promise<string | null>) {

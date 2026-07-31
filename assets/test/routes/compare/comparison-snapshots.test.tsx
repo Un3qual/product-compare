@@ -6,7 +6,7 @@ import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import {
   publishComparisonSnapshotMutation,
   revokeComparisonSnapshotMutation
-} from "../../../src/routes/compare/compare-mutations";
+} from "../../../src/routes/compare/ComparisonSharingOperations";
 import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
 import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
 import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";

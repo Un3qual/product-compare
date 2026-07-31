@@ -2,7 +2,7 @@ import { type FormEvent, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { productMutationsCreatePriceWatchMutation } from "../../__generated__/productMutationsCreatePriceWatchMutation.graphql";
+import type { AlertOperationsCreatePriceWatchMutation } from "../../__generated__/AlertOperationsCreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
 import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
@@ -15,7 +15,7 @@ import {
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType
 } from "./price-watch-data";
-import { createPriceWatchMutation } from "./product-mutations";
+import { createPriceWatchMutation } from "../account/alerts/AlertOperations";
 
 const styles = create({
   details: {
@@ -46,7 +46,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const ruleId = useId();
   const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
   const [message, setMessage] = useState<string | null>(null);
-  const [commitCreate, mutationPending] = useMutation<productMutationsCreatePriceWatchMutation>(createPriceWatchMutation);
+  const [commitCreate, mutationPending] = useMutation<AlertOperationsCreatePriceWatchMutation>(createPriceWatchMutation);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

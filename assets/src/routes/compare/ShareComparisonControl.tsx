@@ -2,9 +2,9 @@ import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState }
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
 import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { OwnedComparisonSnapshotsQuery } from "../../__generated__/OwnedComparisonSnapshotsQuery.graphql";
-import type { compareMutationsPublishComparisonSnapshotMutation } from "../../__generated__/compareMutationsPublishComparisonSnapshotMutation.graphql";
-import type { compareMutationsRevokeComparisonSnapshotMutation } from "../../__generated__/compareMutationsRevokeComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperationsQuery } from "../../__generated__/ComparisonSharingOperationsQuery.graphql";
+import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
 import { Checkbox } from "../../ui/primitives/Checkbox";
@@ -13,14 +13,14 @@ import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./loader";
 import {
+  comparisonSharingOperationsQuery,
   publishComparisonSnapshotMutation,
   revokeComparisonSnapshotMutation
-} from "./compare-mutations";
+} from "./ComparisonSharingOperations";
 import {
   recommendationProfileFromUrl,
   type RecommendationProfile
 } from "./recommendation-route-data";
-import ownedComparisonSnapshotsQuery from "./queries/OwnedComparisonSnapshotsQuery";
 import {
   appendComparisonSnapshotPage,
   buildComparisonSnapshotPublishInput,
@@ -208,7 +208,7 @@ function useSnapshotPublisher(
   onPublished: (snapshot: PublishedComparisonSnapshot) => void,
   onMessage: (message: string | null) => void
 ) {
-  const [commitPublish, publishing] = useMutation<compareMutationsPublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
+  const [commitPublish, publishing] = useMutation<ComparisonSharingOperationsPublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
 
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -245,7 +245,7 @@ function useSnapshotPublisher(
 function useSnapshotRevoker(
   onRevoked: (snapshot: PublishedComparisonSnapshot) => void
 ) {
-  const [commitRevoke] = useMutation<compareMutationsRevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+  const [commitRevoke] = useMutation<ComparisonSharingOperationsRevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
   const pendingSnapshotIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [pendingSnapshotIds, setPendingSnapshotIds] = useState<ReadonlySet<string>>(
     pendingSnapshotIdsRef.current
@@ -316,8 +316,8 @@ function PublishedSnapshots({
 }) {
   const [after, setAfter] = useState<string | null>(null);
   const [loadedSnapshots, setLoadedSnapshots] = useState<PublishedComparisonSnapshot[]>([]);
-  const data = useLazyLoadQuery<OwnedComparisonSnapshotsQuery>(
-    ownedComparisonSnapshotsQuery,
+  const data = useLazyLoadQuery<ComparisonSharingOperationsQuery>(
+    comparisonSharingOperationsQuery,
     { first: SNAPSHOT_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" }
   );

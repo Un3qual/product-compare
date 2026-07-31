@@ -1,14 +1,13 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { usePreloadedQuery } from "react-relay";
-import apiTokensRouteQuery, {
-  type ApiTokensRouteQuery
-} from "../../../__generated__/ApiTokensRouteQuery.graphql";
+import type { ApiTokenOperationsQuery } from "../../../__generated__/ApiTokenOperationsQuery.graphql";
 import {
   relayRouteQueryDescriptorIdentity,
   useRoutePreloadedQuery
 } from "../../../relay/route-preload";
 import { ApiTokenItem } from "./ApiTokenItem";
+import { apiTokenOperationsQuery } from "./ApiTokenOperations";
 import { applyApiTokenUpdates } from "./api-token-route-data";
 import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
 import { summarizeApiTokensPage } from "./loader";
@@ -107,11 +106,11 @@ function RelayApiTokenPage(props: ApiTokenListLifecycleProps & {
     tokenQuery,
     tokenStatus
   } = props;
-  const queryRef = useRoutePreloadedQuery<ApiTokensRouteQuery>(
-    apiTokensRouteQuery,
+  const queryRef = useRoutePreloadedQuery<ApiTokenOperationsQuery>(
+    apiTokenOperationsQuery,
     tokenQuery
   );
-  const data = usePreloadedQuery<ApiTokensRouteQuery>(apiTokensRouteQuery, queryRef);
+  const data = usePreloadedQuery<ApiTokenOperationsQuery>(apiTokenOperationsQuery, queryRef);
   const page = summarizeApiTokensPage(data);
   const tokens = applyApiTokenUpdates(page.tokens, apiTokenUpdates, tokenStatus);
 

@@ -1,16 +1,14 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { useLazyLoadQuery, useMutation } from "react-relay";
 import {
+  answerProductQuestionMutation,
+  askProductQuestionMutation,
   removeCommunityContentMutation,
+  submitProductReviewMutation,
   updateProductAnswerMutation,
   updateProductQuestionMutation,
   updateProductReviewMutation
-} from "../../../src/routes/products/product-mutations";
-import {
-  answerProductQuestionMutation,
-  askProductQuestionMutation,
-  submitProductReviewMutation
-} from "../../../src/routes/products/product-mutations";
+} from "../../../src/routes/products/ProductCommunityOperations";
 import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
 import { chooseSelectOption } from "../../helpers/radix-select";
 

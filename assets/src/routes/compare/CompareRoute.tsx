@@ -3,7 +3,7 @@ import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as 
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { compareMutationsCreateSavedComparisonSetMutation } from "../../__generated__/compareMutationsCreateSavedComparisonSetMutation.graphql";
+import type { SavedComparisonOperationsCreateSavedComparisonSetMutation } from "../../__generated__/SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
@@ -27,7 +27,7 @@ import {
 } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
 import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
-import { createSavedComparisonSetMutation } from "./compare-mutations";
+import { createSavedComparisonSetMutation } from "./SavedComparisonOperations";
 import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs
@@ -92,7 +92,7 @@ function CompareSelectionRoute({
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<compareMutationsCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+    useMutation<SavedComparisonOperationsCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
 
   function handleSave() {
     if (loaderData.status !== "ready") {

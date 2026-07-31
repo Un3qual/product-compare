@@ -238,8 +238,8 @@ function apiTokensQueryDescriptor(variables: {
 }) {
   return {
     __relayQuery: {
-      operationName: "ApiTokensRouteQuery",
-      text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
+      operationName: "ApiTokenOperationsQuery",
+      text: "query ApiTokenOperationsQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
       variables,
     },
   };

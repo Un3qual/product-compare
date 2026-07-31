@@ -1,8 +1,6 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import apiTokensRouteQuery, {
-  type ApiTokensRouteQuery,
-} from "../../../__generated__/ApiTokensRouteQuery.graphql";
+import type { ApiTokenOperationsQuery } from "../../../__generated__/ApiTokenOperationsQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../../relay/environment";
 import {
   fetchRouteQuery,
@@ -10,6 +8,7 @@ import {
   type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
+import { apiTokenOperationsQuery } from "./ApiTokenOperations";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
 
@@ -23,7 +22,9 @@ export interface ApiTokenSummary {
   insertedAt: string;
 }
 
-export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<ApiTokensRouteQuery["variables"]>;
+export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<
+  ApiTokenOperationsQuery["variables"]
+>;
 
 export type ApiTokensRouteLoaderData =
   | {
@@ -42,7 +43,7 @@ export type ApiTokensRouteLoaderData =
       tokenStatus: ApiTokenStatus;
     };
 
-type ApiTokenStatusVariable = NonNullable<ApiTokensRouteQuery["variables"]["status"]>;
+type ApiTokenStatusVariable = NonNullable<ApiTokenOperationsQuery["variables"]["status"]>;
 
 export const API_TOKENS_PAGE_SIZE = 20;
 const API_TOKENS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
@@ -61,13 +62,14 @@ export async function apiTokensLoader({
   const searchParams = new URL(request.url).searchParams;
   const tokenStatus = parseApiTokenStatus(searchParams.get("status"));
   const after = nonBlankSearchParam(searchParams.get("after"));
-  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<ApiTokensRouteQuery>>> | null = null;
+  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<ApiTokenOperationsQuery>>> | null =
+    null;
 
   try {
     throwIfAborted(request.signal);
-    fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
+    fetchedPage = await fetchRouteQuery<ApiTokenOperationsQuery>(
       environment,
-      apiTokensRouteQuery,
+      apiTokenOperationsQuery,
       apiTokensQueryVariables(tokenStatus, after ?? undefined),
       { signal: request.signal },
     );
@@ -112,8 +114,8 @@ function nonBlankSearchParam(value: string | null) {
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
   after: string | undefined,
-): ApiTokensRouteQuery["variables"] {
-  const variables: ApiTokensRouteQuery["variables"] = {
+): ApiTokenOperationsQuery["variables"] {
+  const variables: ApiTokenOperationsQuery["variables"] = {
     first: API_TOKENS_PAGE_SIZE,
     status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
   };

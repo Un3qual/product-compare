@@ -116,7 +116,7 @@ CI=true mise exec -- pnpm run lint
 
 - [ ] **Step 4: Simplify config and budget initial CSS**
 
-Use extensionless StyleX plugin imports, pass `reactWithStyleX()` directly, remove `allowImportingTsExtensions`, and delete the inert workspace file. Extend the manifest model to count deduplicated initial `.js` and `.css` assets. Observe failure with the old 200 KB limit, then set a documented combined 300 KB ceiling.
+Keep explicit `.ts` StyleX plugin imports and `allowImportingTsExtensions` for Vite's native config loader, pass `reactWithStyleX()` directly, and delete the inert workspace file. Extend the manifest model to count deduplicated initial `.js` and `.css` assets. Observe failure with the old 200 KB limit, then set a documented combined 300 KB ceiling.
 
 ```bash
 CI=true mise exec -- pnpm run build:client

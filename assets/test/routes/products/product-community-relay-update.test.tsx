@@ -16,7 +16,7 @@ const mockedFetchGraphQL = vi.mocked(fetchGraphQL);
 beforeEach(() => {
   mockedFetchGraphQL.mockReset();
   mockedFetchGraphQL.mockImplementation((query) => {
-    if (query.includes("mutation productMutationsUpdateProductReviewMutation")) {
+    if (query.includes("mutation ProductCommunityOperationsUpdateProductReviewMutation")) {
       return Promise.resolve(
         graphQLResponse({
           updateProductReview: {
@@ -33,7 +33,7 @@ beforeEach(() => {
       );
     }
 
-    if (query.includes("mutation productMutationsUpdateProductQuestionMutation")) {
+    if (query.includes("mutation ProductCommunityOperationsUpdateProductQuestionMutation")) {
       return Promise.resolve(
         graphQLResponse({
           updateProductQuestion: {
@@ -49,7 +49,7 @@ beforeEach(() => {
       );
     }
 
-    if (query.includes("mutation productMutationsUpdateProductAnswerMutation")) {
+    if (query.includes("mutation ProductCommunityOperationsUpdateProductAnswerMutation")) {
       return Promise.resolve(
         graphQLResponse({
           updateProductAnswer: {
@@ -150,7 +150,7 @@ test("owner resubmissions render the fields returned by Relay update mutations",
   expect(within(review).getByText("Revised review body")).toBeVisible();
   expect(within(review).getByText("★★★★★")).toBeVisible();
   expect(mockedFetchGraphQL).toHaveBeenCalledWith(
-    expect.stringContaining("mutation productMutationsUpdateProductReviewMutation"),
+    expect.stringContaining("mutation ProductCommunityOperationsUpdateProductReviewMutation"),
     expect.objectContaining({
       input: expect.objectContaining({ rating: 5 }),
     }),

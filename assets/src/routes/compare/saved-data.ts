@@ -1,8 +1,6 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import savedComparisonsRouteQuery, {
-  type SavedComparisonsRouteQuery,
-} from "../../__generated__/SavedComparisonsRouteQuery.graphql";
+import type { SavedComparisonOperationsQuery } from "../../__generated__/SavedComparisonOperationsQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../relay/environment";
 import {
   fetchRouteQuery,
@@ -10,12 +8,13 @@ import {
   type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { isRouteRecord } from "../route-errors";
+import { savedComparisonOperationsQuery } from "./SavedComparisonOperations";
 import type { SavedComparisonSetSummary } from "./saved-view-state";
 
 export type { SavedComparisonSetSummary } from "./saved-view-state";
 
 export type SavedComparisonSetQueryDescriptor = RelayRouteQueryDescriptor<
-  SavedComparisonsRouteQuery["variables"]
+  SavedComparisonOperationsQuery["variables"]
 >;
 
 export type SavedComparisonsRouteLoaderData =
@@ -43,14 +42,15 @@ export async function savedComparisonsLoader({
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
-  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null =
-    null;
+  let fetchedPage: Awaited<
+    ReturnType<typeof fetchRouteQuery<SavedComparisonOperationsQuery>>
+  > | null = null;
 
   try {
     throwIfAborted(request.signal);
-    fetchedPage = await fetchRouteQuery<SavedComparisonsRouteQuery>(
+    fetchedPage = await fetchRouteQuery<SavedComparisonOperationsQuery>(
       environment,
-      savedComparisonsRouteQuery,
+      savedComparisonOperationsQuery,
       after === null
         ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
         : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
