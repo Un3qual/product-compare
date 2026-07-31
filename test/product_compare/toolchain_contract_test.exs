@@ -48,10 +48,13 @@ defmodule ProductCompare.ToolchainContractTest do
     assert package["scripts"]["check"] =~ "pnpm run lint"
     assert package["scripts"]["check"] =~ "pnpm run format:check"
 
-    for tool <- ~w(erlang elixir node pnpm postgres) do
+    for tool <- ~w(erlang elixir node pnpm) do
       assert Regex.match?(~r/^#{tool}\s*=\s*"[^"]+"$/m, mise),
              ".mise.toml must pin #{tool}"
     end
+
+    refute Regex.match?(~r/^postgres\s*=/m, mise),
+           "Docker Compose owns the PostgreSQL runtime; mise install must not require a plugin"
 
     assert mise =~ "disable_tools = [\"ruby\"]"
   end
