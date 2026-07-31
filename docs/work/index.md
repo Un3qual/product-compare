@@ -332,11 +332,11 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Work
 
 ### 13. Categorical Storage Policy Guard
 
-Status: ready
+Status: active
 Lane: Database domain policy
 Plan: `docs/superpowers/plans/2026-07-30-categorical-storage-policy-guard-implementation-plan.md`
 Batch outcome: compiled relational `Ecto.Enum` fields are automatically
@@ -377,6 +377,8 @@ Exit condition: future persisted `Ecto.Enum` fields cannot escape native enum
 validation, text/varchar closed-domain constraints fail with actionable
 evidence, controlled-reference checks remain green, and all repository gates
 pass.
+
+## Ready Work
 
 ### 14. Radix Disclosure Controls
 

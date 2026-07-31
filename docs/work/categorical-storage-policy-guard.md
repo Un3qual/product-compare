@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-categorical-storage-policy-guard-implementation-plan.md`
