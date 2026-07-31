@@ -58,15 +58,12 @@ defmodule ProductCompare.Ingestion.SourceProvidersConcurrencyTest do
       Enum.map(["cj", "awin"], fn requested_provider ->
         {task, backend_pid} =
           start_unboxed_action(fn ->
-            case Repo.transaction(fn ->
-                   case SourceProviders.ensure_in_transaction(source.id, requested_provider) do
-                     {:ok, provider} -> provider
-                     {:error, reason} -> Repo.rollback(reason)
-                   end
-                 end) do
-              {:ok, provider} -> {:ok, provider}
-              {:error, reason} -> {:error, reason}
-            end
+            Repo.transaction(fn ->
+              case SourceProviders.ensure_in_transaction(source.id, requested_provider) do
+                {:ok, provider} -> provider
+                {:error, reason} -> Repo.rollback(reason)
+              end
+            end)
           end)
 
         %{backend_pid: backend_pid, provider: requested_provider, task: task}
