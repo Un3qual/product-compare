@@ -6,6 +6,12 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
   alias Absinthe.Relay.Connection, as: RelayConnection
   alias ProductCompareWeb.GraphQL.Connection
 
+  @invalid_after_cursors [
+    {"negative offset", "YXJyYXljb25uZWN0aW9uOi0x"},
+    {"trailing junk", "YXJyYXljb25uZWN0aW9uOjBqdW5r"},
+    {"offset whose successor exceeds bigint", "YXJyYXljb25uZWN0aW9uOjkyMjMzNzIwMzY4NTQ3NzU4MDc="}
+  ]
+
   defmodule FakeRepo do
     @moduledoc false
 
@@ -95,10 +101,31 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
                {:error, :invalid_cursor}
     end
 
+    for {case_name, cursor} <- @invalid_after_cursors do
+      test "rejects #{case_name} cursor" do
+        cursor = unquote(cursor)
+
+        assert Connection.from_list([:first, :second], %{first: 1, after: cursor}) ==
+                 {:error, :invalid_cursor}
+      end
+    end
+
     test "rejects invalid first values" do
       assert Connection.from_list([:first], %{first: -1}) == {:error, :invalid_first}
       assert Connection.from_list([:first], %{"first" => -1}) == {:error, :invalid_first}
       assert Connection.from_list([:first], %{"first" => "1"}) == {:error, :invalid_first}
+    end
+  end
+
+  describe "from_query/3" do
+    for {case_name, cursor} <- @invalid_after_cursors do
+      test "rejects #{case_name} cursor" do
+        query = from(product in "products", select: product.id)
+        cursor = unquote(cursor)
+
+        assert Connection.from_query(query, %{first: 1, after: cursor}, FakeRepo) ==
+                 {:error, :invalid_cursor}
+      end
     end
   end
 
@@ -131,6 +158,27 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
 
       assert Connection.batch_window_result(%{after: "not-a-valid-cursor"}) ==
                {:error, "invalid cursor"}
+    end
+  end
+
+  describe "batch_window/1 and from_prefetched_page/2" do
+    for {case_name, cursor} <- @invalid_after_cursors do
+      test "reject #{case_name} cursor" do
+        cursor = unquote(cursor)
+        args = %{first: 1, after: cursor}
+
+        assert Connection.batch_window(args) == {:error, :invalid_cursor}
+
+        assert Connection.from_prefetched_page([:first, :second], args) ==
+                 {:error, :invalid_cursor}
+      end
+    end
+
+    test "accept the largest cursor whose successor fits a PostgreSQL bigint" do
+      cursor = "YXJyYXljb25uZWN0aW9uOjkyMjMzNzIwMzY4NTQ3NzU4MDY="
+
+      assert Connection.batch_window(%{first: 1, after: cursor}) ==
+               {:ok, %{offset: 9_223_372_036_854_775_807, fetch_limit: 2}}
     end
   end
 end

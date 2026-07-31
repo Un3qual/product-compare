@@ -8,7 +8,6 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   alias ProductCompare.Specs
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
-  alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Accounts.{ApiToken, User}
 
@@ -54,17 +53,6 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   @self_uuid_types [:user]
   @max_bigint_id 9_223_372_036_854_775_807
 
-  @spec node(any(), %{id: String.t()}, Absinthe.Resolution.t()) ::
-          {:ok, term() | nil}
-          | {:error, String.t() | GraphQLErrors.top_level_error()}
-          | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def node(_parent, %{id: id}, resolution) do
-    case decode_node_id(id) do
-      {:ok, {type, local_id}} -> fetch_node(type, local_id, resolution)
-      error -> node_result(error)
-    end
-  end
-
   @spec relay_node(%{type: atom(), id: String.t()}, Absinthe.Resolution.t()) ::
           {:ok, term() | nil}
           | {:error, String.t() | GraphQLErrors.top_level_error()}
@@ -95,14 +83,6 @@ defmodule ProductCompareWeb.Resolvers.NodeResolver do
   end
 
   defp parse_local_node_id(_type, _id), do: {:error, :unsupported_type}
-
-  defp decode_node_id(id) do
-    GlobalId.decode_typed_local_id(
-      id,
-      @public_integer_types ++ @operator_integer_types ++ @owner_integer_types,
-      @community_uuid_types ++ @operator_uuid_types ++ @owner_uuid_types ++ @self_uuid_types
-    )
-  end
 
   defp fetch_node(type, local_id, %{context: %{loader: loader}})
        when type in @public_integer_types do

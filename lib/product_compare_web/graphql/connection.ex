@@ -6,6 +6,7 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   @default_page_size 50
   @max_page_size 100
+  @max_after_cursor_offset 9_223_372_036_854_775_806
 
   @type error_reason :: :invalid_cursor | :invalid_first
   @type batch_window :: %{offset: non_neg_integer(), fetch_limit: non_neg_integer()}
@@ -80,10 +81,26 @@ defmodule ProductCompareWeb.GraphQL.Connection do
 
   defp relay_args(args) do
     with {:ok, first} <-
-           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size() do
-      {:ok, %{first: first, after: Input.fetch_value(args, :after)}}
+           args |> Input.fetch_value(:first, @default_page_size) |> normalize_page_size(),
+         {:ok, after_cursor} <- args |> Input.fetch_value(:after) |> normalize_after_cursor() do
+      {:ok, %{first: first, after: after_cursor}}
     end
   end
+
+  defp normalize_after_cursor(nil), do: {:ok, nil}
+
+  defp normalize_after_cursor(cursor) when is_binary(cursor) do
+    with {:ok, offset}
+         when is_integer(offset) and offset >= 0 and offset <= @max_after_cursor_offset <-
+           RelayConnection.cursor_to_offset(cursor),
+         ^cursor <- RelayConnection.offset_to_cursor(offset) do
+      {:ok, cursor}
+    else
+      _ -> {:error, :invalid_cursor}
+    end
+  end
+
+  defp normalize_after_cursor(_cursor), do: {:error, :invalid_cursor}
 
   defp normalize_page_size(nil), do: {:ok, @default_page_size}
 

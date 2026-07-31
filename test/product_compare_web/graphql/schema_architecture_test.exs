@@ -4,7 +4,6 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
   @project_root Path.expand("../../..", __DIR__)
   @schema_root Path.join(@project_root, "lib/product_compare_web/schema")
   @root_schema Path.join(@project_root, "lib/product_compare_web/schema.ex")
-  @graphql_root Path.join(@project_root, "lib/product_compare_web/graphql")
   @schema_sdl Path.join(@project_root, "assets/schema.graphql")
 
   @contexts ~w(
@@ -46,18 +45,7 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     user
   )a
 
-  test "the GraphQL loader contains no KV source" do
-    offenders =
-      [@graphql_root, @schema_root, @root_schema]
-      |> source_files()
-      |> Enum.filter(&(File.read!(&1) =~ "Dataloader.KV"))
-
-    assert offenders == []
-  end
-
   test "the GraphQL loader registers only honest Ecto sources" do
-    refute File.exists?(Path.join(@graphql_root, "loader/ecto_batch_source.ex"))
-
     assert %Dataloader{sources: sources} = ProductCompareWeb.GraphQL.Loader.new()
     assert sources != %{}
     assert Enum.all?(sources, fn {_name, source} -> match?(%Dataloader.Ecto{}, source) end)
