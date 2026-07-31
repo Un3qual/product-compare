@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-07-30-complete-relay-node-coverage-implementation-plan.md`
@@ -39,13 +39,34 @@ entity's existing public, owner, or operator visibility policy.
   remain unchanged.
 - No `Dataloader.KV` source or unbounded per-alias lookup is allowed.
 
-## Verification
+## Delivered
 
-- Node, authorization, schema architecture, and Dataloader batching suites
-- affected accounts, alerts, snapshots, discussions, ingestion, and specs
-  GraphQL suites
-- full backend tests, type checks, and quality gates
-- Relay validation, full frontend tests, client/SSR builds, and bundle contract
-- `mix work_queue.validate`
-- `mix format --check-formatted`
-- `git diff --check`
+- Converted `User`, `ComparisonSnapshot`, all three community content entities,
+  both ingestion operator entities, `SpecificationCorrection`, `PriceWatch`,
+  and `AlertEvent` to Relay `node object` declarations.
+- Extended the Node interface resolver and typed ID decoder across all 22
+  stable entities while leaving the three projection objects plain.
+- Added a focused discussion Node read boundary for published-or-owner
+  visibility and extended the existing authorized Ecto batch source for self,
+  owner, operator, and owner-or-operator policies.
+- Preserved revoked snapshot hiding, current-user isolation, community
+  moderation, correction moderation access, and operator authorization.
+- Added growing-alias tests proving each new authorization class retains a
+  fixed SELECT budget.
+- Regenerated `assets/schema.graphql`; Relay compilation confirmed the existing
+  generated operations remain current.
+
+## Verification Evidence
+
+- Focused Node, authorization, architecture, batching, and affected-domain
+  GraphQL suites: 151 tests passed.
+- Complete backend test suite: 1,023 tests passed.
+- `mix typecheck`: passed.
+- `mix quality`: Credo found no issues, ExDNA stayed within the 3/3 clone
+  baseline, cross-function analysis found no issues, and Dialyzer reported zero
+  errors.
+- `CI=true mise exec -- pnpm --dir assets run check`: Relay validation,
+  TypeScript, Oxlint, Oxfmt, 1,508 Vitest tests, client build, SSR build, and the
+  200 KB gzip bundle contract all passed.
+- `mix work_queue.validate`, `mix format --check-formatted`, and
+  `git diff --check`: passed at closeout.

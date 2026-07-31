@@ -33,37 +33,37 @@ PostgreSQL, ExUnit, Relay Compiler.
 
 ## Task 1: Freeze Entity And Authorization Coverage
 
-- [ ] Extend the schema architecture contract to enumerate all 22 Relay node
+- [x] Extend the schema architecture contract to enumerate all 22 Relay node
   objects and reject stable entity objects with manual global-ID fields.
-- [ ] Add failing Node-query cases for self, public community, owner, operator,
+- [x] Add failing Node-query cases for self, public community, owner, operator,
   cross-owner, unauthorized, hidden, revoked, missing, and malformed IDs.
-- [ ] Add growing-alias query-budget coverage for the new authorization
+- [x] Add growing-alias query-budget coverage for the new authorization
   classes.
 
 ## Task 2: Convert Remaining Entity Objects
 
-- [ ] Replace the ten plain entity objects and manual ID resolvers with
+- [x] Replace the ten plain entity objects and manual ID resolvers with
   `node object`, using entropy-ID fetchers where required.
-- [ ] Preserve GraphQL names such as `CJProgram` and all existing field
+- [x] Preserve GraphQL names such as `CJProgram` and all existing field
   nullability.
-- [ ] Regenerate the SDL and Relay artifacts after the intentional contract
+- [x] Regenerate the SDL and Relay artifacts after the intentional contract
   change.
 
 ## Task 3: Extend Authorized Node Loading
 
-- [ ] Decode integer and UUID node classes explicitly.
-- [ ] Add set-based Ecto batches for public community visibility, current-user
+- [x] Decode integer and UUID node classes explicitly.
+- [x] Add set-based Ecto batches for public community visibility, current-user
   identity, owner-scoped entities, and operator-scoped ingestion entities.
-- [ ] Preserve direct resolver fallback semantics without bypassing
+- [x] Preserve direct resolver fallback semantics without bypassing
   authorization.
 
 ## Task 4: Verify And Close
 
-- [ ] Run Node, authorization, schema architecture, Dataloader batching, and
+- [x] Run Node, authorization, schema architecture, Dataloader batching, and
   affected domain GraphQL suites.
-- [ ] Run full backend tests, type checks, quality gates, Relay validation,
+- [x] Run full backend tests, type checks, quality gates, Relay validation,
   frontend tests/builds, queue validation, formatting, and `git diff --check`.
-- [ ] Record exact evidence and close the lane with three ready successors.
+- [x] Record exact evidence and close the lane with three ready successors.
 
 Exit condition: all 22 stable GraphQL entities use Relay `node object`, every
 new root Node lookup applies its existing visibility policy, repeated aliases

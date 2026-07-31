@@ -332,56 +332,6 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Active Work
-
-### 10. Complete Relay Entity Node Coverage
-
-Status: active
-Lane: Backend GraphQL architecture
-Plan: `docs/superpowers/plans/2026-07-30-complete-relay-node-coverage-implementation-plan.md`
-Batch outcome: all stable globally identified GraphQL entities implement Relay
-Node while public moderation, owner isolation, operator authorization,
-revocation, and fixed alias-query budgets remain intact.
-Next action: add failing schema, authorization, and alias-budget coverage for
-the ten stable entities that still use manual global-ID fields.
-Owned paths:
-
-- affected `lib/product_compare_web/schema/**/types.ex`
-- `lib/product_compare_web/resolvers/node_resolver.ex`
-- `lib/product_compare_web/graphql/loader/root_sources.ex`
-- affected focused domain read modules only when a set-based node policy needs
-  a stable context boundary
-- affected `test/product_compare_web/graphql/**`
-- affected generated GraphQL schema and Relay artifacts
-- `docs/work/complete-relay-node-coverage.md`
-
-Internal slices:
-
-- Stable entity versus projection inventory.
-- Public community visibility and current-viewer Node reads.
-- Owner-scoped and operator-scoped Node reads.
-- Set-based alias budgets and generated contract refresh.
-
-Prerequisites:
-
-- The modular Relay schema lane is complete and releases the owned paths.
-- Any authorization ambiguity must preserve the narrower existing visibility
-  boundary.
-
-Verification:
-
-- Node, authorization, schema architecture, and Dataloader batching suites
-- affected accounts, alerts, snapshots, discussions, ingestion, and specs
-  GraphQL suites
-- full backend tests, type checks, and quality gates
-- Relay validation, frontend tests, client/SSR builds, and bundle checks
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: all 22 stable entities use `node object`, projections remain
-plain, new Node lookups preserve authorization and fixed query budgets, no KV
-source exists, generated contracts are current, and every gate passes.
-
 ## Ready Work
 
 ### 11. Effect GraphQL Transport Pilot
