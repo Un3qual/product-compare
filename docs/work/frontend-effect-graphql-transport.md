@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-07-30-effect-graphql-transport-pilot-implementation-plan.md`
@@ -46,4 +46,3 @@ the stable Promise-returning `fetchGraphQL/3` interface.
 - bundle contract
 - `mix work_queue.validate`
 - `git diff --check`
-

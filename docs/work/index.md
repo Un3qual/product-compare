@@ -332,11 +332,11 @@ Exit condition: snapshot payload and alert fact JSON columns are absent, typed
 rows preserve current behavior and ordering, query budgets remain bounded, and
 all gates pass.
 
-## Ready Work
+## Active Work
 
 ### 11. Effect GraphQL Transport Pilot
 
-Status: ready
+Status: active
 Lane: Frontend transport
 Plan: `docs/superpowers/plans/2026-07-30-effect-graphql-transport-pilot-implementation-plan.md`
 Batch outcome: the Relay GraphQL transport models configuration, network, HTTP,
@@ -377,6 +377,8 @@ Verification:
 Exit condition: the internal transport workflow has typed failures, Relay still
 consumes `fetchGraphQL/3` as a Promise, browser and SSR behavior is preserved,
 Effect has not spread into route/component code, and every frontend gate passes.
+
+## Ready Work
 
 ### 12. Radix Form Controls
 
