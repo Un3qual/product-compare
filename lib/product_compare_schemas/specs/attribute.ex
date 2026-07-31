@@ -43,6 +43,10 @@ defmodule ProductCompareSchemas.Specs.Attribute do
     |> validate_enum_set_consistency()
     |> foreign_key_constraint(:dimension_id)
     |> foreign_key_constraint(:enum_set_id)
+    |> check_constraint(:base,
+      name: :attributes_semantics_immutable,
+      message: "attribute value semantics are immutable"
+    )
   end
 
   defp validate_enum_set_consistency(changeset) do

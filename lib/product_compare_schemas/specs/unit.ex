@@ -29,5 +29,9 @@ defmodule ProductCompareSchemas.Specs.Unit do
       end
     end)
     |> foreign_key_constraint(:dimension_id)
+    |> check_constraint(:base,
+      name: :units_semantics_immutable,
+      message: "unit conversion semantics are immutable"
+    )
   end
 end
