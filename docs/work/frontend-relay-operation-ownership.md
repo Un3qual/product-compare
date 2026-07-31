@@ -6,14 +6,14 @@
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-approved-maintainability-modernization-implementation-plan.md`
-- Last verified: 2026-07-31 against the five feature-family modules, their
+- Last verified: 2026-07-31 against the six workflow operation modules, their
   consumers, generated artifacts, and affected route behavior.
 
 ## Target Outcome
 
-Related Relay mutations live in feature-family modules that match real route
-ownership. Queries remain dedicated data-contract modules where route render,
-preload, pagination, or loader consumers share them.
+Each workflow module owns its primary query and related Relay mutations.
+Independent or paginated follow-up queries remain dedicated data-contract
+modules where their consumers require separate ownership.
 
 ## Boundaries
 
@@ -26,22 +26,25 @@ preload, pagination, or loader consumers share them.
 
 ## Completed Outcome
 
-- Five feature-family modules own 22 affected mutation documents: alerts (3),
-  API tokens (3), affiliate setup (4), compare (4), and products (8).
-- Consumers and behavioral tests import those family documents directly. The
-  unreleased operation names use the lower-camel family prefixes required by
-  Relay, and the matching generated artifacts were regenerated.
+- Six PascalCase workflow modules own 28 family documents:
+  `AlertOperations`, `ApiTokenOperations`, `AffiliateSetupOperations`,
+  `SavedComparisonOperations`, `ComparisonSharingOperations`, and
+  `ProductCommunityOperations`. Each contains its primary query and related
+  mutations.
+- Consumers, request mocks, and behavioral tests import those workflow
+  documents directly. The unreleased operation names use the workflow-module
+  prefixes required by Relay, and all 28 matching artifacts were regenerated.
 - Source-regex ownership policy was removed. Ordinary route, submission,
   mutation-variable, cache-update, and unknown-document behavior now provides
   the acceptance boundary.
-- Queries remain separate data-contract modules when route rendering, preload,
-  pagination, or loader ownership makes that separation real.
+- Independent and paginated follow-up queries remain separate when their route,
+  preload, or loader ownership makes that separation real.
 
 ## Verification
 
-- Focused primitive, auth submission, and affected route set: 8 files and 129
-  tests passed.
+- Final focused workflow review: 11 files and 261 tests passed.
 - Relay validation compiled 52 reader, 51 normalization, and 51 operation
   documents after the approved family-prefix rename.
 - The complete frontend check passed with TypeScript, authored-source Oxc,
-  Vitest, client/SSR builds, and the combined JavaScript/CSS bundle contract.
+  104 Vitest files / 1,516 tests, client/SSR builds, and the combined
+  JavaScript/CSS bundle contract.

@@ -50,8 +50,8 @@ remains.
   commands are removed.
 - Vite 8 builds through Rolldown. The supported Rolldown Babel bridge preserves
   Relay and StyleX transforms.
-- Oxlint and Oxfmt now cover authored `src`, `test`, `scripts`, and root
-  TypeScript while excluding generated Relay artifacts.
+- Oxlint and Oxfmt now cover authored `src`, `test`, Playwright `tests`,
+  `scripts`, and root TypeScript while excluding generated Relay artifacts.
 - The bundle audit accepts Rolldown's anonymous shared lazy-loader chunks while
   still requiring them to be reachable only through the entry's dynamic import
   graph. It deduplicates the complete initial JavaScript/CSS static closure
@@ -59,15 +59,16 @@ remains.
 - Vite and Vitest use direct flat plugin arrays. The inert pnpm workspace file
   is removed; explicit StyleX TypeScript imports retain supported native-config
   loading.
-- Relay mutations now live in five feature-family modules, and source-regex
-  ownership tests are removed in favor of route and mutation behavior.
+- Primary Relay queries and related mutations now live in six PascalCase
+  workflow modules, and source-regex ownership tests are removed in favor of
+  route and mutation behavior.
 - The Relay transport is direct `async`/`await`; no Effect dependency or
   adapter remains.
 
 ## Verification
 
 - The platform-modernization frozen pnpm install and toolchain contract passed.
-- The simplification's focused frontend behavior set passed 129 tests; Relay
+- The final workflow-focused frontend set passed 11 files / 261 tests; Relay
   validation compiled 52 reader, 51 normalization, and 51 operation documents.
 - `pnpm run check` passed after authored-source lint/format expansion, flat
   plugin configuration, family operation ownership, and the combined initial

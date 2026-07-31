@@ -96,7 +96,10 @@ normalized domain state.
   freshness remain ready successors. The frontend and GraphQL simplification
   outcomes are reconciled in their lane docs.
 
-## Verification
+## Historical Lane-Delivery Verification
+
+The counts in this section preserve the evidence recorded as each database-
+domain batch landed; later full-suite totals do not replace them.
 
 - Baseline repair commit: `506fff4f test: stabilize catalog filter index contract`
 - `mix test test/product_compare/catalog/filtering_regression_test.exs`:
@@ -150,6 +153,21 @@ normalized domain state.
   TypeScript, client/SSR builds, and the client bundle budget all passed.
 - `mix work_queue.validate`: 3 ready rows remain.
 - `mix format --check-formatted` and `git diff --check`: passed.
+
+## 2026-07-31 Simplification Verification
+
+- `MIX_ENV=test mix ecto.reset`: completed successfully from an empty test
+  database through the complete rewritten migration history.
+- Reference-code parity, table-driven affiliate networks, reputation and slug
+  cleanup, and the moved test-support categorical policy passed their two
+  focused commands: 83 tests, 0 failures.
+- The broader repo, commerce, slug, SEO, GraphQL, and redirect command passed
+  120 tests, 0 failures.
+- The final Task 6 branch backend suite passed 1,050 tests, 0 failures.
+- `mix typecheck` passed. `mix quality` exited successfully; its two existing
+  test-code findings are recorded in the Task 6 report.
+- `mix work_queue.validate` passed with 3 ready rows; formatting and diff checks
+  passed.
 
 ## Blocker Rule
 

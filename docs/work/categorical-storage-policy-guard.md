@@ -50,12 +50,27 @@ None. The durable categorical storage contract is complete.
 
 ## Verification
 
+### Historical Policy-Guard Delivery
+
 - `MIX_ENV=test mix ecto.reset`: passed through the complete migration history.
 - Focused enum and controlled-reference storage gate: 9 tests passed.
-- Post-move categorical architecture gate: 4 tests passed.
-- Final full backend suite: 1,026 tests passed.
+- Historical pre-simplification full backend suite: 1,026 tests passed.
 - `mix typecheck`: passed.
 - `mix quality`: Credo found no issues, ExDNA remained at its 3/3 budget,
   Reach reported no unsuppressed smells, and Dialyzer reported zero errors.
 - `mix work_queue.validate`: passed with 3 ready rows.
 - `mix format --check-formatted` and `git diff --check`: passed.
+
+### 2026-07-31 Simplification Verification
+
+- `MIX_ENV=test mix ecto.reset`: completed successfully from an empty test
+  database through the complete rewritten migration history.
+- The moved test-support policy architecture gate passed 4 tests. The
+  self-checking reference-code parity matrix and affected Task 4 domain suites
+  were included in the two focused commands that passed 83 tests, 0 failures.
+- The broader Task 4 regression command passed 120 tests, 0 failures.
+- The final Task 6 branch backend suite passed 1,050 tests, 0 failures.
+- `mix typecheck` passed. `mix quality` exited successfully; its two existing
+  test-code findings are recorded in the Task 6 report.
+- `mix work_queue.validate` passed with 3 ready rows; formatting and diff checks
+  passed.

@@ -79,24 +79,42 @@ git commit -m "refactor: simplify frontend runtime contracts"
 ### Task 2: Frontend Ownership and Tooling Simplification
 
 **Files:**
-- Create: five feature-local `*-mutations.ts` family modules under account alerts, API tokens, affiliate setup, compare, and products.
-- Modify: their route/component consumers and tests.
+- Create: six PascalCase workflow modules:
+  `AlertOperations.ts`, `ApiTokenOperations.ts`,
+  `AffiliateSetupOperations.ts`, `SavedComparisonOperations.ts`,
+  `ComparisonSharingOperations.ts`, and `ProductCommunityOperations.ts` in
+  their owning route folders.
+- Modify: route/component consumers, request mocks, behavioral tests, and
+  generated Relay artifacts for the family-owned primary queries and related
+  mutations.
+- Delete: the five interim `*-mutations.ts` buckets and superseded standalone
+  primary-query sources/artifacts.
 - Delete: `assets/test/architecture/relay-operation-ownership.test.ts`
 - Delete: `assets/test/ui/form-control-architecture.test.ts`
 - Modify: `assets/package.json`, `assets/scripts/check-client-bundle.ts`, Vite/Vitest/StyleX configs, and `assets/tsconfig.json`
 - Delete: `assets/pnpm-workspace.yaml`
-- Mechanically format: authored `assets/src`, `assets/test`, `assets/scripts`, and root TypeScript excluding `assets/src/__generated__`.
+- Mechanically format: authored `assets/src`, `assets/test`,
+  `assets/tests`, `assets/scripts`, and root TypeScript excluding
+  `assets/src/__generated__`.
 
 **Interfaces:**
-- Consumes: unchanged GraphQL operation names/documents and existing route behavior.
+- Consumes: existing route behavior plus Relay's source-module operation-name
+  contract and the accepted family-prefix rename.
 - Produces: feature-family operation ownership, authored-code quality gates, flat Vite plugins, and a combined initial JS/CSS bundle budget.
 
-- [ ] **Step 1: Prove feature-family imports before creating modules**
+- [ ] **Step 1: Prove workflow imports and compiler-owned operation names**
 
-Point compare/community tests at the proposed family modules and run the focused tests to observe module-not-found failures. Create the five family modules, move documents unchanged, and update consumers.
+Point compare/community tests at the proposed workflow modules and run the
+focused tests to observe module-not-found failures. Create all six modules so
+each owns its primary query and related mutations. Preserve the second RED:
+Relay rejects the initially moved, unchanged operation names because they do
+not start with the new source-module names. Rename the 28 family documents with
+their PascalCase workflow prefixes, regenerate the 28 corresponding artifacts,
+and update every consumer, behavioral test, and request mock.
 
 ```bash
 CI=true mise exec -- pnpm exec vitest run test/routes/account/alerts/alerts.route.test.tsx test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/affiliate/setup/affiliate-setup.route.test.tsx test/routes/compare/comparison-snapshots.test.tsx test/routes/products/product-community-panel.test.tsx
+CI=true mise exec -- pnpm run relay
 CI=true mise exec -- pnpm run relay:check
 ```
 
@@ -106,10 +124,14 @@ Delete both regex architecture tests. Run primitive, form-submission, and affect
 
 - [ ] **Step 3: Expand Oxc gates and establish the authored baseline**
 
-Set formatter/linter globs to `src test scripts '*.ts'` with generated Relay artifacts excluded. Demonstrate a temporary malformed test file is caught, remove it, run Oxfmt write once, and fix the comparison-snapshot mock so every imported mutation is behaviorally distinguished.
+Set formatter/linter coverage to authored `src`, `test`, Playwright `tests`,
+`scripts`, and root TypeScript with generated Relay artifacts excluded.
+Demonstrate a temporary malformed test file is caught, remove it, run Oxfmt
+write once, and fix the comparison-snapshot mock so every imported mutation is
+behaviorally distinguished.
 
 ```bash
-CI=true mise exec -- pnpm exec oxfmt --write src test scripts '*.ts' '!src/__generated__/**'
+CI=true mise exec -- pnpm exec oxfmt --write src test tests scripts '*.ts' '!src/__generated__/**'
 CI=true mise exec -- pnpm run format:check
 CI=true mise exec -- pnpm run lint
 ```
