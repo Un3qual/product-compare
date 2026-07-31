@@ -17,7 +17,10 @@ defmodule ProductCompareWeb.Schema.Seo.Types do
     field :indexable, non_null(:boolean)
     field :seo, non_null(:seo_metadata), resolve: &SeoResolver.category_metadata/3
 
-    connection field :products, node_type: :product, non_null_connection: true do
+    connection field :products,
+                 node_type: :product,
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&SeoResolver.category_products/3)
     end
   end

@@ -305,7 +305,7 @@ defmodule ProductCompareWeb.GraphQL.SavedComparisonsTest do
 
   defp my_saved_comparison_sets_query do
     """
-    query MySavedComparisonSets($first: Int) {
+    query MySavedComparisonSets($first: Int! = 50) {
       mySavedComparisonSets(first: $first) {
         edges {
           node {

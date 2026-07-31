@@ -28,7 +28,7 @@ defmodule ProductCompareWeb.Schema.Catalog.Queries do
     end
 
     @desc "Returns products in a deterministic requested order with cursor pagination."
-    connection field :products, node_type: :product do
+    connection field :products, node_type: :product, paginate: :forward do
       arg(:filters, :product_filters_input)
       resolve(&CatalogResolver.products/3)
     end
@@ -40,7 +40,9 @@ defmodule ProductCompareWeb.Schema.Catalog.Queries do
     end
 
     @desc "Returns the current authenticated user's saved comparison sets."
-    connection field :my_saved_comparison_sets, node_type: :saved_comparison_set do
+    connection field :my_saved_comparison_sets,
+                 node_type: :saved_comparison_set,
+                 paginate: :forward do
       resolve(&SavedComparisons.my_saved_comparison_sets/3)
     end
   end

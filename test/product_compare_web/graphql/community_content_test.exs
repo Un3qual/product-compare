@@ -732,7 +732,7 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     """
     query InvalidQuestionConnection($slug: String!, $after: String!) {
       product(slug: $slug) {
-        questions(after: $after) {
+        questions(first: 50, after: $after) {
           edges { cursor }
         }
       }

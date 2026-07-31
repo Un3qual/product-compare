@@ -55,7 +55,7 @@ PostgreSQL, ExUnit, Relay Compiler.
   `page_info` object with Absinthe Relay connection macros.
 - [x] Adapt existing bounded connection projections to the macro-owned shape
   without weakening cursor validation or query budgets.
-- [ ] Regenerate the schema snapshot and Relay artifacts after the intentional
+- [x] Regenerate the schema snapshot and Relay artifacts after the intentional
   breaking contract update.
 
 ### Task 4: Split The Schema By Context
@@ -79,11 +79,11 @@ PostgreSQL, ExUnit, Relay Compiler.
 
 ### Task 6: Verify And Commit
 
-- [ ] Run schema snapshot, Node, connection, authorization, Dataloader batching,
+- [x] Run schema snapshot, Node, connection, authorization, Dataloader batching,
   and query-budget suites.
-- [ ] Run full backend tests, type checks, quality gates, Relay validation,
+- [x] Run full backend tests, type checks, quality gates, Relay validation,
   frontend tests/builds, queue validation, and `git diff --check`.
-- [ ] Commit each reviewable internal milestone with its behavior evidence.
+- [x] Commit each reviewable internal milestone with its behavior evidence.
 
 Exit condition: the API compiles in Absinthe Relay modern mode, every supported
 entity and connection uses Relay macros, context schema ownership is explicit,

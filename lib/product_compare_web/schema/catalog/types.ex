@@ -192,7 +192,12 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
     field :inserted_at, non_null(:datetime)
   end
 
-  connection(node_type: :saved_comparison_set, non_null_edges: true, non_null_edge: true)
+  connection node_type: :saved_comparison_set, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:saved_comparison_set)
+      field :cursor, non_null(:string)
+    end
+  end
 
   node object(:brand) do
     field :name, non_null(:string)
@@ -220,18 +225,24 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
     field :review_summary, non_null(:product_review_summary),
       resolve: &DiscussionReads.review_summary/3
 
-    connection field :reviews, node_type: :product_review, non_null_connection: true do
+    connection field :reviews,
+                 node_type: :product_review,
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&DiscussionReads.reviews/3)
     end
 
-    connection field :questions, node_type: :product_question, non_null_connection: true do
+    connection field :questions,
+                 node_type: :product_question,
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&DiscussionReads.questions/3)
     end
 
     field :viewer_community_submissions, non_null(:viewer_community_submissions),
       resolve: &DiscussionReads.viewer_community_submissions/3
 
-    connection field :merchant_products, node_type: :merchant_product do
+    connection field :merchant_products, node_type: :merchant_product, paginate: :forward do
       arg(:merchant_id, :id)
       arg(:active_only, :boolean)
 
@@ -273,5 +284,10 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
     field :evidence, non_null(list_of(non_null(:product_attribute_evidence)))
   end
 
-  connection(node_type: :product, non_null_edges: true, non_null_edge: true)
+  connection node_type: :product, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:product)
+      field :cursor, non_null(:string)
+    end
+  end
 end

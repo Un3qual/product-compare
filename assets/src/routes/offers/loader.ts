@@ -57,6 +57,8 @@ export async function offerDiscoveryLoader({
         environment,
         offerDiscoveryRouteQuery,
         {
+          after: filters.after,
+          first: filters.first,
           input: offerDiscoveryInputFromFilters(filters),
           productId: filters.productId
         },
@@ -89,8 +91,6 @@ export function offerDiscoveryFiltersFromUrl(url: URL): OfferDiscoveryFilters {
 function offerDiscoveryInputFromFilters(filters: OfferDiscoveryFilters) {
   return {
     activeOnly: filters.activeOnly,
-    ...(filters.after ? { after: filters.after } : {}),
-    first: filters.first,
     ...(filters.merchantId ? { merchantId: filters.merchantId } : {}),
     productId: filters.productId ?? ""
   };

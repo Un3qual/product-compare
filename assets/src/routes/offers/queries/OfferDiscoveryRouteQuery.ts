@@ -1,7 +1,12 @@
 import { graphql } from "react-relay";
 
 export const offerDiscoveryRouteQuery = graphql`
-  query OfferDiscoveryRouteQuery($input: MerchantProductsInput!, $productId: ID!) {
+  query OfferDiscoveryRouteQuery(
+    $after: String
+    $first: Int!
+    $input: MerchantProductsInput!
+    $productId: ID!
+  ) {
     selectedProduct: node(id: $productId) {
       __typename
       ... on Product {
@@ -14,7 +19,7 @@ export const offerDiscoveryRouteQuery = graphql`
         }
       }
     }
-    merchantProducts(input: $input) {
+    merchantProducts(after: $after, first: $first, input: $input) {
       edges {
         cursor
         node {

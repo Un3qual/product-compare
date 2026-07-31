@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<7d4e8ef78dc9741856338416e92fef29>>
+ * @generated SignedSource<<257f905515079024778eb65d74c97068>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -11,7 +11,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type AffiliateSetupRouteQuery$variables = {
   after?: string | null | undefined;
-  first?: number | null | undefined;
+  first: number;
 };
 export type AffiliateSetupRouteQuery$data = {
   readonly merchants: {
@@ -192,16 +192,16 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "ee590fa0db6d52b8e774d24e08a1a772",
+    "cacheID": "70307cd8d25ec64cfa86e6b1ae42e46c",
     "id": null,
     "metadata": {},
     "name": "AffiliateSetupRouteQuery",
     "operationKind": "query",
-    "text": "query AffiliateSetupRouteQuery(\n  $first: Int\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
+    "text": "query AffiliateSetupRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        slug\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "85308f179b338fedbad1c4f483cb9237";
+(node as any).hash = "b99d9006f63ea3667513c5fff66277d1";
 
 export default node;

@@ -7,7 +7,7 @@ defmodule ProductCompareWeb.Schema.Pricing.Queries do
 
   object :pricing_queries do
     @desc "Returns merchants ordered by primary key with cursor pagination."
-    connection field :merchants, node_type: :merchant do
+    connection field :merchants, node_type: :merchant, paginate: :forward do
       resolve(&Merchants.merchants/3)
     end
 
@@ -18,7 +18,7 @@ defmodule ProductCompareWeb.Schema.Pricing.Queries do
     end
 
     @desc "Returns merchant products for a product with optional merchant and active filters."
-    connection field :merchant_products, node_type: :merchant_product do
+    connection field :merchant_products, node_type: :merchant_product, paginate: :forward do
       arg(:input, non_null(:merchant_products_input))
       resolve(&Offers.merchant_products/3)
     end

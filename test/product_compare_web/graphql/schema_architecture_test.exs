@@ -5,6 +5,7 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
   @schema_root Path.join(@project_root, "lib/product_compare_web/schema")
   @root_schema Path.join(@project_root, "lib/product_compare_web/schema.ex")
   @graphql_root Path.join(@project_root, "lib/product_compare_web/graphql")
+  @schema_sdl Path.join(@project_root, "assets/schema.graphql")
 
   @contexts ~w(
     accounts
@@ -45,8 +46,38 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     refute schema_source =~ ~r/\binterface\s+:node\b/
     refute schema_source =~ ~r/\bobject\s+:page_info\b/
     refute schema_source =~ ~r/\bobject\s+:[a-z0-9_]+_(connection|edge)\b/
-    assert length(Regex.scan(~r/\bnode\s+object(?:\s+|\():/, schema_source)) >= 12
-    assert length(Regex.scan(~r/\bconnection(?:\s+|\(\s*)node_type:/, schema_source)) >= 17
+
+    assert schema_source
+           |> then(&Regex.scan(~r/\bnode\s+object(?:\s+|\():/, &1))
+           |> Enum.count_until(12) == 12
+
+    assert schema_source
+           |> then(&Regex.scan(~r/\bconnection(?:\s+|\(\s*)node_type:/, &1))
+           |> Enum.count_until(17) == 17
+  end
+
+  test "generated connections expose a bounded forward-only contract" do
+    sdl = File.read!(@schema_sdl)
+
+    refute sdl =~ ~r/\b(?:before|last):/
+
+    assert sdl
+           |> then(
+             &Regex.scan(
+               ~r/type \w+Edge \{\s+node: \w+!\s+cursor: String!\s+\}/,
+               &1
+             )
+           )
+           |> Enum.count_until(17) == 17
+
+    assert [merchant_products_input] =
+             Regex.run(
+               ~r/input MerchantProductsInput \{(?<body>.*?)\}/s,
+               sdl,
+               capture: ["body"]
+             )
+
+    refute merchant_products_input =~ ~r/\b(?:first|after):/
   end
 
   test "each context owns separate types, queries, and mutations modules" do

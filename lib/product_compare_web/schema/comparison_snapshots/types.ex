@@ -59,7 +59,12 @@ defmodule ProductCompareWeb.Schema.ComparisonSnapshots.Types do
     field :offers, non_null(list_of(non_null(:comparison_snapshot_offer)))
   end
 
-  connection(node_type: :comparison_snapshot, non_null_edges: true, non_null_edge: true)
+  connection node_type: :comparison_snapshot, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:comparison_snapshot)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :comparison_snapshot_attribute do
     field :attribute_id, non_null(:id) do

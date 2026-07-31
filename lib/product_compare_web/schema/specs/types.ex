@@ -97,11 +97,14 @@ defmodule ProductCompareWeb.Schema.Specs.Types do
     field :reviewed_at, :datetime
   end
 
-  connection(
-    node_type: :specification_correction,
-    non_null_edges: true,
-    non_null_edge: true
-  )
+  connection node_type: :specification_correction,
+             non_null_edges: true,
+             non_null_edge: true do
+    edge do
+      field :node, non_null(:specification_correction)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :product_attribute_evidence do
     field :excerpt, :string

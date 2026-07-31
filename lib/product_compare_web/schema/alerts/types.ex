@@ -83,7 +83,12 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
       resolve: fn watch, _, _ -> {:ok, watch.inserted_at} end
   end
 
-  connection(node_type: :price_watch, non_null_edges: true, non_null_edge: true)
+  connection node_type: :price_watch, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:price_watch)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :alert_event do
     field :id, non_null(:id) do
@@ -123,5 +128,10 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
       resolve: fn event, _, _ -> {:ok, event.merchant_product.merchant.name} end
   end
 
-  connection(node_type: :alert_event, non_null_edges: true, non_null_edge: true)
+  connection node_type: :alert_event, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:alert_event)
+      field :cursor, non_null(:string)
+    end
+  end
 end

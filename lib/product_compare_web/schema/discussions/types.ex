@@ -139,7 +139,12 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
       resolve: fn review, _, _ -> {:ok, review.inserted_at} end
   end
 
-  connection(node_type: :product_review, non_null_edges: true, non_null_edge: true)
+  connection node_type: :product_review, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:product_review)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :product_question do
     field :id, non_null(:id) do
@@ -177,7 +182,10 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
       end)
     end
 
-    connection field :answers, node_type: :product_answer, non_null_connection: true do
+    connection field :answers,
+                 node_type: :product_answer,
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&Reads.answers/3)
     end
 
@@ -185,7 +193,12 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
       resolve: fn question, _, _ -> {:ok, question.inserted_at} end
   end
 
-  connection(node_type: :product_question, non_null_edges: true, non_null_edge: true)
+  connection node_type: :product_question, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:product_question)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :product_answer do
     field :id, non_null(:id) do
@@ -203,5 +216,10 @@ defmodule ProductCompareWeb.Schema.Discussions.Types do
       resolve: fn answer, _, _ -> {:ok, answer.inserted_at} end
   end
 
-  connection(node_type: :product_answer, non_null_edges: true, non_null_edge: true)
+  connection node_type: :product_answer, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:product_answer)
+      field :cursor, non_null(:string)
+    end
+  end
 end

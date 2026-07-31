@@ -61,7 +61,8 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
 
     connection field :feeds,
                  node_type: :merchant_feed_candidate,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&IngestionResolver.cj_program_feeds/3)
     end
   end
@@ -76,7 +77,12 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
     field :declined, non_null(:integer)
   end
 
-  connection(node_type: :cj_program, non_null_edges: true, non_null_edge: true)
+  connection node_type: :cj_program, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:cj_program)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :merchant_feed_candidate do
     field :id, non_null(:id) do
@@ -99,5 +105,10 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
     field :last_seen_at, non_null(:datetime)
   end
 
-  connection(node_type: :merchant_feed_candidate, non_null_edges: true, non_null_edge: true)
+  connection node_type: :merchant_feed_candidate, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:merchant_feed_candidate)
+      field :cursor, non_null(:string)
+    end
+  end
 end

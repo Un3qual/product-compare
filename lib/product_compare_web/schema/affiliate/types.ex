@@ -140,7 +140,12 @@ defmodule ProductCompareWeb.Schema.Affiliate.Types do
     field :updated_at, non_null(:datetime)
   end
 
-  connection(node_type: :coupon, non_null_edges: true, non_null_edge: true)
+  connection node_type: :coupon, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:coupon)
+      field :cursor, non_null(:string)
+    end
+  end
 
   object :active_coupon do
     field :code, non_null(:string)
@@ -152,7 +157,12 @@ defmodule ProductCompareWeb.Schema.Affiliate.Types do
     field :terms, :string
   end
 
-  connection(node_type: :active_coupon, non_null_edges: true, non_null_edge: true)
+  connection node_type: :active_coupon, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:active_coupon)
+      field :cursor, non_null(:string)
+    end
+  end
 
   enum :coupon_discount_type do
     value(:percent)

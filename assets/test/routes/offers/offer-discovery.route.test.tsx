@@ -7,7 +7,7 @@ import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCar
 import type {
   ActiveCouponsConnection,
   OfferNode,
-  PriceHistoryConnection
+  PriceHistoryConnection,
 } from "../../../src/routes/offers/offer-discovery-data";
 import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
@@ -19,14 +19,14 @@ const {
   useMutationMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitCommerceClickMock: vi.fn(),
   graphqlMock: vi.fn(),
   useMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -34,7 +34,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -45,18 +45,18 @@ vi.mock("react-relay", async () => {
     ...actual,
     graphql: graphqlMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -70,21 +70,21 @@ const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
 const OFFER_DISCOVERY_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "OfferDiscoveryRouteQuery",
-    text: "query OfferDiscoveryRouteQuery($input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(input: $input) { edges { node { id } } } }",
+    text: "query OfferDiscoveryRouteQuery($first: Int!, $input: MerchantProductsInput!, $productId: ID!) { selectedProduct: node(id: $productId) { __typename } merchantProducts(first: $first, input: $input) { edges { node { id } } } }",
     variables: {
+      first: 6,
       productId: "UHJvZHVjdDoxMjM=",
       input: {
         activeOnly: true,
-        first: 6,
-        productId: "UHJvZHVjdDoxMjM="
-      }
-    }
-  }
+        productId: "UHJvZHVjdDoxMjM=",
+      },
+    },
+  },
 };
 
 const OFFER_DISCOVERY_QUERY_REF = {
   dispose: vi.fn(),
-  variables: OFFER_DISCOVERY_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: OFFER_DISCOVERY_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 beforeEach(() => {
@@ -110,24 +110,24 @@ test("offer card directly renders tracked action, observations, price history, a
   render(
     <MemoryRouter>
       <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
   expect(screen.getByText("Best price on this page")).toBeVisible();
   expect(screen.getByText("199.99 USD")).toBeVisible();
   expect(screen.getByText("2026-06-02", { selector: "time" }).parentElement).toHaveTextContent(
-    "Offer checked 2026-06-02"
+    "Offer checked 2026-06-02",
   );
   expect(screen.getByText("2026-05-30", { selector: "time" })).toBeVisible();
   expect(screen.getByText("189.99 USD")).toBeVisible();
   expect(screen.getByText("SAVE20")).toBeVisible();
   expect(screen.getByText("2026-06-30", { selector: "time" }).parentElement).toHaveTextContent(
-    "Valid through 2026-06-30"
+    "Valid through 2026-06-30",
   );
 });
 
@@ -140,8 +140,8 @@ test("offer discovery asks users to start from browse products when productId is
       first: 6,
       merchantId: null,
       productId: null,
-      sort: "default"
-    }
+      sort: "default",
+    },
   } satisfies OfferDiscoveryLoaderData);
 
   renderOfferDiscoveryRoute();
@@ -151,7 +151,7 @@ test("offer discovery asks users to start from browse products when productId is
   expect(screen.getByText("Choose a product to review its current merchant offers.")).toBeVisible();
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products"
+    "/products",
   );
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
@@ -166,8 +166,8 @@ test("offer discovery summarizes missing product filters without reset actions",
       first: 6,
       merchantId: null,
       productId: null,
-      sort: "default"
-    }
+      sort: "default",
+    },
   } satisfies OfferDiscoveryLoaderData);
 
   renderOfferDiscoveryRoute();
@@ -180,10 +180,10 @@ test("offer discovery summarizes missing product filters without reset actions",
   expect(within(filterSummary).getByText("Default order")).toBeVisible();
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(
-    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
+    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" }),
   ).not.toBeInTheDocument();
   expect(
-    within(filterSummary).queryByRole("link", { name: "Reset filters" })
+    within(filterSummary).queryByRole("link", { name: "Reset filters" }),
   ).not.toBeInTheDocument();
 });
 
@@ -193,8 +193,8 @@ test("offer discovery renders filter controls with existing filter values", () =
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
-      sort: "price_desc"
-    })
+      sort: "price_desc",
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -206,12 +206,8 @@ test("offer discovery renders filter controls with existing filter values", () =
 
   expect(filterForm).toHaveAttribute("action", "/offers");
   expect(filterForm).toHaveAttribute("method", "get");
-  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue(
-    "UHJvZHVjdDoxMjM="
-  );
-  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue(
-    "TWVyY2hhbnQ6NDU2"
-  );
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("TWVyY2hhbnQ6NDU2");
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_desc");
@@ -223,8 +219,8 @@ test("offer discovery summarizes active filters", () => {
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
-      sort: "merchant_name"
-    })
+      sort: "merchant_name",
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -237,7 +233,7 @@ test("offer discovery summarizes active filters", () => {
   expect(within(filterSummary).getByText("Example Brand")).toBeVisible();
   expect(within(filterSummary).getByRole("link", { name: "View product details" })).toHaveAttribute(
     "href",
-    "/products/detail-product"
+    "/products/detail-product",
   );
   expect(within(filterSummary).queryByText("Product ID")).not.toBeInTheDocument();
   expect(within(filterSummary).queryByText("UHJvZHVjdDoxMjM=")).not.toBeInTheDocument();
@@ -263,10 +259,10 @@ test("offer discovery omits merchant summary actions when no merchant filter is 
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(within(filterSummary).getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D",
   );
   expect(
-    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" })
+    within(filterSummary).queryByRole("link", { name: "Clear merchant filter" }),
   ).not.toBeInTheDocument();
 });
 
@@ -277,19 +273,19 @@ test("offer discovery provides route-local filter reset links", () => {
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
-      sort: "price_asc"
-    })
+      sort: "price_asc",
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc",
   );
   expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc",
   );
 });
 
@@ -302,22 +298,18 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
       first: 24,
       merchantId: "TWVyY2hhbnQ6NDU2",
       productId: "UHJvZHVjdDo5OTk=",
-      sort: "merchant_name"
-    })
+      sort: "merchant_name",
+    }),
   );
 
   rerender(
     <MemoryRouter>
       <OfferDiscoveryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
-  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue(
-    "UHJvZHVjdDo5OTk="
-  );
-  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue(
-    "TWVyY2hhbnQ6NDU2"
-  );
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDo5OTk=");
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("TWVyY2hhbnQ6NDU2");
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("merchant_name");
@@ -339,7 +331,7 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByRole("heading", { name: "Detail Product" })).toBeVisible();
   expect(offerContent.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
   expect(offerContent.getByText("acme.example")).toBeVisible();
   expect(offerContent.getByText("Active")).toBeVisible();
@@ -360,11 +352,11 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByText("189.99 USD")).toBeVisible();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    OFFER_DISCOVERY_QUERY_DESCRIPTOR
+    OFFER_DISCOVERY_QUERY_DESCRIPTOR,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    OFFER_DISCOVERY_QUERY_REF
+    OFFER_DISCOVERY_QUERY_REF,
   );
 });
 
@@ -377,7 +369,7 @@ test("offer discovery omits unsafe observation and coupon validity claims", () =
           latestPrice: {
             id: "price-invalid-date",
             price: "199.99",
-            observedAt: "2026-02-30T00:00:00Z"
+            observedAt: "2026-02-30T00:00:00Z",
           },
           activeCoupons: buildCouponConnection([
             {
@@ -389,13 +381,13 @@ test("offer discovery omits unsafe observation and coupon validity claims", () =
                 discountValue: "20.00",
                 currency: "USD",
                 validTo: "June 30 2026",
-                terms: "Online orders only."
-              }
-            }
-          ])
-        })
-      ]
-    })
+                terms: "Online orders only.",
+              },
+            },
+          ]),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -426,21 +418,21 @@ test("offer discovery keeps offer actions when merchant metadata is unavailable"
           product: {
             id: "product-1",
             name: "Detail Product",
-            slug: "detail-product"
+            slug: "detail-product",
           },
           latestPrice: null,
           activeCoupons: buildCouponConnection([]),
-          priceHistory: buildPriceHistoryConnection([])
-        }
-      ]
-    })
+          priceHistory: buildPriceHistoryConnection([]),
+        },
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-without-merchant`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-without-merchant`,
   );
   expect(screen.queryByText("acme.example")).not.toBeInTheDocument();
 });
@@ -454,13 +446,13 @@ test("offer discovery tracks merchant clicks with only the merchant product ID",
     expect.objectContaining({
       variables: {
         input: {
-          merchantProductId: "merchant-product-1"
-        }
-      }
-    })
+          merchantProductId: "merchant-product-1",
+        },
+      },
+    }),
   );
   expect(JSON.stringify(commitCommerceClickMock.mock.calls[0]?.[0]?.variables)).not.toContain(
-    "https://merchant.example.com/detail-product"
+    "https://merchant.example.com/detail-product",
   );
 });
 
@@ -468,8 +460,8 @@ test("offer discovery resolves tracked redirects against the API origin", () => 
   expect(
     resolveTrackedCommerceRedirectUrl(
       "/r/click-123?merchantProductId=merchant-product-1",
-      "http://localhost:4000/api/graphql"
-    )
+      "http://localhost:4000/api/graphql",
+    ),
   ).toBe("http://localhost:4000/r/click-123?merchantProductId=merchant-product-1");
 });
 
@@ -477,19 +469,19 @@ test("offer discovery rejects tracked redirects outside the API origin", () => {
   expect(() =>
     resolveTrackedCommerceRedirectUrl(
       "https://attacker.example/r/click-123",
-      "http://localhost:4000/api/graphql"
-    )
+      "http://localhost:4000/api/graphql",
+    ),
   ).toThrow("same origin");
 
   expect(() =>
     resolveTrackedCommerceRedirectUrl(
       "//attacker.example/r/click-123",
-      "http://localhost:4000/api/graphql"
-    )
+      "http://localhost:4000/api/graphql",
+    ),
   ).toThrow("same origin");
 
   expect(() =>
-    resolveTrackedCommerceRedirectUrl(SCRIPT_SCHEME_REDIRECT, "http://localhost:4000/api/graphql")
+    resolveTrackedCommerceRedirectUrl(SCRIPT_SCHEME_REDIRECT, "http://localhost:4000/api/graphql"),
   ).toThrow("same origin");
 });
 
@@ -518,10 +510,10 @@ test("offer discovery keeps active All offers rows on tracked merchant actions",
           id: "merchant-product-active",
           url: "https://merchant.example.com/active-offer",
           isActive: true,
-          merchant: buildMerchant("merchant-active", "Active Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("merchant-active", "Active Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -531,7 +523,7 @@ test("offer discovery keeps active All offers rows on tracked merchant actions",
   expect(screen.getByText("All offers")).toBeVisible();
   expect(merchantLink).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-active`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-active`,
   );
 
   fireEvent.click(merchantLink);
@@ -540,10 +532,10 @@ test("offer discovery keeps active All offers rows on tracked merchant actions",
     expect.objectContaining({
       variables: {
         input: {
-          merchantProductId: "merchant-product-active"
-        }
-      }
-    })
+          merchantProductId: "merchant-product-active",
+        },
+      },
+    }),
   );
 });
 
@@ -556,10 +548,10 @@ test("offer discovery renders inactive All offers rows as safe direct merchant l
           id: "merchant-product-inactive",
           url: "https://merchant.example.com/inactive-offer",
           isActive: false,
-          merchant: buildMerchant("merchant-inactive", "Inactive Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("merchant-inactive", "Inactive Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -568,10 +560,7 @@ test("offer discovery renders inactive All offers rows as safe direct merchant l
 
   expect(screen.getByText("All offers")).toBeVisible();
   expect(screen.getByText("Inactive")).toBeVisible();
-  expect(merchantLink).toHaveAttribute(
-    "href",
-    "https://merchant.example.com/inactive-offer"
-  );
+  expect(merchantLink).toHaveAttribute("href", "https://merchant.example.com/inactive-offer");
 
   merchantLink.addEventListener("click", (event) => event.preventDefault(), { once: true });
   fireEvent.click(merchantLink);
@@ -592,10 +581,10 @@ test("offer discovery renders a route error when a tracked redirect is cross-ori
         {
           trackCommerceClick: {
             redirectPath: "https://attacker.example/r/click-123",
-            errors: []
-          }
+            errors: [],
+          },
         },
-        null
+        null,
       );
     });
   }).not.toThrow();
@@ -612,12 +601,12 @@ test("offer discovery renders tracked click errors without nested paragraph mark
             {
               code: "INVALID_ARGUMENT",
               field: null,
-              message: "Offer unavailable."
-            }
-          ]
-        }
+              message: "Offer unavailable.",
+            },
+          ],
+        },
       },
-      null
+      null,
     );
   });
 
@@ -639,7 +628,7 @@ test.each([
   ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/deals"],
   ["IPv4-compatible loopback IPv6 URL", "http://[::127.0.0.1]/deals"],
   ["single-slash HTTP URL", "https:/merchant.example/deals"],
-  ["non-HTTP scheme", "ftp://files.example/deals"]
+  ["non-HTTP scheme", "ftp://files.example/deals"],
 ])("offer discovery drops offer links with %s", (_caseName, url) => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
@@ -647,10 +636,10 @@ test.each([
         buildOffer({
           id: "unsafe-offer",
           url,
-          merchant: buildMerchant("unsafe-merchant", "Unsafe Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("unsafe-merchant", "Unsafe Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -667,33 +656,33 @@ test("offer discovery exposes row merchant filter actions that preserve filters 
       activeOnly: false,
       after: "stale-cursor",
       first: 12,
-      sort: "price_asc"
-    })
+      sort: "price_asc",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
           id: "merchant-product-acme",
-          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market"),
         }),
         buildOffer({
           id: "merchant-product-value",
-          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart")
-        })
-      ]
-    })
+          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "Filter to Acme Market" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_asc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_asc",
   );
   expect(screen.getByRole("link", { name: "Filter to Value Mart" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6Nzg5&activeOnly=false&first=12&sort=price_asc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6Nzg5&activeOnly=false&first=12&sort=price_asc",
   );
 });
 
@@ -703,18 +692,18 @@ test("offer discovery de-duplicates visible merchant filters by merchant id", ()
       offers: [
         buildOffer({
           id: "merchant-product-acme-1",
-          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market"),
         }),
         buildOffer({
           id: "merchant-product-acme-2",
-          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market"),
         }),
         buildOffer({
           id: "merchant-product-value",
-          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart")
-        })
-      ]
-    })
+          merchant: buildMerchant("TWVyY2hhbnQ6Nzg5", "Value Mart"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -729,18 +718,18 @@ test("offer discovery omits merchant filters with missing display names", () => 
       offers: [
         buildOffer({
           id: "merchant-product-empty-name",
-          merchant: { ...buildMerchant("merchant-empty", "Empty Merchant"), name: "" }
+          merchant: { ...buildMerchant("merchant-empty", "Empty Merchant"), name: "" },
         }),
         buildOffer({
           id: "merchant-product-null-merchant",
-          merchant: null
+          merchant: null,
         }),
         buildOffer({
           id: "merchant-product-value",
-          merchant: buildMerchant("merchant-value", "Value Mart")
-        })
-      ]
-    })
+          merchant: buildMerchant("merchant-value", "Value Mart"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -752,18 +741,18 @@ test("offer discovery omits merchant filters with missing display names", () => 
 test("offer discovery summarizes the active merchant filter with visible merchant names", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
-      merchantId: "TWVyY2hhbnQ6NDU2"
-    })
+      merchantId: "TWVyY2hhbnQ6NDU2",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
           id: "merchant-product-acme",
-          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("TWVyY2hhbnQ6NDU2", "Acme Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -775,18 +764,18 @@ test("offer discovery summarizes the active merchant filter with visible merchan
 test("offer discovery keeps visible merchant actions when active merchant is absent", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
-      merchantId: "merchant-missing"
-    })
+      merchantId: "merchant-missing",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
           id: "merchant-product-acme",
-          merchant: buildMerchant("merchant-acme", "Acme Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("merchant-acme", "Acme Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -804,31 +793,27 @@ test("offer discovery sorts visible offers by ascending price and labels the fir
           id: "merchant-product-expensive",
           product: buildProduct("product-expensive", "Expensive Product"),
           merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
-          latestPrice: buildLatestPrice("price-expensive", "299.00")
+          latestPrice: buildLatestPrice("price-expensive", "299.00"),
         }),
         buildOffer({
           id: "merchant-product-no-price",
           product: buildProduct("product-no-price", "No Price Product"),
           merchant: buildMerchant("merchant-no-price", "Middle Market"),
-          latestPrice: null
+          latestPrice: null,
         }),
         buildOffer({
           id: "merchant-product-budget",
           product: buildProduct("product-budget", "Budget Product"),
           merchant: buildMerchant("merchant-budget", "Alpha Market"),
-          latestPrice: buildLatestPrice("price-budget", "129.00")
-        })
-      ]
-    })
+          latestPrice: buildLatestPrice("price-budget", "129.00"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
-  expect(offerHeadings()).toEqual([
-    "Budget Product",
-    "Expensive Product",
-    "No Price Product"
-  ]);
+  expect(offerHeadings()).toEqual(["Budget Product", "Expensive Product", "No Price Product"]);
 
   const bestOffer = screen.getByRole("heading", { name: "Budget Product" }).closest("li");
 
@@ -847,17 +832,17 @@ test("offer discovery does not price-sort or label mixed-currency pages", () => 
           product: buildProduct("product-usd", "USD Product"),
           merchant: buildMerchant("merchant-usd", "USD Market"),
           latestPrice: buildLatestPrice("price-usd", "199.00"),
-          currency: "USD"
+          currency: "USD",
         }),
         buildOffer({
           id: "merchant-product-eur",
           product: buildProduct("product-eur", "EUR Product"),
           merchant: buildMerchant("merchant-eur", "Euro Market"),
           latestPrice: buildLatestPrice("price-eur", "149.00"),
-          currency: "EUR"
-        })
-      ]
-    })
+          currency: "EUR",
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -876,16 +861,16 @@ test("offer discovery sorts visible offers by descending price", () => {
           id: "merchant-product-budget",
           product: buildProduct("product-budget", "Budget Product"),
           merchant: buildMerchant("merchant-budget", "Alpha Market"),
-          latestPrice: buildLatestPrice("price-budget", "129.00")
+          latestPrice: buildLatestPrice("price-budget", "129.00"),
         }),
         buildOffer({
           id: "merchant-product-expensive",
           product: buildProduct("product-expensive", "Expensive Product"),
           merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
-          latestPrice: buildLatestPrice("price-expensive", "299.00")
-        })
-      ]
-    })
+          latestPrice: buildLatestPrice("price-expensive", "299.00"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -903,15 +888,15 @@ test("offer discovery sorts visible offers by merchant name without price labels
         buildOffer({
           id: "merchant-product-zephyr",
           product: buildProduct("product-zephyr", "Zephyr Product"),
-          merchant: buildMerchant("merchant-zephyr", "Zephyr Market")
+          merchant: buildMerchant("merchant-zephyr", "Zephyr Market"),
         }),
         buildOffer({
           id: "merchant-product-alpha",
           product: buildProduct("product-alpha", "Alpha Product"),
-          merchant: buildMerchant("merchant-alpha", "Alpha Market")
-        })
-      ]
-    })
+          merchant: buildMerchant("merchant-alpha", "Alpha Market"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -926,7 +911,7 @@ test("offer discovery uses product merchant ordering rather than the environment
 
   function contrastingDefaultCollator(
     locale?: Intl.LocalesArgument,
-    options?: Intl.CollatorOptions
+    options?: Intl.CollatorOptions,
   ) {
     return new NativeCollator(locale ?? "sv-SE", options);
   }
@@ -936,31 +921,30 @@ test("offer discovery uses product merchant ordering rather than the environment
 
   try {
     vi.resetModules();
-    const { sortedRenderableOffers: sortedWithContrastingDefault } = await import(
-      "../../../src/routes/offers/offer-discovery-data"
-    );
+    const { sortedRenderableOffers: sortedWithContrastingDefault } =
+      await import("../../../src/routes/offers/offer-discovery-data");
     const offers = [
       buildOffer({
         id: "merchant-product-zebra",
         product: buildProduct("product-zebra", "Zebra Product"),
-        merchant: buildMerchant("merchant-zebra", "Zebra Market")
+        merchant: buildMerchant("merchant-zebra", "Zebra Market"),
       }),
       buildOffer({
         id: "merchant-product-accent",
         product: buildProduct("product-accent", "Accent Product"),
-        merchant: buildMerchant("merchant-accent", "Älg Market")
-      })
+        merchant: buildMerchant("merchant-accent", "Älg Market"),
+      }),
     ].map((offer, originalIndex) => ({
       latestPriceCurrency: null,
       latestPriceValue: null,
       offer,
-      originalIndex
+      originalIndex,
     }));
 
     expect(
       sortedWithContrastingDefault(offers, "merchant_name", false).map(
-        ({ offer }) => offer.merchant?.name
-      )
+        ({ offer }) => offer.merchant?.name,
+      ),
     ).toEqual(["Älg Market", "Zebra Market"]);
   } finally {
     vi.unstubAllGlobals();
@@ -976,7 +960,7 @@ test("offer discovery summarizes the visible single-currency offer page", () => 
           id: "merchant-product-expensive",
           product: buildProduct("product-expensive", "Expensive Product"),
           merchant: buildMerchant("merchant-expensive", "Zephyr Market"),
-          latestPrice: buildLatestPrice("price-expensive", "299.00")
+          latestPrice: buildLatestPrice("price-expensive", "299.00"),
         }),
         buildOffer({
           id: "merchant-product-budget",
@@ -993,25 +977,25 @@ test("offer discovery summarizes the visible single-currency offer page", () => 
                 discountValue: "10",
                 currency: null,
                 validTo: null,
-                terms: null
-              }
-            }
-          ])
+                terms: null,
+              },
+            },
+          ]),
         }),
         buildOffer({
           id: "merchant-product-no-price-1",
           product: buildProduct("product-no-price-1", "No Price Product One"),
           merchant: buildMerchant("merchant-no-price-1", "No Price Market One"),
-          latestPrice: null
+          latestPrice: null,
         }),
         buildOffer({
           id: "merchant-product-no-price-2",
           product: buildProduct("product-no-price-2", "No Price Product Two"),
           merchant: buildMerchant("merchant-no-price-2", "No Price Market Two"),
-          latestPrice: null
-        })
-      ]
-    })
+          latestPrice: null,
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1020,10 +1004,10 @@ test("offer discovery summarizes the visible single-currency offer page", () => 
   const offersList = screen.getByRole("list", { name: "Offers" });
 
   expect(
-    within(snapshot).getByRole("heading", { level: 2, name: "Visible offer snapshot" })
+    within(snapshot).getByRole("heading", { level: 2, name: "Visible offer snapshot" }),
   ).toBeVisible();
   expect(
-    snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
+    snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(within(snapshot).getByText("Visible offers on this page")).toBeVisible();
   expect(within(snapshot).getByText("4")).toBeVisible();
@@ -1042,15 +1026,15 @@ test("offer discovery refuses a lowest-price claim for mixed currencies", () => 
         buildOffer({
           id: "merchant-product-usd-snapshot",
           currency: "USD",
-          latestPrice: buildLatestPrice("price-usd-snapshot", "199.00")
+          latestPrice: buildLatestPrice("price-usd-snapshot", "199.00"),
         }),
         buildOffer({
           id: "merchant-product-eur-snapshot",
           currency: "EUR",
-          latestPrice: buildLatestPrice("price-eur-snapshot", "149.00")
-        })
-      ]
-    })
+          latestPrice: buildLatestPrice("price-eur-snapshot", "149.00"),
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1067,10 +1051,10 @@ test("offer discovery reports no visible prices when every renderable row lacks 
       offers: [
         buildOffer({
           id: "merchant-product-no-price-snapshot",
-          latestPrice: null
-        })
-      ]
-    })
+          latestPrice: null,
+        }),
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1084,8 +1068,8 @@ test("offer discovery reports no visible prices when every renderable row lacks 
 test("offer discovery renders inactive filter state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
-      activeOnly: false
-    })
+      activeOnly: false,
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
@@ -1099,19 +1083,19 @@ test("offer discovery renders inactive filter state", () => {
           merchant: {
             id: "merchant-1",
             name: "Acme Market",
-            domain: "acme.example"
+            domain: "acme.example",
           },
           product: {
             id: "product-1",
             name: "Detail Product",
-            slug: "detail-product"
+            slug: "detail-product",
           },
           latestPrice: null,
           activeCoupons: buildCouponConnection([]),
-          priceHistory: buildPriceHistoryConnection([])
-        }
-      ]
-    })
+          priceHistory: buildPriceHistoryConnection([]),
+        },
+      ],
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1129,26 +1113,26 @@ test("offer discovery pagination preserves active-only and page-size filters", (
       first: 12,
       merchantId: "TWVyY2hhbnQ6NDU2",
       activeOnly: false,
-      sort: "price_desc"
-    })
+      sort: "price_desc",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       endCursor: "next-cursor",
       hasNextPage: true,
-      hasPreviousPage: true
-    })
+      hasPreviousPage: true,
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc",
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc&after=next-cursor"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_desc&after=next-cursor",
   );
 });
 
@@ -1158,8 +1142,8 @@ test("offer discovery suppresses a repeated next-page cursor", () => {
     buildOfferDiscoveryData({
       endCursor: "same-cursor",
       hasNextPage: true,
-      hasPreviousPage: true
-    })
+      hasPreviousPage: true,
+    }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1177,15 +1161,13 @@ test("offer discovery renders an empty state", () => {
   expect(screen.getByText("Example Brand")).toBeVisible();
   expect(screen.getByRole("link", { name: "View product details" })).toHaveAttribute(
     "href",
-    "/products/detail-product"
+    "/products/detail-product",
   );
   expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
 });
 
 test("offer discovery falls back to the raw product id when the selected product is missing", () => {
-  mockedUsePreloadedQuery.mockReturnValue(
-    buildOfferDiscoveryData({ selectedProduct: null })
-  );
+  mockedUsePreloadedQuery.mockReturnValue(buildOfferDiscoveryData({ selectedProduct: null }));
 
   renderOfferDiscoveryRoute();
 
@@ -1194,13 +1176,13 @@ test("offer discovery falls back to the raw product id when the selected product
   expect(within(filterSummary).getByText("Product ID")).toBeVisible();
   expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
   expect(
-    within(filterSummary).queryByRole("link", { name: "View product details" })
+    within(filterSummary).queryByRole("link", { name: "View product details" }),
   ).not.toBeInTheDocument();
 });
 
 test("offer discovery falls back to the raw product id for non-product nodes", () => {
   mockedUsePreloadedQuery.mockReturnValue(
-    buildOfferDiscoveryData({ selectedProduct: { __typename: "Brand" } })
+    buildOfferDiscoveryData({ selectedProduct: { __typename: "Brand" } }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1213,7 +1195,7 @@ test("offer discovery falls back to the raw product id for non-product nodes", (
 
 test("offer discovery omits brand context when the selected product has no brand", () => {
   mockedUsePreloadedQuery.mockReturnValue(
-    buildOfferDiscoveryData({ selectedProduct: buildSelectedProduct({ brand: null }) })
+    buildOfferDiscoveryData({ selectedProduct: buildSelectedProduct({ brand: null }) }),
   );
 
   renderOfferDiscoveryRoute();
@@ -1229,15 +1211,15 @@ test("offer discovery omits brand context when the selected product has no brand
 test("offer discovery encodes selected product slugs in detail navigation", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
-      selectedProduct: buildSelectedProduct({ slug: "reserved/product?variant=1" })
-    })
+      selectedProduct: buildSelectedProduct({ slug: "reserved/product?variant=1" }),
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "View product details" })).toHaveAttribute(
     "href",
-    "/products/reserved%2Fproduct%3Fvariant%3D1"
+    "/products/reserved%2Fproduct%3Fvariant%3D1",
   );
 });
 
@@ -1246,26 +1228,26 @@ test("offer discovery renders next-page and first-page links", () => {
     buildReadyLoaderData({
       after: "previous-cursor",
       first: 12,
-      merchantId: "TWVyY2hhbnQ6NDU2"
-    })
+      merchantId: "TWVyY2hhbnQ6NDU2",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       endCursor: "next-cursor",
       hasNextPage: true,
-      hasPreviousPage: true
-    })
+      hasPreviousPage: true,
+    }),
   );
 
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=true&first=12"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=true&first=12",
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=true&first=12&after=next-cursor"
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=true&first=12&after=next-cursor",
   );
 });
 
@@ -1278,8 +1260,8 @@ test("offer discovery renders the loader error state", () => {
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",
-      sort: "default"
-    }
+      sort: "default",
+    },
   } satisfies OfferDiscoveryLoaderData);
 
   renderOfferDiscoveryRoute();
@@ -1318,7 +1300,7 @@ test("offer discovery renders the query unavailable state", () => {
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   mockedUsePreloadedQuery.mockReturnValue({
-    merchantProducts: null
+    merchantProducts: null,
   });
 
   try {
@@ -1334,7 +1316,7 @@ function renderOfferDiscoveryRoute() {
   return render(
     <MemoryRouter>
       <OfferDiscoveryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -1345,7 +1327,7 @@ function offerHeadings() {
 }
 
 function buildReadyLoaderData(
-  filters: Partial<Extract<OfferDiscoveryLoaderData, { status: "ready" }>["filters"]> = {}
+  filters: Partial<Extract<OfferDiscoveryLoaderData, { status: "ready" }>["filters"]> = {},
 ) {
   return {
     status: "ready",
@@ -1356,9 +1338,9 @@ function buildReadyLoaderData(
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",
       sort: "default",
-      ...filters
+      ...filters,
     },
-    query: OFFER_DISCOVERY_QUERY_DESCRIPTOR
+    query: OFFER_DISCOVERY_QUERY_DESCRIPTOR,
   } satisfies OfferDiscoveryLoaderData;
 }
 
@@ -1374,7 +1356,7 @@ function buildOffer(overrides: Partial<OfferNode> = {}): OfferNode {
     latestPrice: buildLatestPrice("price-1", "199.99"),
     activeCoupons: buildCouponConnection([]),
     priceHistory: buildPriceHistoryConnection([]),
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -1382,7 +1364,7 @@ function buildMerchant(id: string, name: string): NonNullable<OfferNode["merchan
   return {
     id,
     name,
-    domain: `${name.toLowerCase().replace(/\s+/g, "-")}.example`
+    domain: `${name.toLowerCase().replace(/\s+/g, "-")}.example`,
   };
 }
 
@@ -1390,18 +1372,15 @@ function buildProduct(id: string, name: string): NonNullable<OfferNode["product"
   return {
     id,
     name,
-    slug: name.toLowerCase().replace(/\s+/g, "-")
+    slug: name.toLowerCase().replace(/\s+/g, "-"),
   };
 }
 
-function buildLatestPrice(
-  id: string,
-  price: string
-): NonNullable<OfferNode["latestPrice"]> {
+function buildLatestPrice(id: string, price: string): NonNullable<OfferNode["latestPrice"]> {
   return {
     id,
     price,
-    observedAt: "2026-06-01T00:00:00Z"
+    observedAt: "2026-06-01T00:00:00Z",
   };
 }
 
@@ -1420,17 +1399,17 @@ function buildOfferDiscoveryData({
       merchant: {
         id: "merchant-1",
         name: "Acme Market",
-        domain: "acme.example"
+        domain: "acme.example",
       },
       product: {
         id: "product-1",
         name: "Detail Product",
-        slug: "detail-product"
+        slug: "detail-product",
       },
       latestPrice: {
         id: "price-1",
         price: "199.99",
-        observedAt: "2026-06-01T00:00:00Z"
+        observedAt: "2026-06-01T00:00:00Z",
       },
       activeCoupons: {
         edges: [
@@ -1443,13 +1422,13 @@ function buildOfferDiscoveryData({
               discountValue: "20.00",
               currency: "USD",
               validTo: "2026-06-30T23:59:59Z",
-              terms: "Online orders only."
-            }
-          }
+              terms: "Online orders only.",
+            },
+          },
         ],
         pageInfo: {
-          hasNextPage: false
-        }
+          hasNextPage: false,
+        },
       },
       priceHistory: {
         edges: [
@@ -1457,17 +1436,17 @@ function buildOfferDiscoveryData({
             node: {
               id: "price-history-1",
               price: "189.99",
-              observedAt: "2026-05-30T10:00:00Z"
-            }
-          }
+              observedAt: "2026-05-30T10:00:00Z",
+            },
+          },
         ],
         pageInfo: {
-          hasNextPage: false
-        }
-      }
-    }
+          hasNextPage: false,
+        },
+      },
+    },
   ],
-  startCursor = offers.length === 0 ? null : "cursor-1"
+  startCursor = offers.length === 0 ? null : "cursor-1",
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
@@ -1481,20 +1460,20 @@ function buildOfferDiscoveryData({
     merchantProducts: {
       edges: offers.map((node, index) => ({
         cursor: `cursor-${index + 1}`,
-        node
+        node,
       })),
       pageInfo: {
         endCursor,
         hasNextPage,
         hasPreviousPage,
-        startCursor
-      }
-    }
+        startCursor,
+      },
+    },
   };
 }
 
 function buildSelectedProduct(
-  overrides: Partial<Extract<SelectedProductNode, { __typename: "Product" }>> = {}
+  overrides: Partial<Extract<SelectedProductNode, { __typename: "Product" }>> = {},
 ): Extract<SelectedProductNode, { __typename: "Product" }> {
   return {
     __typename: "Product",
@@ -1503,9 +1482,9 @@ function buildSelectedProduct(
     slug: "detail-product",
     brand: {
       id: "QnJhbmQ6MTIz",
-      name: "Example Brand"
+      name: "Example Brand",
     },
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -1525,24 +1504,22 @@ type SelectedProductNode =
     }
   | null;
 
-function buildCouponConnection(
-  edges: ActiveCouponsConnection["edges"]
-): ActiveCouponsConnection {
+function buildCouponConnection(edges: ActiveCouponsConnection["edges"]): ActiveCouponsConnection {
   return {
     edges,
     pageInfo: {
-      hasNextPage: false
-    }
+      hasNextPage: false,
+    },
   };
 }
 
 function buildPriceHistoryConnection(
-  edges: PriceHistoryConnection["edges"]
+  edges: PriceHistoryConnection["edges"],
 ): PriceHistoryConnection {
   return {
     edges,
     pageInfo: {
-      hasNextPage: false
-    }
+      hasNextPage: false,
+    },
   };
 }

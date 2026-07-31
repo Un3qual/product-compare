@@ -41,7 +41,8 @@ defmodule ProductCompareWeb.Schema.Accounts.Types do
 
     connection field :comparison_snapshots,
                  node_type: :comparison_snapshot,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&ComparisonSnapshotsResolver.owned_snapshots/3)
     end
   end
@@ -55,7 +56,12 @@ defmodule ProductCompareWeb.Schema.Accounts.Types do
     field :inserted_at, non_null(:datetime)
   end
 
-  connection(node_type: :api_token, non_null_edges: true, non_null_edge: true)
+  connection node_type: :api_token, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:api_token)
+      field :cursor, non_null(:string)
+    end
+  end
 
   enum :api_token_status_filter do
     value(:active)

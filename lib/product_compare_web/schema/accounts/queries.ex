@@ -10,7 +10,10 @@ defmodule ProductCompareWeb.Schema.Accounts.Queries do
     field :viewer, :user, resolve: &AccountActions.viewer/3
 
     @desc "Returns API tokens owned by the current authenticated user."
-    connection field :my_api_tokens, node_type: :api_token, non_null_connection: true do
+    connection field :my_api_tokens,
+                 node_type: :api_token,
+                 non_null_connection: true,
+                 paginate: :forward do
       arg(:status, :api_token_status_filter)
       resolve(&ApiTokens.my_api_tokens/3)
     end

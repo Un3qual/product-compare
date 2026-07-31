@@ -8,7 +8,8 @@ defmodule ProductCompareWeb.Schema.Ingestion.Queries do
     @desc "Returns CJ advertiser programs for lifecycle management."
     connection field :cj_programs,
                  node_type: :cj_program,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       arg(:stage, :cj_program_stage)
       arg(:sort, :cj_program_sort)
       resolve(&IngestionResolver.cj_programs/3)
@@ -27,7 +28,8 @@ defmodule ProductCompareWeb.Schema.Ingestion.Queries do
     @desc "Returns CJ feeds that cannot be associated with an advertiser program."
     connection field :unmatched_cj_feeds,
                  node_type: :merchant_feed_candidate,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&IngestionResolver.unmatched_cj_feeds/3)
     end
   end

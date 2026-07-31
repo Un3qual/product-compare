@@ -2,26 +2,30 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Source of truth:
   `docs/superpowers/plans/2026-07-30-relay-native-graphql-schema-implementation-plan.md`
 - Last verified: 2026-07-30 against the current schema, loader sources,
   resolver facades, schema snapshot, and Dataloader batching suite.
 
-## Validated Baseline
+## Batch Outcome
 
-- `ProductCompareWeb.Schema` is 712 lines and owns every root query and
-  mutation.
-- Broad type modules contain 112 object declarations; the project still has a
-  `Types.Common` module despite the root schema being the natural owner for
-  global types.
-- Twelve globally identified object types manually declare the Node interface.
-- Seventeen connection objects and their edges are hand-authored.
-- The GraphQL loader owns 13 `Dataloader.KV` sources in parent/root loaders.
-- Fifteen resolver functions are one-line delegations to the actual owner.
-- Association-level Ecto Dataloader already works and is the migration
-  reference.
+- `ProductCompareWeb.Schema` runs Absinthe Relay modern mode, owns only global
+  types and root composition, and imports context-owned query and mutation
+  fields.
+- Eleven context folders separately own types, queries, and mutations; no
+  `Common` module or broad legacy type module remains.
+- All 12 supported global entities use `node object`, and the root Node field
+  delegates lookup and authorization through the Relay adapter.
+- All 17 connections are macro-owned, forward-only, bounded by required
+  `first`, and expose non-null edge nodes and cursors.
+- Ordinary associations use inline Ecto Dataloader resolvers. All 13 former KV
+  sources use the Ecto-backed batch source; `Dataloader.KV` is absent.
+- Seven shallow resolver facades are deleted, and schema fields point directly
+  at their owning resolver modules.
+- `MerchantProductsInput` contains filters only; Relay pagination lives on the
+  connection field.
 
 ## Boundaries
 
@@ -32,8 +36,21 @@
 - Authorization, cursor validation, ordering, and fixed query budgets remain
   behavior gates.
 
-## Next Action
+## Verification
 
-Add the failing schema-architecture contract and freeze the current Node,
-connection, authorization, and batching behavior before enabling Absinthe Relay
-modern mode.
+- GraphQL schema, authorization, connection, Node, batching, and query-budget
+  suites: 316 tests, 0 failures.
+- Full backend suite: 1,015 tests, 0 failures.
+- `mix typecheck`
+- `mix quality`
+- `CI=true mise exec -- pnpm --dir assets run check`: Relay validation,
+  TypeScript, Oxc, 1,508 Vitest tests, client/SSR Vite builds, and bundle
+  contract passed.
+- `mix work_queue.validate`: 3 ready rows.
+- `mix format --check-formatted`
+- `git diff --check`
+
+## Remaining Work
+
+None in this lane. Effect transport, Radix controls, and categorical-storage
+policy remain independently queued.

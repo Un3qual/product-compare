@@ -138,7 +138,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       assert authed_user.id == user.id
 
       list_tokens_query = """
-      query ListTokens($first: Int, $after: String) {
+      query ListTokens($first: Int!, $after: String) {
         myApiTokens(first: $first, after: $after) {
           edges {
             cursor
@@ -488,7 +488,7 @@ defmodule ProductCompareWeb.GraphQL.ApiTokenAuthTest do
       authed_conn = put_req_header(conn, "authorization", "Bearer #{bootstrap_token}")
 
       query = """
-      query InvalidFirst($first: Int) {
+      query InvalidFirst($first: Int!) {
         myApiTokens(first: $first) {
           edges {
             node {

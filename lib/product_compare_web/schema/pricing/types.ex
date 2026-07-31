@@ -16,8 +16,6 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :product_id, non_null(:id)
     field :merchant_id, :id
     field :active_only, :boolean
-    field :first, :integer
-    field :after, :string
   end
 
   node object(:merchant) do
@@ -31,7 +29,8 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
 
     connection field :merchant_products,
                  node_type: :merchant_product,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       resolve(&Merchants.merchant_offers/3)
     end
 
@@ -51,7 +50,12 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :last_observed_at, :datetime
   end
 
-  connection(node_type: :merchant, non_null_edges: true, non_null_edge: true)
+  connection node_type: :merchant, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:merchant)
+      field :cursor, non_null(:string)
+    end
+  end
 
   node object(:merchant_product) do
     field :merchant_id, non_null(:id) do
@@ -75,11 +79,11 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :product, :product, resolve: dataloader(Pricing, use_parent: true)
     field :latest_price, :price_point, resolve: &Offers.latest_price/3
 
-    connection field :active_coupons, node_type: :active_coupon do
+    connection field :active_coupons, node_type: :active_coupon, paginate: :forward do
       resolve(&AffiliateReads.merchant_product_active_coupons/3)
     end
 
-    connection field :price_history, node_type: :price_point do
+    connection field :price_history, node_type: :price_point, paginate: :forward do
       arg(:from, :datetime)
       arg(:to, :datetime)
 
@@ -160,6 +164,17 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     value(:unobserved)
   end
 
-  connection(node_type: :price_point, non_null_edges: true, non_null_edge: true)
-  connection(node_type: :merchant_product, non_null_edges: true, non_null_edge: true)
+  connection node_type: :price_point, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:price_point)
+      field :cursor, non_null(:string)
+    end
+  end
+
+  connection node_type: :merchant_product, non_null_edges: true, non_null_edge: true do
+    edge do
+      field :node, non_null(:merchant_product)
+      field :cursor, non_null(:string)
+    end
+  end
 end

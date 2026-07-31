@@ -14,7 +14,8 @@ defmodule ProductCompareWeb.Schema.Specs.Queries do
     @desc "Returns specification corrections submitted by the current user."
     connection field :my_specification_corrections,
                  node_type: :specification_correction,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       arg(:status, :specification_correction_status)
       resolve(&Reads.my_specification_corrections/3)
     end
@@ -22,7 +23,8 @@ defmodule ProductCompareWeb.Schema.Specs.Queries do
     @desc "Returns the operator-only specification correction moderation queue."
     connection field :specification_correction_moderation_queue,
                  node_type: :specification_correction,
-                 non_null_connection: true do
+                 non_null_connection: true,
+                 paginate: :forward do
       arg(:status, :specification_correction_status)
       resolve(&Reads.specification_correction_moderation_queue/3)
     end
