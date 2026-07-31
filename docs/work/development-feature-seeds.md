@@ -53,6 +53,10 @@ mailer, or network call.
    and reputations, local confirmation/reset tokens, and active/revoked API
    token examples now pass the real account boundaries without delivery hooks.
 2. Catalog/specification and marketplace/affiliate state matrices.
+   Completed in the catalog/marketplace milestone: five products span monitor,
+   TV, and projector facets; six offers exercise fresh, aging, stale,
+   out-of-stock, inactive, and unobserved states; synthetic source evidence,
+   affiliate programs/links, and active/future/expired coupons are local-only.
 3. Saved/shared comparison, alert, community, and correction lifecycles.
 4. Synthetic CJ/attribution history, testing guide, route smoke coverage, and
    deterministic rerun proof.
@@ -62,6 +66,13 @@ mailer, or network call.
 - 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs` — 2 tests,
   0 failures after the account milestone.
 - 2026-07-31: `git diff --check` — clean after the account milestone.
+- 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs` — 3 tests,
+  0 failures after the catalog/marketplace milestone.
+- 2026-07-31: `mix test test/product_compare/catalog
+  test/product_compare/pricing test/product_compare/affiliate` — 103 tests,
+  0 failures.
+- 2026-07-31: `git diff --check` — clean after the catalog/marketplace
+  milestone.
 - seed entry-point and development-seed GraphQL suites
 - affected account, catalog, pricing, affiliate, alert, discussion,
   specification, comparison, ingestion, attribution, and GraphQL suites
