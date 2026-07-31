@@ -1,11 +1,7 @@
 import { graphql } from "react-relay";
 
 export const browseProductsRouteQuery = graphql`
-  query BrowseProductsRouteQuery(
-    $first: Int!
-    $after: String
-    $filters: ProductFiltersInput
-  ) {
+  query BrowseProductsRouteQuery($first: Int!, $after: String, $filters: ProductFiltersInput) {
     products(first: $first, after: $after, filters: $filters) {
       edges {
         cursor

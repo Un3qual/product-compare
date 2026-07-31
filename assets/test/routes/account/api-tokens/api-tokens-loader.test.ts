@@ -1,20 +1,17 @@
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../../src/relay/environment";
-import {
-  createRelayRouterContext,
-  fetchRouteQuery
-} from "../../../../src/relay/route-preload";
+import { createRelayRouterContext, fetchRouteQuery } from "../../../../src/relay/route-preload";
 import { apiTokensLoader } from "../../../../src/routes/account/api-tokens/loader";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import type { GraphQLResponse } from "relay-runtime";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    fetchRouteQuery: vi.fn()
+    fetchRouteQuery: vi.fn(),
   };
 });
 
@@ -38,7 +35,7 @@ const TOKEN_NODE: TestApiTokenNode = {
   lastUsedAt: null,
   expiresAt: "2026-08-29T12:00:00Z",
   revokedAt: null,
-  insertedAt: "2026-05-31T12:00:00Z"
+  insertedAt: "2026-05-31T12:00:00Z",
 };
 
 beforeEach(() => {
@@ -56,27 +53,27 @@ test("apiTokensLoader returns unauthorized state for myApiTokens UNAUTHENTICATED
           message: "Unauthorized",
           path: ["myApiTokens"],
           extensions: {
-            code: "UNAUTHENTICATED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHENTICATED",
+          },
+        },
+      ]),
+    ),
   );
 
   await expect(
-    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))
+    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "unauthorized",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   });
 
   expect(fetchRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, status: "ACTIVE" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -85,18 +82,18 @@ test("apiTokensLoader returns one page and exposes its next cursor", async () =>
   const request = new Request("https://app.example.com/account/api-tokens?status=revoked");
   const firstPageDescriptor = apiTokensQueryDescriptor({ first: 20, status: "REVOKED" });
   fetchRouteQueryMock.mockResolvedValueOnce(
-      buildFetchedApiTokenPage(
-        buildApiTokenPage({
-          endCursor: "cursor-1",
-          hasNextPage: true,
-          tokens: [TOKEN_NODE]
-        }),
-        firstPageDescriptor
-      )
-    );
+    buildFetchedApiTokenPage(
+      buildApiTokenPage({
+        endCursor: "cursor-1",
+        hasNextPage: true,
+        tokens: [TOKEN_NODE],
+      }),
+      firstPageDescriptor,
+    ),
+  );
 
   await expect(
-    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))
+    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     tokenQueries: [firstPageDescriptor],
@@ -104,7 +101,7 @@ test("apiTokensLoader returns one page and exposes its next cursor", async () =>
     tokenStatus: "revoked",
     after: null,
     hasNextPage: true,
-    endCursor: "cursor-1"
+    endCursor: "cursor-1",
   });
 
   expect(fetchRouteQueryMock).toHaveBeenNthCalledWith(
@@ -112,7 +109,7 @@ test("apiTokensLoader returns one page and exposes its next cursor", async () =>
     environment,
     expect.anything(),
     { first: 20, status: "REVOKED" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(fetchRouteQueryMock).toHaveBeenCalledTimes(1);
 });
@@ -126,14 +123,14 @@ test("apiTokensLoader rejects invalid pagination cursors", async () => {
       buildApiTokenPage({
         endCursor: null,
         hasNextPage: true,
-        tokens: [TOKEN_NODE]
-      })
-    )
+        tokens: [TOKEN_NODE],
+      }),
+    ),
   );
 
-  await expect(
-    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))
-  ).rejects.toThrow("Invalid pagination cursor");
+  await expect(apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))).rejects.toThrow(
+    "Invalid pagination cursor",
+  );
 });
 
 test("apiTokensLoader propagates aborted requests", async () => {
@@ -142,7 +139,7 @@ test("apiTokensLoader propagates aborted requests", async () => {
   const abortReason = new Error("Route load cancelled");
   const request = buildAbortableRequest(
     "https://app.example.com/account/api-tokens",
-    controller.signal
+    controller.signal,
   );
 
   fetchRouteQueryMock.mockImplementationOnce(() => {
@@ -153,15 +150,15 @@ test("apiTokensLoader propagates aborted requests", async () => {
         buildApiTokenPage({
           endCursor: "cursor-1",
           hasNextPage: true,
-          tokens: [TOKEN_NODE]
-        })
-      )
+          tokens: [TOKEN_NODE],
+        }),
+      ),
     );
   });
 
-  await expect(
-    apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))
-  ).rejects.toBe(abortReason);
+  await expect(apiTokensLoader(buildApiTokensLoaderArgs({ environment, request }))).rejects.toBe(
+    abortReason,
+  );
 });
 
 test("apiTokensLoader normalizes non-error abort reasons", async () => {
@@ -169,7 +166,7 @@ test("apiTokensLoader normalizes non-error abort reasons", async () => {
   const environment = createRelayEnvironment();
   const request = buildAbortableRequest(
     "https://app.example.com/account/api-tokens",
-    controller.signal
+    controller.signal,
   );
 
   fetchRouteQueryMock.mockImplementationOnce(() => {
@@ -180,9 +177,9 @@ test("apiTokensLoader normalizes non-error abort reasons", async () => {
         buildApiTokenPage({
           endCursor: "cursor-1",
           hasNextPage: true,
-          tokens: [TOKEN_NODE]
-        })
-      )
+          tokens: [TOKEN_NODE],
+        }),
+      ),
     );
   });
 
@@ -194,7 +191,7 @@ test("apiTokensLoader normalizes non-error abort reasons", async () => {
 
 function buildApiTokensLoaderArgs({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.com/account/api-tokens")
+  request = new Request("https://app.example.com/account/api-tokens"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -204,19 +201,19 @@ function buildApiTokensLoaderArgs({
     params: {},
     context: createRelayRouterContext(environment),
     pattern: "/account/api-tokens",
-    url: new URL(request.url)
+    url: new URL(request.url),
   };
 }
 
 function buildAbortableRequest(url: string, signal: AbortSignal): Request {
   return Object.defineProperty(
     new Request(url, {
-      headers: new Headers()
+      headers: new Headers(),
     }),
     "signal",
     {
-      value: signal
-    }
+      value: signal,
+    },
   );
 }
 
@@ -227,10 +224,10 @@ function buildGraphQLResponseWithErrors(
     extensions?: {
       code: string;
     };
-  }>
+  }>,
 ): GraphQLResponse {
   return {
-    errors
+    errors,
   };
 }
 
@@ -243,15 +240,15 @@ function apiTokensQueryDescriptor(variables: {
     __relayQuery: {
       operationName: "ApiTokensRouteQuery",
       text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
-      variables
-    }
+      variables,
+    },
   };
 }
 
 function buildApiTokenPage({
   endCursor = null,
   hasNextPage = false,
-  tokens
+  tokens,
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
@@ -261,25 +258,25 @@ function buildApiTokenPage({
     myApiTokens: {
       edges: tokens.map((token) => ({
         cursor: `cursor:${token.id}`,
-        node: token
+        node: token,
       })),
       pageInfo: {
         hasNextPage,
         hasPreviousPage: false,
         startCursor: tokens.length > 0 ? `cursor:${tokens[0].id}` : null,
-        endCursor
-      }
-    }
+        endCursor,
+      },
+    },
   };
 }
 
 function buildFetchedApiTokenPage(
   data: unknown,
-  descriptor = apiTokensQueryDescriptor({ first: 20, status: "ALL" })
+  descriptor = apiTokensQueryDescriptor({ first: 20, status: "ALL" }),
 ) {
   return {
     data,
     descriptor,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   };
 }

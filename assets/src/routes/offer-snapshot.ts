@@ -16,7 +16,7 @@ export type OfferSnapshotSummary<T> = {
 
 export function buildOfferSnapshotSummary<T>(
   offers: readonly T[],
-  selectors: OfferSnapshotSelectors<T>
+  selectors: OfferSnapshotSelectors<T>,
 ): OfferSnapshotSummary<T> {
   let couponAvailabilityCount = 0;
   let lowestPrice: number | null = null;
@@ -48,8 +48,7 @@ export function buildOfferSnapshotSummary<T>(
     couponAvailabilityCount,
     lowestPricedOffer,
     missingPriceCount,
-    priceState:
-      lowestPricedOffer === null ? "none" : currencies.size > 1 ? "mixed" : "comparable",
-    visibleOfferCount: offers.length
+    priceState: lowestPricedOffer === null ? "none" : currencies.size > 1 ? "mixed" : "comparable",
+    visibleOfferCount: offers.length,
   };
 }

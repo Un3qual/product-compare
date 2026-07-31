@@ -3,7 +3,7 @@ import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.gr
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { parseGraphQLDateTime } from "../graphql-datetime";
@@ -11,7 +11,7 @@ import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import {
   MAX_COMPARE_PRODUCTS,
   selectedCompareSlugsFromSearch,
-  type CompareSpecMode
+  type CompareSpecMode,
 } from "./paths";
 import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
@@ -19,7 +19,7 @@ export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
 export {
   recommendationProfileFromUrl,
   shouldRevalidateCompareLoader,
-  type RecommendationProfile
+  type RecommendationProfile,
 } from "./recommendation-route-data";
 
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
@@ -102,7 +102,7 @@ type CompareOfferContextNode = CompareOfferConnection["edges"][number]["node"];
 
 export async function compareLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
   const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
   const specMode = compareSpecModeFromUrl(request.url);
@@ -111,7 +111,7 @@ export async function compareLoader({
     return {
       status: "empty",
       specMode,
-      slugs: []
+      slugs: [],
     };
   }
 
@@ -119,7 +119,7 @@ export async function compareLoader({
     return {
       status: "too_many",
       specMode,
-      slugs
+      slugs,
     };
   }
 
@@ -131,14 +131,11 @@ export async function compareLoader({
       compareRouteQuery,
       {
         slugs,
-        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE
+        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
       },
-      { signal: request.signal }
+      { signal: request.signal },
     );
-    const products = orderProductsByRequestedSlugs(
-      slugs,
-      fetchedQuery.data.comparisonProducts
-    );
+    const products = orderProductsByRequestedSlugs(slugs, fetchedQuery.data.comparisonProducts);
 
     if (products.some((product) => !product)) {
       fetchedQuery.dispose();
@@ -146,7 +143,7 @@ export async function compareLoader({
       return {
         status: "not_found",
         specMode,
-        slugs
+        slugs,
       };
     }
 
@@ -158,7 +155,7 @@ export async function compareLoader({
       slugs,
       query: fetchedQuery.descriptor,
       offerContexts: summarizeOfferContexts(presentProducts),
-      products: presentProducts.map(summarizeProduct)
+      products: presentProducts.map(summarizeProduct),
     };
   } catch (error) {
     throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
@@ -180,10 +177,10 @@ export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {
 
 function orderProductsByRequestedSlugs(
   slugs: readonly string[],
-  products: ReadonlyArray<CompareProduct>
+  products: ReadonlyArray<CompareProduct>,
 ) {
   const productsBySlug = new Map(
-    products.filter(isPresentProduct).map((product) => [product.slug, product])
+    products.filter(isPresentProduct).map((product) => [product.slug, product]),
   );
 
   return slugs.map((slug) => productsBySlug.get(slug) ?? null);
@@ -207,8 +204,8 @@ function summarizeProduct(product: PresentCompareProduct): CompareProductSummary
       numericValue: attribute.numericValue,
       booleanValue: attribute.booleanValue,
       enumOptionId: attribute.enumOptionId,
-      unitSymbol: attribute.unitSymbol
-    }))
+      unitSymbol: attribute.unitSymbol,
+    })),
   };
 }
 
@@ -226,7 +223,7 @@ function summarizeOfferContexts(products: PresentCompareProduct[]) {
 
 function summarizeOfferContext(
   productId: string,
-  connection: CompareOfferConnection
+  connection: CompareOfferConnection,
 ): CompareAvailableOfferContextSummary {
   const offerNodes = connection.edges.map(({ node }) => node);
   const hasMoreActiveOffers = connection.pageInfo.hasNextPage;
@@ -236,26 +233,24 @@ function summarizeOfferContext(
     productId,
     activeOfferCount: offerNodes.length,
     bestCurrentPrice: hasMoreActiveOffers ? null : lowestCurrentPrice(offerNodes),
-    hasLoadedCoupons: offerNodes.some(
-      (offer) => (offer.activeCoupons?.edges.length ?? 0) > 0
-    ),
+    hasLoadedCoupons: offerNodes.some((offer) => (offer.activeCoupons?.edges.length ?? 0) > 0),
     hasMoreActiveOffers,
-    hasMoreCoupons: offerNodes.some(
-      (offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false
-    ),
-    latestPriceObservedAt: mostRecentObservedAt(offerNodes)
+    hasMoreCoupons: offerNodes.some((offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false),
+    latestPriceObservedAt: mostRecentObservedAt(offerNodes),
   };
 }
 
-function summarizeUnavailableOfferContext(productId: string): CompareUnavailableOfferContextSummary {
+function summarizeUnavailableOfferContext(
+  productId: string,
+): CompareUnavailableOfferContextSummary {
   return {
     status: "unavailable",
-    productId
+    productId,
   };
 }
 
 function lowestCurrentPrice(
-  offerNodes: CompareOfferContextNode[]
+  offerNodes: CompareOfferContextNode[],
 ): CompareBestCurrentPriceSummary | null {
   const candidates = offerNodes.flatMap((offer) => {
     const candidate = currentPriceCandidate(offer);
@@ -272,20 +267,18 @@ function lowestCurrentPrice(
   }
 
   const bestPrice = candidates.reduce((bestCandidate, candidate) =>
-    compareDecimalStrings(candidate.price, bestCandidate.price) === -1
-      ? candidate
-      : bestCandidate
+    compareDecimalStrings(candidate.price, bestCandidate.price) === -1 ? candidate : bestCandidate,
   );
 
   return {
     currency: bestPrice.currency,
     merchantName: bestPrice.merchantName,
-    price: bestPrice.price
+    price: bestPrice.price,
   };
 }
 
 function currentPriceCandidate(
-  offer: CompareOfferContextNode
+  offer: CompareOfferContextNode,
 ): CompareBestCurrentPriceSummary | null {
   const latestPrice = offer.latestPrice;
 
@@ -296,14 +289,14 @@ function currentPriceCandidate(
   return {
     currency: offer.currency,
     merchantName: offer.merchant?.name ?? null,
-    price: latestPrice.price
+    price: latestPrice.price,
   };
 }
 
 function mostRecentObservedAt(offerNodes: CompareOfferContextNode[]) {
   const observedAtValues = offerNodes.flatMap((offer) => [
     offer.latestPrice?.observedAt,
-    ...(offer.priceHistory?.edges.map(({ node }) => node.observedAt) ?? [])
+    ...(offer.priceHistory?.edges.map(({ node }) => node.observedAt) ?? []),
   ]);
   let mostRecent: string | null = null;
   let mostRecentTime = Number.NEGATIVE_INFINITY;

@@ -6,9 +6,7 @@ import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "../offer-snap
 import { compareProductText } from "../product-formatting";
 import type { OfferDiscoverySort } from "./loader";
 
-export type OfferConnection = NonNullable<
-  OfferDiscoveryRouteQuery["response"]["merchantProducts"]
->;
+export type OfferConnection = NonNullable<OfferDiscoveryRouteQuery["response"]["merchantProducts"]>;
 export type OfferNode = OfferConnection["edges"][number]["node"];
 export type ActiveCouponsConnection = NonNullable<OfferNode["activeCoupons"]>;
 export type PriceHistoryConnection = NonNullable<OfferNode["priceHistory"]>;
@@ -36,12 +34,10 @@ type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 export const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
   currency: (offer) => offer.latestPriceCurrency,
   hasCoupons: ({ offer }) => hasVisibleCoupons(offer),
-  numericPrice: (offer) => offer.latestPriceValue
+  numericPrice: (offer) => offer.latestPriceValue,
 };
 
-export function visibleLowestPriceLabel(
-  summary: OfferSnapshotSummary<RenderableOffer>
-) {
+export function visibleLowestPriceLabel(summary: OfferSnapshotSummary<RenderableOffer>) {
   if (summary.priceState === "mixed") {
     return "Not comparable across currencies";
   }
@@ -49,16 +45,13 @@ export function visibleLowestPriceLabel(
   const lowestPricedOffer = summary.lowestPricedOffer;
 
   return lowestPricedOffer
-    ? priceLabel(
-        lowestPricedOffer.offer.latestPrice?.price,
-        lowestPricedOffer.offer.currency
-      )
+    ? priceLabel(lowestPricedOffer.offer.latestPrice?.price, lowestPricedOffer.offer.currency)
     : "No visible prices";
 }
 
 export function activeVisibleMerchant(
   merchantId: string | null,
-  merchants: ReadonlyArray<VisibleMerchant>
+  merchants: ReadonlyArray<VisibleMerchant>,
 ) {
   if (!merchantId) {
     return null;
@@ -67,9 +60,7 @@ export function activeVisibleMerchant(
   return merchants.find((merchant) => merchant.id === merchantId) ?? null;
 }
 
-export function visibleMerchants(
-  offers: ReadonlyArray<RenderableOffer>
-): VisibleMerchant[] {
+export function visibleMerchants(offers: ReadonlyArray<RenderableOffer>): VisibleMerchant[] {
   const merchants = new Map<string, string>();
 
   for (const { offer } of offers) {
@@ -92,7 +83,7 @@ export function renderableOffers(connection: OfferConnection) {
         latestPriceCurrency: latestPriceValue === null ? null : offer.currency,
         latestPriceValue,
         offer,
-        originalIndex
+        originalIndex,
       });
     }
   });
@@ -103,7 +94,7 @@ export function renderableOffers(connection: OfferConnection) {
 export function sortedRenderableOffers(
   offers: RenderableOffer[],
   sort: OfferDiscoverySort,
-  canComparePrices: boolean
+  canComparePrices: boolean,
 ) {
   if (sort === "default" || (isPriceSort(sort) && !canComparePrices)) {
     return offers;
@@ -115,7 +106,7 @@ export function sortedRenderableOffers(
 function compareRenderableOffers(
   left: RenderableOffer,
   right: RenderableOffer,
-  sort: RenderableOfferSort
+  sort: RenderableOfferSort,
 ) {
   if (sort === "price_asc" || sort === "price_desc") {
     return compareByPrice(left, right, sort);
@@ -124,7 +115,7 @@ function compareRenderableOffers(
   if (sort === "merchant_name") {
     const merchantComparison = compareProductText(
       offerMerchantName(left.offer.merchant),
-      offerMerchantName(right.offer.merchant)
+      offerMerchantName(right.offer.merchant),
     );
 
     return merchantComparison || compareByOriginalIndex(left, right);
@@ -137,7 +128,7 @@ function compareRenderableOffers(
 function compareByPrice(
   left: RenderableOffer,
   right: RenderableOffer,
-  sort: Extract<OfferDiscoverySort, "price_asc" | "price_desc">
+  sort: Extract<OfferDiscoverySort, "price_asc" | "price_desc">,
 ) {
   if (left.latestPriceValue === null && right.latestPriceValue === null) {
     return compareByOriginalIndex(left, right);
@@ -167,7 +158,7 @@ export function priceSortHighlightLabel(
   sort: OfferDiscoverySort,
   index: number,
   offer: RenderableOffer,
-  canComparePrices: boolean
+  canComparePrices: boolean,
 ) {
   if (!canComparePrices || index !== 0 || offer.latestPriceValue === null) {
     return null;
@@ -189,18 +180,14 @@ function numericLatestPrice(offer: OfferNode) {
 }
 
 function isPriceSort(
-  sort: OfferDiscoverySort
+  sort: OfferDiscoverySort,
 ): sort is Extract<OfferDiscoverySort, "price_asc" | "price_desc"> {
   return sort === "price_asc" || sort === "price_desc";
 }
 
-export function priceSortUsesSingleCurrency(
-  offers: ReadonlyArray<RenderableOffer>
-) {
+export function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffer>) {
   return canComparePriceCurrencies(
-    offers.flatMap((offer) =>
-      offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency]
-    )
+    offers.flatMap((offer) => (offer.latestPriceValue === null ? [] : [offer.latestPriceCurrency])),
   );
 }
 
@@ -208,10 +195,7 @@ export function offerMerchantName(merchant: OfferNode["merchant"]) {
   return merchant?.name ?? "Visit offer";
 }
 
-export function priceLabel(
-  price: string | null | undefined,
-  currency: string
-) {
+export function priceLabel(price: string | null | undefined, currency: string) {
   if (!price) {
     return null;
   }
@@ -223,14 +207,13 @@ function hasVisibleCoupons(offer: OfferNode) {
   const activeCoupons = offer.activeCoupons;
 
   return Boolean(
-    activeCoupons &&
-      (activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage)
+    activeCoupons && (activeCoupons.edges.length > 0 || activeCoupons.pageInfo.hasNextPage),
   );
 }
 
 export function priceHistoryRow(
   pricePoint: PriceHistoryNode,
-  currency: string
+  currency: string,
 ): PriceHistoryRow | null {
   const price = priceLabel(pricePoint.price, currency);
   const observedDate = graphQLDateTimeLabel(pricePoint.observedAt);
@@ -243,7 +226,7 @@ export function priceHistoryRow(
     id: pricePoint.id,
     observedAt: pricePoint.observedAt,
     observedDate,
-    price
+    price,
   };
 }
 
@@ -267,8 +250,8 @@ export function emptyCouponConnection(): ActiveCouponsConnection {
   return {
     edges: [],
     pageInfo: {
-      hasNextPage: false
-    }
+      hasNextPage: false,
+    },
   };
 }
 
@@ -276,7 +259,7 @@ export function emptyPriceHistoryConnection(): PriceHistoryConnection {
   return {
     edges: [],
     pageInfo: {
-      hasNextPage: false
-    }
+      hasNextPage: false,
+    },
   };
 }

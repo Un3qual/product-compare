@@ -26,7 +26,7 @@ export function recommendationProfileFromUrl(requestUrl: string): Recommendation
 export function buildRecommendationProfilePath(
   slugs: readonly string[],
   specMode: CompareSpecMode,
-  profile: RecommendationProfile
+  profile: RecommendationProfile,
 ) {
   const params = new URLSearchParams();
 
@@ -42,23 +42,23 @@ export function buildRecommendationProfilePath(
 
 export function buildRecommendationQueryInput(
   slugs: readonly string[],
-  profile: RecommendationProfile
+  profile: RecommendationProfile,
 ): RecommendationQueryInput {
   const selectedSlugs = [...slugs];
 
   return {
     queryVariables: {
       slugs: selectedSlugs,
-      profile: profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST"
+      profile: profile === "best_value" ? "BEST_VALUE" : "LOWEST_CURRENT_COST",
     },
-    resetToken: JSON.stringify({ profile, slugs: selectedSlugs })
+    resetToken: JSON.stringify({ profile, slugs: selectedSlugs }),
   };
 }
 
 export function shouldRevalidateCompareLoader({
   currentUrl,
   defaultShouldRevalidate,
-  nextUrl
+  nextUrl,
 }: RecommendationRevalidationArgs) {
   const current = new URL(currentUrl);
   const next = new URL(nextUrl);

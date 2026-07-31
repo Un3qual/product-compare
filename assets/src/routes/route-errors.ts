@@ -6,7 +6,7 @@ export function hasRouteGraphQLErrors(errors: readonly unknown[] | null | undefi
 
 export function routeMutationErrorMessage(
   errors: unknown,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   if (hasRouteGraphQLErrors(graphQLErrors)) {
     return DEFAULT_ROUTE_ERROR_MESSAGE;
@@ -30,9 +30,9 @@ export interface RouteMutationError {
 export function isRouteMutationError(error: unknown): error is RouteMutationError {
   return Boolean(
     isRouteRecord(error) &&
-      typeof error.code === "string" &&
-      typeof error.message === "string" &&
-      (error.field === undefined || error.field === null || typeof error.field === "string")
+    typeof error.code === "string" &&
+    typeof error.message === "string" &&
+    (error.field === undefined || error.field === null || typeof error.field === "string"),
   );
 }
 

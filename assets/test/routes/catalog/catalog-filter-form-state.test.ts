@@ -2,7 +2,7 @@ import type { CatalogFilters } from "../../../src/routes/catalog/filters";
 import {
   catalogFilterFormInitialTypeState,
   catalogFilterFormTypeSelection,
-  hasInitiallyOpenCatalogAdvancedFilters
+  hasInitiallyOpenCatalogAdvancedFilters,
 } from "../../../src/routes/catalog/catalog-filter-form-state";
 
 function filters(overrides: Partial<CatalogFilters> = {}): CatalogFilters {
@@ -11,7 +11,7 @@ function filters(overrides: Partial<CatalogFilters> = {}): CatalogFilters {
     numeric: [],
     booleans: [],
     enums: [],
-    ...overrides
+    ...overrides,
   };
 }
 
@@ -21,13 +21,13 @@ describe("catalogFilterFormInitialTypeState", () => {
     [
       "an explicit empty type",
       filters({ typeTaxonId: "", includeTypeDescendants: true }),
-      { selectedTypeTaxonId: "", includeTypeDescendants: false }
+      { selectedTypeTaxonId: "", includeTypeDescendants: false },
     ],
     [
       "a selected type",
       filters({ typeTaxonId: "type-laptops", includeTypeDescendants: true }),
-      { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: true }
-    ]
+      { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: true },
+    ],
   ])("uses %s", (_description, input, expected) => {
     expect(catalogFilterFormInitialTypeState(input)).toEqual(expected);
   });
@@ -35,12 +35,12 @@ describe("catalogFilterFormInitialTypeState", () => {
   test("treats a runtime null type as absent", () => {
     const runtimeFilters = {
       typeTaxonId: null,
-      includeTypeDescendants: true
+      includeTypeDescendants: true,
     } as unknown as Parameters<typeof catalogFilterFormInitialTypeState>[0];
 
     expect(catalogFilterFormInitialTypeState(runtimeFilters)).toEqual({
       selectedTypeTaxonId: "",
-      includeTypeDescendants: false
+      includeTypeDescendants: false,
     });
   });
 
@@ -48,10 +48,10 @@ describe("catalogFilterFormInitialTypeState", () => {
     ["selected type with descendants enabled", "type-laptops", true, true],
     ["selected type with descendants disabled", "type-laptops", false, false],
     ["empty type with descendants enabled", "", true, false],
-    ["empty type with descendants disabled", "", false, false]
+    ["empty type with descendants disabled", "", false, false],
   ])("initializes descendants for %s", (_description, typeTaxonId, input, expected) => {
     expect(
-      catalogFilterFormInitialTypeState(filters({ typeTaxonId, includeTypeDescendants: input }))
+      catalogFilterFormInitialTypeState(filters({ typeTaxonId, includeTypeDescendants: input })),
     ).toHaveProperty("includeTypeDescendants", expected);
   });
 });
@@ -61,19 +61,22 @@ describe("catalogFilterFormTypeSelection", () => {
     expect(
       catalogFilterFormTypeSelection(
         { selectedTypeTaxonId: "", includeTypeDescendants: false },
-        "type-laptops"
-      )
+        "type-laptops",
+      ),
     ).toEqual({ selectedTypeTaxonId: "type-laptops", includeTypeDescendants: true });
   });
 
-  test.each([true, false])("disables descendants when clearing a selected type with %s", (value) => {
-    expect(
-      catalogFilterFormTypeSelection(
-        { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: value },
-        ""
-      )
-    ).toEqual({ selectedTypeTaxonId: "", includeTypeDescendants: false });
-  });
+  test.each([true, false])(
+    "disables descendants when clearing a selected type with %s",
+    (value) => {
+      expect(
+        catalogFilterFormTypeSelection(
+          { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: value },
+          "",
+        ),
+      ).toEqual({ selectedTypeTaxonId: "", includeTypeDescendants: false });
+    },
+  );
 
   test.each([true, false])(
     "preserves descendants set to %s when changing selected types",
@@ -81,10 +84,10 @@ describe("catalogFilterFormTypeSelection", () => {
       expect(
         catalogFilterFormTypeSelection(
           { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: value },
-          "type-monitors"
-        )
+          "type-monitors",
+        ),
       ).toEqual({ selectedTypeTaxonId: "type-monitors", includeTypeDescendants: value });
-    }
+    },
   );
 
   test.each([true, false])(
@@ -93,10 +96,10 @@ describe("catalogFilterFormTypeSelection", () => {
       expect(
         catalogFilterFormTypeSelection(
           { selectedTypeTaxonId: "type-laptops", includeTypeDescendants: value },
-          "type-laptops"
-        )
+          "type-laptops",
+        ),
       ).toEqual({ selectedTypeTaxonId: "type-laptops", includeTypeDescendants: value });
-    }
+    },
   );
 
   test("does not mutate its previous state and returns a new result", () => {
@@ -115,7 +118,7 @@ describe("hasInitiallyOpenCatalogAdvancedFilters", () => {
     ["use-case filters", filters({ useCaseTaxonIds: ["use-gaming"] })],
     ["numeric filters", filters({ numeric: [{ attributeId: "price", min: "10" }] })],
     ["boolean filters", filters({ booleans: [{ attributeId: "wireless", value: true }] })],
-    ["enum filters", filters({ enums: [{ attributeId: "color", enumOptionId: "red" }] })]
+    ["enum filters", filters({ enums: [{ attributeId: "color", enumOptionId: "red" }] })],
   ])("opens for %s", (_description, input) => {
     expect(hasInitiallyOpenCatalogAdvancedFilters(input)).toBe(true);
   });
@@ -131,9 +134,9 @@ describe("hasInitiallyOpenCatalogAdvancedFilters", () => {
           query: "oled",
           sort: "NEWEST",
           typeTaxonId: "type-laptops",
-          includeTypeDescendants: true
-        })
-      )
+          includeTypeDescendants: true,
+        }),
+      ),
     ).toBe(false);
   });
 
@@ -144,7 +147,7 @@ describe("hasInitiallyOpenCatalogAdvancedFilters", () => {
       useCaseTaxonIds: ["use-gaming"],
       numeric: [{ attributeId: "price", min: "10" }],
       booleans: [{ attributeId: "wireless", value: true }],
-      enums: [{ attributeId: "color", enumOptionId: "red" }]
+      enums: [{ attributeId: "color", enumOptionId: "red" }],
     });
     const snapshot = structuredClone(input);
 

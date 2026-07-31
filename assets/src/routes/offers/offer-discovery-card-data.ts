@@ -6,7 +6,7 @@ import {
   type ActiveCouponsConnection,
   type OfferNode,
   type PriceHistoryConnection,
-  type PriceHistoryRow
+  type PriceHistoryRow,
 } from "./offer-discovery-data";
 
 export type OfferDiscoveryCardData = {
@@ -16,9 +16,7 @@ export type OfferDiscoveryCardData = {
   priceHistory: PriceHistoryConnection;
   priceHistoryRows: PriceHistoryRow[];
   productName: string;
-  status:
-    | { label: "Active"; tone: "positive" }
-    | { label: "Inactive"; tone: "neutral" };
+  status: { label: "Active"; tone: "positive" } | { label: "Inactive"; tone: "neutral" };
   summaryMerchantName: string;
 };
 
@@ -31,7 +29,7 @@ export function getOfferDiscoveryCardData(offer: OfferNode): OfferDiscoveryCardD
     ...offerIdentity(offer),
     priceHistory,
     priceHistoryRows: offerPriceHistoryRows(priceHistory, offer.currency),
-    status: offerStatus(offer.isActive)
+    status: offerStatus(offer.isActive),
   };
 }
 
@@ -43,21 +41,16 @@ function offerIdentity(offer: OfferNode) {
   return {
     merchantDomain: offer.merchant?.domain ?? null,
     productName: offer.product?.name ?? "Unknown product",
-    summaryMerchantName: offer.merchant?.name ?? "Offer"
+    summaryMerchantName: offer.merchant?.name ?? "Offer",
   };
 }
 
-function offerPriceHistoryRows(
-  priceHistory: PriceHistoryConnection,
-  currency: string
-) {
+function offerPriceHistoryRows(priceHistory: PriceHistoryConnection, currency: string) {
   return priceHistory.edges
     .map(({ node }) => priceHistoryRow(node, currency))
     .filter((row): row is PriceHistoryRow => row !== null);
 }
 
 function offerStatus(isActive: boolean): OfferDiscoveryCardData["status"] {
-  return isActive
-    ? { label: "Active", tone: "positive" }
-    : { label: "Inactive", tone: "neutral" };
+  return isActive ? { label: "Active", tone: "positive" } : { label: "Inactive", tone: "neutral" };
 }

@@ -2,26 +2,26 @@ import { describe, expect, test, vi } from "vitest";
 import {
   buildSavedComparisonsViewState,
   savedComparisonSortModeFromValue,
-  type SavedComparisonSortMode
+  type SavedComparisonSortMode,
 } from "../../../src/routes/compare/saved-view-state";
 import type {
   SavedComparisonSetSummary,
-  SavedComparisonsRouteLoaderData
+  SavedComparisonsRouteLoaderData,
 } from "../../../src/routes/compare/saved-data";
 
 const savedSets: SavedComparisonSetSummary[] = [
   {
     id: "saved-set-1",
     name: "Desk setup",
-    products: [{ name: "Ergonomic Chair", slug: "chair" }]
+    products: [{ name: "Ergonomic Chair", slug: "chair" }],
   },
   {
     id: "saved-set-2",
     name: "Alpha kit",
     products: [
       { name: "Standing Desk", slug: "standing-desk" },
-      { name: "Keyboard", slug: "keyboard" }
-    ]
+      { name: "Keyboard", slug: "keyboard" },
+    ],
   },
   {
     id: "saved-set-3",
@@ -29,24 +29,22 @@ const savedSets: SavedComparisonSetSummary[] = [
     products: [
       { name: "Monitor", slug: "monitor" },
       { name: "Mouse", slug: "mouse" },
-      { name: "Lamp", slug: "reading-lamp" }
-    ]
-  }
+      { name: "Lamp", slug: "reading-lamp" },
+    ],
+  },
 ];
 
 function readyLoaderData(
-  sets: SavedComparisonSetSummary[] = savedSets
+  sets: SavedComparisonSetSummary[] = savedSets,
 ): SavedComparisonsRouteLoaderData {
   return {
     status: sets.length === 0 ? "empty" : "ready",
     savedSetQueries: [],
-    savedSets: sets
+    savedSets: sets,
   };
 }
 
-function savedSetIds(
-  viewState: ReturnType<typeof buildSavedComparisonsViewState>
-) {
+function savedSetIds(viewState: ReturnType<typeof buildSavedComparisonsViewState>) {
   return viewState.savedSets.map(({ id }) => id);
 }
 
@@ -55,7 +53,7 @@ test("returns the sign-in status before local deletion or filter state", () => {
     { status: "unauthorized", savedSetQueries: [], savedSets: [] },
     new Set(["saved-set-1"]),
     "desk",
-    "name-asc"
+    "name-asc",
   );
 
   expect(savedSetIds(viewState)).toEqual([]);
@@ -67,7 +65,7 @@ test("hides locally deleted sets and announces the deletion before an empty stat
     readyLoaderData([savedSets[0]]),
     new Set(["saved-set-1"]),
     "",
-    "current"
+    "current",
   );
 
   expect(savedSetIds(viewState)).toEqual([]);
@@ -79,7 +77,7 @@ test("announces a local deletion before an active filter's no-match state", () =
     readyLoaderData([savedSets[0]]),
     new Set(["saved-set-1"]),
     "sofa",
-    "current"
+    "current",
   );
 
   expect(savedSetIds(viewState)).toEqual([]);
@@ -87,24 +85,14 @@ test("announces a local deletion before an active filter's no-match state", () =
 });
 
 test("reports a no-match status for a filter against loaded saved sets", () => {
-  const viewState = buildSavedComparisonsViewState(
-    readyLoaderData(),
-    new Set(),
-    "sofa",
-    "current"
-  );
+  const viewState = buildSavedComparisonsViewState(readyLoaderData(), new Set(), "sofa", "current");
 
   expect(savedSetIds(viewState)).toEqual([]);
   expect(viewState.statusMessage).toBe("No saved comparisons match your filter.");
 });
 
 test("reports the empty status when no saved sets are loaded", () => {
-  const viewState = buildSavedComparisonsViewState(
-    readyLoaderData([]),
-    new Set(),
-    "",
-    "current"
-  );
+  const viewState = buildSavedComparisonsViewState(readyLoaderData([]), new Set(), "", "current");
 
   expect(savedSetIds(viewState)).toEqual([]);
   expect(viewState.statusMessage).toBe("No saved comparisons yet.");
@@ -115,44 +103,44 @@ describe("saved comparison card display data", () => {
     const products = Object.freeze([
       Object.freeze({ name: "Desk Chair", slug: "chair" }),
       Object.freeze({ name: "Standing Desk", slug: "desk" }),
-      Object.freeze({ name: "Desk Chair", slug: "chair-duplicate" })
+      Object.freeze({ name: "Desk Chair", slug: "chair-duplicate" }),
     ]);
     const input = [
       { id: "single", name: "Single", products: [products[0]] },
       { id: "many", name: "Many", products },
-      { id: "empty", name: "Empty", products: [] }
+      { id: "empty", name: "Empty", products: [] },
     ];
 
     const viewState = buildSavedComparisonsViewState(
       readyLoaderData(input),
       new Set(),
       "",
-      "current"
+      "current",
     );
 
     expect(
       viewState.savedSets.map(({ productCountText, productNamesText }) => ({
         productCountText,
-        productNamesText
-      }))
+        productNamesText,
+      })),
     ).toEqual([
       {
         productCountText: "1 product in this saved comparison",
-        productNamesText: "Desk Chair"
+        productNamesText: "Desk Chair",
       },
       {
         productCountText: "3 products in this saved comparison",
-        productNamesText: "Desk Chair, Standing Desk, Desk Chair"
+        productNamesText: "Desk Chair, Standing Desk, Desk Chair",
       },
       {
         productCountText: "0 products in this saved comparison",
-        productNamesText: ""
-      }
+        productNamesText: "",
+      },
     ]);
     expect(products).toEqual([
       { name: "Desk Chair", slug: "chair" },
       { name: "Standing Desk", slug: "desk" },
-      { name: "Desk Chair", slug: "chair-duplicate" }
+      { name: "Desk Chair", slug: "chair-duplicate" },
     ]);
   });
 });
@@ -161,13 +149,13 @@ describe("filtering", () => {
   test.each([
     ["saved-set name", "SETUP", ["saved-set-1"]],
     ["product name", "standing", ["saved-set-2"]],
-    ["product slug", "READING-LAMP", ["saved-set-3"]]
+    ["product slug", "READING-LAMP", ["saved-set-3"]],
   ])("matches a saved set by case-insensitive %s", (_source, filterText, expectedIds) => {
     const viewState = buildSavedComparisonsViewState(
       readyLoaderData(),
       new Set(),
       filterText,
-      "current"
+      "current",
     );
 
     expect(savedSetIds(viewState)).toEqual(expectedIds);
@@ -183,7 +171,7 @@ describe("sorting", () => {
     ["product-count-asc", "product-count-asc"],
     ["", "current"],
     ["unknown", "current"],
-    ["future-sort-mode", "current"]
+    ["future-sort-mode", "current"],
   ])("normalizes raw sort value %j to %s", (value, expected) => {
     expect(savedComparisonSortModeFromValue(value)).toBe(expected);
   });
@@ -192,14 +180,9 @@ describe("sorting", () => {
     ["current", ["saved-set-1", "saved-set-2", "saved-set-3"]],
     ["name-asc", ["saved-set-2", "saved-set-1", "saved-set-3"]],
     ["product-count-desc", ["saved-set-3", "saved-set-2", "saved-set-1"]],
-    ["product-count-asc", ["saved-set-1", "saved-set-2", "saved-set-3"]]
+    ["product-count-asc", ["saved-set-1", "saved-set-2", "saved-set-3"]],
   ])("orders visible saved sets with %s", (sortMode, expectedIds) => {
-    const viewState = buildSavedComparisonsViewState(
-      readyLoaderData(),
-      new Set(),
-      "",
-      sortMode
-    );
+    const viewState = buildSavedComparisonsViewState(readyLoaderData(), new Set(), "", sortMode);
 
     expect(savedSetIds(viewState)).toEqual(expectedIds);
   });
@@ -209,32 +192,30 @@ describe("sorting", () => {
       readyLoaderData([
         { id: "saved-set-1", name: "alpha kit", products: [] },
         { id: "saved-set-2", name: "Alpha kit", products: [] },
-        { id: "saved-set-3", name: "Bravo kit", products: [] }
+        { id: "saved-set-3", name: "Bravo kit", products: [] },
       ]),
       new Set(),
       "",
-      "name-asc"
+      "name-asc",
     );
 
     expect(savedSetIds(viewState)).toEqual(["saved-set-1", "saved-set-2", "saved-set-3"]);
   });
 
   test("orders names without depending on the host locale", () => {
-    const localeCompare = vi
-      .spyOn(String.prototype, "localeCompare")
-      .mockImplementation(() => {
-        throw new Error("ambient locale comparison used");
-      });
+    const localeCompare = vi.spyOn(String.prototype, "localeCompare").mockImplementation(() => {
+      throw new Error("ambient locale comparison used");
+    });
 
     try {
       const viewState = buildSavedComparisonsViewState(
         readyLoaderData([
           { id: "saved-set-1", name: "Zulu", products: [] },
-          { id: "saved-set-2", name: "Älpha", products: [] }
+          { id: "saved-set-2", name: "Älpha", products: [] },
         ]),
         new Set(),
         "",
-        "name-asc"
+        "name-asc",
       );
 
       expect(savedSetIds(viewState)).toEqual(["saved-set-2", "saved-set-1"]);
@@ -248,11 +229,11 @@ describe("sorting", () => {
       readyLoaderData([
         { id: "saved-set-1", name: "Zulu", products: [] },
         { id: "saved-set-2", name: "Ømega", products: [] },
-        { id: "saved-set-3", name: "Æther", products: [] }
+        { id: "saved-set-3", name: "Æther", products: [] },
       ]),
       new Set(),
       "",
-      "name-asc"
+      "name-asc",
     );
 
     expect(savedSetIds(viewState)).toEqual(["saved-set-3", "saved-set-2", "saved-set-1"]);
@@ -260,17 +241,17 @@ describe("sorting", () => {
 
   test.each([
     ["product-count-desc", ["saved-set-1", "saved-set-2", "saved-set-3"]],
-    ["product-count-asc", ["saved-set-3", "saved-set-1", "saved-set-2"]]
+    ["product-count-asc", ["saved-set-3", "saved-set-1", "saved-set-2"]],
   ] as const)("preserves source order for tied %s results", (sortMode, expectedIds) => {
     const viewState = buildSavedComparisonsViewState(
       readyLoaderData([
         { id: "saved-set-1", name: "First", products: savedSets[0].products },
         { id: "saved-set-2", name: "Second", products: savedSets[0].products },
-        { id: "saved-set-3", name: "Third", products: [] }
+        { id: "saved-set-3", name: "Third", products: [] },
       ]),
       new Set(),
       "",
-      sortMode
+      sortMode,
     );
 
     expect(savedSetIds(viewState)).toEqual(expectedIds);

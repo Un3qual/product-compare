@@ -1,11 +1,11 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import revenueSummaryRouteQuery, {
-  type RevenueSummaryRouteQuery
+  type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
 
@@ -40,7 +40,7 @@ export type RevenueSummaryLoaderData =
 
 export async function revenueSummaryLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<RevenueSummaryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const filters = revenueSummaryFiltersFromUrl(new URL(request.url));
@@ -48,14 +48,14 @@ export async function revenueSummaryLoader({
   if (!filters.currency) {
     return {
       status: "needsCurrency",
-      filters
+      filters,
     };
   }
 
   if (hasInvertedDateRange(filters)) {
     return {
       status: "invalidDateRange",
-      filters
+      filters,
     };
   }
 
@@ -67,10 +67,10 @@ export async function revenueSummaryLoader({
         environment,
         revenueSummaryRouteQuery,
         {
-          input: filters
+          input: filters,
         },
-        { signal: request.signal }
-      )
+        { signal: request.signal },
+      ),
     };
   } catch (error) {
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
@@ -78,8 +78,8 @@ export async function revenueSummaryLoader({
       "Failed to preload revenue summary route query.",
       {
         status: "error",
-        filters
-      }
+        filters,
+      },
     );
   }
 }
@@ -89,11 +89,11 @@ export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
     currency: normalizeCurrencyFilter(url.searchParams.get("currency")),
     from: normalizeDateFilter(url.searchParams.get("from")),
     network: normalizeNetworkFilter(url.searchParams.get("network")),
-    to: normalizeDateFilter(url.searchParams.get("to"))
+    to: normalizeDateFilter(url.searchParams.get("to")),
   };
 
   return Object.fromEntries(
-    Object.entries(filters).filter(([, value]) => value !== undefined)
+    Object.entries(filters).filter(([, value]) => value !== undefined),
   ) as RevenueSummaryFilters;
 }
 

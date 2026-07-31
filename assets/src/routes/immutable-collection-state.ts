@@ -1,7 +1,7 @@
 export function upsertMapValue<K, V>(
   values: ReadonlyMap<K, V>,
   key: K,
-  value: V
+  value: V,
 ): ReadonlyMap<K, V> {
   const nextValues = new Map(values);
   nextValues.set(key, value);
@@ -26,10 +26,7 @@ export function addSetValue<T>(currentValues: ReadonlySet<T>, nextValue: T): Rea
   return new Set(currentValues).add(nextValue);
 }
 
-export function removeSetValue<T>(
-  currentValues: ReadonlySet<T>,
-  removedValue: T
-): ReadonlySet<T> {
+export function removeSetValue<T>(currentValues: ReadonlySet<T>, removedValue: T): ReadonlySet<T> {
   if (!currentValues.has(removedValue)) {
     return currentValues;
   }

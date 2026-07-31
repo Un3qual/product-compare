@@ -1,8 +1,7 @@
 import { compareProductText } from "../product-formatting";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
-const DECIMAL_COMPARISON_VALUE_PATTERN =
-  /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
+const DECIMAL_COMPARISON_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 const MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT = 1_000;
 
 export type SpecificationMatrixMode = "shared" | "differences" | "all";
@@ -41,7 +40,7 @@ interface ParsedDecimalComparisonValue {
 
 export function buildSpecificationMatrixRows(
   products: readonly SpecificationMatrixProduct[],
-  specMode: SpecificationMatrixMode
+  specMode: SpecificationMatrixMode,
 ): SpecificationMatrixRow[] {
   const rows = buildAllSpecificationRows(products);
 
@@ -57,7 +56,7 @@ export function buildSpecificationMatrixRows(
 }
 
 function buildAllSpecificationRows(
-  products: readonly SpecificationMatrixProduct[]
+  products: readonly SpecificationMatrixProduct[],
 ): SpecificationMatrixRow[] {
   const [firstProduct, ...remainingProducts] = products;
 
@@ -66,7 +65,7 @@ function buildAllSpecificationRows(
   }
 
   const attributeMaps = products.map((product) =>
-    buildFirstAttributeByCode(product.currentAttributes)
+    buildFirstAttributeByCode(product.currentAttributes),
   );
   const seenCodes = new Set<string>();
   const firstProductRows = firstProduct.currentAttributes.flatMap((attribute) => {
@@ -80,8 +79,8 @@ function buildAllSpecificationRows(
       buildSpecificationRow({
         attributeMaps,
         code: attribute.code,
-        displayName: attribute.displayName
-      })
+        displayName: attribute.displayName,
+      }),
     ];
   });
   const additionalRows = remainingProducts.flatMap((product) =>
@@ -96,10 +95,10 @@ function buildAllSpecificationRows(
         buildSpecificationRow({
           attributeMaps,
           code: attribute.code,
-          displayName: attribute.displayName
-        })
+          displayName: attribute.displayName,
+        }),
       ];
-    })
+    }),
   );
 
   return [...firstProductRows, ...additionalRows].sort(compareSpecificationRows);
@@ -108,7 +107,7 @@ function buildAllSpecificationRows(
 function buildSpecificationRow({
   attributeMaps,
   code,
-  displayName
+  displayName,
 }: {
   attributeMaps: Array<Map<string, SpecificationMatrixAttribute>>;
   code: string;
@@ -122,7 +121,7 @@ function buildSpecificationRow({
     sortOrder: firstPresentSortOrder(attributes),
     missingValues: attributes.map((attribute) => !attribute),
     values: attributes.map((attribute) => attribute?.valueText ?? MISSING_ATTRIBUTE_VALUE),
-    comparisonValues: attributes.map(buildAttributeComparisonValue)
+    comparisonValues: attributes.map(buildAttributeComparisonValue),
   };
 }
 
@@ -136,11 +135,11 @@ function hasSpecificationDifference(row: SpecificationMatrixRow) {
 
 function compareSpecificationRows(
   firstRow: SpecificationMatrixRow,
-  secondRow: SpecificationMatrixRow
+  secondRow: SpecificationMatrixRow,
 ) {
   const sortOrderComparison = compareSpecificationSortOrders(
     firstRow.sortOrder,
-    secondRow.sortOrder
+    secondRow.sortOrder,
   );
 
   if (sortOrderComparison !== 0) {
@@ -149,14 +148,12 @@ function compareSpecificationRows(
 
   const nameComparison = compareProductText(firstRow.displayName, secondRow.displayName);
 
-  return nameComparison === 0
-    ? compareProductText(firstRow.code, secondRow.code)
-    : nameComparison;
+  return nameComparison === 0 ? compareProductText(firstRow.code, secondRow.code) : nameComparison;
 }
 
 function compareSpecificationSortOrders(
   firstSortOrder: number | null,
-  secondSortOrder: number | null
+  secondSortOrder: number | null,
 ) {
   if (typeof firstSortOrder === "number" && typeof secondSortOrder === "number") {
     return firstSortOrder - secondSortOrder;
@@ -173,15 +170,13 @@ function compareSpecificationSortOrders(
   return 0;
 }
 
-function firstPresentSortOrder(
-  attributes: Array<SpecificationMatrixAttribute | undefined>
-) {
-  return attributes.find((attribute) => typeof attribute?.sortOrder === "number")?.sortOrder ?? null;
+function firstPresentSortOrder(attributes: Array<SpecificationMatrixAttribute | undefined>) {
+  return (
+    attributes.find((attribute) => typeof attribute?.sortOrder === "number")?.sortOrder ?? null
+  );
 }
 
-function buildAttributeComparisonValue(
-  attribute: SpecificationMatrixAttribute | undefined
-) {
+function buildAttributeComparisonValue(attribute: SpecificationMatrixAttribute | undefined) {
   if (!attribute) {
     return "missing";
   }
@@ -235,7 +230,10 @@ function parseDecimalComparisonValue(value: string): ParsedDecimalComparisonValu
   const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
   const exponent = Number.parseInt(rawExponent, 10);
 
-  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT) {
+  if (
+    !Number.isSafeInteger(exponent) ||
+    Math.abs(exponent) > MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT
+  ) {
     return null;
   }
 
@@ -260,9 +258,7 @@ function normalizeUnitComparisonValue(unitSymbol: string | null | undefined) {
   return unitSymbol?.trim() ?? "";
 }
 
-function buildFirstAttributeByCode(
-  attributes: readonly SpecificationMatrixAttribute[]
-) {
+function buildFirstAttributeByCode(attributes: readonly SpecificationMatrixAttribute[]) {
   const attributesByCode = new Map<string, SpecificationMatrixAttribute>();
 
   for (const attribute of attributes ?? []) {

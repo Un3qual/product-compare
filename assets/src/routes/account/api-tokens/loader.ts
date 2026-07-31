@@ -1,13 +1,13 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import apiTokensRouteQuery, {
-  type ApiTokensRouteQuery
+  type ApiTokensRouteQuery,
 } from "../../../__generated__/ApiTokensRouteQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../../relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
 
@@ -23,9 +23,7 @@ export interface ApiTokenSummary {
   insertedAt: string;
 }
 
-export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<
-  ApiTokensRouteQuery["variables"]
->;
+export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<ApiTokensRouteQuery["variables"]>;
 
 export type ApiTokensRouteLoaderData =
   | {
@@ -52,12 +50,12 @@ const API_TOKENS_PARSE_ERROR = "Failed to parse API tokens response";
 const API_TOKEN_STATUS_VARIABLES: Record<ApiTokenStatus, ApiTokenStatusVariable> = {
   active: "ACTIVE",
   all: "ALL",
-  revoked: "REVOKED"
+  revoked: "REVOKED",
 };
 
 export async function apiTokensLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<ApiTokensRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const searchParams = new URL(request.url).searchParams;
@@ -71,7 +69,7 @@ export async function apiTokensLoader({
       environment,
       apiTokensRouteQuery,
       apiTokensQueryVariables(tokenStatus, after ?? undefined),
-      { signal: request.signal }
+      { signal: request.signal },
     );
     throwIfAborted(request.signal);
     const page = summarizeApiTokensPage(fetchedPage.data);
@@ -87,7 +85,7 @@ export async function apiTokensLoader({
       tokenStatus,
       after,
       hasNextPage: page.hasNextPage,
-      endCursor: page.endCursor
+      endCursor: page.endCursor,
     };
   } catch (error) {
     fetchedPage?.dispose();
@@ -97,13 +95,12 @@ export async function apiTokensLoader({
         status: "unauthorized",
         tokenQueries: [],
         tokens: [],
-        tokenStatus: "all"
+        tokenStatus: "all",
       };
     }
 
     throw error;
   }
-
 }
 
 function nonBlankSearchParam(value: string | null) {
@@ -114,11 +111,11 @@ function nonBlankSearchParam(value: string | null) {
 
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
-  after: string | undefined
+  after: string | undefined,
 ): ApiTokensRouteQuery["variables"] {
   const variables: ApiTokensRouteQuery["variables"] = {
     first: API_TOKENS_PAGE_SIZE,
-    status: API_TOKEN_STATUS_VARIABLES[tokenStatus]
+    status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
   };
 
   if (after !== undefined) {
@@ -190,7 +187,7 @@ export function summarizeApiTokensPage(data: unknown): {
   return {
     tokens: connection.edges.map(summarizeApiTokenEdge),
     hasNextPage,
-    endCursor: endCursor ?? null
+    endCursor: endCursor ?? null,
   };
 }
 
@@ -223,7 +220,7 @@ function summarizeApiToken(node: unknown): ApiTokenSummary {
     lastUsedAt: node.lastUsedAt ?? null,
     expiresAt: node.expiresAt ?? null,
     revokedAt: node.revokedAt ?? null,
-    insertedAt: node.insertedAt
+    insertedAt: node.insertedAt,
   };
 }
 

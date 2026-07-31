@@ -17,8 +17,8 @@ test("projects the captured winner, source-backed facts, and ordered live path",
             claimId: "claim-2",
             displayName: "Weight",
             valueText: "400 g",
-            evidence: [{ sourceName: "Acme specifications" }]
-          }
+            evidence: [{ sourceName: "Acme specifications" }],
+          },
         ],
         offers: [
           {
@@ -26,9 +26,9 @@ test("projects the captured winner, source-backed facts, and ordered live path",
             merchantName: "Camera Shop",
             landedPrice: "90",
             currency: "USD",
-            observedAt: "2026-07-13T22:00:00Z"
-          }
-        ]
+            observedAt: "2026-07-13T22:00:00Z",
+          },
+        ],
       },
       {
         id: "product-1",
@@ -38,8 +38,8 @@ test("projects the captured winner, source-backed facts, and ordered live path",
         brandName: "Bravo",
         modelNumber: null,
         attributes: [],
-        offers: []
-      }
+        offers: [],
+      },
     ],
     recommendation: {
       algorithmVersion: "lowest-v1",
@@ -50,15 +50,15 @@ test("projects the captured winner, source-backed facts, and ordered live path",
         {
           productId: "product-1",
           productName: "First camera",
-          reasons: ["Higher current cost"]
+          reasons: ["Higher current cost"],
         },
         {
           productId: "product-2",
           productName: "Second camera",
-          reasons: ["Lowest current cost", "Fresh observation"]
-        }
-      ]
-    }
+          reasons: ["Lowest current cost", "Fresh observation"],
+        },
+      ],
+    },
   });
 
   expect(buildSharedComparisonViewData(snapshot)).toEqual({
@@ -76,16 +76,16 @@ test("projects the captured winner, source-backed facts, and ordered live path",
             claimId: "claim-2",
             displayName: "Weight",
             valueText: "400 g",
-            evidenceLabel: "Accepted claim claim-2 · Acme specifications"
-          }
+            evidenceLabel: "Accepted claim claim-2 · Acme specifications",
+          },
         ],
         offers: [
           {
             pricePointId: "point-2",
             label: "Camera Shop: 90 USD landed",
-            observedAt: "2026-07-13T22:00:00Z"
-          }
-        ]
+            observedAt: "2026-07-13T22:00:00Z",
+          },
+        ],
       },
       {
         id: "product-1",
@@ -93,17 +93,17 @@ test("projects the captured winner, source-backed facts, and ordered live path",
         description: null,
         brandModelLabel: "Bravo",
         attributes: [],
-        offers: []
-      }
+        offers: [],
+      },
     ],
     recommendation: {
       algorithmVersion: "lowest-v1",
       evaluatedAt: "2026-07-13T23:00:00Z",
       kind: "winner",
       label: "Second camera",
-      reasons: ["Lowest current cost", "Fresh observation"]
+      reasons: ["Lowest current cost", "Fresh observation"],
     },
-    title: "Camera shortlist"
+    title: "Camera shortlist",
   });
 });
 
@@ -116,7 +116,7 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
         evaluatedAt: "2026-07-13T23:00:00Z",
         winnerProductId: null,
         missingInputs: ["Accepted specification evidence is unavailable"],
-        rankings: []
+        rankings: [],
       },
       products: [
         {
@@ -131,8 +131,8 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
               claimId: "claim-1",
               displayName: "Resolution",
               valueText: "24 MP",
-              evidence: []
-            }
+              evidence: [],
+            },
           ],
           offers: [
             {
@@ -140,12 +140,12 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
               merchantName: " ",
               landedPrice: " ",
               currency: " ",
-              observedAt: " "
-            }
-          ]
-        }
-      ]
-    })
+              observedAt: " ",
+            },
+          ],
+        },
+      ],
+    }),
   );
 
   expect(viewData.title).toBe("Shared product comparison");
@@ -154,7 +154,7 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
     evaluatedAt: "2026-07-13T23:00:00Z",
     kind: "unsupported",
     label: "No supported winner",
-    reasons: ["Accepted specification evidence is unavailable"]
+    reasons: ["Accepted specification evidence is unavailable"],
   });
   expect(viewData.products).toEqual([
     {
@@ -167,17 +167,17 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
           claimId: "claim-1",
           displayName: "Resolution",
           valueText: "24 MP",
-          evidenceLabel: "Accepted claim claim-1"
-        }
+          evidenceLabel: "Accepted claim claim-1",
+        },
       ],
       offers: [
         {
           pricePointId: "point-1",
           label: "Unknown merchant: Landed price unavailable",
-          observedAt: null
-        }
-      ]
-    }
+          observedAt: null,
+        },
+      ],
+    },
   ]);
 });
 
@@ -199,8 +199,8 @@ function snapshotInput(overrides: Partial<SnapshotInput> = {}): SnapshotInput {
       evaluatedAt: "2026-07-13T23:00:00Z",
       winnerProductId: null,
       missingInputs: [],
-      rankings: []
+      rankings: [],
     },
-    ...overrides
+    ...overrides,
   };
 }

@@ -1,11 +1,9 @@
 export function buildSavedComparisonName(
   products: readonly {
     readonly name: string;
-  }[]
+  }[],
 ) {
-  const productNames = products
-    .map((product) => product.name.trim())
-    .filter((name) => name !== "");
+  const productNames = products.map((product) => product.name.trim()).filter((name) => name !== "");
 
   if (productNames.length === 0) {
     return "Saved comparison";

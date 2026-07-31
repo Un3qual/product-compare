@@ -6,7 +6,7 @@ import {
   comparePickerEmptyMessage,
   comparePickerResetToken,
   isComparePickerEmpty,
-  nextComparePickerPageCursor
+  nextComparePickerPageCursor,
 } from "../../../src/routes/compare/compare-picker-data";
 
 const PRODUCTS = [
@@ -14,21 +14,21 @@ const PRODUCTS = [
     id: "product-1",
     name: "First product",
     slug: "first-product",
-    brand: { name: "Acme" }
+    brand: { name: "Acme" },
   },
   { id: "product-2", name: "Second product", slug: "second-product", brand: null },
   {
     id: "product-3",
     name: "Third product",
     slug: "third-product",
-    brand: { name: "Bravo" }
-  }
+    brand: { name: "Bravo" },
+  },
 ] as const;
 
 describe("compare picker data", () => {
   test("derives reset identity from the selected products and specification mode", () => {
     expect(comparePickerResetToken("all", ["first-product", "second-product"])).toBe(
-      "all:first-product|second-product"
+      "all:first-product|second-product",
     );
   });
 
@@ -36,15 +36,15 @@ describe("compare picker data", () => {
     expect(
       appendUniqueComparePickerProducts(
         [PRODUCTS[0]],
-        [PRODUCTS[1], PRODUCTS[1], PRODUCTS[2], PRODUCTS[0]]
-      )
+        [PRODUCTS[1], PRODUCTS[1], PRODUCTS[2], PRODUCTS[0]],
+      ),
     ).toEqual([PRODUCTS[0], PRODUCTS[1], PRODUCTS[2]]);
   });
 
   test("excludes selected product slugs from available picker products", () => {
     expect(availableComparePickerProducts(PRODUCTS, ["second-product"])).toEqual([
       PRODUCTS[0],
-      PRODUCTS[2]
+      PRODUCTS[2],
     ]);
   });
 
@@ -54,23 +54,20 @@ describe("compare picker data", () => {
         brandName: "Unknown brand",
         href: "/compare?slug=second-product",
         id: "product-2",
-        name: "Second product"
-      }
+        name: "Second product",
+      },
     ]);
   });
 
   test("uses the cursor only when another product page exists", () => {
     expect(nextComparePickerPageCursor({ hasNextPage: true, endCursor: "cursor-2" })).toBe(
-      "cursor-2"
+      "cursor-2",
     );
     expect(nextComparePickerPageCursor({ hasNextPage: false, endCursor: "cursor-2" })).toBeNull();
     expect(nextComparePickerPageCursor({ hasNextPage: true, endCursor: null })).toBeNull();
     expect(nextComparePickerPageCursor({ hasNextPage: true, endCursor: " " })).toBeNull();
     expect(
-      nextComparePickerPageCursor(
-        { hasNextPage: true, endCursor: "cursor-2" },
-        "cursor-2"
-      )
+      nextComparePickerPageCursor({ hasNextPage: true, endCursor: "cursor-2" }, "cursor-2"),
     ).toBeNull();
   });
 
@@ -79,7 +76,7 @@ describe("compare picker data", () => {
     expect(isComparePickerEmpty([], "cursor-2")).toBe(false);
     expect(comparePickerEmptyMessage([])).toBe("No products are available to compare yet.");
     expect(comparePickerEmptyMessage(["first-product"])).toBe(
-      "No additional products are available to compare yet."
+      "No additional products are available to compare yet.",
     );
   });
 
@@ -91,19 +88,19 @@ describe("compare picker data", () => {
             id: "product-4",
             name: "Fourth product",
             slug: "fourth & product",
-            brand: { name: "Delta" }
-          }
+            brand: { name: "Delta" },
+          },
         ],
         ["first product", "second-product", "third-product"],
-        "all"
-      )
+        "all",
+      ),
     ).toEqual([
       {
         brandName: "Delta",
         href: "/compare?slug=first+product&slug=second-product&slug=third-product&specs=all",
         id: "product-4",
-        name: "Fourth product"
-      }
+        name: "Fourth product",
+      },
     ]);
 
     expect(
@@ -113,17 +110,16 @@ describe("compare picker data", () => {
             id: "product-5",
             name: "Fifth product",
             slug: "fifth & product",
-            brand: { name: "Echo" }
-          }
+            brand: { name: "Echo" },
+          },
         ],
         ["first product"],
-        "differences"
-      )
+        "differences",
+      ),
     ).toMatchObject([
       {
-        href: "/compare?slug=first+product&slug=fifth+%26+product&specs=differences"
-      }
+        href: "/compare?slug=first+product&slug=fifth+%26+product&specs=differences",
+      },
     ]);
   });
-
 });

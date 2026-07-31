@@ -1,23 +1,20 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
-import {
-  createRelayRouterContext,
-  preloadRouteQuery
-} from "../../../../src/relay/route-preload";
+import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
 import { affiliateSetupLoader } from "../../../../src/routes/affiliate/setup/loader";
 import {
   affiliateSetupPagePath,
-  buildAffiliateSetupPaginationData
+  buildAffiliateSetupPaginationData,
 } from "../../../../src/routes/affiliate/setup/pagination";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    preloadRouteQuery: vi.fn()
+    preloadRouteQuery: vi.fn(),
   };
 });
 
@@ -38,42 +35,42 @@ test("affiliateSetupLoader preloads the default merchant choices page", async ()
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request }))
+    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     merchantPagination: {
       first: 20,
-      after: null
+      after: null,
     },
-    merchantQuery: descriptor
+    merchantQuery: descriptor,
   });
 
   expect(preloadRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20, after: null },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
 test("affiliateSetupLoader preserves supported merchant cursor and page-size params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=50"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=50",
   );
   const descriptor = affiliateSetupQueryDescriptor({ first: 50, after: "merchant-cursor" });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request }))
+    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     merchantPagination: {
       first: 50,
-      after: "merchant-cursor"
+      after: "merchant-cursor",
     },
-    merchantQuery: descriptor
+    merchantQuery: descriptor,
   });
 });
 
@@ -81,15 +78,15 @@ test("affiliateSetupPagePath serializes normalized merchant pagination", () => {
   expect(
     affiliateSetupPagePath({
       first: 35,
-      after: "merchant cursor/+"
-    })
+      after: "merchant cursor/+",
+    }),
   ).toBe("/affiliate/setup?first=35&after=merchant+cursor%2F%2B");
 
   expect(
     affiliateSetupPagePath({
       first: 35,
-      after: null
-    })
+      after: null,
+    }),
   ).toBe("/affiliate/setup?first=35");
 });
 
@@ -101,18 +98,18 @@ test("buildAffiliateSetupPaginationData returns page-size-preserving first and n
       hasPreviousPage: true,
       pagination: {
         first: 35,
-        after: "current-cursor"
-      }
-    })
+        after: "current-cursor",
+      },
+    }),
   ).toEqual({
     firstHref: "/affiliate/setup?first=35",
-    nextHref: "/affiliate/setup?first=35&after=next+cursor%2F%2B"
+    nextHref: "/affiliate/setup?first=35&after=next+cursor%2F%2B",
   });
 });
 
 test.each([
   [false, "current-cursor"],
-  [true, null]
+  [true, null],
 ] as const)(
   "buildAffiliateSetupPaginationData hides incomplete first-page facts",
   (hasPreviousPage, after) => {
@@ -121,15 +118,15 @@ test.each([
         endCursor: null,
         hasNextPage: false,
         hasPreviousPage,
-        pagination: { first: 20, after }
-      }).firstHref
+        pagination: { first: 20, after },
+      }).firstHref,
     ).toBeNull();
-  }
+  },
 );
 
 test.each([
   [false, "next-cursor"],
-  [true, null]
+  [true, null],
 ] as const)(
   "buildAffiliateSetupPaginationData hides incomplete next-page facts",
   (hasNextPage, endCursor) => {
@@ -138,10 +135,10 @@ test.each([
         endCursor,
         hasNextPage,
         hasPreviousPage: false,
-        pagination: { first: 20, after: null }
-      }).nextHref
+        pagination: { first: 20, after: null },
+      }).nextHref,
     ).toBeNull();
-  }
+  },
 );
 
 test("buildAffiliateSetupPaginationData does not mutate its input", () => {
@@ -149,7 +146,7 @@ test("buildAffiliateSetupPaginationData does not mutate its input", () => {
     endCursor: "next-cursor",
     hasNextPage: true,
     hasPreviousPage: true,
-    pagination: Object.freeze({ first: 50, after: "current-cursor" })
+    pagination: Object.freeze({ first: 50, after: "current-cursor" }),
   });
 
   buildAffiliateSetupPaginationData(input);
@@ -158,35 +155,35 @@ test("buildAffiliateSetupPaginationData does not mutate its input", () => {
     endCursor: "next-cursor",
     hasNextPage: true,
     hasPreviousPage: true,
-    pagination: { first: 50, after: "current-cursor" }
+    pagination: { first: 50, after: "current-cursor" },
   });
 });
 
 test("affiliateSetupLoader drops invalid merchant page-size params", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=500"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=500",
   );
   const descriptor = affiliateSetupQueryDescriptor({ first: 20, after: "merchant-cursor" });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
 
   await expect(
-    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request }))
+    affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     merchantPagination: {
       first: 20,
-      after: "merchant-cursor"
+      after: "merchant-cursor",
     },
-    merchantQuery: descriptor
+    merchantQuery: descriptor,
   });
 });
 
 test("affiliateSetupLoader returns error state when merchant preloading fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=30"
+    "https://app.example.test/affiliate/setup?after=merchant-cursor&first=30",
   );
   const preloadError = new Error("Network request failed: affiliate setup boom");
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -195,20 +192,20 @@ test("affiliateSetupLoader returns error state when merchant preloading fails", 
 
   try {
     await expect(
-      affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request }))
+      affiliateSetupLoader(buildAffiliateSetupLoaderArgs({ environment, request })),
     ).resolves.toEqual({
       status: "error",
       merchantPagination: {
         first: 30,
-        after: "merchant-cursor"
-      }
+        after: "merchant-cursor",
+      },
     });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       "Failed to preload affiliate setup merchant choices.",
       {
-        error: preloadError
-      }
+        error: preloadError,
+      },
     );
   } finally {
     consoleErrorSpy.mockRestore();
@@ -217,7 +214,7 @@ test("affiliateSetupLoader returns error state when merchant preloading fails", 
 
 function buildAffiliateSetupLoaderArgs({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.test/affiliate/setup")
+  request = new Request("https://app.example.test/affiliate/setup"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -227,7 +224,7 @@ function buildAffiliateSetupLoaderArgs({
     params: {},
     context: createRelayRouterContext(environment),
     pattern: "/affiliate/setup",
-    url: new URL(request.url)
+    url: new URL(request.url),
   };
 }
 
@@ -236,7 +233,7 @@ function affiliateSetupQueryDescriptor(variables: { first: number; after: string
     __relayQuery: {
       operationName: "AffiliateSetupRouteQuery",
       text: AFFILIATE_SETUP_QUERY_TEXT,
-      variables
-    }
+      variables,
+    },
   };
 }

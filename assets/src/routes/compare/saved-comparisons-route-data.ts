@@ -26,7 +26,7 @@ export function buildSavedComparisonsPagination({
   after,
   endCursor,
   hasNextPage,
-  status
+  status,
 }: SavedComparisonsPaginationInput): SavedComparisonsPagination {
   if (status === "unauthorized") {
     return { firstHref: null, nextHref: null };
@@ -35,9 +35,7 @@ export function buildSavedComparisonsPagination({
   return {
     firstHref: after ? "/compare/saved" : null,
     nextHref:
-      hasNextPage && endCursor && endCursor !== after
-        ? savedComparisonsPagePath(endCursor)
-        : null
+      hasNextPage && endCursor && endCursor !== after ? savedComparisonsPagePath(endCursor) : null,
   };
 }
 

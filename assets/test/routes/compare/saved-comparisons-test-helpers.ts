@@ -25,20 +25,18 @@ export type DeleteSavedComparisonSetMutationResponse = {
 };
 
 export const buildSuccessfulDeleteResponse = (
-  savedComparisonSetId: string
+  savedComparisonSetId: string,
 ): DeleteSavedComparisonSetMutationResponse => ({
   deleteSavedComparisonSet: {
     savedComparisonSet: {
-      id: savedComparisonSetId
+      id: savedComparisonSetId,
     },
-    errors: []
-  }
+    errors: [],
+  },
 });
 
-export const buildGraphQLResponseWithErrors = (
-  errors: TestGraphQLError[]
-): GraphQLResponse => ({
-  errors
+export const buildGraphQLResponseWithErrors = (errors: TestGraphQLError[]): GraphQLResponse => ({
+  errors,
 });
 
 export const buildRouteLoaderGraphQLError = (errors: TestGraphQLError[]) =>
@@ -46,41 +44,39 @@ export const buildRouteLoaderGraphQLError = (errors: TestGraphQLError[]) =>
 
 export const buildCompareLoaderArgs = ({
   environment,
-  request = new Request("https://app.example.com/compare")
+  request = new Request("https://app.example.com/compare"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs =>
-  ({
-    request,
-    params: {},
-    context: environment ? createRelayRouterContext(environment) : undefined,
-    pattern: "/compare",
-    url: new URL(request.url)
-  });
+} = {}): LoaderFunctionArgs => ({
+  request,
+  params: {},
+  context: environment ? createRelayRouterContext(environment) : undefined,
+  pattern: "/compare",
+  url: new URL(request.url),
+});
 
 export const buildAbortableRequest = (url: string, signal: AbortSignal): Request =>
   Object.defineProperty(
     new Request(url, {
-      headers: new Headers()
+      headers: new Headers(),
     }),
     "signal",
     {
-      value: signal
-    }
+      value: signal,
+    },
   );
 
 export const buildSavedComparisonsLoaderArgs = ({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.com/compare/saved")
+  request = new Request("https://app.example.com/compare/saved"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
-} = {}): LoaderFunctionArgs =>
-  ({
-    request,
-    params: {},
-    context: createRelayRouterContext(environment),
-    pattern: "/compare/saved",
-    url: new URL(request.url)
-  });
+} = {}): LoaderFunctionArgs => ({
+  request,
+  params: {},
+  context: createRelayRouterContext(environment),
+  pattern: "/compare/saved",
+  url: new URL(request.url),
+});

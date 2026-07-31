@@ -1,9 +1,6 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { nextRelayPageCursor } from "../../relay-pagination";
-import {
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../../route-errors";
+import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../../route-errors";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -30,9 +27,7 @@ type UnauthorizedApiTokensRouteData = {
   tokenStatus: ApiTokenStatus;
 };
 
-export type ApiTokensRouteData =
-  | AuthorizedApiTokensRouteData
-  | UnauthorizedApiTokensRouteData;
+export type ApiTokensRouteData = AuthorizedApiTokensRouteData | UnauthorizedApiTokensRouteData;
 
 export type ApiTokensRouteIdentityData = {
   status: "ready" | "empty" | "unauthorized";
@@ -99,7 +94,7 @@ export function buildApiTokenDisplayData(token: ApiTokenRecord) {
     lastUsedAtLabel: formatOptionalDateTime(token.lastUsedAt, "Never used"),
     insertedAtLabel: formatUtcDateTime(token.insertedAt),
     statusLabel: apiTokenStatusLabel(token, isActive),
-    statusTone: isActive ? ("positive" as const) : ("neutral" as const)
+    statusTone: isActive ? ("positive" as const) : ("neutral" as const),
   };
 }
 
@@ -107,11 +102,11 @@ export function buildApiTokenActionPolicy(
   token: ApiTokenRecord,
   {
     revokePending,
-    rotatePending
+    rotatePending,
   }: {
     readonly revokePending: boolean;
     readonly rotatePending: boolean;
-  }
+  },
 ) {
   const disabled = revokePending || rotatePending;
 
@@ -119,13 +114,13 @@ export function buildApiTokenActionPolicy(
     revoke: {
       copy: revokePending ? "Revoking token..." : "Revoke token",
       disabled,
-      visible: token.revokedAt === null
+      visible: token.revokedAt === null,
     },
     rotate: {
       copy: rotatePending ? "Rotating token..." : "Rotate token",
       disabled,
-      visible: apiTokenIsActive(token)
-    }
+      visible: apiTokenIsActive(token),
+    },
   };
 }
 
@@ -151,19 +146,21 @@ export function apiTokenPagePath(tokenStatus: ApiTokenStatus, after: string | nu
 }
 
 export function buildApiTokenStatusFilterNavigationData({
-  tokenStatus
+  tokenStatus,
 }: {
   readonly tokenStatus: ApiTokenStatus;
 }) {
-  return ([
-    { label: "All", status: "all" },
-    { label: "Active", status: "active" },
-    { label: "Revoked", status: "revoked" }
-  ] as const).map(({ label, status }) => ({
+  return (
+    [
+      { label: "All", status: "all" },
+      { label: "Active", status: "active" },
+      { label: "Revoked", status: "revoked" },
+    ] as const
+  ).map(({ label, status }) => ({
     href: apiTokenPagePath(status, null),
     isCurrent: tokenStatus === status,
     label,
-    status
+    status,
   }));
 }
 
@@ -171,7 +168,7 @@ export function buildApiTokenPaginationData({
   after,
   endCursor,
   hasNextPage,
-  tokenStatus
+  tokenStatus,
 }: {
   readonly after: string | null;
   readonly endCursor: string | null;
@@ -182,36 +179,33 @@ export function buildApiTokenPaginationData({
 
   return {
     firstHref: after ? apiTokenPagePath(tokenStatus, null) : null,
-    nextHref:
-      nextCursor
-        ? apiTokenPagePath(tokenStatus, nextCursor)
-        : null
+    nextHref: nextCursor ? apiTokenPagePath(tokenStatus, nextCursor) : null,
   };
 }
 
 export function buildApiTokensViewState(
   loaderData: ApiTokensRouteData,
   createdTokens: readonly ApiTokenRecord[] = [],
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord> = new Map()
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord> = new Map(),
 ) {
   if (loaderData.status === "unauthorized") {
     return {
       localTokens: [],
       statusMessage: "Sign in to manage API tokens.",
-      tokens: []
+      tokens: [],
     };
   }
 
   const loaderTokens = applyApiTokenUpdates(
     loaderData.tokens,
     apiTokenUpdates,
-    loaderData.tokenStatus
+    loaderData.tokenStatus,
   );
   const loaderTokenIds = new Set(loaderTokens.map((token) => token.id));
   const localTokens = applyApiTokenUpdates(
     createdTokens,
     apiTokenUpdates,
-    loaderData.tokenStatus
+    loaderData.tokenStatus,
   ).filter((token) => !loaderTokenIds.has(token.id));
   const tokens = mergeApiTokenSummaries(localTokens, loaderTokens);
 
@@ -219,21 +213,21 @@ export function buildApiTokensViewState(
     return {
       localTokens,
       statusMessage: "No API tokens yet.",
-      tokens: []
+      tokens: [],
     };
   }
 
   return {
     localTokens,
     statusMessage: localTokens.length > 0 ? "API token created." : "",
-    tokens
+    tokens,
   };
 }
 
 export function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenVariables {
   const expiresAt = normalizeExpiresAtFormValue(formData);
   const variables: CreateApiTokenVariables = {
-    label: optionalFormText(formData.get("label"))
+    label: optionalFormText(formData.get("label")),
   };
 
   if (expiresAt !== undefined) {
@@ -245,12 +239,12 @@ export function buildCreateApiTokenVariables(formData: FormData): CreateApiToken
 
 export function buildRotateApiTokenVariables(
   token: ApiTokenRecord,
-  formData: FormData
+  formData: FormData,
 ): RotateApiTokenVariables {
   const expiresAt = normalizeExpiresAtFormValue(formData);
   const variables: RotateApiTokenVariables = {
     tokenId: token.id,
-    label: optionalFormText(formData.get("label")) ?? token.label
+    label: optionalFormText(formData.get("label")) ?? token.label,
   };
 
   if (expiresAt !== undefined) {
@@ -262,7 +256,7 @@ export function buildRotateApiTokenVariables(
 
 export function resolveApiTokenCredentialMutationOutcome(
   payload: ApiTokenCredentialMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): ApiTokenCredentialMutationOutcome {
   if (hasRouteGraphQLErrors(graphQLErrors)) {
     return credentialMutationFailure(payload, graphQLErrors);
@@ -279,7 +273,7 @@ export function resolveApiTokenCredentialMutationOutcome(
 
 export function resolveRevokeApiTokenMutationOutcome(
   payload: ApiTokenMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): RevokeApiTokenMutationOutcome {
   if (hasRouteGraphQLErrors(graphQLErrors)) {
     return revokeMutationFailure(payload, graphQLErrors);
@@ -306,7 +300,7 @@ export function summarizeMutationApiToken(token?: MutationApiToken | null) {
     lastUsedAt = null,
     expiresAt = null,
     revokedAt = null,
-    insertedAt
+    insertedAt,
   } = token;
 
   return {
@@ -316,30 +310,27 @@ export function summarizeMutationApiToken(token?: MutationApiToken | null) {
     lastUsedAt,
     expiresAt,
     revokedAt,
-    insertedAt
+    insertedAt,
   } satisfies ApiTokenRecord;
 }
 
-export function markTokenRotated(
-  previousToken: ApiTokenRecord,
-  rotatedToken: ApiTokenRecord
-) {
+export function markTokenRotated(previousToken: ApiTokenRecord, rotatedToken: ApiTokenRecord) {
   return {
     ...previousToken,
-    revokedAt: previousToken.revokedAt ?? rotatedToken.insertedAt
+    revokedAt: previousToken.revokedAt ?? rotatedToken.insertedAt,
   } satisfies ApiTokenRecord;
 }
 
 export function upsertApiTokenSummary(
   tokens: readonly ApiTokenRecord[],
-  nextToken: ApiTokenRecord
+  nextToken: ApiTokenRecord,
 ) {
   return [nextToken, ...tokens.filter((token) => token.id !== nextToken.id)];
 }
 
 export function upsertApiTokenSummaryMap(
   tokens: ReadonlyMap<string, ApiTokenRecord>,
-  nextToken: ApiTokenRecord
+  nextToken: ApiTokenRecord,
 ) {
   const nextTokens = new Map(tokens);
   nextTokens.set(nextToken.id, nextToken);
@@ -349,7 +340,7 @@ export function upsertApiTokenSummaryMap(
 export function applyApiTokenUpdates(
   tokens: readonly ApiTokenRecord[],
   apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord>,
-  status: ApiTokenStatus
+  status: ApiTokenStatus,
 ) {
   return tokens.flatMap((token) => {
     const updatedToken = mergeApiTokenUpdate(token, apiTokenUpdates.get(token.id));
@@ -369,22 +360,22 @@ function normalizeExpiresAtFormValue(formData: FormData) {
 
 function credentialMutationFailure(
   payload: ApiTokenCredentialMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): ApiTokenCredentialMutationOutcome {
   return {
     error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
     plainTextToken: null,
-    token: null
+    token: null,
   };
 }
 
 function revokeMutationFailure(
   payload: ApiTokenMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): RevokeApiTokenMutationOutcome {
   return {
     error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-    token: null
+    token: null,
   };
 }
 
@@ -408,7 +399,7 @@ function normalizeDateTimeLocalValue(value: string | null) {
 
 function mergeApiTokenSummaries(
   localTokens: readonly ApiTokenRecord[],
-  loaderTokens: readonly ApiTokenRecord[]
+  loaderTokens: readonly ApiTokenRecord[],
 ) {
   if (localTokens.length === 0) {
     return [...loaderTokens];
@@ -430,17 +421,14 @@ function apiTokenMatchesStatus(token: ApiTokenRecord, status: ApiTokenStatus) {
   return token.revokedAt !== null;
 }
 
-function mergeApiTokenUpdate(
-  token: ApiTokenRecord,
-  updatedToken: ApiTokenRecord | undefined
-) {
+function mergeApiTokenUpdate(token: ApiTokenRecord, updatedToken: ApiTokenRecord | undefined) {
   if (!updatedToken) {
     return token;
   }
 
   return {
     ...token,
-    revokedAt: token.revokedAt ?? updatedToken.revokedAt
+    revokedAt: token.revokedAt ?? updatedToken.revokedAt,
   } satisfies ApiTokenRecord;
 }
 
@@ -456,7 +444,7 @@ function formatUtcDateTime(value: string) {
   }
 
   return `${date.getUTCFullYear()}-${padUtcPart(date.getUTCMonth() + 1)}-${padUtcPart(
-    date.getUTCDate()
+    date.getUTCDate(),
   )} ${padUtcPart(date.getUTCHours())}:${padUtcPart(date.getUTCMinutes())} UTC`;
 }
 

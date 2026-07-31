@@ -35,7 +35,7 @@ export function graphQLDateTimeContext(value: unknown): GraphQLDateTimeContext |
 
   return {
     dateTime: value,
-    label: `${parts.yearText}-${parts.monthText}-${parts.dayText}`
+    label: `${parts.yearText}-${parts.monthText}-${parts.dayText}`,
   };
 }
 
@@ -79,7 +79,7 @@ function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
     minuteText,
     secondText,
     offsetHourText,
-    offsetMinuteText
+    offsetMinuteText,
   ] = match;
 
   return {
@@ -93,7 +93,7 @@ function graphQLDateTimeParts(value: string): GraphQLDateTimeParts | null {
     offsetMinute: Number(offsetMinuteText ?? 0),
     second: Number(secondText),
     year: Number(yearText),
-    yearText
+    yearText,
   };
 }
 
@@ -104,8 +104,7 @@ function isValidGraphQLDateTime(parts: GraphQLDateTimeParts) {
 function normalizeGraphQLDateTimeForParsing(value: string) {
   return value.replace(
     /\.(\d{1,6})(?=Z|[+-]\d{2}:\d{2}$)/,
-    (_match, fractionalSeconds: string) =>
-      `.${fractionalSeconds.padEnd(3, "0").slice(0, 3)}`
+    (_match, fractionalSeconds: string) => `.${fractionalSeconds.padEnd(3, "0").slice(0, 3)}`,
   );
 }
 
@@ -114,11 +113,7 @@ function isValidCalendarDate({ day, month, year }: GraphQLDateTimeParts) {
 }
 
 function isValidTime({ hour, minute, second }: GraphQLDateTimeParts) {
-  return (
-    isWithinRange(hour, 0, 23) &&
-    isWithinRange(minute, 0, 59) &&
-    isWithinRange(second, 0, 59)
-  );
+  return isWithinRange(hour, 0, 23) && isWithinRange(minute, 0, 59) && isWithinRange(second, 0, 59);
 }
 
 function isValidOffset({ offsetHour, offsetMinute }: GraphQLDateTimeParts) {

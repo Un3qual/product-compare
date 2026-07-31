@@ -1,18 +1,18 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import offerDiscoveryRouteQuery, {
-  type OfferDiscoveryRouteQuery
+  type OfferDiscoveryRouteQuery,
 } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,
   normalizeOfferDiscoverySort,
   type OfferDiscoveryFilters,
-  type OfferDiscoverySort
+  type OfferDiscoverySort,
 } from "./offer-discovery-filter-data";
 
 export { DEFAULT_OFFERS_PAGE_SIZE } from "./offer-discovery-filter-data";
@@ -37,7 +37,7 @@ export type OfferDiscoveryLoaderData =
 
 export async function offerDiscoveryLoader({
   context,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<OfferDiscoveryLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const filters = offerDiscoveryFiltersFromUrl(new URL(request.url));
@@ -45,7 +45,7 @@ export async function offerDiscoveryLoader({
   if (!filters.productId) {
     return {
       status: "missingProduct",
-      filters
+      filters,
     };
   }
 
@@ -60,10 +60,10 @@ export async function offerDiscoveryLoader({
           after: filters.after,
           first: filters.first,
           input: offerDiscoveryInputFromFilters(filters),
-          productId: filters.productId
+          productId: filters.productId,
         },
-        { signal: request.signal }
-      )
+        { signal: request.signal },
+      ),
     };
   } catch (error) {
     return recoverRouteLoaderError<OfferDiscoveryLoaderData>(
@@ -71,8 +71,8 @@ export async function offerDiscoveryLoader({
       "Failed to preload offer discovery route query.",
       {
         status: "error",
-        filters
-      }
+        filters,
+      },
     );
   }
 }
@@ -84,7 +84,7 @@ export function offerDiscoveryFiltersFromUrl(url: URL): OfferDiscoveryFilters {
     first: pageSizeFromUrl(url),
     merchantId: nonBlankParam(url, "merchantId"),
     productId: nonBlankParam(url, "productId"),
-    sort: sortFromUrl(url)
+    sort: sortFromUrl(url),
   };
 }
 
@@ -92,7 +92,7 @@ function offerDiscoveryInputFromFilters(filters: OfferDiscoveryFilters) {
   return {
     activeOnly: filters.activeOnly,
     ...(filters.merchantId ? { merchantId: filters.merchantId } : {}),
-    productId: filters.productId ?? ""
+    productId: filters.productId ?? "",
   };
 }
 
@@ -115,11 +115,7 @@ function pageSizeFromUrl(url: URL) {
 
   const parsedValue = Number.parseInt(value, 10);
 
-  if (
-    Number.isNaN(parsedValue) ||
-    parsedValue < 1 ||
-    parsedValue > MAX_OFFERS_PAGE_SIZE
-  ) {
+  if (Number.isNaN(parsedValue) || parsedValue < 1 || parsedValue > MAX_OFFERS_PAGE_SIZE) {
     return DEFAULT_OFFERS_PAGE_SIZE;
   }
 
@@ -133,5 +129,5 @@ function sortFromUrl(url: URL): OfferDiscoverySort {
 function nonBlankParam(url: URL, name: string) {
   const value = url.searchParams.get(name)?.trim();
 
-  return value === "" ? null : value ?? null;
+  return value === "" ? null : (value ?? null);
 }

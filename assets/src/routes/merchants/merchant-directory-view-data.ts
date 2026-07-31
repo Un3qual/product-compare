@@ -11,21 +11,19 @@ export type MerchantDirectoryResultNode = {
   readonly slug: string;
 };
 
-export function buildMerchantDirectoryRows(
-  merchants: readonly MerchantDirectoryResultNode[]
-) {
+export function buildMerchantDirectoryRows(merchants: readonly MerchantDirectoryResultNode[]) {
   return merchants.map((merchant) => ({
     detailHref: `/merchants/${encodeURIComponent(merchant.slug)}`,
     domain: merchant.domain,
     id: merchant.id,
     name: merchant.name,
-    websiteHref: externalWebsiteHref(merchant.domain)
+    websiteHref: externalWebsiteHref(merchant.domain),
   }));
 }
 
 export function getMerchantDirectoryViewData<T extends MerchantDirectoryViewDataMerchant>(
   merchants: readonly T[],
-  filterText: string
+  filterText: string,
 ) {
   const normalizedFilterText = filterText.trim().toLowerCase();
   const visibleMerchants = normalizedFilterText
@@ -36,6 +34,6 @@ export function getMerchantDirectoryViewData<T extends MerchantDirectoryViewData
     heading: normalizedFilterText
       ? `${visibleMerchants.length} of ${merchants.length} merchants shown`
       : `${merchants.length} merchants on this page`,
-    visibleMerchants
+    visibleMerchants,
   };
 }

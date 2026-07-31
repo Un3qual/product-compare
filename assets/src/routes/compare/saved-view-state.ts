@@ -23,9 +23,7 @@ export type SavedComparisonSortMode =
   | "product-count-desc"
   | "product-count-asc";
 
-export function savedComparisonSortModeFromValue(
-  value: string
-): SavedComparisonSortMode {
+export function savedComparisonSortModeFromValue(value: string): SavedComparisonSortMode {
   switch (value) {
     case "name-asc":
     case "product-count-desc":
@@ -37,26 +35,17 @@ export function savedComparisonSortModeFromValue(
 }
 
 const SAVED_COMPARISON_NAME_COLLATOR = new Intl.Collator("en-US", {
-  sensitivity: "base"
+  sensitivity: "base",
 });
 
 export function buildSavedComparisonsViewState<T extends SavedComparisonsViewInput>(
   loaderData: T,
   deletedSavedSetIds: ReadonlySet<string>,
   filterText: string,
-  sortMode: SavedComparisonSortMode
+  sortMode: SavedComparisonSortMode,
 ) {
-  const {
-    hasDeletedSavedSet,
-    hasFilter,
-    hasLoadedSavedSets,
-    savedSets
-  } = visibleSavedComparisonSets(
-    loaderData.savedSets,
-    deletedSavedSetIds,
-    filterText,
-    sortMode
-  );
+  const { hasDeletedSavedSet, hasFilter, hasLoadedSavedSets, savedSets } =
+    visibleSavedComparisonSets(loaderData.savedSets, deletedSavedSetIds, filterText, sortMode);
 
   return {
     savedSets: savedSets.map(buildSavedComparisonSetViewState),
@@ -65,20 +54,20 @@ export function buildSavedComparisonsViewState<T extends SavedComparisonsViewInp
       savedSets,
       hasDeletedSavedSet,
       hasFilter,
-      hasLoadedSavedSets
-    )
+      hasLoadedSavedSets,
+    ),
   };
 }
 
 function buildSavedComparisonSetViewState(
-  savedSet: SavedComparisonSetSummary
+  savedSet: SavedComparisonSetSummary,
 ): SavedComparisonSetViewState {
   const productCount = savedSet.products.length;
 
   return {
     ...savedSet,
     productCountText: `${productCount} ${productCount === 1 ? "product" : "products"} in this saved comparison`,
-    productNamesText: savedSet.products.map(({ name }) => name).join(", ")
+    productNamesText: savedSet.products.map(({ name }) => name).join(", "),
   };
 }
 
@@ -87,7 +76,7 @@ function buildSavedComparisonsStatus(
   visibleSavedSets: SavedComparisonSetSummary[],
   hasLocalDeletion: boolean,
   hasFilter: boolean,
-  hasLoadedSavedSets: boolean
+  hasLoadedSavedSets: boolean,
 ) {
   if (loaderData.status === "unauthorized") {
     return "Sign in to view saved comparisons.";
@@ -112,7 +101,7 @@ function visibleSavedComparisonSets(
   savedSets: readonly SavedComparisonSetSummary[],
   deletedSavedSetIds: ReadonlySet<string>,
   filterText: string,
-  sortMode: SavedComparisonSortMode
+  sortMode: SavedComparisonSortMode,
 ) {
   const normalizedFilter = filterText.trim().toLowerCase();
   const visibleSavedSets: SavedComparisonSetSummary[] = [];
@@ -124,10 +113,7 @@ function visibleSavedComparisonSets(
       continue;
     }
 
-    if (
-      normalizedFilter === "" ||
-      savedComparisonSetMatchesFilter(savedSet, normalizedFilter)
-    ) {
+    if (normalizedFilter === "" || savedComparisonSetMatchesFilter(savedSet, normalizedFilter)) {
       visibleSavedSets.push(savedSet);
     }
   }
@@ -136,13 +122,13 @@ function visibleSavedComparisonSets(
     hasDeletedSavedSet,
     hasFilter: normalizedFilter !== "",
     hasLoadedSavedSets: savedSets.length > 0,
-    savedSets: sortSavedComparisonSets(visibleSavedSets, sortMode)
+    savedSets: sortSavedComparisonSets(visibleSavedSets, sortMode),
   };
 }
 
 function sortSavedComparisonSets(
   savedSets: SavedComparisonSetSummary[],
-  sortMode: SavedComparisonSortMode
+  sortMode: SavedComparisonSortMode,
 ) {
   if (sortMode === "current") {
     return savedSets;
@@ -153,7 +139,7 @@ function sortSavedComparisonSets(
   switch (sortMode) {
     case "name-asc":
       sortedSavedSets.sort((left, right) =>
-        SAVED_COMPARISON_NAME_COLLATOR.compare(left.name, right.name)
+        SAVED_COMPARISON_NAME_COLLATOR.compare(left.name, right.name),
       );
       break;
     case "product-count-desc":
@@ -173,7 +159,7 @@ function sortSavedComparisonSets(
 
 function savedComparisonSetMatchesFilter(
   savedSet: SavedComparisonSetSummary,
-  normalizedFilter: string
+  normalizedFilter: string,
 ) {
   if (savedSet.name.toLowerCase().includes(normalizedFilter)) {
     return true;
@@ -182,6 +168,6 @@ function savedComparisonSetMatchesFilter(
   return savedSet.products.some(
     ({ name, slug }) =>
       name.toLowerCase().includes(normalizedFilter) ||
-      slug.toLowerCase().includes(normalizedFilter)
+      slug.toLowerCase().includes(normalizedFilter),
   );
 }

@@ -19,26 +19,20 @@ export function buildAffiliateSetupPaginationData({
   endCursor,
   hasNextPage,
   hasPreviousPage,
-  pagination
+  pagination,
 }: {
   readonly endCursor: string | null;
   readonly hasNextPage: boolean;
   readonly hasPreviousPage: boolean;
   readonly pagination: Readonly<AffiliateSetupMerchantPagination>;
 }) {
-  const nextCursor = nextRelayPageCursor(
-    { endCursor, hasNextPage },
-    pagination.after
-  );
+  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, pagination.after);
 
   return {
     firstHref:
       hasPreviousPage && pagination.after
         ? affiliateSetupPagePath({ ...pagination, after: null })
         : null,
-    nextHref:
-      nextCursor
-        ? affiliateSetupPagePath({ ...pagination, after: nextCursor })
-        : null
+    nextHref: nextCursor ? affiliateSetupPagePath({ ...pagination, after: nextCursor }) : null,
   };
 }

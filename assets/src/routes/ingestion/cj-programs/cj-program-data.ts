@@ -7,7 +7,7 @@ export const CJ_PROGRAM_STAGES = [
     countKey: "considering",
     label: "Considering",
     urlValue: "considering",
-    value: "CONSIDERING"
+    value: "CONSIDERING",
   },
   { countKey: "selected", label: "Selected", urlValue: "selected", value: "SELECTED" },
   { countKey: "applied", label: "Applied", urlValue: "applied", value: "APPLIED" },
@@ -16,9 +16,9 @@ export const CJ_PROGRAM_STAGES = [
     countKey: "notPursuing",
     label: "Not pursuing",
     urlValue: "not_pursuing",
-    value: "NOT_PURSUING"
+    value: "NOT_PURSUING",
   },
-  { countKey: "declined", label: "Declined", urlValue: "declined", value: "DECLINED" }
+  { countKey: "declined", label: "Declined", urlValue: "declined", value: "DECLINED" },
 ] as const;
 
 export type CJProgramStage = (typeof CJ_PROGRAM_STAGES)[number]["value"];
@@ -28,9 +28,9 @@ export const CJ_PROGRAM_SORTS = [
   {
     label: "Last changed",
     urlValue: "last_changed_desc",
-    value: "LAST_CHANGED_DESC"
+    value: "LAST_CHANGED_DESC",
   },
-  { label: "Feed count", urlValue: "feed_count_desc", value: "FEED_COUNT_DESC" }
+  { label: "Feed count", urlValue: "feed_count_desc", value: "FEED_COUNT_DESC" },
 ] as const;
 
 export type CJProgramSort = (typeof CJ_PROGRAM_SORTS)[number]["value"];

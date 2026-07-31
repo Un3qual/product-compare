@@ -1,7 +1,7 @@
 import {
   DEFAULT_ROUTE_ERROR_MESSAGE,
   hasRouteGraphQLErrors,
-  routeMutationErrorMessage
+  routeMutationErrorMessage,
 } from "../route-errors";
 
 type CommerceClick = {
@@ -22,28 +22,19 @@ export type TrackedCommerceClickMutationOutcome =
   | { readonly error: string; readonly redirectUrl: null };
 
 export function shouldTrackCommerceClick(click: CommerceClick) {
-  return (
-    click.button === 0 &&
-    !click.altKey &&
-    !click.ctrlKey &&
-    !click.metaKey &&
-    !click.shiftKey
+  return click.button === 0 && !click.altKey && !click.ctrlKey && !click.metaKey && !click.shiftKey;
+}
+
+export function trackedMerchantProductHref(merchantProductId: string, graphQLEndpoint: string) {
+  const params = new URLSearchParams({ merchantProductId });
+
+  return resolveTrackedCommerceRedirectUrl(
+    `/r/merchant-product?${params.toString()}`,
+    graphQLEndpoint,
   );
 }
 
-export function trackedMerchantProductHref(
-  merchantProductId: string,
-  graphQLEndpoint: string
-) {
-  const params = new URLSearchParams({ merchantProductId });
-
-  return resolveTrackedCommerceRedirectUrl(`/r/merchant-product?${params.toString()}`, graphQLEndpoint);
-}
-
-export function resolveTrackedCommerceRedirectUrl(
-  redirectPath: string,
-  graphQLEndpoint: string
-) {
+export function resolveTrackedCommerceRedirectUrl(redirectPath: string, graphQLEndpoint: string) {
   const endpointUrl = new URL(graphQLEndpoint);
   const redirectUrl = new URL(redirectPath, endpointUrl.origin);
   const usesEndpointHttpProtocol =
@@ -60,7 +51,7 @@ export function resolveTrackedCommerceRedirectUrl(
 export function resolveTrackedCommerceClickMutationOutcome(
   payload: TrackedCommerceClickPayload | null | undefined,
   graphQLEndpoint: string,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): TrackedCommerceClickMutationOutcome {
   if (
     !payload?.redirectPath ||
@@ -70,17 +61,14 @@ export function resolveTrackedCommerceClickMutationOutcome(
   ) {
     return {
       error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
-      redirectUrl: null
+      redirectUrl: null,
     };
   }
 
   try {
     return {
       error: null,
-      redirectUrl: resolveTrackedCommerceRedirectUrl(
-        payload.redirectPath,
-        graphQLEndpoint
-      )
+      redirectUrl: resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint),
     };
   } catch {
     return { error: DEFAULT_ROUTE_ERROR_MESSAGE, redirectUrl: null };

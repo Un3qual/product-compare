@@ -1,11 +1,7 @@
 import { graphql } from "react-relay";
 
 export default graphql`
-  query ApiTokensRouteQuery(
-    $first: Int!
-    $after: String
-    $status: ApiTokenStatusFilter
-  ) {
+  query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) {
     myApiTokens(first: $first, after: $after, status: $status) {
       edges {
         cursor

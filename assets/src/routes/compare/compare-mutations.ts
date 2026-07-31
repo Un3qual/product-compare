@@ -1,7 +1,9 @@
 import { graphql } from "react-relay";
 
 export const createSavedComparisonSetMutation = graphql`
-  mutation compareMutationsCreateSavedComparisonSetMutation($input: CreateSavedComparisonSetInput!) {
+  mutation compareMutationsCreateSavedComparisonSetMutation(
+    $input: CreateSavedComparisonSetInput!
+  ) {
     createSavedComparisonSet(input: $input) {
       savedComparisonSet {
         id
@@ -31,7 +33,9 @@ export const deleteSavedComparisonSetMutation = graphql`
 `;
 
 export const publishComparisonSnapshotMutation = graphql`
-  mutation compareMutationsPublishComparisonSnapshotMutation($input: PublishComparisonSnapshotInput!) {
+  mutation compareMutationsPublishComparisonSnapshotMutation(
+    $input: PublishComparisonSnapshotInput!
+  ) {
     publishComparisonSnapshot(input: $input) {
       snapshot {
         id

@@ -1,13 +1,13 @@
 import { data, redirect, type LoaderFunctionArgs } from "react-router-dom";
 import productDetailRouteQuery, {
-  type ProductDetailRouteQuery
+  type ProductDetailRouteQuery,
 } from "../../__generated__/ProductDetailRouteQuery.graphql";
 import { RouteLoaderGraphQLError } from "../../relay/environment";
 import {
   cacheRouteQueryData,
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../relay/route-preload";
 import { recoverRouteLoaderError } from "../loader-errors";
 import { routeMetadataFromSeo } from "../seo";
@@ -37,7 +37,7 @@ type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
 export async function productDetailLoader({
   context,
   params,
-  request
+  request,
 }: LoaderFunctionArgs): Promise<ProductDetailLoaderResult> {
   const slug = params.slug?.trim() ?? "";
   const offersAfter = offersAfterFromUrl(new URL(request.url));
@@ -50,7 +50,7 @@ export async function productDetailLoader({
   const variables: ProductDetailRouteQuery["variables"] = {
     slug,
     offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
-    offersAfter
+    offersAfter,
   };
 
   try {
@@ -58,7 +58,7 @@ export async function productDetailLoader({
       environment,
       productDetailRouteQuery,
       variables,
-      { signal: request.signal }
+      { signal: request.signal },
     );
 
     if (!productRouteQuery.data.product) {
@@ -77,9 +77,9 @@ export async function productDetailLoader({
     return {
       status: "ready",
       metadata: routeMetadataFromSeo(productRouteQuery.data.product.seo, request.url, {
-        allowIndexing: new URL(request.url).search === ""
+        allowIndexing: new URL(request.url).search === "",
       }),
-      productQuery: productRouteQuery.descriptor
+      productQuery: productRouteQuery.descriptor,
     };
   } catch (error) {
     const partialData = partialProductData(error);
@@ -88,14 +88,14 @@ export async function productDetailLoader({
       return {
         status: "ready",
         metadata: routeMetadataFromSeo(partialData.product.seo, request.url, {
-          allowIndexing: new URL(request.url).search === ""
+          allowIndexing: new URL(request.url).search === "",
         }),
         productQuery: cacheRouteQueryData<ProductDetailRouteQuery>(
           environment,
           productDetailRouteQuery,
           variables,
-          partialData
-        )
+          partialData,
+        ),
       };
     }
 
@@ -103,8 +103,8 @@ export async function productDetailLoader({
       error,
       "Failed to preload product detail route query.",
       {
-        status: "error"
-      }
+        status: "error",
+      },
     );
   }
 }
@@ -112,9 +112,9 @@ export async function productDetailLoader({
 function productNotFoundResult() {
   return data<ProductDetailLoaderData>(
     {
-      status: "not_found"
+      status: "not_found",
     },
-    { status: 404 }
+    { status: 404 },
   );
 }
 
@@ -122,9 +122,7 @@ function offersAfterFromUrl(url: URL): string | null {
   return url.searchParams.get("offersAfter");
 }
 
-function partialProductData(
-  error: unknown
-): ProductDetailResponseWithProduct | null {
+function partialProductData(error: unknown): ProductDetailResponseWithProduct | null {
   if (!(error instanceof RouteLoaderGraphQLError)) {
     return null;
   }
@@ -141,7 +139,7 @@ function partialProductData(
 }
 
 function hasProduct(
-  data: ProductDetailRouteQuery["response"] | null | undefined
+  data: ProductDetailRouteQuery["response"] | null | undefined,
 ): data is ProductDetailResponseWithProduct {
   return data?.product !== null && data?.product !== undefined;
 }

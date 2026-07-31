@@ -5,16 +5,16 @@ import {
   createRelayEnvironment,
   formatGraphQLErrorMessage,
   hasGraphQLErrors,
-  RouteLoaderGraphQLError
+  RouteLoaderGraphQLError,
 } from "../../src/relay/environment";
 import { RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "../../src/relay/load-query";
 
 const { fetchGraphQLMock } = vi.hoisted(() => ({
-  fetchGraphQLMock: vi.fn()
+  fetchGraphQLMock: vi.fn(),
 }));
 
 vi.mock("../../src/relay/fetch-graphql", () => ({
-  fetchGraphQL: fetchGraphQLMock
+  fetchGraphQL: fetchGraphQLMock,
 }));
 
 beforeEach(() => {
@@ -27,9 +27,9 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
 
   fetchGraphQLMock.mockResolvedValue({
     data: {
-      product: null
+      product: null,
     },
-    errors: [{ message: "boom" }]
+    errors: [{ message: "boom" }],
   });
 
   await expect(
@@ -39,16 +39,16 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
       {
         slug: "detail-product",
         offerFirst: 6,
-        offersAfter: null
+        offersAfter: null,
       },
       {
         networkCacheConfig: {
           metadata: {
-            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
-          }
-        }
-      }
-    ).toPromise()
+            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal,
+          },
+        },
+      },
+    ).toPromise(),
   ).rejects.toThrow("GraphQL response contained errors: boom");
   await expect(
     fetchQuery(
@@ -57,32 +57,32 @@ test("Relay environment rejects top-level GraphQL errors for route-loader reques
       {
         slug: "detail-product",
         offerFirst: 6,
-        offersAfter: null
+        offersAfter: null,
       },
       {
         networkCacheConfig: {
           metadata: {
-            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal
-          }
-        }
-      }
-    ).toPromise()
+            [RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY]: signal,
+          },
+        },
+      },
+    ).toPromise(),
   ).rejects.toMatchObject({
     name: "RouteLoaderGraphQLError",
     response: {
       data: {
-        product: null
+        product: null,
       },
-      errors: [{ message: "boom" }]
-    }
+      errors: [{ message: "boom" }],
+    },
   });
 
   expect(fetchGraphQL).toHaveBeenCalledWith(
     expect.stringContaining("query ProductDetailRouteQuery"),
     { slug: "detail-product", offerFirst: 6, offersAfter: null },
     expect.objectContaining({
-      signal
-    })
+      signal,
+    }),
   );
   expect(fetchGraphQLMock.mock.calls[0]?.[2]).not.toHaveProperty("rejectGraphQLErrors");
 });
@@ -93,10 +93,10 @@ test("RouteLoaderGraphQLError preserves the GraphQL response", () => {
       {
         message: "Authentication required",
         extensions: {
-          code: "UNAUTHENTICATED"
-        }
-      }
-    ]
+          code: "UNAUTHENTICATED",
+        },
+      },
+    ],
   };
 
   const error = new RouteLoaderGraphQLError(response);
@@ -110,14 +110,14 @@ test("Relay environment preserves default GraphQL error handling outside route-l
 
   fetchGraphQLMock.mockResolvedValue({
     data: {
-      product: null
-    }
+      product: null,
+    },
   });
 
   await fetchQuery(environment, productDetailRouteQuery, {
     slug: "detail-product",
     offerFirst: 6,
-    offersAfter: null
+    offersAfter: null,
   }).toPromise();
 
   const ssrContext = fetchGraphQLMock.mock.calls[0]?.[2];
@@ -130,20 +130,20 @@ test("Relay environment preserves an explicit SSR signal outside route-loader re
   const signal = new AbortController().signal;
   const environment = createRelayEnvironment({
     ssrContext: {
-      signal
-    }
+      signal,
+    },
   });
 
   fetchGraphQLMock.mockResolvedValue({
     data: {
-      product: null
-    }
+      product: null,
+    },
   });
 
   await fetchQuery(environment, productDetailRouteQuery, {
     slug: "detail-product",
     offerFirst: 6,
-    offersAfter: null
+    offersAfter: null,
   }).toPromise();
 
   const ssrContext = fetchGraphQLMock.mock.calls[0]?.[2];
@@ -167,8 +167,8 @@ describe("hasGraphQLErrors", () => {
     expect(
       hasGraphQLErrors({
         data: { product: null },
-        errors: [{ message: "boom" }]
-      })
+        errors: [{ message: "boom" }],
+      }),
     ).toBe(true);
   });
 });
@@ -177,16 +177,16 @@ describe("formatGraphQLErrorMessage", () => {
   test("formats multiple GraphQL top-level error messages", () => {
     expect(
       formatGraphQLErrorMessage({
-        errors: [{ message: "first failure" }, { message: "second failure" }]
-      })
+        errors: [{ message: "first failure" }, { message: "second failure" }],
+      }),
     ).toBe("GraphQL response contained errors: first failure; second failure");
   });
 
   test("uses a generic message when no string error messages are present", () => {
     expect(
       formatGraphQLErrorMessage({
-        errors: [{ message: 123 }, { message: null }, { foo: "bar" }]
-      } as never)
+        errors: [{ message: 123 }, { message: null }, { foo: "bar" }],
+      } as never),
     ).toBe("GraphQL response contained errors");
   });
 

@@ -7,7 +7,14 @@ export default graphql`
       name
       slug
       domain
-      seo { title description canonicalPath indexable imageUrl structuredData }
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
       detailSummary {
         activeOfferCount
         distinctProductCount
@@ -24,11 +31,24 @@ export default graphql`
           node {
             id
             currency
-            product { id name slug }
-            latestPrice { id price shipping inStock observedAt }
+            product {
+              id
+              name
+              slug
+            }
+            latestPrice {
+              id
+              price
+              shipping
+              inStock
+              observedAt
+            }
           }
         }
-        pageInfo { hasNextPage endCursor }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
       }
     }
   }

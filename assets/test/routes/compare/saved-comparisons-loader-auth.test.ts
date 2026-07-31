@@ -1,22 +1,22 @@
 import { fetchRouteQuery } from "../../../src/relay/route-preload";
 import {
   isUnauthorizedSavedComparisonsResponse,
-  savedComparisonsLoader
+  savedComparisonsLoader,
 } from "../../../src/routes/compare/saved-data";
 import {
   buildGraphQLResponseWithErrors,
   buildRouteLoaderGraphQLError,
-  buildSavedComparisonsLoaderArgs
+  buildSavedComparisonsLoaderArgs,
 } from "./saved-comparisons-test-helpers";
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    fetchRouteQuery: vi.fn()
+    fetchRouteQuery: vi.fn(),
   };
 });
 
@@ -33,11 +33,11 @@ test("isUnauthorizedSavedComparisonsResponse detects a pathless unauthenticated 
         {
           message: "Unauthorized",
           extensions: {
-            code: "UNAUTHENTICATED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHENTICATED",
+          },
+        },
+      ]),
+    ),
   ).toBe(true);
 });
 
@@ -47,29 +47,27 @@ test("savedComparisonsLoader returns unauthorized for a pathless structured auth
       {
         message: "Authentication failed",
         extensions: {
-          code: "UNAUTHENTICATED"
-        }
-      }
-    ])
+          code: "UNAUTHENTICATED",
+        },
+      },
+    ]),
   );
 
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs())
-  ).resolves.toEqual({
+  await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs())).resolves.toEqual({
     status: "unauthorized",
     savedSetQueries: [],
-    savedSets: []
+    savedSets: [],
   });
 });
 
 test("savedComparisonsLoader does not treat generic access denied failures as auth state", async () => {
   fetchRouteQueryMock.mockRejectedValueOnce(
-    new Error("CDN access denied while fetching saved comparison sets")
+    new Error("CDN access denied while fetching saved comparison sets"),
   );
 
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs())
-  ).rejects.toThrow("CDN access denied while fetching saved comparison sets");
+  await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs())).rejects.toThrow(
+    "CDN access denied while fetching saved comparison sets",
+  );
 });
 
 test("isUnauthorizedSavedComparisonsResponse ignores legacy unauthorized extension codes", () => {
@@ -80,10 +78,10 @@ test("isUnauthorizedSavedComparisonsResponse ignores legacy unauthorized extensi
           message: "Unauthorized",
           path: ["mySavedComparisonSets"],
           extensions: {
-            code: "UNAUTHORIZED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHORIZED",
+          },
+        },
+      ]),
+    ),
   ).toBe(false);
 });

@@ -1,24 +1,21 @@
 import {
   buildProductAttributeListData,
-  type ProductAttributeListItem
+  type ProductAttributeListItem,
 } from "../../../src/routes/products/product-attribute-list-data";
 
-function attribute(
-  code: string,
-  groupLabel?: string | null
-): ProductAttributeListItem {
+function attribute(code: string, groupLabel?: string | null): ProductAttributeListItem {
   return {
     code,
     displayName: code,
     groupLabel,
-    valueText: `${code} value`
+    valueText: `${code} value`,
   };
 }
 
 test("buildProductAttributeListData returns empty partitions for empty input", () => {
   expect(buildProductAttributeListData([])).toEqual({
     groupedAttributes: [],
-    ungroupedAttributes: []
+    ungroupedAttributes: [],
   });
 });
 
@@ -27,7 +24,7 @@ test("buildProductAttributeListData preserves every ungrouped attribute", () => 
     attribute("missing"),
     attribute("null", null),
     attribute("empty", ""),
-    attribute("blank", "   ")
+    attribute("blank", "   "),
   ];
 
   const result = buildProductAttributeListData(attributes);
@@ -45,10 +42,10 @@ test("buildProductAttributeListData trims labels and groups case-insensitively",
     groupedAttributes: [
       {
         label: "Performance",
-        attributes: [first, second, third]
-      }
+        attributes: [first, second, third],
+      },
     ],
-    ungroupedAttributes: []
+    ungroupedAttributes: [],
   });
 });
 
@@ -63,17 +60,17 @@ test("buildProductAttributeListData preserves first-seen group and attribute ord
       capabilityFirst,
       performanceFirst,
       capabilitySecond,
-      performanceSecond
-    ]).groupedAttributes
+      performanceSecond,
+    ]).groupedAttributes,
   ).toEqual([
     {
       label: "Capabilities",
-      attributes: [capabilityFirst, capabilitySecond]
+      attributes: [capabilityFirst, capabilitySecond],
     },
     {
       label: "Performance",
-      attributes: [performanceFirst, performanceSecond]
-    }
+      attributes: [performanceFirst, performanceSecond],
+    },
   ]);
 });
 
@@ -82,17 +79,8 @@ test("buildProductAttributeListData retains ungrouped attributes as an ordered t
   const grouped = attribute("refresh-rate", "Performance");
   const ungroupedSecond = attribute("model", " ");
 
-  const result = buildProductAttributeListData([
-    ungroupedFirst,
-    grouped,
-    ungroupedSecond
-  ]);
+  const result = buildProductAttributeListData([ungroupedFirst, grouped, ungroupedSecond]);
 
-  expect(result.groupedAttributes).toEqual([
-    { label: "Performance", attributes: [grouped] }
-  ]);
-  expect(result.ungroupedAttributes).toEqual([
-    ungroupedFirst,
-    ungroupedSecond
-  ]);
+  expect(result.groupedAttributes).toEqual([{ label: "Performance", attributes: [grouped] }]);
+  expect(result.ungroupedAttributes).toEqual([ungroupedFirst, ungroupedSecond]);
 });

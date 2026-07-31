@@ -1,11 +1,11 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { RouteLoaderGraphQLError } from "../../../relay/environment";
 import alertsRouteQuery, {
-  type AlertsRouteQuery
+  type AlertsRouteQuery,
 } from "../../../__generated__/AlertsRouteQuery.graphql";
 import {
   fetchRouteQuery,
-  getRelayEnvironmentFromRouterContext
+  getRelayEnvironmentFromRouterContext,
 } from "../../../relay/route-preload";
 import { isRouteRecord } from "../../route-errors";
 
@@ -46,7 +46,10 @@ export type AlertsRouteLoaderData =
 
 const AUTH_CODES = new Set(["UNAUTHENTICATED"]);
 
-export async function alertsLoader({ context, request }: LoaderFunctionArgs): Promise<AlertsRouteLoaderData> {
+export async function alertsLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<AlertsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   let fetched: Awaited<ReturnType<typeof fetchRouteQuery<AlertsRouteQuery>>> | null = null;
 
@@ -55,7 +58,7 @@ export async function alertsLoader({ context, request }: LoaderFunctionArgs): Pr
       environment,
       alertsRouteQuery,
       { first: 50 },
-      { signal: request.signal }
+      { signal: request.signal },
     );
     const summary = summarizeAlertsRoute(fetched.data);
     fetched.dispose();
@@ -75,8 +78,10 @@ export async function alertsLoader({ context, request }: LoaderFunctionArgs): Pr
 
 export function summarizeAlertsRoute(data: unknown) {
   const record = isRouteRecord(data) ? data : null;
-  const alertConnection = record && isRouteRecord(record.myAlertEvents) ? record.myAlertEvents : null;
-  const watchConnection = record && isRouteRecord(record.myPriceWatches) ? record.myPriceWatches : null;
+  const alertConnection =
+    record && isRouteRecord(record.myAlertEvents) ? record.myAlertEvents : null;
+  const watchConnection =
+    record && isRouteRecord(record.myPriceWatches) ? record.myPriceWatches : null;
 
   if (!alertConnection || !watchConnection) {
     throw new Error("Failed to parse price alerts response");
@@ -86,7 +91,7 @@ export function summarizeAlertsRoute(data: unknown) {
     alerts: connectionNodes(alertConnection).flatMap(normalizeAlert),
     watches: connectionNodes(watchConnection).flatMap(normalizeWatch),
     hasMoreAlerts: pageHasMore(alertConnection),
-    hasMoreWatches: pageHasMore(watchConnection)
+    hasMoreWatches: pageHasMore(watchConnection),
   };
 }
 
@@ -102,7 +107,16 @@ function pageHasMore(connection: Record<string, unknown>) {
 
 function normalizeAlert(value: unknown): AlertSummary[] {
   if (!isRouteRecord(value)) return [];
-  const required = ["id", "productName", "productSlug", "merchantName", "ruleType", "currency", "landedPrice", "observedAt"];
+  const required = [
+    "id",
+    "productName",
+    "productSlug",
+    "merchantName",
+    "ruleType",
+    "currency",
+    "landedPrice",
+    "observedAt",
+  ];
   if (!required.every((key) => typeof value[key] === "string")) return [];
 
   return [value as AlertSummary];
@@ -111,7 +125,11 @@ function normalizeAlert(value: unknown): AlertSummary[] {
 function normalizeWatch(value: unknown): WatchSummary[] {
   if (!isRouteRecord(value)) return [];
   const required = ["id", "productName", "productSlug", "ruleType", "currency"];
-  if (!required.every((key) => typeof value[key] === "string") || typeof value.enabled !== "boolean") return [];
+  if (
+    !required.every((key) => typeof value[key] === "string") ||
+    typeof value.enabled !== "boolean"
+  )
+    return [];
 
   return [value as WatchSummary];
 }

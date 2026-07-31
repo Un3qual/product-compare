@@ -2,13 +2,13 @@ import {
   addSetValue,
   removeMapValue,
   removeSetValue,
-  upsertMapValue
+  upsertMapValue,
 } from "../../src/routes/immutable-collection-state";
 
 test("upsertMapValue appends a new key without changing the source map", () => {
   const source = new Map([
     ["first", 1],
-    ["second", 2]
+    ["second", 2],
   ]);
 
   const result = upsertMapValue(source, "third", 3);
@@ -17,11 +17,11 @@ test("upsertMapValue appends a new key without changing the source map", () => {
   expect([...result]).toEqual([
     ["first", 1],
     ["second", 2],
-    ["third", 3]
+    ["third", 3],
   ]);
   expect([...source]).toEqual([
     ["first", 1],
-    ["second", 2]
+    ["second", 2],
   ]);
 });
 
@@ -30,7 +30,7 @@ test("upsertMapValue replaces a present key in place and always returns a new ma
   const source = new Map([
     ["first", sameValue],
     ["second", { state: "old" }],
-    ["third", { state: "last" }]
+    ["third", { state: "last" }],
   ]);
 
   const result = upsertMapValue(source, "second", sameValue);
@@ -44,7 +44,7 @@ test("upsertMapValue replaces a present key in place and always returns a new ma
 test("removeMapValue preserves source identity and ordering when the key is absent", () => {
   const source = new Map([
     ["first", 1],
-    ["second", 2]
+    ["second", 2],
   ]);
 
   const result = removeMapValue(source, "missing");
@@ -52,7 +52,7 @@ test("removeMapValue preserves source identity and ordering when the key is abse
   expect(result).toBe(source);
   expect([...result]).toEqual([
     ["first", 1],
-    ["second", 2]
+    ["second", 2],
   ]);
 });
 
@@ -60,7 +60,7 @@ test("removeMapValue removes a present key without changing the source map", () 
   const source = new Map([
     ["first", 1],
     ["second", 2],
-    ["third", 3]
+    ["third", 3],
   ]);
 
   const result = removeMapValue(source, "second");
@@ -68,12 +68,12 @@ test("removeMapValue removes a present key without changing the source map", () 
   expect(result).not.toBe(source);
   expect([...result]).toEqual([
     ["first", 1],
-    ["third", 3]
+    ["third", 3],
   ]);
   expect([...source]).toEqual([
     ["first", 1],
     ["second", 2],
-    ["third", 3]
+    ["third", 3],
   ]);
 });
 

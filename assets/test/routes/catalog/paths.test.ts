@@ -1,14 +1,14 @@
 import type { CatalogFilters } from "../../../src/routes/catalog/filters";
 import {
   buildCatalogBrowsePaginationData,
-  catalogBrowsePath
+  catalogBrowsePath,
 } from "../../../src/routes/catalog/paths";
 
 const EMPTY_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
-  enums: []
+  enums: [],
 };
 
 const FILTERS: CatalogFilters = {
@@ -21,21 +21,21 @@ const FILTERS: CatalogFilters = {
     {
       attributeId: "attr-refresh",
       min: "120",
-      max: "240"
-    }
+      max: "240",
+    },
   ],
   booleans: [
     {
       attributeId: "attr-wireless",
-      value: true
-    }
+      value: true,
+    },
   ],
   enums: [
     {
       attributeId: "attr-color",
-      enumOptionId: "enum-red"
-    }
-  ]
+      enumOptionId: "enum-red",
+    },
+  ],
 };
 
 test("buildCatalogBrowsePaginationData preserves filters, page size, compare order, and cursor encoding", () => {
@@ -46,32 +46,26 @@ test("buildCatalogBrowsePaginationData preserves filters, page size, compare ord
       filters: FILTERS,
       first: 24,
       hasNextPage: true,
-      selectedCompareSlugs: ["first product", "second/product"]
-    })
+      selectedCompareSlugs: ["first product", "second/product"],
+    }),
   ).toEqual({
     firstHref:
       "/products?first=24&q=oled+display&sort=BRAND_NAME_ASC&typeTaxonId=type%2Flaptops&includeTypeDescendants=1&useCaseTaxonId=gaming+%26+media&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&slug=first+product&slug=second%2Fproduct",
     nextHref:
-      "/products?first=24&q=oled+display&sort=BRAND_NAME_ASC&typeTaxonId=type%2Flaptops&includeTypeDescendants=1&useCaseTaxonId=gaming+%26+media&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=next+cursor%2F%2B&slug=first+product&slug=second%2Fproduct"
+      "/products?first=24&q=oled+display&sort=BRAND_NAME_ASC&typeTaxonId=type%2Flaptops&includeTypeDescendants=1&useCaseTaxonId=gaming+%26+media&numeric.attr-refresh.min=120&numeric.attr-refresh.max=240&boolean.attr-wireless=true&enum.attr-color=enum-red&after=next+cursor%2F%2B&slug=first+product&slug=second%2Fproduct",
   });
 });
 
 test("catalogBrowsePath omits relevance when it is the active query default", () => {
-  expect(
-    catalogBrowsePath(
-      { ...EMPTY_FILTERS, query: "oled", sort: "RELEVANCE" },
-      12
-    )
-  ).toBe("/products?first=12&q=oled");
+  expect(catalogBrowsePath({ ...EMPTY_FILTERS, query: "oled", sort: "RELEVANCE" }, 12)).toBe(
+    "/products?first=12&q=oled",
+  );
 });
 
 test("catalogBrowsePath preserves explicit catalog order for an active query", () => {
-  expect(
-    catalogBrowsePath(
-      { ...EMPTY_FILTERS, query: "oled", sort: "ID_ASC" },
-      12
-    )
-  ).toBe("/products?first=12&q=oled&sort=ID_ASC");
+  expect(catalogBrowsePath({ ...EMPTY_FILTERS, query: "oled", sort: "ID_ASC" }, 12)).toBe(
+    "/products?first=12&q=oled&sort=ID_ASC",
+  );
 });
 
 test.each([null, ""])(
@@ -84,16 +78,16 @@ test.each([null, ""])(
         filters: FILTERS,
         first: 12,
         hasNextPage: false,
-        selectedCompareSlugs: []
-      }).firstHref
+        selectedCompareSlugs: [],
+      }).firstHref,
     ).toBeNull();
-  }
+  },
 );
 
 test.each([
   [false, "next-cursor"],
   [true, null],
-  [true, ""]
+  [true, ""],
 ] as const)(
   "buildCatalogBrowsePaginationData hides incomplete next-page facts",
   (hasNextPage, endCursor) => {
@@ -104,10 +98,10 @@ test.each([
         filters: FILTERS,
         first: 12,
         hasNextPage,
-        selectedCompareSlugs: []
-      }).nextHref
+        selectedCompareSlugs: [],
+      }).nextHref,
     ).toBeNull();
-  }
+  },
 );
 
 test("buildCatalogBrowsePaginationData does not mutate filters or compare slugs", () => {
@@ -116,7 +110,7 @@ test("buildCatalogBrowsePaginationData does not mutate filters or compare slugs"
     useCaseTaxonIds: [...FILTERS.useCaseTaxonIds],
     numeric: FILTERS.numeric.map((filter) => ({ ...filter })),
     booleans: FILTERS.booleans.map((filter) => ({ ...filter })),
-    enums: FILTERS.enums.map((filter) => ({ ...filter }))
+    enums: FILTERS.enums.map((filter) => ({ ...filter })),
   };
   const selectedCompareSlugs = ["first-product", " second-product "];
   const originalFilters = structuredClone(filters);
@@ -128,7 +122,7 @@ test("buildCatalogBrowsePaginationData does not mutate filters or compare slugs"
     filters,
     first: 50,
     hasNextPage: true,
-    selectedCompareSlugs
+    selectedCompareSlugs,
   });
 
   expect(filters).toEqual(originalFilters);

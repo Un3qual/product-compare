@@ -6,19 +6,19 @@ export type CatalogFilterFormTypeState = {
 };
 
 export function catalogFilterFormInitialTypeState(
-  filters: Pick<CatalogFilters, "typeTaxonId" | "includeTypeDescendants">
+  filters: Pick<CatalogFilters, "typeTaxonId" | "includeTypeDescendants">,
 ): CatalogFilterFormTypeState {
   const selectedTypeTaxonId = filters.typeTaxonId ?? "";
 
   return {
     selectedTypeTaxonId,
-    includeTypeDescendants: Boolean(selectedTypeTaxonId && filters.includeTypeDescendants)
+    includeTypeDescendants: Boolean(selectedTypeTaxonId && filters.includeTypeDescendants),
   };
 }
 
 export function catalogFilterFormTypeSelection(
   previous: CatalogFilterFormTypeState,
-  selectedTypeTaxonId: string
+  selectedTypeTaxonId: string,
 ): CatalogFilterFormTypeState {
   return {
     selectedTypeTaxonId,
@@ -27,12 +27,12 @@ export function catalogFilterFormTypeSelection(
         ? false
         : previous.selectedTypeTaxonId === ""
           ? true
-          : previous.includeTypeDescendants
+          : previous.includeTypeDescendants,
   };
 }
 
 export function hasInitiallyOpenCatalogAdvancedFilters(
-  filters: Pick<CatalogFilters, "useCaseTaxonIds" | "numeric" | "booleans" | "enums">
+  filters: Pick<CatalogFilters, "useCaseTaxonIds" | "numeric" | "booleans" | "enums">,
 ) {
   return (
     filters.useCaseTaxonIds.length > 0 ||

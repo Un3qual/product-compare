@@ -65,30 +65,28 @@ const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
   {
     key: "best-price",
     label: "Best current price",
-    value: bestCurrentPriceLabel
+    value: bestCurrentPriceLabel,
   },
   {
     key: "offer-count",
     label: "Active offer count",
-    value: activeOfferCountLabel
+    value: activeOfferCountLabel,
   },
   {
     key: "coupon-signal",
     label: "Coupon signal",
-    value: couponSignalLabel
+    value: couponSignalLabel,
   },
   {
     key: "price-recency",
     label: "Price recency",
-    value: priceRecencyLabel
-  }
+    value: priceRecencyLabel,
+  },
 ];
 
 export function buildDecisionSummaryMetricRows(
   products: readonly DecisionSummaryProduct[],
-  offerContexts:
-    | Readonly<Record<string, DecisionSummaryOfferContext>>
-    | undefined
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
 ): DecisionSummaryMetricRow[] {
   const relativePriceLabels = relativeLoadedPriceLabels(products, offerContexts);
 
@@ -98,25 +96,23 @@ export function buildDecisionSummaryMetricRows(
       label: "Relative loaded price",
       cells: products.map(({ id }) => ({
         productId: id,
-        value: relativePriceLabels.get(id) ?? "Not comparable"
-      }))
+        value: relativePriceLabels.get(id) ?? "Not comparable",
+      })),
     },
     ...DECISION_SUMMARY_METRICS.map((metric) => ({
       key: metric.key,
       label: metric.label,
       cells: products.map(({ id }) => ({
         productId: id,
-        value: metric.value(offerContextForProduct(offerContexts, id))
-      }))
-    }))
+        value: metric.value(offerContextForProduct(offerContexts, id)),
+      })),
+    })),
   ];
 }
 
 function relativeLoadedPriceLabels(
   products: readonly DecisionSummaryProduct[],
-  offerContexts:
-    | Readonly<Record<string, DecisionSummaryOfferContext>>
-    | undefined
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
 ) {
   const unavailable = new Map(products.map(({ id }) => [id, "Not comparable"]));
 
@@ -147,14 +143,12 @@ function relativeLoadedPriceLabels(
   }
 
   const minimum = comparablePrices.reduce((current, candidate) =>
-    compareDecimalStrings(candidate.value, current.value) === -1 ? candidate : current
+    compareDecimalStrings(candidate.value, current.value) === -1 ? candidate : current,
   );
   const minimumCount = comparablePrices.filter(
-    ({ value }) => compareDecimalStrings(value, minimum.value) === 0
+    ({ value }) => compareDecimalStrings(value, minimum.value) === 0,
   ).length;
-  const comparableByProductId = new Map(
-    comparablePrices.map((price) => [price.productId, price])
-  );
+  const comparableByProductId = new Map(comparablePrices.map((price) => [price.productId, price]));
 
   return new Map(
     products.map(({ id }) => {
@@ -170,17 +164,15 @@ function relativeLoadedPriceLabels(
           ? minimumCount > 1
             ? "Tied for lowest loaded price"
             : "Lowest loaded price"
-          : "Above lowest loaded price"
+          : "Above lowest loaded price",
       ] as const;
-    })
+    }),
   );
 }
 
 function offerContextForProduct(
-  offerContexts:
-    | Readonly<Record<string, DecisionSummaryOfferContext>>
-    | undefined,
-  productId: string
+  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  productId: string,
 ): DecisionSummaryOfferContext {
   return offerContexts?.[productId] ?? { status: "unavailable", productId };
 }

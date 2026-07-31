@@ -104,7 +104,7 @@ export interface CatalogAdvancedEnumRow {
 
 export function catalogAdvancedFilterViewData(
   selections: CatalogAdvancedFilterSelections,
-  metadata: CatalogAdvancedFilterMetadata
+  metadata: CatalogAdvancedFilterMetadata,
 ): CatalogAdvancedFilterViewData {
   return {
     useCaseRows: metadata.useCaseOptions.map((option) => {
@@ -115,11 +115,11 @@ export function catalogAdvancedFilterViewData(
         label: option.label,
         count: option.count,
         selected,
-        disabled: option.disabled && !selected
+        disabled: option.disabled && !selected,
       };
     }),
     numericRows: metadata.numericFilters.map((filter) =>
-      catalogAdvancedNumericRow(selections.numeric, filter)
+      catalogAdvancedNumericRow(selections.numeric, filter),
     ),
     booleanRows: metadata.booleanFilters.map((filter) => {
       const selected = selectedBooleanFilter(selections.booleans, filter.attributeId);
@@ -130,7 +130,7 @@ export function catalogAdvancedFilterViewData(
         displayName: filter.displayName,
         defaultValue: booleanDefaultValue(value),
         trueCount: filter.trueCount,
-        falseCount: filter.falseCount
+        falseCount: filter.falseCount,
       };
     }),
     enumRows: metadata.enumFilters.map((filter) => {
@@ -150,17 +150,17 @@ export function catalogAdvancedFilterViewData(
             label: option.label,
             count: option.count,
             selected,
-            disabled: option.disabled && !selected
+            disabled: option.disabled && !selected,
           };
-        })
+        }),
       };
-    })
+    }),
   };
 }
 
 function catalogAdvancedNumericRow(
   selections: readonly CatalogAdvancedNumericSelection[],
-  filter: CatalogAdvancedNumericFilterMetadata
+  filter: CatalogAdvancedNumericFilterMetadata,
 ): CatalogAdvancedNumericRow {
   const selected = selectedNumericFilter(selections, filter.attributeId);
 
@@ -168,34 +168,34 @@ function catalogAdvancedNumericRow(
     attributeId: filter.attributeId,
     displayName: filter.displayName,
     minValue: selectedNumericFieldValue(selected?.min, filter.selectedMin),
-    maxValue: selectedNumericFieldValue(selected?.max, filter.selectedMax)
+    maxValue: selectedNumericFieldValue(selected?.max, filter.selectedMax),
   };
 }
 
 function selectedNumericFieldValue(
   selectedValue: string | undefined,
-  metadataValue: string | null | undefined
+  metadataValue: string | null | undefined,
 ) {
   return selectedValue ?? metadataValue ?? "";
 }
 
 function selectedNumericFilter(
   filters: readonly CatalogAdvancedNumericSelection[],
-  attributeId: string
+  attributeId: string,
 ) {
   return filters.find((filter) => filter.attributeId === attributeId);
 }
 
 function selectedBooleanFilter(
   filters: readonly CatalogAdvancedBooleanSelection[],
-  attributeId: string
+  attributeId: string,
 ) {
   return filters.find((filter) => filter.attributeId === attributeId);
 }
 
 function selectedEnumOptionId(
   filters: readonly CatalogAdvancedEnumSelection[],
-  attributeId: string
+  attributeId: string,
 ) {
   let selectedOptionId: string | undefined;
 
@@ -208,7 +208,9 @@ function selectedEnumOptionId(
   return selectedOptionId;
 }
 
-function booleanDefaultValue(value: boolean | null | undefined): CatalogAdvancedBooleanRow["defaultValue"] {
+function booleanDefaultValue(
+  value: boolean | null | undefined,
+): CatalogAdvancedBooleanRow["defaultValue"] {
   if (typeof value !== "boolean") {
     return "";
   }

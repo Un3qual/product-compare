@@ -28,5 +28,5 @@ export const tokens = defineVars({
   stickyOffset: "var(--pc-sticky-offset)",
   compactGap: "var(--pc-compact-gap)",
   tableCellSpace: "var(--pc-table-cell-space)",
-  routeTitleSize: "var(--pc-route-title-size)"
+  routeTitleSize: "var(--pc-route-title-size)",
 });

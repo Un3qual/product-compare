@@ -1,15 +1,11 @@
-import {
-  catalogProductSortParam,
-  uniqueCatalogEnumFilters,
-  type CatalogFilters
-} from "./filters";
+import { catalogProductSortParam, uniqueCatalogEnumFilters, type CatalogFilters } from "./filters";
 import { nextRelayPageCursor } from "../relay-pagination";
 
 export function catalogBrowsePath(
   filters: CatalogFilters,
   first: number,
   after?: string | null,
-  compareSlugs: readonly string[] = []
+  compareSlugs: readonly string[] = [],
 ) {
   const params = new URLSearchParams();
 
@@ -28,7 +24,7 @@ export function catalogBrowsePath(
 export function catalogBrowseFirstPagePath(
   filters: CatalogFilters,
   first: number,
-  compareSlugs: readonly string[] = []
+  compareSlugs: readonly string[] = [],
 ) {
   return catalogBrowsePath(filters, first, null, compareSlugs);
 }
@@ -37,7 +33,7 @@ export function catalogBrowseNextPagePath(
   filters: CatalogFilters,
   first: number,
   after: string,
-  compareSlugs: readonly string[] = []
+  compareSlugs: readonly string[] = [],
 ) {
   return catalogBrowsePath(filters, first, after, compareSlugs);
 }
@@ -48,7 +44,7 @@ export function buildCatalogBrowsePaginationData({
   filters,
   first,
   hasNextPage,
-  selectedCompareSlugs
+  selectedCompareSlugs,
 }: {
   readonly currentAfter: string | null;
   readonly endCursor: string | null;
@@ -57,25 +53,21 @@ export function buildCatalogBrowsePaginationData({
   readonly hasNextPage: boolean;
   readonly selectedCompareSlugs: readonly string[];
 }) {
-  const nextCursor = nextRelayPageCursor(
-    { endCursor, hasNextPage },
-    currentAfter
-  );
+  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, currentAfter);
 
   return {
     firstHref: currentAfter
       ? catalogBrowseFirstPagePath(filters, first, selectedCompareSlugs)
       : null,
-    nextHref:
-      nextCursor
-        ? catalogBrowseNextPagePath(filters, first, nextCursor, selectedCompareSlugs)
-        : null
+    nextHref: nextCursor
+      ? catalogBrowseNextPagePath(filters, first, nextCursor, selectedCompareSlugs)
+      : null,
   };
 }
 
 export function catalogBrowseSearchWithNormalizedSort(
   search: string,
-  filters: Pick<CatalogFilters, "query" | "sort">
+  filters: Pick<CatalogFilters, "query" | "sort">,
 ) {
   const params = new URLSearchParams(search);
   const sortParam = catalogProductSortParam(filters);

@@ -44,7 +44,11 @@ export const revokeApiTokenMutation = graphql`
 `;
 
 export const rotateApiTokenMutation = graphql`
-  mutation apiTokenMutationsRotateApiTokenMutation($tokenId: ID!, $label: String, $expiresAt: DateTime) {
+  mutation apiTokenMutationsRotateApiTokenMutation(
+    $tokenId: ID!
+    $label: String
+    $expiresAt: DateTime
+  ) {
     rotateApiToken(tokenId: $tokenId, label: $label, expiresAt: $expiresAt) {
       plainTextToken
       apiToken {

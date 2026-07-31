@@ -3,16 +3,10 @@ import { externalHttpUrlHref } from "../external-links";
 import {
   graphQLDateTimeContext,
   graphQLDateTimeLabel,
-  type GraphQLDateTimeContext
+  type GraphQLDateTimeContext,
 } from "../graphql-datetime";
-import {
-  formatCouponAvailabilityCount,
-  formatOfferCount
-} from "../offer-formatting";
-import {
-  buildOfferSnapshotSummary,
-  type OfferSnapshotSelectors
-} from "../offer-snapshot";
+import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
+import { buildOfferSnapshotSummary, type OfferSnapshotSelectors } from "../offer-snapshot";
 import { productDetailPath } from "./product-detail-route-data";
 import { nextRelayPageCursor } from "../relay-pagination";
 
@@ -107,7 +101,7 @@ export type ProductOfferPanelData = {
 };
 
 export function buildProductOfferPanelData(
-  connection: ProductOfferPanelConnection
+  connection: ProductOfferPanelConnection,
 ): ProductOfferPanelData {
   const offers = connection.edges.flatMap(({ node }) => {
     const offer = buildVisibleProductOffer(node);
@@ -121,7 +115,7 @@ export function productOfferPaginationPaths({
   connection,
   offersAfter,
   productSlug,
-  selectedCompareSlugs = []
+  selectedCompareSlugs = [],
 }: {
   connection: Pick<ProductOfferPanelConnection, "pageInfo">;
   offersAfter: string | null;
@@ -132,7 +126,7 @@ export function productOfferPaginationPaths({
 
   return {
     firstPath: offersAfter ? productOffersPath(productSlug, null, selectedCompareSlugs) : null,
-    nextPath: nextCursor ? productOffersPath(productSlug, nextCursor, selectedCompareSlugs) : null
+    nextPath: nextCursor ? productOffersPath(productSlug, nextCursor, selectedCompareSlugs) : null,
   };
 }
 
@@ -149,44 +143,42 @@ function buildVisibleProductOffer(node: ProductOfferPanelOffer): VisibleProductO
     merchantName: node.merchant?.name ?? "Visit offer",
     ...buildLatestPriceSummary(node.latestPrice, node.currency),
     ...buildVisibleCouponSummary(node.activeCoupons),
-    ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency)
+    ...buildVisiblePriceHistorySummary(node.priceHistory, node.currency),
   };
 }
 
 function buildLatestPriceSummary(
   latestPrice: ProductOfferPrice | null | undefined,
-  currency: unknown
+  currency: unknown,
 ) {
   return {
     priceText: formatPriceText(latestPrice?.price, currency),
     numericPrice: decimalStringToNumber(latestPrice?.price),
-    priceObservation: graphQLDateTimeContext(latestPrice?.observedAt)
+    priceObservation: graphQLDateTimeContext(latestPrice?.observedAt),
   };
 }
 
-function buildVisibleCouponSummary(
-  activeCoupons: ProductOfferCouponConnection | null | undefined
-) {
+function buildVisibleCouponSummary(activeCoupons: ProductOfferCouponConnection | null | undefined) {
   return {
     coupons: buildCouponRows(activeCoupons?.edges ?? []),
-    couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false
+    couponsHasMore: activeCoupons?.pageInfo.hasNextPage ?? false,
   };
 }
 
 function buildVisiblePriceHistorySummary(
   priceHistory: ProductOfferPriceHistoryConnection | null | undefined,
-  currency: unknown
+  currency: unknown,
 ) {
   return {
     priceHistory: buildPriceHistoryRows(priceHistory?.edges ?? [], currency),
-    priceHistoryHasMore: priceHistory?.pageInfo.hasNextPage ?? false
+    priceHistoryHasMore: priceHistory?.pageInfo.hasNextPage ?? false,
   };
 }
 
 const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
   currency: (offer) => offer.currency,
   hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
-  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null)
+  numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null),
 };
 
 function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOfferSnapshot {
@@ -196,18 +188,18 @@ function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOf
     couponAvailabilityText: formatCouponAvailabilityCount(summary.couponAvailabilityCount),
     lowestVisiblePriceText: lowestVisiblePriceText(summary),
     missingLatestPriceText: formatOfferCount(summary.missingPriceCount),
-    visibleOfferCount: summary.visibleOfferCount
+    visibleOfferCount: summary.visibleOfferCount,
   };
 }
 
 function hasVisiblePrice(
-  offer: VisibleProductOffer
+  offer: VisibleProductOffer,
 ): offer is VisibleProductOffer & { currency: string; numericPrice: number; priceText: string } {
   return offer.numericPrice !== null && offer.priceText !== null && offer.currency !== null;
 }
 
 function lowestVisiblePriceText(
-  summary: ReturnType<typeof buildOfferSnapshotSummary<VisibleProductOffer>>
+  summary: ReturnType<typeof buildOfferSnapshotSummary<VisibleProductOffer>>,
 ) {
   if (summary.priceState === "mixed") {
     return "Multiple currencies";
@@ -222,7 +214,7 @@ function lowestVisiblePriceText(
 function productOffersPath(
   productSlug: string,
   offersAfter: string | null,
-  selectedCompareSlugs: readonly string[]
+  selectedCompareSlugs: readonly string[],
 ) {
   const query = productOfferSearchParams(offersAfter, selectedCompareSlugs).toString();
   const querySuffix = query.length > 0 ? `?${query}` : "";
@@ -232,7 +224,7 @@ function productOffersPath(
 
 function productOfferSearchParams(
   offersAfter: string | null,
-  selectedCompareSlugs: readonly string[]
+  selectedCompareSlugs: readonly string[],
 ) {
   const params = new URLSearchParams();
 
@@ -247,22 +239,20 @@ function productOfferSearchParams(
   return params;
 }
 
-function buildCouponRows(
-  edges: ProductOfferCouponConnection["edges"]
-): ProductOfferCouponRow[] {
+function buildCouponRows(edges: ProductOfferCouponConnection["edges"]): ProductOfferCouponRow[] {
   return edges.map(({ cursor, node }) => ({
     key: cursor,
     code: node.code,
     description: node.description,
     discountText: formatCouponDiscountText(node.discountType, node.discountValue, node.currency),
     validToText: formatCouponValidToText(node.validTo),
-    terms: node.terms
+    terms: node.terms,
   }));
 }
 
 function buildPriceHistoryRows(
   edges: ProductOfferPriceHistoryConnection["edges"],
-  currency: unknown
+  currency: unknown,
 ): ProductOfferPriceHistoryRow[] {
   return edges.flatMap(({ node }) => {
     const observedDate = graphQLDateTimeLabel(node.observedAt);
@@ -304,7 +294,7 @@ function normalizedCurrency(currency: unknown) {
 function formatCouponDiscountText(
   discountType: unknown,
   discountValue: unknown,
-  currency: unknown
+  currency: unknown,
 ) {
   if (discountType === "FREE_SHIPPING") {
     return "Free shipping";

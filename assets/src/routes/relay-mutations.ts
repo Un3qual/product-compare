@@ -4,7 +4,7 @@ import type { MutationConfig, MutationParameters } from "relay-runtime";
 export function commitRouteMutation<TMutation extends MutationParameters>(
   commitMutation: MutationCommitFn<TMutation>,
   config: Omit<MutationConfig<TMutation>, "mutation">,
-  onCommitError: (error: unknown) => void
+  onCommitError: (error: unknown) => void,
 ) {
   try {
     return commitMutation(config);
@@ -16,7 +16,7 @@ export function commitRouteMutation<TMutation extends MutationParameters>(
 
 export function commitRouteMutationPromise<TMutation extends MutationParameters>(
   commitMutation: MutationCommitFn<TMutation>,
-  config: Omit<MutationConfig<TMutation>, "mutation" | "onCompleted" | "onError">
+  config: Omit<MutationConfig<TMutation>, "mutation" | "onCompleted" | "onError">,
 ) {
   return new Promise<{
     response: TMutation["response"];
@@ -31,11 +31,11 @@ export function commitRouteMutationPromise<TMutation extends MutationParameters>
         },
         onError(error) {
           reject(error);
-        }
+        },
       },
       (error) => {
         reject(error);
-      }
+      },
     );
   });
 }

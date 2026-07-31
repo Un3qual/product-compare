@@ -1,17 +1,14 @@
 import {
   selectBrowseProductSpecificationHighlights,
-  type BrowseProductSpecificationHighlight
+  type BrowseProductSpecificationHighlight,
 } from "../../../src/routes/catalog/browse-product-list-data";
 
-function highlight(
-  code: string,
-  sortOrder?: number | null
-): BrowseProductSpecificationHighlight {
+function highlight(code: string, sortOrder?: number | null): BrowseProductSpecificationHighlight {
   return {
     code,
     displayName: code,
     sortOrder,
-    valueText: `${code} value`
+    valueText: `${code} value`,
   };
 }
 
@@ -27,7 +24,7 @@ test("selectBrowseProductSpecificationHighlights orders explicit finite sort ord
   expect(selectBrowseProductSpecificationHighlights([third, first, second])).toEqual([
     first,
     second,
-    third
+    third,
   ]);
 });
 
@@ -36,7 +33,7 @@ test("selectBrowseProductSpecificationHighlights limits results to three rows", 
     highlight("one", 1),
     highlight("two", 2),
     highlight("three", 3),
-    highlight("four", 4)
+    highlight("four", 4),
   ];
 
   expect(selectBrowseProductSpecificationHighlights(highlights)).toEqual(highlights.slice(0, 3));
@@ -59,8 +56,8 @@ test("selectBrowseProductSpecificationHighlights keeps finite extreme orders ahe
       positiveInfinity,
       negativeInfinity,
       maximumValue,
-      maximumSafeInteger
-    ])
+      maximumSafeInteger,
+    ]),
   ).toEqual([maximumSafeInteger, maximumValue, undefinedOrder]);
 });
 
@@ -75,8 +72,8 @@ test("selectBrowseProductSpecificationHighlights keeps unusable orders in source
       notANumber,
       positiveInfinity,
       negativeInfinity,
-      finite
-    ])
+      finite,
+    ]),
   ).toEqual([finite, notANumber, positiveInfinity]);
 
   expect(
@@ -84,8 +81,8 @@ test("selectBrowseProductSpecificationHighlights keeps unusable orders in source
       finite,
       negativeInfinity,
       notANumber,
-      positiveInfinity
-    ])
+      positiveInfinity,
+    ]),
   ).toEqual([finite, negativeInfinity, notANumber]);
 });
 
@@ -97,28 +94,28 @@ test("selectBrowseProductSpecificationHighlights preserves source order for equa
   expect(selectBrowseProductSpecificationHighlights([first, second, third])).toEqual([
     first,
     second,
-    third
+    third,
   ]);
 });
 
 test("selectBrowseProductSpecificationHighlights leaves the input unchanged", () => {
   const attributes = Object.freeze([
     Object.freeze(highlight("first", 20)),
-    Object.freeze(highlight("second", 10))
+    Object.freeze(highlight("second", 10)),
   ]);
   const beforeSelection = [
     {
       code: "first",
       displayName: "first",
       sortOrder: 20,
-      valueText: "first value"
+      valueText: "first value",
     },
     {
       code: "second",
       displayName: "second",
       sortOrder: 10,
-      valueText: "second value"
-    }
+      valueText: "second value",
+    },
   ];
 
   expect(() => selectBrowseProductSpecificationHighlights(attributes)).not.toThrow();

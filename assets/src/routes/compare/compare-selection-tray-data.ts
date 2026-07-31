@@ -26,7 +26,7 @@ export function buildCompareSelectionTrayViewData({
   items,
   maxProducts,
   removePathForIndex,
-  selectedSlugs
+  selectedSlugs,
 }: CompareSelectionTrayViewDataInput): CompareSelectionTrayViewData {
   const rows =
     selectedSlugs.length === 0
@@ -34,12 +34,12 @@ export function buildCompareSelectionTrayViewData({
       : selectedSlugs.map((slug, index) => ({
           label: items.find((item) => item.slug === slug)?.label ?? slug,
           removePath: removePathForIndex(index),
-          slug
+          slug,
         }));
 
   return {
     rows,
     selectionCountCopy: `${selectedSlugs.length} of ${maxProducts} products selected.`,
-    showOpenAction: selectedSlugs.length > 0
+    showOpenAction: selectedSlugs.length > 0,
   };
 }

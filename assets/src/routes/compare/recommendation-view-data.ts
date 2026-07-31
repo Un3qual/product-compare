@@ -26,10 +26,10 @@ export type RecommendationViewData =
     };
 
 export function getRecommendationViewData(
-  recommendation: RecommendationViewDataInput
+  recommendation: RecommendationViewDataInput,
 ): RecommendationViewData {
   const winner = recommendation.rankings.find(
-    (ranking) => ranking.productId === recommendation.winnerProductId
+    (ranking) => ranking.productId === recommendation.winnerProductId,
   );
 
   if (!winner) {
@@ -42,6 +42,6 @@ export function getRecommendationViewData(
     kind: "supported",
     productName: winner.productName,
     reasons: winner.reasons,
-    evidence: `Evidence: price observation ${winner.pricePointId}; ${winner.claimIds.length} accepted claim ${claimReference}. Algorithm ${recommendation.algorithmVersion}.`
+    evidence: `Evidence: price observation ${winner.pricePointId}; ${winner.claimIds.length} accepted claim ${claimReference}. Algorithm ${recommendation.algorithmVersion}.`,
   };
 }

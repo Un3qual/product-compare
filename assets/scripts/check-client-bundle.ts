@@ -125,7 +125,7 @@ if (failures.length > 0) {
 
 process.stdout.write(
   `Client bundle contract passed: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes ` +
-  `across ${initialJavaScriptFiles.length} initial JavaScript and ${initialCssFiles.length} CSS file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
+    `across ${initialJavaScriptFiles.length} initial JavaScript and ${initialCssFiles.length} CSS file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
 );
 
 function collectStaticImportClosure(manifest: Manifest, entryKey: string) {

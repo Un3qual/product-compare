@@ -1,10 +1,7 @@
 import { graphql } from "react-relay";
 
 export const compareRouteQuery = graphql`
-  query CompareRouteQuery(
-    $slugs: [String!]!
-    $offerFirst: Int!
-  ) {
+  query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) {
     comparisonProducts(slugs: $slugs) {
       id
       name

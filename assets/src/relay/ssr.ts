@@ -7,7 +7,7 @@ const JSON_HTML_ESCAPES: Record<string, string> = {
   ">": "\\u003e",
   "&": "\\u0026",
   "\u2028": "\\u2028",
-  "\u2029": "\\u2029"
+  "\u2029": "\\u2029",
 };
 
 interface RelayRecordsBootstrap {
@@ -22,7 +22,7 @@ export function renderRelayRecordsScript(records: RelayRecordMap) {
   const payload: RelayRecordsBootstrap = { records };
 
   return `<script id="${RELAY_RECORDS_SCRIPT_ID}" type="application/json">${escapeJsonForHtml(
-    JSON.stringify(payload)
+    JSON.stringify(payload),
   )}</script>`;
 }
 
@@ -45,17 +45,17 @@ export function readRelayRecordsFromDocument(documentRef: Document = document): 
 function escapeJsonForHtml(json: string) {
   return json.replace(
     /[<>&\u2028\u2029]/gu,
-    (character) => JSON_HTML_ESCAPES[character] ?? character
+    (character) => JSON_HTML_ESCAPES[character] ?? character,
   );
 }
 
 function isRelayRecordMap(value: unknown): value is RelayRecordMap {
   return Boolean(
     value &&
-      typeof value === "object" &&
-      !Array.isArray(value) &&
-      Object.values(value).every(
-        (record) => record == null || (typeof record === "object" && !Array.isArray(record))
-      )
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    Object.values(value).every(
+      (record) => record == null || (typeof record === "object" && !Array.isArray(record)),
+    ),
   );
 }

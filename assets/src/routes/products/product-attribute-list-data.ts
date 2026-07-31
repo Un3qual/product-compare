@@ -12,9 +12,7 @@ export interface ProductAttributeListItem {
   unitSymbol?: string | null;
 }
 
-export function buildProductAttributeListData(
-  attributes: ReadonlyArray<ProductAttributeListItem>
-) {
+export function buildProductAttributeListData(attributes: ReadonlyArray<ProductAttributeListItem>) {
   const groups = new Map<
     string,
     {
@@ -40,14 +38,14 @@ export function buildProductAttributeListData(
     } else {
       groups.set(groupKey, {
         label,
-        attributes: [attribute]
+        attributes: [attribute],
       });
     }
   }
 
   return {
     groupedAttributes: Array.from(groups.values()),
-    ungroupedAttributes
+    ungroupedAttributes,
   };
 }
 

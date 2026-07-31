@@ -8,10 +8,7 @@ export interface MerchantPagination {
   first: number;
 }
 
-export function merchantDirectoryPagePath(
-  pagination: MerchantPagination,
-  after?: string | null
-) {
+export function merchantDirectoryPagePath(pagination: MerchantPagination, after?: string | null) {
   const params = new URLSearchParams();
 
   params.set("first", String(pagination.first));
@@ -27,34 +24,25 @@ export function buildMerchantDirectoryPaginationData({
   endCursor,
   hasNextPage,
   hasPreviousPage,
-  pagination
+  pagination,
 }: {
   readonly endCursor: string | null;
   readonly hasNextPage: boolean;
   readonly hasPreviousPage: boolean;
   readonly pagination: Readonly<MerchantPagination>;
 }) {
-  const nextCursor = nextRelayPageCursor(
-    { endCursor, hasNextPage },
-    pagination.after
-  );
+  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, pagination.after);
 
   return {
-    firstHref:
-      hasPreviousPage && pagination.after
-        ? merchantDirectoryPagePath(pagination)
-        : null,
-    nextHref:
-      nextCursor
-        ? merchantDirectoryPagePath(pagination, nextCursor)
-        : null
+    firstHref: hasPreviousPage && pagination.after ? merchantDirectoryPagePath(pagination) : null,
+    nextHref: nextCursor ? merchantDirectoryPagePath(pagination, nextCursor) : null,
   };
 }
 
 export function merchantPaginationFromUrl(url: URL): MerchantPagination {
   return {
     first: normalizeMerchantPageSize(url.searchParams.get("first")),
-    after: normalizeMerchantCursor(url.searchParams.get("after"))
+    after: normalizeMerchantCursor(url.searchParams.get("after")),
   };
 }
 

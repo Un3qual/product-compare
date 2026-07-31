@@ -17,7 +17,7 @@ export type DeleteSavedComparisonSetMutationOutcome =
 
 export function resolveDeleteSavedComparisonSetMutationOutcome(
   payload: DeleteSavedComparisonSetPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ): DeleteSavedComparisonSetMutationOutcome {
   const deletedSavedComparisonSetId = payload?.savedComparisonSet?.id;
 
@@ -27,6 +27,6 @@ export function resolveDeleteSavedComparisonSetMutationOutcome(
 
   return {
     deletedSavedComparisonSetId: null,
-    error: routeMutationErrorMessage(payload?.errors, graphQLErrors)
+    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
   };
 }

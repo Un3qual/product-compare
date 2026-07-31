@@ -1,12 +1,9 @@
 import {
   catalogFiltersWithout,
   catalogFilterSummaryItems,
-  type CatalogFilterRemoval
+  type CatalogFilterRemoval,
 } from "../../../src/routes/catalog/filter-summary";
-import type {
-  CatalogFilterMetadata,
-  CatalogFilters
-} from "../../../src/routes/catalog/filters";
+import type { CatalogFilterMetadata, CatalogFilters } from "../../../src/routes/catalog/filters";
 
 const filters: CatalogFilters = {
   query: "monitor",
@@ -16,14 +13,14 @@ const filters: CatalogFilters = {
   useCaseTaxonIds: ["use-1", "use-2"],
   numeric: [{ attributeId: "refresh", min: "120" }],
   booleans: [{ attributeId: "hdr", value: true }],
-  enums: [{ attributeId: "panel", enumOptionId: "oled" }]
+  enums: [{ attributeId: "panel", enumOptionId: "oled" }],
 };
 
 const metadata: CatalogFilterMetadata = {
   typeOptions: [{ id: "type-1", label: "Monitors", selected: true }],
   useCaseOptions: [
     { id: "use-1", label: "Gaming", selected: true },
-    { id: "use-2", label: "Work", selected: true }
+    { id: "use-2", label: "Work", selected: true },
   ],
   numericFilters: [
     {
@@ -31,19 +28,17 @@ const metadata: CatalogFilterMetadata = {
       displayName: "Refresh rate",
       selectedMin: "120",
       selectedMax: null,
-      unitSymbol: "Hz"
-    }
+      unitSymbol: "Hz",
+    },
   ],
-  booleanFilters: [
-    { attributeId: "hdr", displayName: "HDR", selectedValue: true }
-  ],
+  booleanFilters: [{ attributeId: "hdr", displayName: "HDR", selectedValue: true }],
   enumFilters: [
     {
       attributeId: "panel",
       displayName: "Panel",
-      options: [{ id: "oled", label: "OLED", selected: true }]
-    }
-  ]
+      options: [{ id: "oled", label: "OLED", selected: true }],
+    },
+  ],
 };
 
 test("builds labels with typed removal intent", () => {
@@ -54,19 +49,19 @@ test("builds labels with typed removal intent", () => {
       {
         key: "type",
         label: "Type: Monitors and descendants",
-        removal: { kind: "type" }
+        removal: { kind: "type" },
       },
       {
         key: "use-case:use-1",
         label: "Use case: Gaming",
-        removal: { kind: "useCase", taxonId: "use-1" }
+        removal: { kind: "useCase", taxonId: "use-1" },
       },
       {
         key: "numeric:refresh",
         label: "Refresh rate: at least 120 Hz",
-        removal: { kind: "numeric", attributeId: "refresh" }
-      }
-    ])
+        removal: { kind: "numeric", attributeId: "refresh" },
+      },
+    ]),
   );
 });
 
@@ -75,17 +70,14 @@ test("omits relevance from active filter summaries", () => {
     catalogFilterSummaryItems(metadata, {
       ...filters,
       query: "monitor",
-      sort: "RELEVANCE"
-    }).map((item) => item.key)
+      sort: "RELEVANCE",
+    }).map((item) => item.key),
   ).not.toContain("sort");
 });
 
 test("removing a query also removes its relevance default", () => {
   expect(
-    catalogFiltersWithout(
-      { ...filters, query: "monitor", sort: "RELEVANCE" },
-      { kind: "query" }
-    )
+    catalogFiltersWithout({ ...filters, query: "monitor", sort: "RELEVANCE" }, { kind: "query" }),
   ).toMatchObject({ query: undefined, sort: undefined });
 });
 
@@ -96,17 +88,17 @@ test.each<[CatalogFilterRemoval, Partial<CatalogFilters>]>([
   [{ kind: "useCase", taxonId: "use-1" }, { useCaseTaxonIds: ["use-2"] }],
   [{ kind: "numeric", attributeId: "refresh" }, { numeric: [] }],
   [{ kind: "boolean", attributeId: "hdr" }, { booleans: [] }],
-  [{ kind: "enum", attributeId: "panel" }, { enums: [] }]
+  [{ kind: "enum", attributeId: "panel" }, { enums: [] }],
 ])("applies removal intent %#", (removal, expected) => {
   expect(catalogFiltersWithout(filters, removal)).toMatchObject(expected);
 });
 
 test("rejects an unsupported removal intent", () => {
   const unsupportedRemoval = {
-    kind: "unsupported"
+    kind: "unsupported",
   } as unknown as CatalogFilterRemoval;
 
   expect(() => catalogFiltersWithout(filters, unsupportedRemoval)).toThrow(
-    "Unsupported catalog filter removal"
+    "Unsupported catalog filter removal",
   );
 });

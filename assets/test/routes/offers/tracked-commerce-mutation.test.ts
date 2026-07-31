@@ -3,6 +3,6 @@ import { trackCommerceClickMutation } from "../../../src/routes/offers/TrackedCo
 
 test("tracked commerce click mutation imports as a generated Relay request", () => {
   expect(getRequest(trackCommerceClickMutation).params.name).toBe(
-    "TrackedCommerceClickActionMutation"
+    "TrackedCommerceClickActionMutation",
   );
 });

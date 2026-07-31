@@ -1,7 +1,4 @@
-import {
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage
-} from "../route-errors";
+import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
 import { nextRelayPageCursor, type RelayPageInfo } from "../relay-pagination";
 
 type CommunityMutationPayload = {
@@ -19,14 +16,14 @@ export function publishedReviewRowDisplayData({
   authorLabel,
   rating,
   title,
-  verifiedPurchase
+  verifiedPurchase,
 }: PublishedReviewRowFacts) {
   const normalizedRating = normalizePublishedReviewRating(rating);
 
   return {
     authorCopy: `${authorLabel} · ${verifiedPurchase ? "Verified purchase" : "Purchase not verified"}`,
     ratingStars: `${"★".repeat(normalizedRating)}${"☆".repeat(5 - normalizedRating)}`,
-    title: title ?? `${normalizedRating} out of 5`
+    title: title ?? `${normalizedRating} out of 5`,
   };
 }
 
@@ -40,7 +37,7 @@ function normalizePublishedReviewRating(rating: number) {
 
 export function resolveProductReviewMutationMessage(
   payload: (CommunityMutationPayload & { readonly review?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.review && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Review submitted for moderation."
@@ -49,7 +46,7 @@ export function resolveProductReviewMutationMessage(
 
 export function resolveProductQuestionMutationMessage(
   payload: (CommunityMutationPayload & { readonly question?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.question && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Question submitted for moderation."
@@ -58,7 +55,7 @@ export function resolveProductQuestionMutationMessage(
 
 export function resolveProductAnswerMutationMessage(
   payload: (CommunityMutationPayload & { readonly answer?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.answer && !hasRouteGraphQLErrors(graphQLErrors)
     ? "Answer submitted for moderation."
@@ -67,49 +64,49 @@ export function resolveProductAnswerMutationMessage(
 
 export function resolveProductReviewUpdateMessage(
   payload: (CommunityMutationPayload & { readonly review?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveCommunityMutationMessage(
     payload?.review,
     payload?.errors,
     graphQLErrors,
-    "Review updated and submitted for moderation."
+    "Review updated and submitted for moderation.",
   );
 }
 
 export function resolveProductQuestionUpdateMessage(
   payload: (CommunityMutationPayload & { readonly question?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveCommunityMutationMessage(
     payload?.question,
     payload?.errors,
     graphQLErrors,
-    "Question updated and submitted for moderation."
+    "Question updated and submitted for moderation.",
   );
 }
 
 export function resolveProductAnswerUpdateMessage(
   payload: (CommunityMutationPayload & { readonly answer?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveCommunityMutationMessage(
     payload?.answer,
     payload?.errors,
     graphQLErrors,
-    "Answer updated and submitted for moderation."
+    "Answer updated and submitted for moderation.",
   );
 }
 
 export function resolveCommunityContentRemovalMessage(
   payload: (CommunityMutationPayload & { readonly removedContentId?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null
+  graphQLErrors?: readonly unknown[] | null,
 ) {
   return resolveCommunityMutationMessage(
     payload?.removedContentId,
     payload?.errors,
     graphQLErrors,
-    "Community content removed."
+    "Community content removed.",
   );
 }
 
@@ -118,7 +115,7 @@ export function buildProductReviewInput({
   idempotencyKey,
   productId,
   rating,
-  title: rawTitle
+  title: rawTitle,
 }: {
   body: unknown;
   idempotencyKey: string;
@@ -134,7 +131,7 @@ export function buildProductReviewInput({
     productId,
     rating: Number(rating),
     ...(title ? { title } : {}),
-    ...(body ? { body } : {})
+    ...(body ? { body } : {}),
   };
 }
 
@@ -142,7 +139,7 @@ export function buildProductQuestionInput({
   body: rawBody,
   idempotencyKey,
   productId,
-  title
+  title,
 }: {
   body: unknown;
   idempotencyKey: string;
@@ -155,14 +152,14 @@ export function buildProductQuestionInput({
     idempotencyKey,
     productId,
     title: normalizedCommunityText(title),
-    ...(body ? { body } : {})
+    ...(body ? { body } : {}),
   };
 }
 
 export function buildProductAnswerInput({
   body,
   idempotencyKey,
-  questionId
+  questionId,
 }: {
   body: unknown;
   idempotencyKey: string;
@@ -171,13 +168,13 @@ export function buildProductAnswerInput({
   return {
     body: normalizedCommunityText(body),
     idempotencyKey,
-    questionId
+    questionId,
   };
 }
 
 export function publishedReviewSummary({
   averageRating,
-  count
+  count,
 }: {
   averageRating: string;
   count: number;
@@ -190,23 +187,21 @@ export function publishedReviewSummary({
 export function acceptedAnswerAuthorLabel(
   answerId: string,
   acceptedAnswerId: string | null | undefined,
-  authorLabel: string
+  authorLabel: string,
 ) {
-  return answerId === acceptedAnswerId
-    ? `Accepted answer · ${authorLabel}`
-    : authorLabel;
+  return answerId === acceptedAnswerId ? `Accepted answer · ${authorLabel}` : authorLabel;
 }
 
 export function nextCommunityPageCursor(
   pageInfo: RelayPageInfo | null | undefined,
-  currentAfter: string | null = null
+  currentAfter: string | null = null,
 ) {
   return nextRelayPageCursor(pageInfo, currentAfter);
 }
 
 export function appendUniqueCommunityItems<T extends { readonly id: string }>(
   existing: T[],
-  incoming: readonly T[]
+  incoming: readonly T[],
 ): T[] {
   if (incoming.length === 0) {
     return existing;
@@ -233,7 +228,7 @@ function resolveCommunityMutationMessage(
   completion: unknown,
   errors: unknown,
   graphQLErrors: readonly unknown[] | null | undefined,
-  successMessage: string
+  successMessage: string,
 ) {
   return completion && !hasRouteGraphQLErrors(graphQLErrors)
     ? successMessage

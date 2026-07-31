@@ -1,7 +1,7 @@
 import {
   isAbortError,
   normalizeRouteLoaderThrownError,
-  recoverRouteLoaderError
+  recoverRouteLoaderError,
 } from "../../src/routes/loader-errors";
 
 test("isAbortError detects DOM and object-shaped abort errors", () => {
@@ -22,7 +22,7 @@ test("recoverRouteLoaderError logs recoverable errors and returns the fallback",
 
   try {
     expect(recoverRouteLoaderError(error, "Failed to preload route query.", fallback)).toBe(
-      fallback
+      fallback,
     );
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload route query.", { error });
   } finally {
@@ -55,10 +55,10 @@ test("normalizeRouteLoaderThrownError preserves abort and Error rejection reason
   const ordinaryError = new Error("Network request failed");
 
   expect(normalizeRouteLoaderThrownError(abortError, "Failed to preload route query.")).toBe(
-    abortError
+    abortError,
   );
   expect(normalizeRouteLoaderThrownError(ordinaryError, "Failed to preload route query.")).toBe(
-    ordinaryError
+    ordinaryError,
   );
 });
 
@@ -66,7 +66,7 @@ test("normalizeRouteLoaderThrownError wraps non-error rejection reasons with the
   const rejectionReason = "relay transport failed";
   const normalizedError = normalizeRouteLoaderThrownError(
     rejectionReason,
-    "Failed to preload route query."
+    "Failed to preload route query.",
   );
 
   expect(normalizedError).toBeInstanceOf(Error);

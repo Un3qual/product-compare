@@ -18,17 +18,17 @@ const ALERT_RULE_LABELS: Readonly<Record<string, string>> = {
   TARGET_PRICE: "Target reached",
   PERCENTAGE_DROP: "Price drop reached",
   BACK_IN_STOCK: "Back in stock",
-  NEWLY_AVAILABLE: "Newly available"
+  NEWLY_AVAILABLE: "Newly available",
 };
 
 export function buildAlertsViewData<
   TAlert extends PriceAlertViewSource,
-  TWatch extends PriceWatchViewSource
+  TWatch extends PriceWatchViewSource,
 >(alerts: readonly TAlert[], watches: readonly TWatch[]) {
   return {
     alerts,
     activeWatches: watches.filter((watch) => watch.enabled),
-    pausedWatches: watches.filter((watch) => !watch.enabled)
+    pausedWatches: watches.filter((watch) => !watch.enabled),
   };
 }
 
@@ -51,7 +51,7 @@ export function priceWatchLabel(watch: PriceWatchViewSource) {
 export function priceWatchToggleControl(watch: PriceWatchViewSource) {
   return {
     nextEnabled: !watch.enabled,
-    label: watch.enabled ? "Pause" : "Resume"
+    label: watch.enabled ? "Pause" : "Resume",
   };
 }
 

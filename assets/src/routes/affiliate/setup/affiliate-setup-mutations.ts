@@ -44,7 +44,9 @@ export const upsertAffiliateLinkMutation = graphql`
 `;
 
 export const upsertAffiliateNetworkMutation = graphql`
-  mutation affiliateSetupMutationsUpsertAffiliateNetworkMutation($input: UpsertAffiliateNetworkInput!) {
+  mutation affiliateSetupMutationsUpsertAffiliateNetworkMutation(
+    $input: UpsertAffiliateNetworkInput!
+  ) {
     upsertAffiliateNetwork(input: $input) {
       network {
         id
@@ -60,7 +62,9 @@ export const upsertAffiliateNetworkMutation = graphql`
 `;
 
 export const upsertAffiliateProgramMutation = graphql`
-  mutation affiliateSetupMutationsUpsertAffiliateProgramMutation($input: UpsertAffiliateProgramInput!) {
+  mutation affiliateSetupMutationsUpsertAffiliateProgramMutation(
+    $input: UpsertAffiliateProgramInput!
+  ) {
     upsertAffiliateProgram(input: $input) {
       program {
         id

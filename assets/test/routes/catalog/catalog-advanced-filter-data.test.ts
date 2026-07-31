@@ -1,29 +1,29 @@
 import {
   catalogAdvancedFilterViewData,
   type CatalogAdvancedFilterMetadata,
-  type CatalogAdvancedFilterSelections
+  type CatalogAdvancedFilterSelections,
 } from "../../../src/routes/catalog/catalog-advanced-filter-data";
 
 const emptySelections: CatalogAdvancedFilterSelections = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
-  enums: []
+  enums: [],
 };
 
 function metadataFixture(): CatalogAdvancedFilterMetadata {
   return {
     useCaseOptions: [
       { id: "use-gaming", label: "Gaming", count: 4, selected: false, disabled: true },
-      { id: "use-office", label: "Office", count: 3, selected: true, disabled: false }
+      { id: "use-office", label: "Office", count: 3, selected: true, disabled: false },
     ],
     numericFilters: [
       {
         attributeId: "attr-refresh",
         displayName: "Refresh Rate",
         selectedMin: "120",
-        selectedMax: "240"
-      }
+        selectedMax: "240",
+      },
     ],
     booleanFilters: [
       {
@@ -31,8 +31,8 @@ function metadataFixture(): CatalogAdvancedFilterMetadata {
         displayName: "Wireless",
         trueCount: 5,
         falseCount: 2,
-        selectedValue: true
-      }
+        selectedValue: true,
+      },
     ],
     enumFilters: [
       {
@@ -40,10 +40,10 @@ function metadataFixture(): CatalogAdvancedFilterMetadata {
         displayName: "Color",
         options: [
           { id: "enum-red", label: "Red", count: 2, selected: true, disabled: true },
-          { id: "enum-blue", label: "Blue", count: 1, selected: false, disabled: false }
-        ]
-      }
-    ]
+          { id: "enum-blue", label: "Blue", count: 1, selected: false, disabled: false },
+        ],
+      },
+    ],
   };
 }
 
@@ -53,21 +53,21 @@ test("prefers URL selections, including empty strings and false, over metadata s
       useCaseTaxonIds: ["use-gaming"],
       numeric: [{ attributeId: "attr-refresh", min: "", max: "" }],
       booleans: [{ attributeId: "attr-wireless", value: false }],
-      enums: [{ attributeId: "attr-color", enumOptionId: "enum-blue" }]
+      enums: [{ attributeId: "attr-color", enumOptionId: "enum-blue" }],
     },
-    metadataFixture()
+    metadataFixture(),
   );
 
   expect(data.useCaseRows[0]).toMatchObject({ selected: true, disabled: false });
   expect(data.useCaseRows[1]).toMatchObject({ selected: true, disabled: false });
   expect(data.numericRows[0]).toMatchObject({
     minValue: "",
-    maxValue: ""
+    maxValue: "",
   });
   expect(data.booleanRows[0]).toMatchObject({ defaultValue: "false" });
   expect(data.enumRows[0].options).toMatchObject([
     { id: "enum-red", selected: false, disabled: true },
-    { id: "enum-blue", selected: true, disabled: false }
+    { id: "enum-blue", selected: true, disabled: false },
   ]);
 });
 
@@ -88,10 +88,10 @@ test("uses the last repeated enum selection for an attribute", () => {
       ...emptySelections,
       enums: [
         { attributeId: "attr-color", enumOptionId: "enum-red" },
-        { attributeId: "attr-color", enumOptionId: "enum-blue" }
-      ]
+        { attributeId: "attr-color", enumOptionId: "enum-blue" },
+      ],
     },
-    metadataFixture()
+    metadataFixture(),
   );
 
   expect(data.enumRows[0].options.map((option) => option.selected)).toEqual([false, true]);
@@ -101,24 +101,21 @@ test("preserves metadata identities in source order and omits empty groups", () 
   const metadata = metadataFixture();
   const data = catalogAdvancedFilterViewData(emptySelections, {
     ...metadata,
-    useCaseOptions: [metadata.useCaseOptions[1], metadata.useCaseOptions[0]]
+    useCaseOptions: [metadata.useCaseOptions[1], metadata.useCaseOptions[0]],
   });
 
   expect(data.useCaseRows.map((row) => row.id)).toEqual(["use-office", "use-gaming"]);
   expect(data.numericRows.map((row) => row.attributeId)).toEqual(["attr-refresh"]);
   expect(data.booleanRows.map((row) => row.attributeId)).toEqual(["attr-wireless"]);
   expect(data.enumRows.map((row) => row.attributeId)).toEqual(["attr-color"]);
-  expect(data.enumRows[0].options.map((option) => option.id)).toEqual([
-    "enum-red",
-    "enum-blue"
-  ]);
+  expect(data.enumRows[0].options.map((option) => option.id)).toEqual(["enum-red", "enum-blue"]);
 
   const emptyGroups = catalogAdvancedFilterViewData(emptySelections, {
     ...metadata,
     useCaseOptions: [],
     numericFilters: [],
     booleanFilters: [],
-    enumFilters: []
+    enumFilters: [],
   });
 
   expect(emptyGroups.useCaseRows).toEqual([]);
@@ -132,7 +129,7 @@ test("does not mutate selection or metadata inputs", () => {
     useCaseTaxonIds: Object.freeze(["use-gaming"]),
     numeric: Object.freeze([{ attributeId: "attr-refresh", min: "144" }]),
     booleans: Object.freeze([{ attributeId: "attr-wireless", value: false }]),
-    enums: Object.freeze([{ attributeId: "attr-color", enumOptionId: "enum-blue" }])
+    enums: Object.freeze([{ attributeId: "attr-color", enumOptionId: "enum-blue" }]),
   });
   const metadata = metadataFixture();
   const before = structuredClone({ selections, metadata });

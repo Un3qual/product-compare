@@ -7,7 +7,7 @@ describe("createBrowseRouteData", () => {
     const routeData = createBrowseRouteData({
       pathname: "/",
       search: "",
-      selectedCompareSlugs: []
+      selectedCompareSlugs: [],
     });
 
     expect(routeData.pathname).toBe("/products");
@@ -17,11 +17,11 @@ describe("createBrowseRouteData", () => {
     const routeData = createBrowseRouteData({
       pathname: "/products",
       search: "?first=24",
-      selectedCompareSlugs: ["first-product", "second product"]
+      selectedCompareSlugs: ["first-product", "second product"],
     });
 
     expect(routeData.productDetailPathFor("reserved/product?variant=1")).toBe(
-      "/products/reserved%2Fproduct%3Fvariant%3D1?slug=first-product&slug=second+product"
+      "/products/reserved%2Fproduct%3Fvariant%3D1?slug=first-product&slug=second+product",
     );
   });
 
@@ -29,12 +29,12 @@ describe("createBrowseRouteData", () => {
     const routeData = createBrowseRouteData({
       pathname: "/products",
       search: "?first=24&q=oled&slug=stale-product&slug=another-stale-product",
-      selectedCompareSlugs: ["first-product", "second-product"]
+      selectedCompareSlugs: ["first-product", "second-product"],
     });
 
     expect(routeData.compareActionFor("third-product")).toEqual({
       href: "/products?first=24&q=oled&slug=first-product&slug=second-product&slug=third-product",
-      kind: "add"
+      kind: "add",
     });
   });
 
@@ -42,12 +42,12 @@ describe("createBrowseRouteData", () => {
     const selectedRouteData = createBrowseRouteData({
       pathname: "/products",
       search: "",
-      selectedCompareSlugs: ["first-product"]
+      selectedCompareSlugs: ["first-product"],
     });
     const fullRouteData = createBrowseRouteData({
       pathname: "/products",
       search: "",
-      selectedCompareSlugs: ["first-product", "second-product", "third-product"]
+      selectedCompareSlugs: ["first-product", "second-product", "third-product"],
     });
 
     expect(selectedRouteData.compareActionFor("first-product")).toEqual({ kind: "selected" });
@@ -64,17 +64,17 @@ describe("createBrowseRouteData", () => {
         "first-product",
         "second-product",
         "third-product",
-        "fourth-product"
-      ]
+        "fourth-product",
+      ],
     });
 
     expect(routeData.selectedCompareSlugs).toEqual([
       "first-product",
       "second-product",
-      "third-product"
+      "third-product",
     ]);
     expect(routeData.productDetailPathFor("reserved/product")).toBe(
-      "/products/reserved%2Fproduct?slug=first-product&slug=second-product&slug=third-product"
+      "/products/reserved%2Fproduct?slug=first-product&slug=second-product&slug=third-product",
     );
     expect(routeData.compareActionFor("fourth-product")).toEqual({ kind: "full" });
   });
@@ -83,20 +83,27 @@ describe("createBrowseRouteData", () => {
     const routeData = createBrowseRouteData({
       pathname: "/products",
       search: "?first=24&q=oled&slug=stale-product",
-      selectedCompareSlugs: ["first-product", "second-product", "third-product"]
+      selectedCompareSlugs: ["first-product", "second-product", "third-product"],
     });
 
     expect(routeData.removeSelectedPathForIndex(1)).toBe(
-      "/products?first=24&q=oled&slug=first-product&slug=third-product"
+      "/products?first=24&q=oled&slug=first-product&slug=third-product",
     );
   });
 
   test("shares whitespace, blank, duplicate, order, and maximum normalization", () => {
     expect(
       normalizedCompareSlugs(
-        [" first-product ", "", "first-product", "second-product", " third-product ", "fourth-product"],
-        { maxProducts: 3 }
-      )
+        [
+          " first-product ",
+          "",
+          "first-product",
+          "second-product",
+          " third-product ",
+          "fourth-product",
+        ],
+        { maxProducts: 3 },
+      ),
     ).toEqual(["first-product", "second-product", "third-product"]);
   });
 });

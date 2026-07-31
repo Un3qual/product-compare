@@ -6,7 +6,14 @@ export default graphql`
       id
       title
       searchIndexable
-      seo { title description canonicalPath indexable imageUrl structuredData }
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
       capturedAt
       disclaimer
       products {

@@ -1,27 +1,15 @@
 import { describe, expect, test } from "vitest";
-import {
-  externalHttpUrlHref,
-  externalWebsiteHref
-} from "../../src/routes/external-links";
+import { externalHttpUrlHref, externalWebsiteHref } from "../../src/routes/external-links";
 
 describe("external HTTP URL hrefs", () => {
   test.each([
     [
       "  https://shop.example.com/products/42?ref=compare#details  ",
-      "https://shop.example.com/products/42?ref=compare#details"
+      "https://shop.example.com/products/42?ref=compare#details",
     ],
-    [
-      "HTTP://Shop.Example.com:80/products/42",
-      "HTTP://Shop.Example.com:80/products/42"
-    ],
-    [
-      "https://shop.example.com:8443/products/42",
-      "https://shop.example.com:8443/products/42"
-    ],
-    [
-      "https://shop.example.com./products/42",
-      "https://shop.example.com./products/42"
-    ],
+    ["HTTP://Shop.Example.com:80/products/42", "HTTP://Shop.Example.com:80/products/42"],
+    ["https://shop.example.com:8443/products/42", "https://shop.example.com:8443/products/42"],
+    ["https://shop.example.com./products/42", "https://shop.example.com./products/42"],
     ["https://shop.example.com:1", "https://shop.example.com:1"],
     ["https://shop.example.com:65535", "https://shop.example.com:65535"],
     ["https://localhost.example.com", "https://localhost.example.com"],
@@ -32,10 +20,7 @@ describe("external HTTP URL hrefs", () => {
     ["https://172.32.0.0", "https://172.32.0.0"],
     ["https://198.17.255.255", "https://198.17.255.255"],
     ["https://198.20.0.0", "https://198.20.0.0"],
-    [
-      "https://[2606:4700:4700::1111]:8443/dns",
-      "https://[2606:4700:4700::1111]:8443/dns"
-    ],
+    ["https://[2606:4700:4700::1111]:8443/dns", "https://[2606:4700:4700::1111]:8443/dns"],
     ["http://[2001:db80::1]", "http://[2001:db80::1]"],
     // Globally reachable IANA exceptions inside 2001::/23 remain allowed.
     ["http://[2001:1::1]", "http://[2001:1::1]"],
@@ -44,12 +29,12 @@ describe("external HTTP URL hrefs", () => {
     ["http://[2001:3::1]", "http://[2001:3::1]"],
     [
       "http://[2001:3:ffff:ffff:ffff:ffff:ffff:ffff]",
-      "http://[2001:3:ffff:ffff:ffff:ffff:ffff:ffff]"
+      "http://[2001:3:ffff:ffff:ffff:ffff:ffff:ffff]",
     ],
     ["http://[2001:4:112::1]", "http://[2001:4:112::1]"],
     [
       "http://[2001:4:112:ffff:ffff:ffff:ffff:ffff]",
-      "http://[2001:4:112:ffff:ffff:ffff:ffff:ffff]"
+      "http://[2001:4:112:ffff:ffff:ffff:ffff:ffff]",
     ],
     ["http://[2001:20::1]", "http://[2001:20::1]"],
     ["http://[2001:2f:ffff::1]", "http://[2001:2f:ffff::1]"],
@@ -59,7 +44,7 @@ describe("external HTTP URL hrefs", () => {
     // Immediate upper neighbor outside the non-global 2001::/23 parent.
     ["http://[2001:200::1]", "http://[2001:200::1]"],
     // Immediate upper neighbor outside documentation-only 3fff::/20.
-    ["http://[3fff:1000::1]", "http://[3fff:1000::1]"]
+    ["http://[3fff:1000::1]", "http://[3fff:1000::1]"],
   ])("preserves the trimmed exact safe href %s", (value, expected) => {
     expect(externalHttpUrlHref(value)).toBe(expected);
   });
@@ -67,17 +52,17 @@ describe("external HTTP URL hrefs", () => {
   test.each([
     "https://user@shop.example.com/product",
     "https://user:secret@shop.example.com/product",
-    "https://shop.example.com@evil.example/product"
+    "https://shop.example.com@evil.example/product",
   ])("rejects credentials in %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
 
-  test.each([
-    "https://@shop.example.com/product",
-    "https://:@shop.example.com/product"
-  ])("rejects an empty raw userinfo delimiter in %s", (value) => {
-    expect(externalHttpUrlHref(value)).toBeNull();
-  });
+  test.each(["https://@shop.example.com/product", "https://:@shop.example.com/product"])(
+    "rejects an empty raw userinfo delimiter in %s",
+    (value) => {
+      expect(externalHttpUrlHref(value)).toBeNull();
+    },
+  );
 
   test.each([
     "https:shop.example.com/product",
@@ -91,7 +76,7 @@ describe("external HTTP URL hrefs", () => {
     "https://[2606:4700:4700::1111]:0\\@evil.example/product",
     "https://shop.exam\tple.com/product",
     "https://",
-    "https://?product=42"
+    "https://?product=42",
   ])("rejects a malformed HTTP authority in %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -103,7 +88,7 @@ describe("external HTTP URL hrefs", () => {
     "data:text/html,unsafe",
     "ftp://shop.example.com/product",
     "file:///etc/passwd",
-    "mailto:buyer@example.com"
+    "mailto:buyer@example.com",
   ])("rejects unsupported scheme %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -115,7 +100,7 @@ describe("external HTTP URL hrefs", () => {
     "https://shop..example.com/product",
     "https://shop_example.com/product",
     "https://.example.com/product",
-    "https://example.com../product"
+    "https://example.com../product",
   ])("rejects invalid external hostname %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -124,7 +109,7 @@ describe("external HTTP URL hrefs", () => {
     "https://shop.example.com:",
     "https://shop.example.com:0/product",
     "https://shop.example.com:65536/product",
-    "https://shop.example.com:abc/product"
+    "https://shop.example.com:abc/product",
   ])("rejects invalid port form %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -133,7 +118,7 @@ describe("external HTTP URL hrefs", () => {
     "http://localhost",
     "http://localhost.",
     "https://localhost:4000/product",
-    "https://catalog.localhost/product"
+    "https://catalog.localhost/product",
   ])("rejects localhost destination %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -152,7 +137,7 @@ describe("external HTTP URL hrefs", () => {
     "http://198.51.100.1",
     "http://203.0.113.1",
     "http://224.0.0.1",
-    "http://255.255.255.255"
+    "http://255.255.255.255",
   ])("rejects reserved IPv4 destination %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -165,7 +150,7 @@ describe("external HTTP URL hrefs", () => {
     "http://[fe80::1]",
     "http://[febf::1]",
     "http://[ff02::1]",
-    "http://[2001:db8::1]"
+    "http://[2001:db8::1]",
   ])("rejects reserved IPv6 destination %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -182,7 +167,7 @@ describe("external HTTP URL hrefs", () => {
     ["http://[3fff::1]", "documentation 3fff::/20"],
     ["http://[3fff:fff:ffff::1]", "documentation upper edge"],
     ["http://[5f00::1]", "SRv6 SID 5f00::/16"],
-    ["http://[5f00:ffff:ffff::1]", "SRv6 SID upper edge"]
+    ["http://[5f00:ffff:ffff::1]", "SRv6 SID upper edge"],
   ])("rejects non-global special-use IPv6 destination %s (%s)", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -195,7 +180,7 @@ describe("external HTTP URL hrefs", () => {
     ["http://[2001:4:111:ffff::1]", "below AS112-v6 exception"],
     ["http://[2001:4:113::1]", "above AS112-v6 exception"],
     ["http://[2001:40::1]", "above ORCHIDv2 and DRIP exceptions"],
-    ["http://[2001:1ff:ffff::1]", "upper edge of 2001::/23"]
+    ["http://[2001:1ff:ffff::1]", "upper edge of 2001::/23"],
   ])("rejects non-global 2001::/23 destination %s (%s)", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -219,7 +204,7 @@ describe("external HTTP URL hrefs", () => {
     "http://[64:ff9b:1::c0a8:101]",
     // 6to4 and Teredo encode IPv4 routing information in canonical words.
     "http://[2002:7f00:1::]",
-    "http://[2001:0:4136:e378:8000:63bf:3fff:fdd2]"
+    "http://[2001:0:4136:e378:8000:63bf:3fff:fdd2]",
   ])("rejects IPv4-embedded IPv6 destination %s", (value) => {
     expect(externalHttpUrlHref(value)).toBeNull();
   });
@@ -231,13 +216,10 @@ describe("external website hrefs", () => {
     ["Shop.Example.com:8443", "https://Shop.Example.com:8443"],
     ["Shop.Example.com.:8443", "https://Shop.Example.com.:8443"],
     [" http://shop.example.com/about ", "http://shop.example.com/about"],
-    [" https://shop.example.com/about ", "https://shop.example.com/about"]
-  ])(
-    "promotes a safe bare domain or preserves an absolute href %s",
-    (value, expected) => {
-      expect(externalWebsiteHref(value)).toBe(expected);
-    }
-  );
+    [" https://shop.example.com/about ", "https://shop.example.com/about"],
+  ])("promotes a safe bare domain or preserves an absolute href %s", (value, expected) => {
+    expect(externalWebsiteHref(value)).toBe(expected);
+  });
 
   test.each([
     "",
@@ -259,7 +241,7 @@ describe("external website hrefs", () => {
     "127.0.0.1",
     "127.0.0.1.",
     "shop.example.com..",
-    "192.168.1.1"
+    "192.168.1.1",
   ])("rejects unsafe or malformed website value %s", (value) => {
     expect(externalWebsiteHref(value)).toBeNull();
   });
