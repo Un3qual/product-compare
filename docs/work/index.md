@@ -43,7 +43,53 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Ready Work
 
-### 14. Radix Disclosure Controls
+### 14. Development Feature Seeds
+
+Status: ready
+Lane: Development environment
+Plan: `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
+Batch outcome: every delivered shopper, account, community, operator,
+ingestion, and revenue workflow has deterministic local development data and a
+printed testing guide without any external provider or delivery call.
+Next action: add the failing role-account and local-token seed regressions,
+then extract the seed-only account/support boundary without weakening operator
+bootstrap safety.
+Owned paths:
+
+- `priv/repo/seeds.exs`
+- `priv/repo/seeds/`
+- `test/product_compare/repo/seeds_test.exs`
+- `test/product_compare_web/graphql/development_seeds_test.exs`
+- `docs/work/development-feature-seeds.md`
+
+Internal slices:
+
+- Transactional seed runtime, role accounts, and local auth artifacts.
+- Catalog/specification and marketplace/affiliate state matrices.
+- Saved/shared comparison, alert, community, and correction lifecycles.
+- Synthetic CJ/attribution history, guide output, route smoke coverage, and
+  deterministic rerun proof.
+
+Prerequisites:
+
+- No active row owns the seed entry point or seed tests.
+- Existing application contexts remain the primary write boundaries.
+- Live provider credentials, provider availability, and email delivery are not
+  prerequisites.
+
+Verification:
+
+- focused seed entry-point and development-seed GraphQL suites
+- affected account, catalog, pricing, affiliate, alert, discussion,
+  specification, comparison, ingestion, attribution, and GraphQL suites
+- full backend tests, type checks, quality, formatting, queue, and diff gates
+
+Exit condition: rerunning seeds restores all reserved scenarios without
+duplicates, preserves unrelated local records and the shared link, prints
+usable credentials/deep links, invokes no external integration or CJ job, and
+all backend gates pass.
+
+### 15. Radix Disclosure Controls
 
 Status: ready
 Lane: Frontend UI foundation
@@ -89,7 +135,7 @@ Exit condition: no visible native disclosure remains under `assets/src`, the
 five affected controls use the existing Radix wrapper, lazy and submission
 behavior is unchanged, StyleX remains in place, and every frontend gate passes.
 
-### 15. Operator Mutation Authorization Freshness
+### 16. Operator Mutation Authorization Freshness
 
 Status: ready
 Lane: GraphQL authorization and concurrency
@@ -149,7 +195,7 @@ locks first remains the user-row lock owner while held at its domain-row barrier
 and may commit before revocation, all three owning transactions acquire the
 operator row before domain rows, and all backend gates pass.
 
-### 16. Application JSON Storage Policy Guard
+### 17. Application JSON Storage Policy Guard
 
 Status: ready
 Lane: Database domain policy
