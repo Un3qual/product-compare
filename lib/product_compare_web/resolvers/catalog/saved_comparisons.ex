@@ -3,7 +3,6 @@ defmodule ProductCompareWeb.Resolvers.Catalog.SavedComparisons do
 
   alias ProductCompare.Catalog
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
@@ -11,20 +10,6 @@ defmodule ProductCompareWeb.Resolvers.Catalog.SavedComparisons do
 
   @spec my_saved_comparison_sets(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
-  def my_saved_comparison_sets(_parent, args, %{
-        context: %{current_user: current_user, loader: %Dataloader{} = loader}
-      }) do
-    connection_args = Input.connection_args(args)
-
-    AuthorizedConnection.load_owner(
-      loader,
-      current_user,
-      :saved_comparison_sets,
-      %{},
-      connection_args
-    )
-  end
-
   def my_saved_comparison_sets(_parent, args, %{context: %{current_user: current_user}}) do
     query = Catalog.list_saved_comparison_sets_query(current_user.id)
     connection_args = Input.connection_args(args)

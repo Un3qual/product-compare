@@ -73,8 +73,12 @@ defmodule ProductCompareWeb.Schema.Ingestion.Types do
     field :declined, non_null(:integer)
   end
 
-  connection node_type: :cj_program, non_null_edges: true, non_null_edge: true do
-    edge do
+  connection node_type: :cj_program,
+             name: "CJProgramConnection",
+             non_null_edges: true,
+             non_null_edge: true do
+    @desc "A CJ program connection edge."
+    edge name: "CJProgramEdge" do
       field :node, non_null(:cj_program)
       field :cursor, non_null(:string)
     end

@@ -20,6 +20,7 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     seo
     specs
   )
+  @mutation_contexts @contexts -- ~w(pricing seo)
   @stable_node_types ~w(
     affiliate_link
     affiliate_network
@@ -52,6 +53,28 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
       |> Enum.filter(&(File.read!(&1) =~ "Dataloader.KV"))
 
     assert offenders == []
+  end
+
+  test "the GraphQL loader registers only honest Ecto sources" do
+    refute File.exists?(Path.join(@graphql_root, "loader/ecto_batch_source.ex"))
+
+    assert %Dataloader{sources: sources} = ProductCompareWeb.GraphQL.Loader.new()
+    assert sources != %{}
+    assert Enum.all?(sources, fn {_name, source} -> match?(%Dataloader.Ecto{}, source) end)
+  end
+
+  test "Relay-native schema names and root coupon connection stay canonical" do
+    sdl = File.read!(@schema_sdl)
+
+    assert sdl =~
+             ~r/activeCoupons\([^)]*after: String[^)]*first: Int![^)]*merchantId: ID![^)]*at: DateTime[^)]*\): CouponConnection/
+
+    assert sdl =~ "type CJProgramConnection"
+    assert sdl =~ "type CJProgramEdge"
+    refute sdl =~ "type CjProgramConnection"
+    refute sdl =~ "type CjProgramEdge"
+    refute sdl =~ "ActiveCouponsPayload"
+    refute sdl =~ "ActiveCouponsInput"
   end
 
   test "global types live in schema.ex without a Common module" do
@@ -109,15 +132,23 @@ defmodule ProductCompareWeb.GraphQL.SchemaArchitectureTest do
     refute merchant_products_input =~ ~r/\b(?:first|after):/
   end
 
-  test "each context owns separate types, queries, and mutations modules" do
+  test "each context owns types and queries while mutation contexts own non-empty modules" do
     missing =
       for context <- @contexts,
-          kind <- ~w(types queries mutations),
+          kind <- ~w(types queries),
           path = Path.join([@schema_root, context, "#{kind}.ex"]),
           not File.exists?(path),
           do: path
 
-    assert missing == []
+    missing_mutations =
+      for context <- @mutation_contexts,
+          path = Path.join([@schema_root, context, "mutations.ex"]),
+          not File.exists?(path),
+          do: path
+
+    assert missing ++ missing_mutations == []
+    refute File.exists?(Path.join([@schema_root, "pricing/mutations.ex"]))
+    refute File.exists?(Path.join([@schema_root, "seo/mutations.ex"]))
   end
 
   test "the root schema composes context fields without declaring them inline" do

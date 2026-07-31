@@ -1,48 +1,17 @@
 defmodule ProductCompareWeb.Resolvers.ComparisonSnapshotsResolver do
   @moduledoc false
 
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
-
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
-  alias ProductCompareWeb.GraphQL.Loader
 
   @disclaimer "This comparison is a captured snapshot. Prices, availability, and product facts may have changed since the captured time."
 
-  def comparison_snapshot(_parent, %{token: token}, %{context: %{loader: loader}}) do
-    source = Loader.public_opaque_source()
-
-    loader
-    |> Loader.load(source, :comparison_snapshot, token)
-    |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, :comparison_snapshot, token)}
-    end)
-  end
-
   def comparison_snapshot(_parent, %{token: token}, _resolution) do
     {:ok, ComparisonSnapshots.get_public(token)}
-  end
-
-  def owned_snapshots(%{id: user_id}, args, %{
-        context: %{
-          current_user: %{id: user_id} = current_user,
-          loader: %Dataloader{} = loader
-        }
-      }) do
-    connection_args = Input.connection_args(args)
-
-    AuthorizedConnection.load_owner(
-      loader,
-      current_user,
-      :comparison_snapshots,
-      %{},
-      connection_args
-    )
   end
 
   def owned_snapshots(%{id: user_id}, args, %{context: %{current_user: %{id: user_id}}}) do

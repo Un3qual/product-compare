@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
 
   import Ecto.Query
 
+  alias Absinthe.Relay.Connection, as: RelayConnection
   alias ProductCompareWeb.GraphQL.Connection
 
   defmodule FakeRepo do
@@ -46,6 +47,18 @@ defmodule ProductCompareWeb.GraphQL.ConnectionTest do
       assert Enum.map(connection.edges, & &1.node) == [:first, :second]
       assert connection.page_info.has_next_page
       refute connection.page_info.has_previous_page
+
+      assert {:ok, 0} =
+               connection.edges
+               |> List.first()
+               |> Map.fetch!(:cursor)
+               |> RelayConnection.cursor_to_offset()
+
+      assert {:ok, 1} =
+               connection.edges
+               |> List.last()
+               |> Map.fetch!(:cursor)
+               |> RelayConnection.cursor_to_offset()
 
       assert connection.page_info.start_cursor ==
                connection.edges |> List.first() |> Map.fetch!(:cursor)

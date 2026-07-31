@@ -3,7 +3,6 @@ defmodule ProductCompareWeb.Resolvers.Auth.ApiTokens do
 
   alias ProductCompare.Accounts
   alias ProductCompare.Repo
-  alias ProductCompareWeb.GraphQL.AuthorizedConnection
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
@@ -11,23 +10,6 @@ defmodule ProductCompareWeb.Resolvers.Auth.ApiTokens do
 
   @spec my_api_tokens(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t() | GraphQLErrors.top_level_error()}
-  def my_api_tokens(_parent, args, %{
-        context: %{current_user: current_user, loader: %Dataloader{} = loader}
-      }) do
-    args = args || %{}
-    status_filter = Input.fetch_value(args, :status, :all)
-    connection_args = args |> Input.drop_key(:status) |> Input.connection_args()
-    filters = %{status: status_filter}
-
-    AuthorizedConnection.load_owner(
-      loader,
-      current_user,
-      :api_tokens,
-      filters,
-      connection_args
-    )
-  end
-
   def my_api_tokens(_parent, args, %{context: %{current_user: current_user}}) do
     args = args || %{}
     status_filter = Input.fetch_value(args, :status, :all)

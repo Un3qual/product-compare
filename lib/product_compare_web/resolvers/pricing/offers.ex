@@ -8,25 +8,12 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
   alias ProductCompareWeb.GraphQL.Connection
   alias ProductCompareWeb.GraphQL.Input
   alias ProductCompareWeb.GraphQL.Loader
+  alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
 
   @spec merchant_products(any(), map(), Absinthe.Resolution.t()) ::
-          {:ok, map()} | {:error, String.t()} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def merchant_products(_parent, %{input: input} = args, %{context: %{loader: loader}}) do
-    with {:ok, attrs} <- normalize_merchant_products_input(input),
-         connection_args = Input.connection_args(args),
-         {:ok, _window} <- Connection.batch_window_result(connection_args) do
-      source = Loader.discovery_root_source()
-      batch_key = {:merchant_products, attrs, connection_args}
-
-      loader
-      |> Loader.load(source, batch_key, :root)
-      |> on_load(fn loader ->
-        {:ok, Loader.get(loader, source, batch_key, :root)}
-      end)
-    end
-  end
-
+          {:ok, map()} | {:error, String.t()}
   def merchant_products(_parent, %{input: input} = args, _resolution) do
     with {:ok, attrs} <- normalize_merchant_products_input(input) do
       query = Pricing.list_merchant_products_query(attrs)
@@ -37,7 +24,7 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
   @spec product_merchant_products(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def product_merchant_products(
-        %{id: product_id} = product,
+        %{id: product_id},
         args,
         %{context: %{loader: loader}}
       )
@@ -57,14 +44,12 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
       load_offer_connection(
         loader,
+        Product,
         {:product_offers, connection_args, filters},
-        product
+        product_id
       )
     end
   end
-
-  def product_merchant_products(_product, _args, _resolution),
-    do: {:error, "invalid product id"}
 
   @spec latest_price(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, ProductCompareSchemas.Pricing.PricePoint.t() | nil}
@@ -83,25 +68,23 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
 
   @spec product_offer_truth(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def product_offer_truth(%{id: product_id} = product, _args, %{context: %{loader: loader}})
+  def product_offer_truth(%{id: product_id}, _args, %{context: %{loader: loader}})
       when is_integer(product_id) do
     source = Loader.product_evidence_source()
+    batch = {:one, Product}
+    item = [offer_truth: product_id]
 
     loader
-    |> Loader.load(source, :offer_truth, product)
+    |> Dataloader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, :offer_truth, product)}
+      {:ok, Dataloader.get(loader, source, batch, item)}
     end)
-  end
-
-  def product_offer_truth(_product, _args, _resolution) do
-    {:ok, Pricing.current_offer_truth(nil)}
   end
 
   @spec price_history(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def price_history(
-        %{id: merchant_product_id} = merchant_product,
+        %{id: merchant_product_id},
         args,
         %{context: %{loader: loader}}
       )
@@ -116,22 +99,22 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     with {:ok, _window} <- Connection.batch_window_result(connection_args) do
       load_offer_connection(
         loader,
+        MerchantProduct,
         {:price_history, connection_args, range_filters},
-        merchant_product
+        merchant_product_id
       )
     end
   end
 
-  def price_history(_merchant_product, _args, _resolution),
-    do: {:error, "invalid merchant product id"}
-
-  defp load_offer_connection(loader, batch_key, parent) do
+  defp load_offer_connection(loader, schema, operation, parent_id) do
     source = Loader.offer_connection_source()
+    batch = {:one, schema}
+    item = [{operation, parent_id}]
 
     loader
-    |> Loader.load(source, batch_key, parent)
+    |> Dataloader.load(source, batch, item)
     |> on_load(fn loader ->
-      {:ok, Loader.get(loader, source, batch_key, parent)}
+      {:ok, Dataloader.get(loader, source, batch, item)}
     end)
   end
 
