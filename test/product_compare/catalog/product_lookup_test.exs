@@ -9,6 +9,18 @@ defmodule ProductCompare.Catalog.ProductLookupTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.ProductSlugAlias
 
+  test "slug reservations do not store alias discriminator state" do
+    assert Repo.query!("""
+           SELECT NOT EXISTS (
+             SELECT 1
+             FROM information_schema.columns
+             WHERE table_schema = current_schema()
+               AND table_name = 'product_slug_reservations'
+               AND column_name = 'is_alias'
+           )
+           """).rows == [[true]]
+  end
+
   test "database rejects a historical alias that overlaps a canonical product slug" do
     canonical = product_fixture(%{slug: "reserved-canonical-product"})
     historical = product_fixture(%{slug: "reserved-historical-product"})

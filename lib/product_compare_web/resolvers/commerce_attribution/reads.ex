@@ -6,7 +6,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.GraphQL.Input
-  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @invalid_filters_error "invalid revenue summary filters"
@@ -88,17 +87,8 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
 
   defp normalize_revenue_network(nil), do: {:ok, nil}
 
-  defp normalize_revenue_network(network) when is_atom(network) do
-    if network in AffiliateNetwork.provider_codes(),
-      do: {:ok, network},
-      else: {:error, :invalid_network}
-  end
-
   defp normalize_revenue_network(network) when is_binary(network) do
-    case Enum.find(AffiliateNetwork.provider_codes(), &(Atom.to_string(&1) == network)) do
-      nil -> {:error, :invalid_network}
-      network -> {:ok, network}
-    end
+    {:ok, network}
   end
 
   defp normalize_revenue_network(_network), do: {:error, :invalid_network}

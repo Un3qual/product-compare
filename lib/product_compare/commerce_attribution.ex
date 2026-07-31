@@ -49,7 +49,7 @@ defmodule ProductCompare.CommerceAttribution do
   def product_revenue_summary(product_id, opts \\ %{}),
     do: Revenue.product_revenue_summary(product_id, opts)
 
-  @spec network_revenue_summary(atom() | String.t(), map() | keyword()) :: map()
+  @spec network_revenue_summary(String.t(), map() | keyword()) :: map()
   def network_revenue_summary(network, opts \\ %{}),
     do: Revenue.network_revenue_summary(network, opts)
 end

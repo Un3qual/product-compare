@@ -3,7 +3,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
 
   alias ProductCompareSchemas.Reference.CurrencyCode
 
-  @networks [:impact, :awin, :rakuten, :cj, :amazon_associates]
   @statuses [:pending, :approved, :reversed, :paid]
   @attribution_confidences [:high, :low, :unmatched]
 
@@ -11,7 +10,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceConversion do
 
   schema "commerce_conversions" do
     field :entropy_id, Ecto.UUID
-    field :source_network, Ecto.Enum, values: @networks, virtual: true
+    field :source_network, :string, virtual: true
     field :network_conversion_ref, :string
     field :public_click_id, Ecto.UUID
     field :network_click_ref, :string

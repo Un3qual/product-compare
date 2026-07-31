@@ -26,7 +26,6 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
     create table(:reputation_event_types) do
       add :code, :text, null: false
       add :name, :text, null: false
-      add :default_delta, :bigint, null: false
 
       timestamps(type: :utc_datetime_usec)
     end

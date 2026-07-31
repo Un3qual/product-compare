@@ -94,7 +94,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      commerce_link = commerce_link_fixture(%{merchant: merchant, network: :impact})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
 
       first_click_session =
         commerce_link
@@ -110,7 +110,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
         conversion_fixture(%{
           click_session_id: first_click_session.id,
           public_click_id: first_click_session.click_id,
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           merchant_product_id: merchant_product.id,
@@ -124,7 +124,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
         conversion_fixture(%{
           click_session_id: second_click_session.id,
           public_click_id: second_click_session.click_id,
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           merchant_product_id: merchant_product.id,
@@ -136,7 +136,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
 
       _pending =
         conversion_fixture(%{
-          source_network: :impact,
+          source_network: "impact",
           merchant_id: merchant.id,
           product_id: product.id,
           status: :pending,
@@ -189,11 +189,43 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                })
     end
 
+    test "filters revenue through a configured custom affiliate network", %{conn: conn} do
+      {:ok, _network} =
+        Affiliate.upsert_network(%{code: "partnerize", name: "Partnerize"})
+
+      Enum.each(1..2, fn index ->
+        conversion_fixture(%{
+          source_network: "partnerize",
+          network_conversion_ref: "partnerize-graphql-#{index}",
+          status: :approved,
+          order_amount: Decimal.new("50.00"),
+          commission_amount: Decimal.new("5.00")
+        })
+      end)
+
+      assert %{
+               "data" => %{
+                 "revenueSummary" => %{
+                   "filters" => %{"network" => "partnerize"},
+                   "metrics" => %{
+                     "commissionRevenue" => "10.00",
+                     "conversions" => 2,
+                     "grossOrderValue" => "100.00"
+                   },
+                   "suppression" => %{"suppressed" => false}
+                 }
+               }
+             } =
+               graphql(conn, revenue_summary_query(), %{
+                 "input" => %{"network" => "partnerize"}
+               })
+    end
+
     test "enforces low-volume suppression without client-controlled thresholds", %{conn: conn} do
       merchant = merchant_fixture()
 
       conversion_fixture(%{
-        source_network: :impact,
+        source_network: "impact",
         merchant_id: merchant.id,
         status: :approved,
         order_amount: Decimal.new("90.00"),
@@ -324,7 +356,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   defp conversion_fixture(attrs) do
     {:ok, conversion} =
       attrs
-      |> Map.put_new(:source_network, :impact)
+      |> Map.put_new(:source_network, "impact")
       |> Map.put_new(:network_conversion_ref, "conversion-#{System.unique_integer([:positive])}")
       |> Map.put_new(:status, :pending)
       |> Map.put_new(:currency, "USD")
@@ -352,8 +384,8 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
   defp commerce_link_fixture(attrs) do
     merchant = Map.get(attrs, :merchant, merchant_fixture())
     suffix = System.unique_integer([:positive])
-    network = Map.get(attrs, :network, :impact)
-    network_name = network |> Atom.to_string() |> String.capitalize()
+    network = Map.get(attrs, :network, "impact")
+    network_name = String.capitalize(network)
 
     {:ok, affiliate_network} = Affiliate.upsert_network(%{name: network_name})
 

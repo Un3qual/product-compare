@@ -1,4 +1,4 @@
-defmodule ProductCompare.Repo.CategoricalStoragePolicy do
+defmodule ProductCompare.TestSupport.CategoricalStoragePolicy do
   @moduledoc false
 
   @text_types ~w(bpchar text varchar)

@@ -25,7 +25,7 @@ defmodule ProductCompare.CommerceAttribution.Revenue do
     |> dashboard_revenue_summary()
   end
 
-  @spec network_revenue_summary(atom() | String.t(), map() | keyword()) :: map()
+  @spec network_revenue_summary(String.t(), map() | keyword()) :: map()
   def network_revenue_summary(network, opts \\ %{}) do
     opts
     |> Filters.put(:network, network)

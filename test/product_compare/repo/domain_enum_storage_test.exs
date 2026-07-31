@@ -1,7 +1,7 @@
 defmodule ProductCompare.Repo.DomainEnumStorageTest do
   use ProductCompare.DataCase, async: true
 
-  alias ProductCompare.Repo.CategoricalStoragePolicy
+  alias ProductCompare.TestSupport.CategoricalStoragePolicy
 
   defmodule PersistedEnumFixture do
     use Ecto.Schema

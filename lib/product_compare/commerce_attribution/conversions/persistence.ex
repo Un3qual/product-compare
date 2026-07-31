@@ -88,11 +88,12 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
   end
 
   defp put_affiliate_network_id(attrs) do
+    attrs = normalize_source_network(attrs)
     changeset = CommerceConversion.changeset(%CommerceConversion{}, attrs)
 
     case Ecto.Changeset.get_field(changeset, :source_network) do
-      source_network when is_atom(source_network) ->
-        case Repo.get_by(AffiliateNetwork, code: Atom.to_string(source_network)) do
+      source_network when is_binary(source_network) ->
+        case Repo.get_by(AffiliateNetwork, code: source_network) do
           %AffiliateNetwork{id: affiliate_network_id} ->
             {:ok, Input.put_attr(attrs, :affiliate_network_id, affiliate_network_id)}
 
@@ -107,6 +108,16 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Persistence do
 
       _invalid_or_missing_network ->
         {:error, changeset}
+    end
+  end
+
+  defp normalize_source_network(attrs) do
+    case Input.fetch_attr(attrs, :source_network) do
+      source_network when is_binary(source_network) ->
+        Input.put_attr(attrs, :source_network, AffiliateNetwork.normalize_code(source_network))
+
+      _missing_or_invalid ->
+        attrs
     end
   end
 

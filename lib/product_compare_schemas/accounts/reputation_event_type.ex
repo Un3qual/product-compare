@@ -6,7 +6,6 @@ defmodule ProductCompareSchemas.Accounts.ReputationEventType do
   schema "reputation_event_types" do
     field :code, :string
     field :name, :string
-    field :default_delta, :integer
 
     has_many :reputation_events, ProductCompareSchemas.Accounts.ReputationEvent
 
@@ -16,8 +15,8 @@ defmodule ProductCompareSchemas.Accounts.ReputationEventType do
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(event_type, attrs) do
     event_type
-    |> cast(attrs, [:code, :name, :default_delta])
-    |> validate_required([:code, :name, :default_delta])
+    |> cast(attrs, [:code, :name])
+    |> validate_required([:code, :name])
     |> unique_constraint(:code)
   end
 end
