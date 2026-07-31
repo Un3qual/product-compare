@@ -26,21 +26,30 @@ defmodule ProductCompare.Accounts.ApiTokens.Authentication do
 
     case Repo.one(query) do
       {user, token} ->
-        maybe_touch_api_token(token.id, now, opts)
-        {:ok, user, token}
+        if touch_api_token_if_active(token.id, now, opts) do
+          {:ok, user, %{token | last_used_at: now}}
+        else
+          :error
+        end
 
       nil ->
         :error
     end
   end
 
-  defp maybe_touch_api_token(token_id, now, opts) do
+  defp touch_api_token_if_active(token_id, now, opts) do
     if Keyword.get(opts, :touch_last_used?, true) do
-      from(token in ApiToken, where: token.id == ^token_id)
-      |> Repo.update_all(set: [last_used_at: now])
-    end
+      {count, _rows} =
+        ApiToken
+        |> where([token], token.id == ^token_id)
+        |> where([token], is_nil(token.revoked_at))
+        |> where([token], is_nil(token.expires_at) or token.expires_at > ^now)
+        |> Repo.update_all(set: [last_used_at: now])
 
-    :ok
+      count == 1
+    else
+      true
+    end
   end
 
   defp current_time, do: DateTime.utc_now() |> DateTime.truncate(:microsecond)

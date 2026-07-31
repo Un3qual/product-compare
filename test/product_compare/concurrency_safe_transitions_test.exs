@@ -67,6 +67,29 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
     assert Repo.get!(ApiToken, fixture.api_token.id).revoked_at == @first_transition_at
   end
 
+  test "API token authentication cannot touch and return a concurrently revoked token" do
+    fixture = committed_api_token_fixture()
+    on_exit(fn -> delete_committed_user(fixture.user.id) end)
+
+    {lock_holder, lock_backend_pid} =
+      hold_row_lock(ApiToken, fixture.api_token.id, fn token ->
+        token
+        |> Ecto.Changeset.change(revoked_at: @first_transition_at)
+        |> Repo.update!()
+      end)
+
+    {authentication, authentication_backend_pid} =
+      start_unboxed_action(fn ->
+        Accounts.authenticate_api_token(fixture.plain_text_token)
+      end)
+
+    assert_blocked_by(authentication_backend_pid, lock_backend_pid)
+    release_row_lock(lock_holder)
+
+    assert :error = Task.await(authentication)
+    assert Repo.get!(ApiToken, fixture.api_token.id).last_used_at == nil
+  end
+
   test "marking an alert read preserves the first committed read timestamp" do
     fixture = committed_alert_fixture()
     on_exit(fn -> delete_committed_alert_fixture(fixture) end)
@@ -594,8 +617,11 @@ defmodule ProductCompare.ConcurrencySafeTransitionsTest do
   defp committed_api_token_fixture do
     Sandbox.unboxed_run(Repo, fn ->
       user = AccountsFixtures.user_fixture()
-      {:ok, %{api_token: api_token}} = Accounts.create_api_token(user.id, %{})
-      %{api_token: api_token, user: user}
+
+      {:ok, %{api_token: api_token, plain_text_token: plain_text_token}} =
+        Accounts.create_api_token(user.id, %{})
+
+      %{api_token: api_token, plain_text_token: plain_text_token, user: user}
     end)
   end
 
