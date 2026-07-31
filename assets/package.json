@@ -10,7 +10,7 @@
     "build:ssr": "vite build --ssr src/entry.server.tsx --outDir dist/server",
     "check:bundle": "node scripts/check-client-bundle.ts",
     "format:check": "oxfmt --check src test scripts '*.ts' '!src/__generated__/**'",
-    "lint": "oxlint --deny-warnings src test scripts '*.ts' '!src/__generated__/**'",
+    "lint": "oxlint --deny-warnings --ignore-pattern 'src/__generated__/**' src test scripts playwright.config.ts stylex-plugin.ts vite.config.ts vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:unit": "vitest run",

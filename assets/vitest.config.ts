@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { reactWithStyleX } from "./stylex-plugin";
+import { reactWithStyleX } from "./stylex-plugin.ts";
 
 export default defineConfig({
   plugins: reactWithStyleX(),
