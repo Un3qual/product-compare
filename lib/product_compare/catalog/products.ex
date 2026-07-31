@@ -81,7 +81,15 @@ defmodule ProductCompare.Catalog.Products do
                :ok <- SearchDocuments.refresh_product(updated.id) do
             updated
           else
-            {:error, reason} -> Repo.rollback(reason)
+            {:error, %Ecto.Changeset{} = changeset} ->
+              if slug_namespace_conflict?(changeset) do
+                Repo.rollback(:slug_reserved)
+              else
+                Repo.rollback(changeset)
+              end
+
+            {:error, reason} ->
+              Repo.rollback(reason)
           end
       end
     end)
@@ -183,6 +191,16 @@ defmodule ProductCompare.Catalog.Products do
   end
 
   defp preserve_prior_slug_alias(_product, _next_slug), do: :ok
+
+  defp slug_namespace_conflict?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn
+      {:slug, {_message, opts}} ->
+        to_string(opts[:constraint_name]) == "product_slug_namespace_uq"
+
+      _error ->
+        false
+    end)
+  end
 
   defp validate_primary_type_taxon(attrs, product \\ nil) do
     primary_type_taxon_id_key = "primary_type_taxon_id"
