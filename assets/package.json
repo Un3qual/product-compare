@@ -1,13 +1,8 @@
 {
   "name": "product-compare-frontend",
-  "private": true,
   "version": "0.1.0",
+  "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.18.0",
-  "engines": {
-    "node": "24.18.1",
-    "pnpm": "11.18.0"
-  },
   "scripts": {
     "dev": "vite",
     "build": "pnpm run build:client && pnpm run build:ssr && pnpm run check:bundle",
@@ -35,6 +30,7 @@
     "@radix-ui/react-slot": "1.2.4",
     "@radix-ui/react-tabs": "1.1.17",
     "@stylexjs/stylex": "0.18.1",
+    "effect": "3.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "react-relay": "20.1.1",
@@ -64,5 +60,10 @@
     "typescript": "5.9.3",
     "vite": "8.2.0",
     "vitest": "4.1.8"
-  }
+  },
+  "engines": {
+    "node": "24.18.1",
+    "pnpm": "11.18.0"
+  },
+  "packageManager": "pnpm@11.18.0"
 }
