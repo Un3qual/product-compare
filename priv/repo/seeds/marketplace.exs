@@ -17,6 +17,17 @@ defmodule ProductCompare.DevSeeds.Marketplace do
 
   @source_name "Development Marketplace Evidence"
   @artifact_hash "development-marketplace-offers-v1"
+  @price_point_entropy_ids %{
+    fresh_old: "d3ca0000-0000-4000-8000-000000000501",
+    fresh_middle: "d3ca0000-0000-4000-8000-000000000502",
+    fresh: "d3ca0000-0000-4000-8000-000000000503",
+    aging_old: "d3ca0000-0000-4000-8000-000000000504",
+    aging: "d3ca0000-0000-4000-8000-000000000505",
+    stale_old: "d3ca0000-0000-4000-8000-000000000506",
+    stale: "d3ca0000-0000-4000-8000-000000000507",
+    out_of_stock: "d3ca0000-0000-4000-8000-000000000508",
+    inactive: "d3ca0000-0000-4000-8000-000000000509"
+  }
 
   @spec seed!(map(), DateTime.t()) :: map()
   def seed!(catalog, %DateTime{} = anchor) do
@@ -195,24 +206,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
           in_stock: in_stock
         }
 
-        price_point =
-          case Repo.get_by(PricePoint,
-                 merchant_product_id: offer.id,
-                 artifact_id: artifact.id
-               ) do
-            nil ->
-              # Seed observations are evaluated synchronously after watches exist; the public
-              # pricing path would also enqueue background alert work for these local fixtures.
-              %PricePoint{}
-              |> PricePoint.changeset(attrs)
-              |> Repo.insert()
-
-            price_point ->
-              price_point
-              |> PricePoint.changeset(attrs)
-              |> Repo.update()
-          end
-          |> Support.expect!("price point #{offer.external_sku}/#{key}")
+        price_point = seed_price_point!(key, offer, attrs)
 
         {key, price_point, artifact}
       end)
@@ -226,6 +220,46 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     |> delete_alert_evaluation_jobs!()
 
     %{points: points, artifacts: artifacts}
+  end
+
+  defp seed_price_point!(key, offer, attrs) do
+    entropy_id = Map.fetch!(@price_point_entropy_ids, key)
+
+    price_point =
+      Repo.get_by(PricePoint, entropy_id: entropy_id) || legacy_seed_price_point(attrs)
+
+    case price_point do
+      nil ->
+        # Seed observations are evaluated synchronously after watches exist; the public
+        # pricing path would also enqueue background alert work for these local fixtures.
+        %PricePoint{}
+        |> PricePoint.changeset(attrs)
+        |> Ecto.Changeset.change(entropy_id: entropy_id)
+        |> Repo.insert()
+
+      %PricePoint{merchant_product_id: merchant_product_id} = price_point
+      when merchant_product_id == offer.id ->
+        price_point
+        |> PricePoint.changeset(attrs)
+        |> Ecto.Changeset.change(entropy_id: entropy_id)
+        |> Repo.update()
+
+      %PricePoint{merchant_product_id: conflicting_offer_id} ->
+        raise "development seed #{key} price point belongs to offer #{conflicting_offer_id}"
+    end
+    |> Support.expect!("price point #{offer.external_sku}/#{key}")
+  end
+
+  defp legacy_seed_price_point(attrs) do
+    PricePoint
+    |> where(
+      [point],
+      point.merchant_product_id == ^attrs.merchant_product_id and
+        point.artifact_id == ^attrs.artifact_id
+    )
+    |> order_by([point], asc: point.id)
+    |> limit(1)
+    |> Repo.one()
   end
 
   defp delete_alert_evaluation_jobs!([]), do: :ok

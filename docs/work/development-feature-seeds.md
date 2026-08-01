@@ -95,8 +95,8 @@ provider, scheduler, mailer, job, or network call.
   test/product_compare/specs` — 114 tests, 0 failures.
 - 2026-07-31: `git diff --check` — clean after the engagement milestone.
 - 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs
-  test/product_compare_web/graphql/development_seeds_test.exs` — 7 tests,
-  0 failures after deterministic-rerun closeout.
+  test/product_compare_web/graphql/development_seeds_test.exs` — 41 tests,
+  0 failures against the final reviewed seed suite.
 - 2026-07-31: `mix test test/product_compare/ingestion
   test/product_compare/commerce_attribution
   test/product_compare_web/graphql/cj_program_queries_test.exs

@@ -996,7 +996,9 @@ defmodule ProductCompare.Repo.SeedsTest do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
     assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
-    assert Repo.get!(Oban.Job, job.id).args["price_point_id"] == observation.id
+    preserved_job = Repo.get!(Oban.Job, job.id)
+    assert preserved_job.args["price_point_id"] == observation.id
+    assert preserved_job.state == "available"
     assert Repo.get!(PriceWatchRule, unrelated_watch.id).enabled
   end
 
@@ -1758,7 +1760,77 @@ defmodule ProductCompare.Repo.SeedsTest do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
     assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
-    assert Repo.get!(PurchasePriceFact, fact.id).price_observation_id == observation.id
+
+    preserved_fact = Repo.get!(PurchasePriceFact, fact.id)
+    assert preserved_fact.price_observation_id == observation.id
+    assert Decimal.equal?(preserved_fact.reported_paid_price, Decimal.new("1479.99"))
+    assert preserved_fact.observed_at == observation.observed_at
+    assert Decimal.equal?(preserved_fact.observed_price, observation.price)
+  end
+
+  test "reruns preserve another observation using a reserved seed price artifact" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27G")
+
+    artifact =
+      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-fresh-v1")
+
+    seed_point =
+      Repo.get_by!(PricePoint,
+        merchant_product_id: offer.id,
+        artifact_id: artifact.id
+      )
+
+    reserved_entropy_id = seed_point.entropy_id
+
+    seed_point
+    |> Ecto.Changeset.change(
+      entropy_id: Ecto.UUID.generate(),
+      price: Decimal.new("601.01"),
+      in_stock: false
+    )
+    |> Repo.update!()
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               artifact_id: artifact.id,
+               observed_at:
+                 DateTime.utc_now()
+                 |> DateTime.add(60, :second)
+                 |> DateTime.truncate(:microsecond),
+               price: Decimal.new("641.23"),
+               shipping: Decimal.new("4.56"),
+               in_stock: true
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %PricePoint{
+             artifact_id: seed_artifact_id,
+             entropy_id: ^reserved_entropy_id,
+             price: seed_price,
+             in_stock: true
+           } = Repo.get!(PricePoint, seed_point.id)
+
+    assert seed_artifact_id == artifact.id
+    assert Decimal.equal?(seed_price, Decimal.new("649.99"))
+
+    assert %PricePoint{
+             merchant_product_id: offer_id,
+             artifact_id: artifact_id,
+             observed_at: observed_at,
+             price: price,
+             shipping: shipping,
+             in_stock: true
+           } = Repo.get!(PricePoint, observation.id)
+
+    assert offer_id == offer.id
+    assert artifact_id == artifact.id
+    assert observed_at == observation.observed_at
+    assert Decimal.equal?(price, Decimal.new("641.23"))
+    assert Decimal.equal?(shipping, Decimal.new("4.56"))
   end
 
   test "reruns restore alert fixtures with a newer out-of-stock offer observation" do
@@ -1991,6 +2063,62 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(ProductIdentifier, identifier.id).product_id == unrelated_product.id
     refute Repo.get_by(User, email: "shopper@example.com")
+  end
+
+  test "reruns preserve an unvalidated identifier using a reserved seed value" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    seed_product = Repo.get_by!(Product, slug: "acme-vision-27g")
+
+    seed_identifier =
+      Repo.get_by!(ProductIdentifier,
+        scheme: :mpn,
+        normalized_value: "AV27G",
+        verification_status: :validated
+      )
+
+    reserved_entropy_id = seed_identifier.entropy_id
+
+    seed_identifier
+    |> ProductIdentifier.changeset(%{display_value: "Edited reserved MPN"})
+    |> Ecto.Changeset.change(entropy_id: Ecto.UUID.generate())
+    |> Repo.update!()
+
+    unrelated_product =
+      %Product{}
+      |> Product.changeset(%{
+        name: "Unverified reserved MPN candidate",
+        slug: "unverified-reserved-mpn-candidate"
+      })
+      |> Repo.insert!()
+
+    assert {:ok, unrelated_identifier} =
+             Catalog.create_product_identifier(%{
+               product_id: unrelated_product.id,
+               scheme: :mpn,
+               normalized_value: "AV27G",
+               display_value: "AV27G candidate",
+               verification_status: :unverified
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %ProductIdentifier{
+             product_id: unrelated_product_id,
+             verification_status: :unverified,
+             display_value: "AV27G candidate"
+           } = Repo.get!(ProductIdentifier, unrelated_identifier.id)
+
+    assert unrelated_product_id == unrelated_product.id
+
+    assert %ProductIdentifier{
+             product_id: seed_product_id,
+             entropy_id: ^reserved_entropy_id,
+             verification_status: :validated,
+             display_value: "AV27G"
+           } = Repo.get!(ProductIdentifier, seed_identifier.id)
+
+    assert seed_product_id == seed_product.id
   end
 
   defp seed_scope_counts do

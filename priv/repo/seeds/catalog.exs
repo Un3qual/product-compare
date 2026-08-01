@@ -20,6 +20,13 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
   @source_name "Development Manufacturer Evidence"
   @artifact_hash "development-manufacturer-specs-v1"
+  @identifier_entropy_ids %{
+    monitor_16_9: "d3ca0000-0000-4000-8000-000000000401",
+    monitor_ultrawide: "d3ca0000-0000-4000-8000-000000000402",
+    monitor_import_feed: "d3ca0000-0000-4000-8000-000000000403",
+    tv: "d3ca0000-0000-4000-8000-000000000404",
+    projector: "d3ca0000-0000-4000-8000-000000000405"
+  }
 
   @spec seed!(map(), DateTime.t()) :: map()
   def seed!(accounts, %DateTime{} = anchor) do
@@ -359,6 +366,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
   defp seed_identifiers!(products, artifact, anchor) do
     products
     |> Enum.map(fn {key, product} ->
+      entropy_id = Map.fetch!(@identifier_entropy_ids, key)
       normalized_value = product.model_number
 
       attrs = %{
@@ -372,13 +380,23 @@ defmodule ProductCompare.DevSeeds.Catalog do
       }
 
       identifier =
-        case Repo.get_by(ProductIdentifier, scheme: :mpn, normalized_value: normalized_value) do
+        case Repo.get_by(ProductIdentifier, entropy_id: entropy_id) ||
+               Repo.get_by(ProductIdentifier,
+                 scheme: :mpn,
+                 normalized_value: normalized_value,
+                 verification_status: :validated
+               ) do
           nil ->
-            Catalog.create_product_identifier(attrs)
+            attrs
+            |> Catalog.create_product_identifier()
+            |> Support.expect!("MPN #{normalized_value}")
+            |> Ecto.Changeset.change(entropy_id: entropy_id)
+            |> Repo.update()
 
           %ProductIdentifier{product_id: product_id} = identifier when product_id == product.id ->
             identifier
             |> ProductIdentifier.changeset(attrs)
+            |> Ecto.Changeset.change(entropy_id: entropy_id)
             |> Repo.update()
 
           %ProductIdentifier{product_id: conflicting_product_id} ->
