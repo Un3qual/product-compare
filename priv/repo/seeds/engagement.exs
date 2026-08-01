@@ -23,7 +23,10 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
-  @saved_set_names ["Gaming shortlist", "Home theater shortlist"]
+  @saved_set_entropy_ids %{
+    gaming: "d3ca0000-0000-4000-8000-000000000101",
+    home_theater: "d3ca0000-0000-4000-8000-000000000102"
+  }
   @watch_entropy_ids %{
     target: "d3ca0000-0000-4000-8000-000000000001",
     percentage_drop: "d3ca0000-0000-4000-8000-000000000002",
@@ -49,35 +52,45 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp seed_saved_sets!(shopper, products) do
-    SavedComparisonSet
-    |> where(
-      [saved_set],
-      saved_set.user_id == ^shopper.id and saved_set.name in ^@saved_set_names
-    )
-    |> Repo.all()
-    |> Enum.each(fn saved_set ->
-      Catalog.delete_saved_comparison_set(shopper.id, saved_set.entropy_id)
-      |> Support.expect!("delete saved comparison #{saved_set.name}")
-    end)
-
     %{
       gaming:
-        Catalog.create_saved_comparison_set(shopper.id, %{
+        recreate_seed_saved_set!(shopper.id, :gaming, %{
           name: "Gaming shortlist",
           product_ids: [
             products.monitor_16_9.id,
             products.monitor_ultrawide.id,
             products.monitor_import_feed.id
           ]
-        })
-        |> Support.expect!("Gaming shortlist"),
+        }),
       home_theater:
-        Catalog.create_saved_comparison_set(shopper.id, %{
+        recreate_seed_saved_set!(shopper.id, :home_theater, %{
           name: "Home theater shortlist",
           product_ids: [products.tv.id, products.projector.id]
         })
-        |> Support.expect!("Home theater shortlist")
     }
+  end
+
+  defp recreate_seed_saved_set!(shopper_id, key, attrs) do
+    entropy_id = Map.fetch!(@saved_set_entropy_ids, key)
+
+    case Repo.get_by(SavedComparisonSet, entropy_id: entropy_id) do
+      nil ->
+        :ok
+
+      %SavedComparisonSet{user_id: ^shopper_id} = saved_set ->
+        Catalog.delete_saved_comparison_set(shopper_id, saved_set.entropy_id)
+        |> Support.expect!("delete saved comparison #{saved_set.name}")
+
+      %SavedComparisonSet{user_id: conflicting_user_id} ->
+        raise "development seed #{key} saved comparison belongs to user #{conflicting_user_id}"
+    end
+
+    shopper_id
+    |> Catalog.create_saved_comparison_set(attrs)
+    |> Support.expect!(attrs.name)
+    |> Ecto.Changeset.change(entropy_id: entropy_id)
+    |> Repo.update()
+    |> Support.expect!("reserve #{key} saved comparison")
   end
 
   defp seed_snapshot!(shopper, products, anchor) do
@@ -190,7 +203,18 @@ defmodule ProductCompare.DevSeeds.Engagement do
         cooldown_seconds: 86_400
       })
 
-    Alerts.evaluate_price_point(restored_trigger.id, now: anchor)
+    reserved_watch_ids = MapSet.new([target.id, percentage_drop.id, back_in_stock.id])
+
+    Alerts.evaluate_price_point(restored_trigger.id,
+      now: anchor,
+      watch_evaluator: fn watch_id, price_point, now, evaluate ->
+        if MapSet.member?(reserved_watch_ids, watch_id) do
+          evaluate.(watch_id, price_point, now)
+        else
+          {:ok, false}
+        end
+      end
+    )
     |> Support.expect!("local alert evaluation")
 
     target_event = Repo.get_by!(AlertEvent, watch_rule_id: target.id)
@@ -533,6 +557,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
       end
 
     if status == :accepted do
+      restore_accepted_correction_claim!(correction, product, attribute)
+
       Specs.select_current_claim(product.id, attribute.id, correction.claim_id, moderator.id)
       |> Support.expect!("select accepted correction #{product.slug}/#{attribute.code}")
     end
@@ -554,27 +580,45 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> Support.expect!("restore correction #{product.slug}/#{attribute.code}")
   end
 
-  defp reset_correction_to_pending!(correction, product, attribute) do
-    claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
-    superseded_claim = Repo.get!(ProductAttributeClaim, claim.supersedes_claim_id)
-
-    superseded_claim
-    |> ProductAttributeClaim.changeset(%{status: :accepted})
-    |> Repo.update()
-    |> Support.expect!("restore superseded claim #{product.slug}/#{attribute.code}")
-
-    case Repo.get_by(ProductAttributeCurrent,
-           product_id: correction.product_id,
-           attribute_id: correction.attribute_id
-         ) do
-      nil ->
+  defp restore_accepted_correction_claim!(correction, product, attribute) do
+    case Repo.get!(ProductAttributeClaim, correction.claim_id) do
+      %ProductAttributeClaim{status: :accepted} ->
         :ok
 
-      current ->
-        current
-        |> ProductAttributeCurrent.changeset(%{claim_id: superseded_claim.id})
+      claim ->
+        claim
+        |> ProductAttributeClaim.changeset(%{status: :accepted})
         |> Repo.update()
-        |> Support.expect!("restore current claim #{product.slug}/#{attribute.code}")
+        |> Support.expect!("restore accepted correction claim #{product.slug}/#{attribute.code}")
+
+        :ok
+    end
+  end
+
+  defp reset_correction_to_pending!(correction, product, attribute) do
+    claim = Repo.get!(ProductAttributeClaim, correction.claim_id)
+
+    if claim.supersedes_claim_id do
+      superseded_claim = Repo.get!(ProductAttributeClaim, claim.supersedes_claim_id)
+
+      superseded_claim
+      |> ProductAttributeClaim.changeset(%{status: :accepted})
+      |> Repo.update()
+      |> Support.expect!("restore superseded claim #{product.slug}/#{attribute.code}")
+
+      case Repo.get_by(ProductAttributeCurrent,
+             product_id: correction.product_id,
+             attribute_id: correction.attribute_id
+           ) do
+        nil ->
+          :ok
+
+        current ->
+          current
+          |> ProductAttributeCurrent.changeset(%{claim_id: superseded_claim.id})
+          |> Repo.update()
+          |> Support.expect!("restore current claim #{product.slug}/#{attribute.code}")
+      end
     end
 
     claim

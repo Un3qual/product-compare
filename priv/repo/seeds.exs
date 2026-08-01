@@ -21,8 +21,8 @@ Code.require_file("seeds/guide.exs", __DIR__)
 
 seed_user_password =
   case System.get_env("SEED_USER_PASSWORD") do
-    password when is_binary(password) and password != "" ->
-      password
+    password when is_binary(password) ->
+      if String.trim(password) == "", do: "supersecretpass123", else: password
 
     _ ->
       "supersecretpass123"

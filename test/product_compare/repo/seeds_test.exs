@@ -230,6 +230,33 @@ defmodule ProductCompare.Repo.SeedsTest do
     end
   end
 
+  test "whitespace-only seed passwords use the development default" do
+    original_seed_password = System.get_env("SEED_USER_PASSWORD")
+    whitespace_password = String.duplicate(" ", 16)
+
+    System.put_env("SEED_USER_PASSWORD", whitespace_password)
+
+    on_exit(fn ->
+      case original_seed_password do
+        nil -> System.delete_env("SEED_USER_PASSWORD")
+        password -> System.put_env("SEED_USER_PASSWORD", password)
+      end
+    end)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %User{email: "admin@example.com"} =
+             Accounts.authenticate_user_by_email_and_password(
+               "admin@example.com",
+               @seed_password
+             )
+
+    refute Accounts.authenticate_user_by_email_and_password(
+             "admin@example.com",
+             whitespace_password
+           )
+  end
+
   test "seeds stop rather than promote a preclaimed operator email" do
     attacker_password = String.duplicate("a", 16)
 
@@ -811,6 +838,32 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(ProductReview, unrelated_review.id) == unrelated_records.review
   end
 
+  test "reruns preserve user-created saved sets that reuse a development name" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    product = Repo.get_by!(Product, slug: "acme-beam-4k")
+
+    assert {:ok, unrelated_set} =
+             Catalog.create_saved_comparison_set(shopper.id, %{
+               name: "Gaming shortlist",
+               product_ids: [product.id]
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %SavedComparisonSet{name: "Gaming shortlist"} =
+             Repo.get(SavedComparisonSet, unrelated_set.id)
+
+    assert Repo.aggregate(
+             from(saved_set in SavedComparisonSet,
+               where: saved_set.user_id == ^shopper.id and saved_set.name == "Gaming shortlist"
+             ),
+             :count,
+             :id
+           ) == 2
+  end
+
   test "reruns restore seed-owned records after normal feature lifecycle actions" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -946,7 +999,7 @@ defmodule ProductCompare.Repo.SeedsTest do
                product_id: product.id,
                rule_type: :target_price,
                currency: "USD",
-               target_amount: "500.00",
+               target_amount: "1000.00",
                cooldown_seconds: 604_800
              })
 
@@ -954,10 +1007,14 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %PriceWatchRule{
              target_amount: target_amount,
-             cooldown_seconds: 604_800
+             cooldown_seconds: 604_800,
+             last_evaluated_at: nil,
+             last_evaluated_price_point_id: nil,
+             last_event_at: nil
            } = Repo.get(PriceWatchRule, unrelated_watch.id)
 
-    assert Decimal.equal?(target_amount, Decimal.new("500.00"))
+    assert Decimal.equal?(target_amount, Decimal.new("1000.00"))
+    refute Repo.get_by(AlertEvent, watch_rule_id: unrelated_watch.id)
   end
 
   test "reruns restore community content without consuming interactive write quota" do
@@ -1038,6 +1095,100 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(ProductAttributeClaim, imported_claim.id).status == :accepted
     assert imported_current_claim(product.id, "refresh_rate").claim_id == imported_claim.id
+  end
+
+  test "reruns restore the accepted correction after a newer correction is selected" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    seeded_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development accepted correction example"
+      )
+
+    seeded_claim = Repo.get!(ProductAttributeClaim, seeded_correction.claim_id)
+
+    assert {:ok, newer_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("170"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Developer selected a newer refresh-rate correction",
+                 explanation: "Synthetic local correction used to exercise reseeding."
+               }
+             )
+
+    assert {:ok, _accepted_correction} =
+             Specs.moderate_correction(newer_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the newer correction"
+             })
+
+    assert Repo.get!(ProductAttributeClaim, seeded_claim.id).status == :superseded
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
+    assert Repo.get!(ProductAttributeClaim, seeded_claim.id).status == :accepted
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: seeded_correction.product_id,
+             attribute_id: seeded_correction.attribute_id
+           ).claim_id == seeded_claim.id
+
+    assert Repo.get!(SpecificationCorrection, newer_correction.id).status == :accepted
+  end
+
+  test "reruns reset a pending correction whose claim has no superseded claim" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    pending_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development pending correction example"
+      )
+
+    pending_claim = Repo.get!(ProductAttributeClaim, pending_correction.claim_id)
+    baseline_claim_id = pending_claim.supersedes_claim_id
+
+    ProductAttributeCurrent
+    |> Repo.get_by!(
+      product_id: pending_correction.product_id,
+      attribute_id: pending_correction.attribute_id
+    )
+    |> Repo.delete!()
+
+    pending_claim
+    |> ProductAttributeClaim.changeset(%{supersedes_claim_id: nil})
+    |> Repo.update!()
+
+    assert {:ok, accepted_correction} =
+             Specs.moderate_correction(pending_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted a correction without a prior current claim"
+             })
+
+    assert accepted_correction.status == :accepted
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    restored_correction = Repo.get!(SpecificationCorrection, pending_correction.id)
+    restored_claim = Repo.get!(ProductAttributeClaim, pending_claim.id)
+
+    assert restored_correction.status == :pending
+    assert restored_claim.status == :proposed
+    assert is_nil(restored_claim.supersedes_claim_id)
+
+    assert Repo.get_by!(ProductAttributeCurrent,
+             product_id: pending_correction.product_id,
+             attribute_id: pending_correction.attribute_id
+           ).claim_id == baseline_claim_id
   end
 
   test "reruns preserve user-created coupons that reuse a development code" do
