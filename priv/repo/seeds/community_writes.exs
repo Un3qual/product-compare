@@ -109,7 +109,7 @@ defmodule ProductCompare.DevSeeds.CommunityWrites do
             |> CommunityReport.changeset(
               Map.merge(target, %{reporter_id: reporter_id, reason: reason})
             )
-            |> insert_or_rollback()
+            |> insert_report_or_reload(reporter_id, type, record.id)
         end
       end)
     else
@@ -212,6 +212,27 @@ defmodule ProductCompare.DevSeeds.CommunityWrites do
 
   defp existing_report(reporter_id, :answer, content_id),
     do: Repo.get_by(CommunityReport, reporter_id: reporter_id, post_id: content_id)
+
+  defp insert_report_or_reload(changeset, reporter_id, type, content_id) do
+    case Repo.insert(changeset, mode: :savepoint) do
+      {:ok, report} ->
+        report
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        if unique_constraint_error?(changeset) do
+          case existing_report(reporter_id, type, content_id) do
+            %CommunityReport{} = report -> report
+            nil -> Repo.rollback(changeset)
+          end
+        else
+          Repo.rollback(changeset)
+        end
+    end
+  end
+
+  defp unique_constraint_error?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn {_field, {_message, opts}} -> opts[:constraint] == :unique end)
+  end
 
   defp report_target(:review, content_id), do: %{review_id: content_id}
   defp report_target(:question, content_id), do: %{thread_id: content_id}

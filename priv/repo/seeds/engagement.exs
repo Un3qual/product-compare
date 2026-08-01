@@ -685,7 +685,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   defp restore_correction!(correction, attrs, desired_status, product, attribute) do
     correction =
       if correction.status in [:accepted, :rejected] and correction.status != desired_status and
-           not competing_pending_correction?(correction) do
+           not current_claim_required_by_pending_correction?(correction) do
         reset_correction_to_pending!(correction, product, attribute)
       else
         correction
@@ -697,16 +697,31 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> Support.expect!("restore correction #{product.slug}/#{attribute.code}")
   end
 
-  defp competing_pending_correction?(correction) do
-    Repo.exists?(
+  defp current_claim_required_by_pending_correction?(correction) do
+    current_claim_id =
+      Repo.one(
+        from current in ProductAttributeCurrent,
+          where: current.product_id == ^correction.product_id,
+          where: current.attribute_id == ^correction.attribute_id,
+          select: current.claim_id
+      )
+
+    query =
       from candidate in SpecificationCorrection,
-        where:
-          candidate.id != ^correction.id and
-            candidate.submitted_by == ^correction.submitted_by and
-            candidate.product_id == ^correction.product_id and
-            candidate.attribute_id == ^correction.attribute_id and
-            candidate.status == :pending
-    )
+        join: claim in ProductAttributeClaim,
+        on: claim.id == candidate.claim_id,
+        where: candidate.id != ^correction.id,
+        where: candidate.product_id == ^correction.product_id,
+        where: candidate.attribute_id == ^correction.attribute_id,
+        where: candidate.status == :pending
+
+    query =
+      case current_claim_id do
+        nil -> where(query, [_candidate, claim], is_nil(claim.supersedes_claim_id))
+        claim_id -> where(query, [_candidate, claim], claim.supersedes_claim_id == ^claim_id)
+      end
+
+    Repo.exists?(query)
   end
 
   defp restore_accepted_correction_claim!(correction, product, attribute) do

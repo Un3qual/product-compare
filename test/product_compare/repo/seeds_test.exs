@@ -13,17 +13,22 @@ defmodule ProductCompare.Repo.SeedsTest do
 
   import ExUnit.CaptureIO
 
+  alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
   alias ProductCompare.Alerts
   alias ProductCompare.Catalog
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.DatabaseTestHelpers
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
   alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
+  alias ProductCompare.DevSeeds.CommunityWrites, as: DevSeedCommunityWrites
   alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
   alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
   alias ProductCompare.Discussions
+  alias ProductCompare.Fixtures.AccountsFixtures
+  alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Ingestion
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -38,6 +43,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Catalog.ProductIdentifier
@@ -63,6 +69,8 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
   alias ProductCompareSchemas.Specs.SpecificationCorrection
+  alias ProductCompareSchemas.Taxonomy.Taxon
+  alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   @seed_password "supersecretpass123"
 
@@ -1252,6 +1260,8 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get_by!(CommunityWriteReceipt,
              user_id: accounts.shopper.id,
              content_type: :review,
+             # Public fixture label, not a credential.
+             # skipcq: SCT-A000
              idempotency_key: "dev-seed-review-shopper-v1"
            ).payload_digest == expected_digest
 
@@ -1265,6 +1275,127 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert replayed_review.id == engagement.community.reviews.shopper.id
     assert Repo.aggregate(CommunityWriteWindow, :count, :id) == 0
+  end
+
+  test "seed report returns an interactive report that wins a concurrent insert" do
+    fixture =
+      Sandbox.unboxed_run(Repo, fn ->
+        reporter = AccountsFixtures.user_fixture()
+        author = AccountsFixtures.user_fixture()
+        product = SpecsFixtures.product_fixture()
+        taxon = Repo.get!(Taxon, product.primary_type_taxon_id)
+
+        review =
+          %ProductReview{}
+          |> ProductReview.changeset_with_verified_purchase(
+            %{
+              user_id: author.id,
+              product_id: product.id,
+              rating: 5,
+              title: "Concurrent report target",
+              body_md: "The interactive report commits while the seed insert is waiting."
+            },
+            false
+          )
+          |> Repo.insert!()
+          |> then(&Repo.get!(ProductReview, &1.id))
+
+        %{
+          reporter: reporter,
+          author: author,
+          product: product,
+          review: review,
+          brand_id: product.brand_id,
+          taxon_id: taxon.id,
+          taxonomy_id: taxon.taxonomy_id
+        }
+      end)
+
+    on_exit(fn ->
+      Sandbox.unboxed_run(Repo, fn ->
+        Repo.delete_all(
+          from report in CommunityReport, where: report.review_id == ^fixture.review.id
+        )
+
+        Repo.delete_all(from review in ProductReview, where: review.id == ^fixture.review.id)
+
+        Repo.delete_all(
+          from user in User, where: user.id in ^[fixture.reporter.id, fixture.author.id]
+        )
+
+        Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+        Repo.delete_all(from brand in Brand, where: brand.id == ^fixture.brand_id)
+        Repo.delete_all(from taxon in Taxon, where: taxon.id == ^fixture.taxon_id)
+        Repo.delete_all(from taxonomy in Taxonomy, where: taxonomy.id == ^fixture.taxonomy_id)
+      end)
+    end)
+
+    assert {:error, :not_found} =
+             Sandbox.unboxed_run(Repo, fn ->
+               DevSeedCommunityWrites.report(
+                 fixture.reporter.id,
+                 :review,
+                 Ecto.UUID.generate(),
+                 "Warm the seed report path before coordinating the database race"
+               )
+             end)
+
+    parent = self()
+
+    interactive_reporter =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          Repo.transaction(fn ->
+            {:ok, report} =
+              Discussions.report(
+                fixture.reporter.id,
+                :review,
+                fixture.review.entropy_id,
+                "Interactive report won the insert race"
+              )
+
+            backend_pid = DatabaseTestHelpers.database_backend_pid()
+            send(parent, {:interactive_report_inserted, self(), backend_pid, report.id})
+
+            receive do
+              :commit_interactive_report -> report
+            after
+              5_000 -> flunk("timed out waiting to commit the interactive report")
+            end
+          end)
+        end)
+      end)
+
+    assert_receive {:interactive_report_inserted, interactive_pid, interactive_backend_pid,
+                    report_id},
+                   2_000
+
+    assert interactive_pid == interactive_reporter.pid
+
+    seed_reporter =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          backend_pid = DatabaseTestHelpers.database_backend_pid()
+          send(parent, {:seed_report_started, self(), backend_pid})
+
+          DevSeedCommunityWrites.report(
+            fixture.reporter.id,
+            :review,
+            fixture.review.entropy_id,
+            "Development report example for the moderation queue"
+          )
+        end)
+      end)
+
+    assert_receive {:seed_report_started, seed_pid, seed_backend_pid}, 2_000
+    assert seed_pid == seed_reporter.pid
+    DatabaseTestHelpers.assert_backend_blocked(seed_backend_pid)
+    DatabaseTestHelpers.assert_some_backend_blocked_by(interactive_backend_pid)
+
+    send(interactive_reporter.pid, :commit_interactive_report)
+
+    assert {:ok, %CommunityReport{id: ^report_id}} = Task.await(interactive_reporter)
+    assert {:ok, %CommunityReport{id: ^report_id}} = Task.await(seed_reporter)
   end
 
   test "reruns preserve a replacement review after the reserved review is removed" do
@@ -1582,7 +1713,7 @@ defmodule ProductCompare.Repo.SeedsTest do
              })
   end
 
-  test "reruns reset the seeded correction when another submitter has a pending correction" do
+  test "reruns preserve a pending correction from another submitter" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
     shopper = Repo.get_by!(User, email: "shopper@example.com")
@@ -1616,8 +1747,13 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
-    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :pending
+    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
     assert Repo.get!(SpecificationCorrection, participant_correction.id).status == :pending
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(participant_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the participant correction after reseeding"
+             })
   end
 
   test "reruns identify corrections independently from their visible reason" do
