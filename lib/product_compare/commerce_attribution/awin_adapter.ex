@@ -37,8 +37,6 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
         parse_datetime(value(payload, :transaction_date, "transactionDate", "TransactionDate")),
       reported_at: reported_at,
       data_freshness_at: reported_at,
-      merchant_product_id:
-        integer(value(payload, :merchant_product_id, "merchantProductId", "MerchantProductId")),
       raw_payload: payload
     })
     |> drop_nil_optional_attrs()
@@ -113,18 +111,6 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
   end
 
   defp decimal(_value), do: nil
-
-  defp integer(nil), do: nil
-  defp integer(value) when is_integer(value), do: value
-
-  defp integer(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {int, ""} -> int
-      _invalid -> nil
-    end
-  end
-
-  defp integer(_value), do: nil
 
   defp parse_datetime(nil), do: nil
   defp parse_datetime(%DateTime{} = value), do: value

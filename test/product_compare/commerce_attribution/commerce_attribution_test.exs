@@ -1343,9 +1343,9 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.raw_payload == payload
     end
 
-    test "normalizes atom-keyed member IDs and rejects click-dimension conflicts" do
+    test "normalizes atom-keyed member IDs and rejects affiliate-network conflicts" do
       clicked_merchant = merchant_fixture()
-      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "rakuten"})
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
       click_session = click_session_fixture(commerce_link)
 
       payload = %{
@@ -1356,13 +1356,82 @@ defmodule ProductCompare.CommerceAttributionTest do
         sale_amount: Decimal.new("105.00"),
         commission_amount: Decimal.new("10.50"),
         transaction_date: ~U[2026-05-20 12:00:00Z],
-        process_date: ~U[2026-05-20 12:05:00Z],
-        merchant_product_id: merchant_product_fixture().id
+        process_date: ~U[2026-05-20 12:05:00Z]
       }
 
       assert {:error, changeset} = RakutenAdapter.ingest_transaction(payload)
-      assert "does not match resolved click" in errors_on(changeset).merchant_product_id
+      assert "does not match resolved click" in errors_on(changeset).affiliate_network_id
       assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+
+    test "keeps malformed compact u1 references unmatched and ignores blank references" do
+      for {u1, expected_network_click_ref} <- [
+            {"not-a-compact-uuid", "not-a-compact-uuid"},
+            {" ", nil}
+          ] do
+        payload = %{
+          "transactionId" => "rakuten-transaction-#{System.unique_integer([:positive])}",
+          "u1" => u1,
+          "status" => "pending",
+          "currency" => "USD",
+          "saleAmount" => "20.00",
+          "commissionAmount" => "2.00",
+          "transactionDate" => "2026-05-20T12:00:00Z",
+          "processDate" => "2026-05-20T12:05:00Z"
+        }
+
+        assert {:ok, conversion} = RakutenAdapter.ingest_transaction(payload)
+        assert conversion.public_click_id == nil
+        assert conversion.click_session_id == nil
+        assert conversion.network_click_ref == expected_network_click_ref
+        assert conversion.attribution_confidence == :unmatched
+        assert conversion.raw_payload == payload
+      end
+    end
+  end
+
+  describe "focused adapter evidence boundaries" do
+    test "keeps unsupported provider merchant product fields out of internal attribution" do
+      cases = [
+        {&CJAdapter.ingest_transaction/1,
+         %{
+           "commissionId" => "cj-commission-#{System.unique_integer([:positive])}",
+           "actionStatus" => "NEW",
+           "currency" => "USD",
+           "saleAmount" => "25.00",
+           "commissionAmount" => "2.50",
+           "eventDate" => "2026-05-20T12:00:00Z",
+           "postingDate" => "2026-05-20T12:05:00Z",
+           "merchantProductId" => 9_999_999
+         }, "merchantProductId"},
+        {&AwinAdapter.ingest_transaction/1,
+         %{
+           id: "awin-transaction-#{System.unique_integer([:positive])}",
+           commission_status: :pending,
+           sale_amount: %{amount: "25.00", currency: "USD"},
+           commission_amount: %{amount: "2.50", currency: "USD"},
+           transaction_date: ~U[2026-05-20 12:00:00Z],
+           validation_date: ~U[2026-05-20 12:05:00Z],
+           merchant_product_id: 9_999_999
+         }, "merchant_product_id"},
+        {&RakutenAdapter.ingest_transaction/1,
+         %{
+           "transactionId" => "rakuten-transaction-#{System.unique_integer([:positive])}",
+           "status" => "pending",
+           "currency" => "USD",
+           "saleAmount" => "25.00",
+           "commissionAmount" => "2.50",
+           "transactionDate" => "2026-05-20T12:00:00Z",
+           "processDate" => "2026-05-20T12:05:00Z",
+           "MerchantProductId" => 9_999_999
+         }, "MerchantProductId"}
+      ]
+
+      for {ingest, payload, raw_key} <- cases do
+        assert {:ok, conversion} = ingest.(payload)
+        assert conversion.merchant_product_id == nil
+        assert conversion.raw_payload[raw_key] == 9_999_999
+      end
     end
   end
 
