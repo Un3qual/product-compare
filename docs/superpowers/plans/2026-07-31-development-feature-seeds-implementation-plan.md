@@ -217,6 +217,11 @@ For each price point, look up the exact merchant product and observation time
 before calling `Pricing.add_price_point/1`. Restore merchant-product active and
 last-seen fields through `Pricing.upsert_merchant_product/1`.
 
+Restore only artifact-owned seed observations. Preserve newer local price
+history even when it changes a derived aging or stale state, and do not clear
+the never-observed offer when deleting its observations would also delete an
+unrelated user's alert event.
+
 Use `Affiliate.upsert_network/1`, `upsert_program/1`, and `upsert_link/1` for
 their natural conflict keys. Because coupons have no context upsert, reconcile
 only exact `{merchant_id, code}` seed coupons through `Coupon.changeset/2` and
@@ -307,6 +312,12 @@ records to the required published/hidden states through `moderate/5`, accept the
 named participant answer through `accept_answer/3`, and create the exact
 participant report only when it is absent. Keep question ownership with the
 shopper and answer ownership with the participant.
+
+If a removed reserved review has been replaced through the normal submission
+flow, preserve the active replacement and leave the reserved review removed
+rather than violating the one-active-review constraint. Identify the three
+seed corrections by reserved immutable entropy IDs; visible reason text is not
+an ownership key.
 
 - [ ] **Step 5: Reconcile correction lifecycle examples**
 

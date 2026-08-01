@@ -116,6 +116,15 @@ Their observations are derived from the shared anchor timestamp and cover:
 - multiple price histories suitable for charts and relative-price comparison;
 - products available from one merchant and from multiple merchants.
 
+Seed-owned artifact observations return to their anchored values on rerun. Newer
+local observations are independent history and remain authoritative; the seed
+does not delete or backdate them merely to force an exercised aging or stale
+offer back into its original derived freshness bucket. Likewise, the
+never-observed offer is cleared only while doing so would not erase another
+user's alert history. A developer who exercises these price-derived scenarios
+keeps that local history, while a fresh database still receives the complete
+state matrix.
+
 Synthetic affiliate networks, programs, and links cover configured and inactive
 program states. Coupons include active, future, and expired examples so shopper
 offer presentation and operator setup reads have meaningful data. All outbound
@@ -146,6 +155,10 @@ Community state spans two regular users and includes:
 
 The scenarios preserve valid ownership and moderation transitions rather than
 forcing conflicting states onto one account or record.
+
+The three seed-owned specification corrections use reserved immutable entropy
+IDs. Their visible reason and evidence copy remain editable presentation data,
+and a local correction may reuse that copy without being adopted by the seed.
 
 ## Synthetic Provider And Revenue Scenarios
 

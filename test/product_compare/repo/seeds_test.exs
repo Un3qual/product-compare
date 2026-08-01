@@ -1,5 +1,8 @@
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/support.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
 
 defmodule ProductCompare.Repo.SeedsTest do
   use ProductCompare.DataCase, async: false
@@ -15,6 +18,9 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
+  alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
+  alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
+  alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
   alias ProductCompare.Discussions
   alias ProductCompare.Ingestion
   alias ProductCompare.Pricing
@@ -1150,6 +1156,47 @@ defmodule ProductCompare.Repo.SeedsTest do
            ).count == 2
   end
 
+  test "reruns preserve a replacement review after the reserved review is removed" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    product = Repo.get_by!(Product, slug: "acme-vision-27g")
+
+    seeded_review =
+      Repo.get_by!(ProductReview,
+        user_id: shopper.id,
+        product_id: product.id,
+        title: "Excellent for fast games"
+      )
+
+    assert {:ok, %ProductReview{moderation_status: :removed}} =
+             Discussions.remove_owned(shopper.id, :review, seeded_review.entropy_id)
+
+    assert {:ok, replacement_review} =
+             Discussions.submit_review(
+               shopper.id,
+               product.id,
+               %{
+                 rating: 4,
+                 title: "Replacement review",
+                 body: "This developer-created replacement must survive reseeding unchanged."
+               },
+               "developer-replacement-review-v1"
+             )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %ProductReview{moderation_status: :removed} =
+             Repo.get!(ProductReview, seeded_review.id)
+
+    assert %ProductReview{
+             moderation_status: :pending,
+             rating: 4,
+             title: "Replacement review",
+             body_md: "This developer-created replacement must survive reseeding unchanged."
+           } = Repo.get!(ProductReview, replacement_review.id)
+  end
+
   test "reruns restore a superseded imported claim as current" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1233,6 +1280,11 @@ defmodule ProductCompare.Repo.SeedsTest do
   test "reruns reset a pending correction whose claim has no superseded claim" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
+    anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+    marketplace = DevSeedMarketplace.seed!(catalog, anchor)
+
     shopper = Repo.get_by!(User, email: "shopper@example.com")
     moderator = Repo.get_by!(User, email: "moderator@example.com")
 
@@ -1263,7 +1315,7 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert accepted_correction.status == :accepted
 
-    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+    DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
 
     restored_correction = Repo.get!(SpecificationCorrection, pending_correction.id)
     restored_claim = Repo.get!(ProductAttributeClaim, pending_claim.id)
@@ -1272,10 +1324,12 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert restored_claim.status == :proposed
     assert is_nil(restored_claim.supersedes_claim_id)
 
-    assert Repo.get_by!(ProductAttributeCurrent,
+    refute Repo.get_by(ProductAttributeCurrent,
              product_id: pending_correction.product_id,
              attribute_id: pending_correction.attribute_id
-           ).claim_id == baseline_claim_id
+           )
+
+    assert Repo.get!(ProductAttributeClaim, baseline_claim_id).status == :accepted
   end
 
   test "reruns preserve a newer pending correction instead of resetting the seeded row" do
@@ -1315,6 +1369,88 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(SpecificationCorrection, newer_correction.id).status == :pending
     assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
+  end
+
+  test "reruns reset the seeded correction when another submitter has a pending correction" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    participant = Repo.get_by!(User, email: "participant@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    seeded_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development pending correction example"
+      )
+
+    seeded_claim = Repo.get!(ProductAttributeClaim, seeded_correction.claim_id)
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(seeded_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the seeded pending correction"
+             })
+
+    assert {:ok, participant_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               participant.id,
+               %{value_num: Decimal.new("112"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Participant pending diagonal correction",
+                 explanation: "A different submitter has an independent pending-correction scope."
+               }
+             )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :pending
+    assert Repo.get!(SpecificationCorrection, participant_correction.id).status == :pending
+  end
+
+  test "reruns identify corrections independently from their visible reason" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+
+    seeded_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development accepted correction example"
+      )
+
+    seeded_claim = Repo.get!(ProductAttributeClaim, seeded_correction.claim_id)
+
+    assert {:ok, duplicate_reason_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("171"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Development accepted correction example",
+                 explanation: "A developer-created correction may reuse visible seed copy."
+               }
+             )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
+    assert Repo.get!(SpecificationCorrection, duplicate_reason_correction.id).status == :pending
+
+    seeded_correction
+    |> SpecificationCorrection.changeset(%{reason: "Developer edited the visible seed reason"})
+    |> Repo.update!()
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %SpecificationCorrection{
+             status: :accepted,
+             reason: "Development accepted correction example"
+           } = Repo.get!(SpecificationCorrection, seeded_correction.id)
+
+    assert Repo.get!(SpecificationCorrection, duplicate_reason_correction.id).status == :pending
   end
 
   test "reruns preserve user-created coupons that reuse a development code" do
@@ -1396,6 +1532,76 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Pricing.latest_price(offer.id) == nil
     assert Repo.get(AlertEvent, event.id) == nil
+  end
+
+  test "reruns preserve another user's alert history on the reserved unobserved offer" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    participant = Repo.get_by!(User, email: "participant@example.com")
+    product = Repo.get_by!(Product, slug: "acme-beam-4k")
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+
+    assert {:ok, watch} =
+             Alerts.create_watch(participant.id, %{
+               product_id: product.id,
+               merchant_product_id: offer.id,
+               rule_type: :newly_available,
+               currency: "USD",
+               enabled: true,
+               cooldown_seconds: 86_400
+             })
+
+    observed_at = DateTime.utc_now() |> DateTime.add(60, :second)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: observed_at,
+               price: Decimal.new("1799.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, %{events_created: 1}} =
+             Alerts.evaluate_price_point(observation.id,
+               now: DateTime.add(observed_at, 1, :second)
+             )
+
+    event = Repo.get_by!(AlertEvent, watch_rule_id: watch.id)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
+    assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
+  end
+
+  test "reruns preserve later observations on aging and stale offers" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    aging_offer = Repo.get_by!(MerchantProduct, external_sku: "VAL-AV27G")
+    stale_offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27UW")
+    observed_at = DateTime.utc_now() |> DateTime.add(60, :second)
+
+    later_points =
+      [aging_offer, stale_offer]
+      |> Map.new(fn offer ->
+        assert {:ok, point} =
+                 Pricing.add_price_point(%{
+                   merchant_product_id: offer.id,
+                   observed_at: observed_at,
+                   price: Decimal.new("777.77"),
+                   shipping: Decimal.new("0.00"),
+                   in_stock: true
+                 })
+
+        {offer.id, point}
+      end)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    for offer <- [aging_offer, stale_offer] do
+      assert Pricing.latest_price(offer.id).id == later_points[offer.id].id
+    end
   end
 
   test "reruns restore reserved conversions after a newer ingestion update" do

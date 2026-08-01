@@ -28,6 +28,11 @@ defmodule ProductCompare.DevSeeds.Engagement do
     home_theater: "d3ca0000-0000-4000-8000-000000000102"
   }
   @snapshot_entropy_id "d3ca0000-0000-4000-8000-000000000103"
+  @correction_entropy_ids %{
+    pending: "d3ca0000-0000-4000-8000-000000000301",
+    accepted: "d3ca0000-0000-4000-8000-000000000302",
+    rejected: "d3ca0000-0000-4000-8000-000000000303"
+  }
   @watch_entropy_ids %{
     target: "d3ca0000-0000-4000-8000-000000000001",
     percentage_drop: "d3ca0000-0000-4000-8000-000000000002",
@@ -367,9 +372,24 @@ defmodule ProductCompare.DevSeeds.Engagement do
       Discussions.submit_review(owner.id, product.id, attrs, idempotency_key)
       |> Support.expect!("community review #{idempotency_key}")
 
-    review = maybe_restore_owned!(:review, review, attrs, status)
-    moderate_owned!(:review, moderator, review, status)
+    if active_replacement_review?(review) do
+      review
+    else
+      review = maybe_restore_owned!(:review, review, attrs, status)
+      moderate_owned!(:review, moderator, review, status)
+    end
   end
+
+  defp active_replacement_review?(%ProductReview{moderation_status: :removed} = review) do
+    Repo.exists?(
+      from candidate in ProductReview,
+        where:
+          candidate.id != ^review.id and candidate.user_id == ^review.user_id and
+            candidate.product_id == ^review.product_id and candidate.moderation_status != :removed
+    )
+  end
+
+  defp active_replacement_review?(%ProductReview{}), do: false
 
   defp seed_question!(owner, product, attrs, idempotency_key, moderator, status) do
     question =
@@ -472,6 +492,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
     pending =
       seed_correction!(
+        :pending,
         accounts.shopper,
         products.projector,
         attributes.diagonal,
@@ -487,6 +508,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
     accepted =
       seed_correction!(
+        :accepted,
         accounts.shopper,
         products.monitor_16_9,
         attributes.refresh_rate,
@@ -502,6 +524,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
     rejected =
       seed_correction!(
+        :rejected,
         accounts.shopper,
         products.tv,
         attributes.hdr_supported,
@@ -522,16 +545,18 @@ defmodule ProductCompare.DevSeeds.Engagement do
     }
   end
 
-  defp seed_correction!(submitter, product, attribute, typed_value, attrs, status, moderator) do
+  defp seed_correction!(
+         key,
+         submitter,
+         product,
+         attribute,
+         typed_value,
+         attrs,
+         status,
+         moderator
+       ) do
     correction =
-      Repo.get_by(SpecificationCorrection,
-        submitted_by: submitter.id,
-        product_id: product.id,
-        attribute_id: attribute.id,
-        reason: attrs.reason
-      ) ||
-        Specs.propose_correction(product.id, attribute.id, submitter.id, typed_value, attrs)
-        |> Support.expect!("#{status} correction #{product.slug}/#{attribute.code}")
+      ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status)
 
     correction = restore_correction!(correction, attrs, status, product, attribute)
 
@@ -558,6 +583,49 @@ defmodule ProductCompare.DevSeeds.Engagement do
     end
 
     correction
+  end
+
+  defp ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status) do
+    entropy_id = Map.fetch!(@correction_entropy_ids, key)
+
+    case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
+      nil ->
+        correction =
+          legacy_seed_correction(submitter, product, attribute, attrs) ||
+            Specs.propose_correction(product.id, attribute.id, submitter.id, typed_value, attrs)
+            |> Support.expect!("#{status} correction #{product.slug}/#{attribute.code}")
+
+        correction
+        |> Ecto.Changeset.change(entropy_id: entropy_id)
+        |> Repo.update()
+        |> Support.expect!("reserve #{key} correction #{product.slug}/#{attribute.code}")
+
+      %SpecificationCorrection{} = correction ->
+        ensure_correction_owner!(correction, submitter, product, attribute, key)
+    end
+  end
+
+  # Earlier versions used the visible reason as identity. The oldest exact-scope row is the
+  # pre-reservation seed row; once adopted, every later rerun uses only the immutable ID.
+  defp legacy_seed_correction(submitter, product, attribute, attrs) do
+    SpecificationCorrection
+    |> where(
+      [correction],
+      correction.submitted_by == ^submitter.id and correction.product_id == ^product.id and
+        correction.attribute_id == ^attribute.id and correction.reason == ^attrs.reason
+    )
+    |> order_by([correction], asc: correction.id)
+    |> limit(1)
+    |> Repo.one()
+  end
+
+  defp ensure_correction_owner!(correction, submitter, product, attribute, key) do
+    if correction.submitted_by == submitter.id and correction.product_id == product.id and
+         correction.attribute_id == attribute.id do
+      correction
+    else
+      raise "development seed #{key} correction belongs to another correction scope"
+    end
   end
 
   defp restore_correction!(correction, attrs, desired_status, product, attribute) do
@@ -625,6 +693,19 @@ defmodule ProductCompare.DevSeeds.Engagement do
           |> ProductAttributeCurrent.changeset(%{claim_id: superseded_claim.id})
           |> Repo.update()
           |> Support.expect!("restore current claim #{product.slug}/#{attribute.code}")
+      end
+    else
+      case Repo.get_by(ProductAttributeCurrent,
+             product_id: correction.product_id,
+             attribute_id: correction.attribute_id
+           ) do
+        %ProductAttributeCurrent{claim_id: claim_id} = current when claim_id == claim.id ->
+          current
+          |> Repo.delete()
+          |> Support.expect!("clear current correction claim #{product.slug}/#{attribute.code}")
+
+        _other_current_or_none ->
+          :ok
       end
     end
 

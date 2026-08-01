@@ -9,12 +9,14 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @source_name "Development Marketplace Evidence"
   @artifact_hash "development-marketplace-offers-v1"
+  @unobserved_watch_entropy_id "d3ca0000-0000-4000-8000-000000000004"
 
   @spec seed!(map(), DateTime.t()) :: map()
   def seed!(catalog, %DateTime{} = anchor) do
@@ -113,15 +115,29 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       |> select([point], point.id)
       |> Repo.all()
 
-    delete_alert_evaluation_jobs!(price_point_ids)
+    unless unrelated_alert_history?(price_point_ids) do
+      delete_alert_evaluation_jobs!(price_point_ids)
 
-    AlertEvent
-    |> where([event], event.triggering_price_point_id in ^price_point_ids)
-    |> Repo.delete_all()
+      AlertEvent
+      |> where([event], event.triggering_price_point_id in ^price_point_ids)
+      |> Repo.delete_all()
 
-    PricePoint
-    |> where([point], point.id in ^price_point_ids)
-    |> Repo.delete_all()
+      PricePoint
+      |> where([point], point.id in ^price_point_ids)
+      |> Repo.delete_all()
+    end
+  end
+
+  defp unrelated_alert_history?([]), do: false
+
+  defp unrelated_alert_history?(price_point_ids) do
+    Repo.exists?(
+      from event in AlertEvent,
+        left_join: watch in PriceWatchRule,
+        on: watch.id == event.watch_rule_id,
+        where: event.triggering_price_point_id in ^price_point_ids,
+        where: is_nil(watch.entropy_id) or watch.entropy_id != ^@unobserved_watch_entropy_id
+    )
   end
 
   defp seed_price_points!(offers, source, anchor) do
