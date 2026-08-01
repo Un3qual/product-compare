@@ -1,11 +1,19 @@
-defmodule ProductCompare.Discussions.Submissions.Creates do
+defmodule ProductCompare.DevSeeds.CommunityWrites do
   @moduledoc false
+
+  # This seed-only boundary intentionally does not call the interactive Discussions write
+  # functions: those charge hourly CommunityWriteWindow quotas, while a deterministic first
+  # seed must succeed even when a developer has exhausted a quota and must not alter the quota.
+  # It mirrors the production changesets, receipt digest, advisory lock, and answer lifecycle
+  # check; regression coverage replays a seed receipt through the production path to catch drift.
+  # Reports likewise return the existing reserved report so reruns stay idempotent instead of
+  # producing the interactive :already_reported result.
 
   import Ecto.Query
 
   alias ProductCompare.Discussions.Moderation
-  alias ProductCompare.Discussions.Submissions.WriteLimits
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
@@ -82,6 +90,33 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
     end
   end
 
+  @spec report(pos_integer(), :review | :question | :answer, Ecto.UUID.t(), String.t()) ::
+          {:ok, CommunityReport.t()} | {:error, :not_found | Ecto.Changeset.t()}
+  def report(reporter_id, type, entropy_id, reason) do
+    with record when not is_nil(record) <-
+           Moderation.record_by_type_and_entropy(type, entropy_id) do
+      target = report_target(type, record.id)
+
+      Repo.transaction(fn ->
+        lock_key!("#{reporter_id}:report:#{type}:#{record.id}")
+
+        case existing_report(reporter_id, type, record.id) do
+          %CommunityReport{} = report ->
+            report
+
+          nil ->
+            %CommunityReport{}
+            |> CommunityReport.changeset(
+              Map.merge(target, %{reporter_id: reporter_id, reason: reason})
+            )
+            |> insert_report_or_reload(reporter_id, type, record.id)
+        end
+      end)
+    else
+      nil -> {:error, :not_found}
+    end
+  end
+
   defp submission_digest(changeset, mutation_kind, fields, target \\ nil) do
     if changeset.valid? do
       values = Enum.map(fields, &{&1, Ecto.Changeset.get_field(changeset, &1)})
@@ -107,7 +142,7 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
        ) do
     with :ok <- validate_idempotency_key(user_id, mutation_kind, idempotency_key, digest) do
       Repo.transaction(fn ->
-        lock_idempotency_key!(user_id, mutation_kind, idempotency_key)
+        lock_key!("#{user_id}:#{mutation_kind}:#{idempotency_key}")
 
         case locked_write_receipt(user_id, mutation_kind, idempotency_key) do
           %CommunityWriteReceipt{payload_digest: ^digest} = receipt ->
@@ -124,7 +159,6 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
 
           nil ->
             :ok = before_insert.()
-            WriteLimits.increment!(user_id, mutation_kind)
             inserted_content = insert_or_rollback(changeset)
             content = Repo.get!(inserted_content.__struct__, inserted_content.id)
 
@@ -157,11 +191,8 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
     if changeset.valid?, do: :ok, else: {:error, changeset}
   end
 
-  defp lock_idempotency_key!(user_id, mutation_kind, idempotency_key) do
-    Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [
-      "#{user_id}:#{mutation_kind}:#{idempotency_key}"
-    ])
-  end
+  defp lock_key!(key),
+    do: Repo.query!("SELECT pg_advisory_xact_lock(hashtextextended($1, 0))", [key])
 
   defp locked_write_receipt(user_id, mutation_kind, idempotency_key) do
     Repo.one(
@@ -172,6 +203,40 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
         lock: "FOR UPDATE"
     )
   end
+
+  defp existing_report(reporter_id, :review, content_id),
+    do: Repo.get_by(CommunityReport, reporter_id: reporter_id, review_id: content_id)
+
+  defp existing_report(reporter_id, :question, content_id),
+    do: Repo.get_by(CommunityReport, reporter_id: reporter_id, thread_id: content_id)
+
+  defp existing_report(reporter_id, :answer, content_id),
+    do: Repo.get_by(CommunityReport, reporter_id: reporter_id, post_id: content_id)
+
+  defp insert_report_or_reload(changeset, reporter_id, type, content_id) do
+    case Repo.insert(changeset, mode: :savepoint) do
+      {:ok, report} ->
+        report
+
+      {:error, %Ecto.Changeset{} = changeset} ->
+        if unique_constraint_error?(changeset) do
+          case existing_report(reporter_id, type, content_id) do
+            %CommunityReport{} = report -> report
+            nil -> Repo.rollback({:retry_seed_transaction, :concurrent_report})
+          end
+        else
+          Repo.rollback(changeset)
+        end
+    end
+  end
+
+  defp unique_constraint_error?(%Ecto.Changeset{errors: errors}) do
+    Enum.any?(errors, fn {_field, {_message, opts}} -> opts[:constraint] == :unique end)
+  end
+
+  defp report_target(:review, content_id), do: %{review_id: content_id}
+  defp report_target(:question, content_id), do: %{thread_id: content_id}
+  defp report_target(:answer, content_id), do: %{post_id: content_id}
 
   defp insert_or_rollback(changeset) do
     case Repo.insert(changeset) do

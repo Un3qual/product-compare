@@ -15,6 +15,16 @@ of active and candidate plans, not the dispatch queue.
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+Development Feature Seeds completed through
+`docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
+and
+`docs/superpowers/specs/2026-07-31-development-feature-seed-design.md`. It is
+retained as development-environment completion history spanning role accounts,
+product/offer states, authenticated ownership, operator lifecycles, synthetic
+provider and attribution history, guide output, and deterministic rerun proof.
+It does not reopen live provider, email transport, production privacy, or
+readiness scope.
+
 Ranked Catalog Search completed through
 `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md` and
 `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` under the

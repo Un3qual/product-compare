@@ -43,7 +43,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Ready Work
 
-### 14. Radix Disclosure Controls
+### 15. Radix Disclosure Controls
 
 Status: ready
 Lane: Frontend UI foundation
@@ -89,7 +89,7 @@ Exit condition: no visible native disclosure remains under `assets/src`, the
 five affected controls use the existing Radix wrapper, lazy and submission
 behavior is unchanged, StyleX remains in place, and every frontend gate passes.
 
-### 15. Operator Mutation Authorization Freshness
+### 16. Operator Mutation Authorization Freshness
 
 Status: ready
 Lane: GraphQL authorization and concurrency
@@ -149,7 +149,7 @@ locks first remains the user-row lock owner while held at its domain-row barrier
 and may commit before revocation, all three owning transactions acquire the
 operator row before domain rows, and all backend gates pass.
 
-### 16. Application JSON Storage Policy Guard
+### 17. Application JSON Storage Policy Guard
 
 Status: ready
 Lane: Database domain policy

@@ -15,42 +15,41 @@ defmodule ProductCompare.Specs.Corrections do
     with %Product{} <- Repo.get(Product, product_id),
          {:ok, attribute} <- fetch_attribute(attribute_id),
          {:ok, normalized_value} <- TypedValues.normalize(attribute, typed_value) do
-      current_claim_id =
-        Repo.one(
-          from current in ProductAttributeCurrent,
-            where: current.product_id == ^product_id and current.attribute_id == ^attribute_id,
-            select: current.claim_id
-        )
+      Repo.transaction(fn ->
+        Repo.query!("LOCK TABLE specification_corrections IN ROW EXCLUSIVE MODE")
 
-      claim_attrs =
-        normalized_value
-        |> Map.merge(%{
-          product_id: product_id,
-          attribute_id: attribute_id,
-          source_type: :user,
-          status: :proposed,
-          created_by: user_id,
-          supersedes_claim_id: current_claim_id
-        })
+        current_claim_id =
+          Repo.one(
+            from current in ProductAttributeCurrent,
+              where: current.product_id == ^product_id and current.attribute_id == ^attribute_id,
+              select: current.claim_id,
+              lock: "FOR UPDATE"
+          )
 
-      claim_changeset = ProductAttributeClaim.changeset(%ProductAttributeClaim{}, claim_attrs)
+        claim_attrs =
+          normalized_value
+          |> Map.merge(%{
+            product_id: product_id,
+            attribute_id: attribute_id,
+            source_type: :user,
+            status: :proposed,
+            created_by: user_id,
+            supersedes_claim_id: current_claim_id
+          })
 
-      if claim_changeset.valid? do
-        Repo.transaction(fn ->
-          with {:ok, claim} <- Repo.insert(claim_changeset),
-               {:ok, correction} <-
-                 insert_correction(claim, product_id, attribute_id, user_id, attrs) do
-            correction
-          else
-            {:error, reason} -> Repo.rollback(reason)
-          end
-        end)
-        |> case do
-          {:ok, correction} -> {:ok, preload_correction(correction)}
-          {:error, reason} -> {:error, reason}
+        claim_changeset = ProductAttributeClaim.changeset(%ProductAttributeClaim{}, claim_attrs)
+
+        with {:ok, claim} <- Repo.insert(claim_changeset),
+             {:ok, correction} <-
+               insert_correction(claim, product_id, attribute_id, user_id, attrs) do
+          correction
+        else
+          {:error, reason} -> Repo.rollback(reason)
         end
-      else
-        Ecto.Changeset.apply_action(claim_changeset, :insert)
+      end)
+      |> case do
+        {:ok, correction} -> {:ok, preload_correction(correction)}
+        {:error, reason} -> {:error, reason}
       end
     else
       nil -> {:error, :product_not_found}
