@@ -105,7 +105,9 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       assert user_id == user.id
     end
 
-    test "resolves affiliate merchant product exits with the generated click id", %{conn: conn} do
+    test "resolves Impact merchant product exits with the generated publisher reference", %{
+      conn: conn
+    } do
       merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
       affiliate_network = affiliate_network_fixture(%{name: "Impact"})
 
@@ -137,7 +139,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
       assert String.contains?(redirect_url, "campaign=summer")
 
-      assert %{"ClickId" => click_id} =
+      assert %{"subId1" => click_id} =
                redirect_url
                |> URI.parse()
                |> Map.fetch!(:query)

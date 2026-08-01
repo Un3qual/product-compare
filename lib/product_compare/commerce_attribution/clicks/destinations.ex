@@ -1,13 +1,12 @@
 defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
   @moduledoc false
 
+  alias ProductCompare.CommerceAttribution.ClickReference
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Affiliate.AffiliateLink
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.Pricing.MerchantProduct
-
-  @click_id_query_keys MapSet.new(~w(ClickId clickId click_id subId subid sub_id))
 
   @spec for_merchant_product(pos_integer()) ::
           {:ok, map()} | {:error, :merchant_product_not_found}
@@ -21,16 +20,16 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
     end
   end
 
-  @spec append_public_click_id(String.t(), Ecto.UUID.t()) :: String.t()
-  def append_public_click_id(destination_url, click_id) do
-    uri = URI.parse(destination_url)
-    query = uri.query || ""
-
-    if has_click_id_query_param?(query) do
+  @spec put_public_click_reference(String.t(), String.t() | nil, Ecto.UUID.t()) :: String.t()
+  def put_public_click_reference(destination_url, network, click_id) do
+    with parameter when is_binary(parameter) <- ClickReference.outbound_parameter(network),
+         reference when is_binary(reference) <- ClickReference.encode(network, click_id) do
       destination_url
-    else
-      %{uri | query: append_click_id_query_param(query, click_id)}
+      |> URI.parse()
+      |> put_reserved_query_parameter(parameter, reference)
       |> URI.to_string()
+    else
+      _unmapped_network_or_click_id -> destination_url
     end
   end
 
@@ -99,15 +98,12 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
 
   defp affiliate_program_id(_affiliate_link, _merchant_product), do: nil
 
-  defp has_click_id_query_param?(query) do
-    query
-    |> URI.decode_query()
-    |> Map.keys()
-    |> Enum.any?(&MapSet.member?(@click_id_query_keys, &1))
+  defp put_reserved_query_parameter(uri, parameter, reference) do
+    query_pairs =
+      (uri.query || "")
+      |> URI.query_decoder()
+      |> Enum.reject(fn {key, _value} -> key == parameter end)
+
+    %{uri | query: URI.encode_query(query_pairs ++ [{parameter, reference}])}
   end
-
-  defp append_click_id_query_param("", click_id), do: URI.encode_query(%{"ClickId" => click_id})
-
-  defp append_click_id_query_param(query, click_id),
-    do: query <> "&" <> URI.encode_query(%{"ClickId" => click_id})
 end

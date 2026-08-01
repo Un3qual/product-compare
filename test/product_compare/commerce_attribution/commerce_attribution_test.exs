@@ -5,6 +5,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.CommerceAttribution.ClickReference
   alias ProductCompare.CommerceAttribution.ImpactAdapter
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -217,86 +218,103 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "track_outbound_click/1" do
-    test "uses an existing affiliate link as the tracked redirect destination" do
-      merchant = merchant_fixture()
+    test "decorates verified affiliate networks with their publisher click references" do
+      network_matrix = [
+        %{
+          network: "CJ",
+          parameter: "sid",
+          affiliate_url: "https://affiliate.example.com/cj#details",
+          unrelated: %{}
+        },
+        %{
+          network: "Impact",
+          parameter: "subId1",
+          affiliate_url:
+            "https://affiliate.example.com/impact?ClickId=impact-issued&subId1=static#details",
+          unrelated: %{"ClickId" => "impact-issued"}
+        },
+        %{
+          network: "Awin",
+          parameter: "clickref",
+          affiliate_url:
+            "https://affiliate.example.com/awin?campaign=summer&clickref=static&clickref=extra#details",
+          unrelated: %{"campaign" => "summer"}
+        },
+        %{
+          network: "Rakuten",
+          parameter: "u1",
+          affiliate_url: "https://affiliate.example.com/rakuten?coupon=desk&u1=static#details",
+          unrelated: %{"coupon" => "desk"}
+        }
+      ]
 
-      merchant_product =
-        merchant_product_fixture(%{
-          merchant: merchant,
-          url: "https://merchant.example.com/direct-product"
-        })
+      Enum.each(network_matrix, fn %{network: network, parameter: parameter} = expectation ->
+        merchant = merchant_fixture()
 
-      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
+        merchant_product =
+          merchant_product_fixture(%{
+            merchant: merchant,
+            url: "https://merchant.example.com/direct-product"
+          })
 
-      affiliate_program =
+        affiliate_network = affiliate_network_fixture(%{name: network})
         affiliate_program_fixture(%{affiliate_network: affiliate_network, merchant: merchant})
 
-      {:ok, _affiliate_link} =
-        Affiliate.upsert_link(%{
-          merchant_product_id: merchant_product.id,
-          affiliate_network_id: affiliate_network.id,
-          original_url: merchant_product.url,
-          affiliate_url: "https://affiliate.example.com/click/merchant-product"
-        })
+        {:ok, _affiliate_link} =
+          Affiliate.upsert_link(%{
+            merchant_product_id: merchant_product.id,
+            affiliate_network_id: affiliate_network.id,
+            original_url: merchant_product.url,
+            affiliate_url: expectation.affiliate_url
+          })
 
-      assert {:ok, tracked_click} =
-               CommerceAttribution.track_outbound_click(%{
-                 merchant_product_id: merchant_product.id,
-                 source_surface: :web
-               })
+        assert {:ok, tracked_click} =
+                 CommerceAttribution.track_outbound_click(%{
+                   merchant_product_id: merchant_product.id,
+                   source_surface: :web
+                 })
 
-      assert %CommerceLink{
-               destination_url: "https://affiliate.example.com/click/merchant-product",
-               affiliate_program_id: affiliate_program_id,
-               link_type: :affiliate,
-               merchant_id: merchant_id,
-               backfilled_from_affiliate_links: true,
-               is_active: true
-             } = tracked_click.commerce_link
+        assert {:ok, redirect_destination} =
+                 CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
 
-      assert merchant_id == merchant.id
-      assert affiliate_program_id == affiliate_program.id
-      assert %CommerceClickSession{source_surface: :web} = tracked_click.click_session
-      assert tracked_click.click_session.merchant_product_id == merchant_product.id
-      assert tracked_click.redirect_path == "/r/#{tracked_click.click_session.click_id}"
+        redirect_uri = URI.parse(redirect_destination)
+        query = URI.decode_query(redirect_uri.query || "")
 
-      assert {:ok, redirect_destination} =
-               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+        expected_reference =
+          if network == "Rakuten" do
+            String.replace(tracked_click.click_session.click_id, "-", "")
+          else
+            tracked_click.click_session.click_id
+          end
 
-      assert redirect_destination ==
-               "https://affiliate.example.com/click/merchant-product?ClickId=#{tracked_click.click_session.click_id}"
+        assert query[parameter] == expected_reference
+        assert redirect_uri.fragment == "details"
+        assert Map.take(query, Map.keys(expectation.unrelated)) == expectation.unrelated
+
+        assert 1 ==
+                 redirect_uri.query
+                 |> URI.query_decoder()
+                 |> Enum.count(fn {key, _value} -> key == parameter end)
+
+        assert {:ok, tracked_click.click_session.click_id} ==
+                 ClickReference.decode(String.downcase(network), expected_reference)
+      end)
     end
 
-    test "preserves existing affiliate click id query parameters" do
-      merchant = merchant_fixture()
+    test "leaves unverified, Amazon, nil-network, and non-affiliate destinations unchanged" do
+      destination_url = "https://affiliate.example.com/click?campaign=summer#details"
 
-      merchant_product =
-        merchant_product_fixture(%{
-          merchant: merchant,
-          url: "https://merchant.example.com/direct-product"
-        })
+      for attrs <- [
+            %{link_type: :non_affiliate, network: nil},
+            %{link_type: :affiliate, network: "amazon_associates"},
+            %{link_type: :affiliate, network: "partnerize"}
+          ] do
+        commerce_link = commerce_link_fixture(Map.put(attrs, :destination_url, destination_url))
+        click_session = click_session_fixture(commerce_link)
 
-      affiliate_network = affiliate_network_fixture(%{name: "Impact"})
-
-      _affiliate_program =
-        affiliate_program_fixture(%{affiliate_network: affiliate_network, merchant: merchant})
-
-      {:ok, _affiliate_link} =
-        Affiliate.upsert_link(%{
-          merchant_product_id: merchant_product.id,
-          affiliate_network_id: affiliate_network.id,
-          original_url: merchant_product.url,
-          affiliate_url: "https://affiliate.example.com/click/merchant-product?subId=feed-subid"
-        })
-
-      assert {:ok, tracked_click} =
-               CommerceAttribution.track_outbound_click(%{
-                 merchant_product_id: merchant_product.id,
-                 source_surface: :web
-               })
-
-      assert {:ok, "https://affiliate.example.com/click/merchant-product?subId=feed-subid"} =
-               CommerceAttribution.redirect_destination(tracked_click.click_session.click_id)
+        assert {:ok, ^destination_url} =
+                 CommerceAttribution.redirect_destination(click_session.click_id)
+      end
     end
 
     test "falls back to the merchant URL when a tracked affiliate network has no program" do
