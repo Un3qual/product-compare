@@ -121,9 +121,10 @@ local observations are independent history and remain authoritative; the seed
 does not delete or backdate them merely to force an exercised aging or stale
 offer back into its original derived freshness bucket. Likewise, the
 never-observed offer is cleared only while doing so would not erase another
-user's alert history. A developer who exercises these price-derived scenarios
-keeps that local history, while a fresh database still receives the complete
-state matrix.
+user's alert history or remove a price point referenced as another watch's
+baseline or latest evaluation. A developer who exercises these price-derived
+scenarios keeps that local history, while a fresh database still receives the
+complete state matrix.
 
 Synthetic affiliate networks, programs, and links cover configured and inactive
 program states. Coupons include active, future, and expired examples so shopper
@@ -159,6 +160,10 @@ forcing conflicting states onto one account or record.
 The three seed-owned specification corrections use reserved immutable entropy
 IDs. Their visible reason and evidence copy remain editable presentation data,
 and a local correction may reuse that copy without being adopted by the seed.
+The seed never infers legacy ownership from matching copy. When an unrelated
+pending correction occupies the database's one-pending scope before the
+reserved row exists, that correction is preserved unchanged and supplies the
+pending scenario until the scope becomes available on a later run.
 
 ## Synthetic Provider And Revenue Scenarios
 

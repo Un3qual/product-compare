@@ -1453,6 +1453,57 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(SpecificationCorrection, duplicate_reason_correction.id).status == :pending
   end
 
+  test "first reserved correction run preserves a matching developer correction" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+    marketplace = DevSeedMarketplace.seed!(catalog, anchor)
+
+    assert {:ok, developer_correction} =
+             Specs.propose_correction(
+               catalog.products.projector.id,
+               catalog.attributes.diagonal.id,
+               accounts.shopper.id,
+               %{value_num: Decimal.new("110"), unit_id: catalog.units.inches.id},
+               %{
+                 reason: "Development pending correction example",
+                 source_url: "https://manufacturer.example/development/projector-diagonal",
+                 explanation: "Pending example retained for operator correction review."
+               }
+             )
+
+    developer_correction = Repo.get!(SpecificationCorrection, developer_correction.id)
+    engagement = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+
+    assert %SpecificationCorrection{
+             id: developer_correction_id,
+             entropy_id: developer_entropy_id,
+             status: :pending,
+             reviewed_by: nil,
+             reviewed_at: nil,
+             moderation_note: nil
+           } = Repo.get!(SpecificationCorrection, developer_correction.id)
+
+    assert developer_correction_id == developer_correction.id
+    assert developer_entropy_id == developer_correction.entropy_id
+    assert engagement.corrections.pending.id == developer_correction.id
+
+    developer_correction
+    |> SpecificationCorrection.changeset(%{
+      reason: "Developer-owned pending correction with edited copy"
+    })
+    |> Repo.update!()
+
+    rerun = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+
+    assert %SpecificationCorrection{
+             entropy_id: ^developer_entropy_id,
+             reason: "Developer-owned pending correction with edited copy"
+           } = Repo.get!(SpecificationCorrection, developer_correction.id)
+
+    assert rerun.corrections.pending.id == developer_correction.id
+  end
+
   test "reruns preserve user-created coupons that reuse a development code" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1573,6 +1624,58 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
     assert Repo.get!(AlertEvent, event.id).watch_rule_id == watch.id
+  end
+
+  test "reruns preserve an unobserved price referenced by another user's watch" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    participant = Repo.get_by!(User, email: "participant@example.com")
+    product = Repo.get_by!(Product, slug: "acme-beam-4k")
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+    observed_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: observed_at,
+               price: Decimal.new("1799.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, watch} =
+             Alerts.create_watch(participant.id, %{
+               product_id: product.id,
+               merchant_product_id: offer.id,
+               rule_type: :percentage_drop,
+               currency: "USD",
+               percentage_drop: Decimal.new("10"),
+               enabled: true,
+               cooldown_seconds: 86_400
+             })
+
+    assert watch.baseline_price_point_id == observation.id
+
+    assert {:ok, %{events_created: 0}} =
+             Alerts.evaluate_price_point(observation.id,
+               now: DateTime.add(observed_at, 1, :second)
+             )
+
+    assert %PriceWatchRule{
+             baseline_price_point_id: observation_id,
+             last_evaluated_price_point_id: observation_id
+           } = Repo.get!(PriceWatchRule, watch.id)
+
+    refute Repo.get_by(AlertEvent, watch_rule_id: watch.id)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
+
+    assert %PriceWatchRule{
+             baseline_price_point_id: observation_id,
+             last_evaluated_price_point_id: observation_id
+           } = Repo.get!(PriceWatchRule, watch.id)
   end
 
   test "reruns preserve later observations on aging and stale offers" do

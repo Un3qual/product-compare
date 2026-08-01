@@ -555,9 +555,54 @@ defmodule ProductCompare.DevSeeds.Engagement do
          status,
          moderator
        ) do
-    correction =
-      ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status)
+    case ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status) do
+      {:managed, correction} ->
+        restore_seed_correction!(correction, attrs, status, product, attribute, moderator)
 
+      {:occupied, correction} ->
+        correction
+    end
+  end
+
+  defp ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status) do
+    entropy_id = Map.fetch!(@correction_entropy_ids, key)
+
+    case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
+      nil ->
+        case pending_correction_in_scope(submitter, product, attribute) do
+          %SpecificationCorrection{} = correction ->
+            {:occupied, correction}
+
+          nil ->
+            correction =
+              Specs.propose_correction(product.id, attribute.id, submitter.id, typed_value, attrs)
+              |> Support.expect!("#{status} correction #{product.slug}/#{attribute.code}")
+
+            correction =
+              correction
+              |> Ecto.Changeset.change(entropy_id: entropy_id)
+              |> Repo.update()
+              |> Support.expect!("reserve #{key} correction #{product.slug}/#{attribute.code}")
+
+            {:managed, correction}
+        end
+
+      %SpecificationCorrection{} = correction ->
+        {:managed, ensure_correction_owner!(correction, submitter, product, attribute, key)}
+    end
+  end
+
+  defp pending_correction_in_scope(submitter, product, attribute) do
+    SpecificationCorrection
+    |> where(
+      [correction],
+      correction.submitted_by == ^submitter.id and correction.product_id == ^product.id and
+        correction.attribute_id == ^attribute.id and correction.status == :pending
+    )
+    |> Repo.one()
+  end
+
+  defp restore_seed_correction!(correction, attrs, status, product, attribute, moderator) do
     correction = restore_correction!(correction, attrs, status, product, attribute)
 
     correction =
@@ -583,40 +628,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
     end
 
     correction
-  end
-
-  defp ensure_seed_correction!(key, submitter, product, attribute, typed_value, attrs, status) do
-    entropy_id = Map.fetch!(@correction_entropy_ids, key)
-
-    case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
-      nil ->
-        correction =
-          legacy_seed_correction(submitter, product, attribute, attrs) ||
-            Specs.propose_correction(product.id, attribute.id, submitter.id, typed_value, attrs)
-            |> Support.expect!("#{status} correction #{product.slug}/#{attribute.code}")
-
-        correction
-        |> Ecto.Changeset.change(entropy_id: entropy_id)
-        |> Repo.update()
-        |> Support.expect!("reserve #{key} correction #{product.slug}/#{attribute.code}")
-
-      %SpecificationCorrection{} = correction ->
-        ensure_correction_owner!(correction, submitter, product, attribute, key)
-    end
-  end
-
-  # Earlier versions used the visible reason as identity. The oldest exact-scope row is the
-  # pre-reservation seed row; once adopted, every later rerun uses only the immutable ID.
-  defp legacy_seed_correction(submitter, product, attribute, attrs) do
-    SpecificationCorrection
-    |> where(
-      [correction],
-      correction.submitted_by == ^submitter.id and correction.product_id == ^product.id and
-        correction.attribute_id == ^attribute.id and correction.reason == ^attrs.reason
-    )
-    |> order_by([correction], asc: correction.id)
-    |> limit(1)
-    |> Repo.one()
   end
 
   defp ensure_correction_owner!(correction, submitter, product, attribute, key) do

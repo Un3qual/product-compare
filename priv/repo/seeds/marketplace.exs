@@ -115,7 +115,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       |> select([point], point.id)
       |> Repo.all()
 
-    unless unrelated_alert_history?(price_point_ids) do
+    unless unrelated_price_point_references?(price_point_ids) do
       delete_alert_evaluation_jobs!(price_point_ids)
 
       AlertEvent
@@ -128,16 +128,23 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     end
   end
 
-  defp unrelated_alert_history?([]), do: false
+  defp unrelated_price_point_references?([]), do: false
 
-  defp unrelated_alert_history?(price_point_ids) do
+  defp unrelated_price_point_references?(price_point_ids) do
     Repo.exists?(
       from event in AlertEvent,
         left_join: watch in PriceWatchRule,
         on: watch.id == event.watch_rule_id,
         where: event.triggering_price_point_id in ^price_point_ids,
         where: is_nil(watch.entropy_id) or watch.entropy_id != ^@unobserved_watch_entropy_id
-    )
+    ) or
+      Repo.exists?(
+        from watch in PriceWatchRule,
+          where:
+            (watch.baseline_price_point_id in ^price_point_ids or
+               watch.last_evaluated_price_point_id in ^price_point_ids) and
+              (is_nil(watch.entropy_id) or watch.entropy_id != ^@unobserved_watch_entropy_id)
+      )
   end
 
   defp seed_price_points!(offers, source, anchor) do

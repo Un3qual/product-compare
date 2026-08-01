@@ -220,7 +220,8 @@ last-seen fields through `Pricing.upsert_merchant_product/1`.
 Restore only artifact-owned seed observations. Preserve newer local price
 history even when it changes a derived aging or stale state, and do not clear
 the never-observed offer when deleting its observations would also delete an
-unrelated user's alert event.
+unrelated user's alert event or nilify another watch's baseline or latest
+evaluation price-point reference.
 
 Use `Affiliate.upsert_network/1`, `upsert_program/1`, and `upsert_link/1` for
 their natural conflict keys. Because coupons have no context upsert, reconcile
@@ -324,7 +325,10 @@ an ownership key.
 Use `Specs.propose_correction/5` for distinct seed product/attribute pairs and
 `Specs.moderate_correction/4` for accepted and rejected examples. Restore the
 pending example's reason, source URL, and explanation through its schema
-changeset when it already exists. Never overwrite non-seed corrections.
+changeset when it already exists. Never overwrite non-seed corrections or
+adopt legacy rows by matching visible copy. If an unrelated pending correction
+occupies the one-pending scope before the reserved seed row exists, preserve
+that row unchanged and defer creating the reserved row until a later run.
 
 - [ ] **Step 6: Verify and commit the engagement milestone**
 
