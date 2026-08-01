@@ -89,10 +89,6 @@ const UNSUPPRESSED_REVENUE_SUMMARY = {
       conversions: 2,
       currency: "USD",
       grossOrderValue: "200.00"
-    },
-    suppression: {
-      suppressed: false,
-      threshold: 2
     }
   }
 };
@@ -125,7 +121,6 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
       >
         <RevenueSummaryMetrics
           metrics={[{ label: "Clicks", value: "12" }]}
-          suppression={{ suppressed: false, threshold: 2 }}
         />
       </RevenueSummaryView>
     </MemoryRouter>
@@ -163,7 +158,7 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
 
-test("revenue route renders suppressed metrics with threshold copy", () => {
+test("revenue route renders one-conversion metrics without hidden-metrics copy", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       currency: "USD",
@@ -174,16 +169,12 @@ test("revenue route renders suppressed metrics with threshold copy", () => {
     revenueSummary: {
       ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
       metrics: {
-        averagePaidPrice: null,
-        clicks: null,
-        commissionRevenue: null,
-        conversions: null,
-        currency: null,
-        grossOrderValue: null
-      },
-      suppression: {
-        suppressed: true,
-        threshold: 2
+        averagePaidPrice: "90.00",
+        clicks: 1,
+        commissionRevenue: "9.00",
+        conversions: 1,
+        currency: "USD",
+        grossOrderValue: "90.00"
       }
     }
   } as never);
@@ -191,12 +182,10 @@ test("revenue route renders suppressed metrics with threshold copy", () => {
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Revenue metrics are hidden until at least 2 conversions match the current filters."
-  );
   expect(screen.getByText("Clicks")).toBeInTheDocument();
-  expect(screen.getAllByText("Hidden")).toHaveLength(5);
-  expect(screen.queryByText("20.00 USD")).not.toBeInTheDocument();
+  expect(screen.getAllByText("1")).toHaveLength(2);
+  expect(screen.getAllByText("90.00 USD")).toHaveLength(2);
+  expect(screen.queryByText(/Revenue metrics are hidden/i)).not.toBeInTheDocument();
 });
 
 test("revenue route renders unavailable null counts when metrics are unsuppressed", () => {

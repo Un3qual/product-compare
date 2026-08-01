@@ -188,21 +188,9 @@ function RevenueActiveFilterList({
 }
 
 export function RevenueSummaryMetrics({
-  metrics,
-  suppression
+  metrics
 }: {
   metrics: readonly RevenueSummaryMetric[];
-  suppression: { suppressed: boolean; threshold: number };
 }): ReactElement {
-  return (
-    <>
-      {suppression.suppressed ? (
-        <p aria-live="polite" role="status">
-          Revenue metrics are hidden until at least {suppression.threshold} conversions match the
-          current filters.
-        </p>
-      ) : null}
-      <SummaryStrip items={metrics} label="Summary" />
-    </>
-  );
+  return <SummaryStrip items={metrics} label="Summary" />;
 }

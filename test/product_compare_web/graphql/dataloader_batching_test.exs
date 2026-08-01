@@ -2191,7 +2191,6 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
       metrics {
         averagePaidPrice clicks commissionRevenue conversions currency grossOrderValue
       }
-      suppression { suppressed threshold }
     }
     """
   end
@@ -3181,15 +3180,11 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
         ),
       "metrics" => %{
         "averagePaidPrice" => nil,
-        "clicks" => nil,
-        "commissionRevenue" => nil,
-        "conversions" => nil,
-        "currency" => nil,
-        "grossOrderValue" => nil
-      },
-      "suppression" => %{
-        "suppressed" => true,
-        "threshold" => 2
+        "clicks" => 0,
+        "commissionRevenue" => "0.00",
+        "conversions" => 0,
+        "currency" => Map.get(filter_overrides, "currency"),
+        "grossOrderValue" => "0.00"
       }
     }
   end

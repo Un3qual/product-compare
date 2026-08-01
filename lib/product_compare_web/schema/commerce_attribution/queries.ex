@@ -4,7 +4,7 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Queries do
   alias ProductCompareWeb.Resolvers.CommerceAttribution.Reads
 
   object :commerce_attribution_queries do
-    @desc "Returns aggregate commerce revenue metrics with public-safe suppression metadata."
+    @desc "Returns aggregate commerce revenue metrics for operators."
     field :revenue_summary, :revenue_summary do
       arg(:input, :revenue_summary_input)
       resolve(&Reads.revenue_summary/3)

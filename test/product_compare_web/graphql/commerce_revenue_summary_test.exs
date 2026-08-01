@@ -43,22 +43,18 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    },
                    "metrics" => %{
                      "averagePaidPrice" => nil,
-                     "clicks" => nil,
-                     "commissionRevenue" => nil,
-                     "conversions" => nil,
+                     "clicks" => 0,
+                     "commissionRevenue" => "0.00",
+                     "conversions" => 0,
                      "currency" => nil,
-                     "grossOrderValue" => nil
-                   },
-                   "suppression" => %{
-                     "suppressed" => true,
-                     "threshold" => 2
+                     "grossOrderValue" => "0.00"
                    }
                  }
                }
              } = graphql(conn, revenue_summary_query(), %{})
     end
 
-    test "direct resolver fallback preserves normalized filters and suppression" do
+    test "direct resolver fallback preserves normalized filters and zero totals" do
       operator = AccountsFixtures.operator_fixture()
       merchant = merchant_fixture()
       merchant_id = relay_id(:merchant, merchant.id)
@@ -75,13 +71,12 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                 },
                 metrics: %{
                   average_paid_price: nil,
-                  clicks: nil,
-                  commission_revenue: nil,
-                  conversions: nil,
-                  currency: nil,
-                  gross_order_value: nil
-                },
-                suppression: %{suppressed: true, threshold: 2}
+                  clicks: 0,
+                  commission_revenue: "0.00",
+                  conversions: 0,
+                  currency: "USD",
+                  gross_order_value: "0.00"
+                }
               }} =
                Reads.revenue_summary(
                  nil,
@@ -169,10 +164,6 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                      "conversions" => 2,
                      "currency" => "USD",
                      "grossOrderValue" => "200.00"
-                   },
-                   "suppression" => %{
-                     "suppressed" => false,
-                     "threshold" => 2
                    }
                  }
                }
@@ -211,8 +202,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                      "commissionRevenue" => "10.00",
                      "conversions" => 2,
                      "grossOrderValue" => "100.00"
-                   },
-                   "suppression" => %{"suppressed" => false}
+                   }
                  }
                }
              } =
@@ -221,32 +211,35 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                })
     end
 
-    test "enforces low-volume suppression without client-controlled thresholds", %{conn: conn} do
+    test "returns one-conversion metrics without a suppression field", %{conn: conn} do
       merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
+      click_session = click_session_fixture(commerce_link)
 
-      conversion_fixture(%{
-        source_network: "impact",
-        merchant_id: merchant.id,
-        status: :approved,
-        order_amount: Decimal.new("90.00"),
-        commission_amount: Decimal.new("9.00"),
-        reported_at: ~U[2026-05-21 12:00:00.000000Z]
-      })
+      conversion =
+        conversion_fixture(%{
+          source_network: "impact",
+          click_session_id: click_session.id,
+          public_click_id: click_session.click_id,
+          merchant_id: merchant.id,
+          status: :approved,
+          order_amount: Decimal.new("90.00"),
+          commission_amount: Decimal.new("9.00"),
+          reported_at: ~U[2026-05-21 12:00:00.000000Z]
+        })
+
+      create_purchase_price_fact!(conversion, "90.00")
 
       assert %{
                "data" => %{
                  "revenueSummary" => %{
                    "metrics" => %{
-                     "averagePaidPrice" => nil,
-                     "clicks" => nil,
-                     "commissionRevenue" => nil,
-                     "conversions" => nil,
-                     "currency" => nil,
-                     "grossOrderValue" => nil
-                   },
-                   "suppression" => %{
-                     "suppressed" => true,
-                     "threshold" => 2
+                     "averagePaidPrice" => "90.00",
+                     "clicks" => 1,
+                     "commissionRevenue" => "9.00",
+                     "conversions" => 1,
+                     "currency" => "USD",
+                     "grossOrderValue" => "90.00"
                    }
                  }
                }
@@ -256,6 +249,14 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
                    "merchantId" => relay_id(:merchant, merchant.id)
                  }
                })
+    end
+
+    test "does not expose the removed suppression field", %{conn: conn} do
+      assert %{
+               "errors" => [%{"message" => message} | _]
+             } = graphql(conn, suppression_query(), %{})
+
+      assert message =~ "Cannot query field \"suppression\" on type \"RevenueSummary\""
     end
 
     test "returns the stable GraphQL error when an unfiltered summary spans currencies", %{
@@ -338,11 +339,15 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
           currency
           grossOrderValue
         }
-        suppression {
-          suppressed
-          threshold
-        }
       }
+    }
+    """
+  end
+
+  defp suppression_query do
+    """
+    query RevenueSummarySuppression {
+      revenueSummary { suppression { suppressed } }
     }
     """
   end

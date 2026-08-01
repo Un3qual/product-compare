@@ -18,7 +18,7 @@ Operators always see real revenue totals and can trace individual clicks to user
 - Click sessions already have a unique public UUID and optional user association.
 - The GraphQL click mutation associates signed-in users; the direct fallback currently does not load the session.
 - `user_agent_hash` and `ip_hash` exist only as storage/test/seed fields; no production hashing writer exists.
-- Revenue suppression currently nulls all metrics below two conversions even though the query is operator-only.
+- Revenue summaries return their calculated metrics to operators at every conversion volume; no threshold or suppression metadata remains.
 - The operator route exposes only the aggregate summary.
 - Impact currently writes ProductCompare's UUID into network-generated `ClickId`; official Impact publisher reporting uses `subId1`.
 - Official mappings are CJ `sid`, Impact `subId1`, Awin `clickref`, and Rakuten `u1`.
@@ -42,4 +42,4 @@ Operators always see real revenue totals and can trace individual clicks to user
 ## Evidence
 
 - Design commits: `7db814a8`, `283dce78`, `d404117d`.
-- Implementation evidence pending.
+- Task 1: focused domain, summary GraphQL, batching, development-seed, and revenue-route tests pass after Relay generation; one-conversion summaries expose clicks, conversions, order value, commission, average paid price, and currency.

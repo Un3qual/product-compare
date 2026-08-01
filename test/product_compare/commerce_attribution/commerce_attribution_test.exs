@@ -1250,8 +1250,7 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "conversions" => 0,
                  "currency" => nil,
                  "gross_order_value" => "0.00"
-               },
-               "suppression" => %{"suppressed" => false, "threshold" => 0}
+               }
              }
     end
 
@@ -1613,21 +1612,32 @@ defmodule ProductCompare.CommerceAttributionTest do
       end
     end
 
-    test "keeps low-volume dashboard results suppression-ready" do
+    test "returns one-conversion dashboard metrics without suppression" do
       merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
+      click_session = click_session_fixture(commerce_link)
 
-      conversion_fixture(%{
-        source_network: "impact",
-        merchant_id: merchant.id,
-        status: :approved,
-        order_amount: Decimal.new("90.00"),
-        commission_amount: Decimal.new("9.00"),
-        reported_at: ~U[2026-05-21 12:00:00.000000Z]
-      })
+      conversion =
+        conversion_fixture(%{
+          source_network: "impact",
+          click_session_id: click_session.id,
+          public_click_id: click_session.click_id,
+          merchant_id: merchant.id,
+          status: :approved,
+          order_amount: Decimal.new("90.00"),
+          commission_amount: Decimal.new("9.00"),
+          reported_at: ~U[2026-05-21 12:00:00.000000Z]
+        })
+
+      {:ok, _fact} =
+        CommerceAttribution.create_purchase_price_fact(%{
+          conversion_id: conversion.id,
+          reported_paid_price: Decimal.new("90.00"),
+          currency: "USD"
+        })
 
       assert CommerceAttribution.dashboard_revenue_summary(%{
-               merchant_id: merchant.id,
-               min_conversions: 2
+               merchant_id: merchant.id
              }) == %{
                "filters" => %{
                  "currency" => nil,
@@ -1638,14 +1648,13 @@ defmodule ProductCompare.CommerceAttributionTest do
                  "to" => nil
                },
                "metrics" => %{
-                 "average_paid_price" => nil,
-                 "clicks" => nil,
-                 "commission_revenue" => nil,
-                 "conversions" => nil,
-                 "currency" => nil,
-                 "gross_order_value" => nil
-               },
-               "suppression" => %{"suppressed" => true, "threshold" => 2}
+                 "average_paid_price" => "90.00",
+                 "clicks" => 1,
+                 "commission_revenue" => "9.00",
+                 "conversions" => 1,
+                 "currency" => "USD",
+                 "gross_order_value" => "90.00"
+               }
              }
     end
   end

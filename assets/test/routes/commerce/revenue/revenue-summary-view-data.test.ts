@@ -131,27 +131,26 @@ test("buildRevenueSummaryControls never emits an inverted preset range", () => {
   ).toBe(true);
 });
 
-test("buildRevenueSummaryMetrics hides every value when the summary is suppressed", () => {
+test("buildRevenueSummaryMetrics returns one-conversion values without suppression metadata", () => {
   expect(
     buildRevenueSummaryMetrics(
       {
         metrics: {
-          averagePaidPrice: "80.00",
-          clicks: 2,
-          commissionRevenue: "20.00",
-          conversions: 2,
-          grossOrderValue: "200.00",
-        },
-        suppression: { suppressed: true },
+          averagePaidPrice: "90.00",
+          clicks: 1,
+          commissionRevenue: "9.00",
+          conversions: 1,
+          grossOrderValue: "90.00",
+        }
       },
       "USD",
     ),
   ).toEqual([
-    { label: "Clicks", value: "Hidden" },
-    { label: "Conversions", value: "Hidden" },
-    { label: "Gross order value", value: "Hidden" },
-    { label: "Commission revenue", value: "Hidden" },
-    { label: "Average paid price", value: "Hidden" },
+    { label: "Clicks", value: "1" },
+    { label: "Conversions", value: "1" },
+    { label: "Gross order value", value: "90.00 USD" },
+    { label: "Commission revenue", value: "9.00 USD" },
+    { label: "Average paid price", value: "90.00 USD" },
   ]);
 });
 
@@ -165,8 +164,7 @@ test("buildRevenueSummaryMetrics preserves null and empty-string amount semantic
           commissionRevenue: undefined,
           conversions: 0,
           grossOrderValue: "",
-        },
-        suppression: { suppressed: false },
+        }
       },
       "USD",
     ),

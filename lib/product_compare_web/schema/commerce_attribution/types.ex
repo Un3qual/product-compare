@@ -17,7 +17,6 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
   object :revenue_summary do
     field :filters, non_null(:revenue_summary_filters)
     field :metrics, non_null(:revenue_summary_metrics)
-    field :suppression, non_null(:revenue_summary_suppression)
   end
 
   object :revenue_summary_filters do
@@ -36,11 +35,6 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     field :conversions, :integer
     field :currency, :string
     field :gross_order_value, :string
-  end
-
-  object :revenue_summary_suppression do
-    field :suppressed, non_null(:boolean)
-    field :threshold, non_null(:integer)
   end
 
   object :track_commerce_click_payload do

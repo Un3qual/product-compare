@@ -19,10 +19,6 @@ export default graphql`
         currency
         grossOrderValue
       }
-      suppression {
-        suppressed
-        threshold
-      }
     }
   }
 `;

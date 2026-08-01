@@ -9,7 +9,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   alias ProductCompareSchemas.Reference.CurrencyCode
 
   @invalid_filters_error "invalid revenue summary filters"
-  @public_min_conversions 2
 
   @spec revenue_summary(any(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()}
@@ -49,7 +48,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
           currency: currency,
           from: from,
           merchant_id: Input.fetch_value(input, :merchant_id),
-          min_conversions: @public_min_conversions,
           network: network,
           product_id: Input.fetch_value(input, :product_id),
           to: to
@@ -93,11 +91,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
 
   defp normalize_revenue_network(_network), do: {:error, :invalid_network}
 
-  defp graphql_summary(%{
-         "filters" => filters,
-         "metrics" => metrics,
-         "suppression" => suppression
-       }) do
+  defp graphql_summary(%{"filters" => filters, "metrics" => metrics}) do
     {:ok,
      %{
        filters: %{
@@ -115,10 +109,6 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
          conversions: metrics["conversions"],
          currency: metrics["currency"],
          gross_order_value: metrics["gross_order_value"]
-       },
-       suppression: %{
-         suppressed: suppression["suppressed"],
-         threshold: suppression["threshold"]
        }
      }}
   end

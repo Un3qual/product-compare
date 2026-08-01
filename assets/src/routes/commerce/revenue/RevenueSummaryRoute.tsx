@@ -78,7 +78,6 @@ function RevenueSummaryPanel({
         data.revenueSummary,
         data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? ""
       )}
-      suppression={data.revenueSummary.suppression}
     />
   );
 }
