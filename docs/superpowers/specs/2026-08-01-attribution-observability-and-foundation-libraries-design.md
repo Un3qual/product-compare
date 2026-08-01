@@ -27,6 +27,9 @@ standards or transport responsibility.
   attribution boundary.
 - Preserve signed-in attribution for the direct-navigation redirect fallback,
   not only the primary GraphQL mutation path.
+- Persist the raw request referrer, user-agent value, and Phoenix-resolved
+  remote IP for each browser click so development diagnostics do not depend on
+  irreversible hashes or anonymized placeholders.
 - Replace the hand-written CJ `:httpc` transport with Req.
 - Replace the local punycode implementation with the `idna` package while
   preserving ProductCompare's public-address and browser-URL policy.
@@ -41,10 +44,12 @@ standards or transport responsibility.
   `Community Member`.
 - Do not weaken log, secret, provider-payload, authentication, authorization,
   same-origin, redirect, or SSRF protections.
-- Do not store raw IP addresses, raw user-agent strings, or new browser
-  fingerprints. Anonymous clicks remain individually identifiable by their
-  existing unique click UUID; this change does not add a persistent anonymous
-  tracking cookie.
+- Do not add a persistent anonymous tracking cookie or browser fingerprint.
+  Anonymous clicks remain individually identifiable by their existing unique
+  click UUID.
+- Do not remove ingestion scope fingerprints, claim fingerprints, password
+  hashes, token hashes, or other hashes whose purpose is idempotency,
+  integrity, or authentication rather than attribution anonymization.
 - Do not add provider polling or scheduling for CJ transactions. A CJ
   conversion adapter normalizes already-fetched payloads into the existing
   conversion boundary.
@@ -95,6 +100,7 @@ exposing raw provider evidence or secrets:
 - source surface;
 - signed-in user global ID and email when a user was associated;
 - existing anonymous ID when one was supplied by an authorized producer;
+- raw referrer, user-agent value, and Phoenix-resolved remote IP;
 - merchant, product, merchant-product, affiliate program, and network
   identifiers and display labels when present;
 - whether the link is affiliate or non-affiliate;
@@ -102,8 +108,8 @@ exposing raw provider evidence or secrets:
   confidence, currency, order amount, commission amount, purchase time, and
   report time.
 
-The ledger does not expose `raw_payload`, credentials, destination query
-secrets, IP hashes, or user-agent hashes. Account email is available only on the
+The ledger does not expose `raw_payload`, credentials, or destination query
+secrets. Account email and raw request diagnostics are available only on the
 operator-authorized ledger; public community and account surfaces retain their
 existing presentation rules.
 
@@ -120,8 +126,32 @@ existing session/current-user plugs and pass that user ID into the same domain
 operation. This preserves attribution for modified clicks, copied links, and
 JavaScript fallback navigation without creating a second tracking path.
 
+One focused request-attribution extractor supplies the same raw diagnostic
+values to the GraphQL context and redirect controller. It reads the `referer`
+and `user-agent` request headers and formats `conn.remote_ip`; it does not trust
+forwarding headers independently of Phoenix's endpoint/proxy configuration.
+The domain operation receives `referrer`, `user_agent`, and `ip_address`
+directly and performs no hashing, truncation, masking, or subnet aggregation.
+
 Anonymous clicks remain distinct through the generated public click UUID. No
 new cross-click anonymous identity mechanism is introduced.
+
+### Raw diagnostic storage
+
+Because the application is unreleased and the existing hash columns have no
+production writer, the commerce-attribution schema is simplified in place:
+
+- `user_agent_hash` becomes `user_agent` text;
+- `ip_hash` becomes `ip_address` text;
+- `referrer` remains raw text;
+- synthetic seeds, schemas, domain attribute lists, and tests use the raw field
+  names and representative raw values.
+
+The original development migration is updated rather than preserving obsolete
+hash-named columns plus a rename migration. Existing local development and test
+databases require a reset to receive the revised unreleased schema. The values
+are persisted for operator diagnostics but are not added to application logs,
+error payloads, or public APIs.
 
 ## CJ SID Lifecycle
 
@@ -200,10 +230,12 @@ currencies, or cursors produce the repository's existing GraphQL error shapes.
 An empty ledger returns an empty connection rather than an authorization-like
 error.
 
-Removing suppression changes only operator visibility into already-persisted
-records. It does not alter public responses or logging. Provider raw payloads
-remain stored and redacted according to their existing evidence policy but are
-not projected into the ledger.
+Removing suppression and persisting raw request diagnostics change only
+operator visibility into attribution records. They do not alter public
+responses or logging. Provider raw payloads remain stored under their existing
+evidence policy but are not projected into the ledger.
+Raw IP, user-agent, and referrer values are neither anonymized before
+persistence nor emitted to logs.
 
 CJ and Impact redirects fail closed when their final decorated URL violates the
 existing destination policy. Req transport errors are normalized at the CJ
@@ -215,8 +247,9 @@ through a request.
 This program is split into three reviewable batches:
 
 1. **Attribution observability and CJ SID**: remove suppression, add the ledger
-   and route UI, make fallback tracking session-aware, decorate CJ redirects,
-   and normalize returned SIDs.
+   and route UI, replace hash-named diagnostic fields with captured raw request
+   values, make fallback tracking session-aware, decorate CJ redirects, and
+   normalize returned SIDs.
 2. **Transport and hostname library adoption**: replace `:httpc` with Req and
    local punycode with `idna`, deleting superseded code and retaining boundary
    tests.
@@ -233,8 +266,9 @@ Focused verification includes:
 
 - revenue projection and GraphQL summary tests for zero and one conversions;
 - operator authorization, filter, pagination, user identity, unmatched click,
-  and click-to-conversion ledger tests;
-- controller and GraphQL click tests for signed-in and anonymous navigation;
+  raw request diagnostics, and click-to-conversion ledger tests;
+- controller and GraphQL click tests for signed-in and anonymous navigation,
+  including exact referrer, user-agent, and remote-IP persistence;
 - CJ and Impact redirect URL cases plus CJ conversion normalization;
 - CJ client transport/status/timeout/secret-redaction tests using Req;
 - destination parser and address-policy tests around the `idna` boundary;
