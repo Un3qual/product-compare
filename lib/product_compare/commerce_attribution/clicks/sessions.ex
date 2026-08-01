@@ -69,8 +69,8 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Sessions do
         :anonymous_id,
         :source_surface,
         :referrer,
-        :user_agent_hash,
-        :ip_hash
+        :user_agent,
+        :ip_address
       ],
       %{},
       fn field, acc ->

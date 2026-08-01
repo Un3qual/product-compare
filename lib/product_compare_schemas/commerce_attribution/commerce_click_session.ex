@@ -11,8 +11,8 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     field :anonymous_id, :string
     field :source_surface, Ecto.Enum, values: @source_surfaces, default: :web
     field :referrer, :string
-    field :user_agent_hash, :string
-    field :ip_hash, :string
+    field :user_agent, :string
+    field :ip_address, :string
 
     belongs_to :commerce_link, ProductCompareSchemas.CommerceAttribution.CommerceLink
     belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct
@@ -32,8 +32,8 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
       :anonymous_id,
       :source_surface,
       :referrer,
-      :user_agent_hash,
-      :ip_hash
+      :user_agent,
+      :ip_address
     ])
     |> put_generated_click_id()
     |> validate_required([:click_id, :commerce_link_id, :source_surface])

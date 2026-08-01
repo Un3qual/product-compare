@@ -37,8 +37,13 @@ defmodule ProductCompareWeb.Router do
     get "/sitemaps/merchants.xml", SeoController, :merchants
     get "/sitemaps/categories.xml", SeoController, :categories
     get "/sitemaps/comparisons.xml", SeoController, :comparisons
-    get "/r/merchant-product", CommerceRedirectController, :merchant_product
-    get "/r/:click_id", CommerceRedirectController, :show
+  end
+
+  scope "/r", ProductCompareWeb do
+    pipe_through [:api_session]
+
+    get "/merchant-product", CommerceRedirectController, :merchant_product
+    get "/:click_id", CommerceRedirectController, :show
   end
 
   scope "/api", ProductCompareWeb do

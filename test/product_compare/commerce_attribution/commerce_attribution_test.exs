@@ -196,12 +196,17 @@ defmodule ProductCompare.CommerceAttributionTest do
           anonymous_id: "anon-123",
           source_surface: :web,
           referrer: "https://app.example.com/products/desk",
-          user_agent_hash: "ua-hash",
-          ip_hash: "ip-hash"
+          user_agent: "ProductCompareTest/1.0",
+          ip_address: "203.0.113.42"
         })
 
       assert click_session.click_id == click_id
       assert click_session.source_surface == :web
+      assert click_session.referrer == "https://app.example.com/products/desk"
+      assert click_session.user_agent == "ProductCompareTest/1.0"
+      assert click_session.ip_address == "203.0.113.42"
+      refute Map.has_key?(click_session, :user_agent_hash)
+      refute Map.has_key?(click_session, :ip_hash)
 
       assert {:ok, commerce_link.destination_url} ==
                CommerceAttribution.redirect_destination(click_id)

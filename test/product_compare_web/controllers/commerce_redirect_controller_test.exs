@@ -3,8 +3,10 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
 
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
 
   describe "GET /r/:click_id" do
     test "redirects known click ids to the commerce link destination", %{conn: conn} do
@@ -56,6 +58,8 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       conn =
         conn
         |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("user-agent", "ProductCompareRedirectTest/1.0")
+        |> then(&%{&1 | remote_ip: {198, 51, 100, 8}})
         |> get(tracked_merchant_product_path(merchant_product))
 
       assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
@@ -64,10 +68,41 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
                1
 
       assert Repo.aggregate(
-               ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+               CommerceClickSession,
                :count,
                :id
              ) == 1
+
+      assert %CommerceClickSession{
+               user_id: nil,
+               referrer: "http://www.example.com/offers",
+               user_agent: "ProductCompareRedirectTest/1.0",
+               ip_address: "198.51.100.8"
+             } = Repo.one(CommerceClickSession)
+    end
+
+    test "preserves the signed-in user for direct fallback navigation", %{conn: conn} do
+      merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
+      user = AccountsFixtures.user_fixture()
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> put_req_header("referer", "http://www.example.com/offers")
+        |> put_req_header("user-agent", "ProductCompareRedirectTest/1.0")
+        |> then(&%{&1 | remote_ip: {198, 51, 100, 9}})
+        |> get(tracked_merchant_product_path(merchant_product))
+
+      assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
+
+      assert %CommerceClickSession{
+               user_id: user_id,
+               referrer: "http://www.example.com/offers",
+               user_agent: "ProductCompareRedirectTest/1.0",
+               ip_address: "198.51.100.9"
+             } = Repo.one(CommerceClickSession)
+
+      assert user_id == user.id
     end
 
     test "resolves affiliate merchant product exits with the generated click id", %{conn: conn} do
@@ -126,10 +161,12 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
                1
 
       assert Repo.aggregate(
-               ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+               CommerceClickSession,
                :count,
                :id
              ) == 1
+
+      assert %CommerceClickSession{user_id: nil} = Repo.one(CommerceClickSession)
     end
 
     test "returns 404 for merchant product exits from untrusted origins", %{conn: conn} do

@@ -45,8 +45,8 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :anonymous_id, :text
       add :source_surface, :commerce_source_surface, null: false, default: "web"
       add :referrer, :text
-      add :user_agent_hash, :text
-      add :ip_hash, :text
+      add :user_agent, :text
+      add :ip_address, :text
 
       timestamps(type: :utc_datetime_usec)
     end

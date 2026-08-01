@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.CommerceRedirectController do
   use ProductCompareWeb, :controller
 
   alias ProductCompare.CommerceAttribution
+  alias ProductCompareWeb.CommerceAttribution.RequestDiagnostics
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Plugs.RequireSameOrigin
 
@@ -17,10 +18,15 @@ defmodule ProductCompareWeb.CommerceRedirectController do
          {:ok, merchant_product_id} <-
            GlobalId.decode_integer(merchant_product_id, :merchant_product),
          {:ok, tracked_click} <-
-           CommerceAttribution.track_outbound_click(%{
-             merchant_product_id: merchant_product_id,
-             source_surface: :web
-           }),
+           CommerceAttribution.track_outbound_click(
+             conn
+             |> RequestDiagnostics.from_conn()
+             |> Map.merge(%{
+               merchant_product_id: merchant_product_id,
+               source_surface: :web,
+               user_id: current_user_id(conn)
+             })
+           ),
          {:ok, destination_url} <-
            CommerceAttribution.redirect_destination(tracked_click.click_session.click_id) do
       redirect(conn, external: destination_url)
@@ -37,4 +43,7 @@ defmodule ProductCompareWeb.CommerceRedirectController do
       _origin -> RequireSameOrigin.trusted_request_origin?(conn)
     end
   end
+
+  defp current_user_id(%{assigns: %{current_user: %{id: id}}}) when is_integer(id), do: id
+  defp current_user_id(_conn), do: nil
 end

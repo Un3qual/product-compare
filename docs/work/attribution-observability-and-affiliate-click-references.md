@@ -17,7 +17,7 @@ Operators always see real revenue totals and can trace individual clicks to user
 
 - Click sessions already have a unique public UUID and optional user association.
 - The GraphQL click mutation associates signed-in users; the direct fallback currently does not load the session.
-- `user_agent_hash` and `ip_hash` exist only as storage/test/seed fields; no production hashing writer exists.
+- Click sessions persist raw `referrer`, `user_agent`, and Phoenix-resolved `ip_address`; the unreleased hash-named storage had no production hashing writer and was replaced in place.
 - Revenue summaries return their calculated metrics to operators at every conversion volume; no threshold or suppression metadata remains.
 - The operator route exposes only the aggregate summary.
 - Impact currently writes ProductCompare's UUID into network-generated `ClickId`; official Impact publisher reporting uses `subId1`.
@@ -43,3 +43,4 @@ Operators always see real revenue totals and can trace individual clicks to user
 
 - Design commits: `7db814a8`, `283dce78`, `d404117d`.
 - Task 1: focused domain, summary GraphQL, batching, development-seed, and revenue-route tests pass after Relay generation; one-conversion summaries expose clicks, conversions, order value, commission, average paid price, and currency.
+- Task 2: click sessions store raw referrer, user-agent, and Phoenix-resolved remote IP values; GraphQL and direct fallback clicks share one request-diagnostics boundary, and the fallback preserves a signed-in session user without adding anonymous tracking. Focused attribution, context, GraphQL, redirect, and seed suites pass after a test-environment-only reset of the unreleased attribution migration.

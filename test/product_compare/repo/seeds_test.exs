@@ -963,6 +963,16 @@ defmodule ProductCompare.Repo.SeedsTest do
              :id
            ) == 4
 
+    assert Repo.aggregate(
+             from(click in CommerceClickSession,
+               where:
+                 click.user_agent == "synthetic-development-agent" and
+                   click.ip_address == "127.0.0.1"
+             ),
+             :count,
+             :id
+           ) == 4
+
     assert %{
              "metrics" => %{
                "clicks" => 4,
