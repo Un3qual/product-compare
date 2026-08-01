@@ -225,8 +225,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   defp seed_price_point!(key, offer, attrs) do
     entropy_id = Map.fetch!(@price_point_entropy_ids, key)
 
-    price_point =
-      Repo.get_by(PricePoint, entropy_id: entropy_id) || legacy_seed_price_point(attrs)
+    price_point = Repo.get_by(PricePoint, entropy_id: entropy_id)
 
     case price_point do
       nil ->
@@ -248,18 +247,6 @@ defmodule ProductCompare.DevSeeds.Marketplace do
         raise "development seed #{key} price point belongs to offer #{conflicting_offer_id}"
     end
     |> Support.expect!("price point #{offer.external_sku}/#{key}")
-  end
-
-  defp legacy_seed_price_point(attrs) do
-    PricePoint
-    |> where(
-      [point],
-      point.merchant_product_id == ^attrs.merchant_product_id and
-        point.artifact_id == ^attrs.artifact_id
-    )
-    |> order_by([point], asc: point.id)
-    |> limit(1)
-    |> Repo.one()
   end
 
   defp delete_alert_evaluation_jobs!([]), do: :ok

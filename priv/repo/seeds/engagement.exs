@@ -6,6 +6,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompare.Alerts
   alias ProductCompare.Catalog
   alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.DevSeeds.CommunityWrites
   alias ProductCompare.DevSeeds.CorrectionSafety
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Discussions
@@ -16,7 +17,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
-  alias ProductCompareSchemas.Discussions.CommunityReport
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
@@ -410,7 +410,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
   defp seed_review!(owner, product, attrs, idempotency_key, moderator, status) do
     review =
-      Discussions.submit_review(owner.id, product.id, attrs, idempotency_key)
+      CommunityWrites.submit_review(owner.id, product.id, attrs, idempotency_key)
       |> Support.expect!("community review #{idempotency_key}")
 
     if active_replacement_review?(review) do
@@ -434,7 +434,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
   defp seed_question!(owner, product, attrs, idempotency_key, moderator, status) do
     question =
-      Discussions.ask_question(owner.id, product.id, attrs, idempotency_key)
+      CommunityWrites.ask_question(owner.id, product.id, attrs, idempotency_key)
       |> Support.expect!("community question #{idempotency_key}")
 
     question = maybe_restore_owned!(:question, question, attrs, status)
@@ -447,7 +447,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
   defp seed_answer!(owner, question, body, idempotency_key, moderator, status) do
     answer =
-      Discussions.answer_question(owner.id, question.entropy_id, body, idempotency_key)
+      CommunityWrites.answer_question(owner.id, question.entropy_id, body, idempotency_key)
       |> Support.expect!("community answer #{idempotency_key}")
 
     answer = maybe_restore_owned!(:answer, answer, %{body: body}, status)
@@ -511,19 +511,13 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp seed_report!(reporter, review) do
-    case Repo.get_by(CommunityReport, reporter_id: reporter.id, review_id: review.id) do
-      %CommunityReport{} = report ->
-        report
-
-      nil ->
-        Discussions.report(
-          reporter.id,
-          :review,
-          review.entropy_id,
-          "Development report example for the moderation queue"
-        )
-        |> Support.expect!("community report")
-    end
+    CommunityWrites.report(
+      reporter.id,
+      :review,
+      review.entropy_id,
+      "Development report example for the moderation queue"
+    )
+    |> Support.expect!("community report")
   end
 
   defp seed_corrections!(accounts, catalog) do

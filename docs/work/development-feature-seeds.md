@@ -36,6 +36,8 @@ provider, scheduler, mailer, job, or network call.
 - Reruns restore reserved fields and counts, preserve the shared token and
   unrelated local records, and roll back atomically on a preclaimed operator
   email.
+- Reserved price-point ownership is proven only by immutable entropy IDs, and
+  community fixtures do not consume or depend on interactive hourly quotas.
 
 ## Boundaries
 
@@ -95,7 +97,7 @@ provider, scheduler, mailer, job, or network call.
   test/product_compare/specs` — 114 tests, 0 failures.
 - 2026-07-31: `git diff --check` — clean after the engagement milestone.
 - 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs
-  test/product_compare_web/graphql/development_seeds_test.exs` — 43 tests,
+  test/product_compare_web/graphql/development_seeds_test.exs` — 45 tests,
   0 failures against the final reviewed seed suite.
 - 2026-07-31: `mix test test/product_compare/ingestion
   test/product_compare/commerce_attribution
@@ -114,7 +116,7 @@ provider, scheduler, mailer, job, or network call.
   specification, comparison, ingestion, and attribution suites — 502 tests,
   0 failures.
 - 2026-07-31: complete GraphQL suite — 340 tests, 0 failures.
-- 2026-07-31: `mix test` — 1,102 tests, 0 failures.
+- 2026-07-31: `mix test` — 1,104 tests, 0 failures.
 - 2026-07-31: `mix format --check-formatted` and `mix typecheck` — passed.
 - 2026-07-31: `mix quality` — Credo found no issues, the existing 3/3 clone
   budget held, cross-function analysis found no issues, and Dialyzer reported

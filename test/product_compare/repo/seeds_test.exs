@@ -3,6 +3,7 @@ Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/correction_safety.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/community_writes.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
 
 defmodule ProductCompare.Repo.SeedsTest do
@@ -1174,7 +1175,7 @@ defmodule ProductCompare.Repo.SeedsTest do
       )
 
     Application.put_env(:product_compare, ProductCompare.Discussions,
-      community_write_limits: [review: 2, question: 10, answer: 30, report: 30]
+      community_write_limits: [review: 1, question: 10, answer: 30, report: 30]
     )
 
     assert {:ok, edited_review} =
@@ -1187,7 +1188,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get_by!(CommunityWriteWindow,
              user_id: shopper.id,
              action_kind: :review
-           ).count == 2
+           ).count == 1
 
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1199,7 +1200,33 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get_by!(CommunityWriteWindow,
              user_id: shopper.id,
              action_kind: :review
-           ).count == 2
+           ).count == 1
+  end
+
+  test "first community seed bypasses exhausted interactive write quotas" do
+    previous_config = Application.get_env(:product_compare, ProductCompare.Discussions)
+
+    on_exit(fn ->
+      restore_env(ProductCompare.Discussions, previous_config)
+    end)
+
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+    marketplace = DevSeedMarketplace.seed!(catalog, anchor)
+
+    Application.put_env(:product_compare, ProductCompare.Discussions,
+      community_write_limits: [review: 0, question: 0, answer: 0, report: 0]
+    )
+
+    engagement = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+
+    assert engagement.community.reviews.shopper.moderation_status == :published
+    assert engagement.community.question.moderation_status == :published
+    assert engagement.community.answers.participant.moderation_status == :published
+    assert engagement.community.pending_question.moderation_status == :pending
+    assert engagement.community.report.status == :pending
+    assert Repo.aggregate(CommunityWriteWindow, :count, :id) == 0
   end
 
   test "reruns preserve a replacement review after the reserved review is removed" do
@@ -1850,7 +1877,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Decimal.equal?(preserved_fact.observed_price, observation.price)
   end
 
-  test "reruns preserve another observation using a reserved seed price artifact" do
+  test "reruns preserve price points after their reserved key is changed" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
     offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27G")
@@ -1865,10 +1892,11 @@ defmodule ProductCompare.Repo.SeedsTest do
       )
 
     reserved_entropy_id = seed_point.entropy_id
+    edited_entropy_id = Ecto.UUID.generate()
 
     seed_point
     |> Ecto.Changeset.change(
-      entropy_id: Ecto.UUID.generate(),
+      entropy_id: edited_entropy_id,
       price: Decimal.new("601.01"),
       in_stock: false
     )
@@ -1890,14 +1918,12 @@ defmodule ProductCompare.Repo.SeedsTest do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
     assert %PricePoint{
-             artifact_id: seed_artifact_id,
-             entropy_id: ^reserved_entropy_id,
-             price: seed_price,
-             in_stock: true
+             entropy_id: ^edited_entropy_id,
+             price: edited_price,
+             in_stock: false
            } = Repo.get!(PricePoint, seed_point.id)
 
-    assert seed_artifact_id == artifact.id
-    assert Decimal.equal?(seed_price, Decimal.new("649.99"))
+    assert Decimal.equal?(edited_price, Decimal.new("601.01"))
 
     assert %PricePoint{
              merchant_product_id: offer_id,
@@ -1913,6 +1939,60 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert observed_at == observation.observed_at
     assert Decimal.equal?(price, Decimal.new("641.23"))
     assert Decimal.equal?(shipping, Decimal.new("4.56"))
+
+    assert %PricePoint{id: reserved_id} =
+             Repo.get_by!(PricePoint, entropy_id: reserved_entropy_id)
+
+    refute reserved_id in [seed_point.id, observation.id]
+  end
+
+  test "reruns recreate a missing reserved price point without adopting another observation" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    offer = Repo.get_by!(MerchantProduct, external_sku: "VAL-AC55O")
+
+    artifact =
+      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-inactive-v1")
+
+    seed_point = Repo.get_by!(PricePoint, entropy_id: "d3ca0000-0000-4000-8000-000000000509")
+    Repo.delete!(seed_point)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               artifact_id: artifact.id,
+               observed_at:
+                 DateTime.utc_now()
+                 |> DateTime.add(60, :second)
+                 |> DateTime.truncate(:microsecond),
+               price: Decimal.new("1099.12"),
+               shipping: Decimal.new("17.34"),
+               in_stock: false
+             })
+
+    observation = Repo.get!(PricePoint, observation.id)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %PricePoint{
+             entropy_id: observation_entropy_id,
+             observed_at: observed_at,
+             price: price,
+             shipping: shipping,
+             in_stock: false
+           } = Repo.get!(PricePoint, observation.id)
+
+    assert observation_entropy_id == observation.entropy_id
+    assert observed_at == observation.observed_at
+    assert Decimal.equal?(price, Decimal.new("1099.12"))
+    assert Decimal.equal?(shipping, Decimal.new("17.34"))
+
+    assert %PricePoint{id: reserved_id} =
+             Repo.get_by!(PricePoint,
+               entropy_id: "d3ca0000-0000-4000-8000-000000000509"
+             )
+
+    refute reserved_id == observation.id
   end
 
   test "reruns restore alert fixtures with a newer out-of-stock offer observation" do

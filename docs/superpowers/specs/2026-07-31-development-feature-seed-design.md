@@ -119,7 +119,10 @@ Their observations are derived from the shared anchor timestamp and cover:
 Seed-owned artifact observations return to their anchored values on rerun. Newer
 local observations are independent history and remain authoritative; the seed
 does not delete or backdate them merely to force an exercised aging or stale
-offer back into its original derived freshness bucket. Likewise, the
+offer back into its original derived freshness bucket. Each seed observation is
+owned only through its reserved immutable entropy ID. If that row is missing,
+the seed creates a distinct reserved row and never adopts another observation by
+matching mutable offer or artifact fields. Likewise, the
 never-observed offer is cleared only while doing so would not erase another
 alert event, discard pending evaluation for an enabled non-seed watch, or remove
 a price point referenced by any non-seed watch or purchase-price fact. The
@@ -159,6 +162,11 @@ Community state spans two regular users and includes:
 
 The scenarios preserve valid ownership and moderation transitions rather than
 forcing conflicting states onto one account or record.
+
+Initial community fixture creation uses the same validated content changesets,
+idempotency receipts, advisory locks, and answer lifecycle check as interactive
+writes, but does not consume or depend on a user's hourly write allowance.
+Interactive application calls remain quota-bound.
 
 The three seed-owned specification corrections use reserved immutable entropy
 IDs. Their visible reason and evidence copy remain editable presentation data,

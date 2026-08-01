@@ -213,9 +213,11 @@ semantic keys rather than a positional tuple.
 
 Implement `DevSeeds.Marketplace.seed!/2` with stable merchant domains,
 merchant-product URLs/SKUs, and price observation times derived from `anchor`.
-For each price point, look up the exact merchant product and observation time
-before calling `Pricing.add_price_point/1`. Restore merchant-product active and
-last-seen fields through `Pricing.upsert_merchant_product/1`.
+Identify each seed-owned price point only by a reserved immutable entropy ID.
+When that row is missing, create a distinct reserved row; never adopt an
+observation by matching its offer, artifact, timestamp, or visible values.
+Restore merchant-product active and last-seen fields through
+`Pricing.upsert_merchant_product/1`.
 
 Restore only artifact-owned seed observations. Preserve newer local price
 history even when it changes a derived aging or stale state, and do not clear
@@ -310,12 +312,15 @@ anchor as `now` and never enqueue alert-delivery work.
 
 - [ ] **Step 4: Reconcile community ownership and moderation lifecycles**
 
-Use fixed seed idempotency keys with `submit_review/4`, `ask_question/4`, and
-`answer_question/4`. Restore text through `Discussions.update_owned/4`, move
-records to the required published/hidden states through `moderate/5`, accept the
-named participant answer through `accept_answer/3`, and create the exact
-participant report only when it is absent. Keep question ownership with the
-shopper and answer ownership with the participant.
+Use fixed seed idempotency keys with a seed-specific persistence helper that
+keeps the production content changesets, idempotency receipt digest, advisory
+locks, and published-question check while omitting only interactive quota
+charging. Restore text through validated schema changesets, move records to the
+required published/hidden states through `moderate/5`, accept the named
+participant answer through `accept_answer/3`, and create the exact participant
+report only when it is absent. Keep question ownership with the shopper and
+answer ownership with the participant. Do not create or increment community
+write windows while seeding; normal Discussions calls remain quota-bound.
 
 If a removed reserved review has been replaced through the normal submission
 flow, preserve the active replacement and leave the reserved review removed
