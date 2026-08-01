@@ -41,7 +41,166 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
+## Active Work
+
+### 18. Attribution Observability And Affiliate Click References
+
+Status: active
+Owner: `codex/attribution-observability-libraries`
+Lane: Commerce attribution and operator analytics
+Plan: `docs/superpowers/plans/2026-08-01-attribution-observability-and-affiliate-click-references-implementation-plan.md`
+Batch outcome: operators receive unsuppressed revenue metrics and a paginated
+individual click/conversion ledger, browser clicks persist raw request
+diagnostics and signed-in identity consistently, and CJ, Impact, Awin, and
+Rakuten round-trip ProductCompare click references through their officially
+documented publisher fields.
+Next action: add the failing zero/one-conversion domain, GraphQL, and frontend
+expectations that remove the suppression contract before changing projections.
+Owned paths:
+
+- `lib/product_compare/commerce_attribution/**`
+- `lib/product_compare_schemas/commerce_attribution/**`
+- commerce-attribution fields in
+  `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
+- `lib/product_compare_web/commerce_attribution/**`
+- `lib/product_compare_web/controllers/commerce_redirect_controller.ex`
+- `lib/product_compare_web/plugs/put_absinthe_context.ex`
+- commerce redirect pipeline entries in `lib/product_compare_web/router.ex`
+- `lib/product_compare_web/resolvers/commerce_attribution/**`
+- `lib/product_compare_web/schema/commerce_attribution/**`
+- `assets/src/routes/commerce/revenue/**`
+- `assets/test/routes/commerce/revenue/**`
+- generated Relay artifacts for the revenue route
+- affected commerce attribution, click, revenue, redirect, seed, and GraphQL
+  query-count tests
+- attribution diagnostic values in `priv/repo/seeds/operations.exs`
+- `docs/work/attribution-observability-and-affiliate-click-references.md`
+
+Internal slices:
+
+- Unsuppressed domain, GraphQL, and frontend revenue summary.
+- Raw request diagnostics and session-aware fallback click identity.
+- Verified outbound network parameter mapping and inbound provider adapters.
+- Operator-only bounded click/conversion ledger and revenue-route presentation.
+
+Prerequisites:
+
+- Product approval of option 2 and raw attribution diagnostics is recorded in
+  the linked design.
+- Official network evidence confirms CJ `sid`, Impact `subId1`, Awin
+  `clickref`, and Rakuten `u1`; Amazon remains local-click/campaign-tag only.
+- No active row owns the affected attribution, revenue, or redirect paths.
+
+Verification:
+
+- focused attribution, click, summary, ledger, redirect, and seed suites
+- GraphQL authorization, pagination, filtering, and stable query counts
+- focused revenue and tracked-click frontend suites plus Relay generation
+- complete backend and frontend gates, work-queue validation, and diff check
+
+Exit condition: no suppression code or schema field remains, every persisted
+browser click contains its available raw diagnostics and signed-in identity,
+each verified network receives and returns the correct click-reference token,
+Amazon/custom links are not dynamically decorated, the operator can inspect
+individual clicks and conversions beside exact totals, and all gates pass.
+
 ## Ready Work
+
+### 19. Transport And IDNA Library Adoption
+
+Status: ready
+Lane: Provider transport and destination safety
+Plan: `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
+Batch outcome: Req replaces direct CJ `:httpc` mechanics and `idna` replaces
+the local punycode encoder while existing provider, URL, IP, and SSRF contracts
+remain unchanged.
+Next action: characterize the injected/default CJ transport through Req-shaped
+success, failure, timeout, and secret-safe cases before adding the dependency.
+Owned paths:
+
+- `mix.exs`
+- `mix.lock`
+- `lib/product_compare/ingestion/sources/cj/client.ex`
+- `lib/product_compare/commerce_attribution/destination_url/**`
+- `test/product_compare/ingestion/sources/cj/client_test.exs`
+- affected CJ parser/import/task tests
+- `test/product_compare/commerce_attribution/destination_url_test.exs`
+- affected commerce-attribution and redirect-controller URL tests
+- `docs/work/transport-and-idna-library-adoption.md`
+
+Internal slices:
+
+- Req transport characterization, adoption, and `:httpc` deletion.
+- IDNA boundary characterization, adoption, and local punycode deletion.
+- Dependency and repository-wide verification.
+
+Prerequisites:
+
+- No active row owns `mix.exs`, `mix.lock`, the CJ client, or destination parser.
+- The attribution row may complete first if both rows remain on one serial
+  branch; its click-reference URL behavior becomes characterization evidence.
+
+Verification:
+
+- CJ client, parser, import, and task suites with no live requests
+- destination URL, attribution, and redirect-controller suites
+- removed-code scans, dependency checks, backend/full repository gates
+- `mix work_queue.validate` and `git diff --check`
+
+Exit condition: Req is the only CJ HTTP implementation, `idna` is the only
+punycode/IDNA implementation, superseded code is absent, all prior boundary
+behavior remains covered, secrets remain excluded from logs/errors, and all
+gates pass.
+
+### 20. CLDR Reference Data Boundary
+
+Status: ready
+Lane: Relational reference data
+Plan: `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
+Batch outcome: CLDR owns standards recognition and metadata for supported
+currencies, territories, and languages while ProductCompare retains explicit
+supported sets and stable database IDs.
+Next action: add failing focused tests that distinguish CLDR-recognized codes
+from ProductCompare-supported codes before adding the backend and packages.
+Owned paths:
+
+- `mix.exs`
+- `mix.lock`
+- CLDR configuration in `config/config.exs`
+- `lib/product_compare/reference_data.ex`
+- `lib/product_compare/reference_data/**`
+- `lib/product_compare_schemas/reference/currency_code.ex`
+- `lib/product_compare_schemas/reference/reference_code.ex`
+- `lib/product_compare_schemas/ingestion/merchant_feed_candidate.ex`
+- focused reference-data, codec parity, currency consumer, and feed-candidate
+  tests
+- `docs/work/cldr-reference-data-boundary.md`
+
+Internal slices:
+
+- CLDR backend and focused standards-recognition boundary.
+- Currency codec adoption with database/CLDR parity.
+- Territory/language adoption without changing supported markets.
+
+Prerequisites:
+
+- No active row owns `mix.exs`, `mix.lock`, CLDR configuration, or reference
+  codecs when this row is claimed.
+- Current seeded reference tables and parity tests remain the supported-set and
+  relational-ID authority.
+
+Verification:
+
+- CLDR recognition/metadata and database codec parity suites
+- currency consumers, feed-candidate/CJ ingestion, attribution, and GraphQL
+  suites
+- dependency checks and complete repository gates
+- `mix work_queue.validate` and `git diff --check`
+
+Exit condition: all configured public reference codes are CLDR-recognized,
+valid-but-unsupported codes remain unsupported, database IDs do not change,
+application-owned codes bypass CLDR, migrations remain deterministic, and all
+gates pass.
 
 ### 15. Radix Disclosure Controls
 

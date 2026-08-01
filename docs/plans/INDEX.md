@@ -11,10 +11,22 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
+- `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved attribution observability and foundation-library program is
+dispatched through three reviewable plans:
+
+- `docs/superpowers/plans/2026-08-01-attribution-observability-and-affiliate-click-references-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
+
+The first row is active on `codex/attribution-observability-libraries`; the
+other two remain ready and serial because their dependency files overlap.
+
 Development Feature Seeds completed through
 `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
 and
