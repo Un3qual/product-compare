@@ -1,5 +1,6 @@
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/support.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/accounts.exs"))
+Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/correction_safety.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/catalog.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/marketplace.exs"))
 Code.require_file(Path.join(File.cwd!(), "priv/repo/seeds/engagement.exs"))
@@ -1322,6 +1323,57 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(SpecificationCorrection, newer_correction.id).status == :accepted
   end
 
+  test "reruns keep a newer pending correction over the accepted fixture usable" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    seeded_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development accepted correction example"
+      )
+
+    seeded_claim = Repo.get!(ProductAttributeClaim, seeded_correction.claim_id)
+
+    assert {:ok, newer_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("170"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Developer selected a newer refresh-rate correction",
+                 explanation: "Synthetic local correction used to exercise reseeding."
+               }
+             )
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(newer_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the newer correction"
+             })
+
+    assert {:ok, pending_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("175"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Developer queued a follow-up refresh-rate correction",
+                 explanation: "Pending local moderation work must survive reseeding."
+               }
+             )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(pending_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the preserved follow-up correction"
+             })
+  end
+
   test "reruns reset a pending correction whose claim has no superseded claim" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1414,6 +1466,11 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(SpecificationCorrection, newer_correction.id).status == :pending
     assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(newer_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the preserved pending correction"
+             })
   end
 
   test "reruns reset the seeded correction when another submitter has a pending correction" do
@@ -1547,6 +1604,31 @@ defmodule ProductCompare.Repo.SeedsTest do
            } = Repo.get!(SpecificationCorrection, developer_correction.id)
 
     assert rerun.corrections.pending.id == developer_correction.id
+  end
+
+  test "first reserved completed correction fails on an occupied pending scope" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+    marketplace = DevSeedMarketplace.seed!(catalog, anchor)
+
+    assert {:ok, pending_correction} =
+             Specs.propose_correction(
+               catalog.products.monitor_16_9.id,
+               catalog.attributes.refresh_rate.id,
+               accounts.shopper.id,
+               %{value_num: Decimal.new("170"), unit_id: catalog.units.hz.id},
+               %{
+                 reason: "Developer pending correction in accepted seed scope",
+                 explanation: "Unrelated pending moderation work must not become the fixture."
+               }
+             )
+
+    assert_raise RuntimeError, ~r/cannot create accepted correction.*pending correction/, fn ->
+      DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+    end
+
+    assert Repo.get!(SpecificationCorrection, pending_correction.id).status == :pending
   end
 
   test "reruns preserve user-created coupons that reuse a development code" do

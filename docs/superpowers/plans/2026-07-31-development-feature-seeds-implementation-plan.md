@@ -330,8 +330,11 @@ Use `Specs.propose_correction/5` for distinct seed product/attribute pairs and
 pending example's reason, source URL, and explanation through its schema
 changeset when it already exists. Never overwrite non-seed corrections or
 adopt legacy rows by matching visible copy. If an unrelated pending correction
-occupies the one-pending scope before the reserved seed row exists, preserve
-that row unchanged and defer creating the reserved row until a later run.
+occupies the pending fixture's one-pending scope before the reserved seed row
+exists, preserve that row unchanged and defer creating the reserved row until a
+later run. Fail closed when a completed fixture's scope is occupied rather than
+returning a pending row under an accepted or rejected key. Do not replace a
+current claim while an outstanding pending correction depends on it.
 
 - [ ] **Step 6: Verify and commit the engagement milestone**
 

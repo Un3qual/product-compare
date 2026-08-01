@@ -163,10 +163,12 @@ forcing conflicting states onto one account or record.
 The three seed-owned specification corrections use reserved immutable entropy
 IDs. Their visible reason and evidence copy remain editable presentation data,
 and a local correction may reuse that copy without being adopted by the seed.
-The seed never infers legacy ownership from matching copy. When an unrelated
-pending correction occupies the database's one-pending scope before the
-reserved row exists, that correction is preserved unchanged and supplies the
-pending scenario until the scope becomes available on a later run.
+The seed never infers legacy ownership from matching copy. Only the pending
+fixture may reuse an unrelated pending correction that already occupies its
+one-pending scope. A completed fixture fails closed on that conflict instead of
+reporting the pending row as accepted or rejected. Reruns also preserve a
+different current claim while a pending correction depends on it, keeping that
+moderation work usable instead of making it stale.
 
 ## Synthetic Provider And Revenue Scenarios
 

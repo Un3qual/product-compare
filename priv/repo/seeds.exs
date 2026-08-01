@@ -13,6 +13,7 @@ alias ProductCompare.Repo
 
 Code.require_file("seeds/support.exs", __DIR__)
 Code.require_file("seeds/accounts.exs", __DIR__)
+Code.require_file("seeds/correction_safety.exs", __DIR__)
 Code.require_file("seeds/catalog.exs", __DIR__)
 Code.require_file("seeds/marketplace.exs", __DIR__)
 Code.require_file("seeds/engagement.exs", __DIR__)

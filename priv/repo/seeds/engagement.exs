@@ -6,6 +6,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompare.Alerts
   alias ProductCompare.Catalog
   alias ProductCompare.ComparisonSnapshots
+  alias ProductCompare.DevSeeds.CorrectionSafety
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Discussions
   alias ProductCompare.Pricing
@@ -610,8 +611,11 @@ defmodule ProductCompare.DevSeeds.Engagement do
     case Repo.get_by(SpecificationCorrection, entropy_id: entropy_id) do
       nil ->
         case pending_correction_in_scope(submitter, product, attribute) do
-          %SpecificationCorrection{} = correction ->
+          %SpecificationCorrection{} = correction when status == :pending ->
             {:occupied, correction}
+
+          %SpecificationCorrection{} = correction ->
+            raise "development seed cannot create #{status} correction #{product.slug}/#{attribute.code}: pending correction #{correction.id} already occupies the submitter scope"
 
           nil ->
             correction =
@@ -660,7 +664,12 @@ defmodule ProductCompare.DevSeeds.Engagement do
           |> Support.expect!("moderate correction #{product.slug}/#{attribute.code}")
       end
 
-    if status == :accepted do
+    if status == :accepted and
+         not CorrectionSafety.preserve_current_for_pending?(
+           product.id,
+           attribute.id,
+           correction.claim_id
+         ) do
       restore_accepted_correction_claim!(correction, product, attribute)
 
       Specs.select_current_claim(product.id, attribute.id, correction.claim_id, moderator.id)

@@ -4,6 +4,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
   import Ecto.Query
 
   alias ProductCompare.Catalog
+  alias ProductCompare.DevSeeds.CorrectionSafety
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Ingestion.SpecificationObservation
   alias ProductCompare.Repo
@@ -501,13 +502,13 @@ defmodule ProductCompare.DevSeeds.Catalog do
         "imported refresh-rate claim"
       )
 
-    Specs.select_current_claim(
-      products.monitor_import_feed.id,
-      attrs.refresh_rate.id,
-      imported_claim.id,
-      accounts.moderator.id
+    select_seed_current_claim!(
+      products.monitor_import_feed,
+      attrs.refresh_rate,
+      imported_claim,
+      accounts.moderator,
+      "imported refresh-rate claim"
     )
-    |> Support.expect!("select imported refresh-rate claim")
 
     Map.put(claims, {products.monitor_import_feed.slug, attrs.refresh_rate.code}, imported_claim)
   end
@@ -543,10 +544,24 @@ defmodule ProductCompare.DevSeeds.Catalog do
     claim =
       restore_accepted_claim!(claim, moderator, "claim #{product.slug}/#{attribute.code}")
 
-    Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
-    |> Support.expect!("current claim #{product.slug}/#{attribute.code}")
+    select_seed_current_claim!(
+      product,
+      attribute,
+      claim,
+      moderator,
+      "claim #{product.slug}/#{attribute.code}"
+    )
 
     claim
+  end
+
+  defp select_seed_current_claim!(product, attribute, claim, moderator, stage) do
+    if CorrectionSafety.preserve_current_for_pending?(product.id, attribute.id, claim.id) do
+      :ok
+    else
+      Specs.select_current_claim(product.id, attribute.id, claim.id, moderator.id)
+      |> Support.expect!("select #{stage}")
+    end
   end
 
   defp restore_accepted_claim!(
