@@ -1761,6 +1761,61 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.get!(PurchasePriceFact, fact.id).price_observation_id == observation.id
   end
 
+  test "reruns restore alert fixtures with a newer out-of-stock offer observation" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27G")
+
+    original_percentage_watch =
+      Repo.get_by!(PriceWatchRule,
+        user_id: shopper.id,
+        merchant_product_id: offer.id,
+        rule_type: :percentage_drop
+      )
+
+    seed_trigger = Repo.get!(PricePoint, original_percentage_watch.baseline_price_point_id)
+    observed_at = DateTime.utc_now() |> DateTime.add(60, :second)
+
+    assert {:ok, later_point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: observed_at,
+               price: Decimal.new("777.77"),
+               shipping: Decimal.new("0.00"),
+               in_stock: false
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Pricing.latest_price(offer.id).id == later_point.id
+    refute Repo.get!(PricePoint, later_point.id).in_stock
+
+    watches =
+      PriceWatchRule
+      |> where([watch], watch.user_id == ^shopper.id and watch.enabled == true)
+      |> Repo.all()
+
+    percentage_watch = Enum.find(watches, &(&1.rule_type == :percentage_drop))
+    restored_seed_trigger = Repo.get!(PricePoint, seed_trigger.id)
+
+    assert percentage_watch.baseline_price_point_id == seed_trigger.id
+    assert Decimal.equal?(percentage_watch.baseline_landed_price, Decimal.new("899.99"))
+
+    events =
+      AlertEvent
+      |> where([event], event.watch_rule_id in ^Enum.map(watches, & &1.id))
+      |> Repo.all()
+
+    assert Enum.map(events, & &1.rule_type) |> Enum.sort() ==
+             [:back_in_stock, :percentage_drop, :target_price]
+
+    for event <- Enum.filter(events, &(&1.rule_type in [:back_in_stock, :percentage_drop])) do
+      assert event.triggering_price_point_id == seed_trigger.id
+      assert event.observed_at == restored_seed_trigger.observed_at
+    end
+  end
+
   test "reruns preserve later observations on aging and stale offers" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 

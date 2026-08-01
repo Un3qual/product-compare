@@ -8,6 +8,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompare.ComparisonSnapshots
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Discussions
+  alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompare.Specs
   alias ProductCompareSchemas.Alerts.AlertEvent
@@ -145,52 +146,83 @@ defmodule ProductCompare.DevSeeds.Engagement do
         cooldown_seconds: 86_400
       })
 
-    trigger
-    |> PricePoint.changeset(%{
-      price: Decimal.new("899.99"),
-      shipping: Decimal.new("0.00"),
-      in_stock: true
-    })
-    |> Repo.update()
-    |> Support.expect!("percentage watch baseline")
+    # Watch creation and evaluation read the listing's latest observation. Temporarily
+    # promote this seed-owned point so preserved later local history cannot replace the
+    # controlled baselines, then restore both the point and copied event timestamp.
+    controlled_observed_at =
+      fresh_offer.id
+      |> Pricing.latest_price()
+      |> Map.fetch!(:observed_at)
+      |> DateTime.add(1, :microsecond)
 
-    percentage_drop =
-      recreate_seed_watch!(shopper.id, :percentage_drop, %{
-        product_id: products.monitor_16_9.id,
-        merchant_product_id: fresh_offer.id,
-        rule_type: :percentage_drop,
-        currency: "USD",
-        percentage_drop: "20",
-        cooldown_seconds: 86_400
-      })
+    {percentage_drop, back_in_stock, reserved_watch_ids} =
+      try do
+        trigger
+        |> PricePoint.changeset(%{
+          observed_at: controlled_observed_at,
+          price: Decimal.new("899.99"),
+          shipping: Decimal.new("0.00"),
+          in_stock: true
+        })
+        |> Repo.update()
+        |> Support.expect!("percentage watch baseline")
 
-    Repo.get!(PricePoint, trigger.id)
-    |> PricePoint.changeset(%{in_stock: false})
-    |> Repo.update()
-    |> Support.expect!("back-in-stock watch baseline")
+        percentage_drop =
+          recreate_seed_watch!(shopper.id, :percentage_drop, %{
+            product_id: products.monitor_16_9.id,
+            merchant_product_id: fresh_offer.id,
+            rule_type: :percentage_drop,
+            currency: "USD",
+            percentage_drop: "20",
+            cooldown_seconds: 86_400
+          })
 
-    back_in_stock =
-      recreate_seed_watch!(shopper.id, :back_in_stock, %{
-        product_id: products.monitor_16_9.id,
-        merchant_product_id: fresh_offer.id,
-        rule_type: :back_in_stock,
-        currency: "USD",
-        cooldown_seconds: 86_400
-      })
+        Repo.get!(PricePoint, trigger.id)
+        |> PricePoint.changeset(%{in_stock: false})
+        |> Repo.update()
+        |> Support.expect!("back-in-stock watch baseline")
 
-    # Alert setup temporarily mutates this shared observation. Restore it before operations
-    # reuse its ID and values for purchase-price attribution.
-    restored_trigger =
-      Repo.get!(PricePoint, trigger.id)
-      |> PricePoint.changeset(%{
-        observed_at: trigger.observed_at,
-        price: trigger.price,
-        shipping: trigger.shipping,
-        in_stock: trigger.in_stock,
-        artifact_id: trigger.artifact_id
-      })
-      |> Repo.update()
-      |> Support.expect!("restore alert trigger price")
+        back_in_stock =
+          recreate_seed_watch!(shopper.id, :back_in_stock, %{
+            product_id: products.monitor_16_9.id,
+            merchant_product_id: fresh_offer.id,
+            rule_type: :back_in_stock,
+            currency: "USD",
+            cooldown_seconds: 86_400
+          })
+
+        controlled_trigger =
+          Repo.get!(PricePoint, trigger.id)
+          |> PricePoint.changeset(%{
+            price: trigger.price,
+            shipping: trigger.shipping,
+            in_stock: trigger.in_stock,
+            artifact_id: trigger.artifact_id
+          })
+          |> Repo.update()
+          |> Support.expect!("alert trigger price")
+
+        reserved_watch_ids = [target.id, percentage_drop.id, back_in_stock.id]
+        reserved_watch_id_set = MapSet.new(reserved_watch_ids)
+
+        Alerts.evaluate_price_point(controlled_trigger.id,
+          now: anchor,
+          watch_evaluator: fn watch_id, price_point, now, evaluate ->
+            if MapSet.member?(reserved_watch_id_set, watch_id) do
+              evaluate.(watch_id, price_point, now)
+            else
+              {:ok, false}
+            end
+          end
+        )
+        |> Support.expect!("local alert evaluation")
+
+        {percentage_drop, back_in_stock, reserved_watch_ids}
+      after
+        restore_alert_trigger!(trigger)
+      end
+
+    restore_seed_alert_event_observation!(reserved_watch_ids, trigger)
 
     newly_available =
       recreate_seed_watch!(shopper.id, :newly_available, %{
@@ -201,20 +233,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
         enabled: false,
         cooldown_seconds: 86_400
       })
-
-    reserved_watch_ids = MapSet.new([target.id, percentage_drop.id, back_in_stock.id])
-
-    Alerts.evaluate_price_point(restored_trigger.id,
-      now: anchor,
-      watch_evaluator: fn watch_id, price_point, now, evaluate ->
-        if MapSet.member?(reserved_watch_ids, watch_id) do
-          evaluate.(watch_id, price_point, now)
-        else
-          {:ok, false}
-        end
-      end
-    )
-    |> Support.expect!("local alert evaluation")
 
     target_event = Repo.get_by!(AlertEvent, watch_rule_id: target.id)
 
@@ -242,6 +260,28 @@ defmodule ProductCompare.DevSeeds.Engagement do
       read_event: read_event,
       unread_events: unread_events
     }
+  end
+
+  defp restore_alert_trigger!(trigger) do
+    Repo.get!(PricePoint, trigger.id)
+    |> PricePoint.changeset(%{
+      observed_at: trigger.observed_at,
+      price: trigger.price,
+      shipping: trigger.shipping,
+      in_stock: trigger.in_stock,
+      artifact_id: trigger.artifact_id
+    })
+    |> Repo.update()
+    |> Support.expect!("restore alert trigger price")
+  end
+
+  defp restore_seed_alert_event_observation!(watch_ids, trigger) do
+    AlertEvent
+    |> where(
+      [event],
+      event.watch_rule_id in ^watch_ids and event.triggering_price_point_id == ^trigger.id
+    )
+    |> Repo.update_all(set: [observed_at: trigger.observed_at])
   end
 
   defp recreate_seed_watch!(shopper_id, key, attrs) do
