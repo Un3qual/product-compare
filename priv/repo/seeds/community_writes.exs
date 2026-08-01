@@ -1,6 +1,14 @@
 defmodule ProductCompare.DevSeeds.CommunityWrites do
   @moduledoc false
 
+  # This seed-only boundary intentionally does not call the interactive Discussions write
+  # functions: those charge hourly CommunityWriteWindow quotas, while a deterministic first
+  # seed must succeed even when a developer has exhausted a quota and must not alter the quota.
+  # It mirrors the production changesets, receipt digest, advisory lock, and answer lifecycle
+  # check; regression coverage replays a seed receipt through the production path to catch drift.
+  # Reports likewise return the existing reserved report so reruns stay idempotent instead of
+  # producing the interactive :already_reported result.
+
   import Ecto.Query
 
   alias ProductCompare.Discussions.Moderation
@@ -113,7 +121,12 @@ defmodule ProductCompare.DevSeeds.CommunityWrites do
     if changeset.valid? do
       values = Enum.map(fields, &{&1, Ecto.Changeset.get_field(changeset, &1)})
       payload = {mutation_kind, target, values}
-      {:ok, :crypto.hash(:sha256, :erlang.term_to_binary(payload, [:deterministic]))}
+
+      {:ok,
+       :crypto.hash(
+         :sha256,
+         :erlang.term_to_binary(payload, [:deterministic, minor_version: 2])
+       )}
     else
       {:error, changeset}
     end

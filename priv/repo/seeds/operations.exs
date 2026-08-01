@@ -22,6 +22,19 @@ defmodule ProductCompare.DevSeeds.Operations do
     domain: "cj.com"
   }
 
+  @cj_stage_scenarios [
+    {:new, "New advertiser"},
+    {:considering, "Considering advertiser"},
+    {:selected, "Selected advertiser"},
+    {:applied, "Applied advertiser"},
+    {:accepted, "Accepted advertiser"},
+    {:not_pursuing, "Not-pursuing advertiser"},
+    {:declined, "Declined advertiser"}
+  ]
+  @cj_stage_indexes @cj_stage_scenarios
+                    |> Enum.with_index(1)
+                    |> Map.new(fn {{stage, _label}, index} -> {stage, index} end)
+
   @spec seed!(map(), map(), map(), DateTime.t()) :: map()
   def seed!(accounts, catalog, marketplace, %DateTime{} = anchor) do
     source = seed_cj_source!()
@@ -49,18 +62,8 @@ defmodule ProductCompare.DevSeeds.Operations do
   end
 
   defp seed_cj_programs_and_feeds!(source, anchor) do
-    scenarios = [
-      {:new, "New advertiser"},
-      {:considering, "Considering advertiser"},
-      {:selected, "Selected advertiser"},
-      {:applied, "Applied advertiser"},
-      {:accepted, "Accepted advertiser"},
-      {:not_pursuing, "Not-pursuing advertiser"},
-      {:declined, "Declined advertiser"}
-    ]
-
     {programs, feeds} =
-      scenarios
+      @cj_stage_scenarios
       |> Enum.map(fn {stage, label} ->
         suffix = stage |> Atom.to_string() |> String.upcase()
 
@@ -391,11 +394,7 @@ defmodule ProductCompare.DevSeeds.Operations do
     |> Support.expect!("restore commerce conversion #{status}")
   end
 
-  defp stage_index(stage) do
-    [:new, :considering, :selected, :applied, :accepted, :not_pursuing, :declined]
-    |> Enum.find_index(&(&1 == stage))
-    |> Kernel.+(1)
-  end
+  defp stage_index(stage), do: Map.fetch!(@cj_stage_indexes, stage)
 
   defp hours(anchor, count), do: DateTime.add(anchor, count * 3_600, :second)
   defp days(anchor, count), do: DateTime.add(anchor, count * 86_400, :second)

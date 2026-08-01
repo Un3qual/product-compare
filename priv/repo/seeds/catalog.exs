@@ -415,7 +415,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
 
   defp seed_media!(products, artifact, anchor) do
     Enum.each(products, fn {_key, product} ->
-      %{persisted: 1, rejected: 0} =
+      result =
         Catalog.upsert_product_media(
           product,
           artifact.id,
@@ -429,6 +429,14 @@ defmodule ProductCompare.DevSeeds.Catalog do
           ],
           anchor
         )
+
+      case result do
+        %{persisted: 1, rejected: 0} ->
+          :ok
+
+        other ->
+          Support.expect!({:error, other}, "media for #{product.slug}")
+      end
     end)
   end
 
@@ -527,7 +535,11 @@ defmodule ProductCompare.DevSeeds.Catalog do
           dynamic([claim], ^dynamic_query and field(claim, ^field) == ^value)
         end)
       )
-      |> order_by([claim], asc: claim.id)
+      |> order_by([claim],
+        asc: claim.status != :accepted,
+        asc: claim.status == :proposed,
+        desc: claim.id
+      )
       |> limit(1)
       |> Repo.one()
 

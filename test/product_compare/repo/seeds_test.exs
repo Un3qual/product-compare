@@ -1226,6 +1226,44 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert engagement.community.answers.participant.moderation_status == :published
     assert engagement.community.pending_question.moderation_status == :pending
     assert engagement.community.report.status == :pending
+
+    review_attrs = %{
+      rating: 5,
+      title: "Excellent for fast games",
+      body: "The high refresh rate and OLED contrast make this a strong gaming display."
+    }
+
+    expected_digest =
+      :crypto.hash(
+        :sha256,
+        :erlang.term_to_binary(
+          {:review, nil,
+           [
+             product_id: catalog.products.monitor_16_9.id,
+             merchant_product_id: nil,
+             rating: 5,
+             title: review_attrs.title,
+             body_md: review_attrs.body
+           ]},
+          [:deterministic, minor_version: 2]
+        )
+      )
+
+    assert Repo.get_by!(CommunityWriteReceipt,
+             user_id: accounts.shopper.id,
+             content_type: :review,
+             idempotency_key: "dev-seed-review-shopper-v1"
+           ).payload_digest == expected_digest
+
+    assert {:ok, replayed_review} =
+             Discussions.submit_review(
+               accounts.shopper.id,
+               catalog.products.monitor_16_9.id,
+               review_attrs,
+               "dev-seed-review-shopper-v1"
+             )
+
+    assert replayed_review.id == engagement.community.reviews.shopper.id
     assert Repo.aggregate(CommunityWriteWindow, :count, :id) == 0
   end
 
@@ -2224,6 +2262,50 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.get!(ProductAttributeCurrent, current.id).claim_id == claim.id
     assert Repo.get!(ProductAttributeClaim, duplicate.id).status == :proposed
+  end
+
+  test "reruns keep the accepted matching claim instead of reviving an older superseded claim" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    product = Repo.get_by!(Product, slug: "acme-vision-27g")
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    current =
+      ProductAttributeCurrent
+      |> join(:inner, [current], attribute in assoc(current, :attribute))
+      |> where(
+        [current, attribute],
+        current.product_id == ^product.id and attribute.code == "hdr_supported"
+      )
+      |> Repo.one!()
+
+    older_claim = Repo.get!(ProductAttributeClaim, current.claim_id)
+
+    assert {:ok, correction} =
+             Specs.propose_correction(
+               product.id,
+               older_claim.attribute_id,
+               shopper.id,
+               %{value_bool: older_claim.value_bool},
+               %{
+                 reason: "Matching accepted correction lifecycle",
+                 explanation:
+                   "Exercises reseeding after the original matching claim was superseded."
+               }
+             )
+
+    assert {:ok, %SpecificationCorrection{claim_id: newer_claim_id}} =
+             Specs.moderate_correction(correction.id, moderator.id, :accepted, %{})
+
+    newer_claim = Repo.get!(ProductAttributeClaim, newer_claim_id)
+    assert Repo.get!(ProductAttributeClaim, older_claim.id).status == :superseded
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(ProductAttributeCurrent, current.id).claim_id == newer_claim.id
+    assert Repo.get!(ProductAttributeClaim, newer_claim.id).status == :accepted
+    assert Repo.get!(ProductAttributeClaim, older_claim.id).status == :superseded
   end
 
   test "seeds fail closed rather than move a conflicting validated product identifier" do

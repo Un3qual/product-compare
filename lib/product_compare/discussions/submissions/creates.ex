@@ -86,7 +86,12 @@ defmodule ProductCompare.Discussions.Submissions.Creates do
     if changeset.valid? do
       values = Enum.map(fields, &{&1, Ecto.Changeset.get_field(changeset, &1)})
       payload = {mutation_kind, target, values}
-      {:ok, :crypto.hash(:sha256, :erlang.term_to_binary(payload, [:deterministic]))}
+
+      {:ok,
+       :crypto.hash(
+         :sha256,
+         :erlang.term_to_binary(payload, [:deterministic, minor_version: 2])
+       )}
     else
       {:error, changeset}
     end

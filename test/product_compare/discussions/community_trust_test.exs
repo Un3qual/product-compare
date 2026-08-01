@@ -711,6 +711,28 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     assert {:ok, review} =
              Discussions.submit_review(reviewer.id, product.id, review_attrs, "review-key-00001")
 
+    expected_review_digest =
+      :crypto.hash(
+        :sha256,
+        :erlang.term_to_binary(
+          {:review, nil,
+           [
+             product_id: product.id,
+             merchant_product_id: nil,
+             rating: 4,
+             title: "Clear sound",
+             body_md: "Useful."
+           ]},
+          [:deterministic, minor_version: 2]
+        )
+      )
+
+    assert Repo.get_by!(CommunityWriteReceipt,
+             user_id: reviewer.id,
+             content_type: :review,
+             idempotency_key: "review-key-00001"
+           ).payload_digest == expected_review_digest
+
     assert {:ok, replayed_review} =
              Discussions.submit_review(reviewer.id, product.id, review_attrs, "review-key-00001")
 
