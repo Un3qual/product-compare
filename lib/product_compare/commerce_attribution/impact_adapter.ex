@@ -4,8 +4,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   """
 
   alias ProductCompare.CommerceAttribution
-
-  @canonical_uuid_pattern ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+  alias ProductCompare.CommerceAttribution.ClickReference
 
   @spec ingest_action(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
   def ingest_action(payload) when is_map(payload) do
@@ -19,7 +18,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       parse_datetime(value(payload, :reporting_date, "ReportingDate", "reportingDate"))
 
     payload
-    |> click_id_attrs()
+    |> click_reference_attrs()
     |> Map.merge(%{
       source_network: "impact",
       network_conversion_ref: value(payload, :action_id, "ActionId", "actionId"),
@@ -36,34 +35,42 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     |> drop_nil_optional_attrs()
   end
 
-  defp click_id_attrs(payload) do
-    case click_id_token(value(payload, :click_id, "ClickId", "clickId")) do
-      nil ->
-        %{}
+  defp click_reference_attrs(payload) do
+    publisher_reference =
+      payload
+      |> value(:sub_id1, "SubId1", "subId1")
+      |> click_reference_token()
 
-      click_id ->
-        if String.match?(click_id, @canonical_uuid_pattern) do
-          case Ecto.UUID.cast(click_id) do
-            {:ok, public_click_id} -> %{public_click_id: public_click_id}
-            :error -> %{network_click_ref: click_id}
-          end
-        else
-          %{network_click_ref: click_id}
-        end
+    network_click_ref =
+      payload
+      |> value(:click_id, "ClickId", "clickId")
+      |> click_reference_token()
+
+    attrs = if network_click_ref, do: %{network_click_ref: network_click_ref}, else: %{}
+
+    case ClickReference.decode("impact", publisher_reference) do
+      {:ok, public_click_id} ->
+        Map.put(attrs, :public_click_id, public_click_id)
+
+      :error when not is_nil(publisher_reference) and is_nil(network_click_ref) ->
+        Map.put(attrs, :network_click_ref, publisher_reference)
+
+      :error ->
+        attrs
     end
   end
 
-  defp click_id_token(nil), do: nil
-  defp click_id_token(value) when is_integer(value), do: Integer.to_string(value)
+  defp click_reference_token(nil), do: nil
+  defp click_reference_token(value) when is_integer(value), do: Integer.to_string(value)
 
-  defp click_id_token(value) when is_binary(value) do
+  defp click_reference_token(value) when is_binary(value) do
     case String.trim(value) do
       "" -> nil
       token -> token
     end
   end
 
-  defp click_id_token(_value), do: nil
+  defp click_reference_token(_value), do: nil
 
   defp value(payload, atom_key, string_key), do: value(payload, atom_key, string_key, nil)
 

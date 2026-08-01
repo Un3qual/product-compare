@@ -5,11 +5,15 @@ defmodule ProductCompare.CommerceAttributionTest do
 
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
+  alias ProductCompare.CommerceAttribution.AwinAdapter
+  alias ProductCompare.CommerceAttribution.CJAdapter
   alias ProductCompare.CommerceAttribution.ClickReference
   alias ProductCompare.CommerceAttribution.ImpactAdapter
+  alias ProductCompare.CommerceAttribution.RakutenAdapter
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
@@ -555,7 +559,8 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       payload = %{
         "ActionId" => "impact-action-1",
-        "ClickId" => click_session.click_id,
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-1",
         "Status" => "PENDING",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
@@ -571,6 +576,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert inserted.network_conversion_ref == "impact-action-1"
       assert inserted.click_session_id == click_session.id
       assert inserted.public_click_id == click_session.click_id
+      assert inserted.network_click_ref == "impact-click-1"
       assert inserted.status == :pending
       assert inserted.attribution_confidence == :high
       assert inserted.merchant_product_id == merchant_product.id
@@ -609,7 +615,8 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
-        "ClickId" => click_session.click_id,
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-#{System.unique_integer([:positive])}",
         "Status" => "PENDING",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
@@ -621,7 +628,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       {:ok, updated} =
         payload
-        |> Map.drop(["ClickId"])
+        |> Map.drop(["SubId1"])
         |> Map.merge(%{
           "Status" => "APPROVED",
           "Payout" => "15.00",
@@ -644,7 +651,8 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
-        "ClickId" => click_session.click_id,
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-#{System.unique_integer([:positive])}",
         "Status" => "APPROVED",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
@@ -658,7 +666,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       follow_up =
         payload
-        |> Map.drop(["ClickId"])
+        |> Map.drop(["SubId1"])
         |> Map.merge(%{
           "Status" => "PAID",
           "Payout" => "20.00",
@@ -703,10 +711,10 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert Repo.reload!(approved) == %{approved | source_network: nil}
     end
 
-    test "stores external click tokens without rejecting conversions" do
+    test "stores malformed publisher references without rejecting conversions" do
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
-        "ClickId" => "impact-subid-123",
+        "SubId1" => "impact-subid-123",
         "Status" => "PENDING",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
@@ -721,7 +729,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.attribution_confidence == :unmatched
     end
 
-    test "attributes ClickId-only conversions to the clicked merchant product" do
+    test "attributes SubId1 conversions to the clicked merchant product" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
@@ -737,7 +745,8 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       payload = %{
         "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
-        "ClickId" => click_session.click_id,
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-#{System.unique_integer([:positive])}",
         "Status" => "APPROVED",
         "Currency" => "USD",
         "SaleAmount" => "129.99",
@@ -1129,6 +1138,234 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
   end
 
+  describe "CJAdapter.ingest_transaction/1" do
+    test "normalizes string-keyed commissions and resolves SID click attribution" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      affiliate_network = Repo.get_by!(AffiliateNetwork, code: "cj")
+
+      affiliate_program =
+        affiliate_program_fixture(%{
+          affiliate_network: affiliate_network,
+          merchant: merchant
+        })
+
+      commerce_link =
+        commerce_link_fixture(%{
+          merchant: merchant,
+          affiliate_program_id: affiliate_program.id
+        })
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: merchant_product.id,
+          source_surface: :web
+        })
+
+      payload = %{
+        "commissionId" => "cj-commission-#{System.unique_integer([:positive])}",
+        "SID" => click_session.click_id,
+        "actionStatus" => "LOCKED",
+        "currency" => "USD",
+        "saleAmount" => "81.25",
+        "commissionAmount" => "8.12",
+        "eventDate" => "2026-05-20T12:00:00Z",
+        "postingDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = CJAdapter.ingest_transaction(payload)
+      assert conversion.source_network == "cj"
+      assert conversion.network_conversion_ref == payload["commissionId"]
+      assert conversion.click_session_id == click_session.id
+      assert conversion.public_click_id == click_session.click_id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.product_id == product.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.status == :approved
+      assert conversion.currency == "USD"
+      assert conversion.attribution_confidence == :high
+      assert Decimal.equal?(conversion.order_amount, Decimal.new("81.25"))
+      assert Decimal.equal?(conversion.commission_amount, Decimal.new("8.12"))
+      assert conversion.purchased_at == ~U[2026-05-20 12:00:00.000000Z]
+      assert conversion.reported_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.data_freshness_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.raw_payload == payload
+    end
+
+    test "normalizes atom-keyed commissions and preserves malformed publisher references" do
+      payload = %{
+        commission_id: "cj-commission-#{System.unique_integer([:positive])}",
+        sid: "not-a-product-compare-click",
+        action_status: :new,
+        currency: "USD",
+        sale_amount: Decimal.new("25.00"),
+        commission_amount: Decimal.new("2.50"),
+        event_date: ~U[2026-05-20 12:00:00Z],
+        posting_date: ~U[2026-05-20 12:05:00Z]
+      }
+
+      assert {:ok, conversion} = CJAdapter.ingest_transaction(payload)
+      assert conversion.public_click_id == nil
+      assert conversion.click_session_id == nil
+      assert conversion.network_click_ref == "not-a-product-compare-click"
+      assert conversion.status == :pending
+      assert conversion.attribution_confidence == :unmatched
+      assert conversion.raw_payload["sid"] == "not-a-product-compare-click"
+      assert conversion.raw_payload["action_status"] == "new"
+      assert conversion.raw_payload["commission_amount"] == "2.50"
+    end
+  end
+
+  describe "AwinAdapter.ingest_transaction/1" do
+    test "normalizes string-keyed transactions and resolves clickRef attribution" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "awin"})
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: merchant_product.id,
+          source_surface: :web
+        })
+
+      payload = %{
+        "id" => "awin-transaction-#{System.unique_integer([:positive])}",
+        "ClickRef" => click_session.click_id,
+        "commissionStatus" => "approved",
+        "saleAmount" => %{"amount" => "92.50", "currency" => "USD"},
+        "commissionAmount" => %{"amount" => "9.25", "currency" => "USD"},
+        "transactionDate" => "2026-05-20T12:00:00Z",
+        "validationDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = AwinAdapter.ingest_transaction(payload)
+      assert conversion.source_network == "awin"
+      assert conversion.network_conversion_ref == payload["id"]
+      assert conversion.click_session_id == click_session.id
+      assert conversion.public_click_id == click_session.click_id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.product_id == product.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.status == :approved
+      assert conversion.currency == "USD"
+      assert conversion.attribution_confidence == :high
+      assert Decimal.equal?(conversion.order_amount, Decimal.new("92.50"))
+      assert Decimal.equal?(conversion.commission_amount, Decimal.new("9.25"))
+      assert conversion.purchased_at == ~U[2026-05-20 12:00:00.000000Z]
+      assert conversion.reported_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.data_freshness_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.raw_payload == payload
+    end
+
+    test "normalizes atom-keyed transactions and ignores stale updates" do
+      reference = "awin-transaction-#{System.unique_integer([:positive])}"
+
+      payload = %{
+        id: reference,
+        click_ref: " ",
+        commission_status: :approved,
+        sale_amount: %{amount: "92.50", currency: "USD"},
+        commission_amount: %{amount: "9.25", currency: "USD"},
+        transaction_date: ~U[2026-05-20 12:00:00Z],
+        validation_date: ~U[2026-05-21 12:05:00Z]
+      }
+
+      assert {:ok, approved} = AwinAdapter.ingest_transaction(payload)
+      assert approved.public_click_id == nil
+      assert approved.network_click_ref == nil
+
+      stale_payload = %{
+        payload
+        | commission_status: :declined,
+          commission_amount: %{amount: "1.00", currency: "USD"},
+          validation_date: ~U[2026-05-20 12:05:00Z]
+      }
+
+      assert {:ok, stale} = AwinAdapter.ingest_transaction(stale_payload)
+      assert stale.id == approved.id
+      assert stale.status == :approved
+      assert Decimal.equal?(stale.commission_amount, Decimal.new("9.25"))
+      assert stale.raw_payload["click_ref"] == " "
+      assert stale.raw_payload["commission_status"] == "approved"
+
+      assert stale.raw_payload["commission_amount"] == %{
+               "amount" => "9.25",
+               "currency" => "USD"
+             }
+    end
+  end
+
+  describe "RakutenAdapter.ingest_transaction/1" do
+    test "restores string-keyed compact u1 references and hydrates click dimensions" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "rakuten"})
+
+      {:ok, click_session} =
+        CommerceAttribution.create_click_session(%{
+          commerce_link_id: commerce_link.id,
+          merchant_product_id: merchant_product.id,
+          source_surface: :web
+        })
+
+      payload = %{
+        "transactionId" => "rakuten-transaction-#{System.unique_integer([:positive])}",
+        "u1" => String.replace(click_session.click_id, "-", ""),
+        "status" => "approved",
+        "currency" => "USD",
+        "saleAmount" => "105.00",
+        "commissionAmount" => "10.50",
+        "transactionDate" => "2026-05-20T12:00:00Z",
+        "processDate" => "2026-05-20T12:05:00Z"
+      }
+
+      assert {:ok, conversion} = RakutenAdapter.ingest_transaction(payload)
+      assert conversion.source_network == "rakuten"
+      assert conversion.network_conversion_ref == payload["transactionId"]
+      assert conversion.click_session_id == click_session.id
+      assert conversion.public_click_id == click_session.click_id
+      assert conversion.merchant_id == merchant.id
+      assert conversion.product_id == product.id
+      assert conversion.merchant_product_id == merchant_product.id
+      assert conversion.status == :approved
+      assert conversion.currency == "USD"
+      assert conversion.attribution_confidence == :high
+      assert Decimal.equal?(conversion.order_amount, Decimal.new("105.00"))
+      assert Decimal.equal?(conversion.commission_amount, Decimal.new("10.50"))
+      assert conversion.purchased_at == ~U[2026-05-20 12:00:00.000000Z]
+      assert conversion.reported_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.data_freshness_at == ~U[2026-05-20 12:05:00.000000Z]
+      assert conversion.raw_payload == payload
+    end
+
+    test "normalizes atom-keyed member IDs and rejects click-dimension conflicts" do
+      clicked_merchant = merchant_fixture()
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "rakuten"})
+      click_session = click_session_fixture(commerce_link)
+
+      payload = %{
+        transaction_id: "rakuten-transaction-#{System.unique_integer([:positive])}",
+        member_id: String.replace(click_session.click_id, "-", ""),
+        status: :paid,
+        currency: "USD",
+        sale_amount: Decimal.new("105.00"),
+        commission_amount: Decimal.new("10.50"),
+        transaction_date: ~U[2026-05-20 12:00:00Z],
+        process_date: ~U[2026-05-20 12:05:00Z],
+        merchant_product_id: merchant_product_fixture().id
+      }
+
+      assert {:error, changeset} = RakutenAdapter.ingest_transaction(payload)
+      assert "does not match resolved click" in errors_on(changeset).merchant_product_id
+      assert Repo.aggregate(CommerceConversion, :count, :id) == 0
+    end
+  end
+
   describe "ingest_conversion/1" do
     test "resolves a configured custom network code through affiliate_networks" do
       {:ok, network} =
@@ -1365,7 +1602,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       {:ok, conversion} =
         ImpactAdapter.ingest_action(%{
           "ActionId" => "impact-summary-#{System.unique_integer([:positive])}",
-          "ClickId" => click_session.click_id,
+          "SubId1" => click_session.click_id,
           "Status" => "APPROVED",
           "Currency" => "USD",
           "SaleAmount" => "75.00",
