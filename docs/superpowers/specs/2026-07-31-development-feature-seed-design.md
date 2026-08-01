@@ -121,10 +121,13 @@ local observations are independent history and remain authoritative; the seed
 does not delete or backdate them merely to force an exercised aging or stale
 offer back into its original derived freshness bucket. Likewise, the
 never-observed offer is cleared only while doing so would not erase another
-user's alert history or remove a price point referenced as another watch's
-baseline or latest evaluation. A developer who exercises these price-derived
-scenarios keeps that local history, while a fresh database still receives the
-complete state matrix.
+alert event, discard pending evaluation for an enabled non-seed watch, or remove
+a price point referenced by any non-seed watch or purchase-price fact. The
+reserved newly-available watch is identified by one immutable entropy ID shared
+by alert seeding and marketplace cleanup; every other dependency is protected
+regardless of which development account owns it. A developer who exercises
+these price-derived scenarios keeps that local history, while a fresh database
+still receives the complete state matrix.
 
 Synthetic affiliate networks, programs, and links cover configured and inactive
 program states. Coupons include active, future, and expired examples so shopper

@@ -37,7 +37,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
     target: "d3ca0000-0000-4000-8000-000000000001",
     percentage_drop: "d3ca0000-0000-4000-8000-000000000002",
     back_in_stock: "d3ca0000-0000-4000-8000-000000000003",
-    newly_available: "d3ca0000-0000-4000-8000-000000000004"
+    newly_available: Support.unobserved_watch_entropy_id()
   }
 
   @spec seed!(map(), map(), map(), DateTime.t()) :: map()

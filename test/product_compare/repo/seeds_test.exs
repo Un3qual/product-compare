@@ -957,6 +957,49 @@ defmodule ProductCompare.Repo.SeedsTest do
     refute Repo.get(Oban.Job, job.id)
   end
 
+  test "reruns preserve pending alert evaluation for an unrelated enabled watch" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    product = Repo.get_by!(Product, slug: "acme-beam-4k")
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+
+    assert {:ok, unrelated_watch} =
+             Alerts.create_watch(shopper.id, %{
+               product_id: product.id,
+               merchant_product_id: offer.id,
+               rule_type: :newly_available,
+               currency: "USD",
+               enabled: true,
+               cooldown_seconds: 86_400
+             })
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
+               price: Decimal.new("1499.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    job =
+      Repo.one!(
+        from job in Oban.Job,
+          where:
+            job.worker == "ProductCompare.Alerts.Jobs.AlertEvaluationWorker" and
+              fragment("?->>'price_point_id' = ?", job.args, ^Integer.to_string(observation.id))
+      )
+
+    refute Repo.get_by(AlertEvent, watch_rule_id: unrelated_watch.id)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
+    assert Repo.get!(Oban.Job, job.id).args["price_point_id"] == observation.id
+    assert Repo.get!(PriceWatchRule, unrelated_watch.id).enabled
+  end
+
   test "reruns restore seed-owned records after normal feature lifecycle actions" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1676,6 +1719,46 @@ defmodule ProductCompare.Repo.SeedsTest do
              baseline_price_point_id: observation_id,
              last_evaluated_price_point_id: observation_id
            } = Repo.get!(PriceWatchRule, watch.id)
+  end
+
+  test "reruns preserve an unobserved price referenced by a purchase fact" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+    observed_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    assert {:ok, observation} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: observed_at,
+               price: Decimal.new("1499.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    assert {:ok, conversion} =
+             CommerceAttribution.ingest_conversion(%{
+               source_network: "development_affiliate",
+               network_conversion_ref: "LOCAL-UNOBSERVED-#{System.unique_integer([:positive])}",
+               status: :approved,
+               currency: "USD",
+               reported_at: observed_at
+             })
+
+    assert {:ok, fact} =
+             CommerceAttribution.create_purchase_price_fact(%{
+               conversion_id: conversion.id,
+               reported_paid_price: Decimal.new("1479.99"),
+               currency: "USD",
+               price_observation_id: observation.id,
+               observed_at: observation.observed_at,
+               observed_price: observation.price
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(PricePoint, observation.id).merchant_product_id == offer.id
+    assert Repo.get!(PurchasePriceFact, fact.id).price_observation_id == observation.id
   end
 
   test "reruns preserve later observations on aging and stale offers" do

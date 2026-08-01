@@ -10,13 +10,13 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
   alias ProductCompareSchemas.Pricing.PricePoint
   alias ProductCompareSchemas.Specs.Source
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @source_name "Development Marketplace Evidence"
   @artifact_hash "development-marketplace-offers-v1"
-  @unobserved_watch_entropy_id "d3ca0000-0000-4000-8000-000000000004"
 
   @spec seed!(map(), DateTime.t()) :: map()
   def seed!(catalog, %DateTime{} = anchor) do
@@ -115,7 +115,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       |> select([point], point.id)
       |> Repo.all()
 
-    unless unrelated_price_point_references?(price_point_ids) do
+    unless unrelated_price_point_references?(offer, price_point_ids) do
       delete_alert_evaluation_jobs!(price_point_ids)
 
       AlertEvent
@@ -128,22 +128,36 @@ defmodule ProductCompare.DevSeeds.Marketplace do
     end
   end
 
-  defp unrelated_price_point_references?([]), do: false
+  defp unrelated_price_point_references?(_offer, []), do: false
 
-  defp unrelated_price_point_references?(price_point_ids) do
+  defp unrelated_price_point_references?(offer, price_point_ids) do
+    seed_watch_entropy_id = Support.unobserved_watch_entropy_id()
+
     Repo.exists?(
       from event in AlertEvent,
         left_join: watch in PriceWatchRule,
         on: watch.id == event.watch_rule_id,
         where: event.triggering_price_point_id in ^price_point_ids,
-        where: is_nil(watch.entropy_id) or watch.entropy_id != ^@unobserved_watch_entropy_id
+        where: is_nil(watch.entropy_id) or watch.entropy_id != ^seed_watch_entropy_id
     ) or
       Repo.exists?(
         from watch in PriceWatchRule,
           where:
             (watch.baseline_price_point_id in ^price_point_ids or
                watch.last_evaluated_price_point_id in ^price_point_ids) and
-              (is_nil(watch.entropy_id) or watch.entropy_id != ^@unobserved_watch_entropy_id)
+              (is_nil(watch.entropy_id) or watch.entropy_id != ^seed_watch_entropy_id)
+      ) or
+      Repo.exists?(
+        from fact in PurchasePriceFact,
+          where: fact.price_observation_id in ^price_point_ids
+      ) or
+      Repo.exists?(
+        from watch in PriceWatchRule,
+          where: watch.enabled == true,
+          where: watch.product_id == ^offer.product_id,
+          where: watch.currency == ^offer.currency,
+          where: is_nil(watch.merchant_product_id) or watch.merchant_product_id == ^offer.id,
+          where: is_nil(watch.entropy_id) or watch.entropy_id != ^seed_watch_entropy_id
       )
   end
 

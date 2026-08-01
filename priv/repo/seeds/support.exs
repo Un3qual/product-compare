@@ -1,6 +1,11 @@
 defmodule ProductCompare.DevSeeds.Support do
   @moduledoc false
 
+  @unobserved_watch_entropy_id "d3ca0000-0000-4000-8000-000000000004"
+
+  @spec unobserved_watch_entropy_id() :: Ecto.UUID.t()
+  def unobserved_watch_entropy_id, do: @unobserved_watch_entropy_id
+
   @spec expect!({:ok, value} | {:error, term()}, String.t()) :: value when value: var
   def expect!({:ok, value}, _stage), do: value
 

@@ -219,9 +219,12 @@ last-seen fields through `Pricing.upsert_merchant_product/1`.
 
 Restore only artifact-owned seed observations. Preserve newer local price
 history even when it changes a derived aging or stale state, and do not clear
-the never-observed offer when deleting its observations would also delete an
-unrelated user's alert event or nilify another watch's baseline or latest
-evaluation price-point reference.
+the never-observed offer when deleting its observations would also delete any
+non-seed alert event, clear another watch's baseline or latest evaluation,
+discard pending evaluation for an enabled applicable non-seed watch, or clear a
+purchase-price fact's observation link. Identify the reserved newly-available
+watch through one immutable entropy ID shared by alert seeding and marketplace
+cleanup, and protect every other dependency regardless of its user owner.
 
 Use `Affiliate.upsert_network/1`, `upsert_program/1`, and `upsert_link/1` for
 their natural conflict keys. Because coupons have no context upsert, reconcile
