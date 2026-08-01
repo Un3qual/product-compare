@@ -222,7 +222,7 @@ defmodule ProductCompare.DevSeeds.CommunityWrites do
         if unique_constraint_error?(changeset) do
           case existing_report(reporter_id, type, content_id) do
             %CommunityReport{} = report -> report
-            nil -> Repo.rollback(changeset)
+            nil -> Repo.rollback({:retry_seed_transaction, :concurrent_report})
           end
         else
           Repo.rollback(changeset)

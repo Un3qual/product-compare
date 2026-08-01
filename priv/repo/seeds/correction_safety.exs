@@ -8,6 +8,12 @@ defmodule ProductCompare.DevSeeds.CorrectionSafety do
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
   alias ProductCompareSchemas.Specs.SpecificationCorrection
 
+  @spec lock_correction_submissions!() :: :ok
+  def lock_correction_submissions! do
+    Repo.query!("LOCK TABLE specification_corrections IN SHARE MODE")
+    :ok
+  end
+
   @spec preserve_current_for_pending?(pos_integer(), pos_integer(), pos_integer()) :: boolean()
   def preserve_current_for_pending?(product_id, attribute_id, seed_claim_id) do
     case Repo.get_by(ProductAttributeCurrent,
@@ -18,7 +24,7 @@ defmodule ProductCompare.DevSeeds.CorrectionSafety do
         pending_correction_depends_on?(product_id, attribute_id, nil)
 
       %ProductAttributeCurrent{claim_id: ^seed_claim_id} ->
-        false
+        pending_correction_depends_on?(product_id, attribute_id, seed_claim_id)
 
       %ProductAttributeCurrent{claim_id: current_claim_id} ->
         pending_correction_depends_on?(product_id, attribute_id, current_claim_id)

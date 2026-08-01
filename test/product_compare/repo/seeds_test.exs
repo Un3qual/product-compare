@@ -24,8 +24,10 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
   alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
   alias ProductCompare.DevSeeds.CommunityWrites, as: DevSeedCommunityWrites
+  alias ProductCompare.DevSeeds.CorrectionSafety, as: DevSeedCorrectionSafety
   alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
   alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
+  alias ProductCompare.DevSeeds.Support, as: DevSeedSupport
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -73,6 +75,220 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   @seed_password "supersecretpass123"
+
+  test "seed transaction retries explicit stale-snapshot conflicts on a fresh transaction" do
+    assert {{:ok, :seeded}, 2} =
+             Sandbox.unboxed_run(Repo, fn ->
+               Process.put(:seed_transaction_attempt, 0)
+
+               result =
+                 DevSeedSupport.serializable_transaction(fn ->
+                   attempt = Process.get(:seed_transaction_attempt, 0) + 1
+                   Process.put(:seed_transaction_attempt, attempt)
+
+                   if attempt == 1 do
+                     Repo.rollback({:retry_seed_transaction, :concurrent_test_write})
+                   else
+                     :seeded
+                   end
+                 end)
+
+               {result, Process.get(:seed_transaction_attempt)}
+             end)
+  end
+
+  test "seed reconciliation serializes a correction submitted after its snapshot" do
+    fixture =
+      Sandbox.unboxed_run(Repo, fn ->
+        submitter = AccountsFixtures.user_fixture()
+        late_submitter = AccountsFixtures.user_fixture()
+        moderator = AccountsFixtures.operator_fixture()
+        product = SpecsFixtures.product_fixture()
+        taxon = Repo.get!(Taxon, product.primary_type_taxon_id)
+        attribute = SpecsFixtures.attribute_fixture(%{data_type: :bool})
+
+        {:ok, baseline_claim} =
+          Specs.propose_claim(product.id, attribute.id, %{value_bool: false}, %{
+            source_type: :user,
+            created_by: moderator.id
+          })
+
+        {:ok, baseline_claim} = Specs.accept_claim(baseline_claim.id, moderator.id)
+
+        {:ok, _current} =
+          Specs.select_current_claim(
+            product.id,
+            attribute.id,
+            baseline_claim.id,
+            moderator.id
+          )
+
+        {:ok, seed_correction} =
+          Specs.propose_correction(
+            product.id,
+            attribute.id,
+            submitter.id,
+            %{value_bool: true},
+            %{
+              reason: "Development correction finalized before the concurrent rerun",
+              explanation: "The seed will attempt to restore this fixture to pending."
+            }
+          )
+
+        {:ok, seed_correction} =
+          Specs.moderate_correction(seed_correction.id, moderator.id, :accepted, %{})
+
+        %{
+          submitter: submitter,
+          late_submitter: late_submitter,
+          moderator: moderator,
+          product: product,
+          attribute: attribute,
+          baseline_claim: baseline_claim,
+          seed_correction: seed_correction,
+          brand_id: product.brand_id,
+          taxon_id: taxon.id,
+          taxonomy_id: taxon.taxonomy_id
+        }
+      end)
+
+    on_exit(fn ->
+      Sandbox.unboxed_run(Repo, fn ->
+        Repo.delete_all(
+          from correction in SpecificationCorrection,
+            where: correction.product_id == ^fixture.product.id
+        )
+
+        Repo.delete_all(
+          from current in ProductAttributeCurrent,
+            where: current.product_id == ^fixture.product.id
+        )
+
+        Repo.delete_all(
+          from claim in ProductAttributeClaim,
+            where: claim.product_id == ^fixture.product.id
+        )
+
+        Repo.delete_all(
+          from user in User,
+            where:
+              user.id in ^[
+                fixture.submitter.id,
+                fixture.late_submitter.id,
+                fixture.moderator.id
+              ]
+        )
+
+        Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+
+        Repo.delete_all(
+          from attribute in ProductCompareSchemas.Specs.Attribute,
+            where: attribute.id == ^fixture.attribute.id
+        )
+
+        Repo.delete_all(from brand in Brand, where: brand.id == ^fixture.brand_id)
+        Repo.delete_all(from taxon in Taxon, where: taxon.id == ^fixture.taxon_id)
+        Repo.delete_all(from taxonomy in Taxonomy, where: taxonomy.id == ^fixture.taxonomy_id)
+      end)
+    end)
+
+    parent = self()
+
+    seed_task =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          Process.put(:concurrent_correction_seed_attempt, 0)
+
+          result =
+            DevSeedSupport.serializable_transaction(fn ->
+              DevSeedCorrectionSafety.lock_correction_submissions!()
+
+              attempt = Process.get(:concurrent_correction_seed_attempt, 0) + 1
+              Process.put(:concurrent_correction_seed_attempt, attempt)
+
+              preserve? =
+                DevSeedCorrectionSafety.preserve_current_for_pending?(
+                  fixture.product.id,
+                  fixture.attribute.id,
+                  fixture.seed_correction.claim_id
+                )
+
+              backend_pid = DatabaseTestHelpers.database_backend_pid()
+              send(parent, {:seed_correction_checked, attempt, backend_pid, preserve?})
+
+              if attempt == 1 do
+                receive do
+                  :continue_seed_reconciliation -> :ok
+                after
+                  5_000 -> flunk("timed out waiting to continue seed reconciliation")
+                end
+              end
+
+              unless preserve? do
+                fixture.baseline_claim
+                |> ProductAttributeClaim.changeset(%{status: :accepted})
+                |> Repo.update!()
+
+                ProductAttributeCurrent
+                |> Repo.get_by!(
+                  product_id: fixture.product.id,
+                  attribute_id: fixture.attribute.id
+                )
+                |> ProductAttributeCurrent.changeset(%{
+                  claim_id: fixture.baseline_claim.id
+                })
+                |> Repo.update!()
+              end
+
+              :seeded
+            end)
+
+          {result, Process.get(:concurrent_correction_seed_attempt)}
+        end)
+      end)
+
+    assert_receive {:seed_correction_checked, 1, _seed_backend_pid, false}, 2_000
+
+    late_task =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          backend_pid = DatabaseTestHelpers.database_backend_pid()
+          send(parent, {:late_correction_started, backend_pid})
+
+          Specs.propose_correction(
+            fixture.product.id,
+            fixture.attribute.id,
+            fixture.late_submitter.id,
+            %{value_bool: false},
+            %{
+              reason: "Concurrent correction submitted while development seeds are running",
+              explanation: "This pending moderation work must remain usable after the retry."
+            }
+          )
+        end)
+      end)
+
+    assert_receive {:late_correction_started, late_backend_pid}, 2_000
+    DatabaseTestHelpers.assert_backend_blocked(late_backend_pid)
+
+    send(seed_task.pid, :continue_seed_reconciliation)
+
+    assert {{:ok, :seeded}, 1} = Task.await(seed_task)
+    assert {:ok, late_correction} = Task.await(late_task)
+
+    assert Repo.get!(ProductAttributeClaim, late_correction.claim_id).supersedes_claim_id ==
+             fixture.baseline_claim.id
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Sandbox.unboxed_run(Repo, fn ->
+               Specs.moderate_correction(
+                 late_correction.id,
+                 fixture.moderator.id,
+                 :accepted,
+                 %{moderation_note: "Accepted after seed correction coordination completed"}
+               )
+             end)
+  end
 
   test "seeds role accounts and local auth artifacts without delivery hooks" do
     original_config = Application.get_env(:product_compare, Accounts, [])
@@ -1375,15 +1591,22 @@ defmodule ProductCompare.Repo.SeedsTest do
     seed_reporter =
       Task.async(fn ->
         Sandbox.unboxed_run(Repo, fn ->
-          backend_pid = DatabaseTestHelpers.database_backend_pid()
-          send(parent, {:seed_report_started, self(), backend_pid})
+          Repo.transaction(fn ->
+            Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
 
-          DevSeedCommunityWrites.report(
-            fixture.reporter.id,
-            :review,
-            fixture.review.entropy_id,
-            "Development report example for the moderation queue"
-          )
+            backend_pid = DatabaseTestHelpers.database_backend_pid()
+            send(parent, {:seed_report_started, self(), backend_pid})
+
+            case DevSeedCommunityWrites.report(
+                   fixture.reporter.id,
+                   :review,
+                   fixture.review.entropy_id,
+                   "Development report example for the moderation queue"
+                 ) do
+              {:ok, report} -> report
+              {:error, reason} -> Repo.rollback(reason)
+            end
+          end)
         end)
       end)
 
@@ -1395,7 +1618,79 @@ defmodule ProductCompare.Repo.SeedsTest do
     send(interactive_reporter.pid, :commit_interactive_report)
 
     assert {:ok, %CommunityReport{id: ^report_id}} = Task.await(interactive_reporter)
-    assert {:ok, %CommunityReport{id: ^report_id}} = Task.await(seed_reporter)
+
+    assert {:error, {:retry_seed_transaction, :concurrent_report}} =
+             Task.await(seed_reporter)
+
+    assert {:ok, %CommunityReport{id: ^report_id}} =
+             Sandbox.unboxed_run(Repo, fn ->
+               DevSeedCommunityWrites.report(
+                 fixture.reporter.id,
+                 :review,
+                 fixture.review.entropy_id,
+                 "Development report example for the moderation queue"
+               )
+             end)
+  end
+
+  test "first community seed preserves active reviews that already occupy reserved scopes" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+    marketplace = DevSeedMarketplace.seed!(catalog, anchor)
+
+    assert {:ok, shopper_review} =
+             Discussions.submit_review(
+               accounts.shopper.id,
+               catalog.products.monitor_16_9.id,
+               %{
+                 rating: 2,
+                 title: "Existing local monitor review",
+                 body: "This active local review predates the expanded development fixtures."
+               },
+               "existing-local-monitor-review-v1"
+             )
+
+    assert {:ok, participant_review} =
+             Discussions.submit_review(
+               accounts.participant.id,
+               catalog.products.tv.id,
+               %{
+                 rating: 3,
+                 title: "Existing local television review",
+                 body: "This participant review must also survive the first expanded seed run."
+               },
+               "existing-local-television-review-v1"
+             )
+
+    engagement = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+
+    assert engagement.community.reviews.shopper.id == shopper_review.id
+    assert engagement.community.reviews.participant.id == participant_review.id
+
+    assert %ProductReview{
+             moderation_status: :pending,
+             rating: 2,
+             title: "Existing local monitor review",
+             body_md: "This active local review predates the expanded development fixtures."
+           } = Repo.get!(ProductReview, shopper_review.id)
+
+    assert %ProductReview{
+             moderation_status: :pending,
+             rating: 3,
+             title: "Existing local television review",
+             body_md: "This participant review must also survive the first expanded seed run."
+           } = Repo.get!(ProductReview, participant_review.id)
+
+    refute Repo.get_by(CommunityWriteReceipt,
+             user_id: accounts.shopper.id,
+             idempotency_key: "dev-seed-review-shopper-v1"
+           )
+
+    refute Repo.get_by(CommunityWriteReceipt,
+             user_id: accounts.participant.id,
+             idempotency_key: "dev-seed-review-participant-v1"
+           )
   end
 
   test "reruns preserve a replacement review after the reserved review is removed" do

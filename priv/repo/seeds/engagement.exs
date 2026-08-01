@@ -17,6 +17,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
   alias ProductCompareSchemas.Catalog.SavedComparisonSet
+  alias ProductCompareSchemas.Discussions.CommunityWriteReceipt
   alias ProductCompareSchemas.Discussions.ProductReview
   alias ProductCompareSchemas.Discussions.ProductThread
   alias ProductCompareSchemas.Discussions.ThreadPost
@@ -409,28 +410,60 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp seed_review!(owner, product, attrs, idempotency_key, moderator, status) do
-    review =
-      CommunityWrites.submit_review(owner.id, product.id, attrs, idempotency_key)
-      |> Support.expect!("community review #{idempotency_key}")
+    case occupied_active_review(owner.id, product.id, idempotency_key) do
+      %ProductReview{} = review ->
+        review
 
-    if active_replacement_review?(review) do
-      review
-    else
-      review = maybe_restore_owned!(:review, review, attrs, status)
-      moderate_owned!(:review, moderator, review, status)
+      nil ->
+        review =
+          CommunityWrites.submit_review(owner.id, product.id, attrs, idempotency_key)
+          |> Support.expect!("community review #{idempotency_key}")
+
+        case active_replacement_review(review) do
+          %ProductReview{} = replacement ->
+            replacement
+
+          nil ->
+            review = maybe_restore_owned!(:review, review, attrs, status)
+            moderate_owned!(:review, moderator, review, status)
+        end
     end
   end
 
-  defp active_replacement_review?(%ProductReview{moderation_status: :removed} = review) do
-    Repo.exists?(
-      from candidate in ProductReview,
+  defp occupied_active_review(user_id, product_id, idempotency_key) do
+    case active_review_in_scope(user_id, product_id) do
+      nil ->
+        nil
+
+      %ProductReview{} = review ->
+        case Repo.get_by(CommunityWriteReceipt,
+               user_id: user_id,
+               content_type: :review,
+               idempotency_key: idempotency_key
+             ) do
+          %CommunityWriteReceipt{content_entropy_id: entropy_id}
+          when entropy_id == review.entropy_id ->
+            nil
+
+          _unowned_or_missing_receipt ->
+            review
+        end
+    end
+  end
+
+  defp active_review_in_scope(user_id, product_id) do
+    Repo.one(
+      from review in ProductReview,
         where:
-          candidate.id != ^review.id and candidate.user_id == ^review.user_id and
-            candidate.product_id == ^review.product_id and candidate.moderation_status != :removed
+          review.user_id == ^user_id and review.product_id == ^product_id and
+            review.moderation_status != :removed
     )
   end
 
-  defp active_replacement_review?(%ProductReview{}), do: false
+  defp active_replacement_review(%ProductReview{moderation_status: :removed} = review),
+    do: active_review_in_scope(review.user_id, review.product_id)
+
+  defp active_replacement_review(%ProductReview{}), do: nil
 
   defp seed_question!(owner, product, attrs, idempotency_key, moderator, status) do
     question =
@@ -685,7 +718,11 @@ defmodule ProductCompare.DevSeeds.Engagement do
   defp restore_correction!(correction, attrs, desired_status, product, attribute) do
     correction =
       if correction.status in [:accepted, :rejected] and correction.status != desired_status and
-           not current_claim_required_by_pending_correction?(correction) do
+           not CorrectionSafety.preserve_current_for_pending?(
+             correction.product_id,
+             correction.attribute_id,
+             correction.claim_id
+           ) do
         reset_correction_to_pending!(correction, product, attribute)
       else
         correction
@@ -695,33 +732,6 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> SpecificationCorrection.changeset(attrs)
     |> Repo.update()
     |> Support.expect!("restore correction #{product.slug}/#{attribute.code}")
-  end
-
-  defp current_claim_required_by_pending_correction?(correction) do
-    current_claim_id =
-      Repo.one(
-        from current in ProductAttributeCurrent,
-          where: current.product_id == ^correction.product_id,
-          where: current.attribute_id == ^correction.attribute_id,
-          select: current.claim_id
-      )
-
-    query =
-      from candidate in SpecificationCorrection,
-        join: claim in ProductAttributeClaim,
-        on: claim.id == candidate.claim_id,
-        where: candidate.id != ^correction.id,
-        where: candidate.product_id == ^correction.product_id,
-        where: candidate.attribute_id == ^correction.attribute_id,
-        where: candidate.status == :pending
-
-    query =
-      case current_claim_id do
-        nil -> where(query, [_candidate, claim], is_nil(claim.supersedes_claim_id))
-        claim_id -> where(query, [_candidate, claim], claim.supersedes_claim_id == ^claim_id)
-      end
-
-    Repo.exists?(query)
   end
 
   defp restore_accepted_correction_claim!(correction, product, attribute) do

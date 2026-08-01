@@ -4,12 +4,12 @@ end
 
 alias ProductCompare.DevSeeds.Accounts, as: DevSeedAccounts
 alias ProductCompare.DevSeeds.Catalog, as: DevSeedCatalog
+alias ProductCompare.DevSeeds.CorrectionSafety, as: DevSeedCorrectionSafety
 alias ProductCompare.DevSeeds.Engagement, as: DevSeedEngagement
 alias ProductCompare.DevSeeds.Guide, as: DevSeedGuide
 alias ProductCompare.DevSeeds.Marketplace, as: DevSeedMarketplace
 alias ProductCompare.DevSeeds.Operations, as: DevSeedOperations
 alias ProductCompare.DevSeeds.Support, as: DevSeedSupport
-alias ProductCompare.Repo
 
 Code.require_file("seeds/support.exs", __DIR__)
 Code.require_file("seeds/accounts.exs", __DIR__)
@@ -31,13 +31,10 @@ seed_user_password =
   end
 
 seed_anchor = DateTime.utc_now() |> DateTime.truncate(:microsecond)
-already_in_transaction? = Repo.in_transaction?()
 
 seed_result =
-  Repo.transaction(fn ->
-    unless already_in_transaction? do
-      Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-    end
+  DevSeedSupport.serializable_transaction(fn ->
+    DevSeedCorrectionSafety.lock_correction_submissions!()
 
     accounts = DevSeedAccounts.seed!(seed_user_password, seed_anchor)
     catalog = DevSeedCatalog.seed!(accounts, seed_anchor)
