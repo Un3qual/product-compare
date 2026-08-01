@@ -1,13 +1,16 @@
 defmodule ProductCompare.DevSeeds.Accounts do
   @moduledoc false
 
-  import Ecto.Query
-
   alias ProductCompare.Accounts, as: AccountsContext
   alias ProductCompare.DevSeeds.Support
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.ApiToken
   alias ProductCompareSchemas.Accounts.User
+
+  @api_token_entropy_ids %{
+    active: "d3ca0000-0000-4000-8000-000000000201",
+    revoked: "d3ca0000-0000-4000-8000-000000000202"
+  }
 
   @type result :: %{
           admin: User.t(),
@@ -132,17 +135,12 @@ defmodule ProductCompare.DevSeeds.Accounts do
   defp password_matches?(%User{}, _password), do: false
 
   defp seed_api_tokens!(shopper) do
-    ApiToken
-    |> where(
-      [token],
-      token.user_id == ^shopper.id and
-        token.label in ["Development active", "Development revoked"]
-    )
-    |> Repo.delete_all()
+    Enum.each(Map.keys(@api_token_entropy_ids), &delete_seed_api_token!(shopper.id, &1))
 
     %{api_token: token_to_revoke} =
       AccountsContext.create_api_token(shopper.id, %{label: "Development revoked"})
       |> Support.expect!("revoked API token")
+      |> reserve_api_token!(:revoked)
 
     revoked_api_token =
       AccountsContext.revoke_api_token(shopper.id, token_to_revoke.entropy_id)
@@ -151,7 +149,33 @@ defmodule ProductCompare.DevSeeds.Accounts do
     %{api_token: active_api_token, plain_text_token: active_plain_text_token} =
       AccountsContext.create_api_token(shopper.id, %{label: "Development active"})
       |> Support.expect!("active API token")
+      |> reserve_api_token!(:active)
 
     {revoked_api_token, active_api_token, active_plain_text_token}
+  end
+
+  defp delete_seed_api_token!(shopper_id, key) do
+    entropy_id = Map.fetch!(@api_token_entropy_ids, key)
+
+    case Repo.get_by(ApiToken, entropy_id: entropy_id) do
+      nil ->
+        :ok
+
+      %ApiToken{user_id: ^shopper_id} = token ->
+        Repo.delete!(token)
+
+      %ApiToken{user_id: conflicting_user_id} ->
+        raise "development seed #{key} API token belongs to user #{conflicting_user_id}"
+    end
+  end
+
+  defp reserve_api_token!(%{api_token: token} = issued_token, key) do
+    reserved_token =
+      token
+      |> Ecto.Changeset.change(entropy_id: Map.fetch!(@api_token_entropy_ids, key))
+      |> Repo.update()
+      |> Support.expect!("reserve #{key} API token")
+
+    %{issued_token | api_token: reserved_token}
   end
 end

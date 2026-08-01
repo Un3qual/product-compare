@@ -113,6 +113,8 @@ defmodule ProductCompare.DevSeeds.Marketplace do
       |> select([point], point.id)
       |> Repo.all()
 
+    delete_alert_evaluation_jobs!(price_point_ids)
+
     AlertEvent
     |> where([event], event.triggering_price_point_id in ^price_point_ids)
     |> Repo.delete_all()
@@ -162,7 +164,11 @@ defmodule ProductCompare.DevSeeds.Marketplace do
                  artifact_id: artifact.id
                ) do
             nil ->
-              Pricing.add_price_point(attrs)
+              # Seed observations are evaluated synchronously after watches exist; the public
+              # pricing path would also enqueue background alert work for these local fixtures.
+              %PricePoint{}
+              |> PricePoint.changeset(attrs)
+              |> Repo.insert()
 
             price_point ->
               price_point
@@ -177,7 +183,28 @@ defmodule ProductCompare.DevSeeds.Marketplace do
         {Map.put(points, key, point), Map.put(artifacts, key, artifact)}
       end)
 
+    points
+    |> Map.values()
+    |> Enum.map(& &1.id)
+    |> delete_alert_evaluation_jobs!()
+
     %{points: points, artifacts: artifacts}
+  end
+
+  defp delete_alert_evaluation_jobs!([]), do: :ok
+
+  defp delete_alert_evaluation_jobs!(price_point_ids) do
+    price_point_ids = Enum.map(price_point_ids, &Integer.to_string/1)
+
+    Oban.Job
+    |> where(
+      [job],
+      job.worker == "ProductCompare.Alerts.Jobs.AlertEvaluationWorker" and
+        fragment("?->>'price_point_id'", job.args) in ^price_point_ids
+    )
+    |> Repo.delete_all()
+
+    :ok
   end
 
   defp seed_affiliate!(merchants, offers, anchor) do

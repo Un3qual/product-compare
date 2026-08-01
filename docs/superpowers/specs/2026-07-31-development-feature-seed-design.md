@@ -85,6 +85,8 @@ password unless a configured seed password overrides it:
 
 The shopper owns one usable API token whose plain value is printed for local
 testing and one revoked token that exercises historical token presentation.
+Both seed-owned token rows use reserved immutable entropy IDs so labels remain
+purely presentational and user-created tokens with the same labels are preserved.
 Generated confirmation, reset, and API-token secrets may change between seed
 runs. Their semantic states and printed routes remain deterministic.
 
@@ -122,9 +124,11 @@ URLs use reserved local or example domains.
 ## Comparison, Alert, And Community Scenarios
 
 The shopper owns multiple saved comparison sets, including a primary reopenable
-selection. A public comparison snapshot contains products, attributes, offer
-evidence, ranking, and recommendation data. Its public token is preserved across
-reruns and the corresponding `/compare/shared/:token` link is printed.
+selection. Seed-owned saved sets and the public comparison snapshot use reserved
+immutable entropy IDs so visible names and titles may be reused by unrelated
+local records. The snapshot contains products, attributes, offer evidence,
+ranking, and recommendation data. Its public token is preserved across reruns
+and the corresponding `/compare/shared/:token` link is printed.
 
 Alert state includes enabled and disabled watches, price and availability
 conditions, and both read and unread alert events. Events are created as durable

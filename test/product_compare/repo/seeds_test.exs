@@ -189,6 +189,29 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert second.shopper.confirmed_at == first.shopper.confirmed_at
   end
 
+  test "account reruns preserve user-created API tokens that reuse development labels" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+
+    assert {:ok, %{api_token: unrelated_token}} =
+             Accounts.create_api_token(accounts.shopper.id, %{label: "Development active"})
+
+    DevSeedAccounts.seed!(@seed_password, anchor)
+
+    assert %ApiToken{label: "Development active", revoked_at: nil} =
+             Repo.get(ApiToken, unrelated_token.id)
+
+    assert Repo.aggregate(
+             from(token in ApiToken,
+               where:
+                 token.user_id == ^accounts.shopper.id and
+                   token.label == "Development active"
+             ),
+             :count,
+             :id
+           ) == 2
+  end
+
   test "account reruns restore changed and missing operator reputation baselines" do
     anchor = ~U[2026-07-31 12:00:00.000000Z]
     accounts = DevSeedAccounts.seed!(@seed_password, anchor)
@@ -864,6 +887,70 @@ defmodule ProductCompare.Repo.SeedsTest do
            ) == 2
   end
 
+  test "reruns preserve user-created snapshots that reuse the development title" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    monitor = Repo.get_by!(Product, slug: "acme-vision-27g")
+    projector = Repo.get_by!(Product, slug: "acme-beam-4k")
+
+    assert {:ok, unrelated_snapshot} =
+             ComparisonSnapshots.publish(shopper.id, %{
+               title: "Development comparison",
+               product_ids: [monitor.id, projector.id],
+               recommendation_profile: :best_value,
+               search_indexable: false
+             })
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert %ComparisonSnapshot{revoked_at: nil} =
+             Repo.get(ComparisonSnapshot, unrelated_snapshot.id)
+
+    assert %ComparisonSnapshot{id: snapshot_id} =
+             ComparisonSnapshots.get_public(unrelated_snapshot.public_token)
+
+    assert snapshot_id == unrelated_snapshot.id
+  end
+
+  test "seeding price points does not enqueue alert evaluation jobs" do
+    worker = "ProductCompare.Alerts.Jobs.AlertEvaluationWorker"
+    job_count_before = Repo.aggregate(from(job in Oban.Job, where: job.worker == ^worker), :count)
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.aggregate(from(job in Oban.Job, where: job.worker == ^worker), :count) ==
+             job_count_before
+  end
+
+  test "reruns remove alert jobs for observations deleted to restore the unobserved offer" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AB4K")
+
+    assert {:ok, price_point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: offer.id,
+               observed_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
+               price: Decimal.new("1499.99"),
+               shipping: Decimal.new("0.00"),
+               in_stock: true
+             })
+
+    job =
+      Repo.one!(
+        from job in Oban.Job,
+          where:
+            job.worker == "ProductCompare.Alerts.Jobs.AlertEvaluationWorker" and
+              fragment("?->>'price_point_id' = ?", job.args, ^Integer.to_string(price_point.id))
+      )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    refute Repo.get(PricePoint, price_point.id)
+    refute Repo.get(Oban.Job, job.id)
+  end
+
   test "reruns restore seed-owned records after normal feature lifecycle actions" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
@@ -1189,6 +1276,45 @@ defmodule ProductCompare.Repo.SeedsTest do
              product_id: pending_correction.product_id,
              attribute_id: pending_correction.attribute_id
            ).claim_id == baseline_claim_id
+  end
+
+  test "reruns preserve a newer pending correction instead of resetting the seeded row" do
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    shopper = Repo.get_by!(User, email: "shopper@example.com")
+    moderator = Repo.get_by!(User, email: "moderator@example.com")
+
+    seeded_correction =
+      Repo.get_by!(SpecificationCorrection,
+        submitted_by: shopper.id,
+        reason: "Development pending correction example"
+      )
+
+    seeded_claim = Repo.get!(ProductAttributeClaim, seeded_correction.claim_id)
+
+    assert {:ok, accepted_correction} =
+             Specs.moderate_correction(seeded_correction.id, moderator.id, :accepted, %{
+               moderation_note: "Developer accepted the seeded pending correction"
+             })
+
+    assert accepted_correction.status == :accepted
+
+    assert {:ok, newer_correction} =
+             Specs.propose_correction(
+               seeded_correction.product_id,
+               seeded_correction.attribute_id,
+               shopper.id,
+               %{value_num: Decimal.new("111"), unit_id: seeded_claim.unit_id},
+               %{
+                 reason: "Developer submitted a newer pending diagonal correction",
+                 explanation: "Unrelated local correction that must survive reseeding."
+               }
+             )
+
+    capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
+
+    assert Repo.get!(SpecificationCorrection, newer_correction.id).status == :pending
+    assert Repo.get!(SpecificationCorrection, seeded_correction.id).status == :accepted
   end
 
   test "reruns preserve user-created coupons that reuse a development code" do

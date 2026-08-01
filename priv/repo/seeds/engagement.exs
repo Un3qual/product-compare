@@ -27,6 +27,7 @@ defmodule ProductCompare.DevSeeds.Engagement do
     gaming: "d3ca0000-0000-4000-8000-000000000101",
     home_theater: "d3ca0000-0000-4000-8000-000000000102"
   }
+  @snapshot_entropy_id "d3ca0000-0000-4000-8000-000000000103"
   @watch_entropy_ids %{
     target: "d3ca0000-0000-4000-8000-000000000001",
     percentage_drop: "d3ca0000-0000-4000-8000-000000000002",
@@ -94,15 +95,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
   end
 
   defp seed_snapshot!(shopper, products, anchor) do
-    snapshots =
-      Repo.all(
-        from snapshot in ComparisonSnapshot,
-          where: snapshot.user_id == ^shopper.id and snapshot.title == "Development comparison",
-          order_by: [asc: snapshot.id]
-      )
-
-    case snapshots do
-      [] ->
+    case Repo.get_by(ComparisonSnapshot, entropy_id: @snapshot_entropy_id) do
+      nil ->
         ComparisonSnapshots.publish(
           shopper.id,
           %{
@@ -114,20 +108,20 @@ defmodule ProductCompare.DevSeeds.Engagement do
           now: anchor
         )
         |> Support.expect!("public comparison snapshot")
+        |> Ecto.Changeset.change(entropy_id: @snapshot_entropy_id)
+        |> Repo.update()
+        |> Support.expect!("reserve public comparison snapshot")
+        |> ComparisonSnapshots.hydrate()
 
-      [snapshot | duplicates] ->
+      %ComparisonSnapshot{user_id: shopper_id} when shopper_id != shopper.id ->
+        raise "development seed comparison snapshot belongs to user #{shopper_id}"
+
+      %ComparisonSnapshot{} = snapshot ->
         snapshot =
           snapshot
           |> Ecto.Changeset.change(revoked_at: nil)
           |> Repo.update()
           |> Support.expect!("restore public comparison snapshot")
-
-        Enum.each(duplicates, fn duplicate ->
-          duplicate
-          |> ComparisonSnapshot.revoke_changeset(anchor)
-          |> Repo.update()
-          |> Support.expect!("revoke duplicate public comparison snapshot")
-        end)
 
         ComparisonSnapshots.hydrate(snapshot)
     end
@@ -568,7 +562,8 @@ defmodule ProductCompare.DevSeeds.Engagement do
 
   defp restore_correction!(correction, attrs, desired_status, product, attribute) do
     correction =
-      if correction.status in [:accepted, :rejected] and correction.status != desired_status do
+      if correction.status in [:accepted, :rejected] and correction.status != desired_status and
+           not competing_pending_correction?(correction) do
         reset_correction_to_pending!(correction, product, attribute)
       else
         correction
@@ -578,6 +573,18 @@ defmodule ProductCompare.DevSeeds.Engagement do
     |> SpecificationCorrection.changeset(attrs)
     |> Repo.update()
     |> Support.expect!("restore correction #{product.slug}/#{attribute.code}")
+  end
+
+  defp competing_pending_correction?(correction) do
+    Repo.exists?(
+      from candidate in SpecificationCorrection,
+        where:
+          candidate.id != ^correction.id and
+            candidate.submitted_by == ^correction.submitted_by and
+            candidate.product_id == ^correction.product_id and
+            candidate.attribute_id == ^correction.attribute_id and
+            candidate.status == :pending
+    )
   end
 
   defp restore_accepted_correction_claim!(correction, product, attribute) do

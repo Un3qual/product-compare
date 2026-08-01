@@ -284,11 +284,11 @@ correction scenarios are absent.
 
 - [ ] **Step 2: Reconcile saved and shared comparisons**
 
-For saved sets, find only the shopper's reserved names (`Gaming shortlist` and
-`Home theater shortlist`), delete them through the Catalog context, and recreate
-their ordered product selections. Preserve an existing active snapshot titled
-`Development comparison`; publish it only when absent so its public token and
-deep link remain stable across reruns.
+For saved sets, reconcile only reserved immutable entropy IDs, delete those
+records through the Catalog context, and recreate their ordered product
+selections. Reconcile the public snapshot by its own reserved entropy ID and
+publish it only when absent so its public token and deep link remain stable
+across reruns. Visible names and titles are not ownership keys.
 
 - [ ] **Step 3: Reconcile watches and locally generate alert events**
 
