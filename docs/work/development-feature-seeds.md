@@ -38,6 +38,8 @@ provider, scheduler, mailer, job, or network call.
   email.
 - Reserved price-point ownership is proven only by immutable entropy IDs, and
   community fixtures do not consume or depend on interactive hourly quotas.
+- Reruns preserve both an existing current claim and an intentionally empty
+  current state when pending correction moderation depends on that baseline.
 
 ## Boundaries
 
@@ -97,7 +99,7 @@ provider, scheduler, mailer, job, or network call.
   test/product_compare/specs` — 114 tests, 0 failures.
 - 2026-07-31: `git diff --check` — clean after the engagement milestone.
 - 2026-07-31: `mix test test/product_compare/repo/seeds_test.exs
-  test/product_compare_web/graphql/development_seeds_test.exs` — 45 tests,
+  test/product_compare_web/graphql/development_seeds_test.exs` — 46 tests,
   0 failures against the final reviewed seed suite.
 - 2026-07-31: `mix test test/product_compare/ingestion
   test/product_compare/commerce_attribution
@@ -116,7 +118,7 @@ provider, scheduler, mailer, job, or network call.
   specification, comparison, ingestion, and attribution suites — 502 tests,
   0 failures.
 - 2026-07-31: complete GraphQL suite — 340 tests, 0 failures.
-- 2026-07-31: `mix test` — 1,104 tests, 0 failures.
+- 2026-07-31: `mix test` — 1,105 tests, 0 failures.
 - 2026-07-31: `mix format --check-formatted` and `mix typecheck` — passed.
 - 2026-07-31: `mix quality` — Credo found no issues, the existing 3/3 clone
   budget held, cross-function analysis found no issues, and Dialyzer reported

@@ -175,8 +175,10 @@ The seed never infers legacy ownership from matching copy. Only the pending
 fixture may reuse an unrelated pending correction that already occupies its
 one-pending scope. A completed fixture fails closed on that conflict instead of
 reporting the pending row as accepted or rejected. Reruns also preserve a
-different current claim while a pending correction depends on it, keeping that
-moderation work usable instead of making it stale.
+different current claim while a pending correction depends on it. When a
+pending correction was submitted before any current claim existed, reruns
+preserve that empty-current state as well. Both cases keep local moderation
+work usable instead of making it stale.
 
 ## Synthetic Provider And Revenue Scenarios
 

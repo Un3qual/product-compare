@@ -339,7 +339,9 @@ occupies the pending fixture's one-pending scope before the reserved seed row
 exists, preserve that row unchanged and defer creating the reserved row until a
 later run. Fail closed when a completed fixture's scope is occupied rather than
 returning a pending row under an accepted or rejected key. Do not replace a
-current claim while an outstanding pending correction depends on it.
+current claim while an outstanding pending correction depends on it, and do not
+create a current claim when an outstanding pending correction was submitted
+against an empty current state.
 
 - [ ] **Step 6: Verify and commit the engagement milestone**
 

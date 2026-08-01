@@ -1401,6 +1401,50 @@ defmodule ProductCompare.Repo.SeedsTest do
              })
   end
 
+  test "reruns preserve an empty current claim required by a pending correction" do
+    anchor = ~U[2026-07-31 12:00:00.000000Z]
+    accounts = DevSeedAccounts.seed!(@seed_password, anchor)
+    catalog = DevSeedCatalog.seed!(accounts, anchor)
+
+    product = catalog.products.monitor_16_9
+    attribute = catalog.attributes.diagonal
+
+    ProductAttributeCurrent
+    |> Repo.get_by!(product_id: product.id, attribute_id: attribute.id)
+    |> Repo.delete!()
+
+    assert {:ok, pending_correction} =
+             Specs.propose_correction(
+               product.id,
+               attribute.id,
+               accounts.participant.id,
+               %{value_num: Decimal.new("28"), unit_id: catalog.units.inches.id},
+               %{
+                 reason: "Developer correction submitted before a current claim exists",
+                 explanation: "Pending moderation must remain usable after reseeding."
+               }
+             )
+
+    assert is_nil(
+             Repo.get!(ProductAttributeClaim, pending_correction.claim_id).supersedes_claim_id
+           )
+
+    DevSeedCatalog.seed!(accounts, anchor)
+
+    refute Repo.get_by(ProductAttributeCurrent,
+             product_id: product.id,
+             attribute_id: attribute.id
+           )
+
+    assert {:ok, %SpecificationCorrection{status: :accepted}} =
+             Specs.moderate_correction(
+               pending_correction.id,
+               accounts.moderator.id,
+               :accepted,
+               %{moderation_note: "Developer accepted the preserved correction"}
+             )
+  end
+
   test "reruns reset a pending correction whose claim has no superseded claim" do
     capture_io(fn -> Code.eval_file("priv/repo/seeds.exs") end)
 
