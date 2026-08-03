@@ -83,8 +83,11 @@ defmodule ProductCompare.AlertsTest do
 
     assert {:ok, 86_400} = Cooldown.to_seconds(Duration.new!(day: 1))
     assert {:ok, 604_800} = Cooldown.to_seconds(Duration.new!(week: 1))
+    assert {:ok, 1} = Cooldown.to_seconds(Duration.new!(second: 1, microsecond: {0, 0}))
+    assert {:ok, 1} = Cooldown.to_seconds(Duration.new!(second: 1, microsecond: {0, 6}))
     assert Cooldown.to_seconds(Duration.new!(month: 1)) == :error
     assert Cooldown.to_seconds(Duration.new!(second: 60, microsecond: {1, 6})) == :error
+    assert Cooldown.to_seconds(%Duration{second: 1, microsecond: {0, 7}}) == :error
     assert Cooldown.to_seconds(Duration.new!(second: -60)) == :error
   end
 

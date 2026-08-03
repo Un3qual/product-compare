@@ -24,7 +24,8 @@ defmodule ProductCompareSchemas.Alerts.Cooldown do
       })
       when is_integer(weeks) and weeks >= 0 and is_integer(days) and days >= 0 and
              is_integer(hours) and hours >= 0 and is_integer(minutes) and minutes >= 0 and
-             is_integer(seconds) and seconds >= 0 and is_integer(precision) and precision >= 0 do
+             is_integer(seconds) and seconds >= 0 and is_integer(precision) and precision >= 0 and
+             precision <= 6 do
     {:ok, weeks * 604_800 + days * 86_400 + hours * 3_600 + minutes * 60 + seconds}
   end
 

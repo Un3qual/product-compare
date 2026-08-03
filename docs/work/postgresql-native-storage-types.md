@@ -24,21 +24,21 @@ and the queue/catalog records.
 
 ## Current Milestone
 
-Task 3 is implemented: price-watch cooldowns now persist as constrained
+Task 3 is verified: price-watch cooldowns now persist as constrained
 PostgreSQL `interval DAY TO SECOND` values decoded into Elixir `Duration`.
 The GraphQL create, update, and read contract remains integer-valued
 `cooldownSeconds`, while evaluation compares exact elapsed seconds at the
-conversion boundary. Focused alert/GraphQL coverage and the cooldown-relevant
-seed regression passed against rebuilt isolated test databases. The complete
-seed suite still has an unrelated PostgreSQL deadlock in account bootstrap;
-its details are recorded in the Task 3 report rather than attributed to this
-storage change.
+conversion boundary. The duration conversion also rejects malformed
+microsecond precisions outside PostgreSQL's `0..6` range. Focused regression
+coverage and the clean isolated seed, alert, and GraphQL suite passed (65
+tests, 0 failures).
 
 ## Next Action
 
-Execute Task 4: migrate first-party absolute timestamp storage and add the
-native-type policy guard. Task 3 owns only elapsed cooldown intervals; it does
-not change the existing absolute timestamp columns.
+Task 3 is ready for coordinator closeout. Keep Task 4 unclaimed until the
+coordinator selects the next ready storage slice; Task 3 owns only elapsed
+cooldown intervals and does not change the existing absolute timestamp
+columns.
 
 ## Verification Contract
 
