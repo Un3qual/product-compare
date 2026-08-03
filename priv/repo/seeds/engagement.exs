@@ -151,11 +151,18 @@ defmodule ProductCompare.DevSeeds.Engagement do
     # Watch creation and evaluation read the listing's latest observation. Temporarily
     # promote this seed-owned point so preserved later local history cannot replace the
     # controlled baselines, then restore both the point and copied event timestamp.
-    controlled_observed_at =
+    latest_observed_at =
       fresh_offer.id
       |> Pricing.latest_price()
       |> Map.fetch!(:observed_at)
-      |> DateTime.add(1, :microsecond)
+
+    current_observed_at = DateTime.utc_now() |> DateTime.truncate(:microsecond)
+
+    controlled_observed_at =
+      case DateTime.compare(latest_observed_at, current_observed_at) do
+        :lt -> current_observed_at
+        _ -> DateTime.add(latest_observed_at, 1, :microsecond)
+      end
 
     {percentage_drop, back_in_stock, reserved_watch_ids} =
       try do

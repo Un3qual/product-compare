@@ -1675,6 +1675,11 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     engagement = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
 
+    assert Decimal.equal?(
+             engagement.alerts.watches.percentage_drop.baseline_landed_price,
+             Decimal.new("899.99")
+           )
+
     assert engagement.community.reviews.shopper.id == shopper_review.id
     assert engagement.community.reviews.participant.id == participant_review.id
 
