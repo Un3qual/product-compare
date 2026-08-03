@@ -13,11 +13,11 @@
 
 Req owns CJ HTTP mechanics and `idna` owns Unicode hostname conversion; ProductCompare retains provider-domain normalization and URL/SSRF policy while deleting direct `:httpc` and local punycode code.
 
-## Validated Scope
+## Pre-Implementation Baseline (Historical)
 
-- The CJ client manually starts `:inets`/`:ssl`, converts strings to charlists, and calls `:httpc`.
+- The CJ client manually started `:inets`/`:ssl`, converted strings to charlists, and called `:httpc`.
 - The client already has an injected transport seam and comprehensive non-live tests.
-- The destination stack includes a 126-line local punycode encoder plus separate parser and public-address policy modules.
+- The destination stack included a 126-line local punycode encoder plus separate parser and public-address policy modules.
 - The backend and frontend maintain distinct URL-safety boundaries; this Elixir batch changes only the backend.
 
 ## Boundaries
