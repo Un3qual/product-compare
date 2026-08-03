@@ -99,6 +99,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
       |> String.to_charlist()
       |> :idna.encode()
       |> List.to_string()
+      |> String.downcase()
       |> case do
         hostname when byte_size(hostname) <= @maximum_dns_hostname_length -> {:ok, hostname}
         _overlong_hostname -> :error

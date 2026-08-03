@@ -2,6 +2,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrlTest do
   use ExUnit.Case, async: true
 
   alias ProductCompare.CommerceAttribution.DestinationUrl
+  alias ProductCompare.CommerceAttribution.DestinationUrl.Parser
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
 
   @accepted_urls [
@@ -40,6 +41,11 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrlTest do
         ] do
       assert DestinationUrl.valid?(url)
     end
+  end
+
+  test "canonicalizes an uppercase ASCII hostname to lowercase" do
+    assert {:ok, "merchant.example.com"} =
+             Parser.canonical_http_hostname("https://MERCHANT.EXAMPLE.COM:443/offer")
   end
 
   test "rejects forbidden IDNA code points without raising" do
