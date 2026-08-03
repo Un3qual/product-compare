@@ -2,13 +2,13 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Priority: P3
 - Plan: `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
-- Last verified: 2026-08-01 against seeded currency/country/language tables, Ecto codecs, feed-candidate normalization, and database parity tests.
+- Last verified: 2026-08-03 against seeded currency/country/language tables, Ecto codecs, feed-candidate normalization, database parity tests, dependency checks, and full repository gates.
 
-## Target Outcome
+## Batch Outcome
 
 CLDR owns standards recognition and metadata for currencies, territories, and languages while ProductCompare explicitly owns its supported subset and stable relational IDs.
 
@@ -69,3 +69,13 @@ CLDR owns standards recognition and metadata for currencies, territories, and la
   `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs` (10
   tests, 0 failures), `mix format`, `mix work_queue.validate` (3 ready rows),
   and `git diff --check`.
+- 2026-08-03: Final handoff verified supported-set/database-ID parity and the
+  complete repository gates: focused CLDR, codec, ingestion, attribution, and
+  GraphQL suites (618 tests, 0 failures); `mix deps.unlock --check-unused`;
+  `mix format --check-formatted`; `mix typecheck`; `mix quality`; `mix test
+  --cover` (1,156 tests, 0 failures, 85.84% total coverage); `mix
+  frontend_check` (1,520 frontend tests, client/SSR/bundle checks); `mix
+  work_queue.validate` (3 ready rows); and `git diff --check`. The only
+  Dialyzer exception is a generated `ex_cldr_languages` 0.3.3 dependency
+  false positive, filtered by its exact file/message pair; the filter probe
+  proved it does not match a synthetic ProductCompare warning.

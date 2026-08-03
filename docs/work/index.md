@@ -43,56 +43,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 20. CLDR Reference Data Boundary
-
-Status: active
-Owner: `codex/attribution-observability-libraries`
-Lane: Relational reference data
-Plan: `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
-Batch outcome: CLDR owns standards recognition and metadata for supported
-currencies, territories, and languages while ProductCompare retains explicit
-supported sets and stable database IDs.
-Next action: add failing focused tests that distinguish CLDR-recognized codes
-from ProductCompare-supported codes before adding the backend and packages.
-Owned paths:
-
-- `mix.exs`
-- `mix.lock`
-- CLDR configuration in `config/config.exs`
-- `lib/product_compare/reference_data.ex`
-- `lib/product_compare/reference_data/**`
-- `lib/product_compare_schemas/reference/currency_code.ex`
-- `lib/product_compare_schemas/reference/reference_code.ex`
-- `lib/product_compare_schemas/ingestion/merchant_feed_candidate.ex`
-- focused reference-data, codec parity, currency consumer, and feed-candidate
-  tests
-- `docs/work/cldr-reference-data-boundary.md`
-
-Internal slices:
-
-- CLDR backend and focused standards-recognition boundary.
-- Currency codec adoption with database/CLDR parity.
-- Territory/language adoption without changing supported markets.
-
-Prerequisites:
-
-- No active row owns `mix.exs`, `mix.lock`, CLDR configuration, or reference
-  codecs when this row is claimed.
-- Current seeded reference tables and parity tests remain the supported-set and
-  relational-ID authority.
-
-Verification:
-
-- CLDR recognition/metadata and database codec parity suites
-- currency consumers, feed-candidate/CJ ingestion, attribution, and GraphQL
-  suites
-- dependency checks and complete repository gates
-- `mix work_queue.validate` and `git diff --check`
-
-Exit condition: all configured public reference codes are CLDR-recognized,
-valid-but-unsupported codes remain unsupported, database IDs do not change,
-application-owned codes bypass CLDR, migrations remain deterministic, and all
-gates pass.
+None.
 
 ## Ready Work
 

@@ -24,10 +24,9 @@ dispatched through three reviewable plans:
 - `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
 
-The attribution observability and affiliate click-reference plan and the
-transport/IDNA plan are complete on `codex/attribution-observability-libraries`.
-The CLDR plan remains ready and is the next serial consumer of the overlapping
-dependency files.
+The attribution observability and affiliate click-reference, transport/IDNA,
+and CLDR reference-data boundary plans are complete on
+`codex/attribution-observability-libraries`.
 
 Development Feature Seeds completed through
 `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
