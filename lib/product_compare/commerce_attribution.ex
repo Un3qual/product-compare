@@ -4,6 +4,7 @@ defmodule ProductCompare.CommerceAttribution do
   """
 
   alias ProductCompare.CommerceAttribution.Clicks
+  alias ProductCompare.CommerceAttribution.ClickLedger
   alias ProductCompare.CommerceAttribution.Conversions
   alias ProductCompare.CommerceAttribution.Revenue
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
@@ -40,6 +41,9 @@ defmodule ProductCompare.CommerceAttribution do
 
   @spec dashboard_revenue_summary(map() | keyword()) :: map()
   def dashboard_revenue_summary(opts \\ %{}), do: Revenue.dashboard_revenue_summary(opts)
+
+  @spec click_ledger_query(map() | keyword()) :: Ecto.Query.t()
+  def click_ledger_query(opts \\ %{}), do: ClickLedger.query(opts)
 
   @spec merchant_revenue_summary(pos_integer(), map() | keyword()) :: map()
   def merchant_revenue_summary(merchant_id, opts \\ %{}),

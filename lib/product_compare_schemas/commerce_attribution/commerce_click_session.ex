@@ -18,6 +18,9 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct
     belongs_to :user, ProductCompareSchemas.Accounts.User
 
+    has_many :conversions, ProductCompareSchemas.CommerceAttribution.CommerceConversion,
+      foreign_key: :click_session_id
+
     timestamps()
   end
 

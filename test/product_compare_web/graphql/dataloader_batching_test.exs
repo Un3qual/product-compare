@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     Alerts,
     Affiliate,
     Catalog,
+    CommerceAttribution,
     ComparisonSnapshots,
     Discussions,
     Pricing,
@@ -21,6 +22,17 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   alias ProductCompareSchemas.Specs.{Source, SourceArtifact}
 
   @tracked_tables ~w(products brands merchant_products merchants price_points)a
+  @attribution_ledger_tables ~w(
+    commerce_click_sessions
+    commerce_links
+    commerce_conversions
+    merchant_products
+    merchants
+    products
+    affiliate_programs
+    affiliate_networks
+    users
+  )a
   @public_node_tables ~w(products brands merchants merchant_products price_points source_artifacts sources)a
   @product_evidence_tables ~w(product_media product_attribute_current product_reviews merchant_products price_points)a
   @community_connection_tables ~w(product_reviews product_threads thread_posts)a
@@ -36,6 +48,104 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
   @evidence_description "Evidence-rich product description for careful shoppers considering performance, value, compatibility, and trusted retail availability."
 
   describe "/api/graphql dataloader batching" do
+    test "operator attribution ledger keeps page-level preload queries fixed as the page grows",
+         %{conn: conn, test: test_name} do
+      operator = AccountsFixtures.operator_fixture()
+      prefix = "#{test_name}-#{System.unique_integer([:positive])}"
+      merchant = merchant_fixture(%{name: "#{prefix} Merchant"})
+      product = SpecsFixtures.product_fixture(%{name: "#{prefix} Product"})
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+
+      safe_prefix = canonical_slug(prefix)
+      network_code = String.replace(safe_prefix, "-", "_")
+
+      {:ok, network} =
+        Affiliate.upsert_network(%{code: network_code, name: "#{prefix} Network"})
+
+      {:ok, program} =
+        Affiliate.upsert_program(%{
+          affiliate_network_id: network.id,
+          merchant_id: merchant.id,
+          program_code: "#{prefix}-program"
+        })
+
+      {:ok, link} =
+        CommerceAttribution.upsert_commerce_link(%{
+          merchant_id: merchant.id,
+          affiliate_program_id: program.id,
+          destination_url: "https://#{merchant.domain}/ledger/#{safe_prefix}",
+          link_type: :affiliate
+        })
+
+      Enum.each(1..9, fn index ->
+        user = AccountsFixtures.user_fixture()
+
+        {:ok, click} =
+          CommerceAttribution.create_click_session(%{
+            commerce_link_id: link.id,
+            merchant_product_id: merchant_product.id,
+            user_id: user.id,
+            source_surface: :web,
+            referrer: "https://productcompare.example/#{prefix}/#{index}",
+            user_agent: "Batch Ledger/#{index}",
+            ip_address: "203.0.113.#{index}"
+          })
+
+        {:ok, _conversion} =
+          CommerceAttribution.ingest_conversion(%{
+            source_network: network.code,
+            network_conversion_ref: "#{prefix}-conversion-#{index}",
+            click_session_id: click.id,
+            public_click_id: click.click_id,
+            merchant_id: merchant.id,
+            product_id: product.id,
+            merchant_product_id: merchant_product.id,
+            status: :approved,
+            currency: "USD",
+            order_amount: Decimal.new("100.00"),
+            commission_amount: Decimal.new("10.00"),
+            attribution_confidence: :high,
+            reported_at: DateTime.add(~U[2026-05-22 12:00:00.000000Z], index, :second)
+          })
+      end)
+
+      operator_conn =
+        conn
+        |> log_in_user(operator)
+        |> put_req_header_same_origin()
+
+      {small_response, small_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, attribution_ledger_batching_query(), %{"first" => 2})
+        end)
+
+      {large_response, large_queries} =
+        capture_select_queries(fn ->
+          graphql(operator_conn, attribution_ledger_batching_query(), %{"first" => 8})
+        end)
+
+      assert length(get_in(small_response, ["data", "commerceAttributionClicks", "edges"])) == 2
+      assert length(get_in(large_response, ["data", "commerceAttributionClicks", "edges"])) == 8
+
+      small_budget = attribution_ledger_query_budget(small_queries)
+      large_budget = attribution_ledger_query_budget(large_queries)
+
+      assert {small_budget, large_budget} == {
+               %{
+                 commerce_click_sessions: 1,
+                 commerce_links: 1,
+                 commerce_conversions: 1,
+                 merchant_products: 1,
+                 merchants: 2,
+                 products: 1,
+                 affiliate_programs: 1,
+                 affiliate_networks: 1,
+                 users: 1
+               },
+               small_budget
+             }
+    end
+
     test "single request keeps dataloader-backed field batches bounded", %{
       conn: conn,
       test: test_name
@@ -2580,6 +2690,49 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
     conn
     |> post("/api/graphql", %{query: query, variables: variables})
     |> json_response(200)
+  end
+
+  defp attribution_ledger_batching_query do
+    """
+    query AttributionLedgerBatching($first: Int!) {
+      commerceAttributionClicks(first: $first) {
+        edges {
+          node {
+            clickId
+            userId
+            userEmail
+            merchantId
+            merchantName
+            productId
+            productName
+            merchantProductId
+            merchantProductExternalSku
+            affiliateProgramId
+            affiliateProgramCode
+            affiliateNetworkId
+            affiliateNetworkCode
+            affiliateNetworkName
+            matchedConversions {
+              networkConversionRef
+              status
+              attributionConfidence
+              currency
+              orderAmount
+              commissionAmount
+              purchasedAt
+              reportedAt
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp attribution_ledger_query_budget(queries) do
+    Enum.into(@attribution_ledger_tables, %{}, fn table ->
+      {table, Enum.count(queries, &query_targets_table?(&1, table))}
+    end)
   end
 
   defp count_queries_by_table(queries) do
