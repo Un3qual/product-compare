@@ -43,66 +43,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 18. Attribution Observability And Affiliate Click References
-
-Status: active
-Owner: `codex/attribution-observability-libraries`
-Lane: Commerce attribution and operator analytics
-Plan: `docs/superpowers/plans/2026-08-01-attribution-observability-and-affiliate-click-references-implementation-plan.md`
-Batch outcome: operators receive unsuppressed revenue metrics and a paginated
-individual click/conversion ledger, browser clicks persist raw request
-diagnostics and signed-in identity consistently, and CJ, Impact, Awin, and
-Rakuten round-trip ProductCompare click references through their officially
-documented publisher fields.
-Next action: add the failing zero/one-conversion domain, GraphQL, and frontend
-expectations that remove the suppression contract before changing projections.
-Owned paths:
-
-- `lib/product_compare/commerce_attribution/**`
-- `lib/product_compare_schemas/commerce_attribution/**`
-- commerce-attribution fields in
-  `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
-- `lib/product_compare_web/commerce_attribution/**`
-- `lib/product_compare_web/controllers/commerce_redirect_controller.ex`
-- `lib/product_compare_web/plugs/put_absinthe_context.ex`
-- commerce redirect pipeline entries in `lib/product_compare_web/router.ex`
-- `lib/product_compare_web/resolvers/commerce_attribution/**`
-- `lib/product_compare_web/schema/commerce_attribution/**`
-- `assets/src/routes/commerce/revenue/**`
-- `assets/test/routes/commerce/revenue/**`
-- generated Relay artifacts for the revenue route
-- affected commerce attribution, click, revenue, redirect, seed, and GraphQL
-  query-count tests
-- attribution diagnostic values in `priv/repo/seeds/operations.exs`
-- `docs/work/attribution-observability-and-affiliate-click-references.md`
-
-Internal slices:
-
-- Unsuppressed domain, GraphQL, and frontend revenue summary.
-- Raw request diagnostics and session-aware fallback click identity.
-- Verified outbound network parameter mapping and inbound provider adapters.
-- Operator-only bounded click/conversion ledger and revenue-route presentation.
-
-Prerequisites:
-
-- Product approval of option 2 and raw attribution diagnostics is recorded in
-  the linked design.
-- Official network evidence confirms CJ `sid`, Impact `subId1`, Awin
-  `clickref`, and Rakuten `u1`; Amazon remains local-click/campaign-tag only.
-- No active row owns the affected attribution, revenue, or redirect paths.
-
-Verification:
-
-- focused attribution, click, summary, ledger, redirect, and seed suites
-- GraphQL authorization, pagination, filtering, and stable query counts
-- focused revenue and tracked-click frontend suites plus Relay generation
-- complete backend and frontend gates, work-queue validation, and diff check
-
-Exit condition: no suppression code or schema field remains, every persisted
-browser click contains its available raw diagnostics and signed-in identity,
-each verified network receives and returns the correct click-reference token,
-Amazon/custom links are not dynamically decorated, the operator can inspect
-individual clicks and conversions beside exact totals, and all gates pass.
+None.
 
 ## Ready Work
 
