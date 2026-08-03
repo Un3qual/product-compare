@@ -16,7 +16,7 @@ Operators always see real revenue totals and can trace individual clicks to user
 ## Validated Scope
 
 - Click sessions already have a unique public UUID and optional user association.
-- The GraphQL click mutation associates signed-in users; the direct fallback currently does not load the session.
+- Both the GraphQL click mutation and direct fallback preserve the signed-in session user when available; the fallback remains anonymous without a session.
 - Click sessions persist raw `referrer`, `user_agent`, and Phoenix-resolved `ip_address`; the unreleased hash-named storage had no production hashing writer and was replaced in place.
 - Revenue summaries return their calculated metrics to operators at every conversion volume; no threshold or suppression metadata remains.
 - The operator route exposes the aggregate summary and a paginated individual click/conversion ledger.
