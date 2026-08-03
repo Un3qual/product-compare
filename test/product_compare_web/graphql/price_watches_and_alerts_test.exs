@@ -35,7 +35,8 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     input =
       sample_watch_input(%{
         "productId" => relay_id(:product, product.id),
-        "targetAmount" => "75"
+        "targetAmount" => "75",
+        "cooldownSeconds" => 3_600
       })
 
     assert %{
@@ -47,7 +48,8 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
                    "ruleType" => "TARGET_PRICE",
                    "currency" => "USD",
                    "targetAmount" => "75",
-                   "enabled" => true
+                   "enabled" => true,
+                   "cooldownSeconds" => 3_600
                  },
                  "errors" => []
                }
@@ -74,14 +76,26 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     assert %{
              "data" => %{
                "updatePriceWatch" => %{
-                 "watch" => %{"id" => ^watch_id, "enabled" => false},
+                 "watch" => %{
+                   "id" => ^watch_id,
+                   "enabled" => false,
+                   "cooldownSeconds" => 7_200
+                 },
                  "errors" => []
                }
              }
            } =
              graphql(owner_conn, update_watch_mutation(), %{
-               "input" => %{"id" => watch_id, "enabled" => false}
+               "input" => %{"id" => watch_id, "enabled" => false, "cooldownSeconds" => 7_200}
              })
+
+    assert %{
+             "data" => %{
+               "myPriceWatches" => %{
+                 "edges" => [%{"node" => %{"id" => ^watch_id, "cooldownSeconds" => 7_200}}]
+               }
+             }
+           } = graphql(owner_conn, watches_query(), %{})
 
     assert %{
              "data" => %{
@@ -330,7 +344,7 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     """
     query MyPriceWatches {
       myPriceWatches(first: 20) {
-        edges { node { id productName ruleType currency targetAmount enabled } }
+        edges { node { id productName ruleType currency targetAmount enabled cooldownSeconds } }
         pageInfo { hasNextPage endCursor }
       }
     }
@@ -356,7 +370,7 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     """
     mutation CreatePriceWatch($input: CreatePriceWatchInput!) {
       createPriceWatch(input: $input) {
-        watch { id productName ruleType currency targetAmount enabled }
+        watch { id productName ruleType currency targetAmount enabled cooldownSeconds }
         errors { code field message }
       }
     }
@@ -367,7 +381,7 @@ defmodule ProductCompareWeb.GraphQL.PriceWatchesAndAlertsTest do
     """
     mutation UpdatePriceWatch($input: UpdatePriceWatchInput!) {
       updatePriceWatch(input: $input) {
-        watch { id enabled }
+        watch { id enabled cooldownSeconds }
         errors { code field message }
       }
     }

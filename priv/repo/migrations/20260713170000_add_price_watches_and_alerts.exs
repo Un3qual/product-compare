@@ -27,7 +27,11 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :last_condition_met, :boolean, null: false, default: false
       add :last_evaluated_at, :utc_datetime_usec
       add :last_event_at, :utc_datetime_usec
-      add :cooldown_seconds, :bigint, null: false, default: 86_400
+
+      add :cooldown, :duration,
+        fields: "DAY TO SECOND",
+        null: false,
+        default: fragment("INTERVAL '1 day'")
 
       timestamps(type: :utc_datetime_usec)
     end
@@ -42,8 +46,16 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
                "(rule_type = 'target_price' AND target_amount IS NOT NULL AND target_amount >= 0 AND percentage_drop IS NULL) OR (rule_type = 'percentage_drop' AND percentage_drop IS NOT NULL AND percentage_drop > 0 AND percentage_drop <= 100 AND target_amount IS NULL AND baseline_landed_price IS NOT NULL) OR (rule_type IN ('back_in_stock', 'newly_available') AND target_amount IS NULL AND percentage_drop IS NULL)"
            )
 
-    create constraint(:price_watch_rules, :price_watch_rules_cooldown_check,
-             check: "cooldown_seconds >= 60 AND cooldown_seconds <= 31536000"
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_min_check,
+             check: "cooldown >= INTERVAL '60 seconds'"
+           )
+
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_max_check,
+             check: "cooldown <= INTERVAL '31536000 seconds'"
+           )
+
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_whole_seconds_check,
+             check: "date_trunc('second', cooldown) = cooldown"
            )
 
     create table(:alert_events) do

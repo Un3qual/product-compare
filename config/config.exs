@@ -16,7 +16,8 @@ config :product_compare,
 
 config :product_compare, ProductCompare.Repo,
   migration_primary_key: [name: :id, type: :bigserial],
-  migration_foreign_key: [type: :bigint]
+  migration_foreign_key: [type: :bigint],
+  types: ProductCompare.PostgrexTypes
 
 config :product_compare, ProductCompare.Catalog.SearchDocuments, rebuild_timeout: :infinity
 

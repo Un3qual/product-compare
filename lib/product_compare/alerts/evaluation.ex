@@ -7,6 +7,7 @@ defmodule ProductCompare.Alerts.Evaluation do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Alerts.AlertDeliveryAttempt
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.Cooldown
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Pricing.PricePoint
 
@@ -255,7 +256,13 @@ defmodule ProductCompare.Alerts.Evaluation do
   defp cooldown_elapsed?(%PriceWatchRule{last_event_at: nil}, _now), do: true
 
   defp cooldown_elapsed?(watch, now) do
-    DateTime.diff(now, watch.last_event_at, :second) >= watch.cooldown_seconds
+    case Cooldown.to_seconds(watch.cooldown) do
+      {:ok, cooldown_seconds} ->
+        DateTime.diff(now, watch.last_event_at, :second) >= cooldown_seconds
+
+      :error ->
+        false
+    end
   end
 
   defp decimal_lte?(%Decimal{} = left, %Decimal{} = right),

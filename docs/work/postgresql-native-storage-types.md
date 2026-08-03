@@ -24,18 +24,21 @@ and the queue/catalog records.
 
 ## Current Milestone
 
-Task 2 is complete: application-owned SHA-256 values for source artifacts,
-ingestion reconciliation scopes, and imported product-attribute claims now
-persist as constrained 32-byte `bytea` values. The existing unique and partial
-index replay behavior is unchanged; reconciliation encodes only its transient
-advisory-lock name as hexadecimal text. Focused owner, seed, GraphQL fixture,
-and CJ-import suites passed after rebuilding the test schema.
+Task 3 is implemented: price-watch cooldowns now persist as constrained
+PostgreSQL `interval DAY TO SECOND` values decoded into Elixir `Duration`.
+The GraphQL create, update, and read contract remains integer-valued
+`cooldownSeconds`, while evaluation compares exact elapsed seconds at the
+conversion boundary. Focused alert/GraphQL coverage and the cooldown-relevant
+seed regression passed against rebuilt isolated test databases. The complete
+seed suite still has an unrelated PostgreSQL deadlock in account bootstrap;
+its details are recorded in the Task 3 report rather than attributed to this
+storage change.
 
 ## Next Action
 
-Execute Task 3: migrate the approved cooldown interval and absolute timestamp
-values to PostgreSQL-native storage types while preserving their GraphQL
-projections.
+Execute Task 4: migrate first-party absolute timestamp storage and add the
+native-type policy guard. Task 3 owns only elapsed cooldown intervals; it does
+not change the existing absolute timestamp columns.
 
 ## Verification Contract
 

@@ -44,6 +44,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.Cooldown
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
@@ -1383,13 +1384,14 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %PriceWatchRule{
              target_amount: target_amount,
-             cooldown_seconds: 604_800,
+             cooldown: %Duration{} = cooldown,
              last_evaluated_at: nil,
              last_evaluated_price_point_id: nil,
              last_event_at: nil
            } = Repo.get(PriceWatchRule, unrelated_watch.id)
 
     assert Decimal.equal?(target_amount, Decimal.new("1000.00"))
+    assert {:ok, 604_800} = Cooldown.to_seconds(cooldown)
     refute Repo.get_by(AlertEvent, watch_rule_id: unrelated_watch.id)
   end
 

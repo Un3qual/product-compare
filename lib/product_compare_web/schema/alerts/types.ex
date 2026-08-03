@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
   use Absinthe.Relay.Schema.Notation, :modern
 
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareSchemas.Alerts.Cooldown
 
   enum :price_watch_rule_type do
     value(:target_price)
@@ -72,7 +73,16 @@ defmodule ProductCompareWeb.Schema.Alerts.Types do
     field :percentage_drop, :decimal
     field :baseline_landed_price, :decimal
     field :enabled, non_null(:boolean)
-    field :cooldown_seconds, non_null(:integer)
+
+    field :cooldown_seconds, non_null(:integer) do
+      resolve(fn watch, _, _ ->
+        case Cooldown.to_seconds(watch.cooldown) do
+          {:ok, seconds} -> {:ok, seconds}
+          :error -> {:error, "invalid persisted price watch cooldown"}
+        end
+      end)
+    end
+
     field :last_evaluated_at, :datetime
 
     field :created_at, non_null(:datetime),
