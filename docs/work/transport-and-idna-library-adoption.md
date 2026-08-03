@@ -6,7 +6,7 @@
 - Priority: P2
 - Plan: `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
-- Last verified: 2026-08-01 against the CJ client, destination parser, address policy, and their focused suites.
+- Last verified: 2026-08-03 against the CJ client, destination parser, address policy, and their focused suites.
 
 ## Target Outcome
 
@@ -48,6 +48,14 @@ Req owns CJ HTTP mechanics and `idna` owns Unicode hostname conversion; ProductC
 - Verified 2026-08-03: `mix deps.get`; focused CJ client, parser, import, and
   feed-task suites (54 tests, 0 failures); `mix format`; queue validation; and
   `git diff --check`.
-- Remaining scope: Task 2 replaces only the destination URL local punycode
-  encoder with `idna`; its parser and address-policy contract remain untouched
-  by this milestone.
+- Task 2 complete: `idna` 7.1.0 now owns hostname-to-ASCII conversion. The
+  parser normalizes the library charlist result at its boundary, maps all
+  library failures to `:error`, and rejects ASCII hostnames over 253 bytes.
+  Browser URL syntax, explicit ports, userinfo rejection, IP literal handling,
+  and the public-address policy remain in their existing owners; the local
+  `DestinationUrl.Punycode` module is deleted.
+- Verified 2026-08-03: destination URL, commerce-attribution, and redirect
+  controller suites (89 tests, 0 failures); removed-code scan; `mix format`;
+  queue validation (`4 ready`); and `git diff --check`.
+- Remaining scope: Task 3 runs the combined transport/attribution dependency,
+  repository, and handoff verification before this active lane can close.

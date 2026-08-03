@@ -25,18 +25,18 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
     end
 
     test "returns 404 instead of redirecting invalid stored destinations", %{conn: conn} do
-      commerce_link_id = unsafe_commerce_link_fixture("javascript:alert(1)")
+      for destination_url <- ["javascript:alert(1)", "https://a\u{200D}b.example/offer"] do
+        commerce_link_id = unsafe_commerce_link_fixture(destination_url)
 
-      {:ok, click_session} =
-        CommerceAttribution.create_click_session(%{
-          commerce_link_id: commerce_link_id,
-          click_id: Ecto.UUID.generate(),
-          source_surface: :web
-        })
+        {:ok, click_session} =
+          CommerceAttribution.create_click_session(%{
+            commerce_link_id: commerce_link_id,
+            click_id: Ecto.UUID.generate(),
+            source_surface: :web
+          })
 
-      conn = get(conn, "/r/#{click_session.click_id}")
-
-      assert response(conn, 404) == "redirect not found"
+        assert response(get(conn, "/r/#{click_session.click_id}"), 404) == "redirect not found"
+      end
     end
 
     test "redirects tracked merchant product clicks through the first-party path", %{conn: conn} do

@@ -116,6 +116,7 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       for destination_url <- [
             "https://trusted.example@attacker.example/offer",
+            "https://a\u{200D}b.example/offer",
             "http://localhost/offer",
             "http://192.168.1.1/offer",
             "http://[::ffff:192.168.1.1]/offer"
