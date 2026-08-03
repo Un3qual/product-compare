@@ -6,6 +6,8 @@ defmodule ProductCompareSchemas.Reference.CurrencyCode do
 
   use Ecto.Type
 
+  alias ProductCompare.ReferenceData
+
   @codes %{
     "CAD" => 124,
     "GBP" => 826,
@@ -19,8 +21,12 @@ defmodule ProductCompareSchemas.Reference.CurrencyCode do
 
   @impl true
   def cast(code) when is_binary(code) do
-    code = code |> String.trim() |> String.upcase()
-    if Map.has_key?(@codes, code), do: {:ok, code}, else: :error
+    with {:ok, code} <- ReferenceData.canonical_currency(code),
+         true <- Map.has_key?(@codes, code) do
+      {:ok, code}
+    else
+      _error -> :error
+    end
   end
 
   def cast(_code), do: :error

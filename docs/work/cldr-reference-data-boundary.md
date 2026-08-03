@@ -44,3 +44,14 @@ CLDR owns standards recognition and metadata for currencies, territories, and la
   Money/unit work was included.
 - Verified `mix test test/product_compare/reference_data_test.exs` (6 tests,
   0 failures) and `mix work_queue.validate` (3 ready rows).
+- 2026-08-03: Task 2 routes `CurrencyCode.cast/1` through
+  `ReferenceData.canonical_currency/1` before its unchanged private
+  CAD/EUR/GBP/USD-to-ID map. The boundary now exposes CLDR's ISO minor-unit
+  metadata. Seeded IDs, trimming/casing, field types, and repository-free Ecto
+  codec behavior remain unchanged; CLDR-recognized JPY remains unsupported and
+  is rejected before CJ import fetching.
+- Verified `mix test test/product_compare/reference_data_test.exs
+  test/product_compare/repo/reference_code_codec_parity_test.exs
+  test/product_compare/commerce_attribution test/product_compare/ingestion
+  test/mix/tasks/product_compare_ingestion_cj_import_test.exs` (291 tests,
+  0 failures) and `mix format`.

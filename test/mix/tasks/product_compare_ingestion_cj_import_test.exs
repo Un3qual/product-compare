@@ -532,13 +532,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(ImportRun, :count, :id) == 0
     end
 
-    test "rejects an unsupported configured currency before fetching" do
+    test "rejects CLDR-recognized but unsupported configured currency before fetching" do
       fetcher = fn _cursor, _opts ->
         flunk("unsupported currency configuration must not reach the CJ product fetcher")
       end
 
-      assert_raise Mix.Error, "unsupported CJ import currency: \"AUD\"", fn ->
-        CjImport.run_import(currency: "AUD", fetcher: fetcher)
+      assert_raise Mix.Error, "unsupported CJ import currency: \"JPY\"", fn ->
+        CjImport.run_import(currency: "JPY", fetcher: fetcher)
       end
 
       assert Repo.aggregate(ImportRun, :count, :id) == 0

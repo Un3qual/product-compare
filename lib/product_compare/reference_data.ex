@@ -53,11 +53,12 @@ defmodule ProductCompare.ReferenceData do
   def supported_language?(value),
     do: supported?(value, &canonical_language/1, @supported_languages)
 
-  @spec currency(term()) :: {:ok, %{code: String.t(), name: String.t()}} | nil
+  @spec currency(term()) ::
+          {:ok, %{code: String.t(), name: String.t(), minor_unit: non_neg_integer() | nil}} | nil
   def currency(value) do
     with {:ok, code} <- canonical_currency(value),
          {:ok, currency} <- Cldr.Currency.currency_for_code(code) do
-      {:ok, %{code: code, name: currency.name}}
+      {:ok, %{code: code, name: currency.name, minor_unit: currency.iso_digits}}
     else
       _error -> nil
     end

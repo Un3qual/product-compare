@@ -39,15 +39,12 @@ defmodule ProductCompare.ReferenceDataTest do
   end
 
   describe "CLDR metadata" do
-    test "returns canonical metadata for supported reference codes" do
-      assert {:ok, %{code: "USD", name: currency_name}} = ReferenceData.currency("usd")
-      assert is_binary(currency_name) and currency_name != ""
+    test "returns canonical English metadata for supported reference codes" do
+      assert {:ok, %{code: "USD", name: "US Dollar", minor_unit: 2}} =
+               ReferenceData.currency("usd")
 
-      assert {:ok, %{code: "CA", name: territory_name}} = ReferenceData.territory("ca")
-      assert is_binary(territory_name) and territory_name != ""
-
-      assert {:ok, %{code: "fr", name: language_name}} = ReferenceData.language("fr")
-      assert is_binary(language_name) and language_name != ""
+      assert {:ok, %{code: "CA", name: "Canada"}} = ReferenceData.territory("ca")
+      assert {:ok, %{code: "fr", name: "French"}} = ReferenceData.language("fr")
     end
 
     test "returns nil metadata for malformed or unknown codes" do

@@ -2,6 +2,7 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
   use ProductCompare.DataCase, async: true
 
   alias ProductCompare.Repo
+  alias ProductCompare.ReferenceData
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot.{Evidence, Recommendation}
   alias ProductCompareSchemas.Ingestion.{ImportRun, MerchantFeedCandidate}
@@ -43,7 +44,7 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
     assert expected_fields == production_reference_code_fields()
   end
 
-  test "the currency codec round-trips the complete seeded currency table" do
+  test "the currency codec preserves seeded IDs and CLDR metadata" do
     database_codes = reference_rows("currencies")
 
     assert database_codes == %{
@@ -53,10 +54,34 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
              "EUR" => 978
            }
 
+    expected_minor_units = %{
+      "CAD" => 2,
+      "EUR" => 2,
+      "GBP" => 2,
+      "USD" => 2
+    }
+
     Enum.each(database_codes, fn {code, id} ->
-      assert {:ok, ^id} = CurrencyCode.dump(code)
+      normalized_input = " #{String.downcase(code)} "
+      minor_unit = Map.fetch!(expected_minor_units, code)
+
+      assert {:ok, ^code} = ReferenceData.canonical_currency(normalized_input)
+
+      assert {:ok, %{code: ^code, minor_unit: ^minor_unit}} =
+               ReferenceData.currency(normalized_input)
+
+      assert {:ok, ^code} = CurrencyCode.cast(normalized_input)
+      assert {:ok, ^id} = CurrencyCode.dump(normalized_input)
       assert {:ok, ^code} = CurrencyCode.load(id)
     end)
+  end
+
+  test "the codec rejects CLDR-recognized currencies outside ProductCompare support" do
+    assert {:ok, "JPY"} = ReferenceData.canonical_currency(" jpy ")
+    assert {:ok, %{code: "JPY", minor_unit: 0}} = ReferenceData.currency(" jpy ")
+
+    assert :error = CurrencyCode.cast(" jpy ")
+    assert :error = CurrencyCode.dump(" jpy ")
   end
 
   defp reference_rows(table) do
