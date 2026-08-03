@@ -124,8 +124,10 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
           graphql(operator_conn, attribution_ledger_batching_query(), %{"first" => 8})
         end)
 
-      assert length(get_in(small_response, ["data", "commerceAttributionClicks", "edges"])) == 2
-      assert length(get_in(large_response, ["data", "commerceAttributionClicks", "edges"])) == 8
+      assert [_, _] = get_in(small_response, ["data", "commerceAttributionClicks", "edges"])
+
+      assert [_, _, _, _, _, _, _, _] =
+               get_in(large_response, ["data", "commerceAttributionClicks", "edges"])
 
       small_budget = attribution_ledger_query_budget(small_queries)
       large_budget = attribution_ledger_query_budget(large_queries)

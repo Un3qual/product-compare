@@ -91,13 +91,13 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
   defp normalize_status(nil), do: :missing
   defp normalize_status(status), do: status
 
-  defp amount_decimal(value) when is_map(value),
-    do: decimal(Map.get(value, :amount) || Map.get(value, "amount"))
+  defp amount_decimal(amount) when is_map(amount),
+    do: amount |> value(:amount, "amount", nil) |> decimal()
 
   defp amount_decimal(value), do: decimal(value)
 
-  defp amount_currency(value) when is_map(value),
-    do: Map.get(value, :currency) || Map.get(value, "currency")
+  defp amount_currency(amount) when is_map(amount),
+    do: value(amount, :currency, "currency", nil)
 
   defp amount_currency(_value), do: nil
 

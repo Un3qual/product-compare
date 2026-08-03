@@ -40,8 +40,8 @@ defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
   end
 
   defp member_id(payload) do
-    Map.get(payload, :member_id) || Map.get(payload, "member ID") ||
-      Map.get(payload, "Member ID") || Map.get(payload, :u1) || Map.get(payload, "u1")
+    value(payload, :member_id, "member ID", "Member ID") ||
+      value(payload, :u1, "u1", nil)
   end
 
   defp reference_attrs(value) do

@@ -75,11 +75,15 @@ defmodule ProductCompare.CommerceAttribution.ClickLedger do
     |> join(
       :left,
       [merchant_product: merchant_product],
-      merchant in assoc(merchant_product, :merchant), as: :conversion_merchant_product_merchant)
+      merchant in assoc(merchant_product, :merchant),
+      as: :conversion_merchant_product_merchant
+    )
     |> join(
       :left,
       [merchant_product: merchant_product],
-      product in assoc(merchant_product, :product), as: :conversion_merchant_product_product)
+      product in assoc(merchant_product, :product),
+      as: :conversion_merchant_product_product
+    )
     |> order_by([conversion: conversion], desc: conversion.reported_at, desc: conversion.id)
     |> preload(
       [
