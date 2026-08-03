@@ -173,16 +173,7 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
         }
       })
 
-    request = %{
-      method: :post,
-      url: @endpoint,
-      headers: [
-        {"Authorization", "Bearer #{api_token}"},
-        {"Content-Type", "application/json"}
-      ],
-      body: body,
-      options: request_options(opts)
-    }
+    request = request(api_token, body, opts)
 
     {:ok, request, offset, limit}
   end
@@ -202,7 +193,13 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
         }
       })
 
-    request = %{
+    request = request(api_token, body, opts)
+
+    {:ok, request, offset, limit}
+  end
+
+  defp request(api_token, body, opts) do
+    %{
       method: :post,
       url: @endpoint,
       headers: [
@@ -212,8 +209,6 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
       body: body,
       options: request_options(opts)
     }
-
-    {:ok, request, offset, limit}
   end
 
   defp transport(opts), do: Map.get(opts, :transport, &default_transport/1)

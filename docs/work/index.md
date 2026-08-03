@@ -43,52 +43,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 19. Transport And IDNA Library Adoption
-
-Status: active
-Owner: `codex/attribution-observability-libraries`
-Lane: Provider transport and destination safety
-Plan: `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
-Batch outcome: Req replaces direct CJ `:httpc` mechanics and `idna` replaces
-the local punycode encoder while existing provider, URL, IP, and SSRF contracts
-remain unchanged.
-Next action: characterize the injected/default CJ transport through Req-shaped
-success, failure, timeout, and secret-safe cases before adding the dependency.
-Owned paths:
-
-- `mix.exs`
-- `mix.lock`
-- `lib/product_compare/ingestion/sources/cj/client.ex`
-- `lib/product_compare/commerce_attribution/destination_url/**`
-- `test/product_compare/ingestion/sources/cj/client_test.exs`
-- affected CJ parser/import/task tests
-- `test/product_compare/commerce_attribution/destination_url_test.exs`
-- affected commerce-attribution and redirect-controller URL tests
-- `docs/work/transport-and-idna-library-adoption.md`
-
-Internal slices:
-
-- Req transport characterization, adoption, and `:httpc` deletion.
-- IDNA boundary characterization, adoption, and local punycode deletion.
-- Dependency and repository-wide verification.
-
-Prerequisites:
-
-- No active row owns `mix.exs`, `mix.lock`, the CJ client, or destination parser.
-- The attribution row may complete first if both rows remain on one serial
-  branch; its click-reference URL behavior becomes characterization evidence.
-
-Verification:
-
-- CJ client, parser, import, and task suites with no live requests
-- destination URL, attribution, and redirect-controller suites
-- removed-code scans, dependency checks, backend/full repository gates
-- `mix work_queue.validate` and `git diff --check`
-
-Exit condition: Req is the only CJ HTTP implementation, `idna` is the only
-punycode/IDNA implementation, superseded code is absent, all prior boundary
-behavior remains covered, secrets remain excluded from logs/errors, and all
-gates pass.
+None.
 
 ## Ready Work
 

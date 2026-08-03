@@ -2,13 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Priority: P2
 - Plan: `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
-- Last verified: 2026-08-03 against the CJ client, destination parser, address policy, and their focused suites.
+- Last verified: 2026-08-03 against the combined CJ transport, destination URL,
+  address-policy, backend, frontend, and work-queue gates.
 
-## Target Outcome
+## Batch Outcome
 
 Req owns CJ HTTP mechanics and `idna` owns Unicode hostname conversion; ProductCompare retains provider-domain normalization and URL/SSRF policy while deleting direct `:httpc` and local punycode code.
 
@@ -57,5 +58,12 @@ Req owns CJ HTTP mechanics and `idna` owns Unicode hostname conversion; ProductC
 - Verified 2026-08-03: destination URL, commerce-attribution, and redirect
   controller suites (89 tests, 0 failures); removed-code scan; `mix format`;
   queue validation (`4 ready`); and `git diff --check`.
-- Remaining scope: Task 3 runs the combined transport/attribution dependency,
-  repository, and handoff verification before this active lane can close.
+- Task 3 complete, verified 2026-08-03: `mix deps.unlock --check-unused`;
+  combined CJ ingestion/import/feed-task, commerce-attribution, and redirect
+  suites (302 tests, 0 failures); `mix format --check-formatted`; `mix
+  typecheck`; `mix quality`; `mix test --cover` (1,147 tests, 0 failures;
+  85.74% total coverage); `mix frontend_check` (1,520 tests, client/SSR
+  builds, and bundle contract); `mix work_queue.validate` (`4 ready`); and
+  `git diff --check`. A scoped duplicate request-map cleanup in the CJ client
+  restored the ExDNA clone budget without changing its request contract; the
+  focused CJ client suite then passed (11 tests, 0 failures).
