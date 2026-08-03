@@ -6,6 +6,11 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
   alias ProductCompare.Ingestion.Sources.CJ.IdNormalizer
 
   @endpoint "https://ads.api.cj.com/query"
+  @default_req_options [
+    receive_timeout: 15_000,
+    connect_options: [timeout: 5_000],
+    redirect: true
+  ]
 
   @product_query """
   query(
@@ -90,7 +95,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
           required(:method) => :post,
           required(:url) => String.t(),
           required(:headers) => [{String.t(), String.t()}],
-          required(:body) => String.t()
+          required(:body) => String.t(),
+          required(:options) => keyword()
         }
 
   @type response :: %{required(:status) => pos_integer(), required(:body) => String.t()}
@@ -174,7 +180,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
         {"Authorization", "Bearer #{api_token}"},
         {"Content-Type", "application/json"}
       ],
-      body: body
+      body: body,
+      options: request_options(opts)
     }
 
     {:ok, request, offset, limit}
@@ -202,7 +209,8 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
         {"Authorization", "Bearer #{api_token}"},
         {"Content-Type", "application/json"}
       ],
-      body: body
+      body: body,
+      options: request_options(opts)
     }
 
     {:ok, request, offset, limit}
@@ -210,30 +218,27 @@ defmodule ProductCompare.Ingestion.Sources.CJ.Client do
 
   defp transport(opts), do: Map.get(opts, :transport, &default_transport/1)
 
-  defp default_transport(%{method: :post, url: url, headers: headers, body: body}) do
-    with {:ok, _started} <- Application.ensure_all_started(:inets),
-         {:ok, _started} <- Application.ensure_all_started(:ssl) do
-      http_headers =
-        Enum.map(headers, fn {key, value} ->
-          {String.to_charlist(key), String.to_charlist(value)}
-        end)
+  defp default_transport(%{
+         method: :post,
+         url: url,
+         headers: headers,
+         body: body,
+         options: options
+       }) do
+    case Req.post(url, Keyword.merge(options, headers: headers, body: body, decode_body: false)) do
+      {:ok, %{status: status, body: response_body}} ->
+        {:ok, %{status: status, body: IO.iodata_to_binary(response_body)}}
 
-      request = {
-        String.to_charlist(url),
-        http_headers,
-        ~c"application/json",
-        String.to_charlist(body)
-      }
+      {:error, %Req.TransportError{reason: reason}} ->
+        {:error, {:transport_error, reason}}
 
-      case :httpc.request(:post, request, [{:autoredirect, true}], body_format: :binary) do
-        {:ok, {{_http_version, status, _reason}, _response_headers, response_body}} ->
-          {:ok, %{status: status, body: IO.iodata_to_binary(response_body)}}
-
-        {:error, reason} ->
-          {:error, {:transport_error, reason}}
-      end
+      {:error, reason} ->
+        {:error, {:transport_error, reason}}
     end
   end
+
+  defp request_options(opts),
+    do: Keyword.merge(@default_req_options, Map.get(opts, :req_options, []))
 
   defp decode_response(response, offset, limit),
     do: decode_response(response, offset, limit, "shoppingProducts")

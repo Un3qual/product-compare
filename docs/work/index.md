@@ -43,13 +43,10 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 19. Transport And IDNA Library Adoption
 
-Status: ready
+Status: active
+Owner: `codex/attribution-observability-libraries`
 Lane: Provider transport and destination safety
 Plan: `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
 Batch outcome: Req replaces direct CJ `:httpc` mechanics and `idna` replaces
@@ -92,6 +89,8 @@ Exit condition: Req is the only CJ HTTP implementation, `idna` is the only
 punycode/IDNA implementation, superseded code is absent, all prior boundary
 behavior remains covered, secrets remain excluded from logs/errors, and all
 gates pass.
+
+## Ready Work
 
 ### 20. CLDR Reference Data Boundary
 
