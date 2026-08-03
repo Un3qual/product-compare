@@ -32,7 +32,7 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQualityTest do
 
       source_artifact_fixture(cj_source, %{
         fetched_at: ~U[2026-07-01 10:00:00Z],
-        content_hash: "hash-older",
+        content_hash: :crypto.hash(:sha256, "hash-older"),
         raw_json: %{"token" => "secret"},
         url: "https://example.invalid/secret"
       })
@@ -40,12 +40,12 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQualityTest do
       latest_artifact =
         source_artifact_fixture(cj_source, %{
           fetched_at: ~U[2026-07-02 10:00:00Z],
-          content_hash: "hash-newer"
+          content_hash: :crypto.hash(:sha256, "hash-newer")
         })
 
       source_artifact_fixture(other_source, %{
         fetched_at: ~U[2026-07-03 10:00:00Z],
-        content_hash: "hash-other"
+        content_hash: :crypto.hash(:sha256, "hash-other")
       })
 
       external_product_fixture(cj_source, %{
@@ -94,7 +94,7 @@ defmodule ProductCompare.Ingestion.CJImportArtifactQualityTest do
         %{
           source_id: source.id,
           fetched_at: ~U[2026-07-01 12:00:00Z],
-          content_hash: "artifact-#{suffix}",
+          content_hash: :crypto.hash(:sha256, "artifact-#{suffix}"),
           raw_json: %{"secret" => "hidden"},
           url: "https://example.invalid/artifact-#{suffix}"
         },

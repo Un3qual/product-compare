@@ -24,12 +24,18 @@ and the queue/catalog records.
 
 ## Current Milestone
 
-Task 1 is complete: Phoenix `remote_ip` tuples now persist through
-`EctoNetwork.INET` to the unreleased PostgreSQL `inet` column, and the
-operator ledger converts loaded `%Postgrex.INET{}` values back to textual IP
-addresses. PostgreSQL reloads host addresses with their explicit `/32` netmask;
-the focused tests assert that canonical native representation while GraphQL
-continues exposing only the address text.
+Task 2 is complete: application-owned SHA-256 values for source artifacts,
+ingestion reconciliation scopes, and imported product-attribute claims now
+persist as constrained 32-byte `bytea` values. The existing unique and partial
+index replay behavior is unchanged; reconciliation encodes only its transient
+advisory-lock name as hexadecimal text. Focused owner, seed, GraphQL fixture,
+and CJ-import suites passed after rebuilding the test schema.
+
+## Next Action
+
+Execute Task 3: migrate the approved cooldown interval and absolute timestamp
+values to PostgreSQL-native storage types while preserving their GraphQL
+projections.
 
 ## Verification Contract
 

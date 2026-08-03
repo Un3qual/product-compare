@@ -24,7 +24,7 @@ defmodule ProductCompareWeb.GraphQL.SourceArtifactQueryTest do
           source_id: source.id,
           url: "https://merchant.example.com/product",
           fetched_at: fetched_at,
-          content_hash: "hash-1",
+          content_hash: :crypto.hash(:sha256, "hash-1"),
           raw_json: %{"secret" => "payload"},
           raw_text: "raw payload"
         })

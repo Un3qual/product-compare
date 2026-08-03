@@ -107,7 +107,7 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
              fingerprint: fingerprint
            } = Repo.get!(ProductAttributeClaim, claim_id)
 
-    assert fingerprint =~ ~r/^[a-f0-9]{64}$/
+    assert byte_size(fingerprint) == 32
     assert Repo.aggregate(ClaimEvidence, :count, :id) == 1
     assert Repo.aggregate(CategoryMappingCandidate, :count, :id) == 1
 
@@ -122,6 +122,23 @@ defmodule ProductCompare.Ingestion.EnrichmentTest do
     assert candidate.display_path == "Footwear > Running shoes"
     assert candidate.normalized_path == "footwear > running shoes"
     assert candidate.observation_count == 2
+  end
+
+  test "product attribute claims reject fingerprints that are not SHA-256 digests" do
+    product = SpecsFixtures.product_fixture()
+    attribute = attribute_fixture("fingerprint-validation", :text)
+
+    changeset =
+      ProductAttributeClaim.changeset(%ProductAttributeClaim{}, %{
+        product_id: product.id,
+        attribute_id: attribute.id,
+        source_type: :import,
+        status: :proposed,
+        value_text: "Recycled mesh",
+        fingerprint: "not-a-32-byte-digest"
+      })
+
+    assert %{fingerprint: ["must be 32 bytes"]} = errors_on(changeset)
   end
 
   test "persists and replays numeric, date, and timestamp specification observations" do

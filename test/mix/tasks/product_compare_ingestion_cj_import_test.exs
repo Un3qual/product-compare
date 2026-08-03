@@ -154,7 +154,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                scope_fingerprint: scope_fingerprint
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
 
-      assert scope_fingerprint =~ ~r/^[a-f0-9]{64}$/
+      assert byte_size(scope_fingerprint) == 32
       assert Repo.aggregate(ImportObservation, :count, :id) == 1
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1

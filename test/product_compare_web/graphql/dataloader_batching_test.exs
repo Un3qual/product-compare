@@ -1045,7 +1045,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
           source_id: source.id,
           url: "https://#{source.domain}/product",
           fetched_at: observed_at,
-          content_hash: "offer-discovery-#{System.unique_integer([:positive])}"
+          content_hash:
+            :crypto.hash(:sha256, "offer-discovery-#{System.unique_integer([:positive])}")
         })
         |> Repo.insert!()
 
@@ -4708,7 +4709,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
           source_id: source.id,
           url: "https://#{prefix}-source-#{index}.example.com/product",
           fetched_at: observed_at,
-          content_hash: "#{prefix}-artifact-#{index}"
+          content_hash: :crypto.hash(:sha256, "#{prefix}-artifact-#{index}")
         })
         |> Repo.insert!()
 
@@ -4816,7 +4817,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
           source_id: source.id,
           url: "https://#{prefix}-source-#{index}.example.com/product",
           fetched_at: fetched_at,
-          content_hash: "#{prefix}-artifact-#{index}"
+          content_hash: :crypto.hash(:sha256, "#{prefix}-artifact-#{index}")
         })
         |> Repo.insert!()
 

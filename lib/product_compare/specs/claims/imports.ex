@@ -125,7 +125,6 @@ defmodule ProductCompare.Specs.Claims.Imports do
     [product_id, attribute_id, artifact_id, canonical_claim_value(normalized_value)]
     |> Jason.encode!()
     |> then(&:crypto.hash(:sha256, &1))
-    |> Base.encode16(case: :lower)
   end
 
   defp canonical_claim_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)

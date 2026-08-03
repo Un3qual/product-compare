@@ -115,7 +115,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :source_id, references(:sources, type: :bigint, on_delete: :nilify_all)
       add :url, :text
       add :fetched_at, :utc_datetime_usec, null: false, default: fragment("now()")
-      add :content_hash, :text
+      add :content_hash, :binary
       add :raw_json, :map
       add :raw_text, :text
 
@@ -127,6 +127,10 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
            )
 
     create unique_index(:source_artifacts, [:entropy_id])
+
+    create constraint(:source_artifacts, :source_artifacts_content_hash_sha256_length,
+             check: "content_hash IS NULL OR octet_length(content_hash) = 32"
+           )
 
     create table(:external_products) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")

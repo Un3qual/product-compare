@@ -21,7 +21,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     field :source_type, Ecto.Enum, values: @source_types
     field :status, Ecto.Enum, values: @statuses
     field :confidence, :decimal
-    field :fingerprint, :string
+    field :fingerprint, :binary
 
     field :value_bool, :boolean
     field :value_int, :integer
@@ -86,6 +86,8 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     ])
     |> validate_required([:product_id, :attribute_id, :source_type, :status])
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    |> validate_sha256_digest(:fingerprint)
+    |> check_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_sha256_length)
     |> unique_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_uq)
     |> validate_single_typed_value()
     |> validate_numeric_fields()
@@ -103,6 +105,12 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     else
       add_error(changeset, :base, "must contain exactly one typed value")
     end
+  end
+
+  defp validate_sha256_digest(changeset, field) do
+    validate_change(changeset, field, fn ^field, value ->
+      if is_binary(value) and byte_size(value) == 32, do: [], else: [{field, "must be 32 bytes"}]
+    end)
   end
 
   defp validate_numeric_fields(changeset) do

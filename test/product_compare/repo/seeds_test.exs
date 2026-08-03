@@ -650,7 +650,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert %SourceArtifact{id: artifact_id} =
              Repo.get_by(SourceArtifact,
                source_id: source_id,
-               content_hash: "development-manufacturer-specs-v1"
+               content_hash: :crypto.hash(:sha256, "development-manufacturer-specs-v1")
              )
 
     imported_product = products["acme-vision-27i-import"]
@@ -2411,7 +2411,9 @@ defmodule ProductCompare.Repo.SeedsTest do
     offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27G")
 
     artifact =
-      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-fresh-v1")
+      Repo.get_by!(SourceArtifact,
+        content_hash: :crypto.hash(:sha256, "development-marketplace-price-fresh-v1")
+      )
 
     seed_point =
       Repo.get_by!(PricePoint,
@@ -2480,7 +2482,9 @@ defmodule ProductCompare.Repo.SeedsTest do
     offer = Repo.get_by!(MerchantProduct, external_sku: "VAL-AC55O")
 
     artifact =
-      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-inactive-v1")
+      Repo.get_by!(SourceArtifact,
+        content_hash: :crypto.hash(:sha256, "development-marketplace-price-inactive-v1")
+      )
 
     seed_point = Repo.get_by!(PricePoint, entropy_id: "d3ca0000-0000-4000-8000-000000000509")
     Repo.delete!(seed_point)
@@ -2777,7 +2781,7 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> SourceArtifact.changeset(%{
         source_id: source.id,
         fetched_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
-        content_hash: "unrelated-reserved-mpn-v1"
+        content_hash: :crypto.hash(:sha256, "unrelated-reserved-mpn-v1")
       })
       |> Repo.insert!()
 

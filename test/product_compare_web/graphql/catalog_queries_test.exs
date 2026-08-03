@@ -363,7 +363,7 @@ defmodule ProductCompareWeb.GraphQL.CatalogQueriesTest do
           source_id: source.id,
           url: "https://acme.example/specifications/model-1",
           fetched_at: fetched_at,
-          content_hash: unique_code("provenance"),
+          content_hash: :crypto.hash(:sha256, unique_code("provenance")),
           raw_json: %{"secret" => "must not be queryable"},
           raw_text: "private source body"
         })

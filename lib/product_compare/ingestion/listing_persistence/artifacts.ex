@@ -173,7 +173,6 @@ defmodule ProductCompare.Ingestion.ListingPersistence.Artifacts do
     payload
     |> Jason.encode!()
     |> then(&:crypto.hash(:sha256, &1))
-    |> Base.encode16(case: :lower)
   end
 
   defp canonical_hash_value(%Decimal{} = value), do: Decimal.to_string(value, :normal)

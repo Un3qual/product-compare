@@ -28,12 +28,18 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
            )
 
     alter table(:product_attribute_claims) do
-      add :fingerprint, :text
+      add :fingerprint, :binary
     end
 
     create unique_index(:product_attribute_claims, [:fingerprint],
              name: :product_attribute_claims_fingerprint_uq,
              where: "fingerprint IS NOT NULL"
+           )
+
+    create constraint(
+             :product_attribute_claims,
+             :product_attribute_claims_fingerprint_sha256_length,
+             check: "fingerprint IS NULL OR octet_length(fingerprint) = 32"
            )
 
     create table(:category_mapping_candidates) do

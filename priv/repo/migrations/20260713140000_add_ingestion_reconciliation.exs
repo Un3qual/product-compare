@@ -3,7 +3,7 @@ defmodule ProductCompare.Repo.Migrations.AddIngestionReconciliation do
 
   def change do
     alter table(:ingestion_runs) do
-      add :scope_fingerprint, :text
+      add :scope_fingerprint, :binary
 
       add :reconciliation_status, :ingestion_reconciliation_status,
         null: false,
@@ -19,6 +19,10 @@ defmodule ProductCompare.Repo.Migrations.AddIngestionReconciliation do
 
     create constraint(:ingestion_runs, :ingestion_runs_offers_deactivated_non_negative,
              check: "offers_deactivated >= 0"
+           )
+
+    create constraint(:ingestion_runs, :ingestion_runs_scope_fingerprint_sha256_length,
+             check: "scope_fingerprint IS NULL OR octet_length(scope_fingerprint) = 32"
            )
 
     create table(:ingestion_run_observations) do

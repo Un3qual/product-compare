@@ -16,7 +16,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   @source_name "Development Marketplace Evidence"
-  @artifact_hash "development-marketplace-offers-v1"
+  @artifact_hash Support.sha256("development-marketplace-offers-v1")
   @price_point_entropy_ids %{
     fresh_old: "d3ca0000-0000-4000-8000-000000000501",
     fresh_middle: "d3ca0000-0000-4000-8000-000000000502",
@@ -191,7 +191,7 @@ defmodule ProductCompare.DevSeeds.Marketplace do
         artifact =
           seed_artifact!(
             source,
-            "development-marketplace-price-#{key}-v1",
+            Support.sha256("development-marketplace-price-#{key}-v1"),
             "https://marketplace.example/development/prices/#{key}",
             %{"purpose" => "development price observation", "scenario" => to_string(key)},
             anchor

@@ -20,7 +20,7 @@ defmodule ProductCompare.DevSeeds.Catalog do
   alias ProductCompareSchemas.Taxonomy.Taxonomy, as: TaxonomySchema
 
   @source_name "Development Manufacturer Evidence"
-  @artifact_hash "development-manufacturer-specs-v1"
+  @artifact_hash Support.sha256("development-manufacturer-specs-v1")
   @identifier_entropy_ids %{
     monitor_16_9: "d3ca0000-0000-4000-8000-000000000401",
     monitor_ultrawide: "d3ca0000-0000-4000-8000-000000000402",
