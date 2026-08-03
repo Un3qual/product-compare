@@ -90,6 +90,13 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
   end
 
   object :commerce_attribution_matched_conversion do
+    field :affiliate_network_id, :id
+    field :affiliate_network_code, :string
+    field :affiliate_network_name, :string
+    field :merchant_id, :id
+    field :merchant_name, :string
+    field :product_id, :id
+    field :product_name, :string
     field :network_conversion_ref, non_null(:string)
     field :status, non_null(:commerce_conversion_status)
     field :attribution_confidence, non_null(:commerce_attribution_confidence)

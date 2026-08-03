@@ -3,11 +3,8 @@ defmodule ProductCompare.CommerceAttribution.ClickLedger do
 
   import Ecto.Query
 
-  alias ProductCompare.CommerceAttribution.Revenue.Filters
-  alias ProductCompareSchemas.Affiliate.AffiliateProgram
+  alias ProductCompare.CommerceAttribution.Revenue.{Aggregation, Filters}
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
-  alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
-  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @spec query(map() | keyword()) :: Ecto.Query.t()
   def query(opts \\ %{}) do
@@ -15,102 +12,45 @@ defmodule ProductCompare.CommerceAttribution.ClickLedger do
 
     CommerceClickSession
     |> from(as: :session)
-    |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
-    |> join(:left, [session: session], merchant_product in MerchantProduct,
-      as: :session_merchant_product,
-      on: merchant_product.id == session.merchant_product_id
-    )
-    |> join(:left, [link: link], program in AffiliateProgram,
-      as: :link_program,
-      on: program.id == link.affiliate_program_id
-    )
-    |> maybe_join_conversions(filters)
-    |> maybe_join_conversion_merchant_product(filters)
-    |> maybe_where_merchant(filters.merchant_id)
-    |> maybe_where_product(filters.product_id)
-    |> maybe_where_network(filters.affiliate_network_id)
-    |> maybe_where_currency(filters.currency)
-    |> maybe_where_from(filters.from)
-    |> maybe_where_to(filters.to)
-    |> distinct(true)
+    |> where([session: session], session.id in subquery(matching_session_ids(filters)))
     |> order_by([session: session], desc: session.inserted_at, desc: session.id)
-    |> preload_click_page()
+    |> preload_click_page(filters)
   end
 
-  defp maybe_join_conversions(query, filters) do
-    if Enum.all?([filters.product_id, filters.affiliate_network_id, filters.currency], &is_nil/1) do
-      query
+  defp matching_session_ids(filters) do
+    click_session_ids =
+      filters
+      |> Aggregation.click_sessions_query()
+      |> select([session: session], session.id)
+
+    if conversion_union_required?(filters) do
+      conversion_session_ids =
+        filters
+        |> Aggregation.conversion_evidence_query()
+        |> where([conversion: conversion], not is_nil(conversion.click_session_id))
+        |> select([conversion: conversion], conversion.click_session_id)
+
+      union(click_session_ids, ^conversion_session_ids)
     else
-      join(query, :left, [session: session], conversion in CommerceConversion,
-        as: :conversion,
-        on: conversion.click_session_id == session.id
-      )
+      click_session_ids
     end
   end
 
-  defp maybe_join_conversion_merchant_product(query, %{product_id: nil}), do: query
-
-  defp maybe_join_conversion_merchant_product(query, _filters) do
-    join(query, :left, [conversion: conversion], merchant_product in MerchantProduct,
-      as: :conversion_merchant_product,
-      on: merchant_product.id == conversion.merchant_product_id
-    )
-  end
-
-  defp maybe_where_merchant(query, nil), do: query
-
-  defp maybe_where_merchant(query, merchant_id),
-    do: where(query, [link: link], link.merchant_id == ^merchant_id)
-
-  defp maybe_where_product(query, nil), do: query
-
-  defp maybe_where_product(query, product_id) do
-    where(
-      query,
+  defp conversion_union_required?(filters) do
+    Enum.any?(
       [
-        conversion: conversion,
-        conversion_merchant_product: conversion_merchant_product,
-        session_merchant_product: session_merchant_product
+        filters.merchant_id,
+        filters.product_id,
+        filters.affiliate_network_id,
+        filters.from,
+        filters.to
       ],
-      session_merchant_product.product_id == ^product_id or conversion.product_id == ^product_id or
-        conversion_merchant_product.product_id == ^product_id
+      &(not is_nil(&1))
     )
   end
 
-  defp maybe_where_network(query, nil), do: query
-
-  defp maybe_where_network(query, affiliate_network_id) do
-    where(
-      query,
-      [link_program: link_program, conversion: conversion],
-      link_program.affiliate_network_id == ^affiliate_network_id or
-        conversion.affiliate_network_id == ^affiliate_network_id
-    )
-  end
-
-  defp maybe_where_currency(query, nil), do: query
-
-  defp maybe_where_currency(query, currency),
-    do: where(query, [conversion: conversion], conversion.currency == ^currency)
-
-  defp maybe_where_from(query, nil), do: query
-
-  defp maybe_where_from(query, from_date) do
-    from_datetime = Filters.start_datetime(from_date)
-    where(query, [session: session], session.inserted_at >= ^from_datetime)
-  end
-
-  defp maybe_where_to(query, nil), do: query
-
-  defp maybe_where_to(query, to_date) do
-    to_datetime = Filters.exclusive_end_datetime(to_date)
-    where(query, [session: session], session.inserted_at < ^to_datetime)
-  end
-
-  defp preload_click_page(query) do
-    conversions_query =
-      from conversion in CommerceConversion,
-        order_by: [desc: conversion.reported_at, desc: conversion.id]
+  defp preload_click_page(query, filters) do
+    conversions_query = conversion_preload_query(filters)
 
     preload(query, [
       :user,
@@ -118,5 +58,43 @@ defmodule ProductCompare.CommerceAttribution.ClickLedger do
       commerce_link: [:merchant, affiliate_program: :affiliate_network],
       merchant_product: [:merchant, :product]
     ])
+  end
+
+  defp conversion_preload_query(filters) do
+    filters
+    |> Aggregation.conversion_evidence_query()
+    |> join(:left, [conversion: conversion], network in assoc(conversion, :affiliate_network),
+      as: :conversion_network
+    )
+    |> join(:left, [conversion: conversion], merchant in assoc(conversion, :merchant),
+      as: :conversion_merchant
+    )
+    |> join(:left, [conversion: conversion], product in assoc(conversion, :product),
+      as: :conversion_product
+    )
+    |> join(
+      :left,
+      [merchant_product: merchant_product],
+      merchant in assoc(merchant_product, :merchant), as: :conversion_merchant_product_merchant)
+    |> join(
+      :left,
+      [merchant_product: merchant_product],
+      product in assoc(merchant_product, :product), as: :conversion_merchant_product_product)
+    |> order_by([conversion: conversion], desc: conversion.reported_at, desc: conversion.id)
+    |> preload(
+      [
+        merchant_product: merchant_product,
+        conversion_network: network,
+        conversion_merchant: merchant,
+        conversion_product: product,
+        conversion_merchant_product_merchant: merchant_product_merchant,
+        conversion_merchant_product_product: merchant_product_product
+      ],
+      affiliate_network: network,
+      merchant: merchant,
+      product: product,
+      merchant_product:
+        {merchant_product, merchant: merchant_product_merchant, product: merchant_product_product}
+    )
   end
 end

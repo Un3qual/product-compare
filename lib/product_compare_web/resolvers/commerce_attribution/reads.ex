@@ -186,12 +186,24 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
   end
 
   defp project_conversion(conversion) do
+    merchant_product = conversion.merchant_product
+    merchant = conversion.merchant || (merchant_product && merchant_product.merchant)
+    product = conversion.product || (merchant_product && merchant_product.product)
+    network = conversion.affiliate_network
+
     %{
+      affiliate_network_code: network && network.code,
+      affiliate_network_id: global_id(:affiliate_network, network),
+      affiliate_network_name: network && network.name,
       attribution_confidence: conversion.attribution_confidence,
       commission_amount: conversion.commission_amount,
       currency: conversion.currency,
+      merchant_id: global_id(:merchant, merchant),
+      merchant_name: merchant && merchant.name,
       network_conversion_ref: conversion.network_conversion_ref,
       order_amount: conversion.order_amount,
+      product_id: global_id(:product, product),
+      product_name: product && product.name,
       purchased_at: conversion.purchased_at,
       reported_at: conversion.reported_at,
       status: conversion.status

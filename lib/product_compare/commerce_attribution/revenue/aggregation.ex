@@ -31,6 +31,14 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
 
   @spec click_count(map()) :: non_neg_integer()
   def click_count(filters) do
+    filters
+    |> click_sessions_query()
+    |> select([session: session], count(session.id, :distinct))
+    |> Repo.one()
+  end
+
+  @spec click_sessions_query(map()) :: Ecto.Query.t()
+  def click_sessions_query(filters) do
     CommerceClickSession
     |> from(as: :session)
     |> join(:inner, [session: session], link in assoc(session, :commerce_link), as: :link)
@@ -43,28 +51,32 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Aggregation do
     |> maybe_where_click_network(filters.affiliate_network_id)
     |> maybe_where_click_from(filters.from)
     |> maybe_where_click_to(filters.to)
-    |> select([session: session], count(session.id, :distinct))
-    |> Repo.one()
   end
 
-  defp revenue_metrics_query(filters) do
+  @spec conversion_evidence_query(map()) :: Ecto.Query.t()
+  def conversion_evidence_query(filters) do
     CommerceConversion
     |> from(as: :conversion)
-    |> join(:left, [conversion: conversion], fact in PurchasePriceFact,
-      as: :price_fact,
-      on: fact.conversion_id == conversion.id and fact.currency == conversion.currency
-    )
     |> join(:left, [conversion: conversion], merchant_product in MerchantProduct,
       as: :merchant_product,
       on: merchant_product.id == conversion.merchant_product_id
     )
-    |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
     |> maybe_where_conversion_merchant(filters.merchant_id)
     |> maybe_where_conversion_product(filters.product_id)
     |> maybe_where_conversion_network(filters.affiliate_network_id)
     |> maybe_where_conversion_currency(filters.currency)
     |> maybe_where_conversion_from(filters.from)
     |> maybe_where_conversion_to(filters.to)
+  end
+
+  defp revenue_metrics_query(filters) do
+    filters
+    |> conversion_evidence_query()
+    |> join(:left, [conversion: conversion], fact in PurchasePriceFact,
+      as: :price_fact,
+      on: fact.conversion_id == conversion.id and fact.currency == conversion.currency
+    )
+    |> where([conversion: conversion], conversion.status in ^@revenue_statuses)
   end
 
   defp revenue_metrics_currency!(_query, currency) when is_binary(currency), do: currency

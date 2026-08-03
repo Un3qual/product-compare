@@ -233,7 +233,10 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
       assert %{
                "data" => %{
                  "commerceAttributionClicks" => %{
-                   "edges" => [%{"node" => %{"clickId" => click_id}}]
+                   "edges" => [
+                     %{"node" => %{"clickId" => wrong_currency_click_id}},
+                     %{"node" => %{"clickId" => matching_click_id}}
+                   ]
                  }
                }
              } =
@@ -249,7 +252,238 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
                  }
                })
 
-      assert click_id == matching_click.click_id
+      assert wrong_currency_click_id == wrong_currency_click.click_id
+      assert matching_click_id == matching_click.click_id
+    end
+
+    test "keeps unmatched click evidence under a currency filter and filters mixed-currency children",
+         %{conn: conn} do
+      merchant = merchant_fixture(%{name: "Currency Slice Merchant"})
+      product = SpecsFixtures.product_fixture(%{name: "Currency Slice Product"})
+      merchant_product = merchant_product_fixture(merchant, product)
+      %{link: link} = commerce_link_fixture(merchant, "impact")
+
+      unmatched_click =
+        click_fixture(link, merchant_product, %{})
+        |> set_click_inserted_at!(~U[2026-05-21 10:00:00.000000Z])
+
+      mixed_currency_click =
+        click_fixture(link, merchant_product, %{})
+        |> set_click_inserted_at!(~U[2026-05-21 11:00:00.000000Z])
+
+      usd_conversion =
+        conversion_fixture(%{
+          click: mixed_currency_click,
+          source_network: "impact",
+          network_conversion_ref: "currency-slice-usd",
+          currency: "USD",
+          purchased_at: ~U[2026-05-21 12:00:00.000000Z],
+          reported_at: ~U[2026-05-21 12:05:00.000000Z]
+        })
+
+      _eur_conversion =
+        conversion_fixture(%{
+          click: mixed_currency_click,
+          source_network: "impact",
+          network_conversion_ref: "currency-slice-eur",
+          currency: "EUR",
+          purchased_at: ~U[2026-05-21 13:00:00.000000Z],
+          reported_at: ~U[2026-05-21 13:05:00.000000Z]
+        })
+
+      assert %{
+               "data" => %{
+                 "commerceAttributionClicks" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "clickId" => mixed_click_id,
+                         "matchedConversions" => [
+                           %{
+                             "currency" => "USD",
+                             "networkConversionRef" => usd_conversion_ref
+                           }
+                         ]
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "clickId" => unmatched_click_id,
+                         "matchedConversions" => []
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, ledger_query(), %{
+                 "first" => 10,
+                 "input" => %{
+                   "merchantId" => relay_id(:merchant, merchant.id),
+                   "productId" => relay_id(:product, product.id),
+                   "network" => "impact",
+                   "currency" => "USD",
+                   "from" => "2026-05-21",
+                   "to" => "2026-05-21"
+                 }
+               })
+
+      assert mixed_click_id == mixed_currency_click.click_id
+      assert unmatched_click_id == unmatched_click.click_id
+      assert usd_conversion_ref == usd_conversion.network_conversion_ref
+    end
+
+    test "uses conversion dates for children and unions them with in-period click evidence", %{
+      conn: conn
+    } do
+      merchant = merchant_fixture(%{name: "Date Slice Merchant"})
+      product = SpecsFixtures.product_fixture(%{name: "Date Slice Product"})
+      merchant_product = merchant_product_fixture(merchant, product)
+      %{link: link} = commerce_link_fixture(merchant, "impact")
+
+      old_click =
+        click_fixture(link, merchant_product, %{})
+        |> set_click_inserted_at!(~U[2026-05-19 10:00:00.000000Z])
+
+      in_period_conversion =
+        conversion_fixture(%{
+          click: old_click,
+          source_network: "impact",
+          network_conversion_ref: "date-slice-in-period",
+          status: :reversed,
+          purchased_at: ~U[2026-05-21 09:00:00.000000Z],
+          reported_at: ~U[2026-05-21 09:05:00.000000Z]
+        })
+
+      in_period_click =
+        click_fixture(link, merchant_product, %{})
+        |> set_click_inserted_at!(~U[2026-05-21 10:00:00.000000Z])
+
+      _out_of_period_conversion =
+        conversion_fixture(%{
+          click: in_period_click,
+          source_network: "impact",
+          network_conversion_ref: "date-slice-out-of-period",
+          purchased_at: ~U[2026-05-19 09:00:00.000000Z],
+          reported_at: ~U[2026-05-21 11:00:00.000000Z]
+        })
+
+      assert %{
+               "data" => %{
+                 "commerceAttributionClicks" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "clickId" => in_period_click_id,
+                         "matchedConversions" => []
+                       }
+                     },
+                     %{
+                       "node" => %{
+                         "clickId" => old_click_id,
+                         "matchedConversions" => [
+                           %{
+                             "networkConversionRef" => conversion_ref,
+                             "status" => "REVERSED"
+                           }
+                         ]
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, ledger_query(), %{
+                 "first" => 10,
+                 "input" => %{
+                   "merchantId" => relay_id(:merchant, merchant.id),
+                   "productId" => relay_id(:product, product.id),
+                   "network" => "impact",
+                   "currency" => "USD",
+                   "from" => "2026-05-21",
+                   "to" => "2026-05-21"
+                 }
+               })
+
+      assert in_period_click_id == in_period_click.click_id
+      assert old_click_id == old_click.click_id
+      assert conversion_ref == in_period_conversion.network_conversion_ref
+    end
+
+    test "projects conversion dimensions that make a conversion-side filter match traceable", %{
+      conn: conn
+    } do
+      merchant = merchant_fixture(%{name: "Conversion Dimension Merchant"})
+      product = SpecsFixtures.product_fixture(%{name: "Conversion Dimension Product"})
+      merchant_product = merchant_product_fixture(merchant, product)
+      {:ok, network} = Affiliate.upsert_network(%{code: "partnerize", name: "Partnerize"})
+
+      {:ok, link} =
+        CommerceAttribution.upsert_commerce_link(%{
+          merchant_id: merchant.id,
+          destination_url: "https://#{merchant.domain}/conversion-dimension",
+          link_type: :non_affiliate
+        })
+
+      click =
+        click_fixture(link, nil, %{})
+        |> set_click_inserted_at!(~U[2026-05-19 10:00:00.000000Z])
+
+      _conversion =
+        conversion_fixture(%{
+          click: click,
+          source_network: "partnerize",
+          merchant: merchant,
+          product: product,
+          merchant_product: merchant_product,
+          status: :pending,
+          currency: "USD",
+          purchased_at: ~U[2026-05-21 09:00:00.000000Z],
+          reported_at: ~U[2026-05-21 09:05:00.000000Z]
+        })
+
+      assert %{
+               "data" => %{
+                 "commerceAttributionClicks" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "clickId" => click_id,
+                         "affiliateNetworkId" => nil,
+                         "productId" => nil,
+                         "matchedConversions" => [
+                           %{
+                             "affiliateNetworkCode" => "partnerize",
+                             "affiliateNetworkId" => conversion_network_id,
+                             "affiliateNetworkName" => "Partnerize",
+                             "merchantId" => conversion_merchant_id,
+                             "merchantName" => "Conversion Dimension Merchant",
+                             "productId" => conversion_product_id,
+                             "productName" => "Conversion Dimension Product"
+                           }
+                         ]
+                       }
+                     }
+                   ]
+                 }
+               }
+             } =
+               graphql(conn, traceable_ledger_query(), %{
+                 "first" => 10,
+                 "input" => %{
+                   "merchantId" => relay_id(:merchant, merchant.id),
+                   "productId" => relay_id(:product, product.id),
+                   "network" => "partnerize",
+                   "currency" => "USD",
+                   "from" => "2026-05-21",
+                   "to" => "2026-05-21"
+                 }
+               })
+
+      assert click_id == click.click_id
+      assert conversion_network_id == relay_id(:affiliate_network, network.id)
+      assert conversion_merchant_id == relay_id(:merchant, merchant.id)
+      assert conversion_product_id == relay_id(:product, product.id)
     end
 
     test "exposes user or anonymous identity, diagnostics, dimensions, and all matched conversions",
@@ -411,8 +645,9 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
 
       assert Enum.sort(Enum.map(conversion_fields, & &1["name"])) ==
                Enum.sort(~w(
-                 attributionConfidence commissionAmount currency networkConversionRef orderAmount
-                 purchasedAt reportedAt status
+                 affiliateNetworkCode affiliateNetworkId affiliateNetworkName attributionConfidence
+                 commissionAmount currency merchantId merchantName networkConversionRef orderAmount
+                 productId productName purchasedAt reportedAt status
                ))
 
       assert %{"errors" => errors} = graphql(conn, forbidden_fields_query(), %{})
@@ -506,6 +741,35 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
     """
   end
 
+  defp traceable_ledger_query do
+    """
+    query TraceableCommerceAttributionClicks(
+      $input: RevenueSummaryInput
+      $first: Int!
+      $after: String
+    ) {
+      commerceAttributionClicks(input: $input, first: $first, after: $after) {
+        edges {
+          node {
+            clickId
+            affiliateNetworkId
+            productId
+            matchedConversions {
+              affiliateNetworkCode
+              affiliateNetworkId
+              affiliateNetworkName
+              merchantId
+              merchantName
+              productId
+              productName
+            }
+          }
+        }
+      }
+    }
+    """
+  end
+
   defp forbidden_fields_query do
     """
     query ForbiddenCommerceAttributionLedgerFields {
@@ -585,7 +849,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
     params =
       attrs
       |> Map.put(:commerce_link_id, link.id)
-      |> Map.put(:merchant_product_id, merchant_product.id)
+      |> maybe_put_id(:merchant_product_id, merchant_product)
       |> Map.put_new(:click_id, Ecto.UUID.generate())
       |> Map.put_new(:anonymous_id, "ledger-anonymous-#{System.unique_integer([:positive])}")
       |> Map.put_new(:source_surface, :web)
