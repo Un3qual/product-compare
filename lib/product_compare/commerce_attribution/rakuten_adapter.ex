@@ -21,7 +21,10 @@ defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "rakuten",
-      network_conversion_ref: value(payload, :transaction_id, "transactionId", "TransactionId"),
+      network_conversion_ref:
+        payload
+        |> value(:transaction_id, "transactionId", "TransactionId")
+        |> reference_token(),
       status: normalize_status(value(payload, :status, "status", "Status")),
       currency: value(payload, :currency, "currency", "Currency"),
       order_amount: decimal(value(payload, :sale_amount, "saleAmount", "SaleAmount")),
@@ -49,7 +52,7 @@ defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
       token ->
         case ClickReference.decode("rakuten", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
-          :error -> %{network_click_ref: token}
+          :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
     end
   end

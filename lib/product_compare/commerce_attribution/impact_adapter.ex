@@ -21,7 +21,10 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     |> click_reference_attrs()
     |> Map.merge(%{
       source_network: "impact",
-      network_conversion_ref: value(payload, :action_id, "ActionId", "actionId"),
+      network_conversion_ref:
+        payload
+        |> value(:action_id, "ActionId", "actionId")
+        |> click_reference_token(),
       status: normalize_status(value(payload, :status, "Status")),
       currency: value(payload, :currency, "Currency"),
       order_amount: decimal(value(payload, :sale_amount, "SaleAmount", "saleAmount")),
@@ -52,8 +55,10 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       {:ok, public_click_id} ->
         Map.put(attrs, :public_click_id, public_click_id)
 
-      :error when not is_nil(publisher_reference) and is_nil(network_click_ref) ->
-        Map.put(attrs, :network_click_ref, publisher_reference)
+      :error when not is_nil(publisher_reference) ->
+        attrs
+        |> Map.put(:clear_click_attribution, true)
+        |> Map.put_new(:network_click_ref, publisher_reference)
 
       :error ->
         attrs

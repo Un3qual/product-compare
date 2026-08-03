@@ -20,7 +20,10 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "cj",
-      network_conversion_ref: value(payload, :commission_id, "commissionId", "CommissionId"),
+      network_conversion_ref:
+        payload
+        |> value(:commission_id, "commissionId", "CommissionId")
+        |> reference_token(),
       status: normalize_status(value(payload, :action_status, "actionStatus", "ActionStatus")),
       currency: value(payload, :currency, "currency", "Currency"),
       order_amount: decimal(value(payload, :sale_amount, "saleAmount", "SaleAmount")),
@@ -42,7 +45,7 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
       token ->
         case ClickReference.decode("cj", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
-          :error -> %{network_click_ref: token}
+          :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
     end
   end

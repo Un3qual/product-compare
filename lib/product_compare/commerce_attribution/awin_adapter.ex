@@ -25,7 +25,10 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "awin",
-      network_conversion_ref: value(payload, :id, "id", "Id"),
+      network_conversion_ref:
+        payload
+        |> value(:id, "id", "Id")
+        |> reference_token(),
       status:
         normalize_status(
           value(payload, :commission_status, "commissionStatus", "CommissionStatus")
@@ -50,7 +53,7 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
       token ->
         case ClickReference.decode("awin", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
-          :error -> %{network_click_ref: token}
+          :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
     end
   end

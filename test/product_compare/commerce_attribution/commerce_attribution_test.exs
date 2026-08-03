@@ -729,6 +729,94 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert conversion.attribution_confidence == :unmatched
     end
 
+    test "clears stale click identity when a newer payload has a malformed publisher reference" do
+      clicked_merchant = merchant_fixture()
+      clicked_product = SpecsFixtures.product_fixture()
+
+      clicked_merchant_product =
+        merchant_product_fixture(%{merchant: clicked_merchant, product: clicked_product})
+
+      commerce_link = commerce_link_fixture(%{merchant: clicked_merchant, network: "impact"})
+      click_session = click_session_fixture(commerce_link)
+      provider_merchant_product = merchant_product_fixture()
+
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-original",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "12.34",
+        "ReportingDate" => "2026-05-20T12:05:00Z",
+        "MerchantProductId" => clicked_merchant_product.id
+      }
+
+      assert {:ok, attributed} = ImpactAdapter.ingest_action(payload)
+      assert attributed.click_session_id == click_session.id
+      assert attributed.attribution_confidence == :high
+
+      assert {:ok, updated} =
+               ImpactAdapter.ingest_action(%{
+                 payload
+                 | "SubId1" => "not-a-product-compare-click",
+                   "ClickId" => "impact-click-reported",
+                   "ReportingDate" => "2026-05-21T12:05:00Z",
+                   "MerchantProductId" => provider_merchant_product.id
+               })
+
+      assert updated.click_session_id == nil
+      assert updated.public_click_id == nil
+      assert updated.merchant_id == nil
+      assert updated.affiliate_program_id == nil
+      assert updated.product_id == nil
+      assert updated.merchant_product_id == provider_merchant_product.id
+      assert updated.attribution_confidence == :unmatched
+      assert updated.network_click_ref == "impact-click-reported"
+    end
+
+    test "clears stale click identity while retaining a newer unresolved public click UUID" do
+      merchant = merchant_fixture()
+      product = SpecsFixtures.product_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
+      commerce_link = commerce_link_fixture(%{merchant: merchant, network: "impact"})
+      click_session = click_session_fixture(commerce_link)
+      unresolved_click_id = Ecto.UUID.generate()
+
+      payload = %{
+        "ActionId" => "impact-action-#{System.unique_integer([:positive])}",
+        "SubId1" => click_session.click_id,
+        "ClickId" => "impact-click-original",
+        "Status" => "APPROVED",
+        "Currency" => "USD",
+        "SaleAmount" => "129.99",
+        "Payout" => "12.34",
+        "ReportingDate" => "2026-05-20T12:05:00Z",
+        "MerchantProductId" => merchant_product.id
+      }
+
+      assert {:ok, attributed} = ImpactAdapter.ingest_action(payload)
+      assert attributed.click_session_id == click_session.id
+      assert attributed.attribution_confidence == :high
+
+      assert {:ok, updated} =
+               ImpactAdapter.ingest_action(%{
+                 payload
+                 | "SubId1" => unresolved_click_id,
+                   "ClickId" => "impact-click-unresolved",
+                   "ReportingDate" => "2026-05-21T12:05:00Z"
+               })
+
+      assert updated.click_session_id == nil
+      assert updated.public_click_id == unresolved_click_id
+      assert updated.merchant_id == nil
+      assert updated.affiliate_program_id == nil
+      assert updated.product_id == nil
+      assert updated.merchant_product_id == merchant_product.id
+      assert updated.attribution_confidence == :unmatched
+      assert updated.network_click_ref == "impact-click-unresolved"
+    end
+
     test "attributes SubId1 conversions to the clicked merchant product" do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
@@ -1391,6 +1479,44 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "focused adapter evidence boundaries" do
+    test "normalizes numeric provider conversion identifiers to strings" do
+      cases = [
+        {&ImpactAdapter.ingest_action/1, 8_100_001,
+         %{
+           "ActionId" => 8_100_001,
+           "Status" => "PENDING",
+           "Currency" => "USD",
+           "ReportingDate" => "2026-05-20T12:05:00Z"
+         }},
+        {&CJAdapter.ingest_transaction/1, 8_100_002,
+         %{
+           "commissionId" => 8_100_002,
+           "actionStatus" => "NEW",
+           "currency" => "USD",
+           "postingDate" => "2026-05-20T12:05:00Z"
+         }},
+        {&AwinAdapter.ingest_transaction/1, 8_100_003,
+         %{
+           "id" => 8_100_003,
+           "commissionStatus" => "pending",
+           "commissionAmount" => %{"amount" => "2.50", "currency" => "USD"},
+           "validationDate" => "2026-05-20T12:05:00Z"
+         }},
+        {&RakutenAdapter.ingest_transaction/1, 8_100_004,
+         %{
+           "transactionId" => 8_100_004,
+           "status" => "pending",
+           "currency" => "USD",
+           "processDate" => "2026-05-20T12:05:00Z"
+         }}
+      ]
+
+      for {ingest, provider_id, payload} <- cases do
+        assert {:ok, conversion} = ingest.(payload)
+        assert conversion.network_conversion_ref == Integer.to_string(provider_id)
+      end
+    end
+
     test "keeps unsupported provider merchant product fields out of internal attribution" do
       cases = [
         {&CJAdapter.ingest_transaction/1,
