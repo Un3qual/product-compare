@@ -43,13 +43,10 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 20. CLDR Reference Data Boundary
 
-Status: ready
+Status: active
+Owner: `codex/attribution-observability-libraries`
 Lane: Relational reference data
 Plan: `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
 Batch outcome: CLDR owns standards recognition and metadata for supported
@@ -96,6 +93,8 @@ Exit condition: all configured public reference codes are CLDR-recognized,
 valid-but-unsupported codes remain unsupported, database IDs do not change,
 application-owned codes bypass CLDR, migrations remain deterministic, and all
 gates pass.
+
+## Ready Work
 
 ### 15. Radix Disclosure Controls
 

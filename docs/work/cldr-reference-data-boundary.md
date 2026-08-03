@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P3
 - Plan: `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
@@ -37,4 +37,10 @@ CLDR owns standards recognition and metadata for currencies, territories, and la
 
 ## Evidence
 
-- Implementation evidence pending.
+- 2026-08-03: Task 1 added the minimal `en` CLDR backend and the focused
+  `ProductCompare.ReferenceData` recognition/metadata boundary. Valid but
+  unsupported standard codes remain distinct from the application-supported
+  currency, territory, and language sets; no codec, migration, formatting, or
+  Money/unit work was included.
+- Verified `mix test test/product_compare/reference_data_test.exs` (6 tests,
+  0 failures) and `mix work_queue.validate` (3 ready rows).
