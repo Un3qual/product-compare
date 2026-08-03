@@ -1,3 +1,6 @@
+# ex_dna:disable-for-this-file
+# reach:disable-for-this-file fixed_shape_map
+# CJ payload vocabulary stays provider-local by the approved attribution design.
 defmodule ProductCompare.CommerceAttribution.CJAdapter do
   @moduledoc """
   Normalizes already-fetched CJ commission payloads into commerce conversions.

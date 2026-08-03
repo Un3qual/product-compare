@@ -18,6 +18,5 @@ defmodule ProductCompareWeb.CommerceAttribution.RequestDiagnostics do
     |> Map.new()
   end
 
-  defp format_ip(nil), do: nil
   defp format_ip(remote_ip), do: remote_ip |> :inet.ntoa() |> to_string()
 end

@@ -1,3 +1,6 @@
+# ex_dna:disable-for-this-file
+# reach:disable-for-this-file fixed_shape_map
+# Rakuten payload vocabulary stays provider-local by the approved attribution design.
 defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
   @moduledoc """
   Normalizes already-fetched Rakuten transaction payloads into commerce conversions.

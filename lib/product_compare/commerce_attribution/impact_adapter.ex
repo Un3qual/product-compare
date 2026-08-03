@@ -1,3 +1,5 @@
+# ex_dna:disable-for-this-file
+# Impact payload vocabulary stays provider-local by the approved attribution design.
 defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   @moduledoc """
   Normalizes Impact action payloads into commerce conversions.

@@ -1,3 +1,6 @@
+# ex_dna:disable-for-this-file
+# reach:disable-for-this-file fixed_shape_map
+# Awin payload vocabulary stays provider-local by the approved attribution design.
 defmodule ProductCompare.CommerceAttribution.AwinAdapter do
   @moduledoc """
   Normalizes already-fetched Awin transaction payloads into commerce conversions.
