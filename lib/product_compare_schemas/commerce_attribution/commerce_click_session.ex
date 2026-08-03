@@ -12,7 +12,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     field :source_surface, Ecto.Enum, values: @source_surfaces, default: :web
     field :referrer, :string
     field :user_agent, :string
-    field :ip_address, :string
+    field :ip_address, EctoNetwork.INET
 
     belongs_to :commerce_link, ProductCompareSchemas.CommerceAttribution.CommerceLink
     belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct

@@ -77,7 +77,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
                user_id: nil,
                referrer: "http://www.example.com/offers",
                user_agent: "ProductCompareRedirectTest/1.0",
-               ip_address: "198.51.100.8"
+               ip_address: %Postgrex.INET{address: {198, 51, 100, 8}, netmask: 32}
              } = Repo.one(CommerceClickSession)
     end
 
@@ -99,7 +99,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
                user_id: user_id,
                referrer: "http://www.example.com/offers",
                user_agent: "ProductCompareRedirectTest/1.0",
-               ip_address: "198.51.100.9"
+               ip_address: %Postgrex.INET{address: {198, 51, 100, 9}, netmask: 32}
              } = Repo.one(CommerceClickSession)
 
       assert user_id == user.id

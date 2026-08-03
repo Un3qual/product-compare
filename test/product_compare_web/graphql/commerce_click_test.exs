@@ -48,7 +48,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
                merchant_product_id: merchant_product_id,
                referrer: "https://app.example.com/products/desk",
                user_agent: "ProductCompareTest/1.0",
-               ip_address: "203.0.113.42"
+               ip_address: %Postgrex.INET{address: {203, 0, 113, 42}, netmask: 32}
              } =
                Repo.one(CommerceClickSession)
 

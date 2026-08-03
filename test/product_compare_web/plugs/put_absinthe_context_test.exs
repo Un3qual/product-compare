@@ -29,7 +29,7 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContextTest do
                  request_diagnostics: %{
                    referrer: "https://app.example.com/products/desk",
                    user_agent: "ProductCompareTest/1.0",
-                   ip_address: "203.0.113.42"
+                   ip_address: {203, 0, 113, 42}
                  },
                  loader: loader
                }
@@ -40,7 +40,9 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContextTest do
   end
 
   describe "request diagnostics" do
-    test "captures raw browser headers and formats Phoenix-resolved IPv6 addresses", %{conn: conn} do
+    test "captures raw browser headers and preserves Phoenix-resolved IPv6 addresses", %{
+      conn: conn
+    } do
       diagnostics =
         conn
         |> put_req_header("referer", "https://app.example.com/products/desk")
@@ -51,7 +53,7 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContextTest do
       assert diagnostics == %{
                referrer: "https://app.example.com/products/desk",
                user_agent: "ProductCompareTest/1.0",
-               ip_address: "2001:db8::1"
+               ip_address: {8193, 3512, 0, 0, 0, 0, 0, 1}
              }
     end
 
@@ -62,7 +64,7 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContextTest do
         |> then(&%{&1 | remote_ip: {203, 0, 113, 42}})
         |> RequestDiagnostics.from_conn()
 
-      assert diagnostics == %{ip_address: "203.0.113.42"}
+      assert diagnostics == %{ip_address: {203, 0, 113, 42}}
     end
   end
 end

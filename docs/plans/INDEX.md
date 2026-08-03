@@ -17,6 +17,11 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
+The active PostgreSQL native storage-types batch is defined by
+`docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
+It converts first-party IP, digest, cooldown, and timestamp storage to native
+PostgreSQL types while preserving existing external GraphQL representations.
+
 The approved attribution observability and foundation-library program is
 dispatched through three reviewable plans:
 

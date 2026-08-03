@@ -46,7 +46,7 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :source_surface, :commerce_source_surface, null: false, default: "web"
       add :referrer, :text
       add :user_agent, :text
-      add :ip_address, :text
+      add :ip_address, :inet
 
       timestamps(type: :utc_datetime_usec)
     end

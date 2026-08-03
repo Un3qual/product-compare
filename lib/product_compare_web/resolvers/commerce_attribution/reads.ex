@@ -168,7 +168,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       anonymous_id: click.anonymous_id,
       click_id: click.click_id,
       inserted_at: click.inserted_at,
-      ip_address: click.ip_address,
+      ip_address: format_ip(click.ip_address),
       link_type: link.link_type,
       matched_conversions: Enum.map(click.conversions, &project_conversion/1),
       merchant_id: global_id(:merchant, link.merchant),
@@ -184,6 +184,9 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       user_id: global_id(:user, user)
     }
   end
+
+  defp format_ip(nil), do: nil
+  defp format_ip(%Postgrex.INET{} = address), do: to_string(address)
 
   defp project_conversion(conversion) do
     merchant_product = conversion.merchant_product

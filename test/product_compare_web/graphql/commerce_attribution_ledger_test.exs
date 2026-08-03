@@ -520,6 +520,9 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
         })
         |> set_click_inserted_at!(~U[2026-05-21 14:00:00.000000Z])
 
+      assert %Postgrex.INET{address: {203, 0, 113, 17}, netmask: 32} =
+               Repo.reload!(user_click).ip_address
+
       first_conversion =
         conversion_fixture(%{
           click: user_click,

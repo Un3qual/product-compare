@@ -210,7 +210,10 @@ defmodule ProductCompare.CommerceAttributionTest do
       assert click_session.source_surface == :web
       assert click_session.referrer == "https://app.example.com/products/desk"
       assert click_session.user_agent == "ProductCompareTest/1.0"
-      assert click_session.ip_address == "203.0.113.42"
+
+      assert %Postgrex.INET{address: {203, 0, 113, 42}, netmask: 32} =
+               Repo.reload!(click_session).ip_address
+
       refute Map.has_key?(click_session, :user_agent_hash)
       refute Map.has_key?(click_session, :ip_hash)
 
@@ -219,6 +222,15 @@ defmodule ProductCompare.CommerceAttributionTest do
 
       assert {:error, :not_found} ==
                CommerceAttribution.redirect_destination(Ecto.UUID.generate())
+    end
+
+    test "rejects invalid textual IP addresses" do
+      commerce_link = commerce_link_fixture(%{link_type: :non_affiliate, network: nil})
+
+      refute CommerceClickSession.changeset(%CommerceClickSession{}, %{
+               commerce_link_id: commerce_link.id,
+               ip_address: "999.0.0.1"
+             }).valid?
     end
   end
 
