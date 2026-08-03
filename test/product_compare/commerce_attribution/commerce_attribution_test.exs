@@ -1478,6 +1478,86 @@ defmodule ProductCompare.CommerceAttributionTest do
     end
   end
 
+  describe "provider publisher-reference updates" do
+    test "preserves omitted click references and clears explicitly blank or nil click references" do
+      for %{provider: provider, network: network, ingest: ingest, reference_keys: reference_keys} <-
+            adapter_click_reference_update_cases(),
+          reference_key <- reference_keys do
+        merchant = merchant_fixture()
+        commerce_link = adapter_commerce_link_fixture(merchant, network)
+        click_session = click_session_fixture(commerce_link)
+
+        conversion_ref = "#{provider}-omitted-#{System.unique_integer([:positive])}"
+
+        initial_payload =
+          adapter_update_payload(
+            provider,
+            conversion_ref,
+            reference_key,
+            provider_click_reference(provider, click_session.click_id),
+            "2026-05-20T12:05:00Z"
+          )
+
+        assert {:ok, inserted} = ingest.(initial_payload)
+        assert inserted.click_session_id == click_session.id
+        assert inserted.public_click_id == click_session.click_id
+
+        assert {:ok, omitted_reference_update} =
+                 ingest.(
+                   adapter_update_payload(
+                     provider,
+                     conversion_ref,
+                     reference_key,
+                     :omitted,
+                     "2026-05-21T12:05:00Z"
+                   )
+                 )
+
+        assert omitted_reference_update.id == inserted.id
+        assert omitted_reference_update.click_session_id == click_session.id
+        assert omitted_reference_update.public_click_id == click_session.click_id
+
+        for blank_reference <- [nil, "", " \t "] do
+          conversion_ref = "#{provider}-blank-#{System.unique_integer([:positive])}"
+
+          assert {:ok, inserted} =
+                   ingest.(
+                     adapter_update_payload(
+                       provider,
+                       conversion_ref,
+                       reference_key,
+                       provider_click_reference(provider, click_session.click_id),
+                       "2026-05-20T12:05:00Z"
+                     )
+                   )
+
+          assert {:ok, cleared_reference_update} =
+                   ingest.(
+                     adapter_update_payload(
+                       provider,
+                       conversion_ref,
+                       reference_key,
+                       blank_reference,
+                       "2026-05-21T12:05:00Z"
+                     )
+                   )
+
+          assert cleared_reference_update.id == inserted.id
+          assert cleared_reference_update.click_session_id == nil
+          assert cleared_reference_update.public_click_id == nil
+          assert cleared_reference_update.merchant_id == nil
+          assert cleared_reference_update.affiliate_program_id == nil
+          assert cleared_reference_update.attribution_confidence == :unmatched
+
+          if provider == :impact do
+            assert cleared_reference_update.network_click_ref ==
+                     "impact-network-click-#{conversion_ref}"
+          end
+        end
+      end
+    end
+  end
+
   describe "focused adapter evidence boundaries" do
     test "normalizes numeric provider conversion identifiers to strings" do
       cases = [
@@ -2113,6 +2193,98 @@ defmodule ProductCompare.CommerceAttributionTest do
              }
     end
   end
+
+  defp adapter_click_reference_update_cases do
+    [
+      %{
+        provider: :cj,
+        network: "cj",
+        ingest: &CJAdapter.ingest_transaction/1,
+        reference_keys: [:sid, "SID", "sid"]
+      },
+      %{
+        provider: :impact,
+        network: "impact",
+        ingest: &ImpactAdapter.ingest_action/1,
+        reference_keys: [:sub_id1, "SubId1", "subId1"]
+      },
+      %{
+        provider: :awin,
+        network: "awin",
+        ingest: &AwinAdapter.ingest_transaction/1,
+        reference_keys: [:click_ref, "clickRef", "ClickRef"]
+      },
+      %{
+        provider: :rakuten,
+        network: "rakuten",
+        ingest: &RakutenAdapter.ingest_transaction/1,
+        reference_keys: [:member_id, "member ID", "Member ID", :u1, "u1"]
+      }
+    ]
+  end
+
+  defp adapter_commerce_link_fixture(merchant, "cj") do
+    affiliate_program =
+      affiliate_program_fixture(%{
+        affiliate_network: Repo.get_by!(AffiliateNetwork, code: "cj"),
+        merchant: merchant
+      })
+
+    commerce_link_fixture(%{merchant: merchant, affiliate_program_id: affiliate_program.id})
+  end
+
+  defp adapter_commerce_link_fixture(merchant, network),
+    do: commerce_link_fixture(%{merchant: merchant, network: network})
+
+  defp adapter_update_payload(:cj, conversion_ref, reference_key, reference, reported_at) do
+    %{
+      "commissionId" => conversion_ref,
+      "actionStatus" => "APPROVED",
+      "currency" => "USD",
+      "postingDate" => reported_at
+    }
+    |> put_publisher_reference(reference_key, reference)
+  end
+
+  defp adapter_update_payload(:impact, conversion_ref, reference_key, reference, reported_at) do
+    %{
+      "ActionId" => conversion_ref,
+      "ClickId" => "impact-network-click-#{conversion_ref}",
+      "Status" => "APPROVED",
+      "Currency" => "USD",
+      "ReportingDate" => reported_at
+    }
+    |> put_publisher_reference(reference_key, reference)
+  end
+
+  defp adapter_update_payload(:awin, conversion_ref, reference_key, reference, reported_at) do
+    %{
+      "id" => conversion_ref,
+      "commissionStatus" => "approved",
+      "saleAmount" => %{"amount" => "92.50", "currency" => "USD"},
+      "commissionAmount" => %{"amount" => "9.25", "currency" => "USD"},
+      "validationDate" => reported_at
+    }
+    |> put_publisher_reference(reference_key, reference)
+  end
+
+  defp adapter_update_payload(:rakuten, conversion_ref, reference_key, reference, reported_at) do
+    %{
+      "transactionId" => conversion_ref,
+      "status" => "approved",
+      "currency" => "USD",
+      "processDate" => reported_at
+    }
+    |> put_publisher_reference(reference_key, reference)
+  end
+
+  defp put_publisher_reference(payload, _reference_key, :omitted), do: payload
+
+  defp put_publisher_reference(payload, reference_key, reference),
+    do: Map.put(payload, reference_key, reference)
+
+  defp provider_click_reference(:rakuten, click_id), do: String.replace(click_id, "-", "")
+  defp provider_click_reference(_provider, click_id), do: click_id
 
   defp conversion_fixture(attrs \\ %{}) do
     {:ok, conversion} =

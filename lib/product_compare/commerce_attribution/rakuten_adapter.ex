@@ -20,7 +20,7 @@ defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
     reported_at = parse_datetime(value(payload, :process_date, "processDate", "ProcessDate"))
 
     payload
-    |> member_id()
+    |> publisher_reference()
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "rakuten",
@@ -42,21 +42,34 @@ defmodule ProductCompare.CommerceAttribution.RakutenAdapter do
     |> drop_nil_optional_attrs()
   end
 
-  defp member_id(payload) do
-    value(payload, :member_id, "member ID", "Member ID") ||
-      value(payload, :u1, "u1", nil)
+  defp publisher_reference(payload) do
+    case first_present(payload, [:member_id, "member ID", "Member ID"]) do
+      :missing -> first_present(payload, [:u1, "u1"])
+      reference -> reference
+    end
   end
 
-  defp reference_attrs(value) do
+  defp reference_attrs(:missing), do: %{}
+
+  defp reference_attrs({:present, value}) do
     case reference_token(value) do
       nil ->
-        %{}
+        %{clear_click_attribution: true}
 
       token ->
         case ClickReference.decode("rakuten", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
           :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
+    end
+  end
+
+  defp first_present(_payload, []), do: :missing
+
+  defp first_present(payload, [key | rest]) do
+    case Map.fetch(payload, key) do
+      {:ok, value} -> {:present, value}
+      :error -> first_present(payload, rest)
     end
   end
 

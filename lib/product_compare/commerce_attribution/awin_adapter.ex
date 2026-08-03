@@ -24,7 +24,7 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
     sale_amount = value(payload, :sale_amount, "saleAmount", "SaleAmount")
     commission_amount = value(payload, :commission_amount, "commissionAmount", "CommissionAmount")
 
-    value(payload, :click_ref, "clickRef", "ClickRef")
+    publisher_reference(payload)
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "awin",
@@ -48,16 +48,30 @@ defmodule ProductCompare.CommerceAttribution.AwinAdapter do
     |> drop_nil_optional_attrs()
   end
 
-  defp reference_attrs(value) do
+  defp reference_attrs(:missing), do: %{}
+
+  defp reference_attrs({:present, value}) do
     case reference_token(value) do
       nil ->
-        %{}
+        %{clear_click_attribution: true}
 
       token ->
         case ClickReference.decode("awin", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
           :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
+    end
+  end
+
+  defp publisher_reference(payload),
+    do: first_present(payload, [:click_ref, "clickRef", "ClickRef"])
+
+  defp first_present(_payload, []), do: :missing
+
+  defp first_present(payload, [key | rest]) do
+    case Map.fetch(payload, key) do
+      {:ok, value} -> {:present, value}
+      :error -> first_present(payload, rest)
     end
   end
 

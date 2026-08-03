@@ -41,10 +41,7 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   end
 
   defp click_reference_attrs(payload) do
-    publisher_reference =
-      payload
-      |> value(:sub_id1, "SubId1", "subId1")
-      |> click_reference_token()
+    publisher_reference = publisher_reference(payload)
 
     network_click_ref =
       payload
@@ -53,19 +50,38 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
 
     attrs = if network_click_ref, do: %{network_click_ref: network_click_ref}, else: %{}
 
-    case ClickReference.decode("impact", publisher_reference) do
-      {:ok, public_click_id} ->
-        Map.put(attrs, :public_click_id, public_click_id)
-
-      :error when not is_nil(publisher_reference) ->
+    case publisher_reference do
+      :missing ->
         attrs
-        |> Map.put(:clear_click_attribution, true)
-        |> Map.put_new(:network_click_ref, publisher_reference)
 
-      :error ->
-        attrs
+      {:present, value} ->
+        case ClickReference.decode("impact", click_reference_token(value)) do
+          {:ok, public_click_id} ->
+            Map.put(attrs, :public_click_id, public_click_id)
+
+          :error ->
+            attrs
+            |> Map.put(:clear_click_attribution, true)
+            |> put_network_click_ref(click_reference_token(value))
+        end
     end
   end
+
+  defp publisher_reference(payload), do: first_present(payload, [:sub_id1, "SubId1", "subId1"])
+
+  defp first_present(_payload, []), do: :missing
+
+  defp first_present(payload, [key | rest]) do
+    case Map.fetch(payload, key) do
+      {:ok, value} -> {:present, value}
+      :error -> first_present(payload, rest)
+    end
+  end
+
+  defp put_network_click_ref(attrs, nil), do: attrs
+
+  defp put_network_click_ref(attrs, reference),
+    do: Map.put_new(attrs, :network_click_ref, reference)
 
   defp click_reference_token(nil), do: nil
   defp click_reference_token(value) when is_integer(value), do: Integer.to_string(value)

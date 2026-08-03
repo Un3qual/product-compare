@@ -19,7 +19,7 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   defp normalize_transaction(payload) do
     reported_at = parse_datetime(value(payload, :posting_date, "postingDate", "PostingDate"))
 
-    value(payload, :sid, "SID", "sid")
+    publisher_reference(payload)
     |> reference_attrs()
     |> Map.merge(%{
       source_network: "cj",
@@ -40,16 +40,29 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
     |> drop_nil_optional_attrs()
   end
 
-  defp reference_attrs(value) do
+  defp reference_attrs(:missing), do: %{}
+
+  defp reference_attrs({:present, value}) do
     case reference_token(value) do
       nil ->
-        %{}
+        %{clear_click_attribution: true}
 
       token ->
         case ClickReference.decode("cj", token) do
           {:ok, public_click_id} -> %{public_click_id: public_click_id}
           :error -> %{clear_click_attribution: true, network_click_ref: token}
         end
+    end
+  end
+
+  defp publisher_reference(payload), do: first_present(payload, [:sid, "SID", "sid"])
+
+  defp first_present(_payload, []), do: :missing
+
+  defp first_present(payload, [key | rest]) do
+    case Map.fetch(payload, key) do
+      {:ok, value} -> {:present, value}
+      :error -> first_present(payload, rest)
     end
   end
 
