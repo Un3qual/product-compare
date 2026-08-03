@@ -18,6 +18,7 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     field :advertiser_country, ReferenceCode,
       codes: @country_codes,
       normalization: :upper,
+      standard: :territory,
       source: :advertiser_country_id
 
     field :source_feed_type, ReferenceCode,
@@ -30,6 +31,7 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
     field :language, ReferenceCode,
       codes: @language_codes,
       normalization: :upper,
+      standard: :language,
       source: :language_id
 
     field :feed_name, :string
@@ -85,13 +87,15 @@ defmodule ProductCompareSchemas.Ingestion.MerchantFeedCandidate do
   end
 
   @spec normalize_country(term()) :: String.t() | nil
-  def normalize_country(value), do: ReferenceCode.normalize(value, @country_codes, :upper)
+  def normalize_country(value),
+    do: ReferenceCode.normalize(value, @country_codes, :upper, :territory)
 
   @spec normalize_feed_type(term()) :: String.t() | nil
   def normalize_feed_type(value), do: ReferenceCode.normalize(value, @feed_type_codes, :upper)
 
   @spec normalize_language(term()) :: String.t() | nil
-  def normalize_language(value), do: ReferenceCode.normalize(value, @language_codes, :upper)
+  def normalize_language(value),
+    do: ReferenceCode.normalize(value, @language_codes, :upper, :language)
 
   @spec provider_for_feed_type(term()) :: String.t() | nil
   def provider_for_feed_type(value) do

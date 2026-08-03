@@ -10,22 +10,22 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
   alias ProductCompareSchemas.Specs.Source
 
   @reference_code_fields [
-    {AffiliateProgram, :status, "affiliate_program_statuses"},
-    {Source, :kind, "source_kinds"},
-    {Source, :provider, "integration_providers"},
-    {Evidence, :source_kind, "source_kinds"},
-    {Recommendation, :algorithm_version, "recommendation_algorithms"},
-    {ImportRun, :surface, "integration_surfaces"},
-    {MerchantFeedCandidate, :advertiser_country, "countries"},
-    {MerchantFeedCandidate, :source_feed_type, "provider_feed_types"},
-    {MerchantFeedCandidate, :language, "languages"}
+    {AffiliateProgram, :status, "affiliate_program_statuses", :none},
+    {Source, :kind, "source_kinds", :none},
+    {Source, :provider, "integration_providers", :none},
+    {Evidence, :source_kind, "source_kinds", :none},
+    {Recommendation, :algorithm_version, "recommendation_algorithms", :none},
+    {ImportRun, :surface, "integration_surfaces", :none},
+    {MerchantFeedCandidate, :advertiser_country, "countries", :territory},
+    {MerchantFeedCandidate, :source_feed_type, "provider_feed_types", :none},
+    {MerchantFeedCandidate, :language, "languages", :language}
   ]
 
   test "every parameterized reference-code map matches its seeded table" do
-    Enum.each(@reference_code_fields, fn {schema, field, table} ->
+    Enum.each(@reference_code_fields, fn {schema, field, table, standard} ->
       type = schema.__schema__(:type, field)
 
-      assert {:parameterized, {ReferenceCode, %{codes: codec_codes}}} = type
+      assert {:parameterized, {ReferenceCode, %{codes: codec_codes, standard: ^standard}}} = type
       assert codec_codes == reference_rows(table)
 
       Enum.each(codec_codes, fn {code, id} ->
@@ -38,7 +38,7 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
   test "the explicit table matrix covers every production reference-code field" do
     expected_fields =
       @reference_code_fields
-      |> Enum.map(fn {schema, field, _table} -> {schema, field} end)
+      |> Enum.map(fn {schema, field, _table, _standard} -> {schema, field} end)
       |> Enum.sort()
 
     assert expected_fields == production_reference_code_fields()

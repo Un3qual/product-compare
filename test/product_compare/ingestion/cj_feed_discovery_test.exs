@@ -51,12 +51,12 @@ defmodule ProductCompare.Ingestion.CJFeedDiscoveryTest do
          [
            %{
              "adId" => "feed-1",
-             "advertiserCountry" => "US",
+             "advertiserCountry" => " us ",
              "advertiserId" => "adv-1",
              "advertiserName" => "Merchant",
              "currency" => "USD",
              "feedName" => "US Shopping",
-             "language" => "EN",
+             "language" => " en ",
              "lastUpdated" => "2026-06-04T18:34:49Z",
              "productCount" => 10,
              "sourceFeedType" => "SHOPPING"

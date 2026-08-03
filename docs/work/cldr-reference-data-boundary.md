@@ -55,3 +55,17 @@ CLDR owns standards recognition and metadata for currencies, territories, and la
   test/product_compare/commerce_attribution test/product_compare/ingestion
   test/mix/tasks/product_compare_ingestion_cj_import_test.exs` (291 tests,
   0 failures) and `mix format`.
+- 2026-08-03: Task 3 adds a default-neutral `standard` option to
+  `ReferenceCode`. Only merchant feed candidate territory and language fields
+  use it, canonicalizing with `ReferenceData` before their unchanged supported
+  maps. CA/US retain IDs 124/840 and EN/FR retain IDs 1/2; CLDR-recognized but
+  unsupported GB/DE still normalize to `nil` and reject in the codec. Feed
+  types and every other application-owned `ReferenceCode` field keep
+  `standard: :none`, and no migrations or repository lookups were added.
+- Verified `mix test test/product_compare/reference_data_test.exs
+  test/product_compare/repo/reference_code_codec_parity_test.exs
+  test/product_compare/ingestion/feed_candidates_test.exs
+  test/product_compare/ingestion/sources/cj` (33 tests, 0 failures),
+  `mix test test/product_compare/ingestion/cj_feed_discovery_test.exs` (10
+  tests, 0 failures), `mix format`, `mix work_queue.validate` (3 ready rows),
+  and `git diff --check`.

@@ -5,10 +5,13 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
 
   use Ecto.ParameterizedType
 
+  alias ProductCompare.ReferenceData
+
   @impl true
   def init(opts) do
     codes = Keyword.fetch!(opts, :codes)
     normalization = Keyword.get(opts, :normalization, :none)
+    standard = Keyword.get(opts, :standard, :none)
 
     unless is_map(codes) and
              Enum.all?(codes, fn {code, id} -> is_binary(code) and is_integer(id) end) and
@@ -20,10 +23,15 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
       raise ArgumentError, "reference code normalization must be :none, :lower, or :upper"
     end
 
+    unless standard in [:none, :territory, :language] do
+      raise ArgumentError, "reference code standard must be :none, :territory, or :language"
+    end
+
     %{
       codes: codes,
       ids: Map.new(codes, fn {code, id} -> {id, code} end),
-      normalization: normalization
+      normalization: normalization,
+      standard: standard
     }
   end
 
@@ -34,9 +42,15 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
   def cast(nil, _params), do: {:ok, nil}
   def cast(code, params) when is_atom(code), do: code |> Atom.to_string() |> cast(params)
 
-  def cast(code, %{codes: codes, normalization: normalization}) when is_binary(code) do
-    code = normalize(code, normalization)
-    if Map.has_key?(codes, code), do: {:ok, code}, else: :error
+  def cast(code, %{codes: codes, normalization: normalization, standard: standard})
+      when is_binary(code) do
+    with {:ok, code} <- canonicalize(code, standard),
+         code <- normalize(code, normalization),
+         true <- Map.has_key?(codes, code) do
+      {:ok, code}
+    else
+      _error -> :error
+    end
   end
 
   def cast(_code, _params), do: :error
@@ -61,8 +75,12 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
   def load(_id, _loader, _params), do: :error
 
   @spec normalize(term(), map(), :none | :lower | :upper) :: String.t() | nil
-  def normalize(value, codes, normalization) do
-    params = %{codes: codes, normalization: normalization}
+  def normalize(value, codes, normalization), do: normalize(value, codes, normalization, :none)
+
+  @spec normalize(term(), map(), :none | :lower | :upper, :none | :territory | :language) ::
+          String.t() | nil
+  def normalize(value, codes, normalization, standard) do
+    params = %{codes: codes, normalization: normalization, standard: standard}
 
     case cast(value, params) do
       {:ok, code} -> code
@@ -73,4 +91,8 @@ defmodule ProductCompareSchemas.Reference.ReferenceCode do
   defp normalize(code, :none), do: String.trim(code)
   defp normalize(code, :lower), do: code |> String.trim() |> String.downcase()
   defp normalize(code, :upper), do: code |> String.trim() |> String.upcase()
+
+  defp canonicalize(code, :none), do: {:ok, code}
+  defp canonicalize(code, :territory), do: ReferenceData.canonical_territory(code)
+  defp canonicalize(code, :language), do: ReferenceData.canonical_language(code)
 end
