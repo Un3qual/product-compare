@@ -899,6 +899,13 @@ type CommerceAttributionClick {
 }
 
 type CommerceAttributionMatchedConversion {
+  affiliateNetworkId: ID
+  affiliateNetworkCode: String
+  affiliateNetworkName: String
+  merchantId: ID
+  merchantName: String
+  productId: ID
+  productName: String
   networkConversionRef: String!
   status: CommerceConversionStatus!
   attributionConfidence: CommerceAttributionConfidence!

@@ -3,7 +3,11 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePaginationFragment, usePreloadedQuery } from "react-relay";
-import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
+import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
+import {
+  type RelayRouteQueryDescriptor,
+  useRoutePreloadedQuery,
+} from "../../../../src/relay/route-preload";
 import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   RevenueSummaryMetrics,
@@ -59,7 +63,7 @@ const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const REVENUE_QUERY_DESCRIPTOR = {
+const REVENUE_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery$variables> = {
   __relayQuery: {
     operationName: "RevenueSummaryRouteQuery",
     text: "query RevenueSummaryRouteQuery($input: RevenueSummaryInput) { revenueSummary(input: $input) { metrics { clicks } } }",
@@ -115,11 +119,18 @@ const ATTRIBUTION_LEDGER_PAGE = {
           linkType: "affiliate",
           matchedConversions: [
             {
+              affiliateNetworkCode: "partnerize",
+              affiliateNetworkId: "conversion-network-1",
+              affiliateNetworkName: "Conversion Network",
               attributionConfidence: "high",
               commissionAmount: "9.00",
               currency: "USD",
+              merchantId: "conversion-merchant-1",
+              merchantName: "Conversion Merchant",
               networkConversionRef: "impact-conversion-123",
               orderAmount: "90.00",
+              productId: "conversion-product-1",
+              productName: "Conversion Product",
               purchasedAt: "2026-05-31T13:00:00Z",
               reportedAt: "2026-06-01T09:00:00Z",
               status: "paid",
@@ -241,10 +252,116 @@ test("revenue route renders individual click, user, request, network, and conver
   expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
   expect(screen.getByText("Status: paid")).toBeInTheDocument();
   expect(screen.getByText("Attribution: high")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Merchant (conversion-merchant-1)")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Product (conversion-product-1)")).toBeInTheDocument();
+  expect(
+    screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+  ).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
-  expect(loadNext).toHaveBeenCalledWith(20);
+  expect(loadNext).toHaveBeenCalledWith(
+    20,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
+});
+
+test("revenue route surfaces attribution pagination failures and retries", () => {
+  let attempt = 0;
+  const loadNext = vi.fn(
+    (
+      _count: number,
+      options?: { onComplete?: (error: Error | null) => void },
+    ) => {
+      attempt += 1;
+      options?.onComplete?.(attempt === 1 ? new Error("pagination failed") : null);
+    },
+  );
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
+
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "Unable to load more attribution clicks.",
+  );
+  expect(loadNext).toHaveBeenLastCalledWith(
+    20,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Retry loading attribution clicks" }));
+
+  expect(loadNext).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Load more attribution clicks" }),
+  ).toBeInTheDocument();
+});
+
+test("revenue route resets attribution pagination errors when filters change", () => {
+  const loadNext = vi.fn(
+    (
+      _count: number,
+      options?: { onComplete?: (error: Error | null) => void },
+    ) => options?.onComplete?.(new Error("pagination failed")),
+  );
+  let loaderData = buildReadyLoaderData({ currency: "USD", network: "impact" });
+  mockedUseLoaderData.mockImplementation(() => loaderData);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
+  expect(screen.getByText("Unable to load more attribution clicks.")).toBeInTheDocument();
+
+  loaderData = {
+    ...buildReadyLoaderData({ currency: "EUR", network: "impact" }),
+    query: {
+      ...REVENUE_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...REVENUE_QUERY_DESCRIPTOR.__relayQuery,
+        variables: {
+          ...REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables,
+          input: { currency: "EUR", network: "impact" },
+        },
+      },
+    },
+  };
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  rerender(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
+  expect(
+    screen.getByRole("button", { name: "Load more attribution clicks" }),
+  ).toBeInTheDocument();
 });
 
 test("revenue route distinguishes an anonymous click and an empty ledger", () => {

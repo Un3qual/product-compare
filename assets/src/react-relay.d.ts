@@ -71,8 +71,20 @@ declare module "react-relay" {
     readonly hasPrevious: boolean;
     readonly isLoadingNext: boolean;
     readonly isLoadingPrevious: boolean;
-    loadNext(count: number): void;
-    loadPrevious(count: number): void;
+    loadNext(
+      count: number,
+      options?: {
+        onComplete?: (error: Error | null) => void;
+        UNSTABLE_extraVariables?: Record<string, unknown>;
+      },
+    ): { dispose(): void };
+    loadPrevious(
+      count: number,
+      options?: {
+        onComplete?: (error: Error | null) => void;
+        UNSTABLE_extraVariables?: Record<string, unknown>;
+      },
+    ): { dispose(): void };
     refetch(variables: Record<string, unknown>): void;
   }
 

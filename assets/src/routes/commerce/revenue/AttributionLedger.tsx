@@ -1,4 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
+import { useState } from "react";
 import { graphql, usePaginationFragment } from "react-relay";
 import type {
   AttributionLedger_connection$data,
@@ -42,11 +43,18 @@ const attributionLedgerFragment = graphql`
           ipAddress
           linkType
           matchedConversions {
+            affiliateNetworkCode
+            affiliateNetworkId
+            affiliateNetworkName
             attributionConfidence
             commissionAmount
             currency
+            merchantId
+            merchantName
             networkConversionRef
             orderAmount
+            productId
+            productName
             purchasedAt
             reportedAt
             status
@@ -78,6 +86,13 @@ export function AttributionLedger({
     AttributionLedger_connection$key
   >(attributionLedgerFragment, fragmentRef);
   const clicks = data.commerceAttributionClicks.edges.map(({ node }) => node);
+  const [paginationFailed, setPaginationFailed] = useState(false);
+  const loadMore = () => {
+    setPaginationFailed(false);
+    loadNext(ATTRIBUTION_LEDGER_PAGE_SIZE, {
+      onComplete: (error) => setPaginationFailed(error !== null),
+    });
+  };
 
   return (
     <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
@@ -109,17 +124,43 @@ export function AttributionLedger({
           </table>
         </div>
       )}
-      {hasNext ? (
-        <Button
-          disabled={isLoadingNext}
-          onClick={() => loadNext(ATTRIBUTION_LEDGER_PAGE_SIZE)}
-          type="button"
-        >
-          {isLoadingNext ? "Loading more attribution clicks…" : "Load more attribution clicks"}
-        </Button>
-      ) : null}
+      <AttributionPaginationControl
+        failed={paginationFailed}
+        hasNext={hasNext}
+        isLoadingNext={isLoadingNext}
+        onLoadMore={loadMore}
+      />
     </section>
   );
+}
+
+function AttributionPaginationControl({
+  failed,
+  hasNext,
+  isLoadingNext,
+  onLoadMore,
+}: {
+  failed: boolean;
+  hasNext: boolean;
+  isLoadingNext: boolean;
+  onLoadMore: () => void;
+}) {
+  if (failed) {
+    return (
+      <div role="alert">
+        <p>Unable to load more attribution clicks.</p>
+        <Button disabled={isLoadingNext} onClick={onLoadMore} type="button">
+          Retry loading attribution clicks
+        </Button>
+      </div>
+    );
+  }
+
+  return hasNext ? (
+    <Button disabled={isLoadingNext} onClick={onLoadMore} type="button">
+      {isLoadingNext ? "Loading more attribution clicks…" : "Load more attribution clicks"}
+    </Button>
+  ) : null;
 }
 
 type AttributionClick =
@@ -234,6 +275,22 @@ function AttributionConversionList({
             <dd>Status: {formatLedgerEnum(conversion.status)}</dd>
             <dt>Attribution</dt>
             <dd>Attribution: {formatLedgerEnum(conversion.attributionConfidence)}</dd>
+            <dt>Conversion merchant</dt>
+            <dd>
+              {conversion.merchantName ?? "No merchant"}
+              {conversion.merchantId ? ` (${conversion.merchantId})` : ""}
+            </dd>
+            <dt>Conversion product</dt>
+            <dd>
+              {conversion.productName ?? "No product"}
+              {conversion.productId ? ` (${conversion.productId})` : ""}
+            </dd>
+            <dt>Conversion network</dt>
+            <dd>
+              {conversion.affiliateNetworkName ?? "No affiliate network"}
+              {conversion.affiliateNetworkCode ? ` (${conversion.affiliateNetworkCode})` : ""}
+              {conversion.affiliateNetworkId ? ` [${conversion.affiliateNetworkId}]` : ""}
+            </dd>
             <dt>Purchased</dt>
             <dd>
               {conversion.purchasedAt ? (

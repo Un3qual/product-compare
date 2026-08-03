@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<12941e1d96b1cddd202d99d9b763888e>>
+ * @generated SignedSource<<82548c4b88346475a89dc66b98f05cfe>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -29,11 +29,18 @@ export type AttributionLedger_connection$data = {
         readonly ipAddress: string | null | undefined;
         readonly linkType: CommerceAttributionLinkType;
         readonly matchedConversions: ReadonlyArray<{
+          readonly affiliateNetworkCode: string | null | undefined;
+          readonly affiliateNetworkId: string | null | undefined;
+          readonly affiliateNetworkName: string | null | undefined;
           readonly attributionConfidence: CommerceAttributionConfidence;
           readonly commissionAmount: any | null | undefined;
           readonly currency: string;
+          readonly merchantId: string | null | undefined;
+          readonly merchantName: string | null | undefined;
           readonly networkConversionRef: string;
           readonly orderAmount: any | null | undefined;
+          readonly productId: string | null | undefined;
+          readonly productName: string | null | undefined;
           readonly purchasedAt: any | null | undefined;
           readonly reportedAt: any;
           readonly status: CommerceConversionStatus;
@@ -64,7 +71,56 @@ import AttributionLedgerPaginationQuery_graphql from './AttributionLedgerPaginat
 const node: ReaderFragment = (function(){
 var v0 = [
   "commerceAttributionClicks"
-];
+],
+v1 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkCode",
+  "storageKey": null
+},
+v2 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkId",
+  "storageKey": null
+},
+v3 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkName",
+  "storageKey": null
+},
+v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "merchantId",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "merchantName",
+  "storageKey": null
+},
+v6 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "productId",
+  "storageKey": null
+},
+v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "productName",
+  "storageKey": null
+};
 return {
   "argumentDefinitions": [
     {
@@ -138,27 +194,9 @@ return {
               "name": "node",
               "plural": false,
               "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "affiliateNetworkCode",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "affiliateNetworkId",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "affiliateNetworkName",
-                  "storageKey": null
-                },
+                (v1/*: any*/),
+                (v2/*: any*/),
+                (v3/*: any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -216,6 +254,9 @@ return {
                   "name": "matchedConversions",
                   "plural": true,
                   "selections": [
+                    (v1/*: any*/),
+                    (v2/*: any*/),
+                    (v3/*: any*/),
                     {
                       "alias": null,
                       "args": null,
@@ -237,6 +278,8 @@ return {
                       "name": "currency",
                       "storageKey": null
                     },
+                    (v4/*: any*/),
+                    (v5/*: any*/),
                     {
                       "alias": null,
                       "args": null,
@@ -251,6 +294,8 @@ return {
                       "name": "orderAmount",
                       "storageKey": null
                     },
+                    (v6/*: any*/),
+                    (v7/*: any*/),
                     {
                       "alias": null,
                       "args": null,
@@ -275,20 +320,8 @@ return {
                   ],
                   "storageKey": null
                 },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "merchantId",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "merchantName",
-                  "storageKey": null
-                },
+                (v4/*: any*/),
+                (v5/*: any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -303,20 +336,8 @@ return {
                   "name": "merchantProductId",
                   "storageKey": null
                 },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "productId",
-                  "storageKey": null
-                },
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "productName",
-                  "storageKey": null
-                },
+                (v6/*: any*/),
+                (v7/*: any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -406,6 +427,6 @@ return {
 };
 })();
 
-(node as any).hash = "7cd17bc06567de585eac79c339cd6f90";
+(node as any).hash = "230eb3f1208eba32add731030729955f";
 
 export default node;

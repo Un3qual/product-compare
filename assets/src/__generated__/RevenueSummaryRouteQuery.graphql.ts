@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d62ced6fd9333367a1c72cb059b3c9ab>>
+ * @generated SignedSource<<a354e1cdd0051b1f7646ab9ac904420f>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -198,7 +198,42 @@ v8 = [
     "variableName": "ledgerFirst"
   },
   (v3/*: any*/)
-];
+],
+v9 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkCode",
+  "storageKey": null
+},
+v10 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkId",
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "affiliateNetworkName",
+  "storageKey": null
+},
+v12 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "merchantName",
+  "storageKey": null
+},
+v13 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "productName",
+  "storageKey": null
+};
 return {
   "fragment": {
     "argumentDefinitions": [
@@ -255,27 +290,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "affiliateNetworkCode",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "affiliateNetworkId",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "affiliateNetworkName",
-                    "storageKey": null
-                  },
+                  (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -333,6 +350,9 @@ return {
                     "name": "matchedConversions",
                     "plural": true,
                     "selections": [
+                      (v9/*: any*/),
+                      (v10/*: any*/),
+                      (v11/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -348,6 +368,8 @@ return {
                         "storageKey": null
                       },
                       (v4/*: any*/),
+                      (v5/*: any*/),
+                      (v12/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -362,6 +384,8 @@ return {
                         "name": "orderAmount",
                         "storageKey": null
                       },
+                      (v6/*: any*/),
+                      (v13/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -387,13 +411,7 @@ return {
                     "storageKey": null
                   },
                   (v5/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "merchantName",
-                    "storageKey": null
-                  },
+                  (v12/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -409,13 +427,7 @@ return {
                     "storageKey": null
                   },
                   (v6/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "productName",
-                    "storageKey": null
-                  },
+                  (v13/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -513,12 +525,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "a3b55a86969ca2897cc33880095f3b7b",
+    "cacheID": "7922be76c5a20aeb166f3d4c1c14a51a",
     "id": null,
     "metadata": {},
     "name": "RevenueSummaryRouteQuery",
     "operationKind": "query",
-    "text": "query RevenueSummaryRouteQuery(\n  $input: RevenueSummaryInput\n  $ledgerFirst: Int!\n  $ledgerAfter: String\n) {\n  revenueSummary(input: $input) {\n    filters {\n      currency\n      from\n      merchantId\n      network\n      productId\n      to\n    }\n    metrics {\n      averagePaidPrice\n      clicks\n      commissionRevenue\n      conversions\n      currency\n      grossOrderValue\n    }\n  }\n  ...AttributionLedger_connection_wKqW4\n}\n\nfragment AttributionLedger_connection_wKqW4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $ledgerFirst, after: $ledgerAfter) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousId\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          attributionConfidence\n          commissionAmount\n          currency\n          networkConversionRef\n          orderAmount\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query RevenueSummaryRouteQuery(\n  $input: RevenueSummaryInput\n  $ledgerFirst: Int!\n  $ledgerAfter: String\n) {\n  revenueSummary(input: $input) {\n    filters {\n      currency\n      from\n      merchantId\n      network\n      productId\n      to\n    }\n    metrics {\n      averagePaidPrice\n      clicks\n      commissionRevenue\n      conversions\n      currency\n      grossOrderValue\n    }\n  }\n  ...AttributionLedger_connection_wKqW4\n}\n\nfragment AttributionLedger_connection_wKqW4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $ledgerFirst, after: $ledgerAfter) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousId\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          affiliateNetworkCode\n          affiliateNetworkId\n          affiliateNetworkName\n          attributionConfidence\n          commissionAmount\n          currency\n          merchantId\n          merchantName\n          networkConversionRef\n          orderAmount\n          productId\n          productName\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();

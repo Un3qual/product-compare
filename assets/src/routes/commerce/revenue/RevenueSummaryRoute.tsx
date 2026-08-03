@@ -4,7 +4,10 @@ import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
   type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../../relay/route-preload";
+import {
+  relayRouteQueryDescriptorIdentity,
+  useRoutePreloadedQuery,
+} from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
@@ -78,7 +81,10 @@ function RevenueSummaryPanel({
   return (
     <>
       <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
-      <AttributionLedger fragmentRef={data} />
+      <AttributionLedger
+        fragmentRef={data}
+        key={relayRouteQueryDescriptorIdentity(query)}
+      />
     </>
   );
 }
