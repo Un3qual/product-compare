@@ -29,6 +29,8 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
       assert codec_codes == reference_rows(table)
 
       Enum.each(codec_codes, fn {code, id} ->
+        assert_standard_recognition(code, standard, type)
+        assert {:ok, ^code} = Ecto.Type.cast(type, code)
         assert {:ok, ^id} = Ecto.Type.dump(type, code)
         assert {:ok, ^code} = Ecto.Type.load(type, id)
       end)
@@ -87,6 +89,22 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
   defp reference_rows(table) do
     Repo.query!("SELECT code, id FROM #{table} ORDER BY id").rows
     |> Map.new(fn [code, id] -> {code, id} end)
+  end
+
+  defp assert_standard_recognition(_code, :none, _type), do: :ok
+
+  defp assert_standard_recognition(code, :territory, type) do
+    normalized_input = String.downcase(code)
+
+    assert {:ok, code} == ReferenceData.canonical_territory(normalized_input)
+    assert {:ok, code} == Ecto.Type.cast(type, normalized_input)
+  end
+
+  defp assert_standard_recognition(code, :language, type) do
+    normalized_input = String.downcase(code)
+
+    assert {:ok, normalized_input} == ReferenceData.canonical_language(code)
+    assert {:ok, code} == Ecto.Type.cast(type, normalized_input)
   end
 
   defp production_reference_code_fields do

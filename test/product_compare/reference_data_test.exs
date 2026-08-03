@@ -10,21 +10,15 @@ defmodule ProductCompare.ReferenceDataTest do
       assert {:ok, "fr"} = ReferenceData.canonical_language("fr")
     end
 
-    test "recognizes valid standard codes outside ProductCompare support" do
-      assert {:ok, "AUD"} = ReferenceData.canonical_currency("aud")
-      refute ReferenceData.supported_currency?("aud")
-
-      assert {:ok, "GB"} = ReferenceData.canonical_territory("gb")
-      refute ReferenceData.supported_territory?("gb")
-
-      assert {:ok, "de"} = ReferenceData.canonical_language("de")
-      refute ReferenceData.supported_language?("de")
+    test "canonicalizes regular language codes without English display metadata" do
+      assert {:ok, "alt"} = ReferenceData.canonical_language(" ALT ")
+      assert {:ok, "aaa"} = ReferenceData.canonical_language("AAA")
     end
 
-    test "recognizes ProductCompare-supported codes as supported" do
-      assert ReferenceData.supported_currency?(" usd ")
-      assert ReferenceData.supported_territory?("ca")
-      assert ReferenceData.supported_language?("fr")
+    test "recognizes valid standard codes outside ProductCompare support" do
+      assert {:ok, "AUD"} = ReferenceData.canonical_currency("aud")
+      assert {:ok, "GB"} = ReferenceData.canonical_territory("gb")
+      assert {:ok, "de"} = ReferenceData.canonical_language("de")
     end
 
     test "normalizes malformed and unknown codes without raising" do
@@ -32,9 +26,9 @@ defmodule ProductCompare.ReferenceDataTest do
       assert :error = ReferenceData.canonical_territory("Canada")
       assert :error = ReferenceData.canonical_language("zz")
 
-      refute ReferenceData.supported_currency?(nil)
-      refute ReferenceData.supported_territory?(:ca)
-      refute ReferenceData.supported_language?(123)
+      assert :error = ReferenceData.canonical_currency(nil)
+      assert :error = ReferenceData.canonical_territory(:ca)
+      assert :error = ReferenceData.canonical_language(123)
     end
   end
 
@@ -51,6 +45,11 @@ defmodule ProductCompare.ReferenceDataTest do
       assert nil == ReferenceData.currency("US")
       assert nil == ReferenceData.territory("Canada")
       assert nil == ReferenceData.language("zz")
+    end
+
+    test "returns nil when a valid language has no English display metadata" do
+      assert nil == ReferenceData.language("alt")
+      assert nil == ReferenceData.language("aaa")
     end
   end
 end

@@ -8,10 +8,6 @@ defmodule ProductCompare.ReferenceData do
 
   alias ProductCompare.ReferenceData.Cldr, as: ReferenceDataCldr
 
-  @supported_currencies %{"CAD" => true, "EUR" => true, "GBP" => true, "USD" => true}
-  @supported_territories %{"CA" => true, "US" => true}
-  @supported_languages %{"en" => true, "fr" => true}
-
   @spec canonical_currency(term()) :: {:ok, String.t()} | :error
   def canonical_currency(value) when is_binary(value) do
     with {:ok, code} <- Cldr.validate_currency(String.trim(value)),
@@ -38,28 +34,13 @@ defmodule ProductCompare.ReferenceData do
   def canonical_language(value) when is_binary(value) do
     code = value |> String.trim() |> String.downcase()
 
-    case known_languages() do
-      languages when is_map(languages) ->
-        if Map.has_key?(languages, code), do: {:ok, code}, else: :error
-
-      _error ->
-        :error
+    case Cldr.Validity.Language.validate(code) do
+      {:ok, ^code, _status} -> {:ok, code}
+      _error -> :error
     end
   end
 
   def canonical_language(_value), do: :error
-
-  @spec supported_currency?(term()) :: boolean()
-  def supported_currency?(value),
-    do: supported?(value, &canonical_currency/1, @supported_currencies)
-
-  @spec supported_territory?(term()) :: boolean()
-  def supported_territory?(value),
-    do: supported?(value, &canonical_territory/1, @supported_territories)
-
-  @spec supported_language?(term()) :: boolean()
-  def supported_language?(value),
-    do: supported?(value, &canonical_language/1, @supported_languages)
 
   @spec currency(term()) ::
           {:ok, %{code: String.t(), name: String.t(), minor_unit: non_neg_integer() | nil}} | nil
@@ -93,30 +74,11 @@ defmodule ProductCompare.ReferenceData do
     end
   end
 
-  # The generated CLDR language backend dispatches configured locales by atom,
-  # but exposes an imprecise static contract for that dispatch.
-  @spec known_languages() :: map() | :error
-  defp known_languages do
-    case apply(ReferenceDataCldr.Language, :known_languages, [:en]) do
-      languages when is_map(languages) -> languages
-      _error -> :error
-    end
-  end
-
   @spec language_name(String.t()) :: {:ok, String.t()} | :error
   defp language_name(code) do
     case apply(ReferenceDataCldr.Language, :to_string, [code, [locale: :en]]) do
       {:ok, name} when is_binary(name) -> {:ok, name}
       _error -> :error
-    end
-  end
-
-  @spec supported?(term(), (term() -> {:ok, String.t()} | :error), %{String.t() => true}) ::
-          boolean()
-  defp supported?(value, canonicalize, supported_codes) do
-    case canonicalize.(value) do
-      {:ok, code} -> Map.has_key?(supported_codes, code)
-      :error -> false
     end
   end
 end

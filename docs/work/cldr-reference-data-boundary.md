@@ -79,3 +79,20 @@ CLDR owns standards recognition and metadata for currencies, territories, and la
   Dialyzer exception is a generated `ex_cldr_languages` 0.3.3 dependency
   false positive, filtered by its exact file/message pair; the filter probe
   proved it does not match a synthetic ProductCompare warning.
+- 2026-08-03: Consolidated final-review follow-through moved language
+  recognition from English display-name-map membership to
+  `Cldr.Validity.Language.validate/1`. Literal regressions cover atom-keyed
+  `alt` and regular-valid no-display `aaa`; both canonicalize while metadata
+  remains `nil`, and malformed, unknown, and non-binary values still normalize
+  safely to `:error` or `nil`. Removed the test-only `supported_*` maps and
+  helpers; exhaustive seeded-table parity now proves supported codes through
+  the currency/reference codecs, while merchant-feed tests retain the explicit
+  GB/DE standard-but-unsupported boundary.
+- Final-review TDD evidence: the new focused regression first failed with 7
+  tests, 1 failure because `canonical_language(" ALT ")` returned `:error`, then
+  passed with 7 tests, 0 failures after the validity change. Final verification:
+  focused reference-data, feed-candidate, and codec-parity suites (13 tests, 0
+  failures); `mix typecheck`; `mix quality` (Credo found no issues and ExDNA
+  stayed within its 3/3 clone budget); `mix work_queue.validate` (3 ready rows);
+  and `git diff --check`. The dispatch queue remains `Active Work: None` with
+  exactly ready rows 15-17.
