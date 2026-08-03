@@ -2,24 +2,25 @@ import { Suspense, useEffect, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import revenueSummaryRouteQuery, {
-  type RevenueSummaryRouteQuery
+  type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { revenueSummaryLoader, type RevenueSummaryLoaderData } from "./loader";
+import { AttributionLedger } from "./AttributionLedger";
 import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";
 import {
   buildRevenueSummaryControls,
-  buildRevenueSummaryMetrics
+  buildRevenueSummaryMetrics,
 } from "./revenue-summary-view-data";
 
 export function RevenueSummaryRoute() {
   const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
   const { activeFilters, datePresetLinks } = buildRevenueSummaryControls(
     loaderData.filters,
-    useHydratedLocalDate()
+    useHydratedLocalDate(),
   );
 
   return (
@@ -44,7 +45,9 @@ export function RevenueSummaryRoute() {
             fallback={<RevenueSummaryUnavailableFallback />}
             resetToken={loaderData.query}
           >
-            <Suspense fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}>
+            <Suspense
+              fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}
+            >
               <RevenueSummaryPanel query={loaderData.query} />
             </Suspense>
           </ResettableErrorBoundary>
@@ -55,30 +58,28 @@ export function RevenueSummaryRoute() {
 }
 
 function RevenueSummaryPanel({
-  query
+  query,
 }: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
     revenueSummaryRouteQuery,
-    query
+    query,
   );
-  const data = usePreloadedQuery<RevenueSummaryRouteQuery>(
-    revenueSummaryRouteQuery,
-    queryRef
-  );
+  const data = usePreloadedQuery<RevenueSummaryRouteQuery>(revenueSummaryRouteQuery, queryRef);
 
   if (!data.revenueSummary) {
     return <RevenueSummaryUnavailableFallback />;
   }
 
+  const currency =
+    data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? "";
+
   return (
-    <RevenueSummaryMetrics
-      metrics={buildRevenueSummaryMetrics(
-        data.revenueSummary,
-        data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? ""
-      )}
-    />
+    <>
+      <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
+      <AttributionLedger fragmentRef={data} />
+    </>
   );
 }
 

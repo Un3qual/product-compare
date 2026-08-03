@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<d62ced6fd9333367a1c72cb059b3c9ab>>
+ * @generated SignedSource<<462c76bd391d02be105150481b744693>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -18,201 +18,63 @@ export type RevenueSummaryInput = {
   productId?: string | null | undefined;
   to?: string | null | undefined;
 };
-export type RevenueSummaryRouteQuery$variables = {
+export type AttributionLedgerPaginationQuery$variables = {
+  after?: string | null | undefined;
+  first: number;
   input?: RevenueSummaryInput | null | undefined;
-  ledgerAfter?: string | null | undefined;
-  ledgerFirst: number;
 };
-export type RevenueSummaryRouteQuery$data = {
-  readonly revenueSummary: {
-    readonly filters: {
-      readonly currency: string | null | undefined;
-      readonly from: string | null | undefined;
-      readonly merchantId: string | null | undefined;
-      readonly network: string | null | undefined;
-      readonly productId: string | null | undefined;
-      readonly to: string | null | undefined;
-    };
-    readonly metrics: {
-      readonly averagePaidPrice: string | null | undefined;
-      readonly clicks: number | null | undefined;
-      readonly commissionRevenue: string | null | undefined;
-      readonly conversions: number | null | undefined;
-      readonly currency: string | null | undefined;
-      readonly grossOrderValue: string | null | undefined;
-    };
-  } | null | undefined;
+export type AttributionLedgerPaginationQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"AttributionLedger_connection">;
 };
-export type RevenueSummaryRouteQuery = {
-  response: RevenueSummaryRouteQuery$data;
-  variables: RevenueSummaryRouteQuery$variables;
+export type AttributionLedgerPaginationQuery = {
+  response: AttributionLedgerPaginationQuery$data;
+  variables: AttributionLedgerPaginationQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
-var v0 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "input"
-},
-v1 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "ledgerAfter"
-},
-v2 = {
-  "defaultValue": null,
-  "kind": "LocalArgument",
-  "name": "ledgerFirst"
-},
-v3 = {
-  "kind": "Variable",
-  "name": "input",
-  "variableName": "input"
-},
-v4 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "currency",
-  "storageKey": null
-},
-v5 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "merchantId",
-  "storageKey": null
-},
-v6 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "productId",
-  "storageKey": null
-},
-v7 = {
-  "alias": null,
-  "args": [
-    (v3/*: any*/)
-  ],
-  "concreteType": "RevenueSummary",
-  "kind": "LinkedField",
-  "name": "revenueSummary",
-  "plural": false,
-  "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "RevenueSummaryFilters",
-      "kind": "LinkedField",
-      "name": "filters",
-      "plural": false,
-      "selections": [
-        (v4/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "from",
-          "storageKey": null
-        },
-        (v5/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "network",
-          "storageKey": null
-        },
-        (v6/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "to",
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "RevenueSummaryMetrics",
-      "kind": "LinkedField",
-      "name": "metrics",
-      "plural": false,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "averagePaidPrice",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "clicks",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "commissionRevenue",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "conversions",
-          "storageKey": null
-        },
-        (v4/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "grossOrderValue",
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    }
-  ],
-  "storageKey": null
-},
-v8 = [
+var v0 = [
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "after"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "first"
+  },
+  {
+    "defaultValue": null,
+    "kind": "LocalArgument",
+    "name": "input"
+  }
+],
+v1 = [
   {
     "kind": "Variable",
     "name": "after",
-    "variableName": "ledgerAfter"
+    "variableName": "after"
   },
   {
     "kind": "Variable",
     "name": "first",
-    "variableName": "ledgerFirst"
+    "variableName": "first"
   },
-  (v3/*: any*/)
+  {
+    "kind": "Variable",
+    "name": "input",
+    "variableName": "input"
+  }
 ];
 return {
   "fragment": {
-    "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
-    ],
+    "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "RevenueSummaryRouteQuery",
+    "name": "AttributionLedgerPaginationQuery",
     "selections": [
-      (v7/*: any*/),
       {
-        "args": (v8/*: any*/),
+        "args": (v1/*: any*/),
         "kind": "FragmentSpread",
         "name": "AttributionLedger_connection"
       }
@@ -222,18 +84,13 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": [
-      (v0/*: any*/),
-      (v2/*: any*/),
-      (v1/*: any*/)
-    ],
+    "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "RevenueSummaryRouteQuery",
+    "name": "AttributionLedgerPaginationQuery",
     "selections": [
-      (v7/*: any*/),
       {
         "alias": null,
-        "args": (v8/*: any*/),
+        "args": (v1/*: any*/),
         "concreteType": "CommerceAttributionClickConnection",
         "kind": "LinkedField",
         "name": "commerceAttributionClicks",
@@ -347,7 +204,13 @@ return {
                         "name": "commissionAmount",
                         "storageKey": null
                       },
-                      (v4/*: any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "currency",
+                        "storageKey": null
+                      },
                       {
                         "alias": null,
                         "args": null,
@@ -386,7 +249,13 @@ return {
                     ],
                     "storageKey": null
                   },
-                  (v5/*: any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "merchantId",
+                    "storageKey": null
+                  },
                   {
                     "alias": null,
                     "args": null,
@@ -408,7 +277,13 @@ return {
                     "name": "merchantProductId",
                     "storageKey": null
                   },
-                  (v6/*: any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "productId",
+                    "storageKey": null
+                  },
                   {
                     "alias": null,
                     "args": null,
@@ -501,7 +376,7 @@ return {
       },
       {
         "alias": null,
-        "args": (v8/*: any*/),
+        "args": (v1/*: any*/),
         "filters": [
           "input"
         ],
@@ -513,16 +388,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "a3b55a86969ca2897cc33880095f3b7b",
+    "cacheID": "cc817c1b3518a630ee198dbb0ba7a529",
     "id": null,
     "metadata": {},
-    "name": "RevenueSummaryRouteQuery",
+    "name": "AttributionLedgerPaginationQuery",
     "operationKind": "query",
-    "text": "query RevenueSummaryRouteQuery(\n  $input: RevenueSummaryInput\n  $ledgerFirst: Int!\n  $ledgerAfter: String\n) {\n  revenueSummary(input: $input) {\n    filters {\n      currency\n      from\n      merchantId\n      network\n      productId\n      to\n    }\n    metrics {\n      averagePaidPrice\n      clicks\n      commissionRevenue\n      conversions\n      currency\n      grossOrderValue\n    }\n  }\n  ...AttributionLedger_connection_wKqW4\n}\n\nfragment AttributionLedger_connection_wKqW4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $ledgerFirst, after: $ledgerAfter) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousId\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          attributionConfidence\n          commissionAmount\n          currency\n          networkConversionRef\n          orderAmount\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query AttributionLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n  $input: RevenueSummaryInput\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousId\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          attributionConfidence\n          commissionAmount\n          currency\n          networkConversionRef\n          orderAmount\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a4be97557a948fa60e3c0b8602c9608c";
+(node as any).hash = "7cd17bc06567de585eac79c339cd6f90";
 
 export default node;

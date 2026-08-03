@@ -26,6 +26,8 @@ const REVENUE_QUERY_DESCRIPTOR = {
   },
 };
 
+const REVENUE_LEDGER_PAGE_SIZE = 20;
+
 beforeEach(() => {
   preloadRouteQueryMock.mockReset();
 });
@@ -56,6 +58,8 @@ test("revenueSummaryLoader normalizes supported network currency and date filter
       network: "impact",
       to: "2026-05-31",
     },
+    ledgerAfter: null,
+    ledgerFirst: REVENUE_LEDGER_PAGE_SIZE,
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -83,6 +87,8 @@ test("revenueSummaryLoader normalizes supported network currency and date filter
         network: "impact",
         to: "2026-05-31",
       },
+      ledgerAfter: null,
+      ledgerFirst: REVENUE_LEDGER_PAGE_SIZE,
     },
     { signal: request.signal },
   );
@@ -98,6 +104,8 @@ test("revenueSummaryLoader drops invalid scalar filters before preloading", asyn
       currency: "USD",
       to: "2026-05-31",
     },
+    ledgerAfter: null,
+    ledgerFirst: REVENUE_LEDGER_PAGE_SIZE,
   });
 
   preloadRouteQueryMock.mockResolvedValue(descriptor);
@@ -121,6 +129,8 @@ test("revenueSummaryLoader drops invalid scalar filters before preloading", asyn
         currency: "USD",
         to: "2026-05-31",
       },
+      ledgerAfter: null,
+      ledgerFirst: REVENUE_LEDGER_PAGE_SIZE,
     },
     { signal: request.signal },
   );
@@ -217,6 +227,8 @@ function revenueSummaryQueryDescriptor(variables: {
     network?: string;
     to?: string;
   } | null;
+  ledgerAfter: string | null;
+  ledgerFirst: number;
 }) {
   return {
     __relayQuery: {

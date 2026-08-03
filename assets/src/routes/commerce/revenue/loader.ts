@@ -8,6 +8,7 @@ import {
   type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "./revenue-summary-view-data";
 
 const DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const SUPPORTED_NETWORKS = new Set(["impact", "awin", "rakuten", "cj", "amazon_associates"]);
@@ -68,6 +69,8 @@ export async function revenueSummaryLoader({
         revenueSummaryRouteQuery,
         {
           input: filters,
+          ledgerAfter: null,
+          ledgerFirst: ATTRIBUTION_LEDGER_PAGE_SIZE,
         },
         { signal: request.signal },
       ),

@@ -15,6 +15,8 @@ export type RevenueSummaryFilterFormValues = {
   to: string;
 };
 
+export const ATTRIBUTION_LEDGER_PAGE_SIZE = 20;
+
 type RevenueSummaryMetricSource = {
   metrics: {
     averagePaidPrice?: string | null;
@@ -203,7 +205,7 @@ function formatCount(value: number | null | undefined) {
   return value === null || value === undefined ? "Not available" : String(value);
 }
 
-function formatCurrencyAmount(value: string | null | undefined, currency: string) {
+export function formatCurrencyAmount(value: string | null | undefined, currency: string) {
   if (value === null || value === undefined) {
     return "Not available";
   }

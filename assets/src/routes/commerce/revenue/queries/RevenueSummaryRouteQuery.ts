@@ -1,7 +1,11 @@
 import { graphql } from "react-relay";
 
 export default graphql`
-  query RevenueSummaryRouteQuery($input: RevenueSummaryInput) {
+  query RevenueSummaryRouteQuery(
+    $input: RevenueSummaryInput
+    $ledgerFirst: Int!
+    $ledgerAfter: String
+  ) {
     revenueSummary(input: $input) {
       filters {
         currency
@@ -20,5 +24,7 @@ export default graphql`
         grossOrderValue
       }
     }
+    ...AttributionLedger_connection
+      @arguments(input: $input, first: $ledgerFirst, after: $ledgerAfter)
   }
 `;

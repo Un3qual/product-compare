@@ -141,7 +141,7 @@ test("buildRevenueSummaryMetrics returns one-conversion values without suppressi
           commissionRevenue: "9.00",
           conversions: 1,
           grossOrderValue: "90.00",
-        }
+        },
       },
       "USD",
     ),
@@ -164,7 +164,7 @@ test("buildRevenueSummaryMetrics preserves null and empty-string amount semantic
           commissionRevenue: undefined,
           conversions: 0,
           grossOrderValue: "",
-        }
+        },
       },
       "USD",
     ),
