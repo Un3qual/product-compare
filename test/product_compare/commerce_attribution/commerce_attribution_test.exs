@@ -232,6 +232,57 @@ defmodule ProductCompare.CommerceAttributionTest do
                ip_address: "999.0.0.1"
              }).valid?
     end
+
+    test "accepts host addresses and rejects IPv4 and IPv6 subnets" do
+      commerce_link = commerce_link_fixture(%{link_type: :non_affiliate, network: nil})
+
+      for host <- [
+            "203.0.113.42",
+            "2001:db8::42",
+            {203, 0, 113, 42},
+            {0x2001, 0xDB8, 0, 0, 0, 0, 0, 0x42}
+          ] do
+        assert CommerceClickSession.changeset(%CommerceClickSession{}, %{
+                 commerce_link_id: commerce_link.id,
+                 ip_address: host
+               }).valid?
+      end
+
+      for subnet <- ["203.0.113.42/24", "2001:db8::42/64"] do
+        refute CommerceClickSession.changeset(%CommerceClickSession{}, %{
+                 commerce_link_id: commerce_link.id,
+                 ip_address: subnet
+               }).valid?
+      end
+    end
+
+    test "database rejects non-host INET masks" do
+      commerce_link = commerce_link_fixture(%{link_type: :non_affiliate, network: nil})
+
+      for subnet <- [
+            %Postgrex.INET{address: {203, 0, 113, 42}, netmask: 24},
+            %Postgrex.INET{
+              address: {0x2001, 0xDB8, 0, 0, 0, 0, 0, 0x42},
+              netmask: 64
+            }
+          ] do
+        changeset =
+          %CommerceClickSession{}
+          |> change(%{
+            click_id: Ecto.UUID.generate(),
+            commerce_link_id: commerce_link.id,
+            source_surface: :web,
+            ip_address: subnet
+          })
+          |> check_constraint(:ip_address,
+            name: :commerce_click_sessions_ip_address_host_check,
+            message: "must be a host address"
+          )
+
+        assert {:error, changeset} = Repo.insert(changeset)
+        assert %{ip_address: ["must be a host address"]} = errors_on(changeset)
+      end
+    end
   end
 
   describe "track_outbound_click/1" do

@@ -40,10 +40,15 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     ])
     |> put_generated_click_id()
     |> validate_required([:click_id, :commerce_link_id, :source_surface])
+    |> validate_host_address()
     |> unique_constraint(:click_id)
     |> foreign_key_constraint(:commerce_link_id)
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:user_id)
+    |> check_constraint(:ip_address,
+      name: :commerce_click_sessions_ip_address_host_check,
+      message: "must be a host address"
+    )
   end
 
   defp put_generated_click_id(changeset) do
@@ -52,4 +57,21 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
       _click_id -> changeset
     end
   end
+
+  defp validate_host_address(changeset) do
+    validate_change(changeset, :ip_address, fn :ip_address,
+                                               %Postgrex.INET{
+                                                 address: address,
+                                                 netmask: netmask
+                                               } ->
+      if netmask in [nil, host_netmask(address)] do
+        []
+      else
+        [ip_address: "must be a host address"]
+      end
+    end)
+  end
+
+  defp host_netmask(address) when tuple_size(address) == 4, do: 32
+  defp host_netmask(address) when tuple_size(address) == 8, do: 128
 end

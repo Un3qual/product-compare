@@ -3,15 +3,36 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
 
   @catalog_schema "public"
   @allowed_timestamp_tables MapSet.new(~w(oban_jobs oban_peers schema_migrations))
-  @inet_columns [{@catalog_schema, "commerce_click_sessions", "ip_address"}]
+  @approved_inet_field {
+    @catalog_schema,
+    "commerce_click_sessions",
+    "ip_address",
+    ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+    :ip_address
+  }
+  @inet_host_constraint {
+    "commerce_click_sessions_ip_address_host_check",
+    "ip_address IS NULL OR masklen(ip_address) = " <>
+      "CASE family(ip_address) WHEN 4 THEN 32 ELSE 128 END"
+  }
   @digest_columns [
     {@catalog_schema, "ingestion_runs", "scope_fingerprint",
-     "ingestion_runs_scope_fingerprint_sha256_length"},
+     "ingestion_runs_scope_fingerprint_sha256_length", ProductCompareSchemas.Ingestion.ImportRun,
+     :scope_fingerprint},
     {@catalog_schema, "product_attribute_claims", "fingerprint",
-     "product_attribute_claims_fingerprint_sha256_length"},
+     "product_attribute_claims_fingerprint_sha256_length",
+     ProductCompareSchemas.Specs.ProductAttributeClaim, :fingerprint},
     {@catalog_schema, "source_artifacts", "content_hash",
-     "source_artifacts_content_hash_sha256_length"}
+     "source_artifacts_content_hash_sha256_length", ProductCompareSchemas.Specs.SourceArtifact,
+     :content_hash}
   ]
+  @cooldown_field {
+    @catalog_schema,
+    "price_watch_rules",
+    "cooldown",
+    ProductCompareSchemas.Alerts.PriceWatchRule,
+    :cooldown
+  }
   @cooldown_constraints %{
     price_watch_rules_cooldown_min_check: "cooldown >= '00:01:00'::interval",
     price_watch_rules_cooldown_max_check: "cooldown <= '8760:00:00'::interval",
@@ -24,7 +45,8 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
           database_schema: String.t(),
           table: String.t(),
           field: atom(),
-          column: String.t()
+          column: String.t(),
+          ecto_type: term()
         }
 
   @spec validate(module()) :: {:ok, map()} | {:error, [String.t()]}
@@ -36,7 +58,8 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
     constraints = constraint_catalog(repo)
 
     violations =
-      inet_storage_violations(inet_fields, columns) ++
+      inet_storage_violations(fields, columns) ++
+        inet_host_constraint_violations(fields, constraints) ++
         digest_storage_violations(fields, columns, constraints) ++
         cooldown_storage_violations(fields, columns, constraints) ++
         utc_datetime_storage_violations(utc_datetime_fields, columns) ++
@@ -45,7 +68,8 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
     inventory = %{
       inet_fields: inet_fields,
       utc_datetime_fields: utc_datetime_fields,
-      digest_columns: Enum.map(@digest_columns, &digest_column/1)
+      digest_columns: Enum.map(@digest_columns, &digest_column/1),
+      host_only_inet_columns: [{"commerce_click_sessions", "ip_address"}]
     }
 
     case Enum.sort(violations) do
@@ -90,15 +114,50 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
           String.t()
         ]
   def inet_storage_violations(fields, catalog) do
-    Enum.flat_map(@inet_columns, fn {schema, table, column} ->
-      location = field_location(fields, schema, table, column)
+    reflected_inet_fields = Enum.filter(fields, &(field_type(&1) == EctoNetwork.INET))
+    approved_field = contract_field(@approved_inet_field)
 
-      case Map.fetch(catalog, {schema, table, column}) do
-        {:ok, %{data_type: "inet", udt_name: "inet"}} -> []
-        {:ok, observed} -> [native_violation(observed, location, "inet/inet")]
-        :error -> ["#{location} expected inet/inet, observed no PostgreSQL column"]
-      end
-    end)
+    type_errors =
+      required_field_type_violations(fields, @approved_inet_field, EctoNetwork.INET)
+
+    column_errors =
+      (reflected_inet_fields ++ [approved_field])
+      |> Enum.uniq_by(&field_key/1)
+      |> Enum.flat_map(fn field ->
+        location = field_label(field)
+
+        case Map.fetch(catalog, field_key(field)) do
+          {:ok, %{data_type: "inet", udt_name: "inet"}} -> []
+          {:ok, observed} -> [native_violation(observed, location, "inet/inet")]
+          :error -> ["#{location} expected inet/inet, observed no PostgreSQL column"]
+        end
+      end)
+
+    type_errors ++ column_errors
+  end
+
+  defp inet_host_constraint_violations(_fields, constraints) do
+    {schema, table, _column, _module, _field} = @approved_inet_field
+    {constraint, expected} = @inet_host_constraint
+    location = contract_field(@approved_inet_field) |> field_label()
+
+    case Map.fetch(constraints, {schema, table, constraint}) do
+      {:ok, observed} ->
+        if normalized_constraint(observed) == normalized_constraint(expected) do
+          []
+        else
+          [
+            "#{location} expected host-only INET constraint #{constraint} as #{expected}, " <>
+              "observed #{observed}"
+          ]
+        end
+
+      :error ->
+        [
+          "#{location} expected host-only INET constraint #{constraint} as #{expected}, " <>
+            "observed no PostgreSQL constraint"
+        ]
+    end
   end
 
   @spec first_party_timestamp_violations([map()], [persisted_field()]) :: [String.t()]
@@ -140,7 +199,8 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
           database_schema: @catalog_schema,
           table: module.__schema__(:source),
           field: field,
-          column: module.__schema__(:field_source, field) |> to_string()
+          column: module.__schema__(:field_source, field) |> to_string(),
+          ecto_type: module.__schema__(:type, field)
         }
       end)
     else
@@ -153,6 +213,8 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
       is_binary(module.__schema__(:source))
   end
 
+  defp field_type(%{ecto_type: ecto_type}), do: ecto_type
+
   defp field_type(%{schema: schema, field: field}), do: schema.__schema__(:type, field)
 
   @spec digest_storage_violations(
@@ -161,8 +223,11 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
           %{{String.t(), String.t(), String.t()} => String.t()}
         ) :: [String.t()]
   def digest_storage_violations(fields, columns, constraints) do
-    Enum.flat_map(@digest_columns, fn {schema, table, column, constraint} ->
-      location = field_location(fields, schema, table, column)
+    Enum.flat_map(@digest_columns, fn {schema, table, column, constraint, _module, _field} =
+                                        digest_field ->
+      location = contract_field(digest_field) |> field_label()
+
+      type_errors = required_field_type_violations(fields, digest_field, :binary)
 
       column_errors =
         case Map.fetch(columns, {schema, table, column}) do
@@ -190,7 +255,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
             ]
         end
 
-      column_errors ++ constraint_errors
+      type_errors ++ column_errors ++ constraint_errors
     end)
   end
 
@@ -200,7 +265,9 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
           %{{String.t(), String.t(), String.t()} => String.t()}
         ) :: [String.t()]
   def cooldown_storage_violations(fields, columns, constraints) do
-    location = field_location(fields, @catalog_schema, "price_watch_rules", "cooldown")
+    location = contract_field(@cooldown_field) |> field_label()
+
+    type_errors = required_field_type_violations(fields, @cooldown_field, :duration)
 
     column_errors =
       case Map.fetch(columns, {@catalog_schema, "price_watch_rules", "cooldown"}) do
@@ -239,7 +306,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
         end
       end)
 
-    column_errors ++ constraint_errors
+    type_errors ++ column_errors ++ constraint_errors
   end
 
   defp column_catalog(repo) do
@@ -352,22 +419,70 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
       "(#{Atom.to_string(field.schema)} #{inspect(field.field)})"
   end
 
-  defp field_location(fields, schema, table, column) do
-    case Enum.find(fields, &(field_key(&1) == {schema, table, column})) do
-      nil -> "#{schema}.#{table}.#{column} (no Ecto field)"
-      field -> field_label(field)
-    end
-  end
-
   defp field_key(field), do: {field.database_schema, field.table, field.column}
   defp column_key(column), do: {column.schema, column.table, column.column}
 
-  defp digest_column({_schema, table, column, _constraint}), do: {table, column}
+  defp digest_column({_schema, table, column, _constraint, _module, _field}),
+    do: {table, column}
+
+  defp required_field(fields, {schema, table, column, module, field}) do
+    Enum.find(fields, &(&1.schema == module and &1.field == field)) ||
+      %{
+        schema: module,
+        database_schema: schema,
+        table: table,
+        field: field,
+        column: column,
+        ecto_type: nil
+      }
+  end
+
+  defp required_field(fields, {schema, table, column, _constraint, module, field}) do
+    required_field(fields, {schema, table, column, module, field})
+  end
+
+  defp contract_field({schema, table, column, module, field}) do
+    %{
+      schema: module,
+      database_schema: schema,
+      table: table,
+      field: field,
+      column: column,
+      ecto_type: nil
+    }
+  end
+
+  defp contract_field({schema, table, column, _constraint, module, field}) do
+    contract_field({schema, table, column, module, field})
+  end
+
+  defp required_field_type_violations(fields, field_contract, expected_type) do
+    field = required_field(fields, field_contract)
+    expected = inspect(expected_type)
+
+    case field.ecto_type do
+      ^expected_type ->
+        []
+
+      nil ->
+        [
+          "#{field_label(field)} expected Ecto type #{expected}, " <>
+            "observed no reflected Ecto field"
+        ]
+
+      observed ->
+        ["#{field_label(field)} expected Ecto type #{expected}, observed #{inspect(observed)}"]
+    end
+  end
 
   defp normalized_constraint(definition) do
     definition
     |> String.downcase()
-    |> String.replace(~r/::(?:[a-z_][a-z0-9_]*|"[^"]+")/i, "")
+    |> String.replace(~r/('(?:''|[^'])*')::(?:text|interval)/i, "\\1")
+    |> String.replace(
+      ~r/\b(\d+(?:\.\d+)?)::integer/i,
+      "\\1"
+    )
     |> String.replace(~r/\bcheck\b/i, "")
     |> String.replace(~r/[\s()"]/, "")
   end

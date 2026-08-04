@@ -21,6 +21,34 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
     end
   end
 
+  defmodule PersistedInetFixture do
+    use Ecto.Schema
+
+    @primary_key false
+    schema "native_storage_policy_inet_fixtures" do
+      field :client_address, EctoNetwork.INET
+    end
+  end
+
+  defmodule MissingHostConstraintRepo do
+    def query!(sql, params) do
+      result = ProductCompare.Repo.query!(sql, params)
+
+      if String.contains?(sql, "FROM pg_constraint") do
+        %{
+          result
+          | rows:
+              Enum.reject(
+                result.rows,
+                &match?([_, "commerce_click_sessions_ip_address_host_check", _], &1)
+              )
+        }
+      else
+        result
+      end
+    end
+  end
+
   test "discovers persisted UTC datetime fields without a table and column registry" do
     assert [
              %{
@@ -28,7 +56,8 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
                database_schema: "public",
                table: "native_storage_policy_fixtures",
                field: :occurred_at,
-               column: "occurred_at_utc"
+               column: "occurred_at_utc",
+               ecto_type: :utc_datetime_usec
              }
            ] =
              NativeStoragePolicy.utc_datetime_fields_from_modules([
@@ -110,18 +139,99 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
            ] = NativeStoragePolicy.first_party_timestamp_violations(catalog, [])
   end
 
-  test "requires the click IP column even when its Ecto field is no longer native inet" do
+  test "discovers every reflected native INET field while requiring the approved click field" do
+    click_field = %{
+      schema: ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+      database_schema: "public",
+      table: "commerce_click_sessions",
+      field: :ip_address,
+      column: "ip_address",
+      ecto_type: EctoNetwork.INET
+    }
+
+    reflected_field = %{
+      schema: PersistedInetFixture,
+      database_schema: "public",
+      table: "native_storage_policy_inet_fixtures",
+      field: :client_address,
+      column: "client_address",
+      ecto_type: EctoNetwork.INET
+    }
+
     assert [
-             "public.commerce_click_sessions.ip_address (no Ecto field) expected inet/inet, " <>
-               "observed text/text"
+             "public.native_storage_policy_inet_fixtures.client_address " <>
+               "(Elixir.ProductCompare.Repo.NativeStoragePolicyTest.PersistedInetFixture " <>
+               ":client_address) expected inet/inet, observed text/text"
            ] =
-             NativeStoragePolicy.inet_storage_violations([], %{
+             NativeStoragePolicy.inet_storage_violations([click_field, reflected_field], %{
                {"public", "commerce_click_sessions", "ip_address"} => %{
+                 schema: "public",
+                 data_type: "inet",
+                 udt_name: "inet"
+               },
+               {"public", "native_storage_policy_inet_fixtures", "client_address"} => %{
                  schema: "public",
                  data_type: "text",
                  udt_name: "text"
                }
              })
+  end
+
+  test "requires the approved click field itself to remain EctoNetwork.INET" do
+    assert ("public.commerce_click_sessions.ip_address " <>
+              "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
+              ":ip_address) expected Ecto type EctoNetwork.INET, " <>
+              "observed no reflected Ecto field") in NativeStoragePolicy.inet_storage_violations(
+             [],
+             %{
+               {"public", "commerce_click_sessions", "ip_address"} => %{
+                 schema: "public",
+                 data_type: "inet",
+                 udt_name: "inet"
+               }
+             }
+           )
+  end
+
+  test "keeps the approved click storage column exact while discovering reflected INET fields" do
+    drifted_click_field = %{
+      schema: ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+      database_schema: "public",
+      table: "commerce_click_sessions",
+      field: :ip_address,
+      column: "other_address",
+      ecto_type: EctoNetwork.INET
+    }
+
+    assert [
+             "public.commerce_click_sessions.ip_address " <>
+               "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
+               ":ip_address) expected inet/inet, observed text/text"
+           ] =
+             NativeStoragePolicy.inet_storage_violations([drifted_click_field], %{
+               {"public", "commerce_click_sessions", "ip_address"} => %{
+                 schema: "public",
+                 data_type: "text",
+                 udt_name: "text"
+               },
+               {"public", "commerce_click_sessions", "other_address"} => %{
+                 schema: "public",
+                 data_type: "inet",
+                 udt_name: "inet"
+               }
+             })
+  end
+
+  test "requires the host-only INET database constraint" do
+    assert {:error, errors} = NativeStoragePolicy.validate(MissingHostConstraintRepo)
+
+    assert Enum.any?(errors, fn error ->
+             error =~
+               "public.commerce_click_sessions.ip_address " <>
+                 "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
+                 ":ip_address) expected host-only INET constraint " <>
+                 "commerce_click_sessions_ip_address_host_check"
+           end)
   end
 
   test "reports digest and cooldown violations with their reflected Ecto fields" do
@@ -130,7 +240,8 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
       database_schema: "public",
       table: "source_artifacts",
       field: :content_hash,
-      column: "content_hash"
+      column: "content_hash",
+      ecto_type: :string
     }
 
     price_watch_rule = %{
@@ -138,13 +249,30 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
       database_schema: "public",
       table: "price_watch_rules",
       field: :cooldown,
-      column: "cooldown"
+      column: "cooldown",
+      ecto_type: :integer
     }
+
+    assert ("public.source_artifacts.content_hash " <>
+              "(Elixir.ProductCompareSchemas.Specs.SourceArtifact :content_hash) " <>
+              "expected Ecto type :binary, observed :string") in NativeStoragePolicy.digest_storage_violations(
+             [source_artifact],
+             %{},
+             %{}
+           )
 
     assert ("public.source_artifacts.content_hash " <>
               "(Elixir.ProductCompareSchemas.Specs.SourceArtifact :content_hash) " <>
               "expected bytea/bytea, observed no PostgreSQL column") in NativeStoragePolicy.digest_storage_violations(
              [source_artifact],
+             %{},
+             %{}
+           )
+
+    assert ("public.price_watch_rules.cooldown " <>
+              "(Elixir.ProductCompareSchemas.Alerts.PriceWatchRule :cooldown) " <>
+              "expected Ecto type :duration, observed :integer") in NativeStoragePolicy.cooldown_storage_violations(
+             [price_watch_rule],
              %{},
              %{}
            )
@@ -192,7 +320,17 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
 
   test "accepts equivalent native-storage checks and rejects semantic changes" do
     assert NativeStoragePolicy.digest_constraint_valid?(
-             "CHECK (((content_hash::bytea IS NULL) OR (octet_length((content_hash)::bytea) = 32::integer)))",
+             "CHECK (((content_hash IS NULL) OR (octet_length((content_hash)) = 32::integer)))",
+             "content_hash"
+           )
+
+    refute NativeStoragePolicy.digest_constraint_valid?(
+             "CHECK (content_hash IS NULL OR octet_length(content_hash::text) = 32)",
+             "content_hash"
+           )
+
+    refute NativeStoragePolicy.digest_constraint_valid?(
+             "CHECK (content_hash IS NULL OR octet_length(content_hash) = 32::text)",
              "content_hash"
            )
 
@@ -231,6 +369,10 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
              {"ingestion_runs", "scope_fingerprint"},
              {"product_attribute_claims", "fingerprint"},
              {"source_artifacts", "content_hash"}
+           ]
+
+    assert Map.get(inventory, :host_only_inet_columns) == [
+             {"commerce_click_sessions", "ip_address"}
            ]
   end
 end

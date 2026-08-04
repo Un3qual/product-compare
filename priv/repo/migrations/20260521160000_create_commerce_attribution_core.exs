@@ -60,6 +60,15 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
 
     create index(:commerce_click_sessions, [:user_id], name: :commerce_click_sessions_user_idx)
 
+    create constraint(
+             :commerce_click_sessions,
+             :commerce_click_sessions_ip_address_host_check,
+             check: """
+             ip_address IS NULL OR
+             masklen(ip_address) = CASE family(ip_address) WHEN 4 THEN 32 ELSE 128 END
+             """
+           )
+
     create table(:commerce_conversions) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
 
