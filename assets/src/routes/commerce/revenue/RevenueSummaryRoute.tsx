@@ -96,6 +96,17 @@ function DeferredAttributionLedgerBoundary({
 }: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
 }) {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // SSR waits for all Suspense work, so subscribe to this optional query only after hydration.
+  if (!isHydrated) {
+    return <FeedbackState kind="loading" title="Loading attribution ledger..." />;
+  }
+
   return (
     <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
       <Await resolve={query} errorElement={<AttributionLedgerUnavailableFallback />}>

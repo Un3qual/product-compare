@@ -221,6 +221,70 @@ test("server render includes serialized Relay records for matched route queries"
   }
 });
 
+test("server render does not wait for the optional attribution ledger", async () => {
+  const originalFetch = globalThis.fetch;
+  const ledgerResponse = deferredPromise<Response>();
+
+  globalThis.fetch = vi.fn((_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { query: string };
+
+    if (body.query.includes("AttributionLedgerRouteQuery")) {
+      return ledgerResponse.promise;
+    }
+
+    const payload = body.query.includes("RevenueSummaryRouteQuery")
+      ? {
+          data: {
+            revenueSummary: {
+              filters: {
+                currency: "USD",
+                from: null,
+                merchantId: null,
+                network: null,
+                productId: null,
+                to: null,
+              },
+              metrics: {
+                averagePaidPrice: null,
+                clicks: 1,
+                commissionRevenue: "0",
+                conversions: 0,
+                currency: "USD",
+                grossOrderValue: "0",
+              },
+            },
+          },
+        }
+      : { data: { viewer: null } };
+
+    return Promise.resolve(jsonResponse(payload));
+  }) as typeof fetch;
+
+  const renderResult = render("/commerce/revenue?currency=USD");
+
+  try {
+    await expect(
+      Promise.race([
+        renderResult.then(() => "rendered" as const),
+        new Promise<"blocked">((resolve) => setTimeout(() => resolve("blocked"), 2_000)),
+      ]),
+    ).resolves.toBe("rendered");
+  } finally {
+    ledgerResponse.resolve(
+      jsonResponse({
+        data: {
+          commerceAttributionClicks: {
+            edges: [],
+            pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      }),
+    );
+    await renderResult;
+    globalThis.fetch = originalFetch;
+  }
+});
+
 function parseRelayRecords(html: Response | string) {
   expect(typeof html).toBe("string");
 
@@ -234,4 +298,22 @@ function parseRelayRecords(html: Response | string) {
   };
 
   return payload.records ?? {};
+}
+
+function jsonResponse(payload: unknown) {
+  return new Response(JSON.stringify(payload), {
+    headers: { "content-type": "application/json" },
+    status: 200,
+  });
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }
