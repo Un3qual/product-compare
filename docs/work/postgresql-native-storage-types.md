@@ -9,7 +9,7 @@ boundary; raw request diagnostics remain private and out of logs.
 
 ## Owned Paths
 
-The active coordinator batch owns only the paths named by
+The completed coordinator batch owned only the paths named by
 `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
 Task 1 owns the commerce click-session migration, schema, diagnostics,
 operator projection, focused commerce tests, dependency manifest and lockfile,

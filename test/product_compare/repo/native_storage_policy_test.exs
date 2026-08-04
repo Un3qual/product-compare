@@ -83,6 +83,33 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
            ] = NativeStoragePolicy.first_party_timestamp_violations(catalog, [])
   end
 
+  test "rejects an unreflected timestamp with time zone below precision six" do
+    catalog = [
+      %{
+        schema: "public",
+        table: "native_storage_policy_fixtures",
+        column: "unreflected_at",
+        data_type: "timestamp with time zone",
+        udt_name: "timestamptz",
+        datetime_precision: 3
+      },
+      %{
+        schema: "public",
+        table: "oban_jobs",
+        column: "scheduled_at",
+        data_type: "timestamp with time zone",
+        udt_name: "timestamptz",
+        datetime_precision: 3
+      }
+    ]
+
+    assert [
+             "public.native_storage_policy_fixtures.unreflected_at (unreflected) " <>
+               "expected timestamp with time zone/timestamptz precision 6, " <>
+               "observed timestamp with time zone/timestamptz precision 3"
+           ] = NativeStoragePolicy.first_party_timestamp_violations(catalog, [])
+  end
+
   test "requires the click IP column even when its Ecto field is no longer native inet" do
     assert [
              "public.commerce_click_sessions.ip_address (no Ecto field) expected inet/inet, " <>

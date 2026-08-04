@@ -107,9 +107,10 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
       MapSet.new(reflected_datetime_fields, &field_key/1)
 
     columns
-    |> Enum.filter(&timestamp_without_time_zone?/1)
+    |> Enum.filter(&timestamp_column?/1)
     |> Enum.reject(&MapSet.member?(@allowed_timestamp_tables, &1.table))
     |> Enum.reject(&MapSet.member?(reflected_columns, column_key(&1)))
+    |> Enum.reject(&timestamp_with_time_zone?/1)
     |> Enum.map(&timestamp_violation(&1, "#{&1.schema}.#{&1.table}.#{&1.column} (unreflected)"))
     |> Enum.sort()
   end
@@ -304,8 +305,11 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
 
   defp timestamp_with_time_zone?(_column), do: false
 
-  defp timestamp_without_time_zone?(%{data_type: "timestamp without time zone"}), do: true
-  defp timestamp_without_time_zone?(_column), do: false
+  defp timestamp_column?(%{data_type: data_type})
+       when data_type in ["timestamp with time zone", "timestamp without time zone"],
+       do: true
+
+  defp timestamp_column?(_column), do: false
 
   @spec digest_constraint_valid?(String.t(), String.t()) :: boolean()
   def digest_constraint_valid?(definition, column) do
