@@ -1,6 +1,24 @@
 defmodule ProductCompare.TestSupport.NativeStoragePolicy do
   @moduledoc false
 
+  defmodule NativeField do
+    @moduledoc false
+
+    @enforce_keys [:schema, :database_schema, :table, :field, :column, :ecto_type]
+    defstruct [:schema, :database_schema, :table, :field, :column, :ecto_type]
+
+    @type t :: %__MODULE__{
+            schema: module(),
+            database_schema: String.t(),
+            table: String.t(),
+            field: atom(),
+            column: String.t(),
+            ecto_type: term()
+          }
+  end
+
+  alias __MODULE__.NativeField
+
   @catalog_schema "public"
   @allowed_timestamp_tables MapSet.new(~w(oban_jobs oban_peers schema_migrations))
   @approved_inet_field {
@@ -40,14 +58,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
       "date_trunc('second'::text, cooldown) = cooldown"
   }
 
-  @type persisted_field :: %{
-          schema: module(),
-          database_schema: String.t(),
-          table: String.t(),
-          field: atom(),
-          column: String.t(),
-          ecto_type: term()
-        }
+  @type persisted_field :: NativeField.t()
 
   @spec validate(module()) :: {:ok, map()} | {:error, [String.t()]}
   def validate(repo) do
@@ -194,7 +205,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
       module.__schema__(:fields)
       |> Enum.reject(&MapSet.member?(virtual_fields, &1))
       |> Enum.map(fn field ->
-        %{
+        %NativeField{
           schema: module,
           database_schema: @catalog_schema,
           table: module.__schema__(:source),
@@ -427,7 +438,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
 
   defp required_field(fields, {schema, table, column, module, field}) do
     Enum.find(fields, &(&1.schema == module and &1.field == field)) ||
-      %{
+      %NativeField{
         schema: module,
         database_schema: schema,
         table: table,
@@ -442,7 +453,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
   end
 
   defp contract_field({schema, table, column, module, field}) do
-    %{
+    %NativeField{
       schema: module,
       database_schema: schema,
       table: table,
