@@ -7,6 +7,7 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
   alias ProductCompare.Ingestion.NormalizedListing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Ingestion.ImportObservation
+  alias ProductCompareSchemas.Ingestion.ImportRun
   alias ProductCompareSchemas.Pricing.MerchantProduct
 
   test "a proven complete run deactivates only unseen offers from the same scope" do
@@ -178,8 +179,32 @@ defmodule ProductCompare.Ingestion.ReconciliationTest do
 
     assert first.scope_fingerprint == second.scope_fingerprint
     refute first.scope_fingerprint == different.scope_fingerprint
-    assert first.scope_fingerprint =~ ~r/^[a-f0-9]{64}$/
-    refute first.scope_fingerprint =~ "private-feed-id"
+    assert byte_size(first.scope_fingerprint) == 32
+
+    canonical_payload =
+      Jason.encode!([
+        ["query", [["currency", "USD"], ["providerFeedId", "private-feed-id"]]],
+        ["source_id", source.id],
+        ["surface", "shoppingProducts"]
+      ])
+
+    assert first.scope_fingerprint == :crypto.hash(:sha256, canonical_payload)
+  end
+
+  test "import runs reject scope fingerprints that are not SHA-256 digests" do
+    source = source_fixture()
+
+    changeset =
+      ImportRun.changeset(%ImportRun{}, %{
+        source_id: source.id,
+        surface: "shoppingProducts",
+        query: %{},
+        status: :running,
+        started_at: ~U[2026-07-01 12:00:00Z],
+        scope_fingerprint: "not-a-32-byte-digest"
+      })
+
+    assert %{scope_fingerprint: ["must be 32 bytes"]} = errors_on(changeset)
   end
 
   test "an older run finishing after a newer complete run is safely superseded" do

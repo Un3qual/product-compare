@@ -1002,7 +1002,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           source_id: source.id,
           url: "https://merchant.example/product-feed",
           fetched_at: fetched_at,
-          content_hash: "offer-truth-#{System.unique_integer([:positive])}",
+          content_hash:
+            :crypto.hash(:sha256, "offer-truth-#{System.unique_integer([:positive])}"),
           raw_json: %{"private" => "payload"}
         })
         |> Repo.insert!()

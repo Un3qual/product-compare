@@ -15,6 +15,8 @@ export type RevenueSummaryFilterFormValues = {
   to: string;
 };
 
+export const ATTRIBUTION_LEDGER_PAGE_SIZE = 20;
+
 type RevenueSummaryMetricSource = {
   metrics: {
     averagePaidPrice?: string | null;
@@ -22,9 +24,6 @@ type RevenueSummaryMetricSource = {
     commissionRevenue?: string | null;
     conversions?: number | null;
     grossOrderValue?: string | null;
-  };
-  suppression: {
-    suppressed: boolean;
   };
 };
 
@@ -117,34 +116,26 @@ export function buildRevenueSummaryMetrics(
   summary: RevenueSummaryMetricSource,
   currency: string,
 ): RevenueSummaryMetric[] {
-  const suppressed = summary.suppression.suppressed;
-
   return [
     {
       label: "Clicks",
-      value: suppressed ? "Hidden" : formatCount(summary.metrics.clicks),
+      value: formatCount(summary.metrics.clicks),
     },
     {
       label: "Conversions",
-      value: suppressed ? "Hidden" : formatCount(summary.metrics.conversions),
+      value: formatCount(summary.metrics.conversions),
     },
     {
       label: "Gross order value",
-      value: suppressed
-        ? "Hidden"
-        : formatCurrencyAmount(summary.metrics.grossOrderValue, currency),
+      value: formatCurrencyAmount(summary.metrics.grossOrderValue, currency),
     },
     {
       label: "Commission revenue",
-      value: suppressed
-        ? "Hidden"
-        : formatCurrencyAmount(summary.metrics.commissionRevenue, currency),
+      value: formatCurrencyAmount(summary.metrics.commissionRevenue, currency),
     },
     {
       label: "Average paid price",
-      value: suppressed
-        ? "Hidden"
-        : formatCurrencyAmount(summary.metrics.averagePaidPrice, currency),
+      value: formatCurrencyAmount(summary.metrics.averagePaidPrice, currency),
     },
   ];
 }
@@ -214,7 +205,7 @@ function formatCount(value: number | null | undefined) {
   return value === null || value === undefined ? "Not available" : String(value);
 }
 
-function formatCurrencyAmount(value: string | null | undefined, currency: string) {
+export function formatCurrencyAmount(value: string | null | undefined, currency: string) {
   if (value === null || value === undefined) {
     return "Not available";
   }

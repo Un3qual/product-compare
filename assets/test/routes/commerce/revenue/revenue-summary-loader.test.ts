@@ -1,7 +1,11 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
-import { revenueSummaryLoader } from "../../../../src/routes/commerce/revenue/loader";
+import {
+  revenueSummaryLoader,
+  type RevenueSummaryLoaderData,
+} from "../../../../src/routes/commerce/revenue/loader";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
@@ -49,41 +53,45 @@ test("revenueSummaryLoader normalizes supported network currency and date filter
   const request = new Request(
     "https://app.example.test/commerce/revenue?network=Impact&currency=usd&from=2026-05-01&to=2026-05-31",
   );
-  const descriptor = revenueSummaryQueryDescriptor({
-    input: {
-      currency: "USD",
-      from: "2026-05-01",
-      network: "impact",
-      to: "2026-05-31",
-    },
-  });
+  const filters = {
+    currency: "USD",
+    from: "2026-05-01",
+    network: "impact",
+    to: "2026-05-31",
+  };
+  const descriptor = revenueSummaryQueryDescriptor({ input: filters });
+  const ledgerDescriptor = attributionLedgerQueryDescriptor(filters);
 
-  preloadRouteQueryMock.mockResolvedValue(descriptor);
+  preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(ledgerDescriptor);
 
-  await expect(
-    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
+  const loaderData = await revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  );
+
+  expect(loaderData).toMatchObject({
     status: "ready",
-    filters: {
-      currency: "USD",
-      from: "2026-05-01",
-      network: "impact",
-      to: "2026-05-31",
-    },
+    filters,
     query: descriptor,
   });
 
-  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+  if (loaderData.status !== "ready") {
+    throw new Error("Expected ready revenue summary loader data");
+  }
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
+
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    1,
     environment,
     expect.anything(),
-    {
-      input: {
-        currency: "USD",
-        from: "2026-05-01",
-        network: "impact",
-        to: "2026-05-31",
-      },
-    },
+    { input: filters },
+    { signal: request.signal },
+  );
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { input: filters, after: null, first: ATTRIBUTION_LEDGER_PAGE_SIZE },
     { signal: request.signal },
   );
 });
@@ -93,35 +101,43 @@ test("revenueSummaryLoader drops invalid scalar filters before preloading", asyn
   const request = new Request(
     "https://app.example.test/commerce/revenue?network=unknown-network&currency=usd&from=2026-02-30&to=2026-05-31",
   );
-  const descriptor = revenueSummaryQueryDescriptor({
-    input: {
-      currency: "USD",
-      to: "2026-05-31",
-    },
-  });
+  const filters = {
+    currency: "USD",
+    to: "2026-05-31",
+  };
+  const descriptor = revenueSummaryQueryDescriptor({ input: filters });
+  const ledgerDescriptor = attributionLedgerQueryDescriptor(filters);
 
-  preloadRouteQueryMock.mockResolvedValue(descriptor);
+  preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(ledgerDescriptor);
 
-  await expect(
-    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
+  const loaderData = await revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  );
+
+  expect(loaderData).toMatchObject({
     status: "ready",
-    filters: {
-      currency: "USD",
-      to: "2026-05-31",
-    },
+    filters,
     query: descriptor,
   });
 
-  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+  if (loaderData.status !== "ready") {
+    throw new Error("Expected ready revenue summary loader data");
+  }
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
+
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    1,
     environment,
     expect.anything(),
-    {
-      input: {
-        currency: "USD",
-        to: "2026-05-31",
-      },
-    },
+    { input: filters },
+    { signal: request.signal },
+  );
+  expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
+    2,
+    environment,
+    expect.anything(),
+    { input: filters, after: null, first: ATTRIBUTION_LEDGER_PAGE_SIZE },
     { signal: request.signal },
   );
 });
@@ -194,6 +210,85 @@ test("revenueSummaryLoader returns error state when route preloading fails", asy
   }
 });
 
+test("revenueSummaryLoader keeps a successful summary when ledger preloading fails", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    "https://app.example.test/commerce/revenue?network=Impact&currency=usd",
+  );
+  const ledgerError = new Error("ledger unavailable");
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(REVENUE_QUERY_DESCRIPTOR)
+    .mockRejectedValueOnce(ledgerError);
+
+  try {
+    const loaderData = await revenueSummaryLoader(
+      buildRevenueSummaryLoaderArgs({ environment, request }),
+    );
+
+    expect(loaderData).toMatchObject({
+      status: "ready",
+      filters: {
+        currency: "USD",
+        network: "impact",
+      },
+      query: REVENUE_QUERY_DESCRIPTOR,
+    });
+
+    if (loaderData.status !== "ready") {
+      throw new Error("Expected ready revenue summary loader data");
+    }
+
+    await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toBeNull();
+
+    expect(preloadRouteQueryMock).toHaveBeenCalledTimes(2);
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      "Failed to preload attribution ledger route query.",
+      { error: ledgerError },
+    );
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("revenueSummaryLoader returns the summary without waiting for the ledger preload", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/commerce/revenue?currency=usd");
+  const ledgerPreload = deferredPromise<ReturnType<typeof attributionLedgerQueryDescriptor>>();
+  let loaderData: RevenueSummaryLoaderData | undefined;
+
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(REVENUE_QUERY_DESCRIPTOR)
+    .mockImplementationOnce(() => ledgerPreload.promise);
+
+  const loaderResult = revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  ).then((result) => {
+    loaderData = result;
+    return result;
+  });
+
+  await flushMicrotasks();
+
+  expect(loaderData).toMatchObject({
+    status: "ready",
+    query: REVENUE_QUERY_DESCRIPTOR,
+  });
+
+  if (loaderData?.status !== "ready") {
+    throw new Error("Expected the summary loader to resolve before the ledger preload");
+  }
+
+  expect(loaderData.ledgerQuery).toBeInstanceOf(Promise);
+
+  const ledgerDescriptor = attributionLedgerQueryDescriptor({ currency: "USD" });
+  ledgerPreload.resolve(ledgerDescriptor);
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
+  await expect(loaderResult).resolves.toBe(loaderData);
+});
+
 function buildRevenueSummaryLoaderArgs({
   environment = createRelayEnvironment(),
   request = new Request("https://app.example.test/commerce/revenue"),
@@ -225,4 +320,40 @@ function revenueSummaryQueryDescriptor(variables: {
       variables,
     },
   };
+}
+
+function attributionLedgerQueryDescriptor(input: {
+  currency?: string;
+  from?: string;
+  network?: string;
+  to?: string;
+}) {
+  return {
+    __relayQuery: {
+      operationName: "AttributionLedgerRouteQuery",
+      text: "query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $after: String, $first: Int!) { commerceAttributionClicks(input: $input, after: $after, first: $first) { edges { cursor } } }",
+      variables: {
+        input,
+        after: null,
+        first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+      },
+    },
+  };
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}
+
+async function flushMicrotasks() {
+  for (let index = 0; index < 4; index += 1) {
+    await Promise.resolve();
+  }
 }

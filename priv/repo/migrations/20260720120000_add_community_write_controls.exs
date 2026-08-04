@@ -9,7 +9,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
       add :content_type, :community_content_type, null: false
       add :content_entropy_id, :uuid, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(
@@ -32,10 +32,10 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
     create table(:community_write_windows) do
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
       add :action_kind, :community_action_kind, null: false
-      add :window_started_at, :utc_datetime_usec, null: false
+      add :window_started_at, :timestamptz, precision: 6, size: 6, null: false
       add :count, :integer, null: false, default: 0
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(
@@ -49,7 +49,9 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
            )
 
     create constraint(:community_write_windows, :community_write_windows_hour_check,
-             check: "date_trunc('hour', window_started_at) = window_started_at"
+             check:
+               "date_trunc('hour', window_started_at AT TIME ZONE 'UTC') = " <>
+                 "window_started_at AT TIME ZONE 'UTC'"
            )
   end
 

@@ -109,8 +109,7 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
                    "commissionRevenue" => "145.00",
                    "conversions" => 2,
                    "currency" => "USD"
-                 },
-                 "suppression" => %{"suppressed" => false}
+                 }
                }
              }
            } =
@@ -195,7 +194,6 @@ defmodule ProductCompareWeb.GraphQL.DevelopmentSeedsTest do
       }
       revenueSummary(input: {currency: "USD"}) {
         metrics { clicks commissionRevenue conversions currency }
-        suppression { suppressed threshold }
       }
     }
     """

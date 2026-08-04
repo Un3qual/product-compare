@@ -1,6 +1,8 @@
 defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
   use ExUnit.Case, async: false
 
+  import ExUnit.CaptureLog
+
   alias ProductCompare.Ingestion.Sources.CJ.Client
 
   @env_keys ~w(CJ_API_TOKEN CJ_ACCOUNT_ID CJ_PROPERTY_ID)
@@ -73,6 +75,11 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
                         body: body,
                         headers: headers,
                         method: :post,
+                        options: [
+                          receive_timeout: 15_000,
+                          connect_options: [timeout: 5_000],
+                          redirect: true
+                        ],
                         url: "https://ads.api.cj.com/query"
                       }}
 
@@ -208,6 +215,88 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
                  transport: transport
                )
     end
+
+    test "uses Req with the configured request contract and normalizes a JSON response" do
+      configure_cj_credentials()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        assert conn.method == "POST"
+        assert conn.scheme == :https
+        assert conn.host == "ads.api.cj.com"
+        assert conn.request_path == "/query"
+        assert Plug.Conn.get_req_header(conn, "authorization") == ["Bearer test-token"]
+        assert Plug.Conn.get_req_header(conn, "content-type") == ["application/json"]
+
+        assert %{
+                 "variables" => %{
+                   "companyId" => "1234567",
+                   "limit" => 1,
+                   "offset" => 0
+                 }
+               } = conn |> Req.Test.raw_body() |> Jason.decode!()
+
+        Req.Test.json(conn, %{
+          "data" => %{
+            "shoppingProducts" => %{
+              "count" => 1,
+              "limit" => 1,
+              "totalCount" => 1,
+              "resultList" => [%{"adId" => "CJ-1"}]
+            }
+          }
+        })
+      end)
+
+      assert {:ok, [%{"adId" => "CJ-1"}], nil} =
+               Client.fetch_batch(nil, limit: 1, req_options: req_test_options())
+    end
+
+    test "preserves non-2xx responses returned through Req" do
+      configure_cj_credentials()
+      Req.Test.stub(__MODULE__, &Plug.Conn.send_resp(&1, 503, "unavailable"))
+
+      assert {:error, {:http_error, 503, "unavailable"}} =
+               Client.fetch_batch(nil, req_options: req_test_options())
+    end
+
+    test "preserves malformed JSON errors returned through Req" do
+      configure_cj_credentials()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        conn
+        |> Plug.Conn.put_resp_content_type("application/json")
+        |> Plug.Conn.send_resp(200, "{")
+      end)
+
+      assert {:error, {:decode_error, %Jason.DecodeError{}}} =
+               Client.fetch_batch(nil, req_options: req_test_options())
+    end
+
+    test "preserves GraphQL errors returned through Req" do
+      configure_cj_credentials()
+
+      Req.Test.stub(__MODULE__, fn conn ->
+        Req.Test.json(conn, %{"errors" => [%{"message" => "forbidden"}]})
+      end)
+
+      assert {:error, {:graphql_errors, [%{"message" => "forbidden"}]}} =
+               Client.fetch_batch(nil, req_options: req_test_options())
+    end
+
+    test "normalizes Req transport failures without exposing credentials" do
+      System.put_env("CJ_API_TOKEN", "secret-cj-token")
+      System.put_env("CJ_ACCOUNT_ID", "1234567")
+      Req.Test.stub(__MODULE__, &Req.Test.transport_error(&1, :timeout))
+
+      {result, log} =
+        with_log(fn ->
+          Client.fetch_batch(nil, req_options: req_test_options())
+        end)
+
+      assert {:error, {:transport_error, :timeout}} = result
+      refute inspect(result) =~ "secret-cj-token"
+      refute log =~ "secret-cj-token"
+    end
   end
 
   describe "fetch_feeds/2" do
@@ -282,4 +371,11 @@ defmodule ProductCompare.Ingestion.Sources.CJ.ClientTest do
       assert query =~ "$advertiserCountry: String"
     end
   end
+
+  defp configure_cj_credentials do
+    System.put_env("CJ_API_TOKEN", "test-token")
+    System.put_env("CJ_ACCOUNT_ID", "1234567")
+  end
+
+  defp req_test_options, do: [plug: {Req.Test, __MODULE__}]
 end

@@ -3,7 +3,7 @@ defmodule ProductCompare.Repo.Migrations.AddUserAuthFieldsAndSessionTokens do
 
   def change do
     alter table(:users) do
-      add :confirmed_at, :utc_datetime_usec
+      add :confirmed_at, :timestamptz, precision: 6, size: 6
     end
 
     create table(:users_tokens, primary_key: false) do
@@ -12,9 +12,9 @@ defmodule ProductCompare.Repo.Migrations.AddUserAuthFieldsAndSessionTokens do
       add :token_hash, :binary, null: false
       add :context, :user_token_context, null: false
       add :sent_to, :citext
-      add :expires_at, :utc_datetime_usec, null: false
+      add :expires_at, :timestamptz, precision: 6, size: 6, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:users_tokens, [:user_id])

@@ -1,4 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import type { Environment } from "relay-runtime";
+import attributionLedgerRouteQuery, {
+  type AttributionLedgerRouteQuery,
+} from "../../../__generated__/AttributionLedgerRouteQuery.graphql";
 import revenueSummaryRouteQuery, {
   type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
@@ -8,6 +12,7 @@ import {
   type RelayRouteQueryDescriptor,
 } from "../../../relay/route-preload";
 import { recoverRouteLoaderError } from "../../loader-errors";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "./revenue-summary-view-data";
 
 const DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const SUPPORTED_NETWORKS = new Set(["impact", "awin", "rakuten", "cj", "amazon_associates"]);
@@ -23,6 +28,10 @@ export type RevenueSummaryLoaderData =
   | {
       status: "ready";
       filters: RevenueSummaryFilters;
+      ledgerQuery:
+        | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
+        | null;
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | {
@@ -59,22 +68,29 @@ export async function revenueSummaryLoader({
     };
   }
 
+  const summaryQuery = preloadRouteQuery<RevenueSummaryRouteQuery>(
+    environment,
+    revenueSummaryRouteQuery,
+    { input: filters },
+    { signal: request.signal },
+  );
+  const ledgerQuery = preloadAttributionLedger(environment, filters, request.signal).catch(
+    (reason: unknown) =>
+      recoverRouteLoaderError(reason, "Failed to preload attribution ledger route query.", null),
+  );
+
   try {
+    const query = await summaryQuery;
+
     return {
       status: "ready",
       filters,
-      query: await preloadRouteQuery<RevenueSummaryRouteQuery>(
-        environment,
-        revenueSummaryRouteQuery,
-        {
-          input: filters,
-        },
-        { signal: request.signal },
-      ),
+      ledgerQuery,
+      query,
     };
-  } catch (error) {
+  } catch (reason) {
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
-      error,
+      reason,
       "Failed to preload revenue summary route query.",
       {
         status: "error",
@@ -82,6 +98,23 @@ export async function revenueSummaryLoader({
       },
     );
   }
+}
+
+function preloadAttributionLedger(
+  environment: Environment,
+  filters: RevenueSummaryFilters,
+  signal: AbortSignal,
+) {
+  return preloadRouteQuery<AttributionLedgerRouteQuery>(
+    environment,
+    attributionLedgerRouteQuery,
+    {
+      input: filters,
+      after: null,
+      first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+    },
+    { signal },
+  );
 }
 
 export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {

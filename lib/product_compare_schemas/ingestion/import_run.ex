@@ -47,7 +47,7 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     field :records_persisted, :integer, default: 0
     field :records_failed, :integer, default: 0
     field :error_summary, :string
-    field :scope_fingerprint, :string
+    field :scope_fingerprint, :binary
 
     field :reconciliation_status, Ecto.Enum,
       values: @reconciliation_statuses,
@@ -93,9 +93,11 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> validate_number(:pages_requested, greater_than: 0)
     |> validate_counts()
     |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
+    |> validate_sha256_digest(:scope_fingerprint)
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
+    |> check_constraint(:scope_fingerprint, name: :ingestion_runs_scope_fingerprint_sha256_length)
   end
 
   @spec completion_changeset(t(), map()) :: Ecto.Changeset.t()
@@ -117,6 +119,12 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
   defp validate_counts(changeset) do
     Enum.reduce(@count_fields, changeset, fn field, changeset ->
       validate_number(changeset, field, greater_than_or_equal_to: 0)
+    end)
+  end
+
+  defp validate_sha256_digest(changeset, field) do
+    validate_change(changeset, field, fn ^field, value ->
+      if is_binary(value) and byte_size(value) == 32, do: [], else: [{field, "must be 32 bytes"}]
     end)
   end
 end

@@ -80,6 +80,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                   }} =
                    CjImport.run_import(
                      check_credentials: true,
+                     # Public test sentinel used to verify credential redaction.
+                     # skipcq: SCT-A000
                      api_token: "secret-token",
                      company_id: "1234567",
                      fetcher: flunking_fetcher
@@ -154,7 +156,7 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                scope_fingerprint: scope_fingerprint
              } = Repo.get_by!(ImportRun, source_id: source_id, surface: "shoppingProducts")
 
-      assert scope_fingerprint =~ ~r/^[a-f0-9]{64}$/
+      assert byte_size(scope_fingerprint) == 32
       assert Repo.aggregate(ImportObservation, :count, :id) == 1
 
       assert Repo.aggregate(SourceArtifact, :count, :id) == 1
@@ -532,13 +534,13 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
       assert Repo.aggregate(ImportRun, :count, :id) == 0
     end
 
-    test "rejects an unsupported configured currency before fetching" do
+    test "rejects CLDR-recognized but unsupported configured currency before fetching" do
       fetcher = fn _cursor, _opts ->
         flunk("unsupported currency configuration must not reach the CJ product fetcher")
       end
 
-      assert_raise Mix.Error, "unsupported CJ import currency: \"AUD\"", fn ->
-        CjImport.run_import(currency: "AUD", fetcher: fetcher)
+      assert_raise Mix.Error, "unsupported CJ import currency: \"JPY\"", fn ->
+        CjImport.run_import(currency: "JPY", fetcher: fetcher)
       end
 
       assert Repo.aggregate(ImportRun, :count, :id) == 0

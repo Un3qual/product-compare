@@ -24,6 +24,9 @@ defmodule ProductCompare.DevSeeds.Support do
   @spec unobserved_watch_entropy_id() :: Ecto.UUID.t()
   def unobserved_watch_entropy_id, do: @unobserved_watch_entropy_id
 
+  @spec sha256(binary()) :: binary()
+  def sha256(value) when is_binary(value), do: :crypto.hash(:sha256, value)
+
   @spec expect!({:ok, value} | {:error, term()}, String.t()) :: value when value: var
   def expect!({:ok, value}, _stage), do: value
 

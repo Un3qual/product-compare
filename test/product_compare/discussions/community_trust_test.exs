@@ -3,6 +3,7 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
+  alias Ecto.Adapters.SQL
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
@@ -95,6 +96,15 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
              |> Repo.insert()
 
     assert "must be greater than or equal to 0" in errors_on(count_changeset).count
+
+    SQL.query!(Repo, "SET LOCAL TIME ZONE 'Asia/Kathmandu'")
+
+    assert {:ok, utc_window} =
+             %CommunityWriteWindow{}
+             |> CommunityWriteWindow.changeset(%{attrs | action_kind: :answer, count: 1})
+             |> Repo.insert()
+
+    assert DateTime.compare(utc_window.window_started_at, window_started_at) == :eq
   end
 
   test "only published reviews affect public lists and aggregates, and offer selection is not purchase proof" do

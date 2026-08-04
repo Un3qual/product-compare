@@ -1,9 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
   @moduledoc false
 
-  alias ProductCompare.CommerceAttribution.DestinationUrl.Punycode
-
   @idna_dot_separators [<<0x3002::utf8>>, <<0xFF0E::utf8>>, <<0xFF61::utf8>>]
+  @maximum_dns_hostname_length 253
 
   @spec canonical_http_hostname(String.t()) :: {:ok, String.t()} | :error
   def canonical_http_hostname(url) when is_binary(url) do
@@ -41,17 +40,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
     else
       hostname
       |> normalize_idna_hostname()
-      |> String.split(".")
-      |> Enum.reduce_while({:ok, []}, fn label, {:ok, labels} ->
-        case canonical_hostname_label(label) do
-          {:ok, label} -> {:cont, {:ok, [label | labels]}}
-          :error -> {:halt, :error}
-        end
-      end)
-      |> case do
-        {:ok, labels} -> {:ok, labels |> Enum.reverse() |> Enum.join(".")}
-        :error -> :error
-      end
+      |> canonical_idna_hostname()
     end
   end
 
@@ -62,6 +51,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
     |> URI.decode()
     |> String.normalize(:nfkc)
     |> replace_idna_dot_separators()
+    |> String.downcase()
   end
 
   defp replace_idna_dot_separators(hostname) do
@@ -104,19 +94,21 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
     end
   end
 
-  defp canonical_hostname_label(label) do
-    label = String.downcase(label)
-
-    if ascii_label?(label) do
-      {:ok, label}
-    else
-      {:ok, "xn--" <> Punycode.encode(label)}
+  defp canonical_idna_hostname(hostname) do
+    try do
+      hostname
+      |> String.to_charlist()
+      |> :idna.encode()
+      |> List.to_string()
+      |> String.downcase()
+      |> case do
+        hostname when byte_size(hostname) <= @maximum_dns_hostname_length -> {:ok, hostname}
+        _overlong_hostname -> :error
+      end
+    rescue
+      _error -> :error
+    catch
+      _kind, _reason -> :error
     end
-  rescue
-    ArgumentError -> :error
-  end
-
-  defp ascii_label?(label) do
-    label |> String.to_charlist() |> Enum.all?(&(&1 < 128))
   end
 end

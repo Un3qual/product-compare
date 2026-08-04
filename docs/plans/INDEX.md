@@ -11,10 +11,23 @@ of active and candidate plans, not the dispatch queue.
 - `docs/plans/2026-03-19-frontend-relay-route-data-design.md`
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
+- `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved attribution observability and foundation-library program is
+dispatched through three reviewable plans:
+
+- `docs/superpowers/plans/2026-08-01-attribution-observability-and-affiliate-click-references-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-01-transport-and-idna-library-adoption-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-01-cldr-reference-data-boundary-implementation-plan.md`
+
+The attribution observability and affiliate click-reference, transport/IDNA,
+and CLDR reference-data boundary plans are complete on
+`codex/attribution-observability-libraries`.
+
 Development Feature Seeds completed through
 `docs/superpowers/plans/2026-07-31-development-feature-seeds-implementation-plan.md`
 and
@@ -779,6 +792,14 @@ or `docs/superpowers/plans/`, matching the planning workflow that produced
 them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- PostgreSQL Native Storage Types:
+  `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
+  First-party click IP addresses, SHA-256 digests, elapsed cooldowns, and
+  absolute instants now use PostgreSQL `inet`, `bytea`, `interval DAY TO
+  SECOND`, and `timestamptz(6)` storage while GraphQL remains textual or
+  integer-valued at its boundaries. `docs/work/postgresql-native-storage-types.md`
+  retains the closeout evidence and the development-database reset notice.
 
 - 2026-07-27 Ranked Catalog Search:
   `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` and

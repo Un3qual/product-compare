@@ -10,8 +10,8 @@ defmodule ProductCompare.Repo.Migrations.AddCJProgramLifecycle do
       add :advertiser_id, :text, null: false
       add :stage, :cj_program_stage, null: false, default: "new"
       add :note, :text
-      add :changed_at, :utc_datetime_usec, null: false
-      timestamps(type: :utc_datetime_usec)
+      add :changed_at, :timestamptz, precision: 6, size: 6, null: false
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     alter table(:merchant_feed_candidates) do

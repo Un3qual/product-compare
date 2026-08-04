@@ -775,8 +775,23 @@ defmodule ProductCompare.IngestionTest do
 
       assert {:ok, persisted} = Ingestion.persist_normalized_listing(source, listing)
 
+      assert byte_size(persisted.source_artifact.content_hash) == 32
+
       assert persisted.source_artifact.content_hash ==
-               "7ebf63b3d013b44178147b191378c5b137df0bc1aab99893832458fc390f4bb4"
+               Base.decode16!("7EBF63B3D013B44178147B191378C5B137DF0BC1AAB99893832458FC390F4BB4")
+    end
+
+    test "source artifacts reject content hashes that are not SHA-256 digests" do
+      source = source_fixture()
+
+      changeset =
+        SourceArtifact.changeset(%SourceArtifact{}, %{
+          source_id: source.id,
+          fetched_at: ~U[2026-07-01 12:00:00Z],
+          content_hash: "not-a-32-byte-digest"
+        })
+
+      assert %{content_hash: ["must be 32 bytes"]} = errors_on(changeset)
     end
 
     test "does not let stale observations overwrite merchant products or add older price points" do

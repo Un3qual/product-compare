@@ -1,27 +1,35 @@
-import { act, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
+import { usePaginationFragment, usePreloadedQuery } from "react-relay";
+import type { AttributionLedgerRouteQuery$variables } from "../../../../src/__generated__/AttributionLedgerRouteQuery.graphql";
+import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
+import {
+  type RelayRouteQueryDescriptor,
+  useRoutePreloadedQuery,
+} from "../../../../src/relay/route-preload";
 import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   RevenueSummaryMetrics,
-  RevenueSummaryView
+  RevenueSummaryView,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
 import {
-  buildRevenueDatePresetLinks
+  ATTRIBUTION_LEDGER_PAGE_SIZE,
+  buildRevenueDatePresetLinks,
 } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 const {
   useLoaderDataMock,
+  usePaginationFragmentMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn(),
+  usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -29,7 +37,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -38,38 +46,58 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePaginationFragment: usePaginationFragmentMock,
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const REVENUE_QUERY_DESCRIPTOR = {
+const REVENUE_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery$variables> = {
   __relayQuery: {
     operationName: "RevenueSummaryRouteQuery",
     text: "query RevenueSummaryRouteQuery($input: RevenueSummaryInput) { revenueSummary(input: $input) { metrics { clicks } } }",
     variables: {
-      input: null
-    }
-  }
+      input: null,
+    },
+  },
 };
+
+const ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> =
+  {
+    __relayQuery: {
+      operationName: "AttributionLedgerRouteQuery",
+      text: "query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $after: String, $first: Int!) { commerceAttributionClicks(input: $input, after: $after, first: $first) { edges { cursor } } }",
+      variables: {
+        input: null,
+        after: null,
+        first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+      },
+    },
+  };
 
 const REVENUE_QUERY_REF = {
   dispose: vi.fn(),
-  variables: REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables,
+};
+
+const ATTRIBUTION_LEDGER_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const UNSUPPRESSED_REVENUE_SUMMARY = {
@@ -80,7 +108,7 @@ const UNSUPPRESSED_REVENUE_SUMMARY = {
       merchantId: null,
       network: "impact",
       productId: null,
-      to: "2026-05-31"
+      to: "2026-05-31",
     },
     metrics: {
       averagePaidPrice: "80.00",
@@ -88,13 +116,65 @@ const UNSUPPRESSED_REVENUE_SUMMARY = {
       commissionRevenue: "20.00",
       conversions: 2,
       currency: "USD",
-      grossOrderValue: "200.00"
+      grossOrderValue: "200.00",
     },
-    suppression: {
-      suppressed: false,
-      threshold: 2
-    }
-  }
+  },
+};
+
+const ATTRIBUTION_LEDGER_PAGE = {
+  commerceAttributionClicks: {
+    edges: [
+      {
+        cursor: "ledger-cursor-1",
+        node: {
+          affiliateNetworkCode: "impact",
+          affiliateNetworkId: "network-1",
+          affiliateNetworkName: "Impact",
+          affiliateProgramCode: "impact-program",
+          affiliateProgramId: "program-1",
+          anonymousId: null,
+          clickId: "db8e90c9-c6f2-4f36-a67f-3324033ac114",
+          insertedAt: "2026-05-31T12:30:00Z",
+          ipAddress: "203.0.113.44",
+          linkType: "affiliate",
+          matchedConversions: [
+            {
+              affiliateNetworkCode: "partnerize",
+              affiliateNetworkId: "conversion-network-1",
+              affiliateNetworkName: "Conversion Network",
+              attributionConfidence: "high",
+              commissionAmount: "9.00",
+              currency: "USD",
+              merchantId: "conversion-merchant-1",
+              merchantName: "Conversion Merchant",
+              networkConversionRef: "impact-conversion-123",
+              orderAmount: "90.00",
+              productId: "conversion-product-1",
+              productName: "Conversion Product",
+              purchasedAt: "2026-05-31T13:00:00Z",
+              reportedAt: "2026-06-01T09:00:00Z",
+              status: "paid",
+            },
+          ],
+          merchantId: "merchant-1",
+          merchantName: "Example Merchant",
+          merchantProductExternalSku: "SKU-42",
+          merchantProductId: "merchant-product-1",
+          productId: "product-1",
+          productName: "Example camera",
+          referrer: "https://example.test/compare",
+          sourceSurface: "web",
+          userAgent: "ExampleBrowser/1.0",
+          userEmail: "operator@example.test",
+          userId: "user-1",
+        },
+      },
+    ],
+    pageInfo: {
+      endCursor: "ledger-cursor-1",
+      hasNextPage: true,
+    },
+  },
 };
 
 beforeEach(() => {
@@ -102,8 +182,23 @@ beforeEach(() => {
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   REVENUE_QUERY_REF.dispose.mockReset();
-  mockedUseRoutePreloadedQuery.mockReturnValue(REVENUE_QUERY_REF as never);
-  mockedUsePreloadedQuery.mockReturnValue(UNSUPPRESSED_REVENUE_SUMMARY as never);
+  ATTRIBUTION_LEDGER_QUERY_REF.dispose.mockReset();
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) =>
+    descriptor.__relayQuery.operationName === "RevenueSummaryRouteQuery"
+      ? (REVENUE_QUERY_REF as never)
+      : (ATTRIBUTION_LEDGER_QUERY_REF as never),
+  );
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) =>
+    queryRef === REVENUE_QUERY_REF
+      ? (UNSUPPRESSED_REVENUE_SUMMARY as never)
+      : (ATTRIBUTION_LEDGER_PAGE as never),
+  );
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
 });
 
 afterEach(() => {
@@ -120,15 +215,12 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
           currency: "USD",
           from: "2026-07-05",
           network: "impact",
-          to: "2026-07-11"
+          to: "2026-07-11",
         }}
       >
-        <RevenueSummaryMetrics
-          metrics={[{ label: "Clicks", value: "12" }]}
-          suppression={{ suppressed: false, threshold: 2 }}
-        />
+        <RevenueSummaryMetrics metrics={[{ label: "Clicks", value: "12" }]} />
       </RevenueSummaryView>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("form", { name: "Revenue filters" })).toBeVisible();
@@ -139,7 +231,7 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
   expect(screen.getByRole("button", { name: "Apply filters" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Clear filters" })).toHaveAttribute(
     "href",
-    "/commerce/revenue"
+    "/commerce/revenue",
   );
   expect(screen.getByRole("list", { name: "Revenue date presets" })).toBeVisible();
   expect(screen.getByRole("list", { name: "Active revenue filters" })).toBeVisible();
@@ -151,52 +243,298 @@ test("revenue route identifies recorded attribution data as a preview", () => {
 
   renderRevenueSummaryRoute();
 
-  expect(
-    screen.getByRole("heading", { name: "Revenue reporting preview" })
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("region", { name: "Revenue reporting preview" })
-  ).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue report" })).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Revenue controls" })).toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
 
-test("revenue route renders suppressed metrics with threshold copy", () => {
+test("revenue route renders individual click, user, request, network, and conversion evidence", () => {
+  const loadNext = vi.fn();
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD", network: "impact" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const summary = screen.getByRole("region", { name: "Summary" });
+  const ledgerHeading = screen.getByRole("heading", { name: "Attribution ledger" });
+
+  expect(
+    summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
+  expect(screen.getByText("db8e90c9-c6f2-4f36-a67f-3324033ac114")).toBeInTheDocument();
+  expect(screen.getByText("operator@example.test")).toBeInTheDocument();
+  expect(screen.getByText("User ID: user-1")).toBeInTheDocument();
+  expect(screen.getByText("https://example.test/compare")).toBeInTheDocument();
+  expect(screen.getByText("ExampleBrowser/1.0")).toBeInTheDocument();
+  expect(screen.getByText("203.0.113.44")).toBeInTheDocument();
+  expect(screen.getByText("Impact (impact) [network-1]")).toBeInTheDocument();
+  expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
+  expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
+  expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
+  expect(screen.getByText("Status: paid")).toBeInTheDocument();
+  expect(screen.getByText("Attribution: high")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Merchant (conversion-merchant-1)")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Product (conversion-product-1)")).toBeInTheDocument();
+  expect(
+    screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+  ).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
+
+  expect(loadNext).toHaveBeenCalledWith(
+    ATTRIBUTION_LEDGER_PAGE_SIZE,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
+});
+
+test("revenue route surfaces attribution pagination failures and retries", () => {
+  let attempt = 0;
+  const loadNext = vi.fn(
+    (_count: number, options?: { onComplete?: (error: Error | null) => void }) => {
+      attempt += 1;
+      options?.onComplete?.(attempt === 1 ? new Error("pagination failed") : null);
+    },
+  );
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Unable to load more attribution clicks.");
+  expect(loadNext).toHaveBeenLastCalledWith(
+    ATTRIBUTION_LEDGER_PAGE_SIZE,
+    expect.objectContaining({ onComplete: expect.any(Function) }),
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Retry loading attribution clicks" }));
+
+  expect(loadNext).toHaveBeenCalledTimes(2);
+  expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Load more attribution clicks" })).toBeInTheDocument();
+});
+
+test("revenue route resets attribution pagination errors when filters change", () => {
+  const loadNext = vi.fn(
+    (_count: number, options?: { onComplete?: (error: Error | null) => void }) =>
+      options?.onComplete?.(new Error("pagination failed")),
+  );
+  let loaderData = buildReadyLoaderData({ currency: "USD", network: "impact" });
+  mockedUseLoaderData.mockImplementation(() => loaderData);
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext,
+  } as never);
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
+  expect(screen.getByText("Unable to load more attribution clicks.")).toBeInTheDocument();
+
+  loaderData = buildReadyLoaderData({ currency: "EUR", network: "impact" });
+  mockedUsePaginationFragment.mockReturnValue({
+    data: ATTRIBUTION_LEDGER_PAGE,
+    hasNext: true,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  rerender(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Load more attribution clicks" })).toBeInTheDocument();
+});
+
+test("revenue route distinguishes an anonymous click and an empty ledger", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "ledger-cursor-anonymous",
+            node: {
+              ...ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node,
+              anonymousId: "anonymous-42",
+              matchedConversions: [],
+              userEmail: null,
+              userId: null,
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  const { rerender } = render(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByText("Anonymous click: anonymous-42")).toBeInTheDocument();
+  expect(screen.getByText("No matched conversions.")).toBeInTheDocument();
+
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+  rerender(
+    <MemoryRouter>
+      <RevenueSummaryRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByText("No attribution clicks match these filters.")).toBeInTheDocument();
+});
+
+test("revenue route keeps the summary visible when the ledger preload failed", () => {
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData({ currency: "USD" }),
+    ledgerQuery: null,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
+});
+
+test("revenue route renders the summary while the ledger preload is pending", async () => {
+  const ledgerPreload =
+    deferredPromise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> | null>();
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData({ currency: "USD" }),
+    ledgerQuery: ledgerPreload.promise,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
+  expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
+
+  await act(() => {
+    ledgerPreload.resolve(ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR);
+  });
+
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
+});
+
+test("revenue route renders equal conversion references from different networks without key warnings", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const firstNode = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstNode.matchedConversions[0];
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "duplicate-conversion-ref",
+            node: {
+              ...firstNode,
+              matchedConversions: [
+                firstConversion,
+                {
+                  ...firstConversion,
+                  affiliateNetworkCode: "awin",
+                  affiliateNetworkId: "conversion-network-2",
+                  affiliateNetworkName: "Second Conversion Network",
+                },
+              ],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  try {
+    renderRevenueSummaryRoute();
+
+    expect(
+      screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Second Conversion Network (awin) [conversion-network-2]"),
+    ).toBeVisible();
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
+});
+
+test("revenue route renders one-conversion metrics without hidden-metrics copy", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       currency: "USD",
-      network: "impact"
-    })
+      network: "impact",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue({
     revenueSummary: {
       ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
       metrics: {
-        averagePaidPrice: null,
-        clicks: null,
-        commissionRevenue: null,
-        conversions: null,
-        currency: null,
-        grossOrderValue: null
+        averagePaidPrice: "90.00",
+        clicks: 1,
+        commissionRevenue: "9.00",
+        conversions: 1,
+        currency: "USD",
+        grossOrderValue: "90.00",
       },
-      suppression: {
-        suppressed: true,
-        threshold: 2
-      }
-    }
+    },
   } as never);
 
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent(
-    "Revenue metrics are hidden until at least 2 conversions match the current filters."
-  );
   expect(screen.getByText("Clicks")).toBeInTheDocument();
-  expect(screen.getAllByText("Hidden")).toHaveLength(5);
-  expect(screen.queryByText("20.00 USD")).not.toBeInTheDocument();
+  expect(screen.getAllByText("1")).toHaveLength(2);
+  expect(screen.getAllByText("90.00 USD")).toHaveLength(2);
+  expect(screen.queryByText(/Revenue metrics are hidden/i)).not.toBeInTheDocument();
 });
 
 test("revenue route renders unavailable null counts when metrics are unsuppressed", () => {
@@ -207,9 +545,9 @@ test("revenue route renders unavailable null counts when metrics are unsuppresse
       metrics: {
         ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary.metrics,
         clicks: null,
-        conversions: null
-      }
-    }
+        conversions: null,
+      },
+    },
   } as never);
 
   renderRevenueSummaryRoute();
@@ -240,9 +578,9 @@ test("revenue route preserves empty string revenue amounts", () => {
       ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary,
       metrics: {
         ...UNSUPPRESSED_REVENUE_SUMMARY.revenueSummary.metrics,
-        grossOrderValue: ""
-      }
-    }
+        grossOrderValue: "",
+      },
+    },
   } as never);
 
   renderRevenueSummaryRoute();
@@ -250,7 +588,9 @@ test("revenue route preserves empty string revenue amounts", () => {
   const grossOrderMetric = screen.getByText("Gross order value").closest("div");
 
   expect(grossOrderMetric).not.toBeNull();
-  expect(within(grossOrderMetric as HTMLElement).queryByText("Not available")).not.toBeInTheDocument();
+  expect(
+    within(grossOrderMetric as HTMLElement).queryByText("Not available"),
+  ).not.toBeInTheDocument();
   expect(within(grossOrderMetric as HTMLElement).getByText("USD")).toBeInTheDocument();
 });
 
@@ -260,8 +600,8 @@ test("revenue route renders active filters from the loader", () => {
       currency: "USD",
       from: "2026-05-01",
       network: "impact",
-      to: "2026-05-31"
-    })
+      to: "2026-05-31",
+    }),
   );
 
   renderRevenueSummaryRoute();
@@ -282,8 +622,8 @@ test("revenue route renders date preset links that preserve network and currency
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       currency: "USD",
-      network: "impact"
-    })
+      network: "impact",
+    }),
   );
   vi.useFakeTimers();
   vi.setSystemTime(new Date("2026-06-27T12:00:00.000Z"));
@@ -292,19 +632,19 @@ test("revenue route renders date preset links that preserve network and currency
 
   expect(screen.getByRole("link", { name: "Last 7 days" })).toHaveAttribute(
     "href",
-    "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27"
+    "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27",
   );
   expect(screen.getByRole("link", { name: "Last 30 days" })).toHaveAttribute(
     "href",
-    "/commerce/revenue?network=impact&currency=USD&from=2026-05-29&to=2026-06-27"
+    "/commerce/revenue?network=impact&currency=USD&from=2026-05-29&to=2026-06-27",
   );
   expect(screen.getByRole("link", { name: "Month to date" })).toHaveAttribute(
     "href",
-    "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27"
+    "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27",
   );
   expect(screen.getByRole("link", { name: "Clear dates" })).toHaveAttribute(
     "href",
-    "/commerce/revenue?network=impact&currency=USD"
+    "/commerce/revenue?network=impact&currency=USD",
   );
 
   vi.useRealTimers();
@@ -318,18 +658,18 @@ test("revenue date presets use the browser's local calendar day behind UTC", () 
     const links = buildRevenueDatePresetLinks(
       {
         network: "impact",
-        currency: "USD"
+        currency: "USD",
       },
-      new Date("2026-06-28T06:30:00.000Z")
+      new Date("2026-06-28T06:30:00.000Z"),
     );
 
     expect(links).toContainEqual({
       label: "Last 7 days",
-      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27"
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-21&to=2026-06-27",
     });
     expect(links).toContainEqual({
       label: "Month to date",
-      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27"
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-27",
     });
   } finally {
     process.env.TZ = originalTimeZone;
@@ -344,18 +684,18 @@ test("revenue date presets use the browser's local calendar day ahead of UTC", (
     const links = buildRevenueDatePresetLinks(
       {
         network: "impact",
-        currency: "USD"
+        currency: "USD",
       },
-      new Date("2026-06-27T16:30:00.000Z")
+      new Date("2026-06-27T16:30:00.000Z"),
     );
 
     expect(links).toContainEqual({
       label: "Last 7 days",
-      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-22&to=2026-06-28"
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-22&to=2026-06-28",
     });
     expect(links).toContainEqual({
       label: "Month to date",
-      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-28"
+      to: "/commerce/revenue?network=impact&currency=USD&from=2026-06-01&to=2026-06-28",
     });
   } finally {
     process.env.TZ = originalTimeZone;
@@ -364,7 +704,7 @@ test("revenue date presets use the browser's local calendar day ahead of UTC", (
 
 test.each([
   ["America/Los_Angeles", "2026-06-28T06:30:00.000Z", "2026-06-27"],
-  ["Asia/Tokyo", "2026-06-27T16:30:00.000Z", "2026-06-28"]
+  ["Asia/Tokyo", "2026-06-27T16:30:00.000Z", "2026-06-28"],
 ])(
   "revenue presets hydrate without mismatches and then use the %s local day",
   async (timeZone, currentTime, expectedTo) => {
@@ -393,13 +733,11 @@ test.each([
       });
       expect(
         Array.from(container.querySelectorAll("a")).find(
-          (link) => link.textContent === "Last 7 days"
-        )
+          (link) => link.textContent === "Last 7 days",
+        ),
       ).toHaveAttribute("href", expect.stringContaining(`to=${expectedTo}`));
       expect(
-        consoleError.mock.calls.filter(([message]) =>
-          /hydrat/i.test(String(message))
-        )
+        consoleError.mock.calls.filter(([message]) => /hydrat/i.test(String(message))),
       ).toEqual([]);
     } finally {
       if (root) {
@@ -410,7 +748,7 @@ test.each([
       process.env.TZ = originalTimeZone;
       consoleError.mockRestore();
     }
-  }
+  },
 );
 
 test("buildRevenueDatePresetLinks is deterministic for a fixed date and preserves filters", () => {
@@ -418,28 +756,28 @@ test("buildRevenueDatePresetLinks is deterministic for a fixed date and preserve
   const presetLinks = buildRevenueDatePresetLinks(
     {
       currency: "EUR",
-      network: "impact"
+      network: "impact",
     },
-    currentDate
+    currentDate,
   );
 
   expect(presetLinks).toEqual([
     {
       label: "Last 7 days",
-      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-21&to=2026-06-27"
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-21&to=2026-06-27",
     },
     {
       label: "Last 30 days",
-      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-05-29&to=2026-06-27"
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-05-29&to=2026-06-27",
     },
     {
       label: "Month to date",
-      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-01&to=2026-06-27"
+      to: "/commerce/revenue?network=impact&currency=EUR&from=2026-06-01&to=2026-06-27",
     },
     {
       label: "Clear dates",
-      to: "/commerce/revenue?network=impact&currency=EUR"
-    }
+      to: "/commerce/revenue?network=impact&currency=EUR",
+    },
   ]);
 });
 
@@ -454,7 +792,7 @@ test("buildRevenueDatePresetLinks skips invalid ranges", () => {
       const from = url.searchParams.get("from");
       const to = url.searchParams.get("to");
       return from === null || to === null || from <= to;
-    })
+    }),
   ).toBe(true);
 });
 
@@ -463,14 +801,14 @@ test("revenue route updates filter field values when loader filters change", () 
     currency: "USD",
     from: "2026-05-01",
     network: "impact",
-    to: "2026-05-31"
+    to: "2026-05-31",
   });
   mockedUseLoaderData.mockImplementation(() => loaderData);
 
   const { rerender } = render(
     <MemoryRouter>
       <RevenueSummaryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
@@ -482,7 +820,7 @@ test("revenue route updates filter field values when loader filters change", () 
   rerender(
     <MemoryRouter>
       <RevenueSummaryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByLabelText("Network")).toHaveValue("");
@@ -496,15 +834,15 @@ test("revenue route asks for a currency before loading metrics", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "needsCurrency",
     filters: {
-      network: "impact"
-    }
+      network: "impact",
+    },
   } satisfies RevenueSummaryLoaderData);
 
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Enter a currency code to load revenue metrics."
+    "Enter a currency code to load revenue metrics.",
   );
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("Currency")).toHaveValue("");
@@ -518,15 +856,15 @@ test("revenue route asks for a valid date range before loading metrics", () => {
     filters: {
       currency: "USD",
       from: "2026-06-01",
-      to: "2026-05-31"
-    }
+      to: "2026-05-31",
+    },
   } satisfies RevenueSummaryLoaderData);
 
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "Enter a start date on or before the end date to load revenue metrics."
+    "Enter a start date on or before the end date to load revenue metrics.",
   );
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(screen.getByLabelText("From")).toHaveValue("2026-06-01");
@@ -540,8 +878,8 @@ test("revenue route renders the loader error state", () => {
     status: "error",
     filters: {
       currency: "USD",
-      network: "impact"
-    }
+      network: "impact",
+    },
   } satisfies RevenueSummaryLoaderData);
 
   renderRevenueSummaryRoute();
@@ -558,16 +896,53 @@ function renderRevenueSummaryRoute() {
   render(
     <MemoryRouter>
       <RevenueSummaryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
 function buildReadyLoaderData(
-  filters: Extract<RevenueSummaryLoaderData, { status: "ready" }>["filters"] = {}
+  filters: Extract<RevenueSummaryLoaderData, { status: "ready" }>["filters"] = {},
 ) {
   return {
     status: "ready",
     filters,
-    query: REVENUE_QUERY_DESCRIPTOR
+    query: {
+      ...REVENUE_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...REVENUE_QUERY_DESCRIPTOR.__relayQuery,
+        variables: { input: filters },
+      },
+    },
+    ledgerQuery: {
+      ...ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery,
+        variables: {
+          input: filters,
+          after: null,
+          first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+        },
+      },
+    },
   } satisfies RevenueSummaryLoaderData;
+}
+
+function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
+  return consoleErrorSpy.mock.calls.filter(
+    ([message]: unknown[]) =>
+      typeof message === "string" &&
+      (message.includes("Encountered two children with the same key") ||
+        message.includes('Each child in a list should have a unique "key" prop')),
+  );
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }

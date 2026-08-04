@@ -44,6 +44,7 @@ defmodule ProductCompare.Repo.SeedsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.Cooldown
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.Brand
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot
@@ -650,7 +651,7 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert %SourceArtifact{id: artifact_id} =
              Repo.get_by(SourceArtifact,
                source_id: source_id,
-               content_hash: "development-manufacturer-specs-v1"
+               content_hash: :crypto.hash(:sha256, "development-manufacturer-specs-v1")
              )
 
     imported_product = products["acme-vision-27i-import"]
@@ -958,6 +959,18 @@ defmodule ProductCompare.Repo.SeedsTest do
     assert Repo.aggregate(
              from(click in CommerceClickSession,
                where: like(click.anonymous_id, "development-shopper-%")
+             ),
+             :count,
+             :id
+           ) == 4
+
+    expected_ip = "127.0.0.1"
+
+    assert Repo.aggregate(
+             from(click in CommerceClickSession,
+               where:
+                 click.user_agent == "synthetic-development-agent" and
+                   click.ip_address == ^expected_ip
              ),
              :count,
              :id
@@ -1371,13 +1384,14 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert %PriceWatchRule{
              target_amount: target_amount,
-             cooldown_seconds: 604_800,
+             cooldown: %Duration{} = cooldown,
              last_evaluated_at: nil,
              last_evaluated_price_point_id: nil,
              last_event_at: nil
            } = Repo.get(PriceWatchRule, unrelated_watch.id)
 
     assert Decimal.equal?(target_amount, Decimal.new("1000.00"))
+    assert {:ok, 604_800} = Cooldown.to_seconds(cooldown)
     refute Repo.get_by(AlertEvent, watch_rule_id: unrelated_watch.id)
   end
 
@@ -1664,6 +1678,11 @@ defmodule ProductCompare.Repo.SeedsTest do
              )
 
     engagement = DevSeedEngagement.seed!(accounts, catalog, marketplace, anchor)
+
+    assert Decimal.equal?(
+             engagement.alerts.watches.percentage_drop.baseline_landed_price,
+             Decimal.new("899.99")
+           )
 
     assert engagement.community.reviews.shopper.id == shopper_review.id
     assert engagement.community.reviews.participant.id == participant_review.id
@@ -2396,7 +2415,9 @@ defmodule ProductCompare.Repo.SeedsTest do
     offer = Repo.get_by!(MerchantProduct, external_sku: "EXM-AV27G")
 
     artifact =
-      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-fresh-v1")
+      Repo.get_by!(SourceArtifact,
+        content_hash: :crypto.hash(:sha256, "development-marketplace-price-fresh-v1")
+      )
 
     seed_point =
       Repo.get_by!(PricePoint,
@@ -2465,7 +2486,9 @@ defmodule ProductCompare.Repo.SeedsTest do
     offer = Repo.get_by!(MerchantProduct, external_sku: "VAL-AC55O")
 
     artifact =
-      Repo.get_by!(SourceArtifact, content_hash: "development-marketplace-price-inactive-v1")
+      Repo.get_by!(SourceArtifact,
+        content_hash: :crypto.hash(:sha256, "development-marketplace-price-inactive-v1")
+      )
 
     seed_point = Repo.get_by!(PricePoint, entropy_id: "d3ca0000-0000-4000-8000-000000000509")
     Repo.delete!(seed_point)
@@ -2762,7 +2785,7 @@ defmodule ProductCompare.Repo.SeedsTest do
       |> SourceArtifact.changeset(%{
         source_id: source.id,
         fetched_at: DateTime.utc_now() |> DateTime.truncate(:microsecond),
-        content_hash: "unrelated-reserved-mpn-v1"
+        content_hash: :crypto.hash(:sha256, "unrelated-reserved-mpn-v1")
       })
       |> Repo.insert!()
 

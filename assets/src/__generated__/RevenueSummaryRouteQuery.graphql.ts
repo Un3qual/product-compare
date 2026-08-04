@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<6f7454decfb48c994e0a6d5eea9b5c34>>
+ * @generated SignedSource<<5f6c26f35ecdff6e1d4c53329f9ebfba>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -37,10 +37,6 @@ export type RevenueSummaryRouteQuery$data = {
       readonly conversions: number | null | undefined;
       readonly currency: string | null | undefined;
       readonly grossOrderValue: string | null | undefined;
-    };
-    readonly suppression: {
-      readonly suppressed: boolean;
-      readonly threshold: number;
     };
   } | null | undefined;
 };
@@ -172,31 +168,6 @@ v2 = [
           }
         ],
         "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "concreteType": "RevenueSummarySuppression",
-        "kind": "LinkedField",
-        "name": "suppression",
-        "plural": false,
-        "selections": [
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "suppressed",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "threshold",
-            "storageKey": null
-          }
-        ],
-        "storageKey": null
       }
     ],
     "storageKey": null
@@ -220,16 +191,16 @@ return {
     "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "f3adc6fcff6a60ce684c0de93ef5cc3e",
+    "cacheID": "73aaa913d38fe428bfc197e5595d7ee7",
     "id": null,
     "metadata": {},
     "name": "RevenueSummaryRouteQuery",
     "operationKind": "query",
-    "text": "query RevenueSummaryRouteQuery(\n  $input: RevenueSummaryInput\n) {\n  revenueSummary(input: $input) {\n    filters {\n      currency\n      from\n      merchantId\n      network\n      productId\n      to\n    }\n    metrics {\n      averagePaidPrice\n      clicks\n      commissionRevenue\n      conversions\n      currency\n      grossOrderValue\n    }\n    suppression {\n      suppressed\n      threshold\n    }\n  }\n}\n"
+    "text": "query RevenueSummaryRouteQuery(\n  $input: RevenueSummaryInput\n) {\n  revenueSummary(input: $input) {\n    filters {\n      currency\n      from\n      merchantId\n      network\n      productId\n      to\n    }\n    metrics {\n      averagePaidPrice\n      clicks\n      commissionRevenue\n      conversions\n      currency\n      grossOrderValue\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "6344de9da3f9cd72731110b4eea18f2f";
+(node as any).hash = "1ead8471a01cfc1d03e64b438b838920";
 
 export default node;

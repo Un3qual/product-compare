@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :name, :text, null: false
       add :domain, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:merchants, [:name])
@@ -20,10 +20,16 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :external_sku, :text
       add :url, :text, null: false
       add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
-      add :last_seen_at, :utc_datetime_usec, null: false, default: fragment("now()")
+
+      add :last_seen_at, :timestamptz,
+        precision: 6,
+        size: 6,
+        null: false,
+        default: fragment("now()")
+
       add :is_active, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:merchant_products, [:merchant_id, :url],
@@ -39,13 +45,18 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :merchant_product_id,
           references(:merchant_products, type: :bigint, on_delete: :delete_all), null: false
 
-      add :observed_at, :utc_datetime_usec, null: false, default: fragment("now()")
+      add :observed_at, :timestamptz,
+        precision: 6,
+        size: 6,
+        null: false,
+        default: fragment("now()")
+
       add :price, :decimal, null: false
       add :shipping, :decimal
       add :in_stock, :boolean
       add :artifact_id, references(:source_artifacts, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:price_points, [:merchant_product_id, :observed_at],
@@ -65,7 +76,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:affiliate_networks, [:code])
@@ -99,7 +110,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
           null: false,
           default: 1
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:affiliate_programs, [:affiliate_network_id, :merchant_id],
@@ -119,9 +130,9 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
 
       add :original_url, :text, null: false
       add :affiliate_url, :text, null: false
-      add :last_verified_at, :utc_datetime_usec
+      add :last_verified_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:affiliate_links, [:merchant_product_id],
@@ -142,12 +153,12 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :discount_type, :coupon_discount_type, null: false, default: "other"
       add :discount_value, :decimal
       add :currency_id, references(:currencies, type: :integer, on_delete: :restrict)
-      add :valid_from, :utc_datetime_usec
-      add :valid_to, :utc_datetime_usec
+      add :valid_from, :timestamptz, precision: 6, size: 6
+      add :valid_to, :timestamptz, precision: 6, size: 6
       add :terms, :text
       add :artifact_id, references(:source_artifacts, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:coupons, [:merchant_id, :valid_to], name: :coupons_merchant_validto_idx)
@@ -173,7 +184,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :title, :text, null: false
       add :created_by, references(:users, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:product_threads, [:product_id, :inserted_at],
@@ -192,7 +203,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :user_id, references(:users, type: :bigint, on_delete: :nilify_all)
       add :body_md, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:thread_posts, [:thread_id, :inserted_at], name: :thread_posts_thread_time_idx)
@@ -215,7 +226,7 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
       add :merchant_product_id,
           references(:merchant_products, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:product_reviews, [:product_id], name: :product_reviews_product_idx)

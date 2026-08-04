@@ -65,6 +65,34 @@ declare module "react-relay" {
     options?: LazyLoadQueryOptions,
   ): TQuery["response"];
 
+  export interface PaginationFragmentResult<TData> {
+    readonly data: TData;
+    readonly hasNext: boolean;
+    readonly hasPrevious: boolean;
+    readonly isLoadingNext: boolean;
+    readonly isLoadingPrevious: boolean;
+    loadNext(
+      count: number,
+      options?: {
+        onComplete?: (error: Error | null) => void;
+        UNSTABLE_extraVariables?: Record<string, unknown>;
+      },
+    ): { dispose(): void };
+    loadPrevious(
+      count: number,
+      options?: {
+        onComplete?: (error: Error | null) => void;
+        UNSTABLE_extraVariables?: Record<string, unknown>;
+      },
+    ): { dispose(): void };
+    refetch(variables: Record<string, unknown>): void;
+  }
+
+  export function usePaginationFragment<TData, TKey>(
+    fragment: GraphQLTaggedNode,
+    fragmentRef: TKey,
+  ): PaginationFragmentResult<TData>;
+
   export interface MutationCommitFn<TMutation extends MutationParameters> {
     (config: Omit<MutationConfig<TMutation>, "mutation">): { dispose(): void };
   }

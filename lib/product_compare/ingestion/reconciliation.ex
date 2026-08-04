@@ -9,7 +9,7 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Specs.ExternalProduct
 
-  @spec scope_fingerprint(map()) :: String.t()
+  @spec scope_fingerprint(map()) :: binary()
   def scope_fingerprint(attrs) do
     attrs = Map.new(attrs)
 
@@ -21,7 +21,6 @@ defmodule ProductCompare.Ingestion.Reconciliation do
     |> canonical_value()
     |> Jason.encode!()
     |> then(&:crypto.hash(:sha256, &1))
-    |> Base.encode16(case: :lower)
   end
 
   @spec observe(ImportRun.t(), map()) :: :ok | {:error, term()}
@@ -93,9 +92,11 @@ defmodule ProductCompare.Ingestion.Reconciliation do
   end
 
   defp lock_scope!(run) do
+    fingerprint = Base.encode16(run.scope_fingerprint, case: :lower)
+
     lock_name =
       Enum.join(
-        [run.source_id, run.surface, run.scope_fingerprint],
+        [run.source_id, run.surface, fingerprint],
         ":"
       )
 

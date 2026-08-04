@@ -44,10 +44,10 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Redirects do
   defp destination_url(%{
          destination_url: destination_url,
          link_type: :affiliate,
-         network: "impact",
+         network: network,
          click_id: click_id
        }) do
-    Destinations.append_public_click_id(destination_url, click_id)
+    Destinations.put_public_click_reference(destination_url, network, click_id)
   end
 
   defp destination_url(%{destination_url: destination_url}), do: destination_url

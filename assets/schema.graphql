@@ -57,7 +57,10 @@ type RootQueryType {
   "Returns the current authenticated user's saved comparison sets."
   mySavedComparisonSets(after: String, first: Int!): SavedComparisonSetConnection
 
-  "Returns aggregate commerce revenue metrics with public-safe suppression metadata."
+  "Returns individual commerce attribution clicks for operators."
+  commerceAttributionClicks(after: String, first: Int!, input: RevenueSummaryInput): CommerceAttributionClickConnection!
+
+  "Returns aggregate commerce revenue metrics for operators."
   revenueSummary(input: RevenueSummaryInput): RevenueSummary
 
   "Returns a published, non-revoked immutable comparison snapshot."
@@ -810,6 +813,30 @@ type ProductAnswerConnection {
   edges: [ProductAnswerEdge!]!
 }
 
+enum CommerceClickSourceSurface {
+  WEB
+  API
+  EXTENSION
+}
+
+enum CommerceAttributionLinkType {
+  AFFILIATE
+  NON_AFFILIATE
+}
+
+enum CommerceConversionStatus {
+  PENDING
+  APPROVED
+  REVERSED
+  PAID
+}
+
+enum CommerceAttributionConfidence {
+  HIGH
+  LOW
+  UNMATCHED
+}
+
 input TrackCommerceClickInput {
   merchantProductId: ID!
 }
@@ -826,7 +853,6 @@ input RevenueSummaryInput {
 type RevenueSummary {
   filters: RevenueSummaryFilters!
   metrics: RevenueSummaryMetrics!
-  suppression: RevenueSummarySuppression!
 }
 
 type RevenueSummaryFilters {
@@ -847,9 +873,57 @@ type RevenueSummaryMetrics {
   grossOrderValue: String
 }
 
-type RevenueSummarySuppression {
-  suppressed: Boolean!
-  threshold: Int!
+type CommerceAttributionClick {
+  clickId: ID!
+  insertedAt: DateTime!
+  sourceSurface: CommerceClickSourceSurface!
+  userId: ID
+  userEmail: String
+  anonymousId: String
+  referrer: String
+  userAgent: String
+  ipAddress: String
+  merchantId: ID!
+  merchantName: String!
+  productId: ID
+  productName: String
+  merchantProductId: ID
+  merchantProductExternalSku: String
+  affiliateProgramId: ID
+  affiliateProgramCode: String
+  affiliateNetworkId: ID
+  affiliateNetworkCode: String
+  affiliateNetworkName: String
+  linkType: CommerceAttributionLinkType!
+  matchedConversions: [CommerceAttributionMatchedConversion!]!
+}
+
+type CommerceAttributionMatchedConversion {
+  affiliateNetworkId: ID
+  affiliateNetworkCode: String
+  affiliateNetworkName: String
+  merchantId: ID
+  merchantName: String
+  productId: ID
+  productName: String
+  networkConversionRef: String!
+  status: CommerceConversionStatus!
+  attributionConfidence: CommerceAttributionConfidence!
+  currency: String!
+  orderAmount: Decimal
+  commissionAmount: Decimal
+  purchasedAt: DateTime
+  reportedAt: DateTime!
+}
+
+type CommerceAttributionClickEdge {
+  node: CommerceAttributionClick!
+  cursor: String!
+}
+
+type CommerceAttributionClickConnection {
+  pageInfo: PageInfo!
+  edges: [CommerceAttributionClickEdge!]!
 }
 
 type TrackCommerceClickPayload {

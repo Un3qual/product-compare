@@ -16,6 +16,9 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
       response =
         conn
         |> put_req_header_same_origin()
+        |> put_req_header("referer", "https://app.example.com/products/desk")
+        |> put_req_header("user-agent", "ProductCompareTest/1.0")
+        |> then(&%{&1 | remote_ip: {203, 0, 113, 42}})
         |> graphql(track_commerce_click_mutation(), %{
           "input" => %{
             "merchantProductId" => relay_id(:merchant_product, merchant_product.id)
@@ -41,7 +44,12 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
       assert Repo.aggregate(CommerceLink, :count, :id) == 1
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
 
-      assert %CommerceClickSession{merchant_product_id: merchant_product_id} =
+      assert %CommerceClickSession{
+               merchant_product_id: merchant_product_id,
+               referrer: "https://app.example.com/products/desk",
+               user_agent: "ProductCompareTest/1.0",
+               ip_address: %Postgrex.INET{address: {203, 0, 113, 42}, netmask: 32}
+             } =
                Repo.one(CommerceClickSession)
 
       assert merchant_product_id == merchant_product.id

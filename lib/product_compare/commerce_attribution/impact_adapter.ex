@@ -1,11 +1,12 @@
+# ex_dna:disable-for-this-file
+# Impact payload vocabulary stays provider-local by the approved attribution design.
 defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
   @moduledoc """
   Normalizes Impact action payloads into commerce conversions.
   """
 
   alias ProductCompare.CommerceAttribution
-
-  @canonical_uuid_pattern ~r/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+  alias ProductCompare.CommerceAttribution.ClickReference
 
   @spec ingest_action(map()) :: {:ok, struct()} | {:error, Ecto.Changeset.t()}
   def ingest_action(payload) when is_map(payload) do
@@ -19,10 +20,13 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
       parse_datetime(value(payload, :reporting_date, "ReportingDate", "reportingDate"))
 
     payload
-    |> click_id_attrs()
+    |> click_reference_attrs()
     |> Map.merge(%{
       source_network: "impact",
-      network_conversion_ref: value(payload, :action_id, "ActionId", "actionId"),
+      network_conversion_ref:
+        payload
+        |> value(:action_id, "ActionId", "actionId")
+        |> click_reference_token(),
       status: normalize_status(value(payload, :status, "Status")),
       currency: value(payload, :currency, "Currency"),
       order_amount: decimal(value(payload, :sale_amount, "SaleAmount", "saleAmount")),
@@ -36,34 +40,60 @@ defmodule ProductCompare.CommerceAttribution.ImpactAdapter do
     |> drop_nil_optional_attrs()
   end
 
-  defp click_id_attrs(payload) do
-    case click_id_token(value(payload, :click_id, "ClickId", "clickId")) do
-      nil ->
-        %{}
+  defp click_reference_attrs(payload) do
+    publisher_reference = publisher_reference(payload)
 
-      click_id ->
-        if String.match?(click_id, @canonical_uuid_pattern) do
-          case Ecto.UUID.cast(click_id) do
-            {:ok, public_click_id} -> %{public_click_id: public_click_id}
-            :error -> %{network_click_ref: click_id}
-          end
-        else
-          %{network_click_ref: click_id}
+    network_click_ref =
+      payload
+      |> value(:click_id, "ClickId", "clickId")
+      |> click_reference_token()
+
+    attrs = if network_click_ref, do: %{network_click_ref: network_click_ref}, else: %{}
+
+    case publisher_reference do
+      :missing ->
+        attrs
+
+      {:present, value} ->
+        case ClickReference.decode("impact", click_reference_token(value)) do
+          {:ok, public_click_id} ->
+            Map.put(attrs, :public_click_id, public_click_id)
+
+          :error ->
+            attrs
+            |> Map.put(:clear_click_attribution, true)
+            |> put_network_click_ref(click_reference_token(value))
         end
     end
   end
 
-  defp click_id_token(nil), do: nil
-  defp click_id_token(value) when is_integer(value), do: Integer.to_string(value)
+  defp publisher_reference(payload), do: first_present(payload, [:sub_id1, "SubId1", "subId1"])
 
-  defp click_id_token(value) when is_binary(value) do
+  defp first_present(_payload, []), do: :missing
+
+  defp first_present(payload, [key | rest]) do
+    case Map.fetch(payload, key) do
+      {:ok, value} -> {:present, value}
+      :error -> first_present(payload, rest)
+    end
+  end
+
+  defp put_network_click_ref(attrs, nil), do: attrs
+
+  defp put_network_click_ref(attrs, reference),
+    do: Map.put_new(attrs, :network_click_ref, reference)
+
+  defp click_reference_token(nil), do: nil
+  defp click_reference_token(value) when is_integer(value), do: Integer.to_string(value)
+
+  defp click_reference_token(value) when is_binary(value) do
     case String.trim(value) do
       "" -> nil
       token -> token
     end
   end
 
-  defp click_id_token(_value), do: nil
+  defp click_reference_token(_value), do: nil
 
   defp value(payload, atom_key, string_key), do: value(payload, atom_key, string_key, nil)
 

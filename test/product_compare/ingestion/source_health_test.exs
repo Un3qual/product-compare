@@ -199,7 +199,7 @@ defmodule ProductCompare.Ingestion.SourceHealthTest do
           source_id: source.id,
           url: "https://#{source.domain}/artifact-#{unique}.json",
           fetched_at: @now,
-          content_hash: "artifact-#{unique}",
+          content_hash: :crypto.hash(:sha256, "artifact-#{unique}"),
           raw_json: %{},
           raw_text: nil,
           inserted_at: @now

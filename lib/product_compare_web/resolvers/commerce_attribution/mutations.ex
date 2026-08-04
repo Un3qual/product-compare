@@ -12,11 +12,15 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
     with :ok <- require_trusted_request_origin(resolution),
          {:ok, merchant_product_id} <- decode_merchant_product_id(input),
          {:ok, tracked_click} <-
-           CommerceAttribution.track_outbound_click(%{
-             merchant_product_id: merchant_product_id,
-             source_surface: :web,
-             user_id: current_user_id(resolution)
-           }) do
+           CommerceAttribution.track_outbound_click(
+             resolution
+             |> request_diagnostics()
+             |> Map.merge(%{
+               merchant_product_id: merchant_product_id,
+               source_surface: :web,
+               user_id: current_user_id(resolution)
+             })
+           ) do
       {:ok, %{redirect_path: tracked_click.redirect_path, errors: []}}
     else
       {:error, :invalid_origin} ->
@@ -58,6 +62,12 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
 
   defp current_user_id(%{context: %{current_user: %{id: id}}}) when is_integer(id), do: id
   defp current_user_id(_resolution), do: nil
+
+  defp request_diagnostics(%{context: %{request_diagnostics: diagnostics}})
+       when is_map(diagnostics),
+       do: diagnostics
+
+  defp request_diagnostics(_resolution), do: %{}
 
   defp require_trusted_request_origin(%{context: %{trusted_request_origin?: true}}), do: :ok
   defp require_trusted_request_origin(_resolution), do: {:error, :invalid_origin}

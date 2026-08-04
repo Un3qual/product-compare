@@ -20,10 +20,10 @@ defmodule ProductCompare.Repo.Migrations.AddSpecificationCorrections do
       add :explanation, :text
       add :status, :specification_correction_status, null: false, default: "pending"
       add :reviewed_by, references(:users, type: :bigint, on_delete: :nilify_all)
-      add :reviewed_at, :utc_datetime_usec
+      add :reviewed_at, :timestamptz, precision: 6, size: 6
       add :moderation_note, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:specification_corrections, [:entropy_id])

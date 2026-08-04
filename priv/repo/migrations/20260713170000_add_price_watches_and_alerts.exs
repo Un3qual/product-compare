@@ -25,11 +25,15 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
           references(:price_points, type: :bigint, on_delete: :nilify_all)
 
       add :last_condition_met, :boolean, null: false, default: false
-      add :last_evaluated_at, :utc_datetime_usec
-      add :last_event_at, :utc_datetime_usec
-      add :cooldown_seconds, :bigint, null: false, default: 86_400
+      add :last_evaluated_at, :timestamptz, precision: 6, size: 6
+      add :last_event_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec)
+      add :cooldown, :duration,
+        fields: "DAY TO SECOND",
+        null: false,
+        default: fragment("INTERVAL '1 day'")
+
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:price_watch_rules, [:entropy_id])
@@ -42,8 +46,16 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
                "(rule_type = 'target_price' AND target_amount IS NOT NULL AND target_amount >= 0 AND percentage_drop IS NULL) OR (rule_type = 'percentage_drop' AND percentage_drop IS NOT NULL AND percentage_drop > 0 AND percentage_drop <= 100 AND target_amount IS NULL AND baseline_landed_price IS NOT NULL) OR (rule_type IN ('back_in_stock', 'newly_available') AND target_amount IS NULL AND percentage_drop IS NULL)"
            )
 
-    create constraint(:price_watch_rules, :price_watch_rules_cooldown_check,
-             check: "cooldown_seconds >= 60 AND cooldown_seconds <= 31536000"
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_min_check,
+             check: "cooldown >= INTERVAL '60 seconds'"
+           )
+
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_max_check,
+             check: "cooldown <= INTERVAL '31536000 seconds'"
+           )
+
+    create constraint(:price_watch_rules, :price_watch_rules_cooldown_whole_seconds_check,
+             check: "date_trunc('second', cooldown) = cooldown"
            )
 
     create table(:alert_events) do
@@ -64,13 +76,13 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
       add :item_price, :decimal, null: false
       add :shipping, :decimal, null: false
       add :landed_price, :decimal, null: false
-      add :observed_at, :utc_datetime_usec, null: false
+      add :observed_at, :timestamptz, precision: 6, size: 6, null: false
       add :baseline_landed_price, :decimal
       add :target_amount, :decimal
       add :percentage_drop, :decimal
-      add :read_at, :utc_datetime_usec
+      add :read_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:alert_events, [:entropy_id])
@@ -87,10 +99,10 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
 
       add :transport, :alert_delivery_transport, null: false
       add :state, :alert_delivery_state, null: false
-      add :attempted_at, :utc_datetime_usec, null: false
-      add :delivered_at, :utc_datetime_usec
+      add :attempted_at, :timestamptz, precision: 6, size: 6, null: false
+      add :delivered_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:alert_delivery_attempts, [:alert_event_id, :transport],

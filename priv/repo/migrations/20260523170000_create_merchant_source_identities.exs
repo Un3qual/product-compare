@@ -9,9 +9,9 @@ defmodule ProductCompare.Repo.Migrations.CreateMerchantSourceIdentities do
       add :merchant_identifier, :text, null: false
       add :merchant_name, :text
       add :merchant_domain, :text
-      add :last_seen_at, :utc_datetime_usec, null: false
+      add :last_seen_at, :timestamptz, precision: 6, size: 6, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:merchant_source_identities, [:source_id, :merchant_identifier],

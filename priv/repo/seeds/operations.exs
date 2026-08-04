@@ -263,8 +263,8 @@ defmodule ProductCompare.DevSeeds.Operations do
           anonymous_id: "development-shopper-#{status}",
           source_surface: :web,
           referrer: "http://localhost:4000/offers",
-          user_agent_hash: "synthetic-development-agent",
-          ip_hash: "synthetic-development-ip"
+          user_agent: "synthetic-development-agent",
+          ip_address: "127.0.0.1"
         }
 
         click =

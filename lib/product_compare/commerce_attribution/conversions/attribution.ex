@@ -33,7 +33,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
 
     case resolved_click_session(attrs, changeset) do
       nil ->
-        {:ok, attrs}
+        {:ok, maybe_clear_unresolved_click_attribution(attrs)}
 
       %CommerceClickSession{} = click_session ->
         click_session =
@@ -85,7 +85,32 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
   end
 
   defp incoming_click_identifier?(attrs) do
-    attr_present?(attrs, :click_session_id) or attr_present?(attrs, :public_click_id)
+    attr_present?(attrs, :click_session_id) or attr_present?(attrs, :public_click_id) or
+      Input.fetch_attr(attrs, :clear_click_attribution) == true
+  end
+
+  defp maybe_clear_unresolved_click_attribution(attrs) do
+    if incoming_click_identifier?(attrs) do
+      attrs
+      |> Input.put_attr(:click_session_id, nil)
+      |> put_nil_if_missing(:public_click_id)
+      |> put_nil_if_missing(:merchant_id)
+      |> put_nil_if_missing(:affiliate_program_id)
+      |> put_nil_if_missing(:product_id)
+      |> put_nil_if_missing(:merchant_product_id)
+      |> put_attr_if_missing(:attribution_confidence, :unmatched)
+      |> maybe_clear_invalid_public_click_id()
+    else
+      attrs
+    end
+  end
+
+  defp maybe_clear_invalid_public_click_id(attrs) do
+    if Input.fetch_attr(attrs, :clear_click_attribution) == true do
+      Input.put_attr(attrs, :public_click_id, nil)
+    else
+      attrs
+    end
   end
 
   defp put_click_session_attribution_attrs(attrs, click_session, dimensions) do
@@ -235,6 +260,14 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
       attrs
     else
       Input.put_attr(attrs, key, value)
+    end
+  end
+
+  defp put_nil_if_missing(attrs, key) do
+    if Input.attr_key_present?(attrs, key) do
+      attrs
+    else
+      Input.put_attr(attrs, key, nil)
     end
   end
 

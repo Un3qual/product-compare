@@ -13,9 +13,9 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
       add :role, :product_media_role, null: false
       add :position, :integer, null: false, default: 0
       add :alt_text, :text
-      add :observed_at, :utc_datetime_usec, null: false
+      add :observed_at, :timestamptz, precision: 6, size: 6, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:product_media, [:product_id, :url], name: :product_media_product_url_uq)
@@ -28,12 +28,18 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
            )
 
     alter table(:product_attribute_claims) do
-      add :fingerprint, :text
+      add :fingerprint, :binary
     end
 
     create unique_index(:product_attribute_claims, [:fingerprint],
              name: :product_attribute_claims_fingerprint_uq,
              where: "fingerprint IS NOT NULL"
+           )
+
+    create constraint(
+             :product_attribute_claims,
+             :product_attribute_claims_fingerprint_sha256_length,
+             check: "fingerprint IS NULL OR octet_length(fingerprint) = 32"
            )
 
     create table(:category_mapping_candidates) do
@@ -44,9 +50,9 @@ defmodule ProductCompare.Repo.Migrations.AddProductEnrichment do
       add :normalized_path, :text, null: false
       add :status, :category_mapping_status, null: false, default: "pending"
       add :observation_count, :integer, null: false, default: 1
-      add :last_seen_at, :utc_datetime_usec, null: false
+      add :last_seen_at, :timestamptz, precision: 6, size: 6, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:category_mapping_candidates, [:source_id, :normalized_path],

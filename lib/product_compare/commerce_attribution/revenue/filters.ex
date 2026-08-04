@@ -16,7 +16,6 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
       currency: normalize_currency(get(opts, :currency)),
       from: normalize_date(get(opts, :from)),
       merchant_id: normalize_dimension_id(get(opts, :merchant_id), :merchant_id),
-      min_conversions: normalize_min_conversions(get(opts, :min_conversions)),
       network: network,
       product_id: normalize_dimension_id(get(opts, :product_id), :product_id),
       to: normalize_date(get(opts, :to))
@@ -72,19 +71,6 @@ defmodule ProductCompare.CommerceAttribution.Revenue.Filters do
       {:error, _reason} -> raise ArgumentError, "invalid revenue summary date"
     end
   end
-
-  defp normalize_min_conversions(nil), do: 0
-  defp normalize_min_conversions(value) when is_integer(value) and value >= 0, do: value
-
-  defp normalize_min_conversions(value) when is_binary(value) do
-    case Integer.parse(value) do
-      {integer, ""} when integer >= 0 -> integer
-      _invalid -> raise ArgumentError, "invalid revenue summary suppression threshold"
-    end
-  end
-
-  defp normalize_min_conversions(_value),
-    do: raise(ArgumentError, "invalid revenue summary suppression threshold")
 
   defp normalize_dimension_id(nil, _field), do: nil
 

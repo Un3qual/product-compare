@@ -11,6 +11,7 @@ defmodule ProductCompare.AlertsTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Alerts.AlertDeliveryAttempt
   alias ProductCompareSchemas.Alerts.AlertEvent
+  alias ProductCompareSchemas.Alerts.Cooldown
 
   setup do
     {:ok, now: DateTime.utc_now() |> DateTime.truncate(:second)}
@@ -32,6 +33,7 @@ defmodule ProductCompare.AlertsTest do
 
     assert watch.baseline_price_point_id == baseline.id
     assert Decimal.eq?(watch.baseline_landed_price, Decimal.new("100"))
+    assert %Duration{second: 3_600} = watch.cooldown
 
     crossing = price_fixture(offer, "89", "0", true, DateTime.add(now, 60, :second))
 
@@ -46,7 +48,15 @@ defmodule ProductCompare.AlertsTest do
     assert {:ok, %{events_created: 0}} =
              Alerts.evaluate_price_point(still_true.id, now: still_true.observed_at)
 
-    cooled = price_fixture(offer, "80", "0", true, DateTime.add(now, 3_700, :second))
+    one_second_before_cooldown =
+      price_fixture(offer, "80", "0", true, DateTime.add(now, 3_659, :second))
+
+    assert {:ok, %{events_created: 0}} =
+             Alerts.evaluate_price_point(one_second_before_cooldown.id,
+               now: one_second_before_cooldown.observed_at
+             )
+
+    cooled = price_fixture(offer, "80", "0", true, DateTime.add(now, 3_660, :second))
 
     assert {:ok, %{events_created: 1}} =
              Alerts.evaluate_price_point(cooled.id, now: cooled.observed_at)
@@ -62,6 +72,23 @@ defmodule ProductCompare.AlertsTest do
     assert Decimal.eq?(first.target_amount, Decimal.new("90"))
     assert first.percentage_drop == nil
     assert first.read_at == nil
+  end
+
+  test "cooldown conversion accepts only exact elapsed whole seconds" do
+    assert {:ok, %Duration{second: 60}} = Cooldown.from_seconds(60)
+    assert {:ok, %Duration{second: 31_536_000}} = Cooldown.from_seconds(31_536_000)
+    assert Cooldown.from_seconds(59) == :error
+    assert Cooldown.from_seconds(31_536_001) == :error
+    assert Cooldown.from_seconds(60.0) == :error
+
+    assert {:ok, 86_400} = Cooldown.to_seconds(Duration.new!(day: 1))
+    assert {:ok, 604_800} = Cooldown.to_seconds(Duration.new!(week: 1))
+    assert {:ok, 1} = Cooldown.to_seconds(Duration.new!(second: 1, microsecond: {0, 0}))
+    assert {:ok, 1} = Cooldown.to_seconds(Duration.new!(second: 1, microsecond: {0, 6}))
+    assert Cooldown.to_seconds(Duration.new!(month: 1)) == :error
+    assert Cooldown.to_seconds(Duration.new!(second: 60, microsecond: {1, 6})) == :error
+    assert Cooldown.to_seconds(%Duration{second: 1, microsecond: {0, 7}}) == :error
+    assert Cooldown.to_seconds(Duration.new!(second: -60)) == :error
   end
 
   test "stale, incomplete, out-of-stock, and wrong-currency observations never trigger", %{

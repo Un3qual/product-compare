@@ -23,7 +23,7 @@
 - `/compare` ships an SSR-safe compare baseline driven by repeated `slug` query params, exposes a saved-comparison action for ready-state selections, provides an in-page product picker, renders current product attributes on selected compare cards, and aligns shared current attributes in a comparison matrix.
 - `/compare/saved` now ships a GraphQL-backed saved-set list with reopen/delete flows for authenticated users.
 - `/account/api-tokens` now ships a GraphQL-backed API-token management route with list, create, revoke, rotate, one-time token display, and navigation entry points.
-- `/commerce/revenue` now ships a GraphQL-backed revenue reporting route with aggregate filters, public-safe suppression rendering, and navigation entry points.
+- `/commerce/revenue` now ships an operator-only GraphQL-backed revenue reporting route with aggregate filters, unsuppressed metrics, and a paginated click/conversion attribution ledger.
 - `/merchants` now ships a Relay-backed merchant discovery route with cursor pagination, empty/error states, and navigation entry points.
 - `/affiliate/setup` now ships a Relay-backed affiliate setup route with merchant choices, authenticated network/program/link/coupon mutation forms, typed payload errors, and navigation entry points.
 - `/offers` now ships a Relay-backed offer discovery route for the existing top-level `merchantProducts(input:)` contract, with browse-card and root navigation entry points, visible merchant quick filters, and first-party tracked merchant actions.
@@ -55,7 +55,7 @@
 - Community reviews, questions, and answers now support durable idempotency,
   exact hourly write limits, retained owner removal, owner edits, accepted-
   answer cleanup, typed GraphQL errors, and accessible Relay controls.
-- Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, an initial Impact conversion adapter, a query-backed revenue summary contract, read-only GraphQL `revenueSummary` exposure, and a GraphQL `trackCommerceClick(input:)` mutation for server-resolved merchant-product click tracking.
+- Commerce attribution now has core persistence for outbound links, click sessions, conversions, and purchase-price facts, plus `/r/:click_id` redirect resolution, CJ/Impact/Awin/Rakuten conversion adapters, operator-only GraphQL revenue summary and paginated click-ledger reads, and a GraphQL `trackCommerceClick(input:)` mutation for server-resolved merchant-product click tracking.
 - Shared Relay connection pagination rejects invalid `first` values with a deterministic `invalid first` GraphQL error while preserving default, clamp, `first: 0`, and malformed cursor behavior.
 
 ## Active Gap
