@@ -1,6 +1,11 @@
 defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
-  use ProductCompareWeb.ConnCase, async: true
+  use ProductCompareWeb.ConnCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [assert_blocked_by: 2, hold_row_lock: 3, release_row_lock: 1, start_unboxed_action: 1]
+
+  alias Ecto.Adapters.SQL.Sandbox
+  alias ProductCompare.Accounts
   alias ProductCompare.Affiliate
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
@@ -9,6 +14,7 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.Affiliate.AffiliateProgram
   alias ProductCompareSchemas.Affiliate.Coupon
+  alias ProductCompareSchemas.Accounts.User
   alias ProductCompareWeb.Resolvers.Affiliate.Mutations
   alias ProductCompareWeb.Resolvers.Affiliate.Reads
 
@@ -493,6 +499,150 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
               Repo.aggregate(AffiliateLink, :count), Repo.aggregate(Coupon, :count)} == baseline
     end
 
+    test "affiliate mutations reject a stale operator snapshot without writes" do
+      operator = operator_fixture()
+      resolution = %{context: %{current_user: operator}}
+      merchant = merchant_fixture()
+      merchant_product = merchant_product_fixture(%{merchant: merchant})
+      {:ok, network} = Affiliate.upsert_network(%{name: "Stale Snapshot Network"})
+
+      baseline =
+        {Repo.aggregate(AffiliateNetwork, :count), Repo.aggregate(AffiliateProgram, :count),
+         Repo.aggregate(AffiliateLink, :count), Repo.aggregate(Coupon, :count)}
+
+      assert {:ok, %User{is_operator: false}} = Accounts.set_operator_access(operator, false)
+
+      responses = [
+        Mutations.upsert_affiliate_network(
+          nil,
+          %{input: %{name: "Stale Snapshot Created Network"}},
+          resolution
+        ),
+        Mutations.upsert_affiliate_program(
+          nil,
+          %{
+            input: %{
+              affiliate_network_id: relay_id(:affiliate_network, network.id),
+              merchant_id: relay_id(:merchant, merchant.id),
+              program_code: "STALE-PROGRAM",
+              status: "active"
+            }
+          },
+          resolution
+        ),
+        Mutations.upsert_affiliate_link(
+          nil,
+          %{
+            input: %{
+              merchant_product_id: relay_id(:merchant_product, merchant_product.id),
+              affiliate_network_id: relay_id(:affiliate_network, network.id),
+              original_url: "https://merchant.example/stale",
+              affiliate_url: "https://affiliate.example/stale"
+            }
+          },
+          resolution
+        ),
+        Mutations.create_coupon(
+          nil,
+          %{
+            input: %{
+              merchant_id: relay_id(:merchant, merchant.id),
+              affiliate_network_id: relay_id(:affiliate_network, network.id),
+              code: "STALE-COUPON",
+              discount_type: "OTHER"
+            }
+          },
+          resolution
+        )
+      ]
+
+      for {response, entity_field} <-
+            Enum.zip(responses, [:network, :program, :link, :coupon]) do
+        assert {:ok,
+                %{
+                  ^entity_field => nil,
+                  errors: [%{code: "FORBIDDEN", message: "forbidden", field: nil}]
+                }} = response
+      end
+
+      assert {Repo.aggregate(AffiliateNetwork, :count), Repo.aggregate(AffiliateProgram, :count),
+              Repo.aggregate(AffiliateLink, :count), Repo.aggregate(Coupon, :count)} == baseline
+    end
+
+    test "affiliate mutation waits for revocation and rejects the revoked operator" do
+      fixture = committed_affiliate_program_fixture()
+      on_exit(fn -> delete_committed_affiliate_program_fixture(fixture) end)
+
+      {revocation, revocation_backend_pid} = hold_operator_revocation(fixture.operator.id)
+
+      {mutation, mutation_backend_pid} =
+        start_unboxed_action(fn ->
+          graphql(
+            api_token_conn(fixture.token),
+            upsert_program_mutation(),
+            affiliate_program_variables(fixture, "REVOKED", "paused")
+          )
+        end)
+
+      assert_blocked_by(mutation_backend_pid, revocation_backend_pid)
+      release_operator_revocation(revocation)
+
+      assert %{
+               "data" => %{
+                 "upsertAffiliateProgram" => %{
+                   "program" => nil,
+                   "errors" => [%{"code" => "FORBIDDEN"}]
+                 }
+               }
+             } = Task.await(mutation)
+
+      assert %AffiliateProgram{program_code: "BEFORE", status: "active"} =
+               Repo.get!(AffiliateProgram, fixture.program.id)
+    end
+
+    test "affiliate mutation holds operator access while waiting for its domain row" do
+      fixture = committed_affiliate_program_fixture()
+      on_exit(fn -> delete_committed_affiliate_program_fixture(fixture) end)
+
+      {domain_barrier, domain_backend_pid} =
+        hold_row_lock(AffiliateProgram, fixture.program.id, & &1)
+
+      {mutation, mutation_backend_pid} =
+        start_unboxed_action(fn ->
+          graphql(
+            api_token_conn(fixture.token),
+            upsert_program_mutation(),
+            affiliate_program_variables(fixture, "AFTER", "paused")
+          )
+        end)
+
+      assert_blocked_by(mutation_backend_pid, domain_backend_pid)
+
+      {revocation, revocation_backend_pid} =
+        start_unboxed_action(fn ->
+          User
+          |> Repo.get!(fixture.operator.id)
+          |> Accounts.set_operator_access(false)
+        end)
+
+      assert_blocked_by(revocation_backend_pid, mutation_backend_pid)
+      release_row_lock(domain_barrier)
+
+      assert %{
+               "data" => %{
+                 "upsertAffiliateProgram" => %{
+                   "program" => %{"programCode" => "AFTER", "status" => "paused"},
+                   "errors" => []
+                 }
+               }
+             } = Task.await(mutation)
+
+      assert {:ok, %User{is_operator: false}} = Task.await(revocation)
+
+      assert %AffiliateProgram{program_code: "AFTER", status: "paused"} =
+               Repo.get!(AffiliateProgram, fixture.program.id)
+    end
+
     test "affiliate mutations reject raw affiliate network IDs", %{conn: conn} do
       authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
@@ -832,6 +982,92 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
 
     {:ok, merchant_product} = Pricing.upsert_merchant_product(params)
     merchant_product
+  end
+
+  defp committed_affiliate_program_fixture do
+    Sandbox.unboxed_run(Repo, fn ->
+      operator = operator_fixture()
+      {:ok, %{plain_text_token: token}} = Accounts.create_api_token(operator.id, %{})
+      merchant = merchant_fixture()
+
+      {:ok, network} =
+        Affiliate.upsert_network(%{
+          name: "Concurrent Affiliate Network #{System.unique_integer([:positive])}"
+        })
+
+      {:ok, program} =
+        Affiliate.upsert_program(%{
+          affiliate_network_id: network.id,
+          merchant_id: merchant.id,
+          program_code: "BEFORE",
+          status: "active"
+        })
+
+      %{
+        merchant: merchant,
+        network: network,
+        operator: operator,
+        program: program,
+        token: token
+      }
+    end)
+  end
+
+  defp delete_committed_affiliate_program_fixture(fixture) do
+    Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete!(Repo.get!(AffiliateProgram, fixture.program.id))
+      Repo.delete!(Repo.get!(AffiliateNetwork, fixture.network.id))
+      Repo.delete!(Repo.get!(ProductCompareSchemas.Pricing.Merchant, fixture.merchant.id))
+      Repo.delete!(Repo.get!(User, fixture.operator.id))
+    end)
+  end
+
+  defp hold_operator_revocation(operator_id) do
+    parent = self()
+
+    {task, backend_pid} =
+      start_unboxed_action(fn ->
+        Repo.transaction(fn ->
+          revoked_operator =
+            User
+            |> Repo.get!(operator_id)
+            |> User.operator_access_changeset(false)
+            |> Repo.update!()
+
+          send(parent, {:operator_revoked, self()})
+
+          receive do
+            :commit_revocation -> revoked_operator
+          after
+            5_000 -> flunk("timed out waiting to commit operator revocation")
+          end
+        end)
+      end)
+
+    assert_receive {:operator_revoked, task_pid}, 2_000
+    assert task_pid == task.pid
+    {task, backend_pid}
+  end
+
+  defp release_operator_revocation(task) do
+    send(task.pid, :commit_revocation)
+    assert {:ok, %User{is_operator: false}} = Task.await(task)
+  end
+
+  defp affiliate_program_variables(fixture, program_code, status) do
+    %{
+      "input" => %{
+        "affiliateNetworkId" => relay_id(:affiliate_network, fixture.network.id),
+        "merchantId" => relay_id(:merchant, fixture.merchant.id),
+        "programCode" => program_code,
+        "status" => status
+      }
+    }
+  end
+
+  defp api_token_conn(token) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer #{token}")
   end
 
   defp upsert_network_mutation do

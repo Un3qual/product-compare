@@ -3130,3 +3130,19 @@ If the claim guard is not satisfied, stop and hand off to the coordinator for re
 Completed lane summaries remain in their lane work docs under `docs/work/*.md`.
 Dated implementation plans remain under `docs/plans/`. They are historical
 reference unless this queue links one as the active plan for a `ready` row.
+
+## Completed 2026-08-04 Operator Mutation Authorization Freshness
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
+
+All six operator-only GraphQL mutations now lock and reload the current
+operator inside the owning affiliate, specification-correction, or CJ-program
+write transaction. Stale request snapshots return their existing `FORBIDDEN`
+payloads without domain changes, revocation-first operations wait and deny, and
+mutation-first operations retain the user lock through their domain-row wait
+before committing ahead of revocation.
+
+Verification passed 48 focused tests, 361 complete GraphQL tests, and 1,197
+complete backend tests, plus formatting, typecheck, quality, queue validation
+with ready rows 17-19 intact, and diff hygiene.

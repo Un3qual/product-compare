@@ -2,27 +2,51 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
-- Last verified: 2026-07-31 against request-context construction, all
-  operator-only GraphQL mutations, their context writes, and the existing
-  community-moderation revocation regression.
+- Last verified: 2026-08-04 against 48 focused tests, 361 complete GraphQL
+  tests, and 1,197 complete backend tests.
 
-## Target Outcome
+## Batch Outcome
 
 Operator-only GraphQL writes make their authorization decision from a locked,
 current user row in the same transaction as the protected write. A stale
 request-context user cannot retain write authority after role revocation.
 
-## Ready Evidence
+## Completion Evidence
+
+- `Accounts.lock_operator/1` requires an active database transaction, reloads
+  the user with `FOR UPDATE`, returns only a current operator, and maps missing
+  or non-operator rows to `{:error, :forbidden}`.
+- Stale request-context operator snapshots now return the existing `FORBIDDEN`
+  mutation payload without changing state for `upsertAffiliateNetwork`,
+  `upsertAffiliateProgram`, `upsertAffiliateLink`, `createCoupon`,
+  `moderateSpecificationCorrection`, and `updateCJProgram`.
+- The shared affiliate transaction proves revocation-first blocks the real
+  `upsertAffiliateProgram` operation until revocation commits, then rejects it
+  without changing the program. Mutation-first proves the operation holds the
+  user lock while blocked on the affiliate-program row, commits its program
+  update, and only then allows revocation to finish.
+- Specification-correction moderation proves the same two orders against the
+  correction row: committed revocation preserves pending/proposed state, while
+  mutation-first commits the rejection before the waiting revocation.
+- CJ-program lifecycle mutation proves the same two orders against the program
+  row: committed revocation preserves the original lifecycle state, while
+  mutation-first commits the lifecycle update before the waiting revocation.
+- The focused gate passes 48 tests, the complete GraphQL gate passes 361 tests,
+  and the complete backend gate passes 1,197 tests. Formatting, typecheck,
+  quality, queue validation with three ready rows, and diff hygiene also pass.
+
+## Original Ready Evidence
 
 - Session and API-token plugs load `current_user` before Absinthe execution,
   and `Authorization.require_operator/1` accepts
   `%User{is_operator: true}` from that request snapshot without a database
   recheck.
-- Six operator-only mutations currently rely on that snapshot before writing:
+- Before implementation, six operator-only mutations relied on that snapshot
+  before writing:
   `upsertAffiliateNetwork`, `upsertAffiliateProgram`, `upsertAffiliateLink`,
   `createCoupon`, `moderateSpecificationCorrection`, and `updateCJProgram`.
 - Community `moderateCommunityContent` already demonstrates the required
@@ -37,9 +61,9 @@ request-context user cannot retain write authority after role revocation.
   domain behavior but cover revocation only for community moderation.
 - A live nested-transaction probe showed that wrapping every resolver in one
   outer transaction would collapse an inner rollback to `:rollback`. The batch
-  therefore adds a transaction-required Accounts operator lock and invokes it
-  inside each affected mutation's owning transaction rather than introducing a
-  generic transaction wrapper.
+  therefore added a transaction-required Accounts operator lock that each
+  affected mutation invokes inside its owning transaction rather than
+  introducing a generic transaction wrapper.
 
 ## Boundaries
 

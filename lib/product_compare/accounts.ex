@@ -29,6 +29,10 @@ defmodule ProductCompare.Accounts do
   def set_operator_access(%User{} = user, is_operator) when is_boolean(is_operator),
     do: Users.set_operator_access(user, is_operator)
 
+  @doc "Locks and returns a current operator inside an existing transaction."
+  @spec lock_operator(pos_integer()) :: {:ok, User.t()} | {:error, :forbidden}
+  def lock_operator(user_id), do: Users.lock_operator(user_id)
+
   @doc """
   Bootstraps a trusted operator account without taking over an existing account.
 

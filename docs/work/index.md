@@ -47,66 +47,6 @@ None.
 
 ## Ready Work
 
-### 16. Operator Mutation Authorization Freshness
-
-Status: ready
-Lane: GraphQL authorization and concurrency
-Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
-Batch outcome: every operator-only GraphQL mutation serializes its protected
-write with operator-role revocation instead of trusting the request-context
-user snapshot.
-Next action: add failing revocation-first and mutation-first actual-operation
-regressions for the affiliate, correction, and CJ-program transaction families,
-then prove all six mutation surfaces reject a stale operator snapshot without
-changing domain state.
-Owned paths:
-
-- `lib/product_compare/accounts.ex`
-- `lib/product_compare/accounts/users.ex`
-- `lib/product_compare_web/resolvers/affiliate/mutations.ex`
-- `lib/product_compare/specs/corrections.ex`
-- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
-- `test/product_compare/accounts/concurrency_test.exs`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/cj_program_queries_test.exs`
-- `docs/work/operator-mutation-authorization-freshness.md`
-
-Internal slices:
-
-- Transaction-required operator-row authorization lock plus stale-snapshot
-  denial for all six mutations.
-- Shared affiliate network/program/link/coupon transaction with both actual-
-  operation serialization orders.
-- Specification-correction and CJ-program transactions, each with both actual-
-  operation serialization orders.
-
-Prerequisites:
-
-- No active row owns Accounts operator access, affiliate mutations,
-  specification correction moderation, or CJ program lifecycle mutation paths.
-- Community moderation remains the proven reference and stays behaviorally
-  unchanged.
-- Operator-only reads remain outside this write-authorization batch.
-
-Verification:
-
-- actual-operation revocation-first and mutation-first regressions for all
-  three owning transaction families
-- stale-request-snapshot denial for all six mutation surfaces
-- Accounts and Discussions concurrency suites
-- affiliate workflow, specification correction, and CJ-program GraphQL suites
-- complete GraphQL suite and full backend tests
-- typecheck, quality, and formatting gates
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: a revocation that commits first makes every affected mutation
-return its existing forbidden payload without a domain write, a mutation that
-locks first remains the user-row lock owner while held at its domain-row barrier
-and may commit before revocation, all three owning transactions acquire the
-operator row before domain rows, and all backend gates pass.
-
 ### 17. Application JSON Storage Policy Guard
 
 Status: ready

@@ -532,7 +532,7 @@ batch and should not be recreated or promoted.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | completed | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the former native-enum test depended on a hand-maintained column list. | Completed in `7efad083`; compiled schema reflection now checks every persisted `Ecto.Enum`, and PostgreSQL catalog validation rejects string-backed enum fields and closed-domain text constraints. |
-| promoted | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trust a request-context user snapshot while community moderation already serializes its write with role revocation. | Promoted to `docs/work/index.md`; one Accounts-owned transaction-required user-row lock, three domain adoption slices, and deterministic revocation-first/mutation-first tests form one independently reviewable authorization invariant. Operator reads remain outside the batch. |
+| completed | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trusted a request-context user snapshot while community moderation already serialized its write with role revocation. | Completed on 2026-08-04; one Accounts-owned transaction-required user-row lock now protects the shared affiliate, specification-correction, and CJ-program transactions, with stale-snapshot denial and both actual-operation lock orders covered. Operator reads remain outside the batch. |
 | promoted | Application JSON storage policy guard | The normalized snapshot and alert test still names only the two removed columns, while six legitimate persisted map fields define the current JSON boundary. | Promoted to `docs/work/index.md`; compiled schema reflection plus PostgreSQL catalog coverage can reject new opaque application dumps without banning raw evidence or explicitly open JSON contracts. |
 | promoted | Captured numeric evidence constraints | Source price, confidence, target, and percentage domains already have application or database enforcement, while immutable snapshot and alert copies lack equivalent PostgreSQL checks. | Promoted to `docs/work/index.md`; named constraints across the two copied-evidence migrations form one database-boundary invariant and remain path-disjoint from the active frontend disclosure batch. |
 | promoted | Destructive action confirmation | Four danger-styled account and comparison controls currently invoke irreversible mutations on the first click while retaining correct row-scoped mutation state. | Promoted to `docs/work/index.md`; one Radix AlertDialog boundary covers snapshot revocation, saved-comparison deletion, API-token revocation, and price-watch deletion without absorbing route mutations. Community removal and token rotation remain outside the batch. |
@@ -796,6 +796,12 @@ or `docs/superpowers/plans/`, matching the planning workflow that produced
 them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Operator Mutation Authorization Freshness:
+  `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`.
+  All six operator-only mutations now recheck a locked current user in their
+  owning write transaction; the lane doc retains stale-snapshot and both-order
+  actual-operation concurrency evidence for all three transaction families.
 
 - Frontend Radix disclosure controls:
   `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`.
