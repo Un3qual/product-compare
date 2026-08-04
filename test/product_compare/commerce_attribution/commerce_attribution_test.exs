@@ -1543,6 +1543,85 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "provider publisher-reference updates" do
+    test "clears malformed CJ, Awin, and Rakuten evidence on an independently blank update" do
+      for %{provider: provider, ingest: ingest, reference_keys: reference_keys} <-
+            adapter_click_reference_update_cases(),
+          provider != :impact,
+          reference_key <- reference_keys do
+        conversion_ref = "#{provider}-malformed-blank-#{System.unique_integer([:positive])}"
+        malformed_reference = "malformed-#{provider}-publisher-reference"
+
+        assert {:ok, malformed} =
+                 ingest.(
+                   adapter_update_payload(
+                     provider,
+                     conversion_ref,
+                     reference_key,
+                     malformed_reference,
+                     "2026-05-20T12:05:00Z"
+                   )
+                 )
+
+        assert malformed.network_click_ref == malformed_reference
+        assert malformed.attribution_confidence == :unmatched
+
+        assert {:ok, cleared} =
+                 ingest.(
+                   adapter_update_payload(
+                     provider,
+                     conversion_ref,
+                     reference_key,
+                     " \t ",
+                     "2026-05-21T12:05:00Z"
+                   )
+                 )
+
+        assert cleared.id == malformed.id
+        assert cleared.click_session_id == nil
+        assert cleared.public_click_id == nil
+        assert cleared.network_click_ref == nil
+        assert cleared.attribution_confidence == :unmatched
+      end
+    end
+
+    test "preserves malformed CJ, Awin, and Rakuten evidence when the update omits the reference" do
+      for %{provider: provider, ingest: ingest, reference_keys: reference_keys} <-
+            adapter_click_reference_update_cases(),
+          provider != :impact,
+          reference_key <- reference_keys do
+        conversion_ref = "#{provider}-malformed-omitted-#{System.unique_integer([:positive])}"
+        malformed_reference = "malformed-#{provider}-publisher-reference"
+
+        assert {:ok, malformed} =
+                 ingest.(
+                   adapter_update_payload(
+                     provider,
+                     conversion_ref,
+                     reference_key,
+                     malformed_reference,
+                     "2026-05-20T12:05:00Z"
+                   )
+                 )
+
+        assert {:ok, retained} =
+                 ingest.(
+                   adapter_update_payload(
+                     provider,
+                     conversion_ref,
+                     reference_key,
+                     :omitted,
+                     "2026-05-21T12:05:00Z"
+                   )
+                 )
+
+        assert retained.id == malformed.id
+        assert retained.click_session_id == nil
+        assert retained.public_click_id == nil
+        assert retained.network_click_ref == malformed_reference
+        assert retained.attribution_confidence == :unmatched
+      end
+    end
+
     test "replaces malformed CJ, Awin, and Rakuten evidence with corrected or blank references" do
       for %{provider: provider, network: network, ingest: ingest, reference_keys: reference_keys} <-
             adapter_click_reference_update_cases(),

@@ -194,6 +194,30 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
   end
 
   test "keeps the approved click storage column exact while discovering reflected INET fields" do
+    click_field = %{
+      schema: ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
+      database_schema: "public",
+      table: "commerce_click_sessions",
+      field: :ip_address,
+      column: "ip_address",
+      ecto_type: EctoNetwork.INET
+    }
+
+    assert [
+             "public.commerce_click_sessions.ip_address " <>
+               "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
+               ":ip_address) expected inet/inet, observed text/text"
+           ] =
+             NativeStoragePolicy.inet_storage_violations([click_field], %{
+               {"public", "commerce_click_sessions", "ip_address"} => %{
+                 schema: "public",
+                 data_type: "text",
+                 udt_name: "text"
+               }
+             })
+  end
+
+  test "reports an approved INET field remapped away from its exact storage column" do
     drifted_click_field = %{
       schema: ProductCompareSchemas.CommerceAttribution.CommerceClickSession,
       database_schema: "public",
@@ -203,23 +227,25 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
       ecto_type: EctoNetwork.INET
     }
 
-    assert [
-             "public.commerce_click_sessions.ip_address " <>
-               "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
-               ":ip_address) expected inet/inet, observed text/text"
-           ] =
-             NativeStoragePolicy.inet_storage_violations([drifted_click_field], %{
+    assert ("public.commerce_click_sessions.other_address " <>
+              "(Elixir.ProductCompareSchemas.CommerceAttribution.CommerceClickSession " <>
+              ":ip_address) expected reflected storage " <>
+              "public.commerce_click_sessions.ip_address, observed " <>
+              "public.commerce_click_sessions.other_address") in NativeStoragePolicy.inet_storage_violations(
+             [drifted_click_field],
+             %{
                {"public", "commerce_click_sessions", "ip_address"} => %{
                  schema: "public",
-                 data_type: "text",
-                 udt_name: "text"
+                 data_type: "inet",
+                 udt_name: "inet"
                },
                {"public", "commerce_click_sessions", "other_address"} => %{
                  schema: "public",
                  data_type: "inet",
                  udt_name: "inet"
                }
-             })
+             }
+           )
   end
 
   test "requires the host-only INET database constraint" do
@@ -284,6 +310,98 @@ defmodule ProductCompare.Repo.NativeStoragePolicyTest do
              [price_watch_rule],
              %{},
              %{}
+           )
+  end
+
+  test "reports approved digest and cooldown fields remapped from exact storage columns" do
+    digest_columns = %{
+      {"public", "ingestion_runs", "scope_fingerprint"} => %{
+        schema: "public",
+        data_type: "bytea",
+        udt_name: "bytea"
+      },
+      {"public", "product_attribute_claims", "fingerprint"} => %{
+        schema: "public",
+        data_type: "bytea",
+        udt_name: "bytea"
+      },
+      {"public", "source_artifacts", "content_hash"} => %{
+        schema: "public",
+        data_type: "bytea",
+        udt_name: "bytea"
+      }
+    }
+
+    digest_constraints = %{
+      {"public", "ingestion_runs", "ingestion_runs_scope_fingerprint_sha256_length"} =>
+        "CHECK (scope_fingerprint IS NULL OR octet_length(scope_fingerprint) = 32)",
+      {"public", "product_attribute_claims", "product_attribute_claims_fingerprint_sha256_length"} =>
+        "CHECK (fingerprint IS NULL OR octet_length(fingerprint) = 32)",
+      {"public", "source_artifacts", "source_artifacts_content_hash_sha256_length"} =>
+        "CHECK (content_hash IS NULL OR octet_length(content_hash) = 32)"
+    }
+
+    for {schema, field, table, expected_column, observed_column} <- [
+          {ProductCompareSchemas.Ingestion.ImportRun, :scope_fingerprint, "ingestion_runs",
+           "scope_fingerprint", "other_hash"},
+          {ProductCompareSchemas.Specs.ProductAttributeClaim, :fingerprint,
+           "product_attribute_claims", "fingerprint", "other_hash"},
+          {ProductCompareSchemas.Specs.SourceArtifact, :content_hash, "source_artifacts",
+           "content_hash", "other_hash"}
+        ] do
+      drifted_field = %{
+        schema: schema,
+        database_schema: "public",
+        table: table,
+        field: field,
+        column: observed_column,
+        ecto_type: :binary
+      }
+
+      assert ("public.#{table}.#{observed_column} " <>
+                "(#{Atom.to_string(schema)} #{inspect(field)}) expected reflected storage " <>
+                "public.#{table}.#{expected_column}, observed " <>
+                "public.#{table}.#{observed_column}") in NativeStoragePolicy.digest_storage_violations(
+               [drifted_field],
+               digest_columns,
+               digest_constraints
+             )
+    end
+
+    drifted_cooldown = %{
+      schema: ProductCompareSchemas.Alerts.PriceWatchRule,
+      database_schema: "public",
+      table: "price_watch_rules",
+      field: :cooldown,
+      column: "other_cooldown",
+      ecto_type: :duration
+    }
+
+    cooldown_column = %{
+      {"public", "price_watch_rules", "cooldown"} => %{
+        schema: "public",
+        data_type: "interval",
+        udt_name: "interval",
+        interval_type: "DAY TO SECOND"
+      }
+    }
+
+    cooldown_constraints = %{
+      {"public", "price_watch_rules", "price_watch_rules_cooldown_min_check"} =>
+        "CHECK (cooldown >= '00:01:00'::interval)",
+      {"public", "price_watch_rules", "price_watch_rules_cooldown_max_check"} =>
+        "CHECK (cooldown <= '8760:00:00'::interval)",
+      {"public", "price_watch_rules", "price_watch_rules_cooldown_whole_seconds_check"} =>
+        "CHECK (date_trunc('second'::text, cooldown) = cooldown)"
+    }
+
+    assert ("public.price_watch_rules.other_cooldown " <>
+              "(Elixir.ProductCompareSchemas.Alerts.PriceWatchRule :cooldown) " <>
+              "expected reflected storage public.price_watch_rules.cooldown, " <>
+              "observed public.price_watch_rules.other_cooldown") in NativeStoragePolicy.cooldown_storage_violations(
+             [drifted_cooldown],
+             cooldown_column,
+             cooldown_constraints
            )
   end
 

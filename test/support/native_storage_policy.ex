@@ -118,7 +118,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
     approved_field = contract_field(@approved_inet_field)
 
     type_errors =
-      required_field_type_violations(fields, @approved_inet_field, EctoNetwork.INET)
+      required_field_contract_violations(fields, @approved_inet_field, EctoNetwork.INET)
 
     column_errors =
       (reflected_inet_fields ++ [approved_field])
@@ -227,7 +227,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
                                         digest_field ->
       location = contract_field(digest_field) |> field_label()
 
-      type_errors = required_field_type_violations(fields, digest_field, :binary)
+      type_errors = required_field_contract_violations(fields, digest_field, :binary)
 
       column_errors =
         case Map.fetch(columns, {schema, table, column}) do
@@ -267,7 +267,7 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
   def cooldown_storage_violations(fields, columns, constraints) do
     location = contract_field(@cooldown_field) |> field_label()
 
-    type_errors = required_field_type_violations(fields, @cooldown_field, :duration)
+    type_errors = required_field_contract_violations(fields, @cooldown_field, :duration)
 
     column_errors =
       case Map.fetch(columns, {@catalog_schema, "price_watch_rules", "cooldown"}) do
@@ -456,24 +456,46 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
     contract_field({schema, table, column, module, field})
   end
 
-  defp required_field_type_violations(fields, field_contract, expected_type) do
+  defp required_field_contract_violations(fields, field_contract, expected_type) do
     field = required_field(fields, field_contract)
+    expected_field = contract_field(field_contract)
     expected = inspect(expected_type)
 
-    case field.ecto_type do
-      ^expected_type ->
-        []
+    type_errors =
+      case field.ecto_type do
+        ^expected_type ->
+          []
 
-      nil ->
-        [
-          "#{field_label(field)} expected Ecto type #{expected}, " <>
-            "observed no reflected Ecto field"
-        ]
+        nil ->
+          [
+            "#{field_label(field)} expected Ecto type #{expected}, " <>
+              "observed no reflected Ecto field"
+          ]
 
-      observed ->
-        ["#{field_label(field)} expected Ecto type #{expected}, observed #{inspect(observed)}"]
-    end
+        observed ->
+          ["#{field_label(field)} expected Ecto type #{expected}, observed #{inspect(observed)}"]
+      end
+
+    mapping_errors =
+      cond do
+        is_nil(field.ecto_type) ->
+          []
+
+        field_key(field) == field_key(expected_field) ->
+          []
+
+        true ->
+          [
+            "#{field_label(field)} expected reflected storage " <>
+              "#{storage_location(expected_field)}, observed #{storage_location(field)}"
+          ]
+      end
+
+    type_errors ++ mapping_errors
   end
+
+  defp storage_location(field),
+    do: "#{field.database_schema}.#{field.table}.#{field.column}"
 
   defp normalized_constraint(definition) do
     definition
