@@ -41,53 +41,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
+## Active Work
+
+None.
+
 ## Ready Work
-
-### 15. Radix Disclosure Controls
-
-Status: ready
-Lane: Frontend UI foundation
-Plan: `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`
-Batch outcome: price-watch creation, comparison sharing, and community
-creation forms use the existing Radix Collapsible primitive while lazy work,
-form state, accessibility, and StyleX ownership remain intact.
-Next action: characterize the five native disclosure contracts and add the
-failing visible-disclosure architecture scan before changing consumers.
-Owned paths:
-
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- affected alert, comparison-snapshot, community, and primitive tests
-- focused frontend architecture test for native visible disclosures
-- `docs/work/frontend-radix-disclosure-controls.md`
-
-Internal slices:
-
-- Native disclosure and lazy-loading characterization.
-- Existing Radix Collapsible adoption across five consumers.
-- Accessibility, SSR, full-suite, and bundle verification.
-
-Prerequisites:
-
-- No active row owns the affected disclosure consumers.
-- The existing project Collapsible wrapper remains the only primitive boundary.
-- The completed form-control migration owns inputs, selects, text areas,
-  checkboxes, and the Radix Themes provider; those paths remain outside this
-  row except where a disclosure characterization test must render them.
-
-Verification:
-
-- focused alert, comparison snapshot, community, and primitive tests
-- native visible-disclosure architecture scan
-- TypeScript, Oxc, Oxfmt, and full frontend tests
-- Vite client and SSR builds plus bundle contract
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: no visible native disclosure remains under `assets/src`, the
-five affected controls use the existing Radix wrapper, lazy and submission
-behavior is unchanged, StyleX remains in place, and every frontend gate passes.
 
 ### 16. Operator Mutation Authorization Freshness
 

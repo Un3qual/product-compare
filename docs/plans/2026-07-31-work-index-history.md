@@ -2741,6 +2741,16 @@ None.
 
 ## Just Completed
 
+Radix disclosure controls completed on 2026-08-04. Price-watch creation,
+comparison sharing, review creation, question creation, and answer creation now
+use the existing project Collapsible primitive. Force-mounted closed content
+preserves form state, while comparison history remains controlled and lazy on
+first expansion. TDD characterization failed in four expected places before
+the migration; the focused five-file suite then passed 40 tests. The full
+frontend gate passed Relay validation, TypeScript, Oxc, Oxfmt, 1,528 tests,
+client and SSR builds, and the 268,729-byte gzip bundle contract. The live queue
+retains three ready rows.
+
 Bounded comparison root GraphQL reads are complete. Catalog now projects
 multiple slug selections from one canonical lookup, Recommendations projects
 multiple profile requests from one shared evidence snapshot, and both public

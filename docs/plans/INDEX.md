@@ -795,6 +795,13 @@ them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Frontend Radix disclosure controls:
+  `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`.
+  Price-watch creation, comparison sharing, and the three community creation
+  forms now use the existing project Collapsible primitive; the lane doc
+  retains TDD, lazy-loading, form-state, accessibility, SSR, and bundle
+  evidence.
+
 - PostgreSQL Native Storage Types:
   `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
   First-party click IP addresses, SHA-256 digests, elapsed cooldowns, and

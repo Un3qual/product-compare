@@ -2,12 +2,12 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P3
 - Plan:
   `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`
-- Last verified: 2026-07-30 against the existing Radix Collapsible wrapper,
-  the five native application disclosures, and their focused route suites.
+- Last verified: 2026-08-04 against all five migrated disclosures, the native-
+  disclosure architecture guard, 40 focused tests, and the full frontend gate.
 
 ## Target Outcome
 
@@ -44,3 +44,21 @@ current lazy-loading, form, accessibility, and styling behavior preserved.
 - Vite client and SSR builds plus bundle contract
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Evidence
+
+- TDD characterization first failed in four places: the architecture scan found
+  seven source lines containing native disclosure tags, and the alert,
+  comparison-snapshot, and community suites could not find button triggers.
+  After the migration, the five focused files passed 40 tests.
+- Price-watch, review, question, and answer forms use uncontrolled Radix
+  Collapsible roots with force-mounted, closed-hidden content so form state is
+  retained. Comparison sharing keeps its controlled open state, and snapshot
+  history still begins only on first expansion.
+- The native-disclosure scan now rejects `<details>` and `<summary>` anywhere
+  under `assets/src`; no parallel primitive or styling abstraction was added.
+- Fresh full verification passed Relay validation, TypeScript, Oxc, Oxfmt over
+  398 files, 105 Vitest files with 1,528 tests, client and SSR production
+  builds, and the 1,327,203-raw / 268,729-gzip-byte client bundle contract.
+- `mix work_queue.validate` passed with three ready rows after closeout, and
+  `git diff --check` passed.
