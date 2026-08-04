@@ -9,7 +9,7 @@ defmodule ProductCompare.Repo.Migrations.AddIngestionReconciliation do
         null: false,
         default: "not_requested"
 
-      add :reconciled_at, :utc_datetime_usec
+      add :reconciled_at, :timestamptz, precision: 6, size: 6
       add :offers_deactivated, :integer, null: false, default: 0
     end
 
@@ -38,7 +38,7 @@ defmodule ProductCompare.Repo.Migrations.AddIngestionReconciliation do
           references(:merchant_products, type: :bigint, on_delete: :delete_all),
           null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:ingestion_run_observations, [:import_run_id, :external_product_id],

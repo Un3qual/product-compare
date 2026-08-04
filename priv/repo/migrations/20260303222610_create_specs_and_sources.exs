@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :code, :text, null: false
       add :description, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:dimensions, [:code])
@@ -24,7 +24,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :multiplier_to_base, :decimal, null: false, default: 1
       add :offset_to_base, :decimal, null: false, default: 0
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:units, [:dimension_id, :code], name: :units_dimension_code_uq)
@@ -34,7 +34,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :code, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:enum_sets, [:code])
@@ -47,7 +47,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :label, :text, null: false
       add :sort_order, :integer, null: false, default: 0
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:enum_options, [:enum_set_id, :code], name: :enum_options_set_code_uq)
@@ -66,7 +66,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :is_derived, :boolean, null: false, default: false
       add :description, :text
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:attributes, [:code])
@@ -83,7 +83,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :sort_order, :integer, null: false, default: 0
       add :min_rep_to_edit, :bigint, null: false, default: 0
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:taxon_attributes, [:taxon_id, :attribute_id],
@@ -104,7 +104,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :name, :text, null: false
       add :domain, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:sources, [:source_kind_id, :name], name: :sources_kind_name_uq)
@@ -114,12 +114,18 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :source_id, references(:sources, type: :bigint, on_delete: :nilify_all)
       add :url, :text
-      add :fetched_at, :utc_datetime_usec, null: false, default: fragment("now()")
+
+      add :fetched_at, :timestamptz,
+        precision: 6,
+        size: 6,
+        null: false,
+        default: fragment("now()")
+
       add :content_hash, :binary
       add :raw_json, :map
       add :raw_text, :text
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:source_artifacts, [:source_id, :fetched_at],
@@ -138,9 +144,14 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :external_id, :text, null: false
       add :product_id, references(:products, type: :bigint, on_delete: :nilify_all)
       add :canonical_url, :text
-      add :last_seen_at, :utc_datetime_usec, null: false, default: fragment("now()")
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      add :last_seen_at, :timestamptz,
+        precision: 6,
+        size: 6,
+        null: false,
+        default: fragment("now()")
+
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:external_products, [:source_id, :external_id],
@@ -158,7 +169,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
       add :expression, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:derived_formulas, [:attribute_id], name: :derived_formulas_attribute_uq)
@@ -185,7 +196,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :value_num_base_max, :decimal
       add :value_text, :text
       add :value_date, :date
-      add :value_ts, :utc_datetime_usec
+      add :value_ts, :timestamptz, precision: 6, size: 6
       add :enum_option_id, references(:enum_options, type: :bigint, on_delete: :nilify_all)
       add :value_json, :map
 
@@ -195,7 +206,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :derived_formula_id,
           references(:derived_formulas, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:product_attribute_claims, [:product_id, :attribute_id, :inserted_at],
@@ -245,7 +256,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
 
       add :excerpt, :text
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:claim_evidence, [:claim_id, :artifact_id],
@@ -265,9 +276,14 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
         null: false
 
       add :selected_by, references(:users, type: :bigint, on_delete: :nilify_all)
-      add :selected_at, :utc_datetime_usec, null: false, default: fragment("now()")
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      add :selected_at, :timestamptz,
+        precision: 6,
+        size: 6,
+        null: false,
+        default: fragment("now()")
+
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:product_attribute_current, [:product_id, :attribute_id],
@@ -286,7 +302,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
       add :depends_on_attribute_id,
           references(:attributes, type: :bigint, on_delete: :delete_all), null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:derived_formula_deps, [:formula_id, :depends_on_attribute_id],
@@ -305,7 +321,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSpecsAndSources do
           references(:product_attribute_claims, type: :bigint, on_delete: :delete_all),
           null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:claim_dependencies, [:claim_id, :depends_on_claim_id],

@@ -6,7 +6,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :email, :citext, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:users, [:email])
@@ -17,7 +17,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
       add :points, :bigint, null: false, default: 0
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:user_reputation, [:user_id])
@@ -27,7 +27,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:reputation_event_types, [:code])
@@ -42,7 +42,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
 
       add :delta, :bigint, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create index(:reputation_events, [:user_id, :inserted_at], name: :rep_events_user_time_idx)
@@ -53,7 +53,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:taxonomies, [:code])
@@ -69,7 +69,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:taxons, [:taxonomy_id, :code], name: :taxons_taxonomy_code_uq)
@@ -82,7 +82,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :descendant_id, references(:taxons, type: :bigint, on_delete: :delete_all), null: false
       add :depth, :integer, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:taxon_closure, [:ancestor_id, :descendant_id],
@@ -100,7 +100,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :taxon_id, references(:taxons, type: :bigint, on_delete: :delete_all), null: false
       add :alias, :text, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:taxon_aliases, [:alias], name: :taxon_aliases_alias_uq)
@@ -111,7 +111,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:brands, [:name])
@@ -126,7 +126,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :slug, :text, null: false
       add :description, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:products, [:primary_type_taxon_id], name: :products_primary_type_idx)
@@ -142,7 +142,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAccountsTaxonomyCatalog do
       add :confidence, :decimal
       add :created_by, references(:users, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:product_taxons, [:product_id, :taxon_id],

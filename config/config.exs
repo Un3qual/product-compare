@@ -17,6 +17,9 @@ config :product_compare,
 config :product_compare, ProductCompare.Repo,
   migration_primary_key: [name: :id, type: :bigserial],
   migration_foreign_key: [type: :bigint],
+  # PostgreSQL's generic Ecto type renderer uses `size` for `timestamptz(6)`;
+  # its `precision` option alone renders the invalid `timestamptz(6, 0)`.
+  migration_timestamps: [type: :timestamptz, precision: 6, size: 6],
   types: ProductCompare.PostgrexTypes
 
 config :product_compare, ProductCompare.Catalog.SearchDocuments, rebuild_timeout: :infinity

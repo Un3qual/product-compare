@@ -8,11 +8,11 @@ defmodule ProductCompare.Repo.Migrations.CreateApiTokens do
       add :token_prefix, :text, null: false
       add :token_hash, :binary, null: false
       add :label, :text
-      add :last_used_at, :utc_datetime_usec
-      add :expires_at, :utc_datetime_usec
-      add :revoked_at, :utc_datetime_usec
+      add :last_used_at, :timestamptz, precision: 6, size: 6
+      add :expires_at, :timestamptz, precision: 6, size: 6
+      add :revoked_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:api_tokens, [:entropy_id])

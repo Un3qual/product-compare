@@ -41,47 +41,6 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
-## Active Work
-
-### PostgreSQL Native Storage Types
-
-Status: active
-Lane: Database domain policy
-Plan: `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`
-Batch outcome: first-party IP addresses, SHA-256 digests, alert cooldowns,
-and application timestamps use PostgreSQL-native storage while established
-GraphQL contracts remain unchanged.
-Next action: characterize raw SHA-256 digest persistence and replay behavior,
-then replace the unreleased application-owned hexadecimal columns with
-constrained PostgreSQL `bytea`.
-Owned paths:
-
-- paths named by `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`
-- `docs/work/postgresql-native-storage-types.md`
-
-Internal slices:
-
-- Native IP capture, persistence, and GraphQL presentation.
-- Raw SHA-256 digest storage and replay-safe producer boundaries.
-- Native cooldown interval and timestamp storage-policy verification.
-
-Prerequisites:
-
-- Rows 15, 16, and 17 remain ready while this coordinator-owned batch is active.
-- Only unreleased first-party migrations may change; the development database remains untouched.
-
-Verification:
-
-- focused owner tests after each storage-type slice
-- rebuilt test schema for each migration-bearing milestone
-- native storage-policy suite after all slices
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: all first-party storage owners use their approved PostgreSQL
-types, boundary conversions preserve public contracts, and the policy suite
-prevents regression.
-
 ## Ready Work
 
 ### 15. Radix Disclosure Controls

@@ -12,8 +12,8 @@ defmodule ProductCompare.Repo.Migrations.CreateIngestionRuns do
 
       add :query, :map, null: false, default: %{}
       add :status, :ingestion_run_status, null: false
-      add :started_at, :utc_datetime_usec, null: false
-      add :finished_at, :utc_datetime_usec
+      add :started_at, :timestamptz, precision: 6, size: 6, null: false
+      add :finished_at, :timestamptz, precision: 6, size: 6
       add :cursor_start, :integer
       add :cursor_end, :integer
       add :page_size, :integer
@@ -25,7 +25,7 @@ defmodule ProductCompare.Repo.Migrations.CreateIngestionRuns do
       add :records_failed, :integer, null: false, default: 0
       add :error_summary, :text
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:ingestion_runs, [:source_id, :started_at],

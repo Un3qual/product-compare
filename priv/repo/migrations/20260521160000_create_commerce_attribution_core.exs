@@ -15,7 +15,7 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :backfilled_from_affiliate_links, :boolean, null: false, default: false
       add :is_active, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:commerce_links, [:entropy_id])
@@ -48,7 +48,7 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :user_agent, :text
       add :ip_address, :inet
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:commerce_click_sessions, [:entropy_id])
@@ -94,12 +94,12 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
         null: false,
         default: "unmatched"
 
-      add :data_freshness_at, :utc_datetime_usec
-      add :purchased_at, :utc_datetime_usec
-      add :reported_at, :utc_datetime_usec, null: false
+      add :data_freshness_at, :timestamptz, precision: 6, size: 6
+      add :purchased_at, :timestamptz, precision: 6, size: 6
+      add :reported_at, :timestamptz, precision: 6, size: 6, null: false
       add :raw_payload, :map, null: false, default: %{}
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:commerce_conversions, [:entropy_id])
@@ -143,11 +143,11 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
       add :discount_amount, :decimal
       add :currency_id, references(:currencies, type: :integer, on_delete: :restrict), null: false
       add :price_observation_id, references(:price_points, type: :bigint, on_delete: :nilify_all)
-      add :observed_at, :utc_datetime_usec
+      add :observed_at, :timestamptz, precision: 6, size: 6
       add :observed_price, :decimal
       add :price_delta, :decimal
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:purchase_price_facts, [:entropy_id])

@@ -17,11 +17,6 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-The active PostgreSQL native storage-types batch is defined by
-`docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
-It converts first-party IP, digest, cooldown, and timestamp storage to native
-PostgreSQL types while preserving existing external GraphQL representations.
-
 The approved attribution observability and foundation-library program is
 dispatched through three reviewable plans:
 
@@ -797,6 +792,14 @@ or `docs/superpowers/plans/`, matching the planning workflow that produced
 them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- PostgreSQL Native Storage Types:
+  `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.
+  First-party click IP addresses, SHA-256 digests, elapsed cooldowns, and
+  absolute instants now use PostgreSQL `inet`, `bytea`, `interval DAY TO
+  SECOND`, and `timestamptz(6)` storage while GraphQL remains textual or
+  integer-valued at its boundaries. `docs/work/postgresql-native-storage-types.md`
+  retains the closeout evidence and the development-database reset notice.
 
 - 2026-07-27 Ranked Catalog Search:
   `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` and

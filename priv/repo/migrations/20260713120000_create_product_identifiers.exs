@@ -16,9 +16,9 @@ defmodule ProductCompare.Repo.Migrations.CreateProductIdentifiers do
       add :source_artifact_id,
           references(:source_artifacts, type: :bigint, on_delete: :nilify_all)
 
-      add :verified_at, :utc_datetime_usec
+      add :verified_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:product_identifiers, [:entropy_id])

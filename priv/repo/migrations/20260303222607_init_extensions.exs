@@ -61,7 +61,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :minor_unit, :smallint, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:currencies, [:code])
@@ -85,7 +85,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:recommendation_algorithms, [:code])
@@ -107,7 +107,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :name, :text, null: false
       add :enabled, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:affiliate_program_statuses, [:code])
@@ -128,7 +128,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :code, :text, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:source_kinds, [:code])
@@ -153,7 +153,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :name, :text, null: false
       add :enabled, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:integration_providers, [:code])
@@ -181,7 +181,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :name, :text, null: false
       add :enabled, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:integration_surfaces, [:provider_id, :code])
@@ -208,7 +208,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :name, :text, null: false
       add :enabled, :boolean, null: false, default: true
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:provider_feed_types, [:provider_id, :code])
@@ -230,7 +230,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :numeric_code, :string, size: 3, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:countries, [:code])
@@ -251,7 +251,7 @@ defmodule ProductCompare.Repo.Migrations.InitExtensions do
       add :code, :string, size: 2, null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:languages, [:code])

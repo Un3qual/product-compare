@@ -8,10 +8,10 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
       add :title, :string, size: 120
       add :version, :smallint, null: false
-      add :captured_at, :utc_datetime_usec, null: false
-      add :revoked_at, :utc_datetime_usec
+      add :captured_at, :timestamptz, precision: 6, size: 6, null: false
+      add :revoked_at, :timestamptz, precision: 6, size: 6
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:comparison_snapshots, [:entropy_id])
@@ -90,7 +90,7 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
       add :source_name, :text, null: false
       add :source_domain, :text
       add :url, :text
-      add :fetched_at, :utc_datetime_usec, null: false
+      add :fetched_at, :timestamptz, precision: 6, size: 6, null: false
     end
 
     create unique_index(:comparison_snapshot_evidence, [:snapshot_attribute_id, :position],
@@ -115,7 +115,7 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
       add :item_price, :decimal, null: false
       add :shipping, :decimal, null: false
       add :landed_price, :decimal, null: false
-      add :observed_at, :utc_datetime_usec, null: false
+      add :observed_at, :timestamptz, precision: 6, size: 6, null: false
       add :freshness, :offer_freshness, null: false
     end
 
@@ -142,7 +142,7 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
           ),
           null: false
 
-      add :evaluated_at, :utc_datetime_usec, null: false
+      add :evaluated_at, :timestamptz, precision: 6, size: 6, null: false
       add :status, :recommendation_status, null: false
       add :winner_product_id, :bigint
       add :currency_id, references(:currencies, type: :integer, on_delete: :restrict)

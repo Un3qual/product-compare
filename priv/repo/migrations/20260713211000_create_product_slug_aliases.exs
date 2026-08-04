@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.Migrations.CreateProductSlugAliases do
       add :slug, :string, null: false
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:product_slug_aliases, [:slug])

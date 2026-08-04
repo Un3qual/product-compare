@@ -7,7 +7,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSavedComparisonSets do
       add :user_id, references(:users, type: :bigint, on_delete: :delete_all), null: false
       add :name, :text, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create index(:saved_comparison_sets, [:user_id, :inserted_at],
@@ -26,7 +26,7 @@ defmodule ProductCompare.Repo.Migrations.CreateSavedComparisonSets do
       add :product_id, references(:products, type: :bigint, on_delete: :delete_all), null: false
       add :position, :integer, null: false
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:saved_comparison_items, [:entropy_id])

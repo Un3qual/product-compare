@@ -8,7 +8,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
         default: "published"
 
       add :moderation_note, :text
-      add :moderated_at, :utc_datetime_usec
+      add :moderated_at, :timestamptz, precision: 6, size: 6
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
     end
 
@@ -20,7 +20,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
         default: "published"
 
       add :moderation_note, :text
-      add :moderated_at, :utc_datetime_usec
+      add :moderated_at, :timestamptz, precision: 6, size: 6
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
       add :accepted_post_id, references(:thread_posts, type: :bigint, on_delete: :nilify_all)
     end
@@ -31,7 +31,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
         default: "published"
 
       add :moderation_note, :text
-      add :moderated_at, :utc_datetime_usec
+      add :moderated_at, :timestamptz, precision: 6, size: 6
       add :moderated_by, references(:users, type: :bigint, on_delete: :nilify_all)
     end
 
@@ -49,10 +49,10 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityModeration do
       add :post_id, references(:thread_posts, type: :bigint, on_delete: :delete_all)
       add :reason, :string, null: false, size: 500
       add :status, :community_report_status, null: false, default: "pending"
-      add :resolved_at, :utc_datetime_usec
+      add :resolved_at, :timestamptz, precision: 6, size: 6
       add :resolved_by, references(:users, type: :bigint, on_delete: :nilify_all)
 
-      timestamps(type: :utc_datetime_usec, updated_at: false)
+      timestamps(type: :timestamptz, precision: 6, size: 6, updated_at: false)
     end
 
     create unique_index(:community_reports, [:entropy_id])

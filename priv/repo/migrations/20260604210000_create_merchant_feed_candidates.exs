@@ -19,11 +19,11 @@ defmodule ProductCompare.Repo.Migrations.CreateMerchantFeedCandidates do
       add :language_id, references(:languages, type: :integer, on_delete: :restrict)
       add :feed_name, :text
       add :product_count, :integer
-      add :provider_last_updated_at, :utc_datetime_usec
+      add :provider_last_updated_at, :timestamptz, precision: 6, size: 6
       add :raw_metadata, :map, null: false, default: %{}
-      add :last_seen_at, :utc_datetime_usec, null: false
+      add :last_seen_at, :timestamptz, precision: 6, size: 6, null: false
 
-      timestamps(type: :utc_datetime_usec)
+      timestamps(type: :timestamptz, precision: 6, size: 6)
     end
 
     create unique_index(:merchant_feed_candidates, [:source_id, :provider_feed_id],
