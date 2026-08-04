@@ -451,7 +451,7 @@ test("revenue route renders the summary while the ledger preload is pending", as
   expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
   expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
 
-  await act(async () => {
+  await act(() => {
     ledgerPreload.resolve(ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR);
   });
 
