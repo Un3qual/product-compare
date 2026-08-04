@@ -45,12 +45,15 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
   defp reference_attrs({:present, value}) do
     case reference_token(value) do
       nil ->
-        %{clear_click_attribution: true}
+        %{clear_click_attribution: true, network_click_ref: nil}
 
       token ->
         case ClickReference.decode("cj", token) do
-          {:ok, public_click_id} -> %{public_click_id: public_click_id}
-          :error -> %{clear_click_attribution: true, network_click_ref: token}
+          {:ok, public_click_id} ->
+            %{public_click_id: public_click_id, network_click_ref: nil}
+
+          :error ->
+            %{clear_click_attribution: true, network_click_ref: token}
         end
     end
   end
@@ -130,7 +133,7 @@ defmodule ProductCompare.CommerceAttribution.CJAdapter do
       attrs,
       for(
         {field, nil} <- attrs,
-        field not in [:network_conversion_ref, :reported_at],
+        field not in [:network_conversion_ref, :network_click_ref, :reported_at],
         do: field
       )
     )

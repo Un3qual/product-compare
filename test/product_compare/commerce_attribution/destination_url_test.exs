@@ -48,6 +48,18 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrlTest do
              Parser.canonical_http_hostname("https://MERCHANT.EXAMPLE.COM:443/offer")
   end
 
+  test "canonicalizes equivalent Unicode and A-label hostnames case-insensitively" do
+    for hostname <- [
+          "münich.example",
+          "MÜNICH.example",
+          "xn--mnich-kva.example",
+          "XN--MNICH-KVA.example"
+        ] do
+      assert {:ok, "xn--mnich-kva.example"} =
+               Parser.canonical_http_hostname("https://#{hostname}/offer")
+    end
+  end
+
   test "rejects forbidden IDNA code points without raising" do
     for url <- [
           "https://a\u{200D}b.example/offer",

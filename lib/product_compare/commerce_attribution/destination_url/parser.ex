@@ -51,6 +51,7 @@ defmodule ProductCompare.CommerceAttribution.DestinationUrl.Parser do
     |> URI.decode()
     |> String.normalize(:nfkc)
     |> replace_idna_dot_separators()
+    |> String.downcase()
   end
 
   defp replace_idna_dot_separators(hostname) do
