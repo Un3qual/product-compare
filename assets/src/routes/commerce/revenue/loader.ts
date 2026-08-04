@@ -28,7 +28,10 @@ export type RevenueSummaryLoaderData =
   | {
       status: "ready";
       filters: RevenueSummaryFilters;
-      ledgerQuery: RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null;
+      ledgerQuery:
+        | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
+        | null;
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | {
@@ -65,19 +68,29 @@ export async function revenueSummaryLoader({
     };
   }
 
-  const [summaryResult, ledgerResult] = await Promise.allSettled([
-    preloadRouteQuery<RevenueSummaryRouteQuery>(
-      environment,
-      revenueSummaryRouteQuery,
-      { input: filters },
-      { signal: request.signal },
-    ),
-    preloadAttributionLedger(environment, filters, request.signal),
-  ]);
+  const summaryQuery = preloadRouteQuery<RevenueSummaryRouteQuery>(
+    environment,
+    revenueSummaryRouteQuery,
+    { input: filters },
+    { signal: request.signal },
+  );
+  const ledgerQuery = preloadAttributionLedger(environment, filters, request.signal).catch(
+    (reason: unknown) =>
+      recoverRouteLoaderError(reason, "Failed to preload attribution ledger route query.", null),
+  );
 
-  if (summaryResult.status === "rejected") {
+  try {
+    const query = await summaryQuery;
+
+    return {
+      status: "ready",
+      filters,
+      ledgerQuery,
+      query,
+    };
+  } catch (reason) {
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
-      summaryResult.reason,
+      reason,
       "Failed to preload revenue summary route query.",
       {
         status: "error",
@@ -85,20 +98,6 @@ export async function revenueSummaryLoader({
       },
     );
   }
-
-  return {
-    status: "ready",
-    filters,
-    ledgerQuery:
-      ledgerResult.status === "fulfilled"
-        ? ledgerResult.value
-        : recoverRouteLoaderError(
-            ledgerResult.reason,
-            "Failed to preload attribution ledger route query.",
-            null,
-          ),
-    query: summaryResult.value,
-  };
 }
 
 function preloadAttributionLedger(

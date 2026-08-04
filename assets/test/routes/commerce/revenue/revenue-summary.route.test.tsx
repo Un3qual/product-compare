@@ -437,6 +437,27 @@ test("revenue route keeps the summary visible when the ledger preload failed", (
   expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
 });
 
+test("revenue route renders the summary while the ledger preload is pending", async () => {
+  const ledgerPreload =
+    deferredPromise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> | null>();
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData({ currency: "USD" }),
+    ledgerQuery: ledgerPreload.promise,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
+  expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
+
+  await act(async () => {
+    ledgerPreload.resolve(ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR);
+  });
+
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
+});
+
 test("revenue route renders equal conversion references from different networks without key warnings", () => {
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
   const firstNode = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
@@ -913,4 +934,15 @@ function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
       (message.includes("Encountered two children with the same key") ||
         message.includes('Each child in a list should have a unique "key" prop')),
   );
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
 }

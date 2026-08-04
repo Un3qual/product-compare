@@ -1,5 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
-import { useLoaderData } from "react-router-dom";
+import { Await, useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import attributionLedgerRouteQuery, {
   type AttributionLedgerRouteQuery,
@@ -86,15 +86,29 @@ function RevenueSummaryPanel({
   return (
     <>
       <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
-      <AttributionLedgerBoundary query={ledgerQuery} />
+      <DeferredAttributionLedgerBoundary query={ledgerQuery} />
     </>
+  );
+}
+
+function DeferredAttributionLedgerBoundary({
+  query,
+}: {
+  query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+}) {
+  return (
+    <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+      <Await resolve={query} errorElement={<AttributionLedgerUnavailableFallback />}>
+        {(resolvedQuery) => <AttributionLedgerBoundary query={resolvedQuery} />}
+      </Await>
+    </Suspense>
   );
 }
 
 function AttributionLedgerBoundary({
   query,
 }: {
-  query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+  query: Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>;
 }) {
   if (!query) {
     return <AttributionLedgerUnavailableFallback />;
@@ -112,7 +126,9 @@ function AttributionLedgerBoundary({
 function AttributionLedgerPanel({
   query,
 }: {
-  query: NonNullable<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>;
+  query: NonNullable<
+    Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>
+  >;
 }) {
   const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
     attributionLedgerRouteQuery,

@@ -1,7 +1,10 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
-import { revenueSummaryLoader } from "../../../../src/routes/commerce/revenue/loader";
+import {
+  revenueSummaryLoader,
+  type RevenueSummaryLoaderData,
+} from "../../../../src/routes/commerce/revenue/loader";
 import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
@@ -61,14 +64,21 @@ test("revenueSummaryLoader normalizes supported network currency and date filter
 
   preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(ledgerDescriptor);
 
-  await expect(
-    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
+  const loaderData = await revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  );
+
+  expect(loaderData).toMatchObject({
     status: "ready",
     filters,
-    ledgerQuery: ledgerDescriptor,
     query: descriptor,
   });
+
+  if (loaderData.status !== "ready") {
+    throw new Error("Expected ready revenue summary loader data");
+  }
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
 
   expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
     1,
@@ -100,14 +110,21 @@ test("revenueSummaryLoader drops invalid scalar filters before preloading", asyn
 
   preloadRouteQueryMock.mockResolvedValueOnce(descriptor).mockResolvedValueOnce(ledgerDescriptor);
 
-  await expect(
-    revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
+  const loaderData = await revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  );
+
+  expect(loaderData).toMatchObject({
     status: "ready",
     filters,
-    ledgerQuery: ledgerDescriptor,
     query: descriptor,
   });
+
+  if (loaderData.status !== "ready") {
+    throw new Error("Expected ready revenue summary loader data");
+  }
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
 
   expect(preloadRouteQueryMock).toHaveBeenNthCalledWith(
     1,
@@ -206,17 +223,24 @@ test("revenueSummaryLoader keeps a successful summary when ledger preloading fai
     .mockRejectedValueOnce(ledgerError);
 
   try {
-    await expect(
-      revenueSummaryLoader(buildRevenueSummaryLoaderArgs({ environment, request })),
-    ).resolves.toEqual({
+    const loaderData = await revenueSummaryLoader(
+      buildRevenueSummaryLoaderArgs({ environment, request }),
+    );
+
+    expect(loaderData).toMatchObject({
       status: "ready",
       filters: {
         currency: "USD",
         network: "impact",
       },
       query: REVENUE_QUERY_DESCRIPTOR,
-      ledgerQuery: null,
     });
+
+    if (loaderData.status !== "ready") {
+      throw new Error("Expected ready revenue summary loader data");
+    }
+
+    await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toBeNull();
 
     expect(preloadRouteQueryMock).toHaveBeenCalledTimes(2);
     expect(consoleErrorSpy).toHaveBeenCalledWith(
@@ -226,6 +250,43 @@ test("revenueSummaryLoader keeps a successful summary when ledger preloading fai
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("revenueSummaryLoader returns the summary without waiting for the ledger preload", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request("https://app.example.test/commerce/revenue?currency=usd");
+  const ledgerPreload = deferredPromise<ReturnType<typeof attributionLedgerQueryDescriptor>>();
+  let loaderData: RevenueSummaryLoaderData | undefined;
+
+  preloadRouteQueryMock
+    .mockResolvedValueOnce(REVENUE_QUERY_DESCRIPTOR)
+    .mockImplementationOnce(() => ledgerPreload.promise);
+
+  const loaderResult = revenueSummaryLoader(
+    buildRevenueSummaryLoaderArgs({ environment, request }),
+  ).then((result) => {
+    loaderData = result;
+    return result;
+  });
+
+  await flushMicrotasks();
+
+  expect(loaderData).toMatchObject({
+    status: "ready",
+    query: REVENUE_QUERY_DESCRIPTOR,
+  });
+
+  if (loaderData?.status !== "ready") {
+    throw new Error("Expected the summary loader to resolve before the ledger preload");
+  }
+
+  expect(loaderData.ledgerQuery).toBeInstanceOf(Promise);
+
+  const ledgerDescriptor = attributionLedgerQueryDescriptor({ currency: "USD" });
+  ledgerPreload.resolve(ledgerDescriptor);
+
+  await expect(Promise.resolve(loaderData.ledgerQuery)).resolves.toEqual(ledgerDescriptor);
+  await expect(loaderResult).resolves.toBe(loaderData);
 });
 
 function buildRevenueSummaryLoaderArgs({
@@ -278,4 +339,21 @@ function attributionLedgerQueryDescriptor(input: {
       },
     },
   };
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}
+
+async function flushMicrotasks() {
+  for (let index = 0; index < 4; index += 1) {
+    await Promise.resolve();
+  }
 }
