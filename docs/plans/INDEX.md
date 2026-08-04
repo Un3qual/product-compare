@@ -12,6 +12,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
 - `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
+- `docs/superpowers/specs/2026-08-04-captured-numeric-evidence-constraints-design.md`
 
 ## Active Plan Catalog
 
@@ -532,6 +533,7 @@ batch and should not be recreated or promoted.
 | completed | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the former native-enum test depended on a hand-maintained column list. | Completed in `7efad083`; compiled schema reflection now checks every persisted `Ecto.Enum`, and PostgreSQL catalog validation rejects string-backed enum fields and closed-domain text constraints. |
 | promoted | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trust a request-context user snapshot while community moderation already serializes its write with role revocation. | Promoted to `docs/work/index.md`; one Accounts-owned transaction-required user-row lock, three domain adoption slices, and deterministic revocation-first/mutation-first tests form one independently reviewable authorization invariant. Operator reads remain outside the batch. |
 | promoted | Application JSON storage policy guard | The normalized snapshot and alert test still names only the two removed columns, while six legitimate persisted map fields define the current JSON boundary. | Promoted to `docs/work/index.md`; compiled schema reflection plus PostgreSQL catalog coverage can reject new opaque application dumps without banning raw evidence or explicitly open JSON contracts. |
+| promoted | Captured numeric evidence constraints | Source price, confidence, target, and percentage domains already have application or database enforcement, while immutable snapshot and alert copies lack equivalent PostgreSQL checks. | Promoted to `docs/work/index.md`; named constraints across the two copied-evidence migrations form one database-boundary invariant and remain path-disjoint from the active frontend disclosure batch. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
