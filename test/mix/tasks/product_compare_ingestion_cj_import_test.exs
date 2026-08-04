@@ -80,6 +80,8 @@ defmodule Mix.Tasks.ProductCompare.Ingestion.CjImportTest do
                   }} =
                    CjImport.run_import(
                      check_credentials: true,
+                     # Public test sentinel used to verify credential redaction.
+                     # skipcq: SCT-A000
                      api_token: "secret-token",
                      company_id: "1234567",
                      fetcher: flunking_fetcher
