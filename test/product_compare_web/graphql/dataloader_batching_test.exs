@@ -138,6 +138,7 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                  commerce_links: 1,
                  commerce_conversions: 1,
                  merchant_products: 1,
+                 # Click-session and conversion merchant associations are separate batches.
                  merchants: 2,
                  products: 1,
                  affiliate_programs: 1,

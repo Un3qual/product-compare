@@ -1,6 +1,9 @@
 defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   use ProductCompareWeb.ConnCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+
   alias ProductCompare.Affiliate
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -9,6 +12,21 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
 
   describe "GET /r/:click_id" do
+    test "does not load the signed-in user on an existing click redirect", %{conn: conn} do
+      user = AccountsFixtures.user_fixture()
+      commerce_link = commerce_link_fixture()
+      click_session = click_session_fixture(commerce_link)
+      signed_in_conn = log_in_user(conn, user)
+
+      {conn, queries} =
+        capture_select_queries(fn ->
+          get(signed_in_conn, "/r/#{click_session.click_id}")
+        end)
+
+      assert redirected_to(conn, 302) == commerce_link.destination_url
+      assert count_select_queries_targeting_table(queries, :users) == 0
+    end
+
     test "redirects known click ids to the commerce link destination", %{conn: conn} do
       commerce_link = commerce_link_fixture()
       click_session = click_session_fixture(commerce_link)
@@ -168,6 +186,21 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
                :id
              ) == 1
 
+      assert %CommerceClickSession{user_id: nil} = Repo.one(CommerceClickSession)
+    end
+
+    test "keeps a signed-in copied merchant product exit anonymous without a trusted origin", %{
+      conn: conn
+    } do
+      user = AccountsFixtures.user_fixture()
+      merchant_product = merchant_product_fixture(%{url: "https://merchant.example.com/direct"})
+
+      conn =
+        conn
+        |> log_in_user(user)
+        |> get(tracked_merchant_product_path(merchant_product))
+
+      assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
       assert %CommerceClickSession{user_id: nil} = Repo.one(CommerceClickSession)
     end
 

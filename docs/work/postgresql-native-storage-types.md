@@ -43,9 +43,8 @@ minimum, maximum, and whole-second checks. The only remaining
 `timestamp without time zone` columns belong to `oban_jobs`, `oban_peers`, and
 `schema_migrations`.
 
-The required full backend/frontend closeout evidence is recorded in
-`.superpowers/sdd/2026-08-03-postgresql-native-storage-types-implementation-plan/task-5-report.md`.
-The normal-concurrency backend gate passed 1,170 tests with 0 failures at
+The required full backend/frontend closeout evidence is summarized here. The
+normal-concurrency backend gate passed 1,170 tests with 0 failures at
 85.86% coverage; the frontend gate passed 1,520 tests and both client and SSR
 builds, with a 269,845-byte gzip initial bundle under its 300,000-byte budget.
 

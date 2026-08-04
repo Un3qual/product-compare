@@ -8,12 +8,12 @@ defmodule ProductCompare.CommerceAttributionTest do
   alias ProductCompare.CommerceAttribution.AwinAdapter
   alias ProductCompare.CommerceAttribution.CJAdapter
   alias ProductCompare.CommerceAttribution.ClickReference
+  alias ProductCompare.CommerceAttribution.Clicks.Destinations
   alias ProductCompare.CommerceAttribution.ImpactAdapter
   alias ProductCompare.CommerceAttribution.RakutenAdapter
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
-  alias ProductCompareSchemas.Affiliate.AffiliateNetwork
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
@@ -286,6 +286,17 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "track_outbound_click/1" do
+    test "preserves opaque query components while replacing the reserved click reference" do
+      click_id = Ecto.UUID.generate()
+
+      assert Destinations.put_public_click_reference(
+               "https://affiliate.example.com/awin?signature=A%2fb+%2B&flag&clickref=old&opaque=%7e#details",
+               "awin",
+               click_id
+             ) ==
+               "https://affiliate.example.com/awin?signature=A%2fb+%2B&flag&opaque=%7e&clickref=#{click_id}#details"
+    end
+
     test "decorates verified affiliate networks with their publisher click references" do
       network_matrix = [
         %{
@@ -1295,7 +1306,7 @@ defmodule ProductCompare.CommerceAttributionTest do
       merchant = merchant_fixture()
       product = SpecsFixtures.product_fixture()
       merchant_product = merchant_product_fixture(%{merchant: merchant, product: product})
-      affiliate_network = Repo.get_by!(AffiliateNetwork, code: "cj")
+      affiliate_network = affiliate_network_fixture(%{name: "CJ"})
 
       affiliate_program =
         affiliate_program_fixture(%{
@@ -1543,6 +1554,32 @@ defmodule ProductCompare.CommerceAttributionTest do
   end
 
   describe "provider publisher-reference updates" do
+    test "clears stale public click identity when a direct session update cannot resolve" do
+      commerce_link = commerce_link_fixture(%{network: "impact"})
+      click_session = click_session_fixture(commerce_link)
+
+      initial =
+        conversion_fixture(%{
+          click_session_id: click_session.id,
+          public_click_id: click_session.click_id,
+          reported_at: ~U[2026-05-20 12:00:00.000000Z]
+        })
+
+      assert {:ok, updated} =
+               CommerceAttribution.ingest_conversion(%{
+                 source_network: initial.source_network,
+                 network_conversion_ref: initial.network_conversion_ref,
+                 click_session_id: 9_223_372_036_854_775_807,
+                 status: initial.status,
+                 currency: initial.currency,
+                 reported_at: ~U[2026-05-21 12:00:00.000000Z]
+               })
+
+      assert updated.click_session_id == nil
+      assert updated.public_click_id == nil
+      assert updated.attribution_confidence == :unmatched
+    end
+
     test "clears malformed CJ, Awin, and Rakuten evidence on an independently blank update" do
       for %{provider: provider, ingest: ingest, reference_keys: reference_keys} <-
             adapter_click_reference_update_cases(),
@@ -2432,7 +2469,7 @@ defmodule ProductCompare.CommerceAttributionTest do
   defp adapter_commerce_link_fixture(merchant, "cj") do
     affiliate_program =
       affiliate_program_fixture(%{
-        affiliate_network: Repo.get_by!(AffiliateNetwork, code: "cj"),
+        affiliate_network: affiliate_network_fixture(%{name: "CJ"}),
         merchant: merchant
       })
 

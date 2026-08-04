@@ -100,10 +100,22 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Destinations do
 
   defp put_reserved_query_parameter(uri, parameter, reference) do
     query_pairs =
-      (uri.query || "")
-      |> URI.query_decoder()
-      |> Enum.reject(fn {key, _value} -> key == parameter end)
+      case uri.query do
+        query when is_binary(query) and query != "" -> String.split(query, "&", trim: false)
+        _missing_query -> []
+      end
+      |> Enum.reject(&reserved_query_component?(&1, parameter))
 
-    %{uri | query: URI.encode_query(query_pairs ++ [{parameter, reference}])}
+    reference_pair = parameter <> "=" <> URI.encode_www_form(reference)
+
+    %{uri | query: Enum.join(query_pairs ++ [reference_pair], "&")}
+  end
+
+  defp reserved_query_component?(component, parameter) do
+    raw_key = component |> String.split("=", parts: 2) |> hd()
+
+    URI.decode_www_form(raw_key) == parameter
+  rescue
+    ArgumentError -> false
   end
 end

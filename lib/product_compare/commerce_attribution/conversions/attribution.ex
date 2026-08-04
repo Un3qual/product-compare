@@ -93,6 +93,7 @@ defmodule ProductCompare.CommerceAttribution.Conversions.Attribution do
     if incoming_click_identifier?(attrs) do
       attrs
       |> Input.put_attr(:click_session_id, nil)
+      |> put_nil_if_missing(:public_click_id)
       |> put_nil_if_missing(:merchant_id)
       |> put_nil_if_missing(:affiliate_program_id)
       |> put_nil_if_missing(:product_id)

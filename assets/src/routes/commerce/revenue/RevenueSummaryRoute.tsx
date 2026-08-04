@@ -1,6 +1,9 @@
 import { Suspense, useEffect, useState } from "react";
 import { useLoaderData } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
+import attributionLedgerRouteQuery, {
+  type AttributionLedgerRouteQuery,
+} from "../../../__generated__/AttributionLedgerRouteQuery.graphql";
 import revenueSummaryRouteQuery, {
   type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
@@ -51,7 +54,7 @@ export function RevenueSummaryRoute() {
             <Suspense
               fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}
             >
-              <RevenueSummaryPanel query={loaderData.query} />
+              <RevenueSummaryPanel ledgerQuery={loaderData.ledgerQuery} query={loaderData.query} />
             </Suspense>
           </ResettableErrorBoundary>
         )}
@@ -61,8 +64,10 @@ export function RevenueSummaryRoute() {
 }
 
 function RevenueSummaryPanel({
+  ledgerQuery,
   query,
 }: {
+  ledgerQuery: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
@@ -81,18 +86,58 @@ function RevenueSummaryPanel({
   return (
     <>
       <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
-      <AttributionLedger
-        fragmentRef={data}
-        key={relayRouteQueryDescriptorIdentity(query)}
-      />
+      <AttributionLedgerBoundary query={ledgerQuery} />
     </>
   );
+}
+
+function AttributionLedgerBoundary({
+  query,
+}: {
+  query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+}) {
+  if (!query) {
+    return <AttributionLedgerUnavailableFallback />;
+  }
+
+  return (
+    <ResettableErrorBoundary fallback={<AttributionLedgerUnavailableFallback />} resetToken={query}>
+      <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+        <AttributionLedgerPanel query={query} />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
+}
+
+function AttributionLedgerPanel({
+  query,
+}: {
+  query: NonNullable<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>;
+}) {
+  const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
+    attributionLedgerRouteQuery,
+    query,
+  );
+  const data = usePreloadedQuery<AttributionLedgerRouteQuery>(
+    attributionLedgerRouteQuery,
+    queryRef,
+  );
+
+  return <AttributionLedger fragmentRef={data} key={relayRouteQueryDescriptorIdentity(query)} />;
 }
 
 function RevenueSummaryUnavailableFallback() {
   return (
     <section role="alert">
       <p>Revenue summary unavailable.</p>
+    </section>
+  );
+}
+
+function AttributionLedgerUnavailableFallback() {
+  return (
+    <section role="alert">
+      <p>Attribution ledger unavailable.</p>
     </section>
   );
 }

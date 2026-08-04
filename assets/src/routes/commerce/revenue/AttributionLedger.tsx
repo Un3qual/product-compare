@@ -106,15 +106,9 @@ export function AttributionLedger({
         <p>No attribution clicks match these filters.</p>
       ) : (
         <div {...props(styles.scroll)}>
-          <table {...props(styles.table)}>
+          <table aria-labelledby="attribution-ledger-heading" {...props(styles.table)}>
             <thead>
-              <tr>
-                <th scope="col">Click</th>
-                <th scope="col">Identity</th>
-                <th scope="col">Request diagnostics</th>
-                <th scope="col">Commerce</th>
-                <th scope="col">Matched conversions</th>
-              </tr>
+              <AttributionLedgerHeader />
             </thead>
             <tbody>
               {clicks.map((click) => (
@@ -131,6 +125,18 @@ export function AttributionLedger({
         onLoadMore={loadMore}
       />
     </section>
+  );
+}
+
+function AttributionLedgerHeader() {
+  return (
+    <tr>
+      <th scope="col">Click</th>
+      <th scope="col">Identity</th>
+      <th scope="col">Request diagnostics</th>
+      <th scope="col">Commerce</th>
+      <th scope="col">Matched conversions</th>
+    </tr>
   );
 }
 
@@ -170,20 +176,7 @@ function AttributionLedgerRow({ click }: { click: AttributionClick }) {
   return (
     <tr {...props(styles.row)}>
       <td {...props(styles.cell)}>
-        <dl {...props(styles.details)}>
-          <dt>Click ID</dt>
-          <dd>
-            <code>{click.clickId}</code>
-          </dd>
-          <dt>Created</dt>
-          <dd>
-            <time dateTime={click.insertedAt}>{formatProductDateTimeLabel(click.insertedAt)}</time>
-          </dd>
-          <dt>Source</dt>
-          <dd>{formatLedgerEnum(click.sourceSurface)}</dd>
-          <dt>Link type</dt>
-          <dd>{formatLedgerEnum(click.linkType)}</dd>
-        </dl>
+        <AttributionClickDetails click={click} />
       </td>
       <td {...props(styles.cell)}>
         <AttributionIdentity click={click} />
@@ -234,6 +227,25 @@ function AttributionLedgerRow({ click }: { click: AttributionClick }) {
   );
 }
 
+function AttributionClickDetails({ click }: { click: AttributionClick }) {
+  return (
+    <dl {...props(styles.details)}>
+      <dt>Click ID</dt>
+      <dd>
+        <code>{click.clickId}</code>
+      </dd>
+      <dt>Created</dt>
+      <dd>
+        <time dateTime={click.insertedAt}>{formatProductDateTimeLabel(click.insertedAt)}</time>
+      </dd>
+      <dt>Source</dt>
+      <dd>{formatLedgerEnum(click.sourceSurface)}</dd>
+      <dt>Link type</dt>
+      <dd>{formatLedgerEnum(click.linkType)}</dd>
+    </dl>
+  );
+}
+
 function AttributionIdentity({ click }: { click: AttributionClick }) {
   if (click.userId) {
     return (
@@ -261,56 +273,67 @@ function AttributionConversionList({
   return (
     <ul aria-label="Matched conversions" {...props(styles.conversionList)}>
       {conversions.map((conversion) => (
-        <li key={conversion.networkConversionRef}>
-          <dl {...props(styles.details)}>
-            <dt>Conversion reference</dt>
-            <dd>{conversion.networkConversionRef}</dd>
-            <dt>Order</dt>
-            <dd>Order: {formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</dd>
-            <dt>Commission</dt>
-            <dd>
-              Commission: {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
-            </dd>
-            <dt>Status</dt>
-            <dd>Status: {formatLedgerEnum(conversion.status)}</dd>
-            <dt>Attribution</dt>
-            <dd>Attribution: {formatLedgerEnum(conversion.attributionConfidence)}</dd>
-            <dt>Conversion merchant</dt>
-            <dd>
-              {conversion.merchantName ?? "No merchant"}
-              {conversion.merchantId ? ` (${conversion.merchantId})` : ""}
-            </dd>
-            <dt>Conversion product</dt>
-            <dd>
-              {conversion.productName ?? "No product"}
-              {conversion.productId ? ` (${conversion.productId})` : ""}
-            </dd>
-            <dt>Conversion network</dt>
-            <dd>
-              {conversion.affiliateNetworkName ?? "No affiliate network"}
-              {conversion.affiliateNetworkCode ? ` (${conversion.affiliateNetworkCode})` : ""}
-              {conversion.affiliateNetworkId ? ` [${conversion.affiliateNetworkId}]` : ""}
-            </dd>
-            <dt>Purchased</dt>
-            <dd>
-              {conversion.purchasedAt ? (
-                <time dateTime={conversion.purchasedAt}>
-                  {formatProductDateTimeLabel(conversion.purchasedAt)}
-                </time>
-              ) : (
-                "Not recorded"
-              )}
-            </dd>
-            <dt>Reported</dt>
-            <dd>
-              <time dateTime={conversion.reportedAt}>
-                {formatProductDateTimeLabel(conversion.reportedAt)}
-              </time>
-            </dd>
-          </dl>
-        </li>
+        <AttributionConversion
+          conversion={conversion}
+          key={`${conversion.affiliateNetworkId}:${conversion.networkConversionRef}`}
+        />
       ))}
     </ul>
+  );
+}
+
+type AttributionConversionData = AttributionClick["matchedConversions"][number];
+
+function AttributionConversion({ conversion }: { conversion: AttributionConversionData }) {
+  return (
+    <li>
+      <dl {...props(styles.details)}>
+        <dt>Conversion reference</dt>
+        <dd>{conversion.networkConversionRef}</dd>
+        <dt>Order</dt>
+        <dd>Order: {formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</dd>
+        <dt>Commission</dt>
+        <dd>
+          Commission: {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
+        </dd>
+        <dt>Status</dt>
+        <dd>Status: {formatLedgerEnum(conversion.status)}</dd>
+        <dt>Attribution</dt>
+        <dd>Attribution: {formatLedgerEnum(conversion.attributionConfidence)}</dd>
+        <dt>Conversion merchant</dt>
+        <dd>
+          {conversion.merchantName ?? "No merchant"}
+          {conversion.merchantId ? ` (${conversion.merchantId})` : ""}
+        </dd>
+        <dt>Conversion product</dt>
+        <dd>
+          {conversion.productName ?? "No product"}
+          {conversion.productId ? ` (${conversion.productId})` : ""}
+        </dd>
+        <dt>Conversion network</dt>
+        <dd>
+          {conversion.affiliateNetworkName ?? "No affiliate network"}
+          {conversion.affiliateNetworkCode ? ` (${conversion.affiliateNetworkCode})` : ""}
+          {conversion.affiliateNetworkId ? ` [${conversion.affiliateNetworkId}]` : ""}
+        </dd>
+        <dt>Purchased</dt>
+        <dd>
+          {conversion.purchasedAt ? (
+            <time dateTime={conversion.purchasedAt}>
+              {formatProductDateTimeLabel(conversion.purchasedAt)}
+            </time>
+          ) : (
+            "Not recorded"
+          )}
+        </dd>
+        <dt>Reported</dt>
+        <dd>
+          <time dateTime={conversion.reportedAt}>
+            {formatProductDateTimeLabel(conversion.reportedAt)}
+          </time>
+        </dd>
+      </dl>
+    </li>
   );
 }
 

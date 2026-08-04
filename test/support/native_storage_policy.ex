@@ -226,8 +226,6 @@ defmodule ProductCompare.TestSupport.NativeStoragePolicy do
 
   defp field_type(%{ecto_type: ecto_type}), do: ecto_type
 
-  defp field_type(%{schema: schema, field: field}), do: schema.__schema__(:type, field)
-
   @spec digest_storage_violations(
           [persisted_field()],
           %{{String.t(), String.t(), String.t()} => map()},

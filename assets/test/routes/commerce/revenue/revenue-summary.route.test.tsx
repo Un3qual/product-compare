@@ -3,6 +3,7 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { usePaginationFragment, usePreloadedQuery } from "react-relay";
+import type { AttributionLedgerRouteQuery$variables } from "../../../../src/__generated__/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
 import {
   type RelayRouteQueryDescriptor,
@@ -14,7 +15,10 @@ import {
   RevenueSummaryView,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
-import { buildRevenueDatePresetLinks } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+import {
+  ATTRIBUTION_LEDGER_PAGE_SIZE,
+  buildRevenueDatePresetLinks,
+} from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 const {
   useLoaderDataMock,
@@ -69,15 +73,31 @@ const REVENUE_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<RevenueSummaryRouteQue
     text: "query RevenueSummaryRouteQuery($input: RevenueSummaryInput) { revenueSummary(input: $input) { metrics { clicks } } }",
     variables: {
       input: null,
-      ledgerAfter: null,
-      ledgerFirst: 20,
     },
   },
 };
 
+const ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> =
+  {
+    __relayQuery: {
+      operationName: "AttributionLedgerRouteQuery",
+      text: "query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $after: String, $first: Int!) { commerceAttributionClicks(input: $input, after: $after, first: $first) { edges { cursor } } }",
+      variables: {
+        input: null,
+        after: null,
+        first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+      },
+    },
+  };
+
 const REVENUE_QUERY_REF = {
   dispose: vi.fn(),
   variables: REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables,
+};
+
+const ATTRIBUTION_LEDGER_QUERY_REF = {
+  dispose: vi.fn(),
+  variables: ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const UNSUPPRESSED_REVENUE_SUMMARY = {
@@ -162,8 +182,17 @@ beforeEach(() => {
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   REVENUE_QUERY_REF.dispose.mockReset();
-  mockedUseRoutePreloadedQuery.mockReturnValue(REVENUE_QUERY_REF as never);
-  mockedUsePreloadedQuery.mockReturnValue(UNSUPPRESSED_REVENUE_SUMMARY as never);
+  ATTRIBUTION_LEDGER_QUERY_REF.dispose.mockReset();
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) =>
+    descriptor.__relayQuery.operationName === "RevenueSummaryRouteQuery"
+      ? (REVENUE_QUERY_REF as never)
+      : (ATTRIBUTION_LEDGER_QUERY_REF as never),
+  );
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) =>
+    queryRef === REVENUE_QUERY_REF
+      ? (UNSUPPRESSED_REVENUE_SUMMARY as never)
+      : (ATTRIBUTION_LEDGER_PAGE as never),
+  );
   mockedUsePaginationFragment.mockReturnValue({
     data: ATTRIBUTION_LEDGER_PAGE,
     hasNext: true,
@@ -240,6 +269,7 @@ test("revenue route renders individual click, user, request, network, and conver
   expect(
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
   expect(screen.getByText("db8e90c9-c6f2-4f36-a67f-3324033ac114")).toBeInTheDocument();
   expect(screen.getByText("operator@example.test")).toBeInTheDocument();
   expect(screen.getByText("User ID: user-1")).toBeInTheDocument();
@@ -261,7 +291,7 @@ test("revenue route renders individual click, user, request, network, and conver
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
   expect(loadNext).toHaveBeenCalledWith(
-    20,
+    ATTRIBUTION_LEDGER_PAGE_SIZE,
     expect.objectContaining({ onComplete: expect.any(Function) }),
   );
 });
@@ -269,10 +299,7 @@ test("revenue route renders individual click, user, request, network, and conver
 test("revenue route surfaces attribution pagination failures and retries", () => {
   let attempt = 0;
   const loadNext = vi.fn(
-    (
-      _count: number,
-      options?: { onComplete?: (error: Error | null) => void },
-    ) => {
+    (_count: number, options?: { onComplete?: (error: Error | null) => void }) => {
       attempt += 1;
       options?.onComplete?.(attempt === 1 ? new Error("pagination failed") : null);
     },
@@ -290,11 +317,9 @@ test("revenue route surfaces attribution pagination failures and retries", () =>
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
-  expect(screen.getByRole("alert")).toHaveTextContent(
-    "Unable to load more attribution clicks.",
-  );
+  expect(screen.getByRole("alert")).toHaveTextContent("Unable to load more attribution clicks.");
   expect(loadNext).toHaveBeenLastCalledWith(
-    20,
+    ATTRIBUTION_LEDGER_PAGE_SIZE,
     expect.objectContaining({ onComplete: expect.any(Function) }),
   );
 
@@ -302,17 +327,13 @@ test("revenue route surfaces attribution pagination failures and retries", () =>
 
   expect(loadNext).toHaveBeenCalledTimes(2);
   expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Load more attribution clicks" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Load more attribution clicks" })).toBeInTheDocument();
 });
 
 test("revenue route resets attribution pagination errors when filters change", () => {
   const loadNext = vi.fn(
-    (
-      _count: number,
-      options?: { onComplete?: (error: Error | null) => void },
-    ) => options?.onComplete?.(new Error("pagination failed")),
+    (_count: number, options?: { onComplete?: (error: Error | null) => void }) =>
+      options?.onComplete?.(new Error("pagination failed")),
   );
   let loaderData = buildReadyLoaderData({ currency: "USD", network: "impact" });
   mockedUseLoaderData.mockImplementation(() => loaderData);
@@ -332,19 +353,7 @@ test("revenue route resets attribution pagination errors when filters change", (
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
   expect(screen.getByText("Unable to load more attribution clicks.")).toBeInTheDocument();
 
-  loaderData = {
-    ...buildReadyLoaderData({ currency: "EUR", network: "impact" }),
-    query: {
-      ...REVENUE_QUERY_DESCRIPTOR,
-      __relayQuery: {
-        ...REVENUE_QUERY_DESCRIPTOR.__relayQuery,
-        variables: {
-          ...REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables,
-          input: { currency: "EUR", network: "impact" },
-        },
-      },
-    },
-  };
+  loaderData = buildReadyLoaderData({ currency: "EUR", network: "impact" });
   mockedUsePaginationFragment.mockReturnValue({
     data: ATTRIBUTION_LEDGER_PAGE,
     hasNext: true,
@@ -359,9 +368,7 @@ test("revenue route resets attribution pagination errors when filters change", (
   );
 
   expect(screen.queryByText("Unable to load more attribution clicks.")).not.toBeInTheDocument();
-  expect(
-    screen.getByRole("button", { name: "Load more attribution clicks" }),
-  ).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Load more attribution clicks" })).toBeInTheDocument();
 });
 
 test("revenue route distinguishes an anonymous click and an empty ledger", () => {
@@ -416,6 +423,67 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
   );
 
   expect(screen.getByText("No attribution clicks match these filters.")).toBeInTheDocument();
+});
+
+test("revenue route keeps the summary visible when the ledger preload failed", () => {
+  mockedUseLoaderData.mockReturnValue({
+    ...buildReadyLoaderData({ currency: "USD" }),
+    ledgerQuery: null,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
+});
+
+test("revenue route renders equal conversion references from different networks without key warnings", () => {
+  const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const firstNode = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const firstConversion = firstNode.matchedConversions[0];
+
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          {
+            cursor: "duplicate-conversion-ref",
+            node: {
+              ...firstNode,
+              matchedConversions: [
+                firstConversion,
+                {
+                  ...firstConversion,
+                  affiliateNetworkCode: "awin",
+                  affiliateNetworkId: "conversion-network-2",
+                  affiliateNetworkName: "Second Conversion Network",
+                },
+              ],
+            },
+          },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  try {
+    renderRevenueSummaryRoute();
+
+    expect(
+      screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+    ).toBeVisible();
+    expect(
+      screen.getByText("Second Conversion Network (awin) [conversion-network-2]"),
+    ).toBeVisible();
+    expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
+  } finally {
+    consoleErrorSpy.mockRestore();
+  }
 });
 
 test("revenue route renders one-conversion metrics without hidden-metrics copy", () => {
@@ -817,6 +885,32 @@ function buildReadyLoaderData(
   return {
     status: "ready",
     filters,
-    query: REVENUE_QUERY_DESCRIPTOR,
+    query: {
+      ...REVENUE_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...REVENUE_QUERY_DESCRIPTOR.__relayQuery,
+        variables: { input: filters },
+      },
+    },
+    ledgerQuery: {
+      ...ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR,
+      __relayQuery: {
+        ...ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery,
+        variables: {
+          input: filters,
+          after: null,
+          first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+        },
+      },
+    },
   } satisfies RevenueSummaryLoaderData;
+}
+
+function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
+  return consoleErrorSpy.mock.calls.filter(
+    ([message]: unknown[]) =>
+      typeof message === "string" &&
+      (message.includes("Encountered two children with the same key") ||
+        message.includes('Each child in a list should have a unique "key" prop')),
+  );
 }

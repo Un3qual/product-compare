@@ -11,7 +11,7 @@ defmodule ProductCompareWeb.Router do
 
   pipeline :api_session do
     plug :fetch_session
-    plug ProductCompareWeb.Plugs.FetchCurrentUser
+    plug ProductCompareWeb.Plugs.FetchCurrentUser, same_origin_only: true
   end
 
   pipeline :graphql_session do
@@ -43,6 +43,9 @@ defmodule ProductCompareWeb.Router do
     pipe_through [:api_session]
 
     get "/merchant-product", CommerceRedirectController, :merchant_product
+  end
+
+  scope "/r", ProductCompareWeb do
     get "/:click_id", CommerceRedirectController, :show
   end
 

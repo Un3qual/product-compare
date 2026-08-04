@@ -96,7 +96,7 @@ defmodule ProductCompare.Repo.ReferenceCodeCodecParityTest do
   defp assert_standard_recognition(code, :territory, type) do
     normalized_input = String.downcase(code)
 
-    assert {:ok, code} == ReferenceData.canonical_territory(normalized_input)
+    assert {:ok, code} == ReferenceData.canonical_territory(code)
     assert {:ok, code} == Ecto.Type.cast(type, normalized_input)
   end
 

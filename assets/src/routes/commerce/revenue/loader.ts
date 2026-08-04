@@ -1,4 +1,8 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
+import type { Environment } from "relay-runtime";
+import attributionLedgerRouteQuery, {
+  type AttributionLedgerRouteQuery,
+} from "../../../__generated__/AttributionLedgerRouteQuery.graphql";
 import revenueSummaryRouteQuery, {
   type RevenueSummaryRouteQuery,
 } from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
@@ -24,6 +28,7 @@ export type RevenueSummaryLoaderData =
   | {
       status: "ready";
       filters: RevenueSummaryFilters;
+      ledgerQuery: RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null;
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | {
@@ -60,24 +65,19 @@ export async function revenueSummaryLoader({
     };
   }
 
-  try {
-    return {
-      status: "ready",
-      filters,
-      query: await preloadRouteQuery<RevenueSummaryRouteQuery>(
-        environment,
-        revenueSummaryRouteQuery,
-        {
-          input: filters,
-          ledgerAfter: null,
-          ledgerFirst: ATTRIBUTION_LEDGER_PAGE_SIZE,
-        },
-        { signal: request.signal },
-      ),
-    };
-  } catch (error) {
+  const [summaryResult, ledgerResult] = await Promise.allSettled([
+    preloadRouteQuery<RevenueSummaryRouteQuery>(
+      environment,
+      revenueSummaryRouteQuery,
+      { input: filters },
+      { signal: request.signal },
+    ),
+    preloadAttributionLedger(environment, filters, request.signal),
+  ]);
+
+  if (summaryResult.status === "rejected") {
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
-      error,
+      summaryResult.reason,
       "Failed to preload revenue summary route query.",
       {
         status: "error",
@@ -85,6 +85,37 @@ export async function revenueSummaryLoader({
       },
     );
   }
+
+  return {
+    status: "ready",
+    filters,
+    ledgerQuery:
+      ledgerResult.status === "fulfilled"
+        ? ledgerResult.value
+        : recoverRouteLoaderError(
+            ledgerResult.reason,
+            "Failed to preload attribution ledger route query.",
+            null,
+          ),
+    query: summaryResult.value,
+  };
+}
+
+function preloadAttributionLedger(
+  environment: Environment,
+  filters: RevenueSummaryFilters,
+  signal: AbortSignal,
+) {
+  return preloadRouteQuery<AttributionLedgerRouteQuery>(
+    environment,
+    attributionLedgerRouteQuery,
+    {
+      input: filters,
+      after: null,
+      first: ATTRIBUTION_LEDGER_PAGE_SIZE,
+    },
+    { signal },
+  );
 }
 
 export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {

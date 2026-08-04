@@ -49,7 +49,9 @@ defmodule ProductCompare.Repo.Migrations.AddCommunityWriteControls do
            )
 
     create constraint(:community_write_windows, :community_write_windows_hour_check,
-             check: "date_trunc('hour', window_started_at) = window_started_at"
+             check:
+               "date_trunc('hour', window_started_at AT TIME ZONE 'UTC') = " <>
+                 "window_started_at AT TIME ZONE 'UTC'"
            )
   end
 
