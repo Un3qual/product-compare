@@ -444,7 +444,27 @@ test("delete pending and failure feedback stay on the affected watch row", async
 
   fireEvent.click(firstButton);
 
+  expect(commitMutationMock).not.toHaveBeenCalled();
+  const deleteDialog = screen.getByRole("alertdialog", { name: "Delete this price watch?" });
+  expect(deleteDialog).toHaveTextContent(
+    "Deleting the price watch for First watch permanently stops its alerts.",
+  );
+  fireEvent.click(within(deleteDialog).getByRole("button", { name: "Cancel" }));
+  expect(commitMutationMock).not.toHaveBeenCalled();
+  await waitFor(() => expect(firstButton).toHaveFocus());
+
+  fireEvent.click(firstButton);
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Delete this price watch?" })).getByRole(
+      "button",
+      { name: "Delete price watch" },
+    ),
+  );
+
   await waitFor(() => expect(commitMutationMock).toHaveBeenCalledTimes(1));
+  expect(commitMutationMock).toHaveBeenCalledWith(
+    expect.objectContaining({ variables: { id: "watch-one" } }),
+  );
   expect(firstButton).toBeDisabled();
   expect(secondButton).not.toBeDisabled();
 

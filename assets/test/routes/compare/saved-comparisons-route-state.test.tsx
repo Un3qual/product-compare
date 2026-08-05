@@ -100,6 +100,15 @@ beforeEach(() => {
   mockedUseRoutePreloadedQuery.mockReturnValue(SAVED_SET_QUERY_REF as never);
 });
 
+function confirmSavedComparisonDeletion() {
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
+      "button",
+      { name: "Delete comparison" }
+    )
+  );
+}
+
 const buildReadyLoaderData = () => {
   return {
     status: "ready" as const,
@@ -198,6 +207,49 @@ test("saved comparison presentation disables a pending row deletion", () => {
   expect(onDelete).not.toHaveBeenCalled();
 });
 
+test("saved comparison presentation requires confirmation before deleting the selected set", async () => {
+  const onDelete = vi.fn();
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonSetList
+        actions={{
+          onDelete,
+          onOpenComparison: () => "/compare?slug=chair&slug=desk",
+          pendingDeleteIds: new Set()
+        }}
+        controls={{
+          filterText: "",
+          onFilterTextChange: vi.fn(),
+          onSortModeChange: vi.fn(),
+          sortMode: "current"
+        }}
+        pagination={{ firstHref: null, nextHref: null }}
+        savedSets={[buildSavedSet()]}
+      />
+    </MemoryRouter>
+  );
+
+  const deleteTrigger = screen.getByRole("button", { name: "Delete comparison" });
+  fireEvent.click(deleteTrigger);
+
+  expect(onDelete).not.toHaveBeenCalled();
+  const deleteDialog = screen.getByRole("alertdialog", {
+    name: "Delete this saved comparison?"
+  });
+  expect(deleteDialog).toHaveTextContent(
+    "Deleting Desk setup permanently removes this saved comparison."
+  );
+  fireEvent.click(within(deleteDialog).getByRole("button", { name: "Cancel" }));
+  expect(onDelete).not.toHaveBeenCalled();
+  await waitFor(() => expect(deleteTrigger).toHaveFocus());
+
+  fireEvent.click(deleteTrigger);
+  confirmSavedComparisonDeletion();
+  expect(onDelete).toHaveBeenCalledTimes(1);
+  expect(onDelete).toHaveBeenCalledWith("saved-set-1");
+});
+
 test("saved comparison presentation omits the data list when no records are visible", () => {
   render(
     <MemoryRouter>
@@ -244,6 +296,7 @@ test("saved comparisons route ignores duplicate delete clicks for the same row",
   expect(deleteButton).toHaveAttribute("data-tone", "danger");
 
   fireEvent.click(deleteButton);
+  confirmSavedComparisonDeletion();
   fireEvent.click(deleteButton);
 
   await waitFor(() => {
@@ -471,6 +524,7 @@ test("saved comparisons route keeps row actions scoped when sorting changes", as
   );
 
   fireEvent.click(within(alphaActions).getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commits).toHaveLength(1);
@@ -505,6 +559,7 @@ test("saved comparisons route announces deletion when deleting the last set", as
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -598,7 +653,9 @@ test("saved comparisons route clears stale delete errors when a later delete suc
   const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
 
   fireEvent.click(deleteButtons[0]);
+  confirmSavedComparisonDeletion();
   fireEvent.click(deleteButtons[1]);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commits).toHaveLength(2);
@@ -644,6 +701,7 @@ test("saved comparisons route submits the saved-set ID as Relay mutation variabl
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -680,6 +738,7 @@ test("saved comparisons route keeps the set visible when the Relay mutation retu
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -1020,6 +1079,7 @@ test("saved comparisons route preserves pending delete state when the filter cha
   fireEvent.change(filterInput, { target: { value: "desk" } });
   const [savedSetDeleteButton] = screen.getAllByRole("button", { name: "Delete comparison" });
   fireEvent.click(savedSetDeleteButton);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commits).toHaveLength(1);
@@ -1082,6 +1142,7 @@ test("saved comparisons route keeps delete errors visible when the filter change
 
   fireEvent.change(filterInput, { target: { value: "desk setup" } });
   fireEvent.click(deleteButton);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
@@ -1107,6 +1168,7 @@ test("saved comparisons route keeps the set visible when delete completes with t
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
@@ -1130,6 +1192,7 @@ test("saved comparisons route reports Relay mutation network failures", async ()
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(

@@ -1,5 +1,7 @@
 # Destructive Action Confirmation Implementation Plan
 
+**Status:** complete
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Require an explicit, accessible confirmation before four currently one-click irreversible account and comparison actions invoke their existing GraphQL mutations.
@@ -42,7 +44,7 @@
   closes on cancel or confirm and calls `onConfirm` only from the explicit
   danger action.
 
-- [ ] **Step 1: Add the failing dialog behavior tests**
+- [x] **Step 1: Add the failing dialog behavior tests**
 
 Render a trigger named `Revoke access`, title `Revoke API token?`, description
 `Existing integrations will stop working.`, cancel action `Cancel`, and confirm
@@ -50,7 +52,7 @@ action `Revoke token`. Assert opening exposes one `alertdialog` without calling
 `onConfirm`, cancel closes it and restores focus to the trigger, and reopening
 then confirming calls `onConfirm` exactly once.
 
-- [ ] **Step 2: Run the dialog test and verify RED**
+- [x] **Step 2: Run the dialog test and verify RED**
 
 ```bash
 cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx
@@ -58,7 +60,7 @@ cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx
 
 Expected: FAIL because `DestructiveActionDialog` does not exist.
 
-- [ ] **Step 3: Add the direct dependency and minimal component**
+- [x] **Step 3: Add the direct dependency and minimal component**
 
 Add `@radix-ui/react-alert-dialog` at the lockfile's existing `1.1.23` version.
 Implement this public shape:
@@ -79,7 +81,7 @@ Compose Radix `Root`, `Trigger`, `Portal`, `Overlay`, `Content`, `Title`,
 and danger confirmation variants. Keep all overlay/content/action styling in
 this file with StyleX.
 
-- [ ] **Step 4: Run the dialog test and verify GREEN**
+- [x] **Step 4: Run the dialog test and verify GREEN**
 
 ```bash
 cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx
@@ -88,7 +90,7 @@ cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx
 Expected: PASS with open, cancel, focus-restoration, and single-confirm
 behavior observed through the real component.
 
-- [ ] **Step 5: Commit the shared boundary**
+- [x] **Step 5: Commit the shared boundary**
 
 ```bash
 git add assets/package.json assets/pnpm-lock.yaml assets/src/ui/components/overlays/DestructiveActionDialog.tsx assets/test/ui/destructive-action-dialog.test.tsx
@@ -105,9 +107,15 @@ git commit -m "feat: add destructive action dialog"
 - Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
 - Modify: `assets/test/routes/compare/comparison-snapshots.test.tsx`
 - Modify: `assets/test/routes/compare/saved-comparisons-route-state.test.tsx`
+- Modify: `assets/test/routes/compare/compare-relay-migration.test.tsx`
+- Modify: `assets/test/routes/compare/compare.route.test.tsx`
 - Modify: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
 - Modify: `assets/test/routes/account/alerts/alerts.route.test.tsx`
 - Modify: `docs/work/frontend-destructive-action-confirmation.md`
+- Modify: `docs/work/index.md`
+- Modify: `docs/plans/INDEX.md`
+- Modify: `docs/plans/2026-07-31-work-index-history.md`
+- Modify: `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`
 
 **Interfaces:**
 
@@ -116,7 +124,7 @@ git commit -m "feat: add destructive action dialog"
 - Produces: four labeled cancel/confirm boundaries that call the same existing
   callbacks with the same snapshot, saved-set ID, token ID, or watch value.
 
-- [ ] **Step 1: Add failing route-level confirmation tests**
+- [x] **Step 1: Add failing route-level confirmation tests**
 
 For each surface, click the existing danger trigger and assert the relevant
 callback or mutation has not run. Assert an entity-specific dialog title and
@@ -132,7 +140,7 @@ Use these titles and confirmation labels:
 | API token | `Revoke this API token?` | `Revoke token` |
 | Price watch | `Delete this price watch?` | `Delete price watch` |
 
-- [ ] **Step 2: Run the four route suites and verify RED**
+- [x] **Step 2: Run the four route suites and verify RED**
 
 ```bash
 cd assets && bun x vitest run test/routes/compare/comparison-snapshots.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/account/alerts/alerts.route.test.tsx
@@ -141,7 +149,7 @@ cd assets && bun x vitest run test/routes/compare/comparison-snapshots.test.tsx 
 Expected: FAIL because every current danger trigger invokes its callback on the
 first click and renders no confirmation dialog.
 
-- [ ] **Step 3: Wrap the existing danger actions**
+- [x] **Step 3: Wrap the existing danger actions**
 
 Import `DestructiveActionDialog` directly in each route owner. Pass the current
 danger button as `trigger`, derive consequence copy from the visible entity
@@ -149,7 +157,7 @@ label where useful, bind `disabled` to the existing row pending state, and move
 only the existing callback invocation into `onConfirm`. Do not move mutation
 state or GraphQL response handling into the dialog.
 
-- [ ] **Step 4: Run the focused confirmation suites and verify GREEN**
+- [x] **Step 4: Run the focused confirmation suites and verify GREEN**
 
 ```bash
 cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx test/routes/compare/comparison-snapshots.test.tsx test/routes/compare/saved-comparisons-route-state.test.tsx test/routes/account/api-tokens/api-tokens.route.test.tsx test/routes/account/alerts/alerts.route.test.tsx
@@ -158,7 +166,7 @@ cd assets && bun x vitest run test/ui/destructive-action-dialog.test.tsx test/ro
 Expected: all focused tests pass with explicit confirmation and unchanged
 post-confirm behavior.
 
-- [ ] **Step 5: Run full verification and close the lane**
+- [x] **Step 5: Run full verification and close the lane**
 
 ```bash
 cd assets && bun run check
@@ -167,12 +175,14 @@ git diff --check
 ```
 
 Record focused RED/GREEN evidence, frontend test count, client and SSR builds,
-bundle result, queue depth, and diff hygiene in the lane doc.
+bundle result, queue depth, and diff hygiene in the lane doc. Remove the
+completed row only while at least three other ready rows remain, update the
+candidate catalog and dated queue history, and mark this plan complete.
 
-- [ ] **Step 6: Commit the route adoption and evidence**
+- [x] **Step 6: Commit the route adoption and evidence**
 
 ```bash
-git add assets/src/routes/compare/ShareComparisonControl.tsx assets/src/routes/compare/SavedComparisonSetList.tsx assets/src/routes/account/api-tokens/ApiTokenItem.tsx assets/src/routes/account/alerts/AlertsRoute.tsx assets/test/routes/compare/comparison-snapshots.test.tsx assets/test/routes/compare/saved-comparisons-route-state.test.tsx assets/test/routes/account/api-tokens/api-tokens.route.test.tsx assets/test/routes/account/alerts/alerts.route.test.tsx docs/work/frontend-destructive-action-confirmation.md
+git add assets/src/routes/compare/ShareComparisonControl.tsx assets/src/routes/compare/SavedComparisonSetList.tsx assets/src/routes/account/api-tokens/ApiTokenItem.tsx assets/src/routes/account/alerts/AlertsRoute.tsx assets/test/routes/compare/comparison-snapshots.test.tsx assets/test/routes/compare/saved-comparisons-route-state.test.tsx assets/test/routes/compare/compare-relay-migration.test.tsx assets/test/routes/compare/compare.route.test.tsx assets/test/routes/account/api-tokens/api-tokens.route.test.tsx assets/test/routes/account/alerts/alerts.route.test.tsx docs/work/frontend-destructive-action-confirmation.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-31-work-index-history.md docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md
 git commit -m "feat: confirm irreversible frontend actions"
 ```
 

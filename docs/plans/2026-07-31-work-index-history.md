@@ -3183,3 +3183,22 @@ Verification passed 5 focused direct-write tests; six lifecycle commands passed
 commerce-attribution tests; and the complete backend passed 1,207 tests. Type,
 quality, formatting, queue validation with ready rows 19-21 intact, and diff
 hygiene also passed. Implementation commits were `2476a0dc` and `b0bd54cb`.
+
+## Completed 2026-08-04 Destructive Action Confirmation
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`
+
+One project-local Radix AlertDialog boundary now confirms public comparison-link
+revocation, saved-comparison deletion, API-token revocation, and price-watch
+deletion. Opening and canceling are inert, cancel restores trigger focus, and
+explicit confirmation invokes each unchanged selected-row callback once.
+Mutation submission, pending/error state, success handling, and concurrent-row
+ownership remain in the four route surfaces.
+
+Verification captured 22 expected RED failures across 95 route tests, then
+passed the shared-dialog and route GREEN set at 96/96 and the two broader saved-
+comparison integration suites at 118/118. The complete frontend passed 1,530
+tests in 106 files plus Relay, TypeScript, Oxc, Oxfmt, client and SSR builds, and
+the 268,764-byte gzip bundle contract. Queue validation passed after removing
+Batch 19 with ready rows 20-22 unchanged, and diff hygiene passed.

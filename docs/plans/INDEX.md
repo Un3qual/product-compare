@@ -803,6 +803,14 @@ them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
 
+- Destructive Action Confirmation:
+  `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`.
+  One Radix AlertDialog boundary now confirms public-link revocation,
+  saved-comparison deletion, API-token revocation, and price-watch deletion
+  while every route retains its existing row-scoped mutation state and outcome
+  handling; the lane doc retains RED/GREEN, focus, complete frontend, client,
+  SSR, bundle, queue-depth, and diff evidence.
+
 - Captured Numeric Evidence Constraints:
   `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`.
   Five named checks preserve source numeric domains across immutable comparison

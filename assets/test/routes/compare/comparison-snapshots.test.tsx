@@ -91,6 +91,15 @@ beforeEach(() => {
   });
 });
 
+function confirmPublicLinkRevocation() {
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Revoke this public link?" })).getByRole(
+      "button",
+      { name: "Revoke public link" },
+    ),
+  );
+}
+
 test("ShareComparisonControl publishes the ordered products and selected profile", async () => {
   render(
     <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
@@ -217,9 +226,22 @@ test("ShareComparisonControl revokes the just-published public link", async () =
       [],
     ),
   );
-  fireEvent.click(
-    await screen.findByRole("button", { name: "Revoke public link: Open public snapshot" }),
+  const revokeTrigger = await screen.findByRole("button", {
+    name: "Revoke public link: Open public snapshot",
+  });
+  fireEvent.click(revokeTrigger);
+
+  expect(revokeMutationMock).not.toHaveBeenCalled();
+  const revokeDialog = screen.getByRole("alertdialog", { name: "Revoke this public link?" });
+  expect(revokeDialog).toHaveTextContent(
+    "Revoking the public link for Open public snapshot will make the shared snapshot unavailable.",
   );
+  fireEvent.click(within(revokeDialog).getByRole("button", { name: "Cancel" }));
+  expect(revokeMutationMock).not.toHaveBeenCalled();
+  await waitFor(() => expect(revokeTrigger).toHaveFocus());
+
+  fireEvent.click(revokeTrigger);
+  confirmPublicLinkRevocation();
   await waitFor(() =>
     expect(revokeMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({ variables: { snapshotId: "snapshot-1" } }),
@@ -283,6 +305,7 @@ test("ShareComparisonControl manages snapshots discovered after a reload", async
     "/compare/shared/existing-token",
   );
   fireEvent.click(screen.getByRole("button", { name: "Revoke public link: Existing shortlist" }));
+  confirmPublicLinkRevocation();
 
   await waitFor(() =>
     expect(revokeMutationMock).toHaveBeenCalledWith(
@@ -370,6 +393,7 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
   });
 
   fireEvent.click(firstButton);
+  confirmPublicLinkRevocation();
 
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(1));
   expect(firstButton).toBeDisabled();
@@ -407,6 +431,7 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
   expect(secondButton).not.toBeDisabled();
 
   fireEvent.click(firstButton);
+  confirmPublicLinkRevocation();
   await waitFor(() => expect(revokeMutationMock).toHaveBeenCalledTimes(2));
 
   await act(() => {

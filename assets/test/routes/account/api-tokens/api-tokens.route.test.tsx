@@ -162,6 +162,15 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
+function confirmApiTokenRevocation() {
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Revoke this API token?" })).getByRole(
+      "button",
+      { name: "Revoke token" }
+    )
+  );
+}
+
 test.each([
   ["without an expiration", BUILD_BOT_TOKEN, true],
   ["before expiration", ACTIVE_TOKEN, true],
@@ -172,7 +181,7 @@ test.each([
   expect(apiTokenIsActive(token)).toBe(expected);
 });
 
-test("API token item presents token lifecycle details and delegates actions", () => {
+test("API token item presents token lifecycle details and delegates actions", async () => {
   const onRevoke = vi.fn();
   const onRotate = vi.fn();
   const view = render(
@@ -233,7 +242,21 @@ test("API token item presents token lifecycle details and delegates actions", ()
     </ul>
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  const revokeTrigger = screen.getByRole("button", { name: "Revoke token" });
+  fireEvent.click(revokeTrigger);
+
+  expect(onRevoke).not.toHaveBeenCalled();
+  const revokeDialog = screen.getByRole("alertdialog", { name: "Revoke this API token?" });
+  expect(revokeDialog).toHaveTextContent(
+    "Revoking CLI will stop integrations that use this API token."
+  );
+  fireEvent.click(within(revokeDialog).getByRole("button", { name: "Cancel" }));
+  expect(onRevoke).not.toHaveBeenCalled();
+  await waitFor(() => expect(revokeTrigger).toHaveFocus());
+
+  fireEvent.click(revokeTrigger);
+  confirmApiTokenRevocation();
+  expect(onRevoke).toHaveBeenCalledTimes(1);
   expect(onRevoke).toHaveBeenCalledWith(ACTIVE_TOKEN.id);
 
   const rotateForm = screen.getByRole("form", { name: "Rotate CLI API token" });
@@ -823,6 +846,7 @@ test("revoke token commits the selected token id and updates the row status", as
   renderApiTokensRoute();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledWith(
@@ -858,6 +882,7 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
   const rotateForms = screen.getAllByRole("form", { name: /Rotate .* API token/ });
 
   fireEvent.click(revokeButtons[0]);
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
@@ -876,6 +901,7 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
   expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
 
   fireEvent.click(revokeButtons[1]);
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(2);
@@ -912,6 +938,7 @@ test("revoke token clears the one-time token when revoke starts", async () => {
   expect(await screen.findByText(ONE_TIME_TOKEN_VALUE)).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
@@ -930,6 +957,7 @@ test("revoke token renders mutation payload errors", async () => {
   renderApiTokensRoute();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(1);
@@ -964,7 +992,9 @@ test("revoke token keeps concurrent row errors scoped to each token", async () =
 
   const revokeButtons = screen.getAllByRole("button", { name: "Revoke token" });
   fireEvent.click(revokeButtons[0]);
+  confirmApiTokenRevocation();
   fireEvent.click(revokeButtons[1]);
+  confirmApiTokenRevocation();
 
   await waitFor(() => {
     expect(commitRevokeMutationMock).toHaveBeenCalledTimes(2);
@@ -1014,6 +1044,7 @@ test("revoke token renders a generic alert for network errors", async () => {
   renderApiTokensRoute();
 
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
+  confirmApiTokenRevocation();
 
   expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
   expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();

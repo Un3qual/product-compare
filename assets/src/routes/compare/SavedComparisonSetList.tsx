@@ -5,6 +5,7 @@ import { DataList, DataListItem } from "../../ui/components/data/DataList";
 import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Pagination } from "../../ui/components/navigation/Pagination";
+import { DestructiveActionDialog } from "../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../ui/primitives/Button";
 import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
@@ -191,16 +192,18 @@ function SavedComparisonSetItem({
         <Button asChild variant="soft">
           <Link to={onOpenComparison(savedSet)}>Open comparison</Link>
         </Button>
-        <Button
+        <DestructiveActionDialog
+          confirmLabel="Delete comparison"
+          description={`Deleting ${savedSet.name} permanently removes this saved comparison.`}
           disabled={deletePending}
-          onClick={() => {
-            onDelete(savedSet.id);
-          }}
-          tone="danger"
-          type="button"
-        >
-          {deletePending ? "Deleting comparison..." : "Delete comparison"}
-        </Button>
+          onConfirm={() => onDelete(savedSet.id)}
+          title="Delete this saved comparison?"
+          trigger={
+            <Button disabled={deletePending} tone="danger" type="button">
+              {deletePending ? "Deleting comparison..." : "Delete comparison"}
+            </Button>
+          }
+        />
       </fieldset>
     </article>
   );

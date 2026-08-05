@@ -47,57 +47,6 @@ None.
 
 ## Ready Work
 
-### 19. Destructive Action Confirmation
-
-Status: ready
-Lane: Frontend interaction safety
-Plan: `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`
-Batch outcome: four currently one-click irreversible account and comparison
-actions require a labeled, cancelable Radix confirmation while their existing
-row-scoped mutation behavior remains unchanged.
-Next action: add failing shared-dialog and route tests proving open/cancel are
-inert and explicit confirmation invokes the selected action exactly once.
-Owned paths:
-
-- `assets/package.json`
-- `assets/pnpm-lock.yaml`
-- `assets/src/ui/components/overlays/DestructiveActionDialog.tsx`
-- `assets/test/ui/destructive-action-dialog.test.tsx`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/src/routes/compare/SavedComparisonSetList.tsx`
-- `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
-- `assets/src/routes/account/alerts/AlertsRoute.tsx`
-- affected comparison-snapshot, saved-comparison, API-token, and alert route
-  tests
-- `docs/work/frontend-destructive-action-confirmation.md`
-
-Internal slices:
-
-- Shared Radix AlertDialog confirmation boundary and focus contract.
-- Four entity-specific danger-action adoptions with inert cancel behavior.
-- Full frontend, SSR, bundle, queue, and diff verification.
-
-Prerequisites:
-
-- The Radix disclosure-control batch is complete and no active row owns the
-  four affected route consumers.
-- Existing row-scoped callbacks and pending/error/success state remain their
-  route owners' responsibility.
-- Community removal and API-token rotation remain outside this batch.
-
-Verification:
-
-- focused shared-dialog and four affected route suites
-- TypeScript, Oxc, Oxfmt, Relay validation, and complete frontend tests
-- Vite client and SSR builds plus bundle contract
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: every in-scope danger trigger opens a labeled Radix
-confirmation, cancel performs no mutation and restores focus, confirm invokes
-the unchanged selected-row action once, mutation state remains row-scoped, and
-all frontend gates pass.
-
 ### 20. Test Database Process Exclusivity
 
 Status: ready

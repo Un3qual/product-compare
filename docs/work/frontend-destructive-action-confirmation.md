@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P2
 - Design:
   `docs/superpowers/specs/2026-08-04-destructive-action-confirmation-design.md`
@@ -31,6 +31,19 @@ cancelable confirmation before their existing mutation begins.
   is already a multi-step replacement workflow; neither belongs in this batch.
 - The owned frontend paths are disjoint from ready backend rows 16-18.
 
+## Completion Evidence
+
+- One project-local `DestructiveActionDialog` now owns Radix AlertDialog
+  semantics, focus management, cancel, confirmation presentation, and StyleX.
+- Public-link revocation, saved-comparison deletion, API-token revocation, and
+  price-watch deletion import that component directly and pass their unchanged
+  selected snapshot, saved-set ID, token ID, or watch only from `onConfirm`.
+- The existing route owners still retain all mutation submission, row-scoped
+  pending and error state, success removal or relabeling, and concurrent-row
+  behavior.
+- Batch 19 is removed from the live queue after completion. Ready rows 20-22
+  remain unchanged, leaving the required three-row floor intact.
+
 ## Boundaries
 
 - Use one concrete `DestructiveActionDialog`; do not generalize mutation or
@@ -44,11 +57,20 @@ cancelable confirmation before their existing mutation begins.
 
 ## Verification
 
-- focused shared-dialog and four affected route suites
-- TypeScript, Oxc, Oxfmt, Relay validation, and the complete frontend test suite
-- Vite client and SSR builds plus bundle contract
-- `mix work_queue.validate`
-- `git diff --check`
+- RED: the four affected route suites ran 95 tests with 22 expected failures;
+  first clicks invoked the existing callbacks immediately and no alert dialog
+  existed.
+- GREEN: the shared-dialog and four route suites passed 96/96 tests. The two
+  broader saved-comparison integration suites then passed 118/118 after their
+  existing delete flows were updated to confirm explicitly.
+- Full frontend gate: Relay validated 55 reader, 53 normalization, and 54
+  operation-text documents; TypeScript and Oxc passed; Oxfmt checked 398 files;
+  and all 1,530 tests in 106 files passed.
+- Production builds passed with 1,082 transformed client modules and 250 SSR
+  modules. The bundle contract passed at 1,327,264 raw / 268,764 gzip bytes
+  against the 300,000-byte gzip budget.
+- `mix work_queue.validate` passed with ready rows 20-22 intact, and
+  `git diff --check` passed.
 
 ## Blocker Rule
 

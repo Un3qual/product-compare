@@ -1,6 +1,7 @@
 import { type FormEvent, useId, useRef } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
+import { DestructiveActionDialog } from "../../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
@@ -218,14 +219,18 @@ function ApiTokenActions({
         </form>
       ) : null}
       {actionPolicy.revoke.visible ? (
-        <Button
+        <DestructiveActionDialog
+          confirmLabel="Revoke token"
+          description={`Revoking ${displayLabel} will stop integrations that use this API token.`}
           disabled={actionPolicy.revoke.disabled}
-          onClick={() => onRevoke(token.id)}
-          tone="danger"
-          type="button"
-        >
-          {actionPolicy.revoke.copy}
-        </Button>
+          onConfirm={() => onRevoke(token.id)}
+          title="Revoke this API token?"
+          trigger={
+            <Button disabled={actionPolicy.revoke.disabled} tone="danger" type="button">
+              {actionPolicy.revoke.copy}
+            </Button>
+          }
+        />
       ) : null}
     </>
   );

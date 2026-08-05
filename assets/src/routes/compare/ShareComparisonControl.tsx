@@ -6,6 +6,7 @@ import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } fro
 import type { ComparisonSharingOperationsQuery } from "../../__generated__/ComparisonSharingOperationsQuery.graphql";
 import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { DestructiveActionDialog } from "../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../ui/primitives/Button";
 import { Checkbox } from "../../ui/primitives/Checkbox";
 import {
@@ -401,16 +402,24 @@ function PublishedSnapshots({
             return (
               <li key={snapshot.id} {...props(styles.listItem)}>
                 <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
-                <Button
-                  aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`}
+                <DestructiveActionDialog
+                  confirmLabel="Revoke public link"
+                  description={`Revoking the public link for ${comparisonSnapshotLabel(snapshot)} will make the shared snapshot unavailable.`}
                   disabled={revocation.disabled}
-                  onClick={() => onRevoke(snapshot)}
-                  tone="danger"
-                  type="button"
-                  variant="soft"
-                >
-                  {revocation.buttonCopy}
-                </Button>
+                  onConfirm={() => onRevoke(snapshot)}
+                  title="Revoke this public link?"
+                  trigger={
+                    <Button
+                      aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`}
+                      disabled={revocation.disabled}
+                      tone="danger"
+                      type="button"
+                      variant="soft"
+                    >
+                      {revocation.buttonCopy}
+                    </Button>
+                  }
+                />
                 {revocation.error ? <p role="alert">{revocation.error}</p> : null}
               </li>
             );

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
@@ -490,6 +490,12 @@ test("saved comparisons route deletes saved sets through a Relay mutation", asyn
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
+      "button",
+      { name: "Delete comparison" }
+    )
+  );
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
