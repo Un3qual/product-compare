@@ -15,6 +15,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-04-captured-numeric-evidence-constraints-design.md`
 - `docs/superpowers/specs/2026-08-04-destructive-action-confirmation-design.md`
 - `docs/superpowers/specs/2026-08-04-test-database-process-exclusivity-design.md`
+- `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
 
 ## Active Plan Catalog
 
@@ -538,6 +539,7 @@ batch and should not be recreated or promoted.
 | promoted | Captured numeric evidence constraints | Source price, confidence, target, and percentage domains already have application or database enforcement, while immutable snapshot and alert copies lack equivalent PostgreSQL checks. | Promoted to `docs/work/index.md`; named constraints across the two copied-evidence migrations form one database-boundary invariant and remain path-disjoint from the active frontend disclosure batch. |
 | promoted | Destructive action confirmation | Four danger-styled account and comparison controls currently invoke irreversible mutations on the first click while retaining correct row-scoped mutation state. | Promoted to `docs/work/index.md`; one Radix AlertDialog boundary covers snapshot revocation, saved-comparison deletion, API-token revocation, and price-watch deletion without absorbing route mutations. Community removal and token rotation remain outside the batch. |
 | promoted | Test database process exclusivity | Overlapping external `mix test` processes against the default database produced unrelated `40P01` deadlocks and a `40001` serialization failure, while isolated reruns passed. | Promoted to `docs/work/index.md`; one test-only PostgreSQL session advisory lock fails fast for accidental same-database overlap while preserving intentional `MIX_TEST_PARTITION` databases. |
+| promoted | Credential artifact storage constraints | Session and email tokens always store 32-byte SHA-256 digests, while API-token changesets already bound prefixes to 1 through 32 characters and labels to 120 characters; the live PostgreSQL catalog does not enforce those three exact boundaries. | Promoted to `docs/work/index.md`; one forward migration and focused direct-write suite enforce established account-artifact invariants without changing token generation, auth behavior, or product policy. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 

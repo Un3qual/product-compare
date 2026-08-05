@@ -194,6 +194,56 @@ runs, an accidental second process fails before test execution with actionable
 `MIX_TEST_PARTITION` guidance, normal serial and partitioned suites remain
 unchanged, and all backend gates pass.
 
+### 21. Credential Artifact Storage Constraints
+
+Status: ready
+Lane: Account credential storage integrity
+Plan: `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
+Batch outcome: PostgreSQL retains the fixed digest and display-metadata bounds
+of account credential artifacts even when a write bypasses application
+changesets.
+Next action: add failing direct-write tests for user-token digest bytes and
+API-token prefix and label lengths before adding the named forward constraints.
+Owned paths:
+
+- `priv/repo/migrations/20260804220000_enforce_credential_artifact_storage_constraints.exs`
+- `lib/product_compare_schemas/accounts/api_token.ex`
+- `lib/product_compare_schemas/accounts/user_session_token.ex`
+- `test/product_compare/repo/credential_artifact_storage_constraints_test.exs`
+- affected account auth, API-token, session-token schema, GraphQL auth/token,
+  node-query, and seed tests
+- `docs/work/credential-artifact-storage-constraints.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write digest and metadata-boundary characterization.
+- Named forward constraints and owning changeset mappings.
+- Account lifecycle parity and complete backend verification.
+
+Prerequisites:
+
+- Session, confirmation, and reset tokens continue to use 32-byte SHA-256
+  digests.
+- API-token prefixes and optional labels retain their current changeset bounds.
+- No active row owns account schemas, credential migrations, or account tests.
+
+Verification:
+
+- focused credential-artifact direct-write suite
+- affected account auth, API-token, session-token schema, GraphQL auth/token,
+  node-query, and seed suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects malformed credential digests and overlong
+API-token metadata, valid boundary values remain accepted, account behavior is
+unchanged, and all backend gates pass.
+
 ## Needs Decision Work
 
 None.
