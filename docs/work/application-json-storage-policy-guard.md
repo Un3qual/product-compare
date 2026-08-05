@@ -2,34 +2,43 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`
-- Last verified: 2026-07-30 against compiled Ecto schema declarations,
-  migration history, and the current application JSON storage test.
+- Last verified: 2026-08-04 after a clean test-database rebuild, focused and
+  owner-suite verification, and exact-head repository gates.
+- Implementation commits: `4fa16461`, `cdc6353b`, `6549d4e2`, and `a26b0e8f`.
 
-## Target Outcome
+## Batch Outcome
 
 Stable application-owned relational facts cannot regress into opaque JSON
 columns. Persisted JSON remains possible only for an explicitly classified
 raw, open-key, request-metadata, or JSON-typed value contract.
 
-## Ready Evidence
+## Completed Evidence
 
-- The repository currently has six persisted Ecto `:map` fields and matching
-  migration columns:
+- Compiled Ecto reflection now discovers every persisted `:map` field while
+  excluding virtual projections. PostgreSQL catalog reflection independently
+  discovers every application-owned `json`/`jsonb` column, and the policy
+  compares those inventories in both directions.
+- The six resulting contracts each have one narrow classification:
   - `commerce_links.campaign_params`
   - `commerce_conversions.raw_payload`
   - `ingestion_runs.query`
   - `merchant_feed_candidates.raw_metadata`
   - `product_attribute_claims.value_json`
   - `source_artifacts.raw_json`
-- `comparison_snapshots.payload` is now virtual and relationally hydrated.
-- `alert_events.fact_snapshot` is absent after typed alert-fact normalization.
-- The current policy test checks only those two removed columns. A new
-  application-owned JSON dump under any other name would escape the contract.
-- No persisted array-of-map field exists.
+- Exact framework exclusions cover only `oban_jobs.args` and `oban_jobs.meta`;
+  future JSON columns on framework tables remain subject to the default-deny
+  catalog policy.
+- Synthetic Ecto-only, catalog-only, matched-but-unclassified, renamed-source,
+  and framework-column regressions produce field-specific actionable errors.
+- `comparison_snapshots.payload` remains the sole virtual `:map` projection,
+  and direct regressions keep `comparison_snapshots.payload` and
+  `alert_events.fact_snapshot` absent from persisted storage.
+- Public GraphQL shapes and legitimate provider evidence, request metadata,
+  campaign parameters, and declared JSON specification values did not change.
 
 ## Boundaries
 
@@ -49,14 +58,27 @@ raw, open-key, request-metadata, or JSON-typed value contract.
 
 ## Verification
 
-- clean migrated test database
-- focused application JSON storage policy suite
-- comparison snapshot, alert, specification, ingestion, and
-  commerce-attribution suites
-- full backend test, type, quality, formatting, queue, and diff gates
+- `MIX_ENV=test mix ecto.reset`: dropped, recreated, and migrated only the test
+  database; exit `0`.
+- `mix test test/product_compare/repo/application_json_domain_storage_test.exs`:
+  7 tests, 0 failures after the reset and again on exact head.
+- Comparison snapshot owner paths: 15 tests, 0 failures.
+- Alert owner paths: 15 tests, 0 failures.
+- Specification owner paths: 68 tests, 0 failures.
+- Ingestion owner paths: 184 tests, 0 failures.
+- Commerce-attribution owner paths: 126 tests, 0 failures.
+- Exact-head `mix test`: 1,202 tests, 0 failures.
+- Exact-head `mix quality`: exit `0`; Credo found no issues, the clone budget
+  remained 3/3, cross-function smell detection found no issues, and Dialyzer
+  passed successfully.
+- Exact-head `mix typecheck` and `mix format --check-formatted`: exit `0` with
+  no output.
+- `mix work_queue.validate`: `work queue valid: 3 ready rows`.
+- `git diff --check`: exit `0` before closeout.
 
-## Blocker Rule
+## Concerns
 
-Stop and record the exact field if a current JSON column has a stable closed
-shape but converting it would require a new product or compatibility decision.
-Do not classify it as raw or open merely to make the guard pass.
+None. The initial quality review found two policy-helper refactoring issues;
+`a26b0e8f` repaired them without changing policy behavior, and fresh quality,
+full-test, focused-test, type, formatting, queue, and diff gates passed on that
+exact head.

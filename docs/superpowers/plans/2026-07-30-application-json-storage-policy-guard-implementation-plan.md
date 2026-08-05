@@ -30,36 +30,36 @@ fails by default until its open shape and ownership are reviewed.
 
 ## Task 1: Characterize The Current JSON Boundary
 
-- [ ] Prove the compiled schema inventory contains exactly six persisted
+- [x] Prove the compiled schema inventory contains exactly six persisted
   `:map` fields and one virtual comparison-snapshot projection.
-- [ ] Confirm PostgreSQL exposes the same six persisted columns as
+- [x] Confirm PostgreSQL exposes the same six persisted columns as
   `json`/`jsonb`.
-- [ ] Classify each current field as raw provider evidence, provider request
+- [x] Classify each current field as raw provider evidence, provider request
   metadata, open-key campaign metadata, or explicitly JSON-typed
   specification data.
 
 ## Task 2: Enforce The Storage Policy
 
-- [ ] Replace the two-column-only negative test with schema- and
+- [x] Replace the two-column-only negative test with schema- and
   catalog-reflected coverage of every persisted JSON field.
-- [ ] Require an explicit classification for each allowed
+- [x] Require an explicit classification for each allowed
   `{schema, field, table, column}` contract and reject unclassified JSON
   storage from either Ecto or PostgreSQL.
-- [ ] Retain direct regressions proving `comparison_snapshots.payload` and
+- [x] Retain direct regressions proving `comparison_snapshots.payload` and
   `alert_events.fact_snapshot` remain absent.
-- [ ] Emit field-specific failures that explain whether the drift came from
+- [x] Emit field-specific failures that explain whether the drift came from
   the schema inventory, database catalog, or policy classification.
 
 ## Task 3: Verify And Commit
 
-- [ ] Rebuild the test database and run the focused JSON storage policy suite.
-- [ ] Run the comparison snapshot, alert, specification, ingestion, and
+- [x] Rebuild the test database and run the focused JSON storage policy suite.
+- [x] Run the comparison snapshot, alert, specification, ingestion, and
   commerce-attribution suites that own allowed or formerly opaque JSON data.
-- [ ] Run the full backend test, type, quality, formatting, queue, and diff
+- [x] Run the full backend test, type, quality, formatting, queue, and diff
   gates.
-- [ ] Record exact evidence in
+- [x] Record exact evidence in
   `docs/work/application-json-storage-policy-guard.md`.
-- [ ] Commit with `test: enforce application json storage policy`.
+- [x] Commit with `test: enforce application json storage policy`.
 
 Exit condition: every persisted Ecto map field and PostgreSQL JSON column is
 automatically discovered and explicitly justified, stable application-owned

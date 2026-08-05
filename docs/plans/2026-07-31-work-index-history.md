@@ -3146,3 +3146,21 @@ before committing ahead of revocation.
 Verification passed 48 focused tests, 361 complete GraphQL tests, and 1,197
 complete backend tests, plus formatting, typecheck, quality, queue validation
 with ready rows 17-19 intact, and diff hygiene.
+
+## Completed 2026-08-04 Application JSON Storage Policy Guard
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`
+
+Compiled Ecto reflection and PostgreSQL catalog discovery now inventory every
+persisted application JSON contract in both directions, exclude only exact
+framework-owned columns, and fail by default when a field lacks one narrow
+raw/open/request/typed-JSON classification. The six legitimate contracts remain
+intact; comparison snapshot and alert application-owned dumps remain absent.
+
+Verification rebuilt only the TEST database, passed 7 focused policy tests and
+the five owner suites (15 comparison, 15 alert, 68 specification, 184 ingestion,
+and 126 commerce-attribution tests), then passed 1,202 exact-head backend tests,
+quality, type, formatting, queue validation with ready rows 18-20 intact, and
+diff hygiene. Implementation commits were `4fa16461`, `cdc6353b`, `6549d4e2`,
+and `a26b0e8f`.
