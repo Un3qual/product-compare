@@ -153,6 +153,9 @@
 **Files:**
 
 - Create: `priv/repo/migrations/20260805180000_enforce_source_numeric_evidence_constraints.exs`
+- Modify: `lib/product_compare_schemas/schema.ex`
+- Modify: `lib/product_compare_schemas/pricing/price_point.ex`
+- Modify: `lib/product_compare_schemas/alerts/price_watch_rule.ex`
 - Modify: `test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`
 - Create: `test/product_compare/repo/migrations/enforce_source_numeric_evidence_constraints_test.exs`
 
@@ -175,7 +178,14 @@
   and nullable values remain valid, verify non-finite writes fail with the
   expected named constraints, then prove rollback removes the checks.
 
-- [x] **Step 4: Run repository gates and publish the review follow-up**
+- [x] **Step 4: Keep application callers on typed error paths**
+
+  Normalize Decimal `NaN` and infinities before Ecto's decimal cast can raise,
+  and register the source constraint names on the price-point and create/update
+  watch changesets. Prove application writes return field errors for all three
+  Decimal special-value forms.
+
+- [x] **Step 5: Run repository gates and publish the review follow-up**
 
 Exit condition: forward migrations protect already-migrated databases,
 PostgreSQL rejects impossible or non-finite source, comparison, and alert

@@ -35,6 +35,13 @@ in a local or preview database, must not be rewritten. Focused database tests
 must prove upgrade and rollback behavior, valid finite boundary values, and
 direct SQL rejection of negative and non-finite values.
 
+Ecto does not accept Decimal `NaN` or infinities as `:decimal` cast values and
+raises when those Decimal structs are passed directly. The owning source
+changesets therefore normalize those unsupported structs into values that
+produce normal cast errors before `cast/4`, while retaining named database
+constraint mappings for storage failures. This keeps feed and GraphQL callers
+on their existing `{:error, changeset}` paths.
+
 ## Alternatives Considered
 
 ### Application-only validation
@@ -71,6 +78,8 @@ abstraction, and no public behavior change.
   frontend presentation.
 - Reject invalid source values at storage rather than filtering them during
   snapshot or alert copying.
+- Return changeset errors rather than raising when a source caller supplies a
+  Decimal special value that Ecto cannot cast.
 - Do not reset the development database. Rebuild only the test database.
 
 ## Verification

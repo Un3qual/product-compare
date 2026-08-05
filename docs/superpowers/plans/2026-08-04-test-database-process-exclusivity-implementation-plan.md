@@ -35,7 +35,7 @@
 - Consumes: `ProductCompare.Repo.config/0`, a test-only lock namespace, and PostgreSQL `pg_try_advisory_lock`.
 - Produces: `ProductCompare.TestDatabaseProcessGuard.acquire!/2`, returning the dedicated connection PID on success and raising `RuntimeError` with the database plus `MIX_TEST_PARTITION` guidance on contention.
 
-- [ ] **Step 1: Add the failing same-database contention contract**
+- [x] **Step 1: Add the failing same-database contention contract**
 
 Create a non-DataCase focused test that generates a unique namespace, acquires
 the first guard connection against `ProductCompare.Repo`, and asserts a second
@@ -52,16 +52,17 @@ mix test test/product_compare/test_database_process_guard_test.exs
 Expected before implementation: compilation fails because
 `ProductCompare.TestDatabaseProcessGuard` does not exist.
 
-- [ ] **Step 2: Implement the dedicated advisory-lock owner**
+- [x] **Step 2: Implement the dedicated advisory-lock owner**
 
 Add `acquire!(repo, namespace \\ "external-mix-test-process")`. Start one
 dedicated Postgrex connection from `repo.config/0`, query the current database
 and atomically attempt a 64-bit advisory lock derived from that database plus
-namespace, and return the PID only for `true`. On `false`, stop the rejected
-connection and raise the actionable contention error. Keep the helper
-test-only under `test/support`.
+namespace, and return the PID only for `true`. Stop the rejected connection on
+`false` and on every query or acquisition failure before reraising or raising
+the actionable contention error. Keep the helper test-only under
+`test/support`.
 
-- [ ] **Step 3: Acquire before ExUnit starts**
+- [x] **Step 3: Acquire before ExUnit starts**
 
 Call `ProductCompare.TestDatabaseProcessGuard.acquire!(ProductCompare.Repo)` at
 the top of `test/test_helper.exs`, before `ExUnit.start/0` and SQL sandbox mode.
@@ -79,7 +80,7 @@ Expected: both commands pass when run serially. While either command owns the
 default test database, a second command without `MIX_TEST_PARTITION` exits
 before ExUnit with the actionable contention error.
 
-- [ ] **Step 4: Verify and close the reserve outcome**
+- [x] **Step 4: Verify and close the reserve outcome**
 
 Run:
 
@@ -97,7 +98,7 @@ in the lane doc. Remove the completed queue row only when at least three other
 ready rows remain, append its completion record to work-index history, and move
 the plan from the active catalog into completion history.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add test/support/test_database_process_guard.ex test/product_compare/test_database_process_guard_test.exs test/test_helper.exs docs/work/test-database-process-exclusivity.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-31-work-index-history.md docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md

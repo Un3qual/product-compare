@@ -3,6 +3,7 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
 
   alias ProductCompareSchemas.Alerts.Cooldown
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @rule_types [:target_price, :percentage_drop, :back_in_stock, :newly_available]
 
@@ -38,6 +39,8 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
 
   @spec create_changeset(t(), map()) :: Ecto.Changeset.t()
   def create_changeset(watch, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:target_amount])
+
     watch
     |> cast(attrs, [
       :user_id,
@@ -66,11 +69,16 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
     |> check_constraint(:baseline_landed_price,
       name: :price_watch_rules_baseline_landed_price_non_negative
     )
+    |> check_constraint(:target_amount,
+      name: :price_watch_rules_target_amount_finite_non_negative
+    )
     |> cooldown_constraints()
   end
 
   @spec update_changeset(t(), map()) :: Ecto.Changeset.t()
   def update_changeset(watch, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:target_amount])
+
     watch
     |> cast(attrs, [:target_amount, :percentage_drop, :enabled, :cooldown_seconds])
     |> validate_number(:target_amount, greater_than_or_equal_to: 0)
@@ -78,6 +86,9 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
     |> put_cooldown()
     |> validate_rule_fields()
     |> check_constraint(:rule_type, name: :price_watch_rules_target_check)
+    |> check_constraint(:target_amount,
+      name: :price_watch_rules_target_amount_finite_non_negative
+    )
     |> cooldown_constraints()
   end
 

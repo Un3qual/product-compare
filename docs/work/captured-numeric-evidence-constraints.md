@@ -31,7 +31,9 @@ their numeric domains even when a write bypasses application changesets.
 - `price_points_price_finite_non_negative`,
   `price_points_shipping_finite_non_negative`, and
   `price_watch_rules_target_amount_finite_non_negative` reject non-finite source
-  amounts before snapshot publication or alert recording can copy them.
+  amounts before snapshot publication or alert recording can copy them. The
+  owning changesets map those named checks, and normalize unsupported Decimal
+  special values into ordinary cast errors before Ecto can raise while casting.
 - `alert_events_numeric_evidence_bounds` requires finite nonnegative monetary
   facts, permits nullable baseline and target amounts only when finite and
   nonnegative, and permits nullable percentage drops only in `(0, 100]`.
@@ -77,6 +79,18 @@ their numeric domains even when a write bypasses application changesets.
 - Review follow-up combined backend command: 49 tests, 0 failures.
 - Source-boundary follow-up focused migration, direct-write, and guard command:
   10 tests, 0 failures.
+- Source changeset review follow-up focused migration, direct-write, and
+  non-finite Decimal command: 11 tests, 0 failures.
+- Source changeset review follow-up affected alert, GraphQL, ingestion,
+  migration, and storage command: 66 tests, 0 failures.
+- Source changeset review follow-up `mix test --max-cases 10`: 1,224 tests,
+  0 failures.
+- Source changeset review follow-up `mix typecheck`, `mix quality`, and
+  `mix format --check-formatted`: exit `0`; Credo found no issues, the ExDNA
+  clone budget remained 3/3, cross-function smell detection found no issues,
+  and Dialyzer passed successfully.
+- Source changeset review follow-up `mix work_queue.validate`:
+  `work queue valid: 3 ready rows`; `git diff --check`: exit `0`.
 - Source-boundary follow-up `mix test --max-cases 10`: 1,222 tests,
   0 failures.
 - Source-boundary follow-up `mix typecheck`, `mix quality`, and

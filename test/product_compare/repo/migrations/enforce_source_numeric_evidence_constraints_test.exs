@@ -16,7 +16,7 @@ defmodule ProductCompare.Repo.Migrations.EnforceSourceNumericEvidenceConstraints
   @migration_version 20_260_805_180_000
   @migration_module ProductCompare.Repo.Migrations.EnforceSourceNumericEvidenceConstraints
 
-  unless Code.ensure_loaded?(@migration_module), do: Code.require_file(@migration_path)
+  if File.exists?(@migration_path), do: Code.require_file(@migration_path)
 
   setup do
     config =

@@ -3,6 +3,9 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
 
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.Pricing.PricePoint
 
   test "comparison snapshot attribute confidence accepts null and endpoints and rejects values outside zero through one" do
     snapshot_product_id = insert_snapshot_product!()
@@ -90,6 +93,28 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     end
   end
 
+  test "price point changesets return field errors for non-finite Decimal inputs" do
+    %{merchant_product_id: merchant_product_id} = insert_alert_event_parents!()
+
+    for field <- [:price, :shipping], non_finite <- non_finite_decimals() do
+      attrs =
+        %{
+          merchant_product_id: merchant_product_id,
+          observed_at: DateTime.utc_now(),
+          price: Decimal.new(0),
+          shipping: Decimal.new(0)
+        }
+        |> Map.put(field, non_finite)
+
+      assert {:error, changeset} =
+               %PricePoint{}
+               |> PricePoint.changeset(attrs)
+               |> Repo.insert()
+
+      assert_decimal_cast_error(changeset, field)
+    end
+  end
+
   test "price watch target sources reject non-finite amounts before alert capture" do
     %{id: user_id} = AccountsFixtures.user_fixture()
     %{id: product_id} = SpecsFixtures.product_fixture()
@@ -101,6 +126,45 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
         insert_target_price_watch_rule(user_id, product_id, target_amount),
         "price_watch_rules_target_amount_finite_non_negative"
       )
+    end
+  end
+
+  test "price watch changesets return field errors for non-finite Decimal inputs" do
+    %{id: user_id} = AccountsFixtures.user_fixture()
+    %{id: product_id} = SpecsFixtures.product_fixture()
+
+    base_create_attrs = %{
+      user_id: user_id,
+      product_id: product_id,
+      rule_type: :target_price,
+      currency: "USD",
+      target_amount: Decimal.new(0)
+    }
+
+    for non_finite <- non_finite_decimals() do
+      assert {:error, create_changeset} =
+               %PriceWatchRule{}
+               |> PriceWatchRule.create_changeset(%{
+                 base_create_attrs
+                 | target_amount: non_finite
+               })
+               |> Repo.insert()
+
+      assert_decimal_cast_error(create_changeset, :target_amount)
+    end
+
+    {:ok, watch} =
+      %PriceWatchRule{}
+      |> PriceWatchRule.create_changeset(base_create_attrs)
+      |> Repo.insert()
+
+    for non_finite <- non_finite_decimals() do
+      assert {:error, update_changeset} =
+               watch
+               |> PriceWatchRule.update_changeset(%{target_amount: non_finite})
+               |> Repo.update()
+
+      assert_decimal_cast_error(update_changeset, :target_amount)
     end
   end
 
@@ -369,6 +433,14 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     assert {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: ^constraint}}} =
              result
   end
+
+  defp assert_decimal_cast_error(changeset, field) do
+    assert {"is invalid", [type: :decimal, validation: :cast]} =
+             Keyword.fetch!(changeset.errors, field)
+  end
+
+  defp non_finite_decimals,
+    do: [Decimal.new("NaN"), Decimal.new("Infinity"), Decimal.new("-Infinity")]
 
   defp unique_public_token do
     System.unique_integer([:positive])
