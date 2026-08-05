@@ -52,7 +52,7 @@ defmodule ProductCompare.Affiliate do
     changeset = AffiliateNetwork.changeset(%AffiliateNetwork{}, attrs)
 
     changeset
-    |> Repo.insert(on_conflict: :nothing, conflict_target: [:name], returning: true)
+    |> insert(on_conflict: :nothing, conflict_target: [:name], returning: true)
     |> fetch_existing_network(changeset)
   end
 
@@ -62,7 +62,7 @@ defmodule ProductCompare.Affiliate do
     changeset = AffiliateProgram.changeset(%AffiliateProgram{}, attrs)
     update_fields = conflict_update_fields(attrs, changeset, [:program_code, :status])
 
-    Repo.insert(
+    insert(
       changeset,
       on_conflict: [set: update_fields ++ [updated_at: now]],
       conflict_target: [:affiliate_network_id, :merchant_id],
@@ -83,7 +83,7 @@ defmodule ProductCompare.Affiliate do
         :last_verified_at
       ])
 
-    Repo.insert(
+    insert(
       changeset,
       on_conflict: [set: update_fields ++ [updated_at: now]],
       conflict_target: [:merchant_product_id],
@@ -95,7 +95,7 @@ defmodule ProductCompare.Affiliate do
   def create_coupon(attrs) do
     %Coupon{}
     |> Coupon.changeset(attrs)
-    |> Repo.insert()
+    |> insert()
   end
 
   @spec list_active_coupons_query(pos_integer(), DateTime.t()) :: Ecto.Query.t()
@@ -173,6 +173,13 @@ defmodule ProductCompare.Affiliate do
         true -> []
       end
     end)
+  end
+
+  defp insert(changeset, options \\ []) do
+    options =
+      if Repo.in_transaction?(), do: Keyword.put(options, :mode, :savepoint), else: options
+
+    Repo.insert(changeset, options)
   end
 
   defp fetch_existing_network({:ok, %AffiliateNetwork{id: nil}}, changeset) do

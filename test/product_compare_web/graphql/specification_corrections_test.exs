@@ -6,7 +6,9 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
       assert_blocked_by: 2,
       capture_select_queries: 1,
       count_select_queries_targeting_table: 2,
+      hold_operator_revocation: 1,
       hold_row_lock: 3,
+      release_operator_revocation: 1,
       release_row_lock: 1,
       start_unboxed_action: 1
     ]
@@ -497,38 +499,6 @@ defmodule ProductCompareWeb.GraphQL.SpecificationCorrectionsTest do
       Repo.delete!(Repo.get!(User, fixture.submitter.id))
       Repo.delete!(Repo.get!(User, fixture.operator.id))
     end)
-  end
-
-  defp hold_operator_revocation(operator_id) do
-    parent = self()
-
-    {task, backend_pid} =
-      start_unboxed_action(fn ->
-        Repo.transaction(fn ->
-          revoked_operator =
-            User
-            |> Repo.get!(operator_id)
-            |> User.operator_access_changeset(false)
-            |> Repo.update!()
-
-          send(parent, {:operator_revoked, self()})
-
-          receive do
-            :commit_revocation -> revoked_operator
-          after
-            5_000 -> flunk("timed out waiting to commit operator revocation")
-          end
-        end)
-      end)
-
-    assert_receive {:operator_revoked, task_pid}, 2_000
-    assert task_pid == task.pid
-    {task, backend_pid}
-  end
-
-  defp release_operator_revocation(task) do
-    send(task.pid, :commit_revocation)
-    assert {:ok, %User{is_operator: false}} = Task.await(task)
   end
 
   defp api_token_conn(token) do

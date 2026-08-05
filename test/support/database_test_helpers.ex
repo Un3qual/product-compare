@@ -6,6 +6,7 @@ defmodule ProductCompare.DatabaseTestHelpers do
 
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Accounts.User
 
   def capture_select_queries(fun) when is_function(fun, 0) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
@@ -85,6 +86,38 @@ defmodule ProductCompare.DatabaseTestHelpers do
   def release_row_lock(task) do
     send(task.pid, :commit_transition)
     assert {:ok, _record} = Task.await(task)
+  end
+
+  def hold_operator_revocation(operator_id) do
+    parent = self()
+
+    {task, backend_pid} =
+      start_unboxed_action(fn ->
+        Repo.transaction(fn ->
+          revoked_operator =
+            User
+            |> Repo.get!(operator_id)
+            |> User.operator_access_changeset(false)
+            |> Repo.update!()
+
+          send(parent, {:operator_revoked, self()})
+
+          receive do
+            :commit_revocation -> revoked_operator
+          after
+            5_000 -> flunk("timed out waiting to commit operator revocation")
+          end
+        end)
+      end)
+
+    assert_receive {:operator_revoked, task_pid}, 2_000
+    assert(task_pid == task.pid)
+    {task, backend_pid}
+  end
+
+  def release_operator_revocation(task) do
+    send(task.pid, :commit_revocation)
+    assert {:ok, %User{is_operator: false}} = Task.await(task)
   end
 
   def start_unboxed_action(action) when is_function(action, 0) do

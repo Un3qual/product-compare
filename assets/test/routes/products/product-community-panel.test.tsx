@@ -44,6 +44,41 @@ vi.mock("react-relay", async () => {
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 
+const productReview = {
+  id: "review-1",
+  rating: 4,
+  title: "Useful outdoors",
+  body: "<img src=x onerror=alert(1)> held up in rain.",
+  verifiedPurchase: false,
+  authorLabel: "Community member",
+  viewerCanEdit: true,
+  viewerCanRemove: true,
+};
+
+const productQuestion = {
+  id: "question-1",
+  title: "Weather sealed?",
+  body: "Can it handle rain?",
+  authorLabel: "Community member",
+  acceptedAnswerId: "answer-1",
+  answers: {
+    edges: [
+      {
+        node: {
+          id: "answer-1",
+          body: "Yes, with the port cover closed.",
+          authorLabel: "Community member",
+          viewerCanEdit: true,
+          viewerCanRemove: true,
+        },
+      },
+    ],
+    pageInfo: { endCursor: null, hasNextPage: false },
+  },
+  viewerCanEdit: true,
+  viewerCanRemove: true,
+};
+
 beforeEach(() => {
   answerMock.mockReset();
   askMock.mockReset();
@@ -86,41 +121,6 @@ beforeEach(() => {
     throw new Error("Unexpected community mutation");
   });
 });
-
-const productReview = {
-  id: "review-1",
-  rating: 4,
-  title: "Useful outdoors",
-  body: "<img src=x onerror=alert(1)> held up in rain.",
-  verifiedPurchase: false,
-  authorLabel: "Community member",
-  viewerCanEdit: true,
-  viewerCanRemove: true,
-};
-
-const productQuestion = {
-  id: "question-1",
-  title: "Weather sealed?",
-  body: "Can it handle rain?",
-  authorLabel: "Community member",
-  acceptedAnswerId: "answer-1",
-  answers: {
-    edges: [
-      {
-        node: {
-          id: "answer-1",
-          body: "Yes, with the port cover closed.",
-          authorLabel: "Community member",
-          viewerCanEdit: true,
-          viewerCanRemove: true,
-        },
-      },
-    ],
-    pageInfo: { endCursor: null, hasNextPage: false },
-  },
-  viewerCanEdit: true,
-  viewerCanRemove: true,
-};
 
 test("ProductCommunityPanel shows published trust signals and renders authored text without HTML injection", () => {
   const { container } = render(

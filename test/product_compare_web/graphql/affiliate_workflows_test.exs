@@ -2,7 +2,14 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
   use ProductCompareWeb.ConnCase, async: false
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [assert_blocked_by: 2, hold_row_lock: 3, release_row_lock: 1, start_unboxed_action: 1]
+    only: [
+      assert_blocked_by: 2,
+      hold_operator_revocation: 1,
+      hold_row_lock: 3,
+      release_operator_revocation: 1,
+      release_row_lock: 1,
+      start_unboxed_action: 1
+    ]
 
   alias Ecto.Adapters.SQL.Sandbox
   alias ProductCompare.Accounts
@@ -743,6 +750,36 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
              } = response
     end
 
+    test "createCoupon returns a field error when a database constraint rejects the insert", %{
+      conn: conn
+    } do
+      authed_conn = operator_conn(conn, :api_token)
+
+      response =
+        graphql(authed_conn, create_coupon_mutation(), %{
+          "input" => %{
+            "merchantId" => relay_id(:merchant, System.unique_integer([:positive])),
+            "code" => "MISSING-MERCHANT",
+            "discountType" => "OTHER"
+          }
+        })
+
+      assert %{
+               "data" => %{
+                 "createCoupon" => %{
+                   "coupon" => nil,
+                   "errors" => [
+                     %{
+                       "code" => "INVALID_ARGUMENT",
+                       "field" => "merchantId",
+                       "message" => "does not exist"
+                     }
+                   ]
+                 }
+               }
+             } = response
+    end
+
     test "activeCoupons rejects invalid cursor input", %{conn: conn} do
       authed_conn = operator_conn(conn, :api_token)
       merchant = merchant_fixture()
@@ -1020,38 +1057,6 @@ defmodule ProductCompareWeb.GraphQL.AffiliateWorkflowsTest do
       Repo.delete!(Repo.get!(ProductCompareSchemas.Pricing.Merchant, fixture.merchant.id))
       Repo.delete!(Repo.get!(User, fixture.operator.id))
     end)
-  end
-
-  defp hold_operator_revocation(operator_id) do
-    parent = self()
-
-    {task, backend_pid} =
-      start_unboxed_action(fn ->
-        Repo.transaction(fn ->
-          revoked_operator =
-            User
-            |> Repo.get!(operator_id)
-            |> User.operator_access_changeset(false)
-            |> Repo.update!()
-
-          send(parent, {:operator_revoked, self()})
-
-          receive do
-            :commit_revocation -> revoked_operator
-          after
-            5_000 -> flunk("timed out waiting to commit operator revocation")
-          end
-        end)
-      end)
-
-    assert_receive {:operator_revoked, task_pid}, 2_000
-    assert task_pid == task.pid
-    {task, backend_pid}
-  end
-
-  defp release_operator_revocation(task) do
-    send(task.pid, :commit_revocation)
-    assert {:ok, %User{is_operator: false}} = Task.await(task)
   end
 
   defp affiliate_program_variables(fixture, program_code, status) do

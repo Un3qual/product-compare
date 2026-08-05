@@ -166,7 +166,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
     }),
   );
 
-  await act(async () => {
+  await act(() => {
     publishMutationMock.mock.calls[0]?.[0]?.onCompleted(
       {
         publishComparisonSnapshot: {
@@ -214,7 +214,7 @@ test("ShareComparisonControl revokes the just-published public link", async () =
   fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
   fireEvent.click(screen.getByRole("button", { name: "Publish snapshot" }));
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalled());
-  await act(async () =>
+  await act(() =>
     publishMutationMock.mock.calls[0]?.[0]?.onCompleted(
       {
         publishComparisonSnapshot: {
@@ -247,7 +247,7 @@ test("ShareComparisonControl revokes the just-published public link", async () =
       expect.objectContaining({ variables: { snapshotId: "snapshot-1" } }),
     ),
   );
-  await act(async () =>
+  await act(() =>
     revokeMutationMock.mock.calls[0]?.[0]?.onCompleted(
       { revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-1", errors: [] } },
       [],
@@ -312,7 +312,7 @@ test("ShareComparisonControl manages snapshots discovered after a reload", async
       expect.objectContaining({ variables: { snapshotId: "snapshot-existing" } }),
     ),
   );
-  await act(async () =>
+  await act(() =>
     revokeMutationMock.mock.calls[0]?.[0]?.onCompleted(
       { revokeComparisonSnapshot: { revokedSnapshotId: "snapshot-existing", errors: [] } },
       [],

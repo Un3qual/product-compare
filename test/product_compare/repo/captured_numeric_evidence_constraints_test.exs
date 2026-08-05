@@ -19,7 +19,7 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     end
   end
 
-  test "comparison snapshot offers accept zero amounts and reject negative copied prices" do
+  test "comparison snapshot offers accept finite zero amounts and reject invalid copied prices" do
     snapshot_product_id = insert_snapshot_product!()
 
     assert {:ok, _result} = insert_snapshot_offer(snapshot_product_id, 1, "0", "0", "0")
@@ -27,7 +27,13 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     for {position, item_price, shipping, landed_price} <- [
           {2, "-0.01", "0", "0"},
           {3, "0", "-0.01", "0"},
-          {4, "0", "0", "-0.01"}
+          {4, "0", "0", "-0.01"},
+          {5, "'NaN'::numeric", "0", "0"},
+          {6, "0", "'NaN'::numeric", "0"},
+          {7, "0", "0", "'NaN'::numeric"},
+          {8, "'Infinity'::numeric", "0", "0"},
+          {9, "0", "'Infinity'::numeric", "0"},
+          {10, "0", "0", "'Infinity'::numeric"}
         ] do
       assert_check_violation(
         insert_snapshot_offer(snapshot_product_id, position, item_price, shipping, landed_price),
@@ -36,28 +42,36 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     end
   end
 
-  test "comparison snapshot rankings accept zero landed price and reject negative landed price" do
+  test "comparison snapshot rankings accept finite zero landed price and reject invalid landed price" do
     snapshot_recommendation_id = insert_snapshot_recommendation!()
 
     assert {:ok, _result} = insert_snapshot_ranking(snapshot_recommendation_id, 1, "0")
 
-    assert_check_violation(
-      insert_snapshot_ranking(snapshot_recommendation_id, 2, "-0.01"),
-      "comparison_snapshot_rankings_landed_price_non_negative"
-    )
+    for {rank, landed_price} <- [
+          {2, "-0.01"},
+          {3, "'NaN'::numeric"},
+          {4, "'Infinity'::numeric"}
+        ] do
+      assert_check_violation(
+        insert_snapshot_ranking(snapshot_recommendation_id, rank, landed_price),
+        "comparison_snapshot_rankings_landed_price_non_negative"
+      )
+    end
   end
 
-  test "price watch rules accept null and zero captured baselines and reject negative captured baselines" do
+  test "price watch rules accept null and finite zero captured baselines and reject invalid captured baselines" do
     %{id: user_id} = AccountsFixtures.user_fixture()
     %{id: product_id} = SpecsFixtures.product_fixture()
 
     assert {:ok, _result} = insert_price_watch_rule_without_baseline(user_id, product_id)
     assert {:ok, _result} = insert_price_watch_rule(user_id, product_id, "0")
 
-    assert_check_violation(
-      insert_price_watch_rule(user_id, product_id, "-0.01"),
-      "price_watch_rules_baseline_landed_price_non_negative"
-    )
+    for baseline_landed_price <- ["-0.01", "'NaN'::numeric", "'Infinity'::numeric"] do
+      assert_check_violation(
+        insert_price_watch_rule(user_id, product_id, baseline_landed_price),
+        "price_watch_rules_baseline_landed_price_non_negative"
+      )
+    end
   end
 
   test "alert events accept nullable evidence and valid numeric endpoints and reject invalid copied numeric evidence" do
@@ -88,7 +102,19 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
           %{baseline_landed_price: "-0.01"},
           %{target_amount: "-0.01"},
           %{percentage_drop: "0"},
-          %{percentage_drop: "100.01"}
+          %{percentage_drop: "100.01"},
+          %{item_price: "'NaN'::numeric"},
+          %{shipping: "'NaN'::numeric"},
+          %{landed_price: "'NaN'::numeric"},
+          %{baseline_landed_price: "'NaN'::numeric"},
+          %{target_amount: "'NaN'::numeric"},
+          %{percentage_drop: "'NaN'::numeric"},
+          %{item_price: "'Infinity'::numeric"},
+          %{shipping: "'Infinity'::numeric"},
+          %{landed_price: "'Infinity'::numeric"},
+          %{baseline_landed_price: "'Infinity'::numeric"},
+          %{target_amount: "'Infinity'::numeric"},
+          %{percentage_drop: "'Infinity'::numeric"}
         ] do
       assert_check_violation(
         insert_alert_event(user_id, merchant_product_id, price_point_id, values),

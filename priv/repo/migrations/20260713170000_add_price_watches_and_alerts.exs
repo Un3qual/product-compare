@@ -46,12 +46,6 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
                "(rule_type = 'target_price' AND target_amount IS NOT NULL AND target_amount >= 0 AND percentage_drop IS NULL) OR (rule_type = 'percentage_drop' AND percentage_drop IS NOT NULL AND percentage_drop > 0 AND percentage_drop <= 100 AND target_amount IS NULL AND baseline_landed_price IS NOT NULL) OR (rule_type IN ('back_in_stock', 'newly_available') AND target_amount IS NULL AND percentage_drop IS NULL)"
            )
 
-    create constraint(
-             :price_watch_rules,
-             :price_watch_rules_baseline_landed_price_non_negative,
-             check: "baseline_landed_price IS NULL OR baseline_landed_price >= 0"
-           )
-
     create constraint(:price_watch_rules, :price_watch_rules_cooldown_min_check,
              check: "cooldown >= INTERVAL '60 seconds'"
            )
@@ -98,11 +92,6 @@ defmodule ProductCompare.Repo.Migrations.AddPriceWatchesAndAlerts do
            )
 
     create index(:alert_events, [:user_id, :read_at, :inserted_at])
-
-    create constraint(:alert_events, :alert_events_numeric_evidence_bounds,
-             check:
-               "item_price >= 0 AND shipping >= 0 AND landed_price >= 0 AND (baseline_landed_price IS NULL OR baseline_landed_price >= 0) AND (target_amount IS NULL OR target_amount >= 0) AND (percentage_drop IS NULL OR (percentage_drop > 0 AND percentage_drop <= 100))"
-           )
 
     create table(:alert_delivery_attempts) do
       add :alert_event_id, references(:alert_events, type: :bigint, on_delete: :delete_all),

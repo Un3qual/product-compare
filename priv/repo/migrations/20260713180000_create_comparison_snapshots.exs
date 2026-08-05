@@ -75,12 +75,6 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
              check: "position > 0"
            )
 
-    create constraint(
-             :comparison_snapshot_attributes,
-             :comparison_snapshot_attributes_confidence_range,
-             check: "confidence IS NULL OR (confidence >= 0 AND confidence <= 1)"
-           )
-
     create table(:comparison_snapshot_evidence) do
       add :snapshot_attribute_id,
           references(:comparison_snapshot_attributes, type: :bigint, on_delete: :delete_all),
@@ -133,12 +127,6 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
              check: "position > 0"
            )
 
-    create constraint(
-             :comparison_snapshot_offers,
-             :comparison_snapshot_offers_amounts_non_negative,
-             check: "item_price >= 0 AND shipping >= 0 AND landed_price >= 0"
-           )
-
     create table(:comparison_snapshot_recommendations) do
       add :comparison_snapshot_id,
           references(:comparison_snapshots, type: :bigint, on_delete: :delete_all),
@@ -187,12 +175,6 @@ defmodule ProductCompare.Repo.Migrations.CreateComparisonSnapshots do
 
     create constraint(:comparison_snapshot_rankings, :comparison_snapshot_rankings_rank,
              check: "rank > 0"
-           )
-
-    create constraint(
-             :comparison_snapshot_rankings,
-             :comparison_snapshot_rankings_landed_price_non_negative,
-             check: "landed_price >= 0"
            )
   end
 end

@@ -528,7 +528,7 @@ test("PriceWatchControl reveals relevant input and submits one typed rule", asyn
     }),
   );
 
-  await act(async () => {
+  await act(() => {
     commitMutationMock.mock.calls[0]?.[0]?.onCompleted(
       { createPriceWatch: { watch: { id: "watch-1" }, errors: [] } },
       [],
