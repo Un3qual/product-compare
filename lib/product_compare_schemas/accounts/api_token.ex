@@ -40,6 +40,8 @@ defmodule ProductCompareSchemas.Accounts.ApiToken do
     end)
     |> validate_length(:label, max: 120)
     |> check_constraint(:token_hash, name: :api_tokens_hash_length_check)
+    |> check_constraint(:token_prefix, name: :api_tokens_prefix_length_check)
+    |> check_constraint(:label, name: :api_tokens_label_length_check)
     |> unique_constraint(:token_hash)
     |> unique_constraint(:entropy_id)
     |> assoc_constraint(:user)
