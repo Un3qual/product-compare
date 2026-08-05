@@ -34,7 +34,7 @@ defmodule ProductCompare.Repo.CredentialArtifactStorageConstraintsTest do
     user = user_fixture()
     overlong_prefix = String.duplicate("e\u0301", 16) <> "x"
 
-    assert length(String.codepoints(overlong_prefix)) == 33
+    assert Enum.count_until(String.codepoints(overlong_prefix), 34) == 33
     assert String.length(overlong_prefix) == 17
 
     assert_check_violation(
@@ -48,7 +48,7 @@ defmodule ProductCompare.Repo.CredentialArtifactStorageConstraintsTest do
     family = "👩‍👩‍👧‍👦"
     overlong_label = String.duplicate(family, 17) <> "xy"
 
-    assert length(String.codepoints(overlong_label)) == 121
+    assert Enum.count_until(String.codepoints(overlong_label), 122) == 121
     assert String.length(overlong_label) == 19
 
     assert_check_violation(
@@ -63,8 +63,8 @@ defmodule ProductCompare.Repo.CredentialArtifactStorageConstraintsTest do
     family = "👩‍👩‍👧‍👦"
     boundary_label = String.duplicate(family, 17) <> "x"
 
-    assert length(String.codepoints(boundary_prefix)) == 32
-    assert length(String.codepoints(boundary_label)) == 120
+    assert Enum.count_until(String.codepoints(boundary_prefix), 33) == 32
+    assert Enum.count_until(String.codepoints(boundary_label), 121) == 120
     assert String.length(boundary_prefix) == 16
     assert String.length(boundary_label) == 18
 

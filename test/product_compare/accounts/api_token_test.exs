@@ -135,7 +135,7 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       family = "👩‍👩‍👧‍👦"
       boundary_label = String.duplicate(family, 17) <> "x"
 
-      assert length(String.codepoints(boundary_label)) == 120
+      assert Enum.count_until(String.codepoints(boundary_label), 121) == 120
       assert String.length(boundary_label) == 18
 
       assert {:ok, %{api_token: api_token}} =
@@ -149,7 +149,7 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       user = user_fixture()
       overlong_label = String.duplicate("e\u0301", 60) <> "x"
 
-      assert length(String.codepoints(overlong_label)) == 121
+      assert Enum.count_until(String.codepoints(overlong_label), 122) == 121
       assert String.length(overlong_label) == 61
 
       assert {:error, changeset} = Accounts.create_api_token(user.id, %{label: overlong_label})
@@ -181,8 +181,8 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       boundary_prefix = String.duplicate("e\u0301", 16)
       overlong_prefix = boundary_prefix <> "x"
 
-      assert length(String.codepoints(boundary_prefix)) == 32
-      assert length(String.codepoints(overlong_prefix)) == 33
+      assert Enum.count_until(String.codepoints(boundary_prefix), 33) == 32
+      assert Enum.count_until(String.codepoints(overlong_prefix), 34) == 33
       assert String.length(boundary_prefix) == 16
       assert String.length(overlong_prefix) == 17
 
