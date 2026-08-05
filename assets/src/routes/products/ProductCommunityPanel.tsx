@@ -230,6 +230,28 @@ function ReviewSection({
   reviews: readonly Review[];
   summary: CommunityProduct["reviewSummary"];
 }) {
+  return (
+    <section aria-labelledby="reviews-heading" {...props(styles.content)}>
+      <h2 id="reviews-heading" {...props(styles.title)}>
+        Reviews
+      </h2>
+      <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
+      <ul aria-label="Published product reviews" {...props(styles.list)}>
+        {reviews.map((review) => (
+          <ReviewItem key={review.id} review={review} />
+        ))}
+      </ul>
+      {onShowMore ? (
+        <Button onClick={onShowMore} type="button">
+          Show more reviews
+        </Button>
+      ) : null}
+      <ReviewSubmissionForm productId={productId} />
+    </section>
+  );
+}
+
+function ReviewSubmissionForm({ productId }: { productId: string }) {
   const [commitReview, pending] =
     useMutation<ProductCommunityOperationsSubmitProductReviewMutation>(submitProductReviewMutation);
   const [message, setMessage] = useState<string | null>(null);
@@ -258,65 +280,49 @@ function ReviewSection({
   }
 
   return (
-    <section aria-labelledby="reviews-heading" {...props(styles.content)}>
-      <h2 id="reviews-heading" {...props(styles.title)}>
-        Reviews
-      </h2>
-      <p {...props(styles.metadata)}>{publishedReviewSummary(summary)}</p>
-      <ul aria-label="Published product reviews" {...props(styles.list)}>
-        {reviews.map((review) => (
-          <ReviewItem key={review.id} review={review} />
-        ))}
-      </ul>
-      {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
-          Show more reviews
-        </Button>
-      ) : null}
-      <Collapsible>
-        <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Write a review</CollapsibleTrigger>
-        <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
-          <form onSubmit={submit} {...props(styles.form)}>
-            <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
-              Rating
-              <Select
-                id={`${fieldId}-rating`}
-                name="rating"
-                defaultValue="5"
-                options={[5, 4, 3, 2, 1].map((rating) => ({
-                  label: String(rating),
-                  value: String(rating),
-                }))}
-                {...props(styles.input)}
-              />
-            </Label>
-            <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
-              Title
-              <TextField
-                id={`${fieldId}-title`}
-                name="title"
-                maxLength={120}
-                {...props(styles.input)}
-              />
-            </Label>
-            <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
-              Review
-              <TextArea
-                id={`${fieldId}-body`}
-                name="body"
-                maxLength={5000}
-                rows={4}
-                {...props(styles.input)}
-              />
-            </Label>
-            <Button disabled={pending} type="submit">
-              {pending ? "Submitting…" : "Submit review"}
-            </Button>
-            {message ? <p role="status">{message}</p> : null}
-          </form>
-        </CollapsibleContent>
-      </Collapsible>
-    </section>
+    <Collapsible>
+      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Write a review</CollapsibleTrigger>
+      <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
+        <form onSubmit={submit} {...props(styles.form)}>
+          <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
+            Rating
+            <Select
+              id={`${fieldId}-rating`}
+              name="rating"
+              defaultValue="5"
+              options={[5, 4, 3, 2, 1].map((rating) => ({
+                label: String(rating),
+                value: String(rating),
+              }))}
+              {...props(styles.input)}
+            />
+          </Label>
+          <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+            Title
+            <TextField
+              id={`${fieldId}-title`}
+              name="title"
+              maxLength={120}
+              {...props(styles.input)}
+            />
+          </Label>
+          <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+            Review
+            <TextArea
+              id={`${fieldId}-body`}
+              name="body"
+              maxLength={5000}
+              rows={4}
+              {...props(styles.input)}
+            />
+          </Label>
+          <Button disabled={pending} type="submit">
+            {pending ? "Submitting…" : "Submit review"}
+          </Button>
+          {message ? <p role="status">{message}</p> : null}
+        </form>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -329,6 +335,34 @@ function QuestionSection({
   productId: string;
   questions: readonly Question[];
 }) {
+  return (
+    <section aria-labelledby="questions-heading" {...props(styles.content)}>
+      <h2 id="questions-heading" {...props(styles.title)}>
+        Product Q&amp;A
+      </h2>
+      {questions.length ? (
+        <ul aria-label="Published product questions" {...props(styles.list)}>
+          {questions.map((question) => (
+            <QuestionItem key={question.id} question={question}>
+              <QuestionAnswers question={question} />
+              <AnswerForm questionId={question.id} />
+            </QuestionItem>
+          ))}
+        </ul>
+      ) : (
+        <p>No published questions yet.</p>
+      )}
+      {onShowMore ? (
+        <Button onClick={onShowMore} type="button">
+          Show more questions
+        </Button>
+      ) : null}
+      <QuestionSubmissionForm productId={productId} />
+    </section>
+  );
+}
+
+function QuestionSubmissionForm({ productId }: { productId: string }) {
   const [commitQuestion, pending] =
     useMutation<ProductCommunityOperationsAskProductQuestionMutation>(askProductQuestionMutation);
   const [message, setMessage] = useState<string | null>(null);
@@ -356,59 +390,37 @@ function QuestionSection({
   }
 
   return (
-    <section aria-labelledby="questions-heading" {...props(styles.content)}>
-      <h2 id="questions-heading" {...props(styles.title)}>
-        Product Q&amp;A
-      </h2>
-      {questions.length ? (
-        <ul aria-label="Published product questions" {...props(styles.list)}>
-          {questions.map((question) => (
-            <QuestionItem key={question.id} question={question}>
-              <QuestionAnswers question={question} />
-              <AnswerForm questionId={question.id} />
-            </QuestionItem>
-          ))}
-        </ul>
-      ) : (
-        <p>No published questions yet.</p>
-      )}
-      {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
-          Show more questions
-        </Button>
-      ) : null}
-      <Collapsible>
-        <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Ask a question</CollapsibleTrigger>
-        <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
-          <form onSubmit={submit} {...props(styles.form)}>
-            <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
-              Question
-              <TextField
-                id={`${fieldId}-title`}
-                name="title"
-                required
-                maxLength={200}
-                {...props(styles.input)}
-              />
-            </Label>
-            <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
-              Details
-              <TextArea
-                id={`${fieldId}-body`}
-                name="body"
-                maxLength={5000}
-                rows={3}
-                {...props(styles.input)}
-              />
-            </Label>
-            <Button disabled={pending} type="submit">
-              {pending ? "Submitting…" : "Submit question"}
-            </Button>
-            {message ? <p role="status">{message}</p> : null}
-          </form>
-        </CollapsibleContent>
-      </Collapsible>
-    </section>
+    <Collapsible>
+      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Ask a question</CollapsibleTrigger>
+      <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
+        <form onSubmit={submit} {...props(styles.form)}>
+          <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+            Question
+            <TextField
+              id={`${fieldId}-title`}
+              name="title"
+              required
+              maxLength={200}
+              {...props(styles.input)}
+            />
+          </Label>
+          <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+            Details
+            <TextArea
+              id={`${fieldId}-body`}
+              name="body"
+              maxLength={5000}
+              rows={3}
+              {...props(styles.input)}
+            />
+          </Label>
+          <Button disabled={pending} type="submit">
+            {pending ? "Submitting…" : "Submit question"}
+          </Button>
+          {message ? <p role="status">{message}</p> : null}
+        </form>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 

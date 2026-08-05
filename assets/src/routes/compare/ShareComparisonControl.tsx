@@ -157,10 +157,26 @@ interface SnapshotControlViewProps {
 }
 
 function SnapshotControlView({
+  onOpenChange,
+  open,
+  ...publishFormProps
+}: SnapshotControlViewProps) {
+  return (
+    <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
+      <CollapsibleTrigger {...props(styles.summary)}>
+        Share a fixed comparison snapshot
+      </CollapsibleTrigger>
+      <CollapsibleContent forceMount {...props(styles.content)}>
+        <SnapshotPublishForm open={open} {...publishFormProps} />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function SnapshotPublishForm({
   handlePublish,
   handleRevoke,
   message,
-  onOpenChange,
   open,
   products,
   published,
@@ -168,51 +184,44 @@ function SnapshotControlView({
   revokedSnapshotIds,
   revocationErrorsBySnapshotId,
   revokingSnapshotIds,
-}: SnapshotControlViewProps) {
+}: Omit<SnapshotControlViewProps, "onOpenChange">) {
   const titleId = useId();
   const searchIndexableId = useId();
 
   return (
-    <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
-      <CollapsibleTrigger {...props(styles.summary)}>
-        Share a fixed comparison snapshot
-      </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(styles.content)}>
-        <form onSubmit={handlePublish} {...props(styles.form)}>
-          <label htmlFor={titleId} {...props(styles.field)}>
-            Optional title
-            <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
-          </label>
-          <label htmlFor={searchIndexableId} {...props(styles.field)}>
-            <span>
-              <Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to
-              discover this immutable snapshot
-            </span>
-            <small>
-              Off by default. Only snapshots with sufficient captured specifications and current
-              offer evidence can be indexed.
-            </small>
-          </label>
-          <Button disabled={publishing || products.length < 2} type="submit">
-            {publishing ? "Publishing…" : "Publish snapshot"}
-          </Button>
-          <SnapshotHistory
-            localSnapshots={published}
-            onRevoke={handleRevoke}
-            open={open}
-            resetToken={products.map(({ id }) => id).join("|")}
-            revokedSnapshotIds={revokedSnapshotIds}
-            revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
-            revokingSnapshotIds={revokingSnapshotIds}
-          />
-          {message ? (
-            <p role="status" {...props(styles.message)}>
-              {message}
-            </p>
-          ) : null}
-        </form>
-      </CollapsibleContent>
-    </Collapsible>
+    <form onSubmit={handlePublish} {...props(styles.form)}>
+      <label htmlFor={titleId} {...props(styles.field)}>
+        Optional title
+        <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+      </label>
+      <label htmlFor={searchIndexableId} {...props(styles.field)}>
+        <span>
+          <Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to
+          discover this immutable snapshot
+        </span>
+        <small>
+          Off by default. Only snapshots with sufficient captured specifications and current offer
+          evidence can be indexed.
+        </small>
+      </label>
+      <Button disabled={publishing || products.length < 2} type="submit">
+        {publishing ? "Publishing…" : "Publish snapshot"}
+      </Button>
+      <SnapshotHistory
+        localSnapshots={published}
+        onRevoke={handleRevoke}
+        open={open}
+        resetToken={products.map(({ id }) => id).join("|")}
+        revokedSnapshotIds={revokedSnapshotIds}
+        revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
+        revokingSnapshotIds={revokingSnapshotIds}
+      />
+      {message ? (
+        <p role="status" {...props(styles.message)}>
+          {message}
+        </p>
+      ) : null}
+    </form>
   );
 }
 

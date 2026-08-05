@@ -80,21 +80,39 @@ export function DestructiveActionDialog({
       <Trigger asChild>{trigger}</Trigger>
       <Portal>
         <Overlay {...props(styles.overlay)} />
-        <Content {...props(styles.content)}>
-          <Title {...props(styles.title)}>{title}</Title>
-          <Description {...props(styles.description)}>{description}</Description>
-          <div {...props(styles.actions)}>
-            <Cancel asChild>
-              <Button variant="soft">Cancel</Button>
-            </Cancel>
-            <Action asChild>
-              <Button disabled={disabled} onClick={onConfirm} tone="danger">
-                {confirmLabel}
-              </Button>
-            </Action>
-          </div>
-        </Content>
+        <DestructiveActionDialogContent
+          confirmLabel={confirmLabel}
+          description={description}
+          disabled={disabled}
+          onConfirm={onConfirm}
+          title={title}
+        />
       </Portal>
     </Root>
+  );
+}
+
+function DestructiveActionDialogContent({
+  confirmLabel,
+  description,
+  disabled,
+  onConfirm,
+  title,
+}: Omit<DestructiveActionDialogProps, "trigger">) {
+  return (
+    <Content {...props(styles.content)}>
+      <Title {...props(styles.title)}>{title}</Title>
+      <Description {...props(styles.description)}>{description}</Description>
+      <div {...props(styles.actions)}>
+        <Cancel asChild>
+          <Button variant="soft">Cancel</Button>
+        </Cancel>
+        <Action asChild>
+          <Button disabled={disabled} onClick={onConfirm} tone="danger">
+            {confirmLabel}
+          </Button>
+        </Action>
+      </div>
+    </Content>
   );
 }
