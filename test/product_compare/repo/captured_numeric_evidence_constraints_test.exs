@@ -4,13 +4,14 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
 
-  test "comparison snapshot attribute confidence accepts endpoints and rejects values outside zero through one" do
+  test "comparison snapshot attribute confidence accepts null and endpoints and rejects values outside zero through one" do
     snapshot_product_id = insert_snapshot_product!()
 
-    assert {:ok, _result} = insert_snapshot_attribute(snapshot_product_id, 1, "0")
-    assert {:ok, _result} = insert_snapshot_attribute(snapshot_product_id, 2, "1")
+    assert {:ok, _result} = insert_snapshot_attribute(snapshot_product_id, 1, "NULL")
+    assert {:ok, _result} = insert_snapshot_attribute(snapshot_product_id, 2, "0")
+    assert {:ok, _result} = insert_snapshot_attribute(snapshot_product_id, 3, "1")
 
-    for {position, confidence} <- [{3, "-0.01"}, {4, "1.01"}] do
+    for {position, confidence} <- [{4, "-0.01"}, {5, "1.01"}] do
       assert_check_violation(
         insert_snapshot_attribute(snapshot_product_id, position, confidence),
         "comparison_snapshot_attributes_confidence_range"
@@ -46,10 +47,11 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     )
   end
 
-  test "price watch rules accept zero captured baselines and reject negative captured baselines" do
+  test "price watch rules accept null and zero captured baselines and reject negative captured baselines" do
     %{id: user_id} = AccountsFixtures.user_fixture()
     %{id: product_id} = SpecsFixtures.product_fixture()
 
+    assert {:ok, _result} = insert_price_watch_rule_without_baseline(user_id, product_id)
     assert {:ok, _result} = insert_price_watch_rule(user_id, product_id, "0")
 
     assert_check_violation(
@@ -58,13 +60,20 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     )
   end
 
-  test "alert events accept valid numeric endpoints and reject invalid copied numeric evidence" do
+  test "alert events accept nullable evidence and valid numeric endpoints and reject invalid copied numeric evidence" do
     %{user_id: user_id, merchant_product_id: merchant_product_id, price_point_id: price_point_id} =
       insert_alert_event_parents!()
 
     assert {:ok, _result} =
              insert_alert_event(user_id, merchant_product_id, price_point_id, %{
-               percentage_drop: "1"
+               baseline_landed_price: "NULL",
+               target_amount: "NULL",
+               percentage_drop: "NULL"
+             })
+
+    assert {:ok, _result} =
+             insert_alert_event(user_id, merchant_product_id, price_point_id, %{
+               percentage_drop: "0.01"
              })
 
     assert {:ok, _result} =
@@ -188,6 +197,19 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
         inserted_at, updated_at
       )
       VALUES ($1, $2, 'percentage_drop', 840, 100, #{baseline_landed_price}, now(), now())
+      """,
+      [user_id, product_id]
+    )
+  end
+
+  defp insert_price_watch_rule_without_baseline(user_id, product_id) do
+    ProductCompare.Repo.query(
+      """
+      INSERT INTO price_watch_rules (
+        user_id, product_id, rule_type, currency_id, target_amount, baseline_landed_price,
+        inserted_at, updated_at
+      )
+      VALUES ($1, $2, 'target_price', 840, 0, NULL, now(), now())
       """,
       [user_id, product_id]
     )
