@@ -3232,9 +3232,12 @@ PostgreSQL now rejects malformed `users_tokens.token_hash` digests and
 out-of-bounds API-token display metadata through the named
 `users_tokens_hash_length_check`, `api_tokens_prefix_length_check`, and
 `api_tokens_label_length_check` constraints. Direct-write controls retain the
-established valid boundaries: a 32-byte digest, one- and 32-character prefixes,
-and `NULL` and 120-character labels. Existing GraphQL, browser-auth, API-token,
-and cookie-session behavior remains unchanged.
+established valid boundaries: a 32-byte digest, one- and 32-code-point prefixes,
+and `NULL` and 120-code-point labels. Final-review application and direct-write
+regressions use decomposed combining text and an emoji ZWJ sequence to confirm
+that explicit Ecto code-point validation agrees with PostgreSQL `char_length`.
+Existing GraphQL, browser-auth, API-token, and cookie-session behavior remains
+unchanged, and stored Unicode values are not normalized or rewritten.
 
 Verification passed 148 affected account lifecycle tests and 1,214 complete
 backend tests with no failures. Typecheck, quality, formatting, queue validation

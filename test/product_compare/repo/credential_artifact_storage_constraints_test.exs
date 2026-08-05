@@ -30,32 +30,49 @@ defmodule ProductCompare.Repo.CredentialArtifactStorageConstraintsTest do
     )
   end
 
-  test "api_tokens rejects a 33-character token prefix with its named storage constraint" do
+  test "api_tokens rejects a 33-code-point decomposed token prefix" do
     user = user_fixture()
+    overlong_prefix = String.duplicate("e\u0301", 16) <> "x"
+
+    assert length(String.codepoints(overlong_prefix)) == 33
+    assert String.length(overlong_prefix) == 17
 
     assert_check_violation(
-      insert_api_token(user.id, String.duplicate("a", 33), nil, 3),
+      insert_api_token(user.id, overlong_prefix, nil, 3),
       "api_tokens_prefix_length_check"
     )
   end
 
-  test "api_tokens rejects a 121-character label with its named storage constraint" do
+  test "api_tokens rejects a 121-code-point emoji ZWJ label" do
     user = user_fixture()
+    family = "👩‍👩‍👧‍👦"
+    overlong_label = String.duplicate(family, 17) <> "xy"
+
+    assert length(String.codepoints(overlong_label)) == 121
+    assert String.length(overlong_label) == 19
 
     assert_check_violation(
-      insert_api_token(user.id, "a", String.duplicate("b", 121), 4),
+      insert_api_token(user.id, "a", overlong_label, 4),
       "api_tokens_label_length_check"
     )
   end
 
   test "credential artifacts accept their valid storage boundaries" do
     user = user_fixture()
+    boundary_prefix = String.duplicate("e\u0301", 16)
+    family = "👩‍👩‍👧‍👦"
+    boundary_label = String.duplicate(family, 17) <> "x"
+
+    assert length(String.codepoints(boundary_prefix)) == 32
+    assert length(String.codepoints(boundary_label)) == 120
+    assert String.length(boundary_prefix) == 16
+    assert String.length(boundary_label) == 18
 
     assert {:ok, _result} = insert_user_token(user.id, :binary.copy(<<1>>, 32))
     assert {:ok, _result} = insert_api_token(user.id, "a", nil, 2)
 
     assert {:ok, _result} =
-             insert_api_token(user.id, String.duplicate("a", 32), String.duplicate("b", 120), 3)
+             insert_api_token(user.id, boundary_prefix, boundary_label, 3)
   end
 
   defp insert_user_token(user_id, token_hash) do

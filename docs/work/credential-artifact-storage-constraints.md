@@ -2,17 +2,18 @@
 
 ## Snapshot
 
-- Status: complete
+- Status: done
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
 - Design:
   `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
-- Last verified: 2026-08-05 with 148 affected lifecycle tests and 1,214 full
-  backend tests, all with zero failures; type, quality, formatting, queue, and
-  diff gates also passed.
+- Last verified: 2026-08-05 with 22 focused final-review boundary tests, plus
+  the prior closeout's 148 affected lifecycle tests and 1,214 full backend
+  tests, all with zero failures; type, quality, formatting, queue, and diff
+  gates also passed.
 
-## Completed Outcome
+## Batch Outcome
 
 PostgreSQL retains the fixed digest and display-metadata boundaries of account
 credential artifacts even when a write bypasses application changesets.
@@ -22,17 +23,21 @@ credential artifacts even when a write bypasses application changesets.
 - User session, confirmation, and reset tokens hash raw tokens with SHA-256,
   yielding 32 bytes; the prior `users_tokens.token_hash` schema lacked a
   database length check.
-- API-token changesets require prefix lengths from 1 through 32 characters;
+- API-token changesets require prefix lengths from 1 through 32 Unicode code
+  points;
   the prior PostgreSQL check required only a non-empty prefix.
-- API-token changesets limit optional labels to 120 characters; the prior
+- API-token changesets limit optional labels to 120 Unicode code points; the prior
   PostgreSQL schema had no label-length check.
 - The pre-migration catalog exposed only `api_tokens_hash_length_check` and
   `api_tokens_prefix_not_empty` across the two credential-artifact tables.
 - Direct-write regressions confirm PostgreSQL rejects 31-byte and 33-byte user
-  token digests, empty and 33-character API-token prefixes, and 121-character
+  token digests, empty and 33-code-point API-token prefixes, and 121-code-point
   API-token labels with their exact named constraints.
 - Direct-write controls confirm PostgreSQL accepts a 32-byte digest, prefixes
-  of one and 32 characters, and `NULL` and 120-character labels.
+  of one and 32 code points, and `NULL` and 120-code-point labels.
+- Application-boundary regressions use decomposed combining text and an emoji
+  ZWJ sequence to prove the explicit Ecto code-point validations agree with
+  PostgreSQL `char_length` at the 32/33 and 120/121 boundaries.
 - The affected account lifecycle suite passed 148 tests with no failures; the
   complete backend suite passed 1,214 tests with no failures.
 
@@ -41,6 +46,8 @@ credential artifacts even when a write bypasses application changesets.
 - Preserve GraphQL, browser-auth, API-token, and cookie-session behavior.
 - Keep token generation, hashing algorithms, prefix derivation, labels, and
   expiry behavior unchanged.
+- Keep stored Unicode values unchanged; do not normalize, truncate, or rewrite
+  prefixes or labels.
 - Add no email, password, timestamp-ordering, or generic text-length policy.
 - Use a forward migration; never reset the development database.
 
@@ -65,6 +72,9 @@ credential artifacts even when a write bypasses application changesets.
   credential artifact storage bounds`).
 - Named storage constraints and changeset mappings completed in `89bda46e`
   (`fix: constrain credential artifact storage`).
+- The final-review fix wave canonicalized the existing text bounds as Unicode
+  code-point counts and added behavior regressions that fail if Ecto returns to
+  its grapheme-counting default.
 - On 2026-08-05, `mix typecheck`, `mix quality`, `mix format
   --check-formatted`, `mix work_queue.validate`, and `git diff --check` passed
   after the lifecycle and full-backend test suites.

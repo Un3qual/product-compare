@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make PostgreSQL enforce the established digest and display-metadata bounds of account credential artifacts.
+**Goal:** Make PostgreSQL enforce the established digest and Unicode code-point display-metadata bounds of account credential artifacts.
 
-**Architecture:** Add one forward migration with named checks for user-token digest bytes and API-token prefix/label lengths. Prove the database boundary with direct writes, map mutable constraint failures through the owning changesets, and preserve all auth behavior.
+**Architecture:** Add one forward migration with named checks for user-token digest bytes and API-token prefix/label code-point lengths. Prove the database boundary with direct writes, make the owning changesets count code points explicitly, map mutable constraint failures, and preserve all auth behavior.
 
 **Tech Stack:** Elixir, Ecto SQL, PostgreSQL check constraints, ExUnit.
 
@@ -12,6 +12,7 @@
 
 - Preserve all GraphQL, browser-auth, API-token, and cookie-session contracts.
 - Do not change token generation, hashing algorithms, prefixes, labels, or expiry behavior.
+- Do not normalize, truncate, or otherwise transform stored Unicode values.
 - Do not add email-format, password-hash, timestamp-ordering, or expiry policy.
 - Do not reset the development database.
 - Do not introduce a generic string-length policy framework.
@@ -39,21 +40,22 @@
   inside the SQL sandbox. Assert the expected named PostgreSQL error for:
 
   - 31-byte and 33-byte `users_tokens.token_hash` values;
-  - empty and 33-character `api_tokens.token_prefix` values; and
-  - a 121-character `api_tokens.label` value.
+  - empty and 33-code-point `api_tokens.token_prefix` values; and
+  - a 121-code-point `api_tokens.label` value.
 
 - [x] **Step 2: Add accepted-boundary controls**
 
   Insert distinct valid rows proving acceptance of an exactly 32-byte user
-  token digest, API-token prefixes of 1 and 32 characters, and API-token labels
-  of `NULL` and 120 characters.
+  token digest, API-token prefixes of 1 and 32 code points, and API-token labels
+  of `NULL` and 120 code points. Use decomposed combining text and an emoji ZWJ
+  sequence so the fixtures distinguish code points from graphemes.
 
 - [x] **Step 3: Run the focused test and verify RED**
 
   Run: `mix test test/product_compare/repo/credential_artifact_storage_constraints_test.exs`
 
-  Expected: user-token digest length, the 33-character API-token prefix, and
-  the 121-character API-token label are accepted instead of returning their
+  Expected: user-token digest length, the 33-code-point API-token prefix, and
+  the 121-code-point API-token label are accepted instead of returning their
   planned named constraints. The historical empty-prefix check may already
   reject its case under the old name.
 
@@ -68,7 +70,7 @@
 
 **Interfaces:**
 
-- Consumes: the exact byte and character boundaries frozen by Task 1.
+- Consumes: the exact byte and Unicode code-point boundaries frozen by Task 1.
 - Produces: `api_tokens_prefix_length_check`, `api_tokens_label_length_check`, and `users_tokens_hash_length_check` plus owning changeset mappings.
 
 - [x] **Step 1: Add the forward migration**
@@ -85,12 +87,12 @@
   In `down/0`, remove those three checks and restore
   `api_tokens_prefix_not_empty` with `char_length(token_prefix) > 0`.
 
-- [x] **Step 2: Map changeset failures**
+- [x] **Step 2: Align application counting and map changeset failures**
 
-  Add `check_constraint/3` mappings for the prefix and label checks in
+  Pass `count: :codepoints` to the prefix and label `validate_length/3` calls,
+  then add `check_constraint/3` mappings for both checks in
   `ApiToken.changeset/2`. Add an exact 32-byte `validate_change/3` and the
-  `users_tokens_hash_length_check` mapping in
-  `UserSessionToken.changeset/2`.
+  `users_tokens_hash_length_check` mapping in `UserSessionToken.changeset/2`.
 
 - [x] **Step 3: Rebuild only the test database**
 
@@ -152,5 +154,12 @@
 - [x] **Step 4: Commit closeout**
 
   Commit message: `docs: close credential artifact storage constraints`
+
+- [x] **Step 5: Resolve final-review Unicode boundary mismatch**
+
+  Add application and direct-write behavior regressions for decomposed
+  combining text and emoji ZWJ sequences. Prove 32/33-code-point prefixes and
+  120/121-code-point labels agree between Ecto and PostgreSQL, then record the
+  approved code-point unit across the completed lane, catalog, and history.
 
 Exit condition: PostgreSQL rejects malformed credential digests and overlong API-token metadata, valid boundaries remain accepted, account behavior is unchanged, and all backend gates pass.

@@ -5,18 +5,24 @@
 Community changesets already define six persistence boundaries for authored
 text:
 
-- product-thread titles contain 1 through 200 characters;
-- optional product-thread bodies contain at most 5,000 characters;
-- thread-post bodies contain at most 5,000 characters;
-- optional product-review titles contain at most 120 characters;
-- optional product-review bodies contain at most 5,000 characters; and
-- report reasons contain at least 3 characters.
+- product-thread titles contain 1 through 200 Unicode code points;
+- optional product-thread bodies contain at most 5,000 Unicode code points;
+- thread-post bodies contain at most 5,000 Unicode code points;
+- optional product-review titles contain at most 120 Unicode code points;
+- optional product-review bodies contain at most 5,000 Unicode code points; and
+- report reasons contain 3 through 500 Unicode code points.
 
 PostgreSQL currently enforces none of those checks. The existing
 `community_reports.reason` column is `varchar(500)`, so its established
-500-character maximum is already protected by the column type. A direct write
+500-code-point maximum is already protected by the column type. A direct write
 can still persist all six missing invalid shapes while bypassing the owning
 changesets.
+
+The canonical unit for all six authored-text validations is Unicode code
+points. PostgreSQL `char_length` and the existing `varchar(500)` report column
+already use that unit. Each owning Ecto `validate_length/3` call must pass
+`count: :codepoints` explicitly instead of relying on Ecto's grapheme-counting
+default.
 
 The live test catalog contains no authored-text checks on `product_threads`,
 `thread_posts`, `product_reviews`, or `community_reports`. A data preflight
@@ -62,20 +68,22 @@ Create one forward migration with these named checks:
   `char_length(reason) >= 3`.
 
 The owning `ProductThread`, `ThreadPost`, `ProductReview`, and
-`CommunityReport` changesets map their named checks so application writes keep
-field-specific errors if a database race or changeset bypass reaches the
+`CommunityReport` changesets change all six authored-text `validate_length/3`
+calls to `count: :codepoints` and map their named checks so application writes
+keep field-specific errors if a database race or changeset bypass reaches the
 constraint.
 
 ## Test Contract
 
 A focused direct-write suite uses valid user and product parents and proves
-that PostgreSQL rejects every value one character outside the six missing
-boundaries with the exact constraint name. It also proves the valid boundaries:
-one- and 200-character thread titles; `NULL` and 5,000-character optional
-bodies; a 5,000-character required post body; `NULL` and 120-character review
-titles; and a 3-character report reason. The existing `varchar(500)` report
-maximum remains covered by current schema and lifecycle behavior rather than a
-redundant check.
+that PostgreSQL rejects every value one code point outside the six missing
+boundaries with the exact constraint name. Application-write regressions prove
+the same boundaries are rejected before PostgreSQL. Both layers use decomposed
+combining text and emoji ZWJ sequences whose code-point and grapheme counts
+differ, and prove the valid one-, 200-, 5,000-, 120-, 3-, and 500-code-point
+boundaries independently. The existing `varchar(500)` report maximum remains
+covered by the column type and application behavior rather than a redundant
+check.
 
 Community lifecycle, validation, GraphQL mutation, and deterministic seed tests
 prove behavior remains unchanged.
@@ -86,6 +94,7 @@ prove behavior remains unchanged.
   idempotency, and seed behavior.
 - Do not change whitespace handling, Markdown policy, nullability, or required
   fields.
+- Do not normalize, truncate, or otherwise transform stored Unicode values.
 - Do not add moderation-note, generic text-length, or frontend validation
   policy.
 - Do not replace the existing `community_reports.reason` column type.
@@ -94,5 +103,5 @@ prove behavior remains unchanged.
 ## Failure Handling
 
 If existing rows violate an established boundary, stop and report the exact
-table, column, and character length. Do not truncate, rewrite, or delete
+table, column, and code-point length. Do not truncate, rewrite, or delete
 community content to make the migration pass.

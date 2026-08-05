@@ -148,10 +148,11 @@ all backend gates pass.
 Status: ready
 Lane: Community content storage integrity
 Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL retains established character bounds for authored
-threads, posts, reviews, and reports even when writes bypass changesets.
-Next action: add failing direct-write tests for every one-character-outside
-community text boundary before adding the six named forward checks.
+Batch outcome: PostgreSQL and the owning changesets retain established Unicode
+code-point bounds for authored threads, posts, reviews, and reports.
+Next action: add failing direct- and application-write tests for code-point
+boundaries, including decomposed combining text and emoji ZWJ sequences, before
+changing all six owning validations and adding the named forward checks.
 Owned paths:
 
 - `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
@@ -170,21 +171,24 @@ Owned paths:
 
 Internal slices:
 
-- Failing direct-write authored-text boundary characterization.
-- Six named forward checks and owning changeset mappings.
+- Failing direct- and application-write code-point boundary characterization.
+- Six explicit code-point changeset validations, named forward checks, and
+  owning constraint mappings.
 - Community lifecycle parity and complete backend verification.
 
 Prerequisites:
 
-- Current changeset length limits, nullability, and required-field behavior
-  remain unchanged.
+- The approved canonical unit is Unicode code points; all six owning
+  `validate_length/3` calls change to `count: :codepoints` while their numeric
+  limits, nullability, and required-field behavior remain unchanged.
 - The existing report-reason `varchar(500)` upper bound remains intact.
 - No active row owns community schemas, migrations, or affected tests.
 - No current community row violates one of the six missing boundaries.
 
 Verification:
 
-- focused community-authored-text direct-write suite
+- focused community-authored-text direct- and application-write suites with
+  decomposed combining text and emoji ZWJ boundaries
 - content lifecycle, thread-post validation, community trust, GraphQL
   community content, node-query, Dataloader batching, and deterministic seed
   suites
@@ -192,9 +196,9 @@ Verification:
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: PostgreSQL rejects out-of-bounds community-authored text, all
-valid boundaries remain accepted, community behavior is unchanged, and all
-backend gates pass.
+Exit condition: PostgreSQL and application changesets agree on every Unicode
+code-point boundary, valid authored text remains accepted without rewriting,
+community behavior is otherwise unchanged, and all backend gates pass.
 
 ## Needs Decision Work
 
