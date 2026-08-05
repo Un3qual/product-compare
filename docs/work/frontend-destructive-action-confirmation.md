@@ -41,8 +41,8 @@ cancelable confirmation before their existing mutation begins.
 - The existing route owners still retain all mutation submission, row-scoped
   pending and error state, success removal or relabeling, and concurrent-row
   behavior.
-- Batch 19 is removed from the live queue after completion. Ready rows 20-22
-  remain unchanged, leaving the required three-row floor intact.
+- Batch 19 is removed from the live queue after completion. Three unrelated
+  ready rows remain, leaving the required floor intact.
 
 ## Boundaries
 

@@ -21,6 +21,7 @@
 ### Task 1: Enforce Taxon Attribute Integer Domains In PostgreSQL
 
 **Files:**
+
 - Create: `priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs`
 - Create: `test/product_compare/repo/taxon_attribute_storage_bounds_test.exs`
 - Modify: `lib/product_compare_schemas/specs/taxon_attribute.ex`
@@ -33,6 +34,7 @@
 - Modify: `docs/plans/2026-07-31-work-index-history.md`
 
 **Interfaces:**
+
 - Consumes: existing `TaxonAttribute.changeset/2` non-negative validations and the `taxon_attributes` columns.
 - Produces: named database checks `taxon_attributes_sort_order_non_negative` and `taxon_attributes_min_rep_to_edit_non_negative`, with matching schema mappings.
 

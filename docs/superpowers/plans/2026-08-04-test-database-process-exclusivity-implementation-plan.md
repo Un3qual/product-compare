@@ -21,6 +21,7 @@
 ### Task 1: Guard One Test Database Per External Process
 
 **Files:**
+
 - Create: `test/support/test_database_process_guard.ex`
 - Create: `test/product_compare/test_database_process_guard_test.exs`
 - Modify: `test/test_helper.exs`
@@ -30,6 +31,7 @@
 - Modify: `docs/plans/2026-07-31-work-index-history.md`
 
 **Interfaces:**
+
 - Consumes: `ProductCompare.Repo.config/0`, a test-only lock namespace, and PostgreSQL `pg_try_advisory_lock`.
 - Produces: `ProductCompare.TestDatabaseProcessGuard.acquire!/2`, returning the dedicated connection PID on success and raising `RuntimeError` with the database plus `MIX_TEST_PARTITION` guidance on contention.
 
@@ -101,4 +103,3 @@ the plan from the active catalog into completion history.
 git add test/support/test_database_process_guard.ex test/product_compare/test_database_process_guard_test.exs test/test_helper.exs docs/work/test-database-process-exclusivity.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-31-work-index-history.md docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md
 git commit -m "test: guard shared test database processes"
 ```
-

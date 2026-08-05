@@ -82,12 +82,26 @@
 - Consumes: the exact Unicode code-point boundaries frozen by Task 1.
 - Produces: six named PostgreSQL checks, six explicitly code-point-counting
   changeset validations, and owning constraint mappings.
+- Canonical checks and predicates reused by the migration, direct constraint-name
+  assertions, Ecto mappings, and completion evidence:
+  - `product_threads_title_length_check`:
+    `char_length(title) BETWEEN 1 AND 200`
+  - `product_threads_body_length_check`:
+    `body_md IS NULL OR char_length(body_md) <= 5000`
+  - `thread_posts_body_length_check`:
+    `char_length(body_md) <= 5000`
+  - `product_reviews_title_length_check`:
+    `title IS NULL OR char_length(title) <= 120`
+  - `product_reviews_body_length_check`:
+    `body_md IS NULL OR char_length(body_md) <= 5000`
+  - `community_reports_reason_length_check`:
+    `char_length(reason) >= 3`
 
 - [ ] **Step 1: Add the forward migration**
 
   Implement explicit `up/0` and `down/0` functions. `up/0` creates the six
-  checks named in the design using `char_length`; nullable fields explicitly
-  allow `NULL`. `down/0` drops only those six checks.
+  canonical checks above using `char_length`; nullable fields explicitly allow
+  `NULL`. `down/0` drops only those six checks.
 
 - [ ] **Step 2: Align all owning validations and map constraint failures**
 

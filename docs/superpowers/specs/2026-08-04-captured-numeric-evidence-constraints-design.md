@@ -18,16 +18,17 @@ could persist evidence that the source tables themselves reject.
 Enforce source-domain parity at the copied-storage boundary.
 
 - Comparison snapshot attribute confidence is null or within `0..1`.
-- Comparison snapshot offer prices and ranking landed prices are nonnegative.
-- Price-watch captured baselines are null or nonnegative.
+- Comparison snapshot offer prices and ranking landed prices are finite and nonnegative.
+- Price-watch captured baselines are null or finite and nonnegative.
 - Alert event item, shipping, landed, baseline, and target amounts are
-  nonnegative when present.
+  finite and nonnegative when present.
 - Alert event percentage drops are null or greater than zero and no more than
   one hundred.
 
-The constraints belong in the unreleased migrations that create the affected
-tables. Focused database tests must prove both valid boundary values and direct
-SQL rejection of invalid values.
+The constraints belong in one new forward migration because the migrations that
+created the affected tables may already be recorded as applied. Focused database
+tests must prove upgrade and rollback behavior, valid finite boundary values,
+and direct SQL rejection of negative and non-finite values.
 
 ## Alternatives Considered
 
@@ -54,6 +55,8 @@ constraints, no new abstraction, and no public behavior change.
 
 - Do not add precision or scale limits; provider and measurement precision is a
   separate decision.
+- Reject PostgreSQL numeric special values such as `NaN` and positive
+  `Infinity`; they are not captured monetary evidence.
 - Do not constrain `purchase_price_facts.price_delta`; it is intentionally
   signed.
 - Do not constrain specification numeric values or unit offsets; their domains
@@ -64,10 +67,10 @@ constraints, no new abstraction, and no public behavior change.
 
 ## Verification
 
-- A clean test-database rebuild applies the rewritten unreleased migrations.
-- Focused direct-SQL tests prove every named constraint rejects invalid data and
-  accepts boundary-valid data.
+- An isolated migration test applies the forward migration to an existing
+  schema, proves the checks are active, and rolls it back cleanly.
+- Focused direct-SQL tests prove every named constraint rejects negative and
+  non-finite data and accepts boundary-valid finite data.
 - Existing comparison snapshot and alert lifecycle suites remain green.
 - Full backend tests, type checks, quality, formatting, queue validation, and
   diff checks pass.
-

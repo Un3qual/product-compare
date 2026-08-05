@@ -43,9 +43,6 @@
 - Modify: `test/product_compare_web/graphql/specification_corrections_test.exs`
 - Modify: `test/product_compare_web/graphql/cj_program_queries_test.exs`
 - Modify: `docs/work/operator-mutation-authorization-freshness.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/INDEX.md`
-- Modify: `docs/plans/2026-07-31-work-index-history.md`
 
 **Interfaces:**
 - Consumes: the request-context operator ID, `Repo.in_transaction?/0`, and the

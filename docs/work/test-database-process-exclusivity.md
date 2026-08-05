@@ -75,7 +75,7 @@ Intentional parallel processes remain available through distinct
 
 ## Remaining Work
 
-None. Batch 21 remains the next ready queue row.
+None. Current dispatch order remains owned by `docs/work/index.md`.
 
 ## Blocker Rule
 
