@@ -59,7 +59,10 @@ defmodule ProductCompare.TestSupport.ApplicationJsonStoragePolicy do
     "explicitly JSON-typed specification data"
   ]
 
-  @framework_owned_tables ~w(oban_jobs oban_peers schema_migrations)
+  @framework_owned_json_columns MapSet.new([
+                                  {"oban_jobs", "args"},
+                                  {"oban_jobs", "meta"}
+                                ])
 
   @type schema_field :: %{
           schema: module(),
@@ -136,7 +139,12 @@ defmodule ProductCompare.TestSupport.ApplicationJsonStoragePolicy do
           {:ok, [classification()]} | {:error, [String.t()]}
   def validate_inventories(schema_fields, catalog_columns, classifications) do
     fields = Enum.sort_by(schema_fields, &field_contract_key/1)
-    columns = Enum.sort_by(catalog_columns, &column_key/1)
+
+    columns =
+      catalog_columns
+      |> Enum.reject(&MapSet.member?(@framework_owned_json_columns, column_key(&1)))
+      |> Enum.sort_by(&column_key/1)
+
     policies = Enum.sort_by(classifications, &field_contract_key/1)
 
     violations =
@@ -277,10 +285,9 @@ defmodule ProductCompare.TestSupport.ApplicationJsonStoragePolicy do
       FROM information_schema.columns
       WHERE table_schema = current_schema()
         AND data_type IN ('json', 'jsonb')
-        AND NOT (table_name = ANY($1))
       ORDER BY table_name, column_name
       """,
-      [@framework_owned_tables]
+      []
     ).rows
     |> Enum.map(fn [table, column, data_type, udt_name] ->
       %{table: table, column: column, data_type: data_type, udt_name: udt_name}

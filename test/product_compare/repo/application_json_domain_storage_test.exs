@@ -3,6 +3,15 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
 
   alias ProductCompare.TestSupport.ApplicationJsonStoragePolicy
 
+  defmodule UnclassifiedJsonSchema do
+    use Ecto.Schema
+
+    @primary_key false
+    schema "policy_fixture_records" do
+      field :opaque_facts, :map, source: :opaque_facts_dump
+    end
+  end
+
   @expected_json_classifications [
     %{
       schema: ProductCompareSchemas.CommerceAttribution.CommerceConversion,
@@ -74,12 +83,24 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
   ]
 
   test "rejects an unclassified persisted schema JSON field by default" do
-    field = %{
-      schema: __MODULE__.UnclassifiedJsonSchema,
-      field: :opaque_facts,
-      source: :opaque_facts_dump,
+    assert [
+             %{
+               schema: UnclassifiedJsonSchema,
+               field: :opaque_facts,
+               source: :opaque_facts_dump,
+               table: "policy_fixture_records",
+               column: "opaque_facts_dump"
+             } = field
+           ] =
+             ApplicationJsonStoragePolicy.persisted_map_fields_from_modules([
+               UnclassifiedJsonSchema
+             ])
+
+    column = %{
       table: "policy_fixture_records",
-      column: "opaque_facts_dump"
+      column: "opaque_facts_dump",
+      data_type: "jsonb",
+      udt_name: "jsonb"
     }
 
     assert {:error,
@@ -89,12 +110,8 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
                 "policy_fixture_records.opaque_facts_dump (:opaque_facts, source :opaque_facts_dump) " <>
                 "has no explicit JSON storage classification. Classify only raw provider evidence, " <>
                 "provider request metadata, open-key campaign metadata, or explicitly JSON-typed " <>
-                "specification data; stable application-owned facts must use typed relational storage.",
-              "Schema inventory: " <>
-                "Elixir.ProductCompare.Repo.ApplicationJsonDomainStorageTest.UnclassifiedJsonSchema " <>
-                "policy_fixture_records.opaque_facts_dump (:opaque_facts, source :opaque_facts_dump) " <>
-                "is a persisted Ecto :map field without a matching PostgreSQL json/jsonb catalog column."
-            ]} = ApplicationJsonStoragePolicy.validate_inventories([field], [], [])
+                "specification data; stable application-owned facts must use typed relational storage."
+            ]} = ApplicationJsonStoragePolicy.validate_inventories([field], [column], [])
   end
 
   test "rejects an unclassified PostgreSQL JSON column by default" do
@@ -114,6 +131,43 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
                 "persisted Ecto :map field and one narrow classification, or migrate stable " <>
                 "application-owned facts to typed relational storage."
             ]} = ApplicationJsonStoragePolicy.validate_inventories([], [column], [])
+  end
+
+  test "excludes only exact known framework-owned JSON columns" do
+    catalog = [
+      %{table: "oban_jobs", column: "args", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_jobs", column: "meta", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_jobs", column: "future_payload", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_peers", column: "future_payload", data_type: "jsonb", udt_name: "jsonb"},
+      %{
+        table: "schema_migrations",
+        column: "future_payload",
+        data_type: "jsonb",
+        udt_name: "jsonb"
+      }
+    ]
+
+    assert {:error,
+            [
+              "Catalog inventory: oban_jobs.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Catalog inventory: oban_peers.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Catalog inventory: schema_migrations.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Policy classification: oban_jobs.future_payload has no explicit JSON storage " <>
+                "contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted Ecto " <>
+                ":map field and one narrow classification, or migrate stable application-owned " <>
+                "facts to typed relational storage.",
+              "Policy classification: oban_peers.future_payload has no explicit JSON storage " <>
+                "contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted Ecto " <>
+                ":map field and one narrow classification, or migrate stable application-owned " <>
+                "facts to typed relational storage.",
+              "Policy classification: schema_migrations.future_payload has no explicit JSON " <>
+                "storage contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted " <>
+                "Ecto :map field and one narrow classification, or migrate stable " <>
+                "application-owned facts to typed relational storage."
+            ]} = ApplicationJsonStoragePolicy.validate_inventories([], catalog, [])
   end
 
   test "application-owned snapshot and alert JSON columns are absent" do
