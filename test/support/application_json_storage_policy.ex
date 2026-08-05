@@ -161,28 +161,24 @@ defmodule ProductCompare.TestSupport.ApplicationJsonStoragePolicy do
   end
 
   defp schema_inventory_violations(fields, columns) do
-    Enum.flat_map(fields, fn field ->
-      if Enum.any?(columns, &(column_key(&1) == column_key(field))) do
-        []
-      else
-        [
-          "Schema inventory: #{field_label(field)} is a persisted Ecto :map field without a " <>
-            "matching PostgreSQL json/jsonb catalog column."
-        ]
-      end
+    fields
+    |> Enum.filter(fn field ->
+      not Enum.any?(columns, &(column_key(&1) == column_key(field)))
+    end)
+    |> Enum.map(fn field ->
+      "Schema inventory: #{field_label(field)} is a persisted Ecto :map field without a " <>
+        "matching PostgreSQL json/jsonb catalog column."
     end)
   end
 
   defp catalog_inventory_violations(fields, columns) do
-    Enum.flat_map(columns, fn column ->
-      if Enum.any?(fields, &(column_key(&1) == column_key(column))) do
-        []
-      else
-        [
-          "Catalog inventory: #{column_label(column)} uses PostgreSQL " <>
-            "#{column.data_type}/#{column.udt_name} without a matching persisted Ecto :map field."
-        ]
-      end
+    columns
+    |> Enum.filter(fn column ->
+      not Enum.any?(fields, &(column_key(&1) == column_key(column)))
+    end)
+    |> Enum.map(fn column ->
+      "Catalog inventory: #{column_label(column)} uses PostgreSQL " <>
+        "#{column.data_type}/#{column.udt_name} without a matching persisted Ecto :map field."
     end)
   end
 
