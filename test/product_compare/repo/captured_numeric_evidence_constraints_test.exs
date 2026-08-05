@@ -74,6 +74,36 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     end
   end
 
+  test "price point sources reject non-finite amounts before evidence capture" do
+    %{merchant_product_id: merchant_product_id} = insert_alert_event_parents!()
+
+    assert {:ok, _result} = insert_price_point(merchant_product_id, "0", "NULL")
+    assert {:ok, _result} = insert_price_point(merchant_product_id, "0", "0")
+
+    for {price, shipping, constraint} <- [
+          {"'NaN'::numeric", "0", "price_points_price_finite_non_negative"},
+          {"'Infinity'::numeric", "0", "price_points_price_finite_non_negative"},
+          {"0", "'NaN'::numeric", "price_points_shipping_finite_non_negative"},
+          {"0", "'Infinity'::numeric", "price_points_shipping_finite_non_negative"}
+        ] do
+      assert_check_violation(insert_price_point(merchant_product_id, price, shipping), constraint)
+    end
+  end
+
+  test "price watch target sources reject non-finite amounts before alert capture" do
+    %{id: user_id} = AccountsFixtures.user_fixture()
+    %{id: product_id} = SpecsFixtures.product_fixture()
+
+    assert {:ok, _result} = insert_target_price_watch_rule(user_id, product_id, "0")
+
+    for target_amount <- ["'NaN'::numeric", "'Infinity'::numeric"] do
+      assert_check_violation(
+        insert_target_price_watch_rule(user_id, product_id, target_amount),
+        "price_watch_rules_target_amount_finite_non_negative"
+      )
+    end
+  end
+
   test "alert events accept nullable evidence and valid numeric endpoints and reject invalid copied numeric evidence" do
     %{user_id: user_id, merchant_product_id: merchant_product_id, price_point_id: price_point_id} =
       insert_alert_event_parents!()
@@ -229,15 +259,31 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   end
 
   defp insert_price_watch_rule_without_baseline(user_id, product_id) do
+    insert_target_price_watch_rule(user_id, product_id, "0")
+  end
+
+  defp insert_target_price_watch_rule(user_id, product_id, target_amount) do
     ProductCompare.Repo.query(
       """
       INSERT INTO price_watch_rules (
         user_id, product_id, rule_type, currency_id, target_amount, baseline_landed_price,
         inserted_at, updated_at
       )
-      VALUES ($1, $2, 'target_price', 840, 0, NULL, now(), now())
+      VALUES ($1, $2, 'target_price', 840, #{target_amount}, NULL, now(), now())
       """,
       [user_id, product_id]
+    )
+  end
+
+  defp insert_price_point(merchant_product_id, price, shipping) do
+    ProductCompare.Repo.query(
+      """
+      INSERT INTO price_points (
+        merchant_product_id, observed_at, price, shipping, in_stock, inserted_at
+      )
+      VALUES ($1, now(), #{price}, #{shipping}, true, now())
+      """,
+      [merchant_product_id]
     )
   end
 

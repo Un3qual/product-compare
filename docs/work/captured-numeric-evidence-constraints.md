@@ -6,16 +6,16 @@
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`
-- Last verified: 2026-08-05 after the forward-migration review correction,
-  focused migration and direct-write verification, affected GraphQL suites,
-  and full repository gates.
+- Last verified: 2026-08-05 after the captured- and source-boundary
+  forward-migration review corrections, focused migration and direct-write
+  verification, affected GraphQL suites, and full repository gates.
 - Implementation commits: `2476a0dc`, `b0bd54cb`, and review follow-up
-  `e913ee04`.
+  `e913ee04`, plus the source-boundary follow-up in this PR.
 
 ## Batch Outcome
 
-Immutable comparison evidence and copied alert facts retain the numeric domains
-of their source records even when a write bypasses application changesets.
+Source price facts, immutable comparison evidence, and copied alert facts retain
+their numeric domains even when a write bypasses application changesets.
 
 ## Completed Evidence
 
@@ -28,14 +28,18 @@ of their source records even when a write bypasses application changesets.
 - `price_watch_rules_baseline_landed_price_non_negative` preserves nullable
   captured baselines while rejecting negative and non-finite values, and the
   mutable price watch changeset maps the named database constraint.
+- `price_points_price_finite_non_negative`,
+  `price_points_shipping_finite_non_negative`, and
+  `price_watch_rules_target_amount_finite_non_negative` reject non-finite source
+  amounts before snapshot publication or alert recording can copy them.
 - `alert_events_numeric_evidence_bounds` requires finite nonnegative monetary
   facts, permits nullable baseline and target amounts only when finite and
   nonnegative, and permits nullable percentage drops only in `(0, 100]`.
-- A forward-migration regression proves already-created tables receive the
-  checks and rollback removes them. Direct PostgreSQL writes prove every invalid
-  family returns its exact named check violation while finite zero monetary
-  values, confidence endpoints `0` and `1`, and percentage endpoints greater
-  than zero through `100` remain valid.
+- Forward-migration regressions prove already-created source and copied-evidence
+  tables receive the checks and rollback removes them. Direct PostgreSQL writes
+  prove every invalid family returns its exact named check violation while
+  finite zero monetary values, confidence endpoints `0` and `1`, and percentage
+  endpoints greater than zero through `100` remain valid.
 - GraphQL, capture, hydration, pricing, specification-claim, taxonomy, alert,
   and commerce-attribution behavior did not change.
 
@@ -52,7 +56,8 @@ of their source records even when a write bypasses application changesets.
 
 1. Failing direct-write constraint characterization.
 2. Named forward comparison snapshot and alert/watch constraints.
-3. Upgrade/rollback proof, lifecycle parity, and full backend verification.
+3. Source-boundary direct-write characterization and a second forward migration.
+4. Upgrade/rollback proof, lifecycle parity, and full backend verification.
 
 ## Verification
 
@@ -70,6 +75,16 @@ of their source records even when a write bypasses application changesets.
 - Review follow-up migration and direct-write command: 6 tests, 0 failures.
 - Review follow-up affected GraphQL command: 43 tests, 0 failures.
 - Review follow-up combined backend command: 49 tests, 0 failures.
+- Source-boundary follow-up focused migration, direct-write, and guard command:
+  10 tests, 0 failures.
+- Source-boundary follow-up `mix test --max-cases 10`: 1,222 tests,
+  0 failures.
+- Source-boundary follow-up `mix typecheck`, `mix quality`, and
+  `mix format --check-formatted`: exit `0`; Credo found no issues, the ExDNA
+  clone budget remained 3/3, cross-function smell detection found no issues,
+  and Dialyzer passed successfully.
+- Source-boundary follow-up `mix work_queue.validate`:
+  `work queue valid: 3 ready rows`; `git diff --check`: exit `0`.
 - Review follow-up `mix test`: 1,219 tests, 0 failures.
 - Review follow-up frontend focused command: 28 tests, 0 failures.
 - Review follow-up full frontend command: 1,530 tests, 0 failures.

@@ -2,16 +2,18 @@
 
 ## Problem
 
-Product Compare already rejects impossible numeric values at the source boundary:
-price points reject negative price and shipping values, product-taxonomy and
-attribute-claim confidence stays between zero and one, and price-watch inputs
-enforce nonnegative targets plus percentage drops greater than zero and no more
-than one hundred. The immutable comparison-snapshot tables and copied alert
-facts persist those same values without equivalent PostgreSQL constraints.
+Product Compare already rejects ordinary out-of-range numeric values at the
+source boundary: price points reject negative price and shipping values,
+product-taxonomy and attribute-claim confidence stays between zero and one, and
+price-watch inputs enforce nonnegative targets plus percentage drops greater
+than zero and no more than one hundred. The original PostgreSQL lower-bound
+checks still admit `NaN` and positive `Infinity`, while immutable
+comparison-snapshot tables and copied alert facts initially persisted those
+same values without equivalent PostgreSQL constraints.
 
 That leaves trusted internal capture code as the only protection against an
 impossible copied fact. A future bulk insert, repair task, or capture regression
-could persist evidence that the source tables themselves reject.
+could persist invalid source data or copy it into evidence tables.
 
 ## Decision
 
@@ -19,16 +21,19 @@ Enforce source-domain parity at the copied-storage boundary.
 
 - Comparison snapshot attribute confidence is null or within `0..1`.
 - Comparison snapshot offer prices and ranking landed prices are finite and nonnegative.
+- Price-point price and shipping values are finite and nonnegative when present.
+- Price-watch target amounts are finite and nonnegative when present.
 - Price-watch captured baselines are null or finite and nonnegative.
 - Alert event item, shipping, landed, baseline, and target amounts are
   finite and nonnegative when present.
 - Alert event percentage drops are null or greater than zero and no more than
   one hundred.
 
-The constraints belong in one new forward migration because the migrations that
-created the affected tables may already be recorded as applied. Focused database
-tests must prove upgrade and rollback behavior, valid finite boundary values,
-and direct SQL rejection of negative and non-finite values.
+The constraints belong in dedicated forward migrations because migrations that
+created the affected tables, and any review-corrected migration already applied
+in a local or preview database, must not be rewritten. Focused database tests
+must prove upgrade and rollback behavior, valid finite boundary values, and
+direct SQL rejection of negative and non-finite values.
 
 ## Alternatives Considered
 
@@ -46,10 +51,11 @@ signed price deltas are valid open domains. A generic framework would require a
 large classification registry without improving the concrete captured-evidence
 boundary.
 
-### Source-domain parity at copied tables
+### Source-domain parity at source and copied tables
 
-This is the selected approach. It closes a concrete integrity gap with named
-constraints, no new abstraction, and no public behavior change.
+This is the selected approach. It closes the copy boundary and prevents invalid
+source rows from poisoning later capture with named constraints, no new
+abstraction, and no public behavior change.
 
 ## Boundaries
 
@@ -63,12 +69,14 @@ constraints, no new abstraction, and no public behavior change.
   depend on the owning attribute or unit.
 - Do not redesign alert or comparison capture code, GraphQL payloads, or
   frontend presentation.
+- Reject invalid source values at storage rather than filtering them during
+  snapshot or alert copying.
 - Do not reset the development database. Rebuild only the test database.
 
 ## Verification
 
-- An isolated migration test applies the forward migration to an existing
-  schema, proves the checks are active, and rolls it back cleanly.
+- Isolated migration tests apply each forward migration to an existing schema,
+  prove the checks are active, and roll them back cleanly.
 - Focused direct-SQL tests prove every named constraint rejects negative and
   non-finite data and accepts boundary-valid finite data.
 - Existing comparison snapshot and alert lifecycle suites remain green.

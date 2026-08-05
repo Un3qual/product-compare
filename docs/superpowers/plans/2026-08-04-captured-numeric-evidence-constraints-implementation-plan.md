@@ -2,9 +2,9 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make PostgreSQL enforce the established numeric domains of immutable comparison evidence and copied alert facts.
+**Goal:** Make PostgreSQL enforce the established numeric domains of source price facts, immutable comparison evidence, and copied alert facts.
 
-**Architecture:** Add one forward migration that installs named checks on the existing comparison-snapshot, price-watch, and alert-event tables. Prove both upgrade behavior and the database boundary through direct invalid writes while retaining existing application capture behavior unchanged.
+**Architecture:** Add forward migrations that install named checks on the existing price-point, comparison-snapshot, price-watch, and alert-event tables. Prove both upgrade behavior and the database boundary through direct invalid writes while retaining existing application capture behavior unchanged.
 
 **Tech Stack:** Elixir, Ecto SQL, PostgreSQL check constraints, ExUnit.
 
@@ -148,4 +148,36 @@
 
   Commit message: `docs: close captured numeric evidence constraints`
 
-Exit condition: a forward migration protects already-migrated databases, PostgreSQL rejects impossible or non-finite copied comparison and alert numeric evidence, valid finite boundary values remain accepted, public behavior is unchanged, and all backend gates pass.
+## Task 4: Prevent Non-Finite Source Rows From Poisoning Evidence Capture
+
+**Files:**
+
+- Create: `priv/repo/migrations/20260805180000_enforce_source_numeric_evidence_constraints.exs`
+- Modify: `test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`
+- Create: `test/product_compare/repo/migrations/enforce_source_numeric_evidence_constraints_test.exs`
+
+- [x] **Step 1: Reproduce the direct-write source gap**
+
+  Prove PostgreSQL accepts `NaN` and positive `Infinity` in source
+  `price_points.price`, `price_points.shipping`, and
+  `price_watch_rules.target_amount` even though later evidence copies reject
+  those values.
+
+- [x] **Step 2: Add a separate forward migration**
+
+  Add source constraints in a new timestamped migration because the captured
+  evidence migration was already applied in this checkout. Do not filter or
+  coerce invalid source values during snapshot or alert copying.
+
+- [x] **Step 3: Prove upgrade and rollback behavior**
+
+  Apply the source migration to an isolated legacy schema, verify finite zero
+  and nullable values remain valid, verify non-finite writes fail with the
+  expected named constraints, then prove rollback removes the checks.
+
+- [x] **Step 4: Run repository gates and publish the review follow-up**
+
+Exit condition: forward migrations protect already-migrated databases,
+PostgreSQL rejects impossible or non-finite source, comparison, and alert
+numeric evidence, valid finite boundary values remain accepted, public behavior
+is unchanged, and all backend gates pass.
