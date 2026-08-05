@@ -47,53 +47,6 @@ None.
 
 ## Ready Work
 
-### 18. Captured Numeric Evidence Constraints
-
-Status: ready
-Lane: Database copied evidence integrity
-Plan: `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`
-Batch outcome: immutable comparison evidence and copied alert facts retain the
-numeric domains of their source records even when a write bypasses application
-changesets.
-Next action: add failing direct-write tests for copied confidence, price,
-baseline, target, and percentage fields before adding named constraints to the
-unreleased comparison-snapshot and alert migrations.
-Owned paths:
-
-- `priv/repo/migrations/20260713170000_add_price_watches_and_alerts.exs`
-- `priv/repo/migrations/20260713180000_create_comparison_snapshots.exs`
-- `lib/product_compare_schemas/alerts/price_watch_rule.ex`
-- `test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`
-- affected backend comparison snapshot, alert, pricing, specification,
-  taxonomy, and commerce-attribution tests
-- `docs/work/captured-numeric-evidence-constraints.md`
-
-Internal slices:
-
-- Failing direct-write constraint characterization.
-- Named comparison snapshot and alert/watch constraints.
-- Clean test-database rebuild, lifecycle parity, and full backend verification.
-
-Prerequisites:
-
-- Source price, confidence, target, and percentage domains remain unchanged.
-- No active row owns the affected backend migrations, schema, or database tests.
-- Signed price deltas, specification numeric values, and unit offsets remain
-  explicitly outside the batch.
-
-Verification:
-
-- clean migrated test database and focused direct-write constraint suite
-- affected comparison snapshot, alert, pricing, specification, taxonomy, and
-  commerce-attribution suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects impossible copied comparison and alert
-numeric evidence, valid boundary values remain accepted, public behavior is
-unchanged, and all backend gates pass.
-
 ### 19. Destructive Action Confirmation
 
 Status: ready

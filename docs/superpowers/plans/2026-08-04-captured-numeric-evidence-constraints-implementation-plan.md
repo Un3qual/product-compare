@@ -31,7 +31,7 @@
 - Consumes: the current PostgreSQL schema created by the two unreleased migrations.
 - Produces: direct database regressions for the five named copied-evidence constraints.
 
-- [ ] **Step 1: Add failing direct-write tests**
+- [x] **Step 1: Add failing direct-write tests**
 
   Add one focused test per constraint family. Insert the minimum valid parent
   rows, then use `ProductCompare.Repo.query/2` inside the SQL sandbox to prove:
@@ -42,13 +42,13 @@
   - `price_watch_rules.baseline_landed_price` rejects negative values.
   - `alert_events` rejects negative monetary evidence and percentage drops outside `(0, 100]`.
 
-- [ ] **Step 2: Run the focused test and verify RED**
+- [x] **Step 2: Run the focused test and verify RED**
 
   Run: `mix test test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`
 
   Expected: the invalid direct writes succeed because the copied tables do not yet own the checks.
 
-- [ ] **Step 3: Confirm valid boundary fixtures**
+- [x] **Step 3: Confirm valid boundary fixtures**
 
   Keep zero monetary values, confidence values `0` and `1`, and percentage
   values greater than zero through `100` as accepted controls in the same
@@ -68,7 +68,7 @@
 - Consumes: the exact numeric domains frozen by Task 1.
 - Produces: named PostgreSQL checks and changeset mapping for the mutable price-watch rule boundary.
 
-- [ ] **Step 1: Constrain comparison snapshot copies**
+- [x] **Step 1: Constrain comparison snapshot copies**
 
   Add these named checks to the snapshot migration:
 
@@ -79,7 +79,7 @@
   Confidence permits `NULL` or `0..1`. Snapshot offer monetary columns and
   ranking landed price must be greater than or equal to zero.
 
-- [ ] **Step 2: Constrain alert and watch copies**
+- [x] **Step 2: Constrain alert and watch copies**
 
   Add these named checks to the alert migration:
 
@@ -90,14 +90,14 @@
   permits nullable baseline and target amounts only when nonnegative; and
   permits nullable percentage drops only in `(0, 100]`.
 
-- [ ] **Step 3: Map the mutable watch constraint**
+- [x] **Step 3: Map the mutable watch constraint**
 
   Add `check_constraint/3` for
   `price_watch_rules_baseline_landed_price_non_negative` to the existing price
   watch changeset. Do not add changesets solely for immutable snapshot or alert
   rows written by trusted capture code.
 
-- [ ] **Step 4: Run the focused test and verify GREEN**
+- [x] **Step 4: Run the focused test and verify GREEN**
 
   Run: `MIX_ENV=test mix ecto.reset`
 
@@ -106,7 +106,7 @@
   Expected: all valid controls pass and every invalid direct write returns the
   expected named check-constraint violation.
 
-- [ ] **Step 5: Commit the database boundary milestone**
+- [x] **Step 5: Commit the database boundary milestone**
 
   Commit message: `fix: constrain captured numeric evidence`
 
@@ -123,12 +123,12 @@
 - Consumes: the database boundary delivered by Task 2.
 - Produces: verified completion evidence and a replenished live queue.
 
-- [ ] **Step 1: Run affected lifecycle suites**
+- [x] **Step 1: Run affected lifecycle suites**
 
   Run comparison snapshot, alert, pricing, specification-claim, taxonomy, and
   commerce-attribution suites that own the source and copied numeric facts.
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
   Run:
 
@@ -139,15 +139,14 @@
   - `mix work_queue.validate`
   - `git diff --check`
 
-- [ ] **Step 3: Record evidence and close the row**
+- [x] **Step 3: Record evidence and close the row**
 
   Replace prospective lane language with observed results, remove the completed
   row only at a coordinator boundary that still preserves at least three other
   ready rows, and update the plan catalog in the same commit.
 
-- [ ] **Step 4: Commit closeout**
+- [x] **Step 4: Commit closeout**
 
   Commit message: `docs: close captured numeric evidence constraints`
 
 Exit condition: PostgreSQL rejects impossible copied comparison and alert numeric evidence, valid boundary values remain accepted, public behavior is unchanged, and all backend gates pass.
-

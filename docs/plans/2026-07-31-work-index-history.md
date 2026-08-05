@@ -3164,3 +3164,22 @@ and 126 commerce-attribution tests), then passed 1,202 exact-head backend tests,
 quality, type, formatting, queue validation with ready rows 18-20 intact, and
 diff hygiene. Implementation commits were `4fa16461`, `cdc6353b`, `6549d4e2`,
 and `a26b0e8f`.
+
+## Completed 2026-08-04 Captured Numeric Evidence Constraints
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`
+
+Five named PostgreSQL checks now preserve the established numeric domains of
+immutable comparison attributes, offers, and rankings, captured price-watch
+baselines, and copied alert monetary, target, baseline, and percentage facts.
+Direct writes reject every impossible value with the exact owning constraint,
+while zero monetary values, confidence endpoints `0` and `1`, and percentage
+values greater than zero through `100` remain accepted. Public behavior is
+unchanged.
+
+Verification passed 5 focused direct-write tests; six lifecycle commands passed
+275 comparison, alert, pricing, specification-claim, taxonomy, and
+commerce-attribution tests; and the complete backend passed 1,207 tests. Type,
+quality, formatting, queue validation with ready rows 19-21 intact, and diff
+hygiene also passed. Implementation commits were `2476a0dc` and `b0bd54cb`.

@@ -2,35 +2,39 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`
-- Design:
-  `docs/superpowers/specs/2026-08-04-captured-numeric-evidence-constraints-design.md`
-- Last verified: 2026-08-04 against the current unreleased comparison-snapshot
-  and alert migrations, their source-schema changesets, and existing database
-  checks.
+- Last verified: 2026-08-04 after the permitted test-only database rebuild,
+  focused direct-write verification, six lifecycle-suite commands, and full
+  repository gates.
+- Implementation commits: `2476a0dc` and `b0bd54cb`.
 
-## Target Outcome
+## Batch Outcome
 
 Immutable comparison evidence and copied alert facts retain the numeric domains
 of their source records even when a write bypasses application changesets.
 
-## Ready Evidence
+## Completed Evidence
 
-- Price points already enforce nonnegative price and shipping values in both
-  changesets and PostgreSQL.
-- Product-taxonomy and attribute-claim confidence already enforce the `0..1`
-  domain in both changesets and PostgreSQL.
-- Price-watch inputs already enforce nonnegative targets and percentage drops
-  in `(0, 100]`.
-- Comparison snapshot attribute, offer, and ranking copies have only positional
-  checks; their copied confidence and price columns have no domain checks.
-- Alert events persist item, shipping, landed, baseline, target, and percentage
-  facts without equivalent database checks.
-- The price-watch captured baseline is not covered by its existing rule-shape
-  constraint.
+- `comparison_snapshot_attributes_confidence_range` permits `NULL` or inclusive
+  confidence values from `0` through `1` and rejects values outside that range.
+- `comparison_snapshot_offers_amounts_non_negative` requires copied item,
+  shipping, and landed prices to be nonnegative.
+- `comparison_snapshot_rankings_landed_price_non_negative` requires copied
+  ranking landed prices to be nonnegative.
+- `price_watch_rules_baseline_landed_price_non_negative` preserves nullable
+  captured baselines while rejecting negative values, and the mutable price
+  watch changeset maps the named database constraint.
+- `alert_events_numeric_evidence_bounds` requires nonnegative monetary facts,
+  permits nullable baseline and target amounts only when nonnegative, and
+  permits nullable percentage drops only in `(0, 100]`.
+- Direct PostgreSQL writes prove every invalid family returns its exact named
+  check violation while zero monetary values, confidence endpoints `0` and
+  `1`, and percentage endpoints greater than zero through `100` remain valid.
+- GraphQL, capture, hydration, pricing, specification-claim, taxonomy, alert,
+  and commerce-attribution behavior did not change.
 
 ## Boundaries
 
@@ -49,17 +53,31 @@ of their source records even when a write bypasses application changesets.
 
 ## Verification
 
-- `MIX_ENV=test mix ecto.reset`
-- focused captured numeric evidence constraint suite
-- comparison snapshot, alert, pricing, specification, taxonomy, and
-  commerce-attribution suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
+- Task 2 `MIX_ENV=test mix ecto.reset`: exit `0`; dropped, recreated, and
+  migrated only the test database with all five named checks installed.
+- `mix test test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`:
+  5 tests, 0 failures.
+- Comparison snapshot lifecycle command: 15 tests, 0 failures.
+- Alert lifecycle command: 15 tests, 0 failures.
+- Pricing lifecycle command: 40 tests, 0 failures.
+- Specification-claim lifecycle command: 68 tests, 0 failures.
+- Taxonomy lifecycle command: 11 tests, 0 failures.
+- Commerce-attribution lifecycle command: 126 tests, 0 failures.
+- `mix test`: 1,207 tests, 0 failures.
+- `mix typecheck` and `mix format --check-formatted`: exit `0` with no output.
+- `mix quality`: exit `0`; Credo found no issues, the ExDNA clone budget
+  remained 3/3, cross-function smell detection found no issues, and Dialyzer
+  passed successfully.
+- `mix work_queue.validate`: `work queue valid: 3 ready rows` after closeout.
+- `git diff --check`: exit `0` after closeout edits.
+
+## Concerns
+
+None. The development database was never reset; only the test database rebuild
+explicitly permitted by the plan was performed.
 
 ## Blocker Rule
 
 Stop and record the exact field if current data or capture behavior relies on a
 value outside the source domain. Do not widen the constraint or invent a new
 numeric policy to make the test pass.
-
