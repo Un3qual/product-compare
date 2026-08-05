@@ -2,19 +2,30 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: done
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md`
-- Last verified: 2026-08-04 against `config/test.exs`, the SQL sandbox setup,
-  and observed overlapping Batch 16 verification processes.
+- Last verified: 2026-08-05 with the focused release regression, an external
+  same-database contender, an independent partition, and the complete backend
+  gate.
 
-## Target Outcome
+## Batch Outcome
 
 Accidental concurrent `mix test` processes cannot share one PostgreSQL test
 database and contaminate each other's committed-transaction evidence.
 Intentional parallel processes remain available through distinct
 `MIX_TEST_PARTITION` databases.
+
+## What Changed
+
+- `ProductCompare.TestDatabaseProcessGuard` opens a dedicated Postgrex session
+  from the Repo configuration, derives a signed 64-bit advisory-lock key from
+  the connected database and lock namespace, and holds it for the BEAM process.
+- `test/test_helper.exs` acquires the default external-process lock before
+  ExUnit or SQL-sandbox setup starts.
+- The focused real-PostgreSQL test proves same-database contention and that
+  stopping the owner session releases the namespace for a later acquisition.
 
 ## Ready Evidence
 
@@ -43,14 +54,28 @@ Intentional parallel processes remain available through distinct
 2. Test-helper acquisition before ExUnit execution.
 3. External-process proof plus complete backend verification.
 
-## Verification
+## Completion Evidence
 
-- focused test-database guard and representative concurrency suites
-- same-database second-process failure before ExUnit
-- session release with existing `MIX_TEST_PARTITION` configuration unchanged
-- full backend test, type, quality, and formatting gates
-- `mix work_queue.validate`
-- `git diff --check`
+- `mix test test/product_compare/test_database_process_guard_test.exs` passed
+  one focused contention-and-release regression, and
+  `mix test test/product_compare/accounts/concurrency_test.exs` passed five
+  representative committed-concurrency tests.
+- With an external BEAM process holding the default guard, a second
+  `mix test test/product_compare/test_database_process_guard_test.exs` stopped
+  in `test/test_helper.exs` before ExUnit with: `another mix test process
+  already owns the product_compare_test test database; set MIX_TEST_PARTITION
+  to use a separate test database`.
+- While that default-database guard remained held,
+  `MIX_TEST_PARTITION=_test_database_guard_proof mix test
+  test/product_compare/test_database_process_guard_test.exs` passed its one
+  test against the separate partition database.
+- `mix format --check-formatted`, `mix typecheck`, `mix quality`, and the full
+  `mix test` gate completed successfully. `mix quality` retained the existing
+  clone budget at 3/3 and reported no new Credo or cross-function smell issues.
+
+## Remaining Work
+
+None. Batch 21 remains the next ready queue row.
 
 ## Blocker Rule
 

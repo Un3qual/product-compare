@@ -3202,3 +3202,23 @@ comparison integration suites at 118/118. The complete frontend passed 1,530
 tests in 106 files plus Relay, TypeScript, Oxc, Oxfmt, client and SSR builds, and
 the 268,764-byte gzip bundle contract. Queue validation passed after removing
 Batch 19 with ready rows 20-22 unchanged, and diff hygiene passed.
+
+## Completed 2026-08-05 Test Database Process Exclusivity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md`
+
+The test-only `ProductCompare.TestDatabaseProcessGuard` now owns a dedicated
+Postgrex session advisory lock for each database and namespace. The test helper
+acquires the default namespace before ExUnit starts, so an accidental second
+external test process fails before any tests run and names `MIX_TEST_PARTITION`
+as the supported way to select an independent database. Lock ownership ends
+when the dedicated session stops; production runtime, Repo pooling, migrations,
+and SQL-sandbox behavior remain unchanged.
+
+The focused real PostgreSQL regression passed one contention-and-release test,
+the representative Accounts concurrency suite passed five tests, an external
+same-database contender failed in `test/test_helper.exs` before ExUnit with the
+actionable partition guidance, and a partitioned contender passed one test while
+the default lock was held. Formatting, typecheck, quality, full backend tests,
+queue validation with ready rows 21-23 intact, and diff hygiene passed.
