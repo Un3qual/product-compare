@@ -193,6 +193,59 @@ Exit condition: PostgreSQL rejects negative taxonomy ordering and reputation
 thresholds, zero and positive values and current ordering remain unchanged, and
 all backend gates pass.
 
+### 24. Community Authored Text Storage Bounds
+
+Status: ready
+Lane: Community content storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
+Batch outcome: PostgreSQL retains established character bounds for authored
+threads, posts, reviews, and reports even when writes bypass changesets.
+Next action: add failing direct-write tests for every one-character-outside
+community text boundary before adding the six named forward checks.
+Owned paths:
+
+- `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
+- `lib/product_compare_schemas/discussions/product_thread.ex`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare_schemas/discussions/product_review.ex`
+- `lib/product_compare_schemas/discussions/community_report.ex`
+- `test/product_compare/repo/community_authored_text_storage_bounds_test.exs`
+- affected community lifecycle, thread-post validation, trust, GraphQL
+  community, node-query, Dataloader, and seed tests
+- `docs/work/community-authored-text-storage-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write authored-text boundary characterization.
+- Six named forward checks and owning changeset mappings.
+- Community lifecycle parity and complete backend verification.
+
+Prerequisites:
+
+- Current changeset length limits, nullability, and required-field behavior
+  remain unchanged.
+- The existing report-reason `varchar(500)` upper bound remains intact.
+- No active row owns community schemas, migrations, or affected tests.
+- No current community row violates one of the six missing boundaries.
+
+Verification:
+
+- focused community-authored-text direct-write suite
+- content lifecycle, thread-post validation, community trust, GraphQL
+  community content, node-query, Dataloader batching, and deterministic seed
+  suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects out-of-bounds community-authored text, all
+valid boundaries remain accepted, community behavior is unchanged, and all
+backend gates pass.
+
 ## Needs Decision Work
 
 None.
