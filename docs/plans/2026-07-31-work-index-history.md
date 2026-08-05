@@ -3222,3 +3222,21 @@ same-database contender failed in `test/test_helper.exs` before ExUnit with the
 actionable partition guidance, and a partitioned contender passed one test while
 the default lock was held. Formatting, typecheck, quality, full backend tests,
 queue validation with ready rows 21-23 intact, and diff hygiene passed.
+
+## Completed 2026-08-05 Credential Artifact Storage Constraints
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
+
+PostgreSQL now rejects malformed `users_tokens.token_hash` digests and
+out-of-bounds API-token display metadata through the named
+`users_tokens_hash_length_check`, `api_tokens_prefix_length_check`, and
+`api_tokens_label_length_check` constraints. Direct-write controls retain the
+established valid boundaries: a 32-byte digest, one- and 32-character prefixes,
+and `NULL` and 120-character labels. Existing GraphQL, browser-auth, API-token,
+and cookie-session behavior remains unchanged.
+
+Verification passed 148 affected account lifecycle tests and 1,214 complete
+backend tests with no failures. Typecheck, quality, formatting, queue validation
+with ready rows 22-24 intact, and diff hygiene also passed. Implementation
+commits were `ff5f751b` and `89bda46e`.

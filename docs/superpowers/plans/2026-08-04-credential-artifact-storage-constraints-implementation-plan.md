@@ -33,7 +33,7 @@
 - Consumes: the current `api_tokens` and `users_tokens` PostgreSQL tables.
 - Produces: direct-write regressions for three named storage constraints and their valid boundaries.
 
-- [ ] **Step 1: Add failing direct-write tests**
+- [x] **Step 1: Add failing direct-write tests**
 
   Use account fixtures for valid parent users and `ProductCompare.Repo.query/2`
   inside the SQL sandbox. Assert the expected named PostgreSQL error for:
@@ -42,13 +42,13 @@
   - empty and 33-character `api_tokens.token_prefix` values; and
   - a 121-character `api_tokens.label` value.
 
-- [ ] **Step 2: Add accepted-boundary controls**
+- [x] **Step 2: Add accepted-boundary controls**
 
   Insert distinct valid rows proving acceptance of an exactly 32-byte user
   token digest, API-token prefixes of 1 and 32 characters, and API-token labels
   of `NULL` and 120 characters.
 
-- [ ] **Step 3: Run the focused test and verify RED**
+- [x] **Step 3: Run the focused test and verify RED**
 
   Run: `mix test test/product_compare/repo/credential_artifact_storage_constraints_test.exs`
 
@@ -71,7 +71,7 @@
 - Consumes: the exact byte and character boundaries frozen by Task 1.
 - Produces: `api_tokens_prefix_length_check`, `api_tokens_label_length_check`, and `users_tokens_hash_length_check` plus owning changeset mappings.
 
-- [ ] **Step 1: Add the forward migration**
+- [x] **Step 1: Add the forward migration**
 
   In `up/0`, drop `api_tokens_prefix_not_empty`, then create:
 
@@ -85,14 +85,14 @@
   In `down/0`, remove those three checks and restore
   `api_tokens_prefix_not_empty` with `char_length(token_prefix) > 0`.
 
-- [ ] **Step 2: Map changeset failures**
+- [x] **Step 2: Map changeset failures**
 
   Add `check_constraint/3` mappings for the prefix and label checks in
   `ApiToken.changeset/2`. Add an exact 32-byte `validate_change/3` and the
   `users_tokens_hash_length_check` mapping in
   `UserSessionToken.changeset/2`.
 
-- [ ] **Step 3: Rebuild only the test database**
+- [x] **Step 3: Rebuild only the test database**
 
   Run: `MIX_ENV=test mix ecto.reset`
 
@@ -100,14 +100,14 @@
   rebuild, stop and report the exact violating table, column, and length. Do
   not mutate credential data to make the migration pass.
 
-- [ ] **Step 4: Run the focused suite and verify GREEN**
+- [x] **Step 4: Run the focused suite and verify GREEN**
 
   Run: `mix test test/product_compare/repo/credential_artifact_storage_constraints_test.exs`
 
   Expected: every invalid direct write returns its exact planned constraint and
   every valid boundary insert succeeds.
 
-- [ ] **Step 5: Commit the storage boundary milestone**
+- [x] **Step 5: Commit the storage boundary milestone**
 
   Commit message: `fix: constrain credential artifact storage`
 
@@ -126,12 +126,12 @@
 - Consumes: the database constraints and schema mappings delivered by Task 2.
 - Produces: lifecycle verification evidence and a queue closeout that retains at least three other ready rows.
 
-- [ ] **Step 1: Run affected account suites**
+- [x] **Step 1: Run affected account suites**
 
   Run account auth, API-token, user-session-token schema, GraphQL API-token,
   GraphQL session-auth, node-query, and deterministic seed suites.
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
   Run:
 
@@ -142,14 +142,14 @@
   - `mix work_queue.validate`
   - `git diff --check`
 
-- [ ] **Step 3: Record evidence and close the row**
+- [x] **Step 3: Record evidence and close the row**
 
   Replace prospective lane language with observed results, remove the completed
   row only when at least three other complete ready rows remain, update the
   candidate catalog and dated queue history, and mark this plan's checklist
   complete.
 
-- [ ] **Step 4: Commit closeout**
+- [x] **Step 4: Commit closeout**
 
   Commit message: `docs: close credential artifact storage constraints`
 

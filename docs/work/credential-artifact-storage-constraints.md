@@ -2,32 +2,39 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
 - Design:
   `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
-- Last verified: 2026-08-04 against the live PostgreSQL test catalog, account
-  token generation code, owning changesets, and 21 focused account tests.
+- Last verified: 2026-08-05 with 148 affected lifecycle tests and 1,214 full
+  backend tests, all with zero failures; type, quality, formatting, queue, and
+  diff gates also passed.
 
-## Target Outcome
+## Completed Outcome
 
 PostgreSQL retains the fixed digest and display-metadata boundaries of account
 credential artifacts even when a write bypasses application changesets.
 
-## Ready Evidence
+## Completed Evidence
 
-- User session, confirmation, and reset tokens always hash raw tokens with
-  SHA-256, yielding 32 bytes, but `users_tokens.token_hash` has no database
-  length check.
-- API-token changesets require prefix lengths from 1 through 32 characters,
-  while PostgreSQL checks only that the prefix is non-empty.
-- API-token changesets limit optional labels to 120 characters, while
-  PostgreSQL has no label-length check.
-- The live catalog reports only `api_tokens_hash_length_check` and
+- User session, confirmation, and reset tokens hash raw tokens with SHA-256,
+  yielding 32 bytes; the prior `users_tokens.token_hash` schema lacked a
+  database length check.
+- API-token changesets require prefix lengths from 1 through 32 characters;
+  the prior PostgreSQL check required only a non-empty prefix.
+- API-token changesets limit optional labels to 120 characters; the prior
+  PostgreSQL schema had no label-length check.
+- The pre-migration catalog exposed only `api_tokens_hash_length_check` and
   `api_tokens_prefix_not_empty` across the two credential-artifact tables.
-- The focused account baseline passes 21 tests with no failures.
+- Direct-write regressions confirm PostgreSQL rejects 31-byte and 33-byte user
+  token digests, empty and 33-character API-token prefixes, and 121-character
+  API-token labels with their exact named constraints.
+- Direct-write controls confirm PostgreSQL accepts a 32-byte digest, prefixes
+  of one and 32 characters, and `NULL` and 120-character labels.
+- The affected account lifecycle suite passed 148 tests with no failures; the
+  complete backend suite passed 1,214 tests with no failures.
 
 ## Boundaries
 
@@ -51,6 +58,16 @@ credential artifacts even when a write bypasses application changesets.
 - full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
+
+## Completion
+
+- Direct-write characterization completed in `ff5f751b` (`test: characterize
+  credential artifact storage bounds`).
+- Named storage constraints and changeset mappings completed in `89bda46e`
+  (`fix: constrain credential artifact storage`).
+- On 2026-08-05, `mix typecheck`, `mix quality`, `mix format
+  --check-formatted`, `mix work_queue.validate`, and `git diff --check` passed
+  after the lifecycle and full-backend test suites.
 
 ## Blocker Rule
 
