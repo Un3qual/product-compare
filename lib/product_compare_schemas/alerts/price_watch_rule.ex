@@ -63,6 +63,9 @@ defmodule ProductCompareSchemas.Alerts.PriceWatchRule do
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:currency, name: :price_watch_rules_currency_id_fkey)
     |> check_constraint(:rule_type, name: :price_watch_rules_target_check)
+    |> check_constraint(:baseline_landed_price,
+      name: :price_watch_rules_baseline_landed_price_non_negative
+    )
     |> cooldown_constraints()
   end
 
