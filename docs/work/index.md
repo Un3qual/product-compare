@@ -189,6 +189,55 @@ confirmation, cancel performs no mutation and restores focus, confirm invokes
 the unchanged selected-row action once, mutation state remains row-scoped, and
 all frontend gates pass.
 
+### 20. Test Database Process Exclusivity
+
+Status: ready
+Lane: Test infrastructure reliability
+Plan: `docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md`
+Batch outcome: accidental concurrent `mix test` processes cannot share one
+PostgreSQL test database and contaminate committed-transaction evidence, while
+intentional parallel processes retain distinct `MIX_TEST_PARTITION` databases.
+Next action: add the failing same-database contention and session-release
+contract before acquiring the process guard in `test/test_helper.exs`.
+Owned paths:
+
+- `test/support/test_database_process_guard.ex`
+- `test/product_compare/test_database_process_guard_test.exs`
+- `test/test_helper.exs`
+- `docs/work/test-database-process-exclusivity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md`
+
+Internal slices:
+
+- Same-database contention and advisory-lock session-release regression.
+- Test-helper acquisition before ExUnit starts.
+- External-process proof and complete backend verification.
+
+Prerequisites:
+
+- `config/test.exs` continues to give `MIX_TEST_PARTITION` values distinct
+  database names.
+- No active row owns the test helper or the new test-only support boundary.
+- The guard can use a dedicated Postgrex connection without changing Repo or
+  SQL sandbox configuration.
+
+Verification:
+
+- focused guard and representative committed-concurrency suites
+- same-database second process fails before ExUnit with partition guidance
+- session release with existing `MIX_TEST_PARTITION` configuration unchanged
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: one external test process owns each database while ExUnit
+runs, an accidental second process fails before test execution with actionable
+`MIX_TEST_PARTITION` guidance, normal serial and partitioned suites remain
+unchanged, and all backend gates pass.
+
 ## Needs Decision Work
 
 None.
