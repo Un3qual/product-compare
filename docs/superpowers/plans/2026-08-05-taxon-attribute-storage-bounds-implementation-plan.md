@@ -37,7 +37,7 @@
 - Consumes: existing `TaxonAttribute.changeset/2` non-negative validations and the `taxon_attributes` columns.
 - Produces: named database checks `taxon_attributes_sort_order_non_negative` and `taxon_attributes_min_rep_to_edit_non_negative`, with matching schema mappings.
 
-- [ ] **Step 1: Add failing direct-write boundary tests**
+- [x] **Step 1: Add failing direct-write boundary tests**
 
 Create taxon and attribute owners, insert a valid `taxon_attributes` row, and
 prove direct SQL currently accepts negative `sort_order` and
@@ -54,7 +54,7 @@ mix test test/product_compare/repo/taxon_attribute_storage_bounds_test.exs
 Expected before implementation: both negative direct writes succeed instead of
 returning the named PostgreSQL constraint errors.
 
-- [ ] **Step 2: Add the forward constraints and schema mappings**
+- [x] **Step 2: Add the forward constraints and schema mappings**
 
 Add one reversible migration that raises when any current row has a negative
 value, then creates both named checks. Map the same names through
@@ -71,7 +71,7 @@ mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs t
 Expected: the focused constraint suite passes and the existing 53-test
 changeset/read/GraphQL baseline remains green.
 
-- [ ] **Step 3: Verify and close the batch**
+- [x] **Step 3: Verify and close the batch**
 
 Run:
 
@@ -89,7 +89,7 @@ evidence in the lane doc. The coordinator removes the completed queue row only
 when at least three other ready rows remain, appends work-index history, and
 moves the candidate catalog row to completed.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs lib/product_compare_schemas/specs/taxon_attribute.ex test/product_compare/repo/taxon_attribute_storage_bounds_test.exs docs/work/taxon-attribute-storage-bounds.md docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md

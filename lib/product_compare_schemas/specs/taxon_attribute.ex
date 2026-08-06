@@ -30,6 +30,8 @@ defmodule ProductCompareSchemas.Specs.TaxonAttribute do
     |> validate_required([:taxon_id, :attribute_id])
     |> validate_number(:sort_order, greater_than_or_equal_to: 0)
     |> validate_number(:min_rep_to_edit, greater_than_or_equal_to: 0)
+    |> check_constraint(:sort_order, name: :taxon_attributes_sort_order_non_negative)
+    |> check_constraint(:min_rep_to_edit, name: :taxon_attributes_min_rep_to_edit_non_negative)
     |> unique_constraint([:taxon_id, :attribute_id], name: :taxon_attributes_taxon_attr_uq)
     |> foreign_key_constraint(:taxon_id)
     |> foreign_key_constraint(:attribute_id)

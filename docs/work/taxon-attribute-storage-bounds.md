@@ -52,6 +52,39 @@ values retain current behavior.
 - `mix work_queue.validate`
 - `git diff --check`
 
+## Task 1 Execution Evidence
+
+- Preflight returned no invalid stored rows:
+
+  ```sql
+  SELECT id, sort_order, min_rep_to_edit
+  FROM taxon_attributes
+  WHERE sort_order < 0 OR min_rep_to_edit < 0
+  ORDER BY id
+  ```
+
+  The test-database result was `[]`; no stored taxonomy policy was rewritten.
+- RED: before the migration, `mix test
+  test/product_compare/repo/taxon_attribute_storage_bounds_test.exs` ran three
+  tests with two expected failures. Direct SQL updates to `sort_order = -1`
+  and `min_rep_to_edit = -1` both returned `{:ok, %Postgrex.Result{}}` instead
+  of the named PostgreSQL check violations.
+- GREEN: the focused direct-write suite now passes 3 tests. PostgreSQL rejects
+  those negative writes with
+  `taxon_attributes_sort_order_non_negative` and
+  `taxon_attributes_min_rep_to_edit_non_negative`; direct inserts with `(0, 0)`
+  and `(17, 250)` remain valid.
+- Read-order and GraphQL regression gate:
+  `mix test test/product_compare/specs/product_attribute_claim_changeset_test.exs
+  test/product_compare/specs/read_helpers_test.exs
+  test/product_compare_web/graphql/catalog_queries_test.exs` passed 53 tests
+  with 0 failures.
+- Complete gates passed: `mix format --check-formatted`, `mix typecheck`,
+  `mix quality`, `mix test`, `mix work_queue.validate` (6 ready rows), and
+  `git diff --check`.
+
+Implementation is complete and awaits coordinator queue/history closeout.
+
 ## Blocker Rule
 
 Stop if preflight finds a negative stored value. Record the affected row IDs
