@@ -75,20 +75,33 @@ uses the truthful running state instead.
 - Consumes: the frozen `running` versus terminal timestamp boundary.
 - Produces: one named PostgreSQL check and an owning changeset mapping.
 
-- [ ] **Step 1: Add the forward migration**
+- [ ] **Step 1: Run the exact read-only preflight**
+
+  ```sql
+  SELECT id, status, finished_at
+  FROM ingestion_runs
+  WHERE status IN ('succeeded', 'failed')
+    AND finished_at IS NULL
+  ORDER BY id;
+  ```
+
+  Expected: zero rows. If it returns data, stop and report exact IDs and
+  statuses; do not fabricate timestamps, change statuses, or delete history.
+
+- [ ] **Step 2: Add the forward migration**
 
   Create `ingestion_runs_terminal_finished_at_required` with the check
   `status = 'running' OR finished_at IS NOT NULL`. Implement `down/0` to drop
   that exact constraint.
 
-- [ ] **Step 2: Map database failures**
+- [ ] **Step 3: Map database failures**
 
   Add `check_constraint/3` for
   `ingestion_runs_terminal_finished_at_required` in `ImportRun.changeset/2`
   against `:finished_at`. Retain `completion_changeset/2` and its existing
   required/inclusion validations unchanged.
 
-- [ ] **Step 3: Apply the test migration**
+- [ ] **Step 4: Apply the test migration**
 
   Run:
 
@@ -96,11 +109,7 @@ uses the truthful running state instead.
   MIX_ENV=test mix ecto.migrate
   ```
 
-  If the preflight detects a terminal row without `finished_at`, stop and
-  report its ID and status. Do not alter persisted history to force migration
-  success.
-
-- [ ] **Step 4: Verify GREEN**
+- [ ] **Step 5: Verify GREEN**
 
   Run:
 
@@ -111,7 +120,7 @@ uses the truthful running state instead.
   Expected: both terminal-null writes return the exact named check; the
   running-null and terminal-timestamp controls pass.
 
-- [ ] **Step 5: Commit the integrity milestone**
+- [ ] **Step 6: Commit the integrity milestone**
 
   Commit message: `fix: require timestamps for terminal ingestion runs`
 

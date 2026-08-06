@@ -2,7 +2,9 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: Codex `/root` in the detached workspace at
+  `/Users/admin/.codex/worktrees/5ad5/backend`
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`

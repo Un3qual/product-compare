@@ -29,9 +29,8 @@
 - Verify: `test/product_compare/specs/read_helpers_test.exs`
 - Verify: `test/product_compare_web/graphql/catalog_queries_test.exs`
 - Modify: `docs/work/taxon-attribute-storage-bounds.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/INDEX.md`
-- Modify: `docs/plans/2026-07-31-work-index-history.md`
+- Modify at coordinator closeout only: `docs/work/index.md`,
+  `docs/plans/INDEX.md`, and `docs/plans/2026-07-31-work-index-history.md`
 
 **Interfaces:**
 
@@ -86,13 +85,13 @@ git diff --check
 ```
 
 Record observed direct-write, boundary, read-order, GraphQL, and complete-gate
-evidence in the lane doc. Remove the completed queue row only when at least
-three other ready rows remain, append completion to work-index history, and
-move the candidate catalog row to completed.
+evidence in the lane doc. The coordinator removes the completed queue row only
+when at least three other ready rows remain, appends work-index history, and
+moves the candidate catalog row to completed.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs lib/product_compare_schemas/specs/taxon_attribute.ex test/product_compare/repo/taxon_attribute_storage_bounds_test.exs docs/work/taxon-attribute-storage-bounds.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-31-work-index-history.md docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md
+git add priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs lib/product_compare_schemas/specs/taxon_attribute.ex test/product_compare/repo/taxon_attribute_storage_bounds_test.exs docs/work/taxon-attribute-storage-bounds.md docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md
 git commit -m "test: enforce taxon attribute storage bounds"
 ```

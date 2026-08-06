@@ -46,6 +46,8 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 ### 22. Ingestion Run Request Bounds
 
 Status: active
+Owner: Codex `/root` in the detached workspace at
+`/Users/admin/.codex/worktrees/5ad5/backend`
 Lane: Ingestion storage integrity
 Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
 Batch outcome: PostgreSQL retains the positive-when-present bounds of import-run
@@ -111,9 +113,6 @@ Owned paths:
 - affected TaxonAttribute changeset, current-attribute read, and catalog
   GraphQL tests
 - `docs/work/taxon-attribute-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
 
 Internal slices:
@@ -162,9 +161,6 @@ Owned paths:
 - affected community lifecycle, thread-post validation, trust, GraphQL
   community, node-query, Dataloader, and seed tests
 - `docs/work/community-authored-text-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
 
 Internal slices:
@@ -198,56 +194,7 @@ Exit condition: PostgreSQL and application changesets agree on every Unicode
 code-point boundary, valid authored text remains accepted without rewriting,
 community behavior is otherwise unchanged, and all backend gates pass.
 
-### 25. Product Attribute Claim Companion Storage Integrity
-
-Status: ready
-Lane: Specification claim storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-product-attribute-claim-companion-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL preserves the complete, ordered numeric companion
-representation already required by ProductAttributeClaim changesets.
-Next action: add failing direct-write tests for orphaned numeric companions,
-missing unit/base companions, and inverted normalized ranges before adding the
-named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805020000_enforce_product_attribute_claim_companion_integrity.exs`
-- `lib/product_compare_schemas/specs/product_attribute_claim.ex`
-- `test/product_compare/repo/product_attribute_claim_companion_storage_integrity_test.exs`
-- affected product-attribute-claim changeset, database-constraint, import, and
-  read tests
-- `docs/work/product-attribute-claim-companion-storage-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-product-attribute-claim-companion-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write companion and range characterization with valid controls.
-- Named forward constraints and owning changeset mappings.
-- Claim lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- Numeric claims retain their existing unit, normalized base, optional range,
-  and minimum-not-above-maximum rules.
-- No active row owns ProductAttributeClaim storage or its affected tests.
-- No current claim violates the established companion relationships.
-
-Verification:
-
-- focused direct-write companion suite
-- ProductAttributeClaim changeset and database-constraint suites
-- affected claim import and read suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects incomplete or inverted numeric claim
-representations, valid typed claims remain accepted, claim behavior is
-unchanged, and all backend gates pass.
-
-### 26. Specification Definition Creation Validity
+### 25. Specification Definition Creation Validity
 
 Status: ready
 Lane: Specification definition storage integrity
@@ -266,9 +213,6 @@ Owned paths:
 - `test/product_compare/specs/definition_semantics_test.exs`
 - `test/product_compare/specs/unit_conversion_test.exs`
 - `docs/work/specification-definition-creation-validity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
 
 Internal slices:
@@ -298,54 +242,7 @@ Exit condition: PostgreSQL rejects invalid newly inserted attributes and units,
 valid definitions and existing immutability behavior remain unchanged, and all
 backend gates pass.
 
-### 27. Ingestion Run Terminal Timestamp Integrity
-
-Status: ready
-Lane: Ingestion lifecycle storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL requires completion timestamps for terminal ingestion
-runs while preserving unfinished running rows.
-Next action: add failing direct-write tests for succeeded and failed runs with
-null `finished_at` values before adding the named forward check.
-Owned paths:
-
-- `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
-- `lib/product_compare_schemas/ingestion/import_run.ex`
-- `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
-- affected ingestion readiness, health, scheduling, reconciliation, and source
-  health tests
-- `docs/work/ingestion-run-terminal-timestamp-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing terminal timestamp characterization with running/terminal controls.
-- One named forward check and its owning changeset mapping.
-- Truthful readiness fixtures, lifecycle parity, and complete verification.
-
-Prerequisites:
-
-- `running` rows may keep `finished_at` null; `succeeded` and `failed` rows may
-  not.
-- No active row owns ImportRun storage when this row is claimed.
-- No current terminal run lacks a completion timestamp.
-
-Verification:
-
-- focused ingestion terminal-timestamp direct-write suite
-- CJ readiness, run-health, scheduling, reconciliation, and source-health suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects terminal runs without `finished_at`, valid
-running and completed runs remain accepted, ingestion behavior is unchanged,
-and all backend gates pass.
-
-### 28. User Email Shape Storage Integrity
+### 26. User Email Shape Storage Integrity
 
 Status: ready
 Lane: Accounts identity storage integrity
@@ -362,9 +259,6 @@ Owned paths:
 - `test/product_compare/accounts/user_auth_schema_test.exs`
 - affected Accounts authentication and GraphQL browser-auth tests
 - `docs/work/user-email-shape-storage-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
 
 Internal slices:
@@ -391,7 +285,7 @@ Exit condition: PostgreSQL rejects persisted emails outside the established
 shape, existing valid identities and authentication behavior remain unchanged,
 and all backend gates pass.
 
-### 29. Commerce Identifier Storage Integrity
+### 27. Commerce Identifier Storage Integrity
 
 Status: ready
 Lane: Commerce identifier storage integrity
@@ -409,9 +303,6 @@ Owned paths:
 - `test/product_compare/pricing/merchant_detail_test.exs`
 - `test/product_compare/affiliate/affiliate_workflows_test.exs`
 - `docs/work/commerce-identifier-storage-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
 
 Internal slices:
@@ -439,6 +330,99 @@ Verification:
 Exit condition: PostgreSQL rejects malformed direct commerce identifiers,
 valid identifiers and existing commerce behavior remain unchanged, and all
 backend gates pass.
+
+### 28. Shared Product Slug Storage Integrity
+
+Status: ready
+Lane: Catalog identity storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-shared-product-slug-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL preserves the canonical lexical shape shared by
+current product slugs and historical product slug aliases.
+Next action: add failing direct-write tests for malformed current and alias
+slugs before adding the two named forward checks.
+Owned paths:
+
+- `priv/repo/migrations/20260805080000_enforce_shared_product_slug_storage_integrity.exs`
+- `lib/product_compare_schemas/catalog/product.ex`
+- `lib/product_compare_schemas/catalog/product_slug_alias.ex`
+- `test/product_compare/repo/shared_product_slug_storage_integrity_test.exs`
+- `test/product_compare/catalog/product_lookup_test.exs`
+- `test/product_compare/catalog/search_documents_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `docs/work/shared-product-slug-storage-integrity.md`
+- `docs/superpowers/plans/2026-08-05-shared-product-slug-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write lexical characterization with accepted controls.
+- Two named forward checks and owning changeset mappings.
+- Namespace reservation, alias immutability, lookup, search, and GraphQL parity.
+
+Prerequisites:
+
+- Both tables retain the exact lowercase hyphen-separated slug language.
+- Existing cross-table reservation and alias-immutability triggers remain
+  unchanged.
+- No active row owns these catalog schemas and no current slug violates the
+  established language.
+
+Verification:
+
+- focused direct-write shared-slug suite
+- product lookup, search-document, and catalog GraphQL suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects malformed current and historical product
+slugs, valid slugs and namespace behavior remain unchanged, and all backend
+gates pass.
+
+### 29. Thread Post Parent Scope Storage Integrity
+
+Status: ready
+Lane: Community relationship storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL permits root posts and requires every non-null parent
+post to belong to the same thread as its child.
+Next action: add a failing direct-write cross-thread parent test plus null,
+same-thread, and parent-deletion controls before adding the composite foreign
+key.
+Owned paths:
+
+- `priv/repo/migrations/20260805070000_enforce_thread_post_parent_scope_integrity.exs`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `test/product_compare/repo/thread_post_parent_scope_storage_integrity_test.exs`
+- `test/product_compare/discussions/thread_post_validation_test.exs`
+- affected community lifecycle and GraphQL content tests
+- `docs/work/thread-post-parent-scope-storage-integrity.md`
+- `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing cross-thread characterization with accepted and deletion controls.
+- Unique composite target, same-thread foreign key, and owning schema mapping.
+- Existing self-parent/cycle behavior and community lifecycle parity.
+
+Prerequisites:
+
+- `parent_post_id` remains nullable and parent deletion continues to null only
+  that column.
+- Existing self-parent checks and application cycle locking remain unchanged.
+- No active row owns ThreadPost when this row is claimed and no current parent
+  crosses thread scope.
+
+Verification:
+
+- focused direct-write parent-scope suite
+- thread-post validation, community lifecycle/trust, and GraphQL content suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects cross-thread parent references, root and
+same-thread posts plus parent deletion retain current behavior, and all backend
+gates pass.
 
 ## Needs Decision Work
 

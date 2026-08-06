@@ -135,9 +135,8 @@
 **Files:**
 
 - Modify: `docs/work/community-authored-text-storage-bounds.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/INDEX.md`
-- Modify: `docs/plans/2026-07-31-work-index-history.md`
+- Modify at coordinator closeout only: `docs/work/index.md`,
+  `docs/plans/INDEX.md`, and `docs/plans/2026-07-31-work-index-history.md`
 - Modify: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
 
 **Interfaces:**
@@ -159,10 +158,10 @@
 
 - [ ] **Step 3: Record evidence and close the row**
 
-  Replace prospective lane language with observed results, remove the
-  completed row only when at least three other complete ready rows remain,
-  update the candidate catalog and dated queue history, and mark this plan's
-  checklist complete.
+  Replace prospective lane language with observed results and mark this plan's
+  checklist complete. The coordinator removes the completed row only when at
+  least three complete ready rows remain and updates the candidate catalog and
+  dated queue history.
 
 - [ ] **Step 4: Commit closeout**
 

@@ -78,9 +78,20 @@ behavior unchanged.
 
 - [ ] **Step 1: Run the read-only preflight**
 
-  Query for enum attributes missing enum sets, non-enum attributes carrying
-  enum sets, and zero unit multipliers. Expected: zero rows. Stop and report
-  exact IDs/values if it returns data; do not repair definitions.
+  Run this exact query. Expected: zero rows. Stop and report exact IDs/values
+  if it returns data; do not repair definitions.
+
+  ```sql
+  SELECT 'attributes' AS table_name, id,
+         data_type::text AS kind, enum_set_id::text AS detail
+  FROM attributes
+  WHERE (data_type = 'enum' AND enum_set_id IS NULL)
+     OR (data_type <> 'enum' AND enum_set_id IS NOT NULL)
+  UNION ALL
+  SELECT 'units', id, 'multiplier_to_base', multiplier_to_base::text
+  FROM units
+  WHERE multiplier_to_base = 0;
+  ```
 
 - [ ] **Step 2: Add the reversible forward migration**
 
@@ -135,8 +146,11 @@ behavior unchanged.
 
 - [ ] **Step 1: Run affected downstream suites**
 
-  Run definition semantics, unit conversion, ProductAttributeClaim,
-  specification import/enrichment, catalog GraphQL, and recommendation suites.
+  Run:
+
+  ```bash
+  mix test test/product_compare/specs/definition_semantics_test.exs test/product_compare/specs/unit_conversion_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs test/product_compare/specs/product_attribute_claim_db_constraint_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/enrichment_concurrency_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs
+  ```
 
 - [ ] **Step 2: Run repository gates**
 

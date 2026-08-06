@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: validated successor; promote after active ingestion request-bound
+  batch 22 closes
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
