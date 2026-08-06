@@ -18,6 +18,12 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
 - `docs/superpowers/specs/2026-08-04-ingestion-run-request-bounds-design.md`
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
+- `docs/superpowers/specs/2026-08-05-taxon-attribute-storage-bounds-design.md`
+- `docs/superpowers/specs/2026-08-05-product-attribute-claim-companion-storage-integrity-design.md`
+- `docs/superpowers/specs/2026-08-05-specification-definition-creation-validity-design.md`
+- `docs/superpowers/specs/2026-08-05-ingestion-run-terminal-timestamp-integrity-design.md`
+- `docs/superpowers/specs/2026-08-05-user-email-shape-storage-integrity-design.md`
+- `docs/superpowers/specs/2026-08-05-commerce-identifier-storage-integrity-design.md`
 
 ## Active Plan Catalog
 
@@ -463,6 +469,15 @@ failure-containment rescues. Strict baseline-backed Reach passes with those 11
 documented suppressions, and full `mix ci` passes 921 backend tests at 83.73%
 coverage plus 1,507 frontend tests.
 
+The 2026-08-05 storage-integrity replenishment promoted five additional
+source-backed outcomes after read-only live preflights found zero violating
+rows: ProductAttributeClaim numeric companions, specification-definition
+creation validity, terminal ingestion-run timestamps, user email shape, and
+commerce identifier syntax. Their focused baselines pass 11, 14, 41, 15, and
+14 tests respectively. Each outcome mirrors an existing application invariant
+through named forward constraints and owning mappings; none introduces new
+product policy, normalization, or a generic storage framework.
+
 Implementation plan references (non-dispatch):
 
 - `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`
@@ -545,6 +560,11 @@ batch and should not be recreated or promoted.
 | promoted | Ingestion run request bounds | Import-run changesets require positive `page_size` and `pages_requested` values when present, while the live PostgreSQL catalog has no matching checks and both fields remain intentionally nullable. | Promoted to `docs/work/index.md`; two named forward checks and focused direct-write coverage enforce the established positive-when-present contract without adding upper limits, fetched-page relationships, or scheduler policy. |
 | promoted | Taxon attribute storage bounds | TaxonAttribute changesets require non-negative `sort_order` and `min_rep_to_edit`, while the live PostgreSQL catalog has no checks on `taxon_attributes` and current rows contain no negative values. | Promoted to `docs/work/index.md`; two named forward checks and focused direct-write coverage preserve the established zero-or-positive domains without changing ordering, GraphQL projection, or reputation policy. |
 | promoted | Community authored text storage bounds | Community changesets define six thread, post, review, and report text limits, but currently use Ecto's grapheme-counting default while PostgreSQL storage bounds count Unicode code points; the live catalog lacks six matching checks and current rows contain no violations. | Promoted to `docs/work/index.md` as one coherent batch. Before or with the six named checks, all six owning `validate_length/3` calls explicitly change to `count: :codepoints`. Direct- and application-write regressions use decomposed combining text and emoji ZWJ boundaries without changing GraphQL payloads, moderation, write limits, idempotency, whitespace, nullability, or stored values. |
+| promoted | Product attribute claim companion storage integrity | ProductAttributeClaim changesets already require numeric values to carry a unit and normalized base, reject numeric companions without a numeric value, and order optional normalized ranges, while PostgreSQL enforces only confidence and exactly-one-typed-value checks. | Promoted to `docs/work/index.md`; named forward checks and direct-write coverage preserve the complete normalized numeric representation without changing typed-value, import, unit-conversion, or claim-read policy. The live preflight found zero violations and the focused claim baseline passed 11 tests. |
+| promoted | Specification definition creation validity | Attribute changesets require enum-set ownership to match `data_type`, and Unit changesets reject a zero conversion multiplier, while existing PostgreSQL triggers freeze definitions only after insertion and do not reject invalid initial rows. | Promoted to `docs/work/index.md`; named forward checks close the creation-time gap while preserving native enums, definition immutability triggers, and unit-conversion behavior. The live preflight found zero violations and the focused definition baseline passed 14 tests. |
+| promoted | Ingestion run terminal timestamp integrity | Import-run completion requires `finished_at` for `succeeded` and `failed` runs, while PostgreSQL currently permits terminal rows with a null completion timestamp. | Promoted to `docs/work/index.md`; one forward check permits unfinished `running` rows and requires timestamps only for terminal states. The live preflight found zero invalid rows and the focused ingestion baseline passed 41 tests. |
+| promoted | User email shape storage integrity | Both user changesets require at least one `@` and no whitespace after normalization, while `users.email` has `citext` uniqueness but no matching database check. | Promoted to `docs/work/index.md`; one POSIX-equivalent forward check and both owning mappings preserve the existing narrow email rule without introducing RFC, domain, length, or database-normalization policy. The live preflight found zero invalid rows and the focused Accounts baseline passed 15 tests. |
+| promoted | Commerce identifier storage integrity | Merchant slugs and affiliate-network codes have compact established lowercase separator formats in their owning changesets, but neither table has a matching PostgreSQL syntax check. | Promoted to `docs/work/index.md` as one commerce-identifier acceptance boundary with two exact POSIX checks. Existing normalization, uniqueness, lookup, and upsert behavior stays unchanged; live preflight found zero invalid rows and 14 focused tests passed. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 

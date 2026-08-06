@@ -43,13 +43,9 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 22. Ingestion Run Request Bounds
 
-Status: ready
+Status: active
 Lane: Ingestion storage integrity
 Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
 Batch outcome: PostgreSQL retains the positive-when-present bounds of import-run
@@ -95,6 +91,8 @@ Verification:
 Exit condition: PostgreSQL rejects zero and negative import-run request
 metadata, null and positive values remain accepted, ingestion behavior is
 unchanged, and all backend gates pass.
+
+## Ready Work
 
 ### 23. Taxon Attribute Storage Bounds
 
@@ -199,6 +197,248 @@ Verification:
 Exit condition: PostgreSQL and application changesets agree on every Unicode
 code-point boundary, valid authored text remains accepted without rewriting,
 community behavior is otherwise unchanged, and all backend gates pass.
+
+### 25. Product Attribute Claim Companion Storage Integrity
+
+Status: ready
+Lane: Specification claim storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-product-attribute-claim-companion-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL preserves the complete, ordered numeric companion
+representation already required by ProductAttributeClaim changesets.
+Next action: add failing direct-write tests for orphaned numeric companions,
+missing unit/base companions, and inverted normalized ranges before adding the
+named forward checks.
+Owned paths:
+
+- `priv/repo/migrations/20260805020000_enforce_product_attribute_claim_companion_integrity.exs`
+- `lib/product_compare_schemas/specs/product_attribute_claim.ex`
+- `test/product_compare/repo/product_attribute_claim_companion_storage_integrity_test.exs`
+- affected product-attribute-claim changeset, database-constraint, import, and
+  read tests
+- `docs/work/product-attribute-claim-companion-storage-integrity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-product-attribute-claim-companion-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write companion and range characterization with valid controls.
+- Named forward constraints and owning changeset mappings.
+- Claim lifecycle parity and complete backend verification.
+
+Prerequisites:
+
+- Numeric claims retain their existing unit, normalized base, optional range,
+  and minimum-not-above-maximum rules.
+- No active row owns ProductAttributeClaim storage or its affected tests.
+- No current claim violates the established companion relationships.
+
+Verification:
+
+- focused direct-write companion suite
+- ProductAttributeClaim changeset and database-constraint suites
+- affected claim import and read suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects incomplete or inverted numeric claim
+representations, valid typed claims remain accepted, claim behavior is
+unchanged, and all backend gates pass.
+
+### 26. Specification Definition Creation Validity
+
+Status: ready
+Lane: Specification definition storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
+Batch outcome: PostgreSQL requires valid enum ownership and nonzero unit
+conversion multipliers when specification definitions are first inserted.
+Next action: add failing direct-write tests for enum attributes without enum
+sets, non-enum attributes with enum sets, and zero unit multipliers before
+adding the named forward checks.
+Owned paths:
+
+- `priv/repo/migrations/20260805030000_enforce_specification_definition_creation_validity.exs`
+- `lib/product_compare_schemas/specs/attribute.ex`
+- `lib/product_compare_schemas/specs/unit.ex`
+- `test/product_compare/repo/specification_definition_creation_validity_test.exs`
+- `test/product_compare/specs/definition_semantics_test.exs`
+- `test/product_compare/specs/unit_conversion_test.exs`
+- `docs/work/specification-definition-creation-validity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write definition characterization with valid controls.
+- Named forward constraints and owning changeset mappings.
+- Definition immutability and unit-conversion parity plus complete verification.
+
+Prerequisites:
+
+- Enum attributes require an enum set, non-enum attributes forbid one, and
+  unit conversion multipliers remain nonzero.
+- Existing definition immutability triggers and application validations remain
+  unchanged.
+- No active row owns Attribute or Unit storage and no current definition
+  violates the established creation rules.
+
+Verification:
+
+- focused direct-write specification-definition suite
+- definition-semantics and unit-conversion suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects invalid newly inserted attributes and units,
+valid definitions and existing immutability behavior remain unchanged, and all
+backend gates pass.
+
+### 27. Ingestion Run Terminal Timestamp Integrity
+
+Status: ready
+Lane: Ingestion lifecycle storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL requires completion timestamps for terminal ingestion
+runs while preserving unfinished running rows.
+Next action: add failing direct-write tests for succeeded and failed runs with
+null `finished_at` values before adding the named forward check.
+Owned paths:
+
+- `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
+- `lib/product_compare_schemas/ingestion/import_run.ex`
+- `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
+- affected ingestion readiness, health, scheduling, reconciliation, and source
+  health tests
+- `docs/work/ingestion-run-terminal-timestamp-integrity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing terminal timestamp characterization with running/terminal controls.
+- One named forward check and its owning changeset mapping.
+- Truthful readiness fixtures, lifecycle parity, and complete verification.
+
+Prerequisites:
+
+- `running` rows may keep `finished_at` null; `succeeded` and `failed` rows may
+  not.
+- No active row owns ImportRun storage when this row is claimed.
+- No current terminal run lacks a completion timestamp.
+
+Verification:
+
+- focused ingestion terminal-timestamp direct-write suite
+- CJ readiness, run-health, scheduling, reconciliation, and source-health suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects terminal runs without `finished_at`, valid
+running and completed runs remain accepted, ingestion behavior is unchanged,
+and all backend gates pass.
+
+### 28. User Email Shape Storage Integrity
+
+Status: ready
+Lane: Accounts identity storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL preserves the existing non-whitespace, contains-`@`
+shape of persisted user identities even for direct writes.
+Next action: add failing direct-write tests for whitespace-containing and
+`@`-free emails before adding the named forward check.
+Owned paths:
+
+- `priv/repo/migrations/20260805050000_enforce_user_email_shape_integrity.exs`
+- `lib/product_compare_schemas/accounts/user.ex`
+- `test/product_compare/repo/user_email_shape_storage_integrity_test.exs`
+- `test/product_compare/accounts/user_auth_schema_test.exs`
+- affected Accounts authentication and GraphQL browser-auth tests
+- `docs/work/user-email-shape-storage-integrity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write email-shape characterization and valid control.
+- One named forward check and both owning changeset mappings.
+- Accounts lifecycle parity and complete backend verification.
+
+Prerequisites:
+
+- The established email rule remains at least one `@` and no whitespace.
+- Normalization, `citext` uniqueness, and browser-auth behavior remain unchanged.
+- No active row owns User storage and no current email violates the rule.
+
+Verification:
+
+- focused direct-write user-email suite
+- Accounts schema, authentication, session, token, and GraphQL auth suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects persisted emails outside the established
+shape, existing valid identities and authentication behavior remain unchanged,
+and all backend gates pass.
+
+### 29. Commerce Identifier Storage Integrity
+
+Status: ready
+Lane: Commerce identifier storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL preserves the established merchant-slug and
+affiliate-network-code formats when writes bypass their changesets.
+Next action: add failing direct-write tests for malformed merchant slugs and
+affiliate network codes before adding the named forward checks.
+Owned paths:
+
+- `priv/repo/migrations/20260805060000_enforce_commerce_identifier_storage_integrity.exs`
+- `lib/product_compare_schemas/pricing/merchant.ex`
+- `lib/product_compare_schemas/affiliate/affiliate_network.ex`
+- `test/product_compare/repo/commerce_identifier_storage_integrity_test.exs`
+- `test/product_compare/pricing/merchant_detail_test.exs`
+- `test/product_compare/affiliate/affiliate_workflows_test.exs`
+- `docs/work/commerce-identifier-storage-integrity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write identifier characterization and accepted controls.
+- Two named forward checks and their owning changeset mappings.
+- Merchant lookup and affiliate-upsert parity plus complete verification.
+
+Prerequisites:
+
+- Merchant slugs retain lowercase hyphen-separated syntax and affiliate network
+  codes retain lowercase underscore-separated syntax.
+- Existing normalization, uniqueness, lookup, and upsert behavior remains
+  unchanged.
+- No active row owns these schemas and no current identifier violates its rule.
+
+Verification:
+
+- focused direct-write commerce-identifier suite
+- merchant-detail and affiliate-workflow suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects malformed direct commerce identifiers,
+valid identifiers and existing commerce behavior remain unchanged, and all
+backend gates pass.
 
 ## Needs Decision Work
 
