@@ -3260,3 +3260,20 @@ Verification passed 53 focused request-boundary and ingestion lifecycle tests,
 the complete backend test suite, typecheck, quality, formatting, queue
 validation with six ready rows, and diff hygiene. Implementation commits were
 `c49d8c45`, `5af38c07`, and `b949cfce`.
+
+## Completed 2026-08-05 Taxon Attribute Storage Bounds
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
+
+PostgreSQL now preserves the existing non-negative domains of
+`taxon_attributes.sort_order` and `min_rep_to_edit` through two exact named
+checks, and the owning changeset maps both constraint failures. Direct writes
+reject negative values while zero and representative positive values remain
+accepted; taxonomy ordering, reputation thresholds, and GraphQL behavior are
+unchanged.
+
+Verification passed 3 focused storage-bound tests, 53 adjacent changeset/read/
+GraphQL tests, the complete backend suite, typecheck, quality, formatting,
+queue validation with five ready rows, and diff hygiene. The implementation
+commit was `52d492b2`.

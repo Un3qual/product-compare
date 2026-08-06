@@ -43,60 +43,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 23. Taxon Attribute Storage Bounds
+### 24. Community Authored Text Storage Bounds
 
 Status: active
 Owner: Codex `/root` in the detached workspace at
 `/Users/admin/.codex/worktrees/5ad5/backend`
-Lane: Taxonomy storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL preserves non-negative taxonomy display ordering and
-reputation thresholds even when a write bypasses application changesets.
-Next action: add failing direct-write tests for negative `sort_order` and
-`min_rep_to_edit` values before adding the named forward constraints.
-Owned paths:
-
-- `priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs`
-- `lib/product_compare_schemas/specs/taxon_attribute.ex`
-- `test/product_compare/repo/taxon_attribute_storage_bounds_test.exs`
-- affected TaxonAttribute changeset, current-attribute read, and catalog
-  GraphQL tests
-- `docs/work/taxon-attribute-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write negative-value characterization and valid boundaries.
-- Named forward constraints and owning changeset mappings.
-- Current-attribute read and GraphQL parity plus complete backend verification.
-
-Prerequisites:
-
-- `sort_order` and `min_rep_to_edit` retain zero defaults and non-negative
-  application validations.
-- No active row owns TaxonAttribute schemas, migrations, or affected tests.
-- No current row contains a negative value in either field.
-
-Verification:
-
-- focused TaxonAttribute direct-write suite
-- TaxonAttribute changeset, current-attribute read, and catalog GraphQL suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects negative taxonomy ordering and reputation
-thresholds, zero and positive values and current ordering remain unchanged, and
-all backend gates pass.
-
-## Ready Work
-
-### 24. Community Authored Text Storage Bounds
-
-Status: ready
 Lane: Community content storage integrity
 Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
 Batch outcome: PostgreSQL and the owning changesets retain established Unicode
@@ -115,6 +66,9 @@ Owned paths:
 - affected community lifecycle, thread-post validation, trust, GraphQL
   community, node-query, Dataloader, and seed tests
 - `docs/work/community-authored-text-storage-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
 
 Internal slices:
@@ -147,6 +101,8 @@ Verification:
 Exit condition: PostgreSQL and application changesets agree on every Unicode
 code-point boundary, valid authored text remains accepted without rewriting,
 community behavior is otherwise unchanged, and all backend gates pass.
+
+## Ready Work
 
 ### 25. Specification Definition Creation Validity
 

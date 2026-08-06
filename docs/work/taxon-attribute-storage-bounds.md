@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: done
 - Owner: Codex `/root` in the detached workspace at
   `/Users/admin/.codex/worktrees/5ad5/backend`
 - Priority: P1
@@ -83,7 +83,7 @@ values retain current behavior.
   `mix quality`, `mix test`, `mix work_queue.validate` (6 ready rows), and
   `git diff --check`.
 
-Implementation is complete and awaits coordinator queue/history closeout.
+Implementation and coordinator queue/history closeout are complete.
 
 ## Blocker Rule
 
