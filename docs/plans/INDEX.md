@@ -22,7 +22,6 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-05-specification-definition-creation-validity-design.md`
 - `docs/superpowers/specs/2026-08-05-user-email-shape-storage-integrity-design.md`
 - `docs/superpowers/specs/2026-08-05-commerce-identifier-storage-integrity-design.md`
-- `docs/superpowers/specs/2026-08-05-shared-product-slug-storage-integrity-design.md`
 - `docs/superpowers/specs/2026-08-05-thread-post-parent-scope-storage-integrity-design.md`
 
 ## Active Plan Catalog
@@ -472,8 +471,8 @@ coverage plus 1,507 frontend tests.
 The 2026-08-05 storage-integrity replenishment promoted source-backed outcomes
 after read-only live preflights found zero violating rows. Specification-
 definition creation validity, user email shape, commerce identifier syntax,
-the shared current/historical product-slug language, and same-thread post-parent
-scope remain immediately executable. Terminal ingestion-run timestamps are a
+and same-thread post-parent scope remain immediately executable. Terminal
+ingestion-run timestamps are a
 validated serial successor to the active ingestion request-bound batch. The
 numeric-claim companion candidate was removed from dispatch after review found
 that its proposed required-unit check conflicts with the existing `ON DELETE
@@ -567,7 +566,7 @@ batch and should not be recreated or promoted.
 | validated successor | Ingestion run terminal timestamp integrity | Import-run completion requires `finished_at` for `succeeded` and `failed` runs, while PostgreSQL currently permits terminal rows with a null completion timestamp. | Promote after active ingestion request-bound row 22 closes; both outcomes own `ImportRun` and cannot execute concurrently. The live preflight found zero invalid rows and the focused ingestion baseline passed 41 tests. |
 | promoted | User email shape storage integrity | Both user changesets require at least one `@` and no whitespace after normalization, while `users.email` has `citext` uniqueness but no matching database check. | Promoted to `docs/work/index.md`; one POSIX-equivalent forward check and both owning mappings preserve the existing narrow email rule without introducing RFC, domain, length, or database-normalization policy. The live preflight found zero invalid rows and the focused Accounts baseline passed 15 tests. |
 | promoted | Commerce identifier storage integrity | Merchant slugs and affiliate-network codes have compact established lowercase separator formats in their owning changesets, but neither table has a matching PostgreSQL syntax check. | Promoted to `docs/work/index.md` as one commerce-identifier acceptance boundary with two exact POSIX checks. Existing normalization, uniqueness, lookup, and upsert behavior stays unchanged; live preflight found zero invalid rows and 14 focused tests passed. |
-| promoted | Shared product slug storage integrity | Canonical product slugs and historical aliases use the same application regex and one cross-table reservation namespace, while neither table has a matching PostgreSQL lexical check. | Promoted to `docs/work/index.md`; two exact POSIX checks preserve one current/historical route-identity language without changing reservation, alias immutability, lookup, search, or GraphQL behavior. Live preflight found zero invalid rows and 48 focused tests passed. |
+| needs_decision | Shared product slug storage integrity | Canonical product slugs and historical aliases share an Elixir regex whose `$` anchor accepts a final newline, while the proposed PostgreSQL POSIX check rejects it. | Not executable without choosing the canonical end-of-string semantics. Align both application and database regexes under an explicit identity-policy decision before creating a replacement plan; do not silently narrow accepted writes at PostgreSQL. |
 | promoted | Thread post parent scope storage integrity | Community lifecycle validation rejects a parent from another thread, while the database has only a single-column parent foreign key and self-parent check. | Promoted to `docs/work/index.md`; a composite same-thread foreign key preserves nullable roots and parent deletion while leaving recursive cycle protection in the application. Live preflight found zero cross-thread parents and five focused tests passed. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |

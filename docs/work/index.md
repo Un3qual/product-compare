@@ -331,54 +331,7 @@ Exit condition: PostgreSQL rejects malformed direct commerce identifiers,
 valid identifiers and existing commerce behavior remain unchanged, and all
 backend gates pass.
 
-### 28. Shared Product Slug Storage Integrity
-
-Status: ready
-Lane: Catalog identity storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-shared-product-slug-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL preserves the canonical lexical shape shared by
-current product slugs and historical product slug aliases.
-Next action: add failing direct-write tests for malformed current and alias
-slugs before adding the two named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805080000_enforce_shared_product_slug_storage_integrity.exs`
-- `lib/product_compare_schemas/catalog/product.ex`
-- `lib/product_compare_schemas/catalog/product_slug_alias.ex`
-- `test/product_compare/repo/shared_product_slug_storage_integrity_test.exs`
-- `test/product_compare/catalog/product_lookup_test.exs`
-- `test/product_compare/catalog/search_documents_test.exs`
-- `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `docs/work/shared-product-slug-storage-integrity.md`
-- `docs/superpowers/plans/2026-08-05-shared-product-slug-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write lexical characterization with accepted controls.
-- Two named forward checks and owning changeset mappings.
-- Namespace reservation, alias immutability, lookup, search, and GraphQL parity.
-
-Prerequisites:
-
-- Both tables retain the exact lowercase hyphen-separated slug language.
-- Existing cross-table reservation and alias-immutability triggers remain
-  unchanged.
-- No active row owns these catalog schemas and no current slug violates the
-  established language.
-
-Verification:
-
-- focused direct-write shared-slug suite
-- product lookup, search-document, and catalog GraphQL suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects malformed current and historical product
-slugs, valid slugs and namespace behavior remain unchanged, and all backend
-gates pass.
-
-### 29. Thread Post Parent Scope Storage Integrity
+### 28. Thread Post Parent Scope Storage Integrity
 
 Status: ready
 Lane: Community relationship storage integrity
