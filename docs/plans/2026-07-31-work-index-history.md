@@ -3311,3 +3311,19 @@ downstream specification, claim, ingestion, recommendation, and GraphQL tests,
 and 1,252 complete backend tests. Typecheck, quality, formatting, queue
 validation with three ready rows, and diff hygiene also passed. Implementation
 commits were `36e6f745`, `c10995af`, and `daea220c`.
+
+## Completed 2026-08-06 User Email Shape Storage Integrity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
+
+PostgreSQL now preserves the existing minimal Accounts email shape through the
+named `users_email_shape_check`: persisted values contain at least one `@` and
+no whitespace. Both email-owning changesets map the database failure while
+normalization, `citext` uniqueness, registration, authentication, sessions,
+tokens, and GraphQL browser-auth behavior remain unchanged.
+
+Verification passed 18 focused direct-write/schema tests, 88 affected Accounts
+and GraphQL auth tests, and 1,255 complete backend tests. Typecheck, quality,
+formatting, queue validation with ready rows 27–29 intact, and diff hygiene also
+passed. Implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.

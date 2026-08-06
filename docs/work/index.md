@@ -43,53 +43,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 26. User Email Shape Storage Integrity
-
-Status: active
-Owner: Codex `/root` in the detached workspace at
-`/Users/admin/.codex/worktrees/5ad5/backend`
-Lane: Accounts identity storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL preserves the existing non-whitespace, contains-`@`
-shape of persisted user identities even for direct writes.
-Next action: add failing direct-write tests for whitespace-containing and
-`@`-free emails before adding the named forward check.
-Owned paths:
-
-- `priv/repo/migrations/20260805050000_enforce_user_email_shape_integrity.exs`
-- `lib/product_compare_schemas/accounts/user.ex`
-- `test/product_compare/repo/user_email_shape_storage_integrity_test.exs`
-- `test/product_compare/accounts/user_auth_schema_test.exs`
-- affected Accounts authentication and GraphQL browser-auth tests
-- `docs/work/user-email-shape-storage-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write email-shape characterization and valid control.
-- One named forward check and both owning changeset mappings.
-- Accounts lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- The established email rule remains at least one `@` and no whitespace.
-- Normalization, `citext` uniqueness, and browser-auth behavior remain unchanged.
-- No active row owns User storage and no current email violates the rule.
-
-Verification:
-
-- focused direct-write user-email suite
-- Accounts schema, authentication, session, token, and GraphQL auth suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects persisted emails outside the established
-shape, existing valid identities and authentication behavior remain unchanged,
-and all backend gates pass.
+None.
 
 ## Ready Work
 

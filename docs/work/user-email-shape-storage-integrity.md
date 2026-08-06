@@ -63,13 +63,6 @@ existing Accounts lifecycle behavior remain accepted.
 - Dispatch and diff gates: `mix work_queue.validate` (3 ready rows) and
   `git diff --check` passed.
 
-## Completion Handoff
-
-- What changed: the direct-write shape constraint and both Accounts changeset
-  mappings are verified with lifecycle and repository-gate evidence.
-- Remaining work: coordinator dispatch closeout only; no implementation or
-  verification blocker remains in this lane.
-
 ## Blocker Rule
 
 Stop if the target preflight returns a row. Record its `id` and `email` value
