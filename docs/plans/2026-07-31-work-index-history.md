@@ -3333,3 +3333,19 @@ review correction added the Unicode/ASCII parity regressions (21 focused tests)
 and post-fix static, dispatch, and diff evidence, preserving ready rows 27–29.
 Root completion gates retain final post-fix full-suite and quality confirmation.
 Original implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.
+
+## Dispatch Correction 2026-08-06 Final Storage Review
+
+Final whole-branch review demoted Commerce Identifier Storage Integrity from
+`ready` to `needs_decision`. `Merchant.changeset/2` uses PCRE `$` and accepts a
+single trailing newline, while the proposed PostgreSQL slug predicate rejects
+that value; the draft cannot execute until exact end-of-string semantics are
+chosen and aligned.
+
+The same dispatch boundary promoted Product Attribute Claim Scope Storage
+Integrity after live preflight returned zero mismatches for both
+`product_attribute_current` and `specification_corrections`, confirmed both
+original claim foreign keys use `ON DELETE CASCADE`, and passed the 15-test
+current-selection/correction baseline. Ready rows 28–30 remain coherent and
+path-disjoint. The dispatch also replaced descriptive test ownership in rows 28
+and 29 with exact paths and cataloged the terminal-timestamp design and plan.

@@ -1,5 +1,8 @@
 # Commerce Identifier Storage Integrity Design
 
+Status: needs decision. This draft is not executable because the proposed
+PostgreSQL merchant-slug end anchor is not equivalent to the current PCRE `$`.
+
 ## Context
 
 Pricing merchant slugs and affiliate-network codes are persisted canonical
@@ -22,9 +25,9 @@ Add `merchants_slug_format_check` and
 `affiliate_networks_code_format_check`, use exact POSIX regular expressions,
 map both in their owning changesets, and prove direct-write rejection.
 
-This is the selected approach. Both rules are compact, static, exact
-translations of existing validations and have the same preflight, migration,
-and direct-write acceptance boundary.
+Rejected as drafted. The rules are compact, but final review proved the
+merchant end anchors are not exact translations: PCRE `$` accepts one trailing
+newline while the proposed PostgreSQL predicate rejects it.
 
 ### 2. Create a shared identifier-validation framework
 
@@ -37,7 +40,7 @@ Rejected. `AffiliateNetwork.changeset/2` already owns code normalization and
 merchant-slug generation already owns its current output. Storage checks must
 validate persisted values only, not change how callers construct them.
 
-## Design
+## Proposed Design (Not Executable)
 
 Create `20260805060000_enforce_commerce_identifier_storage_integrity.exs` with
 these named checks:

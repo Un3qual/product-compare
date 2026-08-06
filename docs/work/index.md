@@ -47,52 +47,6 @@ None.
 
 ## Ready Work
 
-### 27. Commerce Identifier Storage Integrity
-
-Status: ready
-Lane: Commerce identifier storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL preserves the established merchant-slug and
-affiliate-network-code formats when writes bypass their changesets.
-Next action: add failing direct-write tests for malformed merchant slugs and
-affiliate network codes before adding the named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805060000_enforce_commerce_identifier_storage_integrity.exs`
-- `lib/product_compare_schemas/pricing/merchant.ex`
-- `lib/product_compare_schemas/affiliate/affiliate_network.ex`
-- `test/product_compare/repo/commerce_identifier_storage_integrity_test.exs`
-- `test/product_compare/pricing/merchant_detail_test.exs`
-- `test/product_compare/affiliate/affiliate_workflows_test.exs`
-- `docs/work/commerce-identifier-storage-integrity.md`
-- `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write identifier characterization and accepted controls.
-- Two named forward checks and their owning changeset mappings.
-- Merchant lookup and affiliate-upsert parity plus complete verification.
-
-Prerequisites:
-
-- Merchant slugs retain lowercase hyphen-separated syntax and affiliate network
-  codes retain lowercase underscore-separated syntax.
-- Existing normalization, uniqueness, lookup, and upsert behavior remains
-  unchanged.
-- No active row owns these schemas and no current identifier violates its rule.
-
-Verification:
-
-- focused direct-write commerce-identifier suite
-- merchant-detail and affiliate-workflow suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects malformed direct commerce identifiers,
-valid identifiers and existing commerce behavior remain unchanged, and all
-backend gates pass.
-
 ### 28. Thread Post Parent Scope Storage Integrity
 
 Status: ready
@@ -109,7 +63,9 @@ Owned paths:
 - `lib/product_compare_schemas/discussions/thread_post.ex`
 - `test/product_compare/repo/thread_post_parent_scope_storage_integrity_test.exs`
 - `test/product_compare/discussions/thread_post_validation_test.exs`
-- affected community lifecycle and GraphQL content tests
+- `test/product_compare/discussions/content_lifecycle_test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
 - `docs/work/thread-post-parent-scope-storage-integrity.md`
 - `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
 
@@ -154,8 +110,10 @@ Owned paths:
 - `lib/product_compare_schemas/ingestion/import_run.ex`
 - `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
 - `test/product_compare/ingestion/cj_run_readiness_test.exs`
-- affected CJ run-health, scheduled-cursor, reconciliation, and source-health
-  tests
+- `test/product_compare/ingestion/cj_run_health_test.exs`
+- `test/product_compare/ingestion/scheduled_cursor_test.exs`
+- `test/product_compare/ingestion/reconciliation_test.exs`
+- `test/product_compare/ingestion/source_health_test.exs`
 - `docs/work/ingestion-run-terminal-timestamp-integrity.md`
 - `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
 
@@ -186,9 +144,65 @@ Exit condition: PostgreSQL rejects timestamp-free terminal runs, accepts
 unfinished running rows and timestamped terminal rows, readiness fixtures remain
 truthful, and all backend gates pass.
 
+### 30. Product Attribute Claim Scope Storage Integrity
+
+Status: ready
+Lane: Specification claim referential integrity
+Plan: `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL requires current selections and specification
+corrections to reference claims from the same product-and-attribute scope.
+Next action: add failing direct-write tests for product and attribute mismatches
+on both dependent tables before replacing their claim foreign keys.
+Owned paths:
+
+- `priv/repo/migrations/20260805060000_enforce_product_attribute_claim_scope_integrity.exs`
+- `lib/product_compare_schemas/specs/product_attribute_current.ex`
+- `lib/product_compare_schemas/specs/specification_correction.ex`
+- `test/product_compare/repo/product_attribute_claim_scope_storage_integrity_test.exs`
+- `docs/work/product-attribute-claim-scope-storage-integrity.md`
+- `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Clean live preflight, focused baseline, and eight direct-write boundaries.
+- One composite claim-scope target plus two named composite foreign keys and
+  owning changeset mappings.
+- Claim, correction, ingestion, seed, read-consumer, and complete repository
+  verification.
+
+Prerequisites:
+
+- Both dependents retain `ON DELETE CASCADE` when their referenced claim is
+  deleted.
+- Live preflight returns zero mismatches and both original claim foreign keys
+  have the expected names and cascade action.
+- No active row owns the two dependent schemas or proposed migration path.
+
+Verification:
+
+- focused direct-write, current-claim selection, and correction suites
+- claim concurrency/read, enrichment, seed, catalog, recommendation, snapshot,
+  SEO, and GraphQL consumer suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects both scope-mismatch dimensions for both
+dependent tables, exact-scope rows and claim-deletion cascades retain current
+behavior, and all backend gates pass.
+
 ## Needs Decision Work
 
-None.
+### Commerce Identifier Storage Integrity
+
+Status: needs_decision
+Lane: Commerce identifier storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
+Decision: choose whether canonical merchant slugs reject a single trailing
+newline, then align the application and database end anchors before replanning.
+Evidence: `Merchant.changeset/2` uses PCRE `$` and accepts `"north-main\n"`,
+while the proposed PostgreSQL slug predicate rejects that value. The current
+draft is not executable and cannot count toward the ready-row floor.
 
 ## Blocked Work
 

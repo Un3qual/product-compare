@@ -21,12 +21,19 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-05-taxon-attribute-storage-bounds-design.md`
 - `docs/superpowers/specs/2026-08-05-specification-definition-creation-validity-design.md`
 - `docs/superpowers/specs/2026-08-05-user-email-shape-storage-integrity-design.md`
-- `docs/superpowers/specs/2026-08-05-commerce-identifier-storage-integrity-design.md`
 - `docs/superpowers/specs/2026-08-05-thread-post-parent-scope-storage-integrity-design.md`
+- `docs/superpowers/specs/2026-08-05-ingestion-run-terminal-timestamp-integrity-design.md`
+- `docs/superpowers/specs/2026-08-06-product-attribute-claim-scope-storage-integrity-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+Current ready storage-integrity plans:
+
+- `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
 
 The approved attribution observability and foundation-library program is
 dispatched through three reviewable plans:
@@ -565,9 +572,10 @@ batch and should not be recreated or promoted.
 | completed | Specification definition creation validity | Attribute changesets require enum-set ownership to match `data_type`, and Unit changesets reject a zero conversion multiplier, while existing PostgreSQL triggers froze definitions only after insertion. | Completed on 2026-08-06; two named row checks close the creation-time gap while preserving native enums, definition immutability triggers, and unit-conversion behavior. The focused GREEN passed 18 tests, downstream suites passed 93 tests, the full backend passed 1,252 tests, and all remaining gates passed. |
 | promoted | Ingestion run terminal timestamp integrity | Import-run completion requires `finished_at` for `succeeded` and `failed` runs, while PostgreSQL currently permits terminal rows with a null completion timestamp. | Promoted after ingestion request-bound row 22 closed. The live preflight found zero invalid rows and the focused ingestion baseline passed 41 tests. |
 | completed | User email shape storage integrity | Both user changesets require at least one `@` and reject ASCII regex whitespace after normalization, while `users.email` had `citext` uniqueness but no matching database check. | Final review corrected the still-unshipped migration to use `COLLATE "C"` so PostgreSQL preserves the existing non-Unicode regex semantics: internal U+2003/U+2028/U+2029 separators remain accepted and ASCII regex whitespace remains rejected. Both owning mappings remain intact, with no RFC, domain, length, or database-normalization policy. Focused suites passed 21 and 88 tests; root completion gates retain post-fix full-suite and quality confirmation. |
-| promoted | Commerce identifier storage integrity | Merchant slugs and affiliate-network codes have compact established lowercase separator formats in their owning changesets, but neither table has a matching PostgreSQL syntax check. | Promoted to `docs/work/index.md` as one commerce-identifier acceptance boundary with two exact POSIX checks. Existing normalization, uniqueness, lookup, and upsert behavior stays unchanged; live preflight found zero invalid rows and 14 focused tests passed. |
+| needs_decision | Commerce identifier storage integrity | Final review proved the Merchant PCRE `$` accepts one trailing newline while the proposed PostgreSQL POSIX end anchor rejects it. | Not executable until exact merchant end-of-string semantics are chosen and application/database anchors are aligned. Revalidate whether merchant slugs and affiliate-network codes still form one coherent batch after that decision. |
 | needs_decision | Shared product slug storage integrity | Canonical product slugs and historical aliases share an Elixir regex whose `$` anchor accepts a final newline, while the proposed PostgreSQL POSIX check rejects it. | Not executable without choosing the canonical end-of-string semantics. Align both application and database regexes under an explicit identity-policy decision before creating a replacement plan; do not silently narrow accepted writes at PostgreSQL. |
 | promoted | Thread post parent scope storage integrity | Community lifecycle validation rejects a parent from another thread, while the database has only a single-column parent foreign key and self-parent check. | Promoted to `docs/work/index.md`; a composite same-thread foreign key preserves nullable roots and parent deletion while leaving recursive cycle protection in the application. Live preflight found zero cross-thread parents and five focused tests passed. |
+| promoted | Product attribute claim scope storage integrity | Current claim selection, imports, and specification corrections require repeated product and attribute IDs to match the referenced claim, while both dependent tables have only independent foreign keys. | Promoted after live preflight returned zero mismatches for both dependents, both original claim foreign keys confirmed `ON DELETE CASCADE`, and the focused application baseline passed 15 tests. One composite target and two composite foreign keys preserve the established relational scope without adding claim-status policy or changeset queries. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 

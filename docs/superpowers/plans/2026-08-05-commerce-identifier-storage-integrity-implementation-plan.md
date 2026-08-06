@@ -1,5 +1,12 @@
 # Commerce Identifier Storage Integrity Implementation Plan
 
+> **Status: needs decision; do not execute.** Final branch review proved that
+> `Merchant.changeset/2` uses PCRE `$` and accepts a single trailing newline,
+> while this draft's PostgreSQL slug predicate rejects it. Choose and align
+> exact end-of-string semantics before replacing this plan. Its proposed
+> `20260805060000` migration version is now assigned to a different ready row;
+> any replacement commerce plan must use a fresh version.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make PostgreSQL preserve the established merchant-slug and affiliate-network-code formats when commerce writes bypass their changesets.
@@ -14,8 +21,8 @@
   stability across merchant identity updates.
 - Preserve `AffiliateNetwork.normalize_code/1`, default-code generation,
   network uniqueness, and affiliate upsert behavior.
-- Use only `slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'` and
-  `code ~ '^[a-z0-9]+(_[a-z0-9]+)*$'` as the exact POSIX equivalents.
+- Do not implement the proposed predicates while their end-anchor semantics
+  differ from the owning application regexes.
 - Add no identifier length limit, Unicode policy, URL policy, normalization,
   generic helper, or storage-policy framework.
 - Stop rather than rewrite values if preflight discovers invalid data.
