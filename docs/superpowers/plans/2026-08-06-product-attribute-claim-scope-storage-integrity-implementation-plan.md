@@ -98,7 +98,7 @@ indexes, ExUnit.
     'product_attribute_current_claim_id_fkey',
     'specification_corrections_claim_id_fkey'
   )
-  ORDER BY table_name::text;
+  ORDER BY conrelid::regclass::text;
   ```
 
   Expected: both named constraints are single-column `claim_id` foreign keys
