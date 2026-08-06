@@ -11,7 +11,7 @@
 - Last verified: 2026-08-05 against the owning schema, original migration,
   live PostgreSQL catalog, stored rows, and focused read/GraphQL suites.
 
-## Target Outcome
+## Batch Outcome
 
 PostgreSQL rejects negative taxonomy display ordering and reputation thresholds
 even when a write bypasses `TaxonAttribute.changeset/2`, while zero and positive
