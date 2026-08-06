@@ -38,7 +38,8 @@ defmodule ProductCompareSchemas.Discussions.ThreadPost do
     post
     |> cast(attrs, cast_fields)
     |> validate_required([:thread_id, :user_id, :body_md])
-    |> validate_length(:body_md, max: 5_000)
+    |> validate_length(:body_md, max: 5_000, count: :codepoints)
+    |> check_constraint(:body_md, name: :thread_posts_body_length_check)
     |> foreign_key_constraint(:thread_id)
     |> foreign_key_constraint(:parent_post_id)
     |> foreign_key_constraint(:user_id)

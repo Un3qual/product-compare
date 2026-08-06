@@ -37,8 +37,10 @@ defmodule ProductCompareSchemas.Discussions.ProductThread do
     thread
     |> cast(attrs, cast_fields)
     |> validate_required([:product_id, :title, :created_by])
-    |> validate_length(:title, min: 1, max: 200)
-    |> validate_length(:body_md, max: 5_000)
+    |> validate_length(:title, min: 1, max: 200, count: :codepoints)
+    |> validate_length(:body_md, max: 5_000, count: :codepoints)
+    |> check_constraint(:title, name: :product_threads_title_length_check)
+    |> check_constraint(:body_md, name: :product_threads_body_length_check)
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:created_by)
   end
