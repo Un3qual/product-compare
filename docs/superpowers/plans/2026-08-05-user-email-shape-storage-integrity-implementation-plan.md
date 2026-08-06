@@ -38,7 +38,7 @@
 - Produces: direct-SQL characterization for the planned
   `users_email_shape_check` constraint.
 
-- [ ] **Step 1: Add failing direct-write cases**
+- [x] **Step 1: Add failing direct-write cases**
 
   In `UserEmailShapeStorageIntegrityTest`, use `ProductCompare.Repo.query/2`
   to insert rows with a unique valid 32-byte-or-longer fixed test password
@@ -46,13 +46,13 @@
   Assert each result is a Postgrex constraint error naming
   `users_email_shape_check`.
 
-- [ ] **Step 2: Add an accepted direct-write control**
+- [x] **Step 2: Add an accepted direct-write control**
 
   Insert `valid@example.com` with the same required timestamp and password-hash
   columns, then assert the insert succeeds. This proves the check preserves the
   existing non-whitespace, contains-`@` acceptance boundary.
 
-- [ ] **Step 3: Run the focused RED command**
+- [x] **Step 3: Run the focused RED command**
 
   Run:
 
@@ -78,7 +78,7 @@
 - Produces: `users_email_shape_check`, mapped to `:email` in both
   `User.changeset/2` and `User.registration_changeset/2`.
 
-- [ ] **Step 1: Run the invalid-row preflight before migrating**
+- [x] **Step 1: Run the invalid-row preflight before migrating**
 
   Run this read-only query against the target database:
 
@@ -92,7 +92,7 @@
   Expected: zero rows. If rows appear, stop and report their IDs and values;
   do not modify them or run the migration.
 
-- [ ] **Step 2: Add the reversible forward migration**
+- [x] **Step 2: Add the reversible forward migration**
 
   In `up/0`, create exactly:
 
@@ -104,14 +104,14 @@
 
   In `down/0`, remove exactly `:users_email_shape_check` from `:users`.
 
-- [ ] **Step 3: Map the constraint without changing validation policy**
+- [x] **Step 3: Map the constraint without changing validation policy**
 
   Add `check_constraint(:email, name: :users_email_shape_check)` after the
   existing `validate_format/4` invocation in both `User.changeset/2` and
   `User.registration_changeset/2`. Retain `update_change(:email,
   &normalize_email/1)` and `unique_constraint(:email)` unchanged.
 
-- [ ] **Step 4: Apply and verify GREEN**
+- [x] **Step 4: Apply and verify GREEN**
 
   Run:
 
@@ -123,7 +123,7 @@
   Expected: both invalid direct writes report `users_email_shape_check`, the
   valid control succeeds, and all 15 existing Accounts schema tests pass.
 
-- [ ] **Step 5: Commit the implementation milestone**
+- [x] **Step 5: Commit the implementation milestone**
 
   ```bash
   git add priv/repo/migrations/20260805050000_enforce_user_email_shape_integrity.exs lib/product_compare_schemas/accounts/user.ex test/product_compare/repo/user_email_shape_storage_integrity_test.exs docs/work/user-email-shape-storage-integrity.md docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md
@@ -142,14 +142,14 @@
 - Consumes: the named check and passing focused suites from Task 2.
 - Produces: observed verification evidence for coordinator dispatch closeout.
 
-- [ ] **Step 1: Record observed data and focused-suite evidence**
+- [x] **Step 1: Record observed data and focused-suite evidence**
 
   Replace the prospective lane wording only with the actual preflight result,
   direct-write assertion count, and Accounts-suite result. Do not edit
   `docs/work/index.md`, `docs/plans/INDEX.md`, or work-index history; those
   are coordinator-owned dispatch records.
 
-- [ ] **Step 2: Run the full gates**
+- [x] **Step 2: Run the full gates**
 
   ```bash
   mix test
@@ -160,7 +160,7 @@
   git diff --check
   ```
 
-- [ ] **Step 3: Commit the verification record when it changed**
+- [x] **Step 3: Commit the verification record when it changed**
 
   ```bash
   git add docs/work/user-email-shape-storage-integrity.md docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md
@@ -170,3 +170,13 @@
 Exit condition: PostgreSQL rejects whitespace-containing and `@`-free direct
 writes under `users_email_shape_check`, the existing valid shape remains
 accepted, and Accounts authentication behavior is unchanged.
+
+## Completion Evidence
+
+- Preflight: 0 invalid persisted user-email rows before migration.
+- Focused direct-write plus Accounts schema suites: 18 tests, 0 failures.
+- Affected Accounts authentication/session/token plus GraphQL browser-auth
+  suites: 88 tests, 0 failures.
+- Full repository suite: 1,255 tests, 0 failures in 111.8 seconds.
+- `mix typecheck`, `mix quality`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed.
