@@ -97,13 +97,13 @@
   - `community_reports_reason_length_check`:
     `char_length(reason) >= 3`
 
-- [ ] **Step 1: Add the forward migration**
+- [x] **Step 1: Add the forward migration**
 
   Implement explicit `up/0` and `down/0` functions. `up/0` creates the six
   canonical checks above using `char_length`; nullable fields explicitly allow
   `NULL`. `down/0` drops only those six checks.
 
-- [ ] **Step 2: Align all owning validations and map constraint failures**
+- [x] **Step 2: Align all owning validations and map constraint failures**
 
   Before or with the database constraints, pass `count: :codepoints` to all six
   owning `validate_length/3` calls: title and body on `ProductThread`, body on
@@ -112,21 +112,21 @@
   every existing minimum, maximum, message, nullability, and required-field
   rule.
 
-- [ ] **Step 3: Rebuild only the test database**
+- [x] **Step 3: Rebuild only the test database**
 
   Run: `MIX_ENV=test mix ecto.reset`
 
   If any existing environment reports violating content, stop with the exact
   table, column, and code-point length. Do not mutate authored content.
 
-- [ ] **Step 4: Run the focused suite and verify GREEN**
+- [x] **Step 4: Run the focused suite and verify GREEN**
 
   Run the same focused direct- and application-write command from Task 1.
 
   Expected: each invalid direct write returns its exact named constraint and
   every accepted boundary insert succeeds.
 
-- [ ] **Step 5: Commit the storage boundary milestone**
+- [x] **Step 5: Commit the storage boundary milestone**
 
   Commit message: `fix: constrain community authored text storage`
 
@@ -144,26 +144,26 @@
 - Consumes: the database checks and schema mappings from Task 2.
 - Produces: lifecycle verification evidence and a queue closeout retaining at least three other ready rows.
 
-- [ ] **Step 1: Run affected community suites**
+- [x] **Step 1: Run affected community suites**
 
   Run content lifecycle, thread-post validation, community trust, GraphQL
   community content, node-query, Dataloader batching, and deterministic seed
   suites serially.
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
   Run `mix test`, `mix typecheck`, `mix quality`,
   `mix format --check-formatted`, `mix work_queue.validate`, and
   `git diff --check`.
 
-- [ ] **Step 3: Record evidence and close the row**
+- [x] **Step 3: Record evidence and close the row**
 
   Replace prospective lane language with observed results and mark this plan's
   checklist complete. The coordinator removes the completed row only when at
   least three complete ready rows remain and updates the candidate catalog and
   dated queue history.
 
-- [ ] **Step 4: Commit closeout**
+- [x] **Step 4: Commit closeout**
 
   Commit message: `docs: close community authored text storage bounds`
 
