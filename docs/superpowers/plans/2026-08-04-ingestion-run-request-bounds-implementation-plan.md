@@ -31,19 +31,19 @@
 - Consumes: the current `ingestion_runs` PostgreSQL table.
 - Produces: direct-write regressions for two named positive-when-present checks.
 
-- [ ] **Step 1: Add failing direct-write tests**
+- [x] **Step 1: Add failing direct-write tests**
 
   Insert the minimum valid source and ingestion-run rows through
   `ProductCompare.Repo.query/2` inside the SQL sandbox. Assert that zero and a
   negative value for each request field return the planned exact constraint
   name.
 
-- [ ] **Step 2: Add accepted-boundary controls**
+- [x] **Step 2: Add accepted-boundary controls**
 
   Insert distinct valid rows proving that `NULL` and `1` remain accepted for
   both fields.
 
-- [ ] **Step 3: Run the focused test and verify RED**
+- [x] **Step 3: Run the focused test and verify RED**
 
   Run: `mix test test/product_compare/repo/ingestion_run_request_bounds_test.exs`
 
@@ -63,34 +63,34 @@
 - Consumes: the exact nullable-positive contract frozen by Task 1.
 - Produces: two named PostgreSQL checks and owning changeset mappings.
 
-- [ ] **Step 1: Add the forward migration**
+- [x] **Step 1: Add the forward migration**
 
   Add `ingestion_runs_page_size_positive` and
   `ingestion_runs_pages_requested_positive`. Each check permits `NULL` and
   otherwise requires its field to be greater than zero. Make `down/0` remove
   both checks.
 
-- [ ] **Step 2: Map constraint failures**
+- [x] **Step 2: Map constraint failures**
 
   Add one `check_constraint/3` mapping per field in
   `ImportRun.changeset/2`. Preserve the existing application validations and
   error behavior.
 
-- [ ] **Step 3: Apply the migration to the test database**
+- [x] **Step 3: Apply the migration to the test database**
 
   Run: `MIX_ENV=test mix ecto.migrate`
 
   If existing test data blocks the migration, report the exact field and
   value. Do not reset the development database or mutate durable history.
 
-- [ ] **Step 4: Run the focused suite and verify GREEN**
+- [x] **Step 4: Run the focused suite and verify GREEN**
 
   Run: `mix test test/product_compare/repo/ingestion_run_request_bounds_test.exs`
 
   Expected: all invalid writes return their exact named check and all valid
   boundaries succeed.
 
-- [ ] **Step 5: Commit the storage-boundary milestone**
+- [x] **Step 5: Commit the storage-boundary milestone**
 
   Commit message: `fix: constrain ingestion run request bounds`
 
@@ -99,22 +99,21 @@
 **Files:**
 
 - Modify: `docs/work/ingestion-run-request-bounds.md`
-- Modify: `docs/work/index.md`
-- Modify: `docs/plans/INDEX.md`
-- Modify: `docs/plans/2026-07-31-work-index-history.md`
 - Modify: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
+- Modify at coordinator closeout after task review: `docs/work/index.md`,
+  `docs/plans/INDEX.md`, and `docs/plans/2026-07-31-work-index-history.md`
 
 **Interfaces:**
 
 - Consumes: the database checks and schema mappings delivered by Task 2.
 - Produces: lifecycle verification evidence and a queue closeout retaining at least three other ready rows.
 
-- [ ] **Step 1: Run affected ingestion suites**
+- [x] **Step 1: Run affected ingestion suites**
 
   Run the import-run, scheduled-cursor, reconciliation, source-health, and CJ
   run-health suites that own or read request metadata.
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
   Run:
 
@@ -125,14 +124,16 @@
   - `mix work_queue.validate`
   - `git diff --check`
 
-- [ ] **Step 3: Record evidence and close the row**
+- [x] **Step 3: Record evidence and close the row**
 
-  Replace prospective lane language with observed results, remove the
-  completed row only when at least three other complete ready rows remain,
-  update the catalog and dated history, and mark this plan complete.
+  Replace prospective lane language with observed results and mark this plan's
+  checklist complete. After task review, the coordinator removes the completed
+  row only when at least three other complete ready rows remain, updates the
+  catalog and dated history, promotes validated successors, and claims the next
+  compatible ready row.
 
-- [ ] **Step 4: Commit closeout**
+- [x] **Step 4: Commit verification evidence**
 
-  Commit message: `docs: close ingestion run request bounds`
+  Commit message: `docs: verify ingestion run request bounds`
 
 Exit condition: PostgreSQL rejects zero and negative import-run request metadata, null and positive values remain accepted, ingestion behavior is unchanged, and all backend gates pass.
