@@ -37,7 +37,7 @@
 - Consumes: the current community tables plus valid user and product fixtures.
 - Produces: direct- and application-write regressions for six named storage checks and their accepted boundaries.
 
-- [ ] **Step 1: Add failing direct- and application-write tests**
+- [x] **Step 1: Add failing direct- and application-write tests**
 
   Use `ProductCompare.Repo.query/2` in the SQL sandbox and valid fixture parent
   rows. Assert the exact planned constraint for a zero-code-point and
@@ -48,7 +48,7 @@
   graphemes. Both the direct-write and application-write suites must each
   contain decomposed combining-text and emoji ZWJ boundary cases.
 
-- [ ] **Step 2: Add accepted-boundary controls**
+- [x] **Step 2: Add accepted-boundary controls**
 
   Insert distinct valid records proving one- and 200-code-point thread titles;
   `NULL` and 5,000-code-point optional thread/review bodies; a 5,000-code-point
@@ -58,7 +58,7 @@
   sizes independently and use separate target rows where uniqueness or
   report-target constraints require them.
 
-- [ ] **Step 3: Run the focused test and verify RED**
+- [x] **Step 3: Run the focused test and verify RED**
 
   Run: `mix test test/product_compare/repo/community_authored_text_storage_bounds_test.exs test/product_compare/discussions/community_trust_test.exs test/product_compare/discussions/thread_post_validation_test.exs test/product_compare_web/graphql/community_content_test.exs`
 

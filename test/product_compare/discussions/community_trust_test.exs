@@ -37,6 +37,95 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     end
   end
 
+  test "review submission rejects a 121-code-point emoji ZWJ title" do
+    user = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    title = emoji_zwj_text(121)
+
+    assert_codepoint_length(title, 121)
+    assert String.length(title) < 121
+
+    assert {:error, changeset} =
+             Discussions.submit_review(user.id, product.id, %{rating: 5, title: title})
+
+    assert "should be at most 120 character(s)" in errors_on(changeset).title
+  end
+
+  test "review submission rejects a 5,001-code-point decomposed body" do
+    user = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    body = String.duplicate("e\u0301", 2_500) <> "x"
+
+    assert_codepoint_length(body, 5_001)
+    assert String.length(body) == 2_501
+
+    assert {:error, changeset} =
+             Discussions.submit_review(user.id, product.id, %{rating: 5, body: body})
+
+    assert "should be at most 5000 character(s)" in errors_on(changeset).body_md
+  end
+
+  test "review submissions accept nil and code-point boundary fields" do
+    product = SpecsFixtures.product_fixture()
+    title = emoji_zwj_text(120)
+    body = String.duplicate("e\u0301", 2_500)
+
+    assert_codepoint_length(title, 120)
+    assert_codepoint_length(body, 5_000)
+
+    assert {:ok, _review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, product.id, %{
+               rating: 5
+             })
+
+    assert {:ok, _review} =
+             Discussions.submit_review(AccountsFixtures.user_fixture().id, product.id, %{
+               rating: 4,
+               title: title,
+               body: body
+             })
+  end
+
+  test "report submissions accept code-point-valid emoji reasons" do
+    author = AccountsFixtures.user_fixture()
+    reporter = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    reason = "👩‍👩‍👧‍👦"
+
+    assert_codepoint_length(reason, 7)
+    assert String.length(reason) == 1
+    assert {:ok, review} = Discussions.submit_review(author.id, product.id, %{rating: 5})
+
+    assert {:ok, _report} = Discussions.report(reporter.id, :review, review.entropy_id, reason)
+  end
+
+  test "report submissions retain their three- and 500-code-point boundaries" do
+    author = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    three_code_point_reason = "bad"
+    five_hundred_code_point_reason = String.duplicate("x", 500)
+
+    assert_codepoint_length(three_code_point_reason, 3)
+    assert_codepoint_length(five_hundred_code_point_reason, 500)
+    assert {:ok, review} = Discussions.submit_review(author.id, product.id, %{rating: 5})
+
+    assert {:ok, _report} =
+             Discussions.report(
+               AccountsFixtures.user_fixture().id,
+               :review,
+               review.entropy_id,
+               three_code_point_reason
+             )
+
+    assert {:ok, _report} =
+             Discussions.report(
+               AccountsFixtures.user_fixture().id,
+               :review,
+               review.entropy_id,
+               five_hundred_code_point_reason
+             )
+  end
+
   test "durable write receipts enforce one idempotency key per user and content type" do
     user = AccountsFixtures.user_fixture()
     content_entropy_id = Ecto.UUID.generate()
@@ -1187,5 +1276,18 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     |> Repo.update_all(set: [inserted_at: inserted_at])
 
     Repo.get!(schema, id)
+  end
+
+  defp emoji_zwj_text(code_point_count) do
+    family = "👩‍👩‍👧‍👦"
+    family_code_point_count = Enum.count(String.codepoints(family))
+    family_count = div(code_point_count, family_code_point_count)
+    remainder = rem(code_point_count, family_code_point_count)
+
+    String.duplicate(family, family_count) <> String.duplicate("x", remainder)
+  end
+
+  defp assert_codepoint_length(text, expected) do
+    assert Enum.count_until(String.codepoints(text), expected + 1) == expected
   end
 end
