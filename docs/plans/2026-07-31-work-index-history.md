@@ -3294,3 +3294,20 @@ Verification passed 67 focused boundary tests, 189 serial community lifecycle
 tests, and 1,248 complete backend tests. Typecheck, quality, formatting, queue
 validation with four ready rows, and diff hygiene also passed. Implementation
 commits were `509e2f8a`, `0adc355b`, and `4509c7ef`.
+
+## Completed 2026-08-06 Specification Definition Creation Validity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
+
+PostgreSQL now rejects invalid initial Attribute enum-set ownership and zero
+Unit conversion multipliers through two named row checks before the existing
+immutability triggers preserve their semantics. The owning changesets map both
+constraint failures; valid enum and non-enum attributes plus positive and
+negative nonzero multipliers remain accepted.
+
+Verification passed 18 focused creation-validity/definition/unit tests, 93
+downstream specification, claim, ingestion, recommendation, and GraphQL tests,
+and 1,252 complete backend tests. Typecheck, quality, formatting, queue
+validation with three ready rows, and diff hygiene also passed. Implementation
+commits were `36e6f745`, `c10995af`, and `daea220c`.

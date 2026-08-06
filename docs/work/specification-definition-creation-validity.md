@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: pending coordinator closeout
+- Status: done
 - Owner: Codex `/root` in the detached workspace at
   `/Users/admin/.codex/worktrees/5ad5/backend`
 - Priority: P1
@@ -50,12 +50,6 @@ multiplier while preserving valid definitions and existing update immutability.
 1. Failing direct-write Attribute/Unit characterization and valid controls.
 2. Two named forward checks and owning changeset mappings.
 3. Definition immutability and unit-conversion parity plus complete gates.
-
-## Closeout Status
-
-All worker-owned verification is complete. The coordinator must update the
-shared dispatch queue, catalog, history, and implementation plan while
-preserving the ready-row floor.
 
 ## Blocker Rule
 

@@ -38,20 +38,20 @@ behavior unchanged.
   tables.
 - Produces: direct-write regressions for two exact named checks.
 
-- [ ] **Step 1: Add failing Attribute direct-write cases**
+- [x] **Step 1: Add failing Attribute direct-write cases**
 
   Insert minimum valid dimension and enum-set fixtures through the Repo. Assert
   that an enum Attribute without `enum_set_id`, and a non-enum Attribute with
   `enum_set_id`, fail under `attributes_enum_set_consistency`.
 
-- [ ] **Step 2: Add the failing Unit case and valid controls**
+- [x] **Step 2: Add the failing Unit case and valid controls**
 
   Assert that a Unit with `multiplier_to_base = 0` fails under
   `units_multiplier_to_base_nonzero`. Add distinct accepted controls for an
   enum Attribute with an enum set, a non-enum Attribute without one, and Units
   with representative positive and negative nonzero multipliers.
 
-- [ ] **Step 3: Verify RED**
+- [x] **Step 3: Verify RED**
 
   ```bash
   mix test test/product_compare/repo/specification_definition_creation_validity_test.exs
@@ -76,7 +76,7 @@ behavior unchanged.
 - Consumes: the creation boundary frozen by Task 1.
 - Produces: two reversible checks and owning schema mappings.
 
-- [ ] **Step 1: Run the read-only preflight**
+- [x] **Step 1: Run the read-only preflight**
 
   Run this exact query. Expected: zero rows. Stop and report exact IDs/values
   if it returns data; do not repair definitions.
@@ -93,7 +93,7 @@ behavior unchanged.
   WHERE multiplier_to_base = 0;
   ```
 
-- [ ] **Step 2: Add the reversible forward migration**
+- [x] **Step 2: Add the reversible forward migration**
 
   Create these exact checks:
 
@@ -108,7 +108,7 @@ behavior unchanged.
   `units_multiplier_to_base_nonzero`. `down/0` removes only those names and
   leaves existing semantics triggers intact.
 
-- [ ] **Step 3: Map failures without changing validation behavior**
+- [x] **Step 3: Map failures without changing validation behavior**
 
   Add `check_constraint/3` for `attributes_enum_set_consistency` on
   `:enum_set_id` after the current consistency validation. Add the nonzero
@@ -116,7 +116,7 @@ behavior unchanged.
   `validate_change/3`. Preserve all existing messages and immutable-semantics
   mappings.
 
-- [ ] **Step 4: Apply and verify GREEN**
+- [x] **Step 4: Apply and verify GREEN**
 
   ```bash
   MIX_ENV=test mix ecto.migrate
@@ -126,7 +126,7 @@ behavior unchanged.
   Expected: invalid direct writes return exact named checks, valid controls
   pass, and the existing 14-test definition/unit baseline remains green.
 
-- [ ] **Step 5: Commit the storage milestone**
+- [x] **Step 5: Commit the storage milestone**
 
   Commit message: `fix: enforce valid specification definitions`
 
@@ -144,7 +144,7 @@ behavior unchanged.
 - Consumes: the two checks and passing focused suites.
 - Produces: downstream verification and truthful dispatch closeout evidence.
 
-- [ ] **Step 1: Run affected downstream suites**
+- [x] **Step 1: Run affected downstream suites**
 
   Run:
 
@@ -152,7 +152,7 @@ behavior unchanged.
   mix test test/product_compare/specs/definition_semantics_test.exs test/product_compare/specs/unit_conversion_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs test/product_compare/specs/product_attribute_claim_db_constraint_test.exs test/product_compare/ingestion/enrichment_test.exs test/product_compare/ingestion/enrichment_concurrency_test.exs test/product_compare/recommendations_test.exs test/product_compare_web/graphql/catalog_queries_test.exs test/product_compare_web/graphql/recommendations_test.exs test/product_compare_web/graphql/specification_corrections_test.exs
   ```
 
-- [ ] **Step 2: Run repository gates**
+- [x] **Step 2: Run repository gates**
 
   ```bash
   mix test
@@ -163,13 +163,13 @@ behavior unchanged.
   git diff --check
   ```
 
-- [ ] **Step 3: Record evidence and close the row**
+- [x] **Step 3: Record evidence and close the row**
 
   Replace prospective lane language with observed results. The coordinator
   updates the shared queue, catalog, and history only while preserving at least
   three other ready rows.
 
-- [ ] **Step 4: Commit closeout**
+- [x] **Step 4: Commit closeout**
 
   Commit message: `docs: close specification definition creation validity`
 

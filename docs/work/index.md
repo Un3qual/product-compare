@@ -43,64 +43,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 25. Specification Definition Creation Validity
+### 26. User Email Shape Storage Integrity
 
 Status: active
 Owner: Codex `/root` in the detached workspace at
 `/Users/admin/.codex/worktrees/5ad5/backend`
-Lane: Specification definition storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
-Batch outcome: PostgreSQL requires valid enum ownership and nonzero unit
-conversion multipliers when specification definitions are first inserted.
-Next action: add failing direct-write tests for enum attributes without enum
-sets, non-enum attributes with enum sets, and zero unit multipliers before
-adding the named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805030000_enforce_specification_definition_creation_validity.exs`
-- `lib/product_compare_schemas/specs/attribute.ex`
-- `lib/product_compare_schemas/specs/unit.ex`
-- `test/product_compare/repo/specification_definition_creation_validity_test.exs`
-- `test/product_compare/specs/definition_semantics_test.exs`
-- `test/product_compare/specs/unit_conversion_test.exs`
-- `docs/work/specification-definition-creation-validity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write definition characterization with valid controls.
-- Named forward constraints and owning changeset mappings.
-- Definition immutability and unit-conversion parity plus complete verification.
-
-Prerequisites:
-
-- Enum attributes require an enum set, non-enum attributes forbid one, and
-  unit conversion multipliers remain nonzero.
-- Existing definition immutability triggers and application validations remain
-  unchanged.
-- No active row owns Attribute or Unit storage and no current definition
-  violates the established creation rules.
-
-Verification:
-
-- focused direct-write specification-definition suite
-- definition-semantics and unit-conversion suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects invalid newly inserted attributes and units,
-valid definitions and existing immutability behavior remain unchanged, and all
-backend gates pass.
-
-## Ready Work
-
-### 26. User Email Shape Storage Integrity
-
-Status: ready
 Lane: Accounts identity storage integrity
 Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
 Batch outcome: PostgreSQL preserves the existing non-whitespace, contains-`@`
@@ -115,6 +62,9 @@ Owned paths:
 - `test/product_compare/accounts/user_auth_schema_test.exs`
 - affected Accounts authentication and GraphQL browser-auth tests
 - `docs/work/user-email-shape-storage-integrity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
 
 Internal slices:
@@ -140,6 +90,8 @@ Verification:
 Exit condition: PostgreSQL rejects persisted emails outside the established
 shape, existing valid identities and authentication behavior remain unchanged,
 and all backend gates pass.
+
+## Ready Work
 
 ### 27. Commerce Identifier Storage Integrity
 
