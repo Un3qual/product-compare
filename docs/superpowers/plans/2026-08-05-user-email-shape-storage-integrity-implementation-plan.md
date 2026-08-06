@@ -12,9 +12,12 @@
 
 - Preserve `User.normalize_email/1`, `citext` uniqueness, registration,
   password, confirmation, session, API-token, and GraphQL browser-auth behavior.
-- Use only the existing email rule: at least one `@` and no whitespace.
-- Use the semantically equivalent PostgreSQL POSIX predicate
-  `email::text ~ '^[^[:space:]]+@[^[:space:]]+$'`.
+- Use only the existing non-Unicode Elixir email rule: at least one `@` and no
+  ASCII regex whitespace. Do not add the `u` regex modifier or otherwise narrow
+  the application rule.
+- Use the matching stable PostgreSQL POSIX predicate
+  `email::text COLLATE "C" ~ '^[^[:space:]]+@[^[:space:]]+$'`; `C` makes
+  `[[:space:]]` ASCII-scoped rather than locale-dependent.
 - Add no RFC email policy, length limit, domain verification, database
   normalization trigger, generic validation helper, or storage framework.
 - Stop rather than rewrite identities if the preflight discovers invalid data.
@@ -42,7 +45,7 @@
 
   In `UserEmailShapeStorageIntegrityTest`, use `ProductCompare.Repo.query/2`
   to insert rows with a unique valid 32-byte-or-longer fixed test password
-  hash and each invalid email `not-an-email` and `has space@example.com`.
+  hash and each invalid email `not-an-email` and ASCII-whitespace variant.
   Assert each result is a Postgrex constraint error naming
   `users_email_shape_check`.
 
@@ -50,7 +53,7 @@
 
   Insert `valid@example.com` with the same required timestamp and password-hash
   columns, then assert the insert succeeds. This proves the check preserves the
-  existing non-whitespace, contains-`@` acceptance boundary.
+  existing ASCII-regex-whitespace, contains-`@` acceptance boundary.
 
 - [x] **Step 3: Run the focused RED command**
 
@@ -85,7 +88,7 @@
   ```sql
   SELECT id, email
   FROM users
-  WHERE email::text !~ '^[^[:space:]]+@[^[:space:]]+$'
+  WHERE email::text COLLATE "C" !~ '^[^[:space:]]+@[^[:space:]]+$'
   ORDER BY id;
   ```
 
@@ -98,7 +101,7 @@
 
   ```elixir
   create constraint(:users, :users_email_shape_check,
-           check: "email::text ~ '^[^[:space:]]+@[^[:space:]]+$'"
+           check: "email::text COLLATE \"C\" ~ '^[^[:space:]]+@[^[:space:]]+$'"
          )
   ```
 
@@ -167,16 +170,29 @@
   git commit -m "docs: verify user email shape integrity"
   ```
 
-Exit condition: PostgreSQL rejects whitespace-containing and `@`-free direct
-writes under `users_email_shape_check`, the existing valid shape remains
-accepted, and Accounts authentication behavior is unchanged.
+Exit condition: PostgreSQL rejects ASCII-whitespace-containing and `@`-free
+direct writes under `users_email_shape_check`, the existing valid shape and
+internal U+2003/U+2028/U+2029 separators remain accepted, and Accounts
+authentication behavior is unchanged.
+
+## Final Review Correction
+
+- [x] Added paired application and direct-write regressions for internal
+  U+2003, U+2028, and U+2029 separators (accepted) and ASCII regex whitespace
+  (rejected).
+- [x] Corrected the still-unshipped migration to use explicit `COLLATE "C"`
+  rather than adding a second constraint or changing the Elixir regex.
+- [x] Rolled back and reapplied only migration `20260805050000` in the test
+  database before the focused GREEN run; development was not reset or touched.
 
 ## Completion Evidence
 
 - Preflight: 0 invalid persisted user-email rows before migration.
-- Focused direct-write plus Accounts schema suites: 18 tests, 0 failures.
+- Focused direct-write plus Accounts schema suites: 21 tests, 0 failures.
 - Affected Accounts authentication/session/token plus GraphQL browser-auth
   suites: 88 tests, 0 failures.
-- Full repository suite: 1,255 tests, 0 failures in 111.8 seconds.
-- `mix typecheck`, `mix quality`, `mix format --check-formatted`,
-  `mix work_queue.validate`, and `git diff --check` passed.
+- Superseded pre-correction full repository evidence: 1,255 tests, 0 failures
+  in 111.8 seconds.
+- Post-fix `mix typecheck`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check` passed. Root completion
+  gates retain final post-fix full-suite and quality confirmation.

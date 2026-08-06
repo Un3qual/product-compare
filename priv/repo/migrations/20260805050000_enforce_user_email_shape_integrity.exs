@@ -3,7 +3,7 @@ defmodule ProductCompare.Repo.Migrations.EnforceUserEmailShapeIntegrity do
 
   def up do
     create constraint(:users, :users_email_shape_check,
-             check: "email::text ~ '^[^[:space:]]+@[^[:space:]]+$'"
+             check: "email::text COLLATE \"C\" ~ '^[^[:space:]]+@[^[:space:]]+$'"
            )
   end
 

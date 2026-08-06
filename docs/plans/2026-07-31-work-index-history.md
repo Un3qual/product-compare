@@ -3319,11 +3319,17 @@ Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-impl
 
 PostgreSQL now preserves the existing minimal Accounts email shape through the
 named `users_email_shape_check`: persisted values contain at least one `@` and
-no whitespace. Both email-owning changesets map the database failure while
-normalization, `citext` uniqueness, registration, authentication, sessions,
-tokens, and GraphQL browser-auth behavior remain unchanged.
+no ASCII regex whitespace. Final review corrected the still-unshipped
+migration to use `COLLATE "C"`, preserving the existing non-Unicode Elixir
+regex semantics: internal U+2003/U+2028/U+2029 separators remain accepted while
+ASCII regex whitespace remains rejected. Both email-owning changesets map the
+database failure while normalization, `citext` uniqueness, registration,
+authentication, sessions, tokens, and GraphQL browser-auth behavior remain
+unchanged.
 
-Verification passed 18 focused direct-write/schema tests, 88 affected Accounts
-and GraphQL auth tests, and 1,255 complete backend tests. Typecheck, quality,
-formatting, queue validation with ready rows 27–29 intact, and diff hygiene also
-passed. Implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.
+The original evidence passed 18 focused direct-write/schema tests, 88 affected
+Accounts and GraphQL auth tests, and 1,255 complete backend tests. The final
+review correction added the Unicode/ASCII parity regressions (21 focused tests)
+and post-fix static, dispatch, and diff evidence, preserving ready rows 27–29.
+Root completion gates retain final post-fix full-suite and quality confirmation.
+Original implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.
