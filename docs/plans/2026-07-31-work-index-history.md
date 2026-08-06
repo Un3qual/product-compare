@@ -3277,3 +3277,20 @@ Verification passed 3 focused storage-bound tests, 53 adjacent changeset/read/
 GraphQL tests, the complete backend suite, typecheck, quality, formatting,
 queue validation with five ready rows, and diff hygiene. The implementation
 commit was `52d492b2`.
+
+## Completed 2026-08-06 Community Authored Text Storage Bounds
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
+
+PostgreSQL and the four owning schemas now agree on six Unicode code-point
+bounds covering thread titles and bodies, post bodies, review titles and
+bodies, and report reasons. Decomposed combining text and emoji ZWJ regressions
+protect direct SQL, changeset/context, and GraphQL writes while preserving
+nullability, messages, the existing report `varchar(500)` maximum, moderation,
+idempotency, and stored content.
+
+Verification passed 67 focused boundary tests, 189 serial community lifecycle
+tests, and 1,248 complete backend tests. Typecheck, quality, formatting, queue
+validation with four ready rows, and diff hygiene also passed. Implementation
+commits were `509e2f8a`, `0adc355b`, and `4509c7ef`.

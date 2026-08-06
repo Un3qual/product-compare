@@ -43,70 +43,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 24. Community Authored Text Storage Bounds
+### 25. Specification Definition Creation Validity
 
 Status: active
 Owner: Codex `/root` in the detached workspace at
 `/Users/admin/.codex/worktrees/5ad5/backend`
-Lane: Community content storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL and the owning changesets retain established Unicode
-code-point bounds for authored threads, posts, reviews, and reports.
-Next action: add failing direct- and application-write tests for code-point
-boundaries, including decomposed combining text and emoji ZWJ sequences, before
-changing all six owning validations and adding the named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
-- `lib/product_compare_schemas/discussions/product_thread.ex`
-- `lib/product_compare_schemas/discussions/thread_post.ex`
-- `lib/product_compare_schemas/discussions/product_review.ex`
-- `lib/product_compare_schemas/discussions/community_report.ex`
-- `test/product_compare/repo/community_authored_text_storage_bounds_test.exs`
-- affected community lifecycle, thread-post validation, trust, GraphQL
-  community, node-query, Dataloader, and seed tests
-- `docs/work/community-authored-text-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct- and application-write code-point boundary characterization.
-- Six explicit code-point changeset validations, named forward checks, and
-  owning constraint mappings.
-- Community lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- The approved canonical unit is Unicode code points; all six owning
-  `validate_length/3` calls change to `count: :codepoints` while their numeric
-  limits, nullability, and required-field behavior remain unchanged.
-- The existing report-reason `varchar(500)` upper bound remains intact.
-- No active row owns community schemas, migrations, or affected tests.
-- No current community row violates one of the six missing boundaries.
-
-Verification:
-
-- focused community-authored-text direct- and application-write suites with
-  decomposed combining text and emoji ZWJ boundaries
-- content lifecycle, thread-post validation, community trust, GraphQL
-  community content, node-query, Dataloader batching, and deterministic seed
-  suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL and application changesets agree on every Unicode
-code-point boundary, valid authored text remains accepted without rewriting,
-community behavior is otherwise unchanged, and all backend gates pass.
-
-## Ready Work
-
-### 25. Specification Definition Creation Validity
-
-Status: ready
 Lane: Specification definition storage integrity
 Plan: `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
 Batch outcome: PostgreSQL requires valid enum ownership and nonzero unit
@@ -123,6 +64,9 @@ Owned paths:
 - `test/product_compare/specs/definition_semantics_test.exs`
 - `test/product_compare/specs/unit_conversion_test.exs`
 - `docs/work/specification-definition-creation-validity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
 
 Internal slices:
@@ -151,6 +95,8 @@ Verification:
 Exit condition: PostgreSQL rejects invalid newly inserted attributes and units,
 valid definitions and existing immutability behavior remain unchanged, and all
 backend gates pass.
+
+## Ready Work
 
 ### 26. User Email Shape Storage Integrity
 
