@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: done (pending coordinator queue closeout)
+- Status: done
 - Owner: Codex `/root` in the detached workspace at
   `/Users/admin/.codex/worktrees/5ad5/backend`
 - Priority: P1
@@ -61,12 +61,6 @@ CJ run-health behavior remains unchanged.
 - full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
-
-## Remaining Work
-
-The coordinator will review this task, then close the live queue row only if
-at least three other complete `ready` rows remain, and update the catalog and
-dated work-index history.
 
 ## Blocker Rule
 

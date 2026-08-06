@@ -3243,3 +3243,20 @@ Verification passed 148 affected account lifecycle tests and 1,214 complete
 backend tests with no failures. Typecheck, quality, formatting, queue validation
 with ready rows 22-24 intact, and diff hygiene also passed. Implementation
 commits were `ff5f751b` and `89bda46e`.
+
+## Completed 2026-08-05 Ingestion Run Request Bounds
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
+
+PostgreSQL now preserves the established positive-when-present bounds of
+nullable `ingestion_runs.page_size` and `pages_requested` through the named
+`ingestion_runs_page_size_positive` and
+`ingestion_runs_pages_requested_positive` constraints. Direct writes reject
+zero and negative values while `NULL` and positive request metadata remain
+accepted, and the owning changeset maps both database failures.
+
+Verification passed 53 focused request-boundary and ingestion lifecycle tests,
+the complete backend test suite, typecheck, quality, formatting, queue
+validation with six ready rows, and diff hygiene. Implementation commits were
+`c49d8c45`, `5af38c07`, and `b949cfce`.

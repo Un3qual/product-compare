@@ -43,62 +43,11 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 22. Ingestion Run Request Bounds
+### 23. Taxon Attribute Storage Bounds
 
 Status: active
 Owner: Codex `/root` in the detached workspace at
 `/Users/admin/.codex/worktrees/5ad5/backend`
-Lane: Ingestion storage integrity
-Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL retains the positive-when-present bounds of import-run
-request metadata even when writes bypass application changesets.
-Next action: add failing direct-write tests for zero and negative `page_size`
-and `pages_requested` values before adding the named forward constraints.
-Owned paths:
-
-- `priv/repo/migrations/20260804230000_enforce_ingestion_run_request_bounds.exs`
-- `lib/product_compare_schemas/ingestion/import_run.ex`
-- `test/product_compare/repo/ingestion_run_request_bounds_test.exs`
-- affected import-run, scheduled-cursor, reconciliation, source-health, and CJ
-  run-health tests
-- `docs/work/ingestion-run-request-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write request-boundary characterization.
-- Named forward constraints and owning changeset mappings.
-- Ingestion lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- `page_size` and `pages_requested` remain nullable and must be positive when
-  present.
-- No active row owns the import-run schema, ingestion migrations, or affected
-  ingestion tests.
-- No current data requires a non-null request value below one.
-
-Verification:
-
-- focused ingestion-run direct-write suite
-- import-run, scheduled-cursor, reconciliation, source-health, and CJ run-health
-  suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects zero and negative import-run request
-metadata, null and positive values remain accepted, ingestion behavior is
-unchanged, and all backend gates pass.
-
-## Ready Work
-
-### 23. Taxon Attribute Storage Bounds
-
-Status: ready
 Lane: Taxonomy storage integrity
 Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
 Batch outcome: PostgreSQL preserves non-negative taxonomy display ordering and
@@ -113,6 +62,9 @@ Owned paths:
 - affected TaxonAttribute changeset, current-attribute read, and catalog
   GraphQL tests
 - `docs/work/taxon-attribute-storage-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
 - `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
 
 Internal slices:
@@ -139,6 +91,8 @@ Verification:
 Exit condition: PostgreSQL rejects negative taxonomy ordering and reputation
 thresholds, zero and positive values and current ordering remain unchanged, and
 all backend gates pass.
+
+## Ready Work
 
 ### 24. Community Authored Text Storage Bounds
 
@@ -376,6 +330,53 @@ Verification:
 Exit condition: PostgreSQL rejects cross-thread parent references, root and
 same-thread posts plus parent deletion retain current behavior, and all backend
 gates pass.
+
+### 29. Ingestion Run Terminal Timestamp Integrity
+
+Status: ready
+Lane: Ingestion storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL requires completion timestamps for terminal
+ingestion runs while preserving nullable `finished_at` for running rows.
+Next action: add failing direct-write tests for timestamp-free `succeeded` and
+`failed` rows before adding the named forward check.
+Owned paths:
+
+- `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
+- `lib/product_compare_schemas/ingestion/import_run.ex`
+- `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
+- `test/product_compare/ingestion/cj_run_readiness_test.exs`
+- affected CJ run-health, scheduled-cursor, reconciliation, and source-health
+  tests
+- `docs/work/ingestion-run-terminal-timestamp-integrity.md`
+- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+
+Internal slices:
+
+- Failing direct-write terminal-timestamp characterization and valid controls.
+- One named forward check and owning changeset mapping.
+- Truthful CJ readiness fixture plus ingestion lifecycle parity and complete
+  backend verification.
+
+Prerequisites:
+
+- `finished_at` remains nullable for running rows and is required only for
+  `succeeded` and `failed` rows.
+- No active row owns the ImportRun schema or affected ingestion tests.
+- No current terminal row has a null completion timestamp.
+
+Verification:
+
+- focused direct-write terminal-timestamp suite
+- CJ readiness/run-health, scheduled-cursor, reconciliation, and source-health
+  suites
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: PostgreSQL rejects timestamp-free terminal runs, accepts
+unfinished running rows and timestamped terminal rows, readiness fixtures remain
+truthful, and all backend gates pass.
 
 ## Needs Decision Work
 
