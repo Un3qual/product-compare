@@ -3327,11 +3327,11 @@ database failure while normalization, `citext` uniqueness, registration,
 authentication, sessions, tokens, and GraphQL browser-auth behavior remain
 unchanged.
 
-The original evidence passed 18 focused direct-write/schema tests, 88 affected
-Accounts and GraphQL auth tests, and 1,255 complete backend tests. The final
-review correction added the Unicode/ASCII parity regressions (21 focused tests)
-and post-fix static, dispatch, and diff evidence, preserving ready rows 27–29.
-Root completion gates retain final post-fix full-suite and quality confirmation.
+The original evidence passed 18 focused direct-write/schema tests and 88
+affected Accounts and GraphQL auth tests. The final review correction added the
+Unicode/ASCII parity regressions (21 focused tests); the definitive post-fix
+backend passed 1,258 tests with no failures, plus typecheck, quality, formatting,
+queue validation with ready rows 28–30, and diff hygiene.
 Original implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.
 
 ## Dispatch Correction 2026-08-06 Final Storage Review

@@ -191,8 +191,8 @@ authentication behavior is unchanged.
 - Focused direct-write plus Accounts schema suites: 21 tests, 0 failures.
 - Affected Accounts authentication/session/token plus GraphQL browser-auth
   suites: 88 tests, 0 failures.
-- Superseded pre-correction full repository evidence: 1,255 tests, 0 failures
-  in 111.8 seconds.
-- Post-fix `mix typecheck`, `mix format --check-formatted`,
-  `mix work_queue.validate`, and `git diff --check` passed. Root completion
-  gates retain final post-fix full-suite and quality confirmation.
+- Final post-fix `mix test`: 1,258 tests, 0 failures in 118.1 seconds.
+- Final post-fix `mix typecheck`, `mix quality`,
+  `mix format --check-formatted`, `mix work_queue.validate` (3 ready rows), and
+  `git diff --check` passed. Quality checked 505 source files with no Credo
+  issues, retained the ExDNA 3/3 clone budget, and passed Dialyzer.

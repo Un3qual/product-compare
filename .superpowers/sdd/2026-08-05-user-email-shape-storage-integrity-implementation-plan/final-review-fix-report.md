@@ -55,9 +55,9 @@ Result: 88 tests, 0 failures.
 - `mix format --check-formatted`: passed.
 - `mix work_queue.validate`: passed with 3 ready rows.
 - `git diff --check`: passed.
-- The earlier 1,255-test full-suite and quality evidence predates this fix and
-  is superseded. Root completion gates retain final post-fix full-suite and
-  quality confirmation.
+- Final post-fix `mix test`: 1,258 tests, 0 failures in 118.1 seconds.
+- Final post-fix `mix quality`: 505 source files, no Credo issues, ExDNA 3/3,
+  and Dialyzer passed.
 
 ## Files and Commit
 

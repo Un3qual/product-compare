@@ -34,13 +34,11 @@ existing non-Unicode Elixir regex accepts them.
   0 failures (6 direct-write checks and 15 Accounts schema checks).
 - The affected Accounts authentication, session, token, and GraphQL browser-auth
   suites passed: 88 tests, 0 failures.
-- Pre-correction repository evidence recorded `mix test`: 1,255 tests, 0
-  failures in 111.8 seconds. It is superseded for this correction.
-- Post-fix `mix typecheck`, `mix format --check-formatted`,
-  `mix work_queue.validate` (3 ready rows), and `git diff --check` passed.
-- Final post-fix full-suite and quality confirmation remains pending the root
-  completion gates; do not treat the earlier full-suite or quality record as
-  refreshed evidence for this correction.
+- Final post-fix `mix test` passed 1,258 tests with 0 failures in 118.1 seconds.
+- Final post-fix `mix typecheck`, `mix quality`,
+  `mix format --check-formatted`, `mix work_queue.validate` (3 ready rows), and
+  `git diff --check` passed. Quality checked 505 source files with no Credo
+  issues, retained the ExDNA 3/3 clone budget, and passed Dialyzer.
 
 ## Boundaries
 
@@ -66,9 +64,8 @@ existing non-Unicode Elixir regex accepts them.
 - Focused direct-write and Accounts schema suites: 21 tests, 0 failures.
 - Accounts authentication, session, token, and GraphQL browser-auth suites:
   88 tests, 0 failures.
-- Superseded pre-correction full-suite evidence: 1,255 tests, 0 failures.
-- Post-fix static, formatting, dispatch, and diff gates passed; root completion
-  gates retain final full-suite and quality confirmation.
+- Final post-fix full suite: 1,258 tests, 0 failures.
+- Final post-fix type, quality, formatting, dispatch, and diff gates passed.
 - Dispatch and diff gates: `mix work_queue.validate` (3 ready rows) and
   `git diff --check` passed.
 
