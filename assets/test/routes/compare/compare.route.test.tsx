@@ -44,6 +44,15 @@ import {
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
 
+function confirmSavedComparisonDeletion() {
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
+      "button",
+      { name: "Delete comparison" }
+    )
+  );
+}
+
 const {
   commitMutationMock,
   fetchRouteQueryMock,
@@ -3839,6 +3848,7 @@ test("saved comparisons route removes a deleted set from the list", async () => 
   );
 
   fireEvent.click(screen.getAllByRole("button", { name: "Delete comparison" })[0]);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -3883,6 +3893,7 @@ test("saved comparisons route keeps the set visible when delete fails and clears
   const deleteButton = screen.getAllByRole("button", { name: "Delete comparison" })[0];
 
   fireEvent.click(deleteButton);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -3936,6 +3947,7 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
@@ -3989,7 +4001,9 @@ test("saved comparisons route applies overlapping delete responses against the l
   const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
 
   fireEvent.click(deleteButtons[0]);
+  confirmSavedComparisonDeletion();
   fireEvent.click(deleteButtons[1]);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(commits).toHaveLength(2);
@@ -4045,7 +4059,9 @@ test("saved comparisons route keeps later delete rows pending until their own re
   const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
 
   fireEvent.click(deleteButtons[0]);
+  confirmSavedComparisonDeletion();
   fireEvent.click(deleteButtons[1]);
+  confirmSavedComparisonDeletion();
 
   await waitFor(() => {
     expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);

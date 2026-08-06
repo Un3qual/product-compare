@@ -7,6 +7,7 @@ import type { AlertOperationsMarkAlertReadMutation } from "../../../__generated_
 import type { AlertOperationsUpdatePriceWatchMutation } from "../../../__generated__/AlertOperationsUpdatePriceWatchMutation.graphql";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
+import { DestructiveActionDialog } from "../../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../../ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
 import { commitRouteMutationPromise } from "../../relay-mutations";
@@ -207,7 +208,14 @@ function WatchListItem({
       {error ? <FeedbackState kind="error" title={error} /> : null}
       <div {...props(styles.actions)}>
         <Button disabled={pendingIds.has(watch.id)} variant="soft" onClick={() => onToggle(watch)}>{control.label}</Button>
-        <Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost" onClick={() => onDelete(watch)}>Delete</Button>
+        <DestructiveActionDialog
+          confirmLabel="Delete price watch"
+          description={`Deleting the price watch for ${watch.productName} permanently stops its alerts.`}
+          disabled={pendingIds.has(watch.id)}
+          onConfirm={() => onDelete(watch)}
+          title="Delete this price watch?"
+          trigger={<Button disabled={pendingIds.has(watch.id)} tone="danger" variant="ghost">Delete</Button>}
+        />
       </div>
     </li>
   );

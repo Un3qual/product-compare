@@ -50,6 +50,22 @@ defmodule ProductCompare.Accounts.Users do
     |> Repo.update()
   end
 
+  @spec lock_operator(pos_integer()) :: {:ok, User.t()} | {:error, :forbidden}
+  def lock_operator(user_id) do
+    if Repo.in_transaction?() do
+      case Repo.one(
+             from user in User,
+               where: user.id == ^user_id,
+               lock: "FOR UPDATE"
+           ) do
+        %User{is_operator: true} = operator -> {:ok, operator}
+        _missing_or_non_operator -> {:error, :forbidden}
+      end
+    else
+      raise ArgumentError, "lock_operator/1 requires a database transaction"
+    end
+  end
+
   @spec bootstrap_operator_user(String.t(), String.t(), integer()) ::
           {:ok, User.t()} | {:error, :existing_non_operator | Ecto.Changeset.t()}
   def bootstrap_operator_user(email, password, reputation_points)

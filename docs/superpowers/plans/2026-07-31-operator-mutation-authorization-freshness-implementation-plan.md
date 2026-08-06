@@ -52,7 +52,7 @@
   a missing/non-operator row; calling it outside a transaction raises
   `ArgumentError`.
 
-- [ ] **Step 1: Add failing surface and actual-operation concurrency regressions**
+- [x] **Step 1: Add failing surface and actual-operation concurrency regressions**
 
 In the three GraphQL suites, keep a previously loaded operator struct, revoke
 its database row, invoke all six resolver paths, and assert their existing
@@ -90,7 +90,7 @@ mix test test/product_compare/accounts/concurrency_test.exs test/product_compare
 Expected before implementation: the new Accounts operation is absent and the
 six stale-snapshot mutation assertions perform or reach their domain writes.
 
-- [ ] **Step 2: Add the transaction-required Accounts lock**
+- [x] **Step 2: Add the transaction-required Accounts lock**
 
 Delegate `Accounts.lock_operator/1` to `Accounts.Users`. Require an active Repo
 transaction, select the user by ID with `FOR UPDATE`, return the current
@@ -98,7 +98,7 @@ operator, and map a missing or non-operator row to `{:error, :forbidden}`.
 Follow the existing transaction-required guard style used by source-provider
 claiming; do not start a transaction inside this operation.
 
-- [ ] **Step 3: Adopt one lock order across the six mutations**
+- [x] **Step 3: Adopt one lock order across the six mutations**
 
 For affiliate writes, use one resolver helper as the single path that starts
 the transaction, locks the current operator, and runs the selected
@@ -109,7 +109,7 @@ For CJ-program lifecycle updates, start a resolver transaction, lock the
 operator, and then call the existing optimistic lifecycle update. Roll back on
 authorization failure while retaining every current mutation error mapping.
 
-- [ ] **Step 4: Verify the focused and complete contracts**
+- [x] **Step 4: Verify the focused and complete contracts**
 
 ```bash
 mix test test/product_compare/accounts/concurrency_test.exs test/product_compare/discussions/concurrency_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/cj_program_queries_test.exs
@@ -122,14 +122,16 @@ mix work_queue.validate
 git diff --check
 ```
 
-- [ ] **Step 5: Record and commit the completed outcome**
+- [x] **Step 5: Record and commit the completed outcome**
 
 Change the lane doc's prospective `Target Outcome` to observed `Batch Outcome`,
 record all six stale-snapshot results plus both actual-operation lock orders for
-each of the three transaction families, and commit the code, tests, and lane
-evidence together.
+each of the three transaction families, remove the completed active row while
+leaving ready rows 17-19 intact, append the concise completion record to the
+work-index history, move the plan into the completed catalog, and commit the
+code, tests, and closeout evidence together.
 
 ```bash
-git add lib/product_compare/accounts.ex lib/product_compare/accounts/users.ex lib/product_compare_web/resolvers/affiliate/mutations.ex lib/product_compare/specs/corrections.ex lib/product_compare_web/resolvers/ingestion_resolver.ex test/product_compare/accounts/concurrency_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/cj_program_queries_test.exs docs/work/operator-mutation-authorization-freshness.md
+git add lib/product_compare/accounts.ex lib/product_compare/accounts/users.ex lib/product_compare_web/resolvers/affiliate/mutations.ex lib/product_compare/specs/corrections.ex lib/product_compare_web/resolvers/ingestion_resolver.ex test/product_compare/accounts/concurrency_test.exs test/product_compare_web/graphql/affiliate_workflows_test.exs test/product_compare_web/graphql/specification_corrections_test.exs test/product_compare_web/graphql/cj_program_queries_test.exs docs/work/operator-mutation-authorization-freshness.md docs/work/index.md docs/plans/INDEX.md docs/plans/2026-07-31-work-index-history.md docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md
 git commit -m "fix: refresh operator mutation authorization"
 ```

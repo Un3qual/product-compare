@@ -2741,6 +2741,16 @@ None.
 
 ## Just Completed
 
+Radix disclosure controls completed on 2026-08-04. Price-watch creation,
+comparison sharing, review creation, question creation, and answer creation now
+use the existing project Collapsible primitive. Force-mounted closed content
+preserves form state, while comparison history remains controlled and lazy on
+first expansion. TDD characterization failed in four expected places before
+the migration; the focused five-file suite then passed 40 tests. The full
+frontend gate passed Relay validation, TypeScript, Oxc, Oxfmt, 1,528 tests,
+client and SSR builds, and the 268,729-byte gzip bundle contract. The live queue
+retains three ready rows.
+
 Bounded comparison root GraphQL reads are complete. Catalog now projects
 multiple slug selections from one canonical lookup, Recommendations projects
 multiple profile requests from one shared evidence snapshot, and both public
@@ -3120,3 +3130,116 @@ If the claim guard is not satisfied, stop and hand off to the coordinator for re
 Completed lane summaries remain in their lane work docs under `docs/work/*.md`.
 Dated implementation plans remain under `docs/plans/`. They are historical
 reference unless this queue links one as the active plan for a `ready` row.
+
+## Completed 2026-08-04 Operator Mutation Authorization Freshness
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
+
+All six operator-only GraphQL mutations now lock and reload the current
+operator inside the owning affiliate, specification-correction, or CJ-program
+write transaction. Stale request snapshots return their existing `FORBIDDEN`
+payloads without domain changes, revocation-first operations wait and deny, and
+mutation-first operations retain the user lock through their domain-row wait
+before committing ahead of revocation.
+
+Verification passed 48 focused tests, 361 complete GraphQL tests, and 1,197
+complete backend tests, plus formatting, typecheck, quality, queue validation
+with ready rows 17-19 intact, and diff hygiene.
+
+## Completed 2026-08-04 Application JSON Storage Policy Guard
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`
+
+Compiled Ecto reflection and PostgreSQL catalog discovery now inventory every
+persisted application JSON contract in both directions, exclude only exact
+framework-owned columns, and fail by default when a field lacks one narrow
+raw/open/request/typed-JSON classification. The six legitimate contracts remain
+intact; comparison snapshot and alert application-owned dumps remain absent.
+
+Verification rebuilt only the TEST database, passed 7 focused policy tests and
+the five owner suites (15 comparison, 15 alert, 68 specification, 184 ingestion,
+and 126 commerce-attribution tests), then passed 1,202 exact-head backend tests,
+quality, type, formatting, queue validation with ready rows 18-20 intact, and
+diff hygiene. Implementation commits were `4fa16461`, `cdc6353b`, `6549d4e2`,
+and `a26b0e8f`.
+
+## Completed 2026-08-04 Captured Numeric Evidence Constraints
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`
+
+Five named PostgreSQL checks now preserve the established numeric domains of
+immutable comparison attributes, offers, and rankings, captured price-watch
+baselines, and copied alert monetary, target, baseline, and percentage facts.
+Direct writes reject every impossible value with the exact owning constraint,
+while zero monetary values, confidence endpoints `0` and `1`, and percentage
+values greater than zero through `100` remain accepted. Public behavior is
+unchanged.
+
+Verification passed 5 focused direct-write tests; six lifecycle commands passed
+275 comparison, alert, pricing, specification-claim, taxonomy, and
+commerce-attribution tests; and the complete backend passed 1,207 tests. Type,
+quality, formatting, queue validation with ready rows 19-21 intact, and diff
+hygiene also passed. Implementation commits were `2476a0dc` and `b0bd54cb`.
+
+## Completed 2026-08-04 Destructive Action Confirmation
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`
+
+One project-local Radix AlertDialog boundary now confirms public comparison-link
+revocation, saved-comparison deletion, API-token revocation, and price-watch
+deletion. Opening and canceling are inert, cancel restores trigger focus, and
+explicit confirmation invokes each unchanged selected-row callback once.
+Mutation submission, pending/error state, success handling, and concurrent-row
+ownership remain in the four route surfaces.
+
+Verification captured 22 expected RED failures across 95 route tests, then
+passed the shared-dialog and route GREEN set at 96/96 and the two broader saved-
+comparison integration suites at 118/118. The complete frontend passed 1,530
+tests in 106 files plus Relay, TypeScript, Oxc, Oxfmt, client and SSR builds, and
+the 268,764-byte gzip bundle contract. Queue validation passed after removing
+Batch 19 with ready rows 20-22 unchanged, and diff hygiene passed.
+
+## Completed 2026-08-05 Test Database Process Exclusivity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-test-database-process-exclusivity-implementation-plan.md`
+
+The test-only `ProductCompare.TestDatabaseProcessGuard` now owns a dedicated
+Postgrex session advisory lock for each database and namespace. The test helper
+acquires the default namespace before ExUnit starts, so an accidental second
+external test process fails before any tests run and names `MIX_TEST_PARTITION`
+as the supported way to select an independent database. Lock ownership ends
+when the dedicated session stops; production runtime, Repo pooling, migrations,
+and SQL-sandbox behavior remain unchanged.
+
+The focused real PostgreSQL regression passed one contention-and-release test,
+the representative Accounts concurrency suite passed five tests, an external
+same-database contender failed in `test/test_helper.exs` before ExUnit with the
+actionable partition guidance, and a partitioned contender passed one test while
+the default lock was held. Formatting, typecheck, quality, full backend tests,
+queue validation with ready rows 21-23 intact, and diff hygiene passed.
+
+## Completed 2026-08-05 Credential Artifact Storage Constraints
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-04-credential-artifact-storage-constraints-implementation-plan.md`
+
+PostgreSQL now rejects malformed `users_tokens.token_hash` digests and
+out-of-bounds API-token display metadata through the named
+`users_tokens_hash_length_check`, `api_tokens_prefix_length_check`, and
+`api_tokens_label_length_check` constraints. Direct-write controls retain the
+established valid boundaries: a 32-byte digest, one- and 32-code-point prefixes,
+and `NULL` and 120-code-point labels. Final-review application and direct-write
+regressions use decomposed combining text and an emoji ZWJ sequence to confirm
+that explicit Ecto code-point validation agrees with PostgreSQL `char_length`.
+Existing GraphQL, browser-auth, API-token, and cookie-session behavior remains
+unchanged, and stored Unicode values are not normalized or rewritten.
+
+Verification passed 148 affected account lifecycle tests and 1,214 complete
+backend tests with no failures. Typecheck, quality, formatting, queue validation
+with ready rows 22-24 intact, and diff hygiene also passed. Implementation
+commits were `ff5f751b` and `89bda46e`.

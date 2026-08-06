@@ -30,7 +30,7 @@ defmodule ProductCompareSchemas.Accounts.ApiToken do
       :revoked_at
     ])
     |> validate_required([:user_id, :token_prefix, :token_hash])
-    |> validate_length(:token_prefix, min: 1, max: 32)
+    |> validate_length(:token_prefix, min: 1, max: 32, count: :codepoints)
     |> validate_change(:token_hash, fn :token_hash, token_hash ->
       if is_binary(token_hash) and byte_size(token_hash) == 32 do
         []
@@ -38,8 +38,10 @@ defmodule ProductCompareSchemas.Accounts.ApiToken do
         [token_hash: "must be a 32-byte SHA3-256 digest"]
       end
     end)
-    |> validate_length(:label, max: 120)
+    |> validate_length(:label, max: 120, count: :codepoints)
     |> check_constraint(:token_hash, name: :api_tokens_hash_length_check)
+    |> check_constraint(:token_prefix, name: :api_tokens_prefix_length_check)
+    |> check_constraint(:label, name: :api_tokens_label_length_check)
     |> unique_constraint(:token_hash)
     |> unique_constraint(:entropy_id)
     |> assoc_constraint(:user)

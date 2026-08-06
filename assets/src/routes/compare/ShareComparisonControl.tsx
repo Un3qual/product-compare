@@ -6,8 +6,14 @@ import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } fro
 import type { ComparisonSharingOperationsQuery } from "../../__generated__/ComparisonSharingOperationsQuery.graphql";
 import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+import { DestructiveActionDialog } from "../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../ui/primitives/Button";
 import { Checkbox } from "../../ui/primitives/Checkbox";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../../ui/primitives/Collapsible";
 import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
@@ -15,11 +21,11 @@ import type { CompareProductSummary } from "./loader";
 import {
   comparisonSharingOperationsQuery,
   publishComparisonSnapshotMutation,
-  revokeComparisonSnapshotMutation
+  revokeComparisonSnapshotMutation,
 } from "./ComparisonSharingOperations";
 import {
   recommendationProfileFromUrl,
-  type RecommendationProfile
+  type RecommendationProfile,
 } from "./recommendation-route-data";
 import {
   appendComparisonSnapshotPage,
@@ -35,24 +41,55 @@ import {
   snapshotRevocationRowState,
   snapshotFromNode,
   type ComparisonSnapshotState,
-  type PublishedComparisonSnapshot
+  type PublishedComparisonSnapshot,
 } from "./share-comparison-data";
 
 const SNAPSHOT_PAGE_SIZE = 20;
 
 const styles = create({
+  content: {
+    display: {
+      default: "block",
+      ":where([data-state='closed'])": "none",
+    },
+  },
   control: { borderBlockStart: "1px solid var(--pc-border-quiet)", paddingBlockStart: "0.85rem" },
   field: { display: "grid", gap: "0.35rem" },
   form: { display: "grid", gap: "0.75rem", paddingBlockStart: "0.8rem" },
-  input: { backgroundColor: "var(--pc-surface)", border: "1px solid var(--pc-border-emphasized)", borderRadius: "0.4rem", color: "var(--pc-text)", minHeight: "2.6rem", paddingInline: "0.7rem" },
+  input: {
+    backgroundColor: "var(--pc-surface)",
+    border: "1px solid var(--pc-border-emphasized)",
+    borderRadius: "0.4rem",
+    color: "var(--pc-text)",
+    minHeight: "2.6rem",
+    paddingInline: "0.7rem",
+  },
   list: { display: "grid", gap: "0.65rem", listStyle: "none", margin: 0, padding: 0 },
-  listItem: { alignItems: "center", display: "flex", flexWrap: "wrap", gap: "0.6rem", justifyContent: "space-between" },
+  listItem: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.6rem",
+    justifyContent: "space-between",
+  },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
-  summary: { cursor: "pointer", fontWeight: 650 }
+  summary: {
+    appearance: "none",
+    backgroundColor: "transparent",
+    border: 0,
+    color: "inherit",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "inherit",
+    fontWeight: 650,
+    lineHeight: "inherit",
+    padding: 0,
+    textAlign: "start",
+  },
 });
 
 export function ShareComparisonControl({
-  products
+  products,
 }: {
   products: readonly CompareProductSummary[];
 }) {
@@ -61,10 +98,10 @@ export function ShareComparisonControl({
   const [snapshotState, setSnapshotState] = useState<ComparisonSnapshotState>(() => ({
     message: null,
     published: [],
-    revokedSnapshotIds: new Set()
+    revokedSnapshotIds: new Set(),
   }));
   const recommendationProfile = recommendationProfileFromUrl(
-    `${location.pathname}${location.search}`
+    `${location.pathname}${location.search}`,
   );
 
   function recordPublished(snapshot: PublishedComparisonSnapshot) {
@@ -83,27 +120,26 @@ export function ShareComparisonControl({
     products,
     recommendationProfile,
     recordPublished,
-    recordMessage
+    recordMessage,
   );
-  const {
-    errorsBySnapshotId,
-    handleRevoke,
-    pendingSnapshotIds
-  } = useSnapshotRevoker(recordRevoked);
+  const { errorsBySnapshotId, handleRevoke, pendingSnapshotIds } =
+    useSnapshotRevoker(recordRevoked);
 
-  return <SnapshotControlView
-    handlePublish={handlePublish}
-    handleRevoke={handleRevoke}
-    message={snapshotState.message}
-    onOpenChange={setOpen}
-    open={open}
-    products={products}
-    published={snapshotState.published}
-    publishing={publishing}
-    revokedSnapshotIds={snapshotState.revokedSnapshotIds}
-    revocationErrorsBySnapshotId={errorsBySnapshotId}
-    revokingSnapshotIds={pendingSnapshotIds}
-  />;
+  return (
+    <SnapshotControlView
+      handlePublish={handlePublish}
+      handleRevoke={handleRevoke}
+      message={snapshotState.message}
+      onOpenChange={setOpen}
+      open={open}
+      products={products}
+      published={snapshotState.published}
+      publishing={publishing}
+      revokedSnapshotIds={snapshotState.revokedSnapshotIds}
+      revocationErrorsBySnapshotId={errorsBySnapshotId}
+      revokingSnapshotIds={pendingSnapshotIds}
+    />
+  );
 }
 
 interface SnapshotControlViewProps {
@@ -121,49 +157,71 @@ interface SnapshotControlViewProps {
 }
 
 function SnapshotControlView({
+  onOpenChange,
+  open,
+  ...publishFormProps
+}: SnapshotControlViewProps) {
+  return (
+    <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
+      <CollapsibleTrigger {...props(styles.summary)}>
+        Share a fixed comparison snapshot
+      </CollapsibleTrigger>
+      <CollapsibleContent forceMount {...props(styles.content)}>
+        <SnapshotPublishForm open={open} {...publishFormProps} />
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+function SnapshotPublishForm({
   handlePublish,
   handleRevoke,
   message,
-  onOpenChange,
   open,
   products,
   published,
   publishing,
   revokedSnapshotIds,
   revocationErrorsBySnapshotId,
-  revokingSnapshotIds
-}: SnapshotControlViewProps) {
+  revokingSnapshotIds,
+}: Omit<SnapshotControlViewProps, "onOpenChange">) {
   const titleId = useId();
   const searchIndexableId = useId();
 
   return (
-    <details
-      onToggle={(event) => onOpenChange(event.currentTarget.open)}
-      {...props(styles.control)}
-    >
-      <summary {...props(styles.summary)}>Share a fixed comparison snapshot</summary>
-      <form onSubmit={handlePublish} {...props(styles.form)}>
-        <label htmlFor={titleId} {...props(styles.field)}>
-          Optional title
-          <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
-        </label>
-        <label htmlFor={searchIndexableId} {...props(styles.field)}>
-          <span><Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to discover this immutable snapshot</span>
-          <small>Off by default. Only snapshots with sufficient captured specifications and current offer evidence can be indexed.</small>
-        </label>
-        <Button disabled={publishing || products.length < 2} type="submit">{publishing ? "Publishing…" : "Publish snapshot"}</Button>
-        <SnapshotHistory
-          localSnapshots={published}
-          onRevoke={handleRevoke}
-          open={open}
-          resetToken={products.map(({ id }) => id).join("|")}
-          revokedSnapshotIds={revokedSnapshotIds}
-          revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
-          revokingSnapshotIds={revokingSnapshotIds}
-        />
-        {message ? <p role="status" {...props(styles.message)}>{message}</p> : null}
-      </form>
-    </details>
+    <form onSubmit={handlePublish} {...props(styles.form)}>
+      <label htmlFor={titleId} {...props(styles.field)}>
+        Optional title
+        <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+      </label>
+      <label htmlFor={searchIndexableId} {...props(styles.field)}>
+        <span>
+          <Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to
+          discover this immutable snapshot
+        </span>
+        <small>
+          Off by default. Only snapshots with sufficient captured specifications and current offer
+          evidence can be indexed.
+        </small>
+      </label>
+      <Button disabled={publishing || products.length < 2} type="submit">
+        {publishing ? "Publishing…" : "Publish snapshot"}
+      </Button>
+      <SnapshotHistory
+        localSnapshots={published}
+        onRevoke={handleRevoke}
+        open={open}
+        resetToken={products.map(({ id }) => id).join("|")}
+        revokedSnapshotIds={revokedSnapshotIds}
+        revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
+        revokingSnapshotIds={revokingSnapshotIds}
+      />
+      {message ? (
+        <p role="status" {...props(styles.message)}>
+          {message}
+        </p>
+      ) : null}
+    </form>
   );
 }
 
@@ -174,7 +232,7 @@ function SnapshotHistory({
   resetToken,
   revokedSnapshotIds,
   revocationErrorsBySnapshotId,
-  revokingSnapshotIds
+  revokingSnapshotIds,
 }: {
   localSnapshots: readonly PublishedComparisonSnapshot[];
   onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
@@ -186,29 +244,34 @@ function SnapshotHistory({
 }) {
   if (!open) return null;
 
-  return <ResettableErrorBoundary
-    resetToken={resetToken}
-    fallback={<p role="alert">Published snapshots unavailable.</p>}
-  >
-    <Suspense fallback={<p role="status">Loading published snapshots...</p>}>
-      <PublishedSnapshots
-        localSnapshots={localSnapshots}
-        onRevoke={onRevoke}
-        revokedSnapshotIds={revokedSnapshotIds}
-        revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
-        revokingSnapshotIds={revokingSnapshotIds}
-      />
-    </Suspense>
-  </ResettableErrorBoundary>;
+  return (
+    <ResettableErrorBoundary
+      resetToken={resetToken}
+      fallback={<p role="alert">Published snapshots unavailable.</p>}
+    >
+      <Suspense fallback={<p role="status">Loading published snapshots...</p>}>
+        <PublishedSnapshots
+          localSnapshots={localSnapshots}
+          onRevoke={onRevoke}
+          revokedSnapshotIds={revokedSnapshotIds}
+          revocationErrorsBySnapshotId={revocationErrorsBySnapshotId}
+          revokingSnapshotIds={revokingSnapshotIds}
+        />
+      </Suspense>
+    </ResettableErrorBoundary>
+  );
 }
 
 function useSnapshotPublisher(
   products: readonly CompareProductSummary[],
   recommendationProfile: RecommendationProfile,
   onPublished: (snapshot: PublishedComparisonSnapshot) => void,
-  onMessage: (message: string | null) => void
+  onMessage: (message: string | null) => void,
 ) {
-  const [commitPublish, publishing] = useMutation<ComparisonSharingOperationsPublishComparisonSnapshotMutation>(publishComparisonSnapshotMutation);
+  const [commitPublish, publishing] =
+    useMutation<ComparisonSharingOperationsPublishComparisonSnapshotMutation>(
+      publishComparisonSnapshotMutation,
+    );
 
   async function handlePublish(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -218,18 +281,18 @@ function useSnapshotPublisher(
       productIds: products.map(({ id }) => id),
       recommendationProfile,
       searchIndexable: form.get("searchIndexable") === "on",
-      title: form.get("title")
+      title: form.get("title"),
     });
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitPublish, {
-        variables: { input }
+        variables: { input },
       });
       const payload = response.publishComparisonSnapshot;
       const outcome = resolvePublishComparisonSnapshotMutationOutcome(
         payload,
         input.title ?? null,
-        graphQLErrors
+        graphQLErrors,
       );
 
       if (outcome.error === null) onPublished(outcome.snapshot);
@@ -242,16 +305,16 @@ function useSnapshotPublisher(
   return [handlePublish, publishing] as const;
 }
 
-function useSnapshotRevoker(
-  onRevoked: (snapshot: PublishedComparisonSnapshot) => void
-) {
-  const [commitRevoke] = useMutation<ComparisonSharingOperationsRevokeComparisonSnapshotMutation>(revokeComparisonSnapshotMutation);
+function useSnapshotRevoker(onRevoked: (snapshot: PublishedComparisonSnapshot) => void) {
+  const [commitRevoke] = useMutation<ComparisonSharingOperationsRevokeComparisonSnapshotMutation>(
+    revokeComparisonSnapshotMutation,
+  );
   const pendingSnapshotIdsRef = useRef<ReadonlySet<string>>(new Set());
   const [pendingSnapshotIds, setPendingSnapshotIds] = useState<ReadonlySet<string>>(
-    pendingSnapshotIdsRef.current
+    pendingSnapshotIdsRef.current,
   );
   const [errorsBySnapshotId, setErrorsBySnapshotId] = useState<ReadonlyMap<string, string>>(
-    new Map()
+    new Map(),
   );
 
   async function handleRevoke(snapshot: PublishedComparisonSnapshot) {
@@ -266,30 +329,24 @@ function useSnapshotRevoker(
 
     try {
       const { response, graphQLErrors } = await commitRouteMutationPromise(commitRevoke, {
-        variables: { snapshotId: snapshot.id }
+        variables: { snapshotId: snapshot.id },
       });
       const payload = response.revokeComparisonSnapshot;
       const outcome = resolveRevokeComparisonSnapshotMutationOutcome(
         payload,
         snapshot,
-        graphQLErrors
+        graphQLErrors,
       );
 
       if (outcome.error === null) {
         onRevoked(outcome.snapshot);
       } else {
-        setErrorsBySnapshotId((current) => withSnapshotError(
-          current,
-          snapshot.id,
-          outcome.error
-        ));
+        setErrorsBySnapshotId((current) => withSnapshotError(current, snapshot.id, outcome.error));
       }
     } catch {
-      setErrorsBySnapshotId((current) => withSnapshotError(
-        current,
-        snapshot.id,
-        DEFAULT_ROUTE_ERROR_MESSAGE
-      ));
+      setErrorsBySnapshotId((current) =>
+        withSnapshotError(current, snapshot.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+      );
     } finally {
       const remaining = new Set(pendingSnapshotIdsRef.current);
       remaining.delete(snapshot.id);
@@ -306,7 +363,7 @@ function PublishedSnapshots({
   onRevoke,
   revokedSnapshotIds,
   revocationErrorsBySnapshotId,
-  revokingSnapshotIds
+  revokingSnapshotIds,
 }: {
   localSnapshots: readonly PublishedComparisonSnapshot[];
   onRevoke: (snapshot: PublishedComparisonSnapshot) => Promise<void>;
@@ -319,16 +376,16 @@ function PublishedSnapshots({
   const data = useLazyLoadQuery<ComparisonSharingOperationsQuery>(
     comparisonSharingOperationsQuery,
     { first: SNAPSHOT_PAGE_SIZE, after },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
   const connection = data.viewer?.comparisonSnapshots;
   const pageSnapshots = useMemo(
     () => connection?.edges.map(({ node }) => snapshotFromNode(node)) ?? [],
-    [connection]
+    [connection],
   );
   const snapshots = mergeComparisonSnapshots(
     [localSnapshots, loadedSnapshots, pageSnapshots],
-    revokedSnapshotIds
+    revokedSnapshotIds,
   );
   const next = nextComparisonSnapshotCursor(connection, after);
 
@@ -340,34 +397,54 @@ function PublishedSnapshots({
     return null;
   }
 
-  return <>
-    {snapshots.length > 0 ? (
-      <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
-        {snapshots.map((snapshot) => {
-          const revocation = snapshotRevocationRowState(
-            snapshot.id,
-            revokingSnapshotIds,
-            revocationErrorsBySnapshotId
-          );
+  return (
+    <>
+      {snapshots.length > 0 ? (
+        <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
+          {snapshots.map((snapshot) => {
+            const revocation = snapshotRevocationRowState(
+              snapshot.id,
+              revokingSnapshotIds,
+              revocationErrorsBySnapshotId,
+            );
 
-          return (
-            <li key={snapshot.id} {...props(styles.listItem)}>
-              <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
-              <Button aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`} disabled={revocation.disabled} onClick={() => onRevoke(snapshot)} tone="danger" type="button" variant="soft">{revocation.buttonCopy}</Button>
-              {revocation.error ? <p role="alert">{revocation.error}</p> : null}
-            </li>
-          );
-        })}
-      </ul>
-    ) : null}
-    {next ? <Button onClick={() => setAfter(next)} type="button">Show more snapshots</Button> : null}
-  </>;
+            return (
+              <li key={snapshot.id} {...props(styles.listItem)}>
+                <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
+                <DestructiveActionDialog
+                  confirmLabel="Revoke public link"
+                  description={`Revoking the public link for ${comparisonSnapshotLabel(snapshot)} will make the shared snapshot unavailable.`}
+                  disabled={revocation.disabled}
+                  onConfirm={() => onRevoke(snapshot)}
+                  title="Revoke this public link?"
+                  trigger={
+                    <Button
+                      aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`}
+                      disabled={revocation.disabled}
+                      tone="danger"
+                      type="button"
+                      variant="soft"
+                    >
+                      {revocation.buttonCopy}
+                    </Button>
+                  }
+                />
+                {revocation.error ? <p role="alert">{revocation.error}</p> : null}
+              </li>
+            );
+          })}
+        </ul>
+      ) : null}
+      {next ? (
+        <Button onClick={() => setAfter(next)} type="button">
+          Show more snapshots
+        </Button>
+      ) : null}
+    </>
+  );
 }
 
-function withoutSnapshotError(
-  errorsBySnapshotId: ReadonlyMap<string, string>,
-  snapshotId: string
-) {
+function withoutSnapshotError(errorsBySnapshotId: ReadonlyMap<string, string>, snapshotId: string) {
   if (!errorsBySnapshotId.has(snapshotId)) {
     return errorsBySnapshotId;
   }
@@ -380,7 +457,7 @@ function withoutSnapshotError(
 function withSnapshotError(
   errorsBySnapshotId: ReadonlyMap<string, string>,
   snapshotId: string,
-  error: string
+  error: string,
 ) {
   const next = new Map(errorsBySnapshotId);
   next.set(snapshotId, error);

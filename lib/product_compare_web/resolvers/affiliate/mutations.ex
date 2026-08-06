@@ -1,29 +1,21 @@
 defmodule ProductCompareWeb.Resolvers.Affiliate.Mutations do
   @moduledoc false
 
-  alias ProductCompare.Affiliate
+  alias ProductCompare.{Accounts, Affiliate, Repo}
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Errors, as: GraphQLErrors
   alias ProductCompareWeb.GraphQL.Input
 
   @spec upsert_affiliate_network(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
   def upsert_affiliate_network(_parent, %{input: input}, resolution) do
-    with {:ok, _user} <- Authorization.require_operator(resolution) do
-      attrs = Input.take_present(input, [:name])
-
-      case Affiliate.upsert_network(attrs) do
-        {:ok, network} ->
-          {:ok, %{network: network, errors: []}}
-
-        {:error, changeset} ->
-          {field, message} = GraphQLErrors.changeset_first_error(changeset)
-          {:ok, mutation_error_payload(:network, "INVALID_ARGUMENT", message, field)}
-      end
-    else
-      {:error, reason} ->
-        {:ok,
-         mutation_error_payload(:network, GraphQLErrors.authorization_mutation_error(reason))}
-    end
+    operator_affiliate_mutation(
+      resolution,
+      :network,
+      input,
+      [],
+      [:name],
+      &Affiliate.upsert_network/1
+    )
   end
 
   def upsert_affiliate_network(_parent, _args, resolution),
@@ -105,8 +97,27 @@ defmodule ProductCompareWeb.Resolvers.Affiliate.Mutations do
          attr_fields,
          save_fun
        ) do
-    with {:ok, _user} <- Authorization.require_operator(resolution) do
-      affiliate_mutation(entity_field, input, id_fields, attr_fields, save_fun)
+    with {:ok, user} <- Authorization.require_operator(resolution) do
+      Repo.transaction(fn ->
+        case Accounts.lock_operator(user.id) do
+          {:ok, _operator} ->
+            affiliate_mutation(entity_field, input, id_fields, attr_fields, save_fun)
+
+          {:error, reason} ->
+            Repo.rollback(reason)
+        end
+      end)
+      |> case do
+        {:ok, result} ->
+          result
+
+        {:error, reason} ->
+          {:ok,
+           mutation_error_payload(
+             entity_field,
+             GraphQLErrors.authorization_mutation_error(reason)
+           )}
+      end
     else
       {:error, reason} ->
         {:ok,

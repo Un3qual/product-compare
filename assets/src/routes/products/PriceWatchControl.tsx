@@ -4,6 +4,11 @@ import { Link } from "react-router-dom";
 import { useMutation } from "react-relay";
 import type { AlertOperationsCreatePriceWatchMutation } from "../../__generated__/AlertOperationsCreatePriceWatchMutation.graphql";
 import { Button } from "../../ui/primitives/Button";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "../../ui/primitives/Collapsible";
 import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
@@ -13,14 +18,20 @@ import {
   getPriceWatchAmountFieldData,
   priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
-  type PriceWatchRuleType
+  type PriceWatchRuleType,
 } from "./price-watch-data";
 import { createPriceWatchMutation } from "../account/alerts/AlertOperations";
 
 const styles = create({
+  content: {
+    display: {
+      default: "block",
+      ":where([data-state='closed'])": "none",
+    },
+  },
   details: {
     borderBlockStart: "1px solid var(--pc-border-quiet)",
-    paddingBlockStart: "0.85rem"
+    paddingBlockStart: "0.85rem",
   },
   form: { display: "grid", gap: "0.75rem", paddingBlockStart: "0.8rem" },
   field: { display: "grid", gap: "0.35rem" },
@@ -30,10 +41,22 @@ const styles = create({
     borderRadius: "0.4rem",
     color: "var(--pc-text)",
     minHeight: "2.6rem",
-    paddingInline: "0.7rem"
+    paddingInline: "0.7rem",
   },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
-  summary: { cursor: "pointer", fontWeight: 650 }
+  summary: {
+    appearance: "none",
+    backgroundColor: "transparent",
+    border: 0,
+    color: "inherit",
+    cursor: "pointer",
+    fontFamily: "inherit",
+    fontSize: "inherit",
+    fontWeight: 650,
+    lineHeight: "inherit",
+    padding: 0,
+    textAlign: "start",
+  },
 });
 
 export function PriceWatchControl({ productId }: { productId: string }) {
@@ -46,7 +69,8 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const ruleId = useId();
   const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
   const [message, setMessage] = useState<string | null>(null);
-  const [commitCreate, mutationPending] = useMutation<AlertOperationsCreatePriceWatchMutation>(createPriceWatchMutation);
+  const [commitCreate, mutationPending] =
+    useMutation<AlertOperationsCreatePriceWatchMutation>(createPriceWatchMutation);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -56,11 +80,13 @@ function PriceWatchForm({ productId }: { productId: string }) {
       productId,
       ruleType,
       amount: form.get("amount"),
-      currency: form.get("currency")
+      currency: form.get("currency"),
     });
 
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, { variables: { input } });
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, {
+        variables: { input },
+      });
       const payload = response.createPriceWatch;
       setMessage(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors));
     } catch {
@@ -71,49 +97,70 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const amountField = getPriceWatchAmountFieldData(ruleType);
 
   return (
-    <details {...props(styles.details)}>
-      <summary {...props(styles.summary)}>Watch price or availability</summary>
-      <form onSubmit={handleSubmit} {...props(styles.form)}>
-        <label htmlFor={ruleId} {...props(styles.field)}>
-          Alert when
-          <Select
-            id={ruleId}
-            name="ruleType"
-            onValueChange={(value) =>
-              setRuleType(priceWatchRuleTypeFromValue(value))
-            }
-            options={[
-              { label: "Landed price reaches a target", value: "TARGET_PRICE" },
-              {
-                label: "Landed price drops by a percentage",
-                value: "PERCENTAGE_DROP"
-              },
-              { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
-              {
-                label: "A qualifying offer becomes available",
-                value: "NEWLY_AVAILABLE"
-              }
-            ]}
-            value={ruleType}
-            {...props(styles.input)}
-          />
-        </label>
-        <label htmlFor={currencyId} {...props(styles.field)}>
-          Currency
-          <TextField id={currencyId} name="currency" defaultValue="USD" maxLength={3} required {...props(styles.input)} />
-        </label>
-        {amountField.visible ? (
-          <label htmlFor={amountId} {...props(styles.field)}>
-            {amountField.label}
-            <TextField id={amountId} name="amount" inputMode="decimal" min="0.01" step="0.01" required {...props(styles.input)} />
+    <Collapsible {...props(styles.details)}>
+      <CollapsibleTrigger {...props(styles.summary)}>
+        Watch price or availability
+      </CollapsibleTrigger>
+      <CollapsibleContent forceMount {...props(styles.content)}>
+        <form onSubmit={handleSubmit} {...props(styles.form)}>
+          <label htmlFor={ruleId} {...props(styles.field)}>
+            Alert when
+            <Select
+              id={ruleId}
+              name="ruleType"
+              onValueChange={(value) => setRuleType(priceWatchRuleTypeFromValue(value))}
+              options={[
+                { label: "Landed price reaches a target", value: "TARGET_PRICE" },
+                {
+                  label: "Landed price drops by a percentage",
+                  value: "PERCENTAGE_DROP",
+                },
+                { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
+                {
+                  label: "A qualifying offer becomes available",
+                  value: "NEWLY_AVAILABLE",
+                },
+              ]}
+              value={ruleType}
+              {...props(styles.input)}
+            />
           </label>
-        ) : null}
-        <Button disabled={mutationPending} type="submit">
-          {mutationPending ? "Creating watch…" : "Create watch"}
-        </Button>
-        {message ? <p role="status" {...props(styles.message)}>{message}</p> : null}
-        <Link to="/account/alerts">Open price alert inbox</Link>
-      </form>
-    </details>
+          <label htmlFor={currencyId} {...props(styles.field)}>
+            Currency
+            <TextField
+              id={currencyId}
+              name="currency"
+              defaultValue="USD"
+              maxLength={3}
+              required
+              {...props(styles.input)}
+            />
+          </label>
+          {amountField.visible ? (
+            <label htmlFor={amountId} {...props(styles.field)}>
+              {amountField.label}
+              <TextField
+                id={amountId}
+                name="amount"
+                inputMode="decimal"
+                min="0.01"
+                step="0.01"
+                required
+                {...props(styles.input)}
+              />
+            </label>
+          ) : null}
+          <Button disabled={mutationPending} type="submit">
+            {mutationPending ? "Creating watch…" : "Create watch"}
+          </Button>
+          {message ? (
+            <p role="status" {...props(styles.message)}>
+              {message}
+            </p>
+          ) : null}
+          <Link to="/account/alerts">Open price alert inbox</Link>
+        </form>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

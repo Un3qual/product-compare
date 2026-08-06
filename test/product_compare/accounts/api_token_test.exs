@@ -130,6 +130,33 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
       assert delta in (expected - 20)..(expected + 20)
     end
 
+    test "accepts a label at exactly 120 Unicode code points" do
+      user = user_fixture()
+      family = "👩‍👩‍👧‍👦"
+      boundary_label = String.duplicate(family, 17) <> "x"
+
+      assert Enum.count_until(String.codepoints(boundary_label), 121) == 120
+      assert String.length(boundary_label) == 18
+
+      assert {:ok, %{api_token: api_token}} =
+               Accounts.create_api_token(user.id, %{label: boundary_label})
+
+      assert api_token.label == boundary_label
+      assert Repo.get!(ApiToken, api_token.id).label == boundary_label
+    end
+
+    test "rejects a label over 120 Unicode code points before the database boundary" do
+      user = user_fixture()
+      overlong_label = String.duplicate("e\u0301", 60) <> "x"
+
+      assert Enum.count_until(String.codepoints(overlong_label), 122) == 121
+      assert String.length(overlong_label) == 61
+
+      assert {:error, changeset} = Accounts.create_api_token(user.id, %{label: overlong_label})
+
+      assert %{label: ["should be at most 120 character(s)"]} = errors_on(changeset)
+    end
+
     test "database rejects token hashes that are not SHA3-256 length" do
       user = user_fixture()
 
@@ -145,6 +172,32 @@ defmodule ProductCompare.Accounts.ApiTokenTest do
 
       assert {:error, %Postgrex.Error{postgres: %{constraint: "api_tokens_hash_length_check"}}} =
                result
+    end
+  end
+
+  describe "ApiToken.changeset/2" do
+    test "uses the 32 Unicode code-point prefix boundary" do
+      user = user_fixture()
+      boundary_prefix = String.duplicate("e\u0301", 16)
+      overlong_prefix = boundary_prefix <> "x"
+
+      assert Enum.count_until(String.codepoints(boundary_prefix), 33) == 32
+      assert Enum.count_until(String.codepoints(overlong_prefix), 34) == 33
+      assert String.length(boundary_prefix) == 16
+      assert String.length(overlong_prefix) == 17
+
+      attrs = %{
+        user_id: user.id,
+        token_hash: :binary.copy(<<1>>, 32),
+        token_prefix: boundary_prefix
+      }
+
+      assert %Ecto.Changeset{valid?: true} = ApiToken.changeset(%ApiToken{}, attrs)
+
+      changeset = ApiToken.changeset(%ApiToken{}, %{attrs | token_prefix: overlong_prefix})
+
+      refute changeset.valid?
+      assert %{token_prefix: ["should be at most 32 character(s)"]} = errors_on(changeset)
     end
   end
 

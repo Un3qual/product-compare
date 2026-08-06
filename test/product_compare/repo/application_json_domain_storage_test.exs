@@ -1,6 +1,68 @@
 defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.TestSupport.ApplicationJsonStoragePolicy
+
+  defmodule UnclassifiedJsonSchema do
+    use Ecto.Schema
+
+    @primary_key false
+    schema "policy_fixture_records" do
+      field :opaque_facts, :map, source: :opaque_facts_dump
+    end
+  end
+
+  @expected_json_classifications [
+    %{
+      schema: ProductCompareSchemas.CommerceAttribution.CommerceConversion,
+      field: :raw_payload,
+      source: :raw_payload,
+      table: "commerce_conversions",
+      column: "raw_payload",
+      classification: "raw provider evidence"
+    },
+    %{
+      schema: ProductCompareSchemas.CommerceAttribution.CommerceLink,
+      field: :campaign_params,
+      source: :campaign_params,
+      table: "commerce_links",
+      column: "campaign_params",
+      classification: "open-key campaign metadata"
+    },
+    %{
+      schema: ProductCompareSchemas.Ingestion.ImportRun,
+      field: :query,
+      source: :query,
+      table: "ingestion_runs",
+      column: "query",
+      classification: "provider request metadata"
+    },
+    %{
+      schema: ProductCompareSchemas.Ingestion.MerchantFeedCandidate,
+      field: :raw_metadata,
+      source: :raw_metadata,
+      table: "merchant_feed_candidates",
+      column: "raw_metadata",
+      classification: "raw provider evidence"
+    },
+    %{
+      schema: ProductCompareSchemas.Specs.ProductAttributeClaim,
+      field: :value_json,
+      source: :value_json,
+      table: "product_attribute_claims",
+      column: "value_json",
+      classification: "explicitly JSON-typed specification data"
+    },
+    %{
+      schema: ProductCompareSchemas.Specs.SourceArtifact,
+      field: :raw_json,
+      source: :raw_json,
+      table: "source_artifacts",
+      column: "raw_json",
+      classification: "raw provider evidence"
+    }
+  ]
+
   @snapshot_foreign_keys [
     {"comparison_snapshot_products", "comparison_snapshot_id", "comparison_snapshots"},
     {"comparison_snapshot_attributes", "snapshot_product_id", "comparison_snapshot_products"},
@@ -20,6 +82,94 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
     {"comparison_snapshot_recommendations", "status", "recommendation_status"}
   ]
 
+  test "rejects an unclassified persisted schema JSON field by default" do
+    assert [
+             %{
+               schema: UnclassifiedJsonSchema,
+               field: :opaque_facts,
+               source: :opaque_facts_dump,
+               table: "policy_fixture_records",
+               column: "opaque_facts_dump"
+             } = field
+           ] =
+             ApplicationJsonStoragePolicy.persisted_map_fields_from_modules([
+               UnclassifiedJsonSchema
+             ])
+
+    column = %{
+      table: "policy_fixture_records",
+      column: "opaque_facts_dump",
+      data_type: "jsonb",
+      udt_name: "jsonb"
+    }
+
+    assert {:error,
+            [
+              "Policy classification: " <>
+                "Elixir.ProductCompare.Repo.ApplicationJsonDomainStorageTest.UnclassifiedJsonSchema " <>
+                "policy_fixture_records.opaque_facts_dump (:opaque_facts, source :opaque_facts_dump) " <>
+                "has no explicit JSON storage classification. Classify only raw provider evidence, " <>
+                "provider request metadata, open-key campaign metadata, or explicitly JSON-typed " <>
+                "specification data; stable application-owned facts must use typed relational storage."
+            ]} = ApplicationJsonStoragePolicy.validate_inventories([field], [column], [])
+  end
+
+  test "rejects an unclassified PostgreSQL JSON column by default" do
+    column = %{
+      table: "policy_fixture_records",
+      column: "opaque_facts_dump",
+      data_type: "jsonb",
+      udt_name: "jsonb"
+    }
+
+    assert {:error,
+            [
+              "Catalog inventory: policy_fixture_records.opaque_facts_dump uses PostgreSQL " <>
+                "jsonb/jsonb without a matching persisted Ecto :map field.",
+              "Policy classification: policy_fixture_records.opaque_facts_dump has no explicit " <>
+                "JSON storage contract for its PostgreSQL jsonb/jsonb column. Add a matching " <>
+                "persisted Ecto :map field and one narrow classification, or migrate stable " <>
+                "application-owned facts to typed relational storage."
+            ]} = ApplicationJsonStoragePolicy.validate_inventories([], [column], [])
+  end
+
+  test "excludes only exact known framework-owned JSON columns" do
+    catalog = [
+      %{table: "oban_jobs", column: "args", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_jobs", column: "meta", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_jobs", column: "future_payload", data_type: "jsonb", udt_name: "jsonb"},
+      %{table: "oban_peers", column: "future_payload", data_type: "jsonb", udt_name: "jsonb"},
+      %{
+        table: "schema_migrations",
+        column: "future_payload",
+        data_type: "jsonb",
+        udt_name: "jsonb"
+      }
+    ]
+
+    assert {:error,
+            [
+              "Catalog inventory: oban_jobs.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Catalog inventory: oban_peers.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Catalog inventory: schema_migrations.future_payload uses PostgreSQL jsonb/jsonb " <>
+                "without a matching persisted Ecto :map field.",
+              "Policy classification: oban_jobs.future_payload has no explicit JSON storage " <>
+                "contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted Ecto " <>
+                ":map field and one narrow classification, or migrate stable application-owned " <>
+                "facts to typed relational storage.",
+              "Policy classification: oban_peers.future_payload has no explicit JSON storage " <>
+                "contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted Ecto " <>
+                ":map field and one narrow classification, or migrate stable application-owned " <>
+                "facts to typed relational storage.",
+              "Policy classification: schema_migrations.future_payload has no explicit JSON " <>
+                "storage contract for its PostgreSQL jsonb/jsonb column. Add a matching persisted " <>
+                "Ecto :map field and one narrow classification, or migrate stable " <>
+                "application-owned facts to typed relational storage."
+            ]} = ApplicationJsonStoragePolicy.validate_inventories([], catalog, [])
+  end
+
   test "application-owned snapshot and alert JSON columns are absent" do
     refute column_exists?("comparison_snapshots", "payload")
     refute column_exists?("alert_events", "fact_snapshot")
@@ -27,6 +177,23 @@ defmodule ProductCompare.Repo.ApplicationJsonDomainStorageTest do
     for column <- ~w(baseline_landed_price target_amount percentage_drop) do
       assert column_exists?("alert_events", column)
     end
+  end
+
+  test "every persisted application JSON field has one narrow schema and catalog contract" do
+    assert {:ok, classifications} = ApplicationJsonStoragePolicy.validate(ProductCompare.Repo)
+    assert classifications == @expected_json_classifications
+  end
+
+  test "comparison snapshot payload is the sole virtual map projection" do
+    assert ApplicationJsonStoragePolicy.virtual_map_fields() == [
+             %{
+               schema: ProductCompareSchemas.Catalog.ComparisonSnapshot,
+               field: :payload,
+               source: :payload,
+               table: "comparison_snapshots",
+               column: "payload"
+             }
+           ]
   end
 
   test "comparison snapshot facts use ordered typed relational storage" do

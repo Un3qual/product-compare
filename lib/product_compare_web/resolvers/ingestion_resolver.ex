@@ -1,7 +1,7 @@
 defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   @moduledoc false
 
-  alias ProductCompare.Ingestion
+  alias ProductCompare.{Accounts, Ingestion}
   alias ProductCompare.Repo
   alias ProductCompareWeb.GraphQL.Authorization
   alias ProductCompareWeb.GraphQL.Connection
@@ -117,10 +117,10 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
   @spec update_cj_program(any(), %{input: map()}, Absinthe.Resolution.t()) ::
           {:ok, map()}
   def update_cj_program(_parent, %{input: input}, resolution) do
-    with {:ok, _user} <- Authorization.require_operator(resolution),
+    with {:ok, user} <- Authorization.require_operator(resolution),
          {:ok, entropy_id} <- decode_program_id(Input.fetch_value(input, :id)),
          {:ok, program} <-
-           Ingestion.update_cj_program_lifecycle(entropy_id, lifecycle_attrs(input)) do
+           update_cj_program_in_transaction(user.id, entropy_id, lifecycle_attrs(input)) do
       {:ok, %{program: program, errors: []}}
     else
       {:error, reason} when reason in [:unauthenticated, :forbidden] ->
@@ -148,6 +148,21 @@ defmodule ProductCompareWeb.Resolvers.IngestionResolver do
       {:ok, _operator} ->
         {:ok, program_error_payload("INVALID_INPUT", "invalid program input")}
     end
+  end
+
+  defp update_cj_program_in_transaction(operator_id, entropy_id, attrs) do
+    Repo.transaction(fn ->
+      case Accounts.lock_operator(operator_id) do
+        {:ok, _operator} ->
+          case Ingestion.update_cj_program_lifecycle(entropy_id, attrs) do
+            {:ok, program} -> program
+            {:error, reason} -> Repo.rollback(reason)
+          end
+
+        {:error, reason} ->
+          Repo.rollback(reason)
+      end
+    end)
   end
 
   defp program_query_options(args) do

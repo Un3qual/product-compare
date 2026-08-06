@@ -19,6 +19,35 @@ defmodule ProductCompare.Accounts.ConcurrencyTest do
 
   @first_transition_at ~U[2026-07-30 12:00:00.000000Z]
 
+  test "operator locking requires a database transaction" do
+    Sandbox.unboxed_run(Repo, fn ->
+      assert_raise ArgumentError,
+                   "lock_operator/1 requires a database transaction",
+                   fn -> Accounts.lock_operator(0) end
+    end)
+  end
+
+  test "operator locking reloads the current row and fails closed" do
+    operator = AccountsFixtures.operator_fixture()
+    member = AccountsFixtures.user_fixture()
+
+    assert {:ok, {:ok, %User{id: operator_id, is_operator: true}}} =
+             Repo.transaction(fn -> Accounts.lock_operator(operator.id) end)
+
+    assert operator_id == operator.id
+
+    assert {:ok, {:error, :forbidden}} =
+             Repo.transaction(fn -> Accounts.lock_operator(member.id) end)
+
+    assert {:ok, {:error, :forbidden}} =
+             Repo.transaction(fn -> Accounts.lock_operator(0) end)
+
+    assert {:ok, %User{is_operator: false}} = Accounts.set_operator_access(operator, false)
+
+    assert {:ok, {:error, :forbidden}} =
+             Repo.transaction(fn -> Accounts.lock_operator(operator.id) end)
+  end
+
   test "API token revocation preserves the transition that wins the row lock" do
     fixture = committed_api_token_fixture()
     on_exit(fn -> delete_committed_user(fixture.user.id) end)

@@ -41,157 +41,164 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
+## Active Work
+
+None.
+
 ## Ready Work
 
-### 15. Radix Disclosure Controls
+### 22. Ingestion Run Request Bounds
 
 Status: ready
-Lane: Frontend UI foundation
-Plan: `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`
-Batch outcome: price-watch creation, comparison sharing, and community
-creation forms use the existing Radix Collapsible primitive while lazy work,
-form state, accessibility, and StyleX ownership remain intact.
-Next action: characterize the five native disclosure contracts and add the
-failing visible-disclosure architecture scan before changing consumers.
+Lane: Ingestion storage integrity
+Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
+Batch outcome: PostgreSQL retains the positive-when-present bounds of import-run
+request metadata even when writes bypass application changesets.
+Next action: add failing direct-write tests for zero and negative `page_size`
+and `pages_requested` values before adding the named forward constraints.
 Owned paths:
 
-- `assets/src/routes/products/PriceWatchControl.tsx`
-- `assets/src/routes/compare/ShareComparisonControl.tsx`
-- `assets/src/routes/products/ProductCommunityPanel.tsx`
-- affected alert, comparison-snapshot, community, and primitive tests
-- focused frontend architecture test for native visible disclosures
-- `docs/work/frontend-radix-disclosure-controls.md`
+- `priv/repo/migrations/20260804230000_enforce_ingestion_run_request_bounds.exs`
+- `lib/product_compare_schemas/ingestion/import_run.ex`
+- `test/product_compare/repo/ingestion_run_request_bounds_test.exs`
+- affected import-run, scheduled-cursor, reconciliation, source-health, and CJ
+  run-health tests
+- `docs/work/ingestion-run-request-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
 
 Internal slices:
 
-- Native disclosure and lazy-loading characterization.
-- Existing Radix Collapsible adoption across five consumers.
-- Accessibility, SSR, full-suite, and bundle verification.
+- Failing direct-write request-boundary characterization.
+- Named forward constraints and owning changeset mappings.
+- Ingestion lifecycle parity and complete backend verification.
 
 Prerequisites:
 
-- No active row owns the affected disclosure consumers.
-- The existing project Collapsible wrapper remains the only primitive boundary.
-- The completed form-control migration owns inputs, selects, text areas,
-  checkboxes, and the Radix Themes provider; those paths remain outside this
-  row except where a disclosure characterization test must render them.
+- `page_size` and `pages_requested` remain nullable and must be positive when
+  present.
+- No active row owns the import-run schema, ingestion migrations, or affected
+  ingestion tests.
+- No current data requires a non-null request value below one.
 
 Verification:
 
-- focused alert, comparison snapshot, community, and primitive tests
-- native visible-disclosure architecture scan
-- TypeScript, Oxc, Oxfmt, and full frontend tests
-- Vite client and SSR builds plus bundle contract
+- focused ingestion-run direct-write suite
+- import-run, scheduled-cursor, reconciliation, source-health, and CJ run-health
+  suites
+- full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: no visible native disclosure remains under `assets/src`, the
-five affected controls use the existing Radix wrapper, lazy and submission
-behavior is unchanged, StyleX remains in place, and every frontend gate passes.
+Exit condition: PostgreSQL rejects zero and negative import-run request
+metadata, null and positive values remain accepted, ingestion behavior is
+unchanged, and all backend gates pass.
 
-### 16. Operator Mutation Authorization Freshness
+### 23. Taxon Attribute Storage Bounds
 
 Status: ready
-Lane: GraphQL authorization and concurrency
-Plan: `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`
-Batch outcome: every operator-only GraphQL mutation serializes its protected
-write with operator-role revocation instead of trusting the request-context
-user snapshot.
-Next action: add failing revocation-first and mutation-first actual-operation
-regressions for the affiliate, correction, and CJ-program transaction families,
-then prove all six mutation surfaces reject a stale operator snapshot without
-changing domain state.
+Lane: Taxonomy storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
+Batch outcome: PostgreSQL preserves non-negative taxonomy display ordering and
+reputation thresholds even when a write bypasses application changesets.
+Next action: add failing direct-write tests for negative `sort_order` and
+`min_rep_to_edit` values before adding the named forward constraints.
 Owned paths:
 
-- `lib/product_compare/accounts.ex`
-- `lib/product_compare/accounts/users.ex`
-- `lib/product_compare_web/resolvers/affiliate/mutations.ex`
-- `lib/product_compare/specs/corrections.ex`
-- `lib/product_compare_web/resolvers/ingestion_resolver.ex`
-- `test/product_compare/accounts/concurrency_test.exs`
-- `test/product_compare_web/graphql/affiliate_workflows_test.exs`
-- `test/product_compare_web/graphql/specification_corrections_test.exs`
-- `test/product_compare_web/graphql/cj_program_queries_test.exs`
-- `docs/work/operator-mutation-authorization-freshness.md`
+- `priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs`
+- `lib/product_compare_schemas/specs/taxon_attribute.ex`
+- `test/product_compare/repo/taxon_attribute_storage_bounds_test.exs`
+- affected TaxonAttribute changeset, current-attribute read, and catalog
+  GraphQL tests
+- `docs/work/taxon-attribute-storage-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
 
 Internal slices:
 
-- Transaction-required operator-row authorization lock plus stale-snapshot
-  denial for all six mutations.
-- Shared affiliate network/program/link/coupon transaction with both actual-
-  operation serialization orders.
-- Specification-correction and CJ-program transactions, each with both actual-
-  operation serialization orders.
+- Failing direct-write negative-value characterization and valid boundaries.
+- Named forward constraints and owning changeset mappings.
+- Current-attribute read and GraphQL parity plus complete backend verification.
 
 Prerequisites:
 
-- No active row owns Accounts operator access, affiliate mutations,
-  specification correction moderation, or CJ program lifecycle mutation paths.
-- Community moderation remains the proven reference and stays behaviorally
-  unchanged.
-- Operator-only reads remain outside this write-authorization batch.
+- `sort_order` and `min_rep_to_edit` retain zero defaults and non-negative
+  application validations.
+- No active row owns TaxonAttribute schemas, migrations, or affected tests.
+- No current row contains a negative value in either field.
 
 Verification:
 
-- actual-operation revocation-first and mutation-first regressions for all
-  three owning transaction families
-- stale-request-snapshot denial for all six mutation surfaces
-- Accounts and Discussions concurrency suites
-- affiliate workflow, specification correction, and CJ-program GraphQL suites
-- complete GraphQL suite and full backend tests
-- typecheck, quality, and formatting gates
+- focused TaxonAttribute direct-write suite
+- TaxonAttribute changeset, current-attribute read, and catalog GraphQL suites
+- full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: a revocation that commits first makes every affected mutation
-return its existing forbidden payload without a domain write, a mutation that
-locks first remains the user-row lock owner while held at its domain-row barrier
-and may commit before revocation, all three owning transactions acquire the
-operator row before domain rows, and all backend gates pass.
+Exit condition: PostgreSQL rejects negative taxonomy ordering and reputation
+thresholds, zero and positive values and current ordering remain unchanged, and
+all backend gates pass.
 
-### 17. Application JSON Storage Policy Guard
+### 24. Community Authored Text Storage Bounds
 
 Status: ready
-Lane: Database domain policy
-Plan: `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`
-Batch outcome: every persisted Ecto map field and PostgreSQL JSON column is
-automatically inventoried and explicitly classified, so stable
-application-owned facts cannot silently regress into opaque JSON dumps.
-Next action: characterize the six current persisted map fields and add the
-failing unclassified-schema and unclassified-catalog drift cases.
+Lane: Community content storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
+Batch outcome: PostgreSQL and the owning changesets retain established Unicode
+code-point bounds for authored threads, posts, reviews, and reports.
+Next action: add failing direct- and application-write tests for code-point
+boundaries, including decomposed combining text and emoji ZWJ sequences, before
+changing all six owning validations and adding the named forward checks.
 Owned paths:
 
-- `test/product_compare/repo/application_json_domain_storage_test.exs`
-- focused JSON storage policy support under `lib/product_compare/**` only if
-  test-local reflection cannot express the contract clearly
-- affected allowed-JSON owner tests only if characterization exposes a gap
-- `docs/work/application-json-storage-policy-guard.md`
+- `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
+- `lib/product_compare_schemas/discussions/product_thread.ex`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
+- `lib/product_compare_schemas/discussions/product_review.ex`
+- `lib/product_compare_schemas/discussions/community_report.ex`
+- `test/product_compare/repo/community_authored_text_storage_bounds_test.exs`
+- affected community lifecycle, thread-post validation, trust, GraphQL
+  community, node-query, Dataloader, and seed tests
+- `docs/work/community-authored-text-storage-bounds.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+- `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
 
 Internal slices:
 
-- Persisted Ecto map-field and PostgreSQL JSON catalog discovery.
-- Explicit raw/open/request/typed-JSON classifications.
-- Removed snapshot/alert dump regressions and full storage-owner evidence.
+- Failing direct- and application-write code-point boundary characterization.
+- Six explicit code-point changeset validations, named forward checks, and
+  owning constraint mappings.
+- Community lifecycle parity and complete backend verification.
 
 Prerequisites:
 
-- Snapshot and alert JSON normalization is complete.
-- Provider raw evidence, request metadata, open campaign parameters, and
-  explicitly JSON-typed specification values remain valid JSON contracts.
+- The approved canonical unit is Unicode code points; all six owning
+  `validate_length/3` calls change to `count: :codepoints` while their numeric
+  limits, nullability, and required-field behavior remain unchanged.
+- The existing report-reason `varchar(500)` upper bound remains intact.
+- No active row owns community schemas, migrations, or affected tests.
+- No current community row violates one of the six missing boundaries.
 
 Verification:
 
-- clean migrated database and focused JSON storage policy suite
-- affected comparison snapshot, alert, specification, ingestion, and
-  commerce-attribution suites
-- full backend tests, type checks, and quality gates
+- focused community-authored-text direct- and application-write suites with
+  decomposed combining text and emoji ZWJ boundaries
+- content lifecycle, thread-post validation, community trust, GraphQL
+  community content, node-query, Dataloader batching, and deterministic seed
+  suites
+- full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: all persisted Ecto map fields and PostgreSQL JSON columns are
-discovered and explicitly justified, unclassified JSON storage fails with
-actionable evidence, removed application dumps remain absent, and all
-repository gates pass.
+Exit condition: PostgreSQL and application changesets agree on every Unicode
+code-point boundary, valid authored text remains accepted without rewriting,
+community behavior is otherwise unchanged, and all backend gates pass.
 
 ## Needs Decision Work
 

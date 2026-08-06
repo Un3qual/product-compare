@@ -12,6 +12,12 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-07-20-cross-stack-ready-work-design.md`
 - `docs/superpowers/specs/2026-07-25-cj-program-lifecycle-design.md`
 - `docs/superpowers/specs/2026-08-01-attribution-observability-and-foundation-libraries-design.md`
+- `docs/superpowers/specs/2026-08-04-captured-numeric-evidence-constraints-design.md`
+- `docs/superpowers/specs/2026-08-04-destructive-action-confirmation-design.md`
+- `docs/superpowers/specs/2026-08-04-test-database-process-exclusivity-design.md`
+- `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
+- `docs/superpowers/specs/2026-08-04-ingestion-run-request-bounds-design.md`
+- `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
 
 ## Active Plan Catalog
 
@@ -530,8 +536,15 @@ batch and should not be recreated or promoted.
 | Status | Candidate | Create Or Promote When | Notes |
 | --- | --- | --- | --- |
 | completed | Categorical storage policy guard | The user approved a permanent no-string-enum policy and the former native-enum test depended on a hand-maintained column list. | Completed in `7efad083`; compiled schema reflection now checks every persisted `Ecto.Enum`, and PostgreSQL catalog validation rejects string-backed enum fields and closed-domain text constraints. |
-| promoted | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trust a request-context user snapshot while community moderation already serializes its write with role revocation. | Promoted to `docs/work/index.md`; one Accounts-owned transaction-required user-row lock, three domain adoption slices, and deterministic revocation-first/mutation-first tests form one independently reviewable authorization invariant. Operator reads remain outside the batch. |
-| promoted | Application JSON storage policy guard | The normalized snapshot and alert test still names only the two removed columns, while six legitimate persisted map fields define the current JSON boundary. | Promoted to `docs/work/index.md`; compiled schema reflection plus PostgreSQL catalog coverage can reject new opaque application dumps without banning raw evidence or explicitly open JSON contracts. |
+| completed | Operator mutation authorization freshness | The concurrency follow-up verified that six operator-only GraphQL writes trusted a request-context user snapshot while community moderation already serialized its write with role revocation. | Completed on 2026-08-04; one Accounts-owned transaction-required user-row lock now protects the shared affiliate, specification-correction, and CJ-program transactions, with stale-snapshot denial and both actual-operation lock orders covered. Operator reads remain outside the batch. |
+| completed | Application JSON storage policy guard | The normalized snapshot and alert test named only the two removed columns, while six legitimate persisted map fields defined the current JSON boundary. | Completed through `4fa16461`, `cdc6353b`, `6549d4e2`, and `a26b0e8f`; compiled Ecto and PostgreSQL catalog reflection now discover both sides automatically, require one narrow classification, and reject unclassified drift. Clean TEST reset, 7 focused tests, five owner suites, 1,202 full backend tests, and all quality/type/format/queue/diff gates passed. |
+| completed | Captured numeric evidence constraints | Source price, confidence, target, and percentage domains already have application or database enforcement, while immutable snapshot and alert copies lacked equivalent PostgreSQL checks. | Completed through `2476a0dc` and `b0bd54cb`; five named PostgreSQL checks now preserve copied confidence, monetary, target, baseline, and percentage domains. The focused suite passed 5 tests, six lifecycle commands passed 275 tests, the full backend passed 1,207 tests, and all quality/type/format/queue/diff gates passed. |
+| completed | Destructive action confirmation | Completed on 2026-08-04 with inert open/cancel behavior, focus restoration, and explicit confirmation for all four irreversible route actions. | One Radix AlertDialog boundary now confirms snapshot revocation, saved-comparison deletion, API-token revocation, and price-watch deletion while each route retains its existing row-scoped mutation state and outcomes. The complete frontend passed 1,530 tests, client and SSR builds, and the bundle gate. |
+| completed | Test database process exclusivity | Overlapping external `mix test` processes against the default database produced unrelated `40P01` deadlocks and a `40001` serialization failure, while isolated reruns passed. | Completed on 2026-08-05; one test-only PostgreSQL session advisory lock fails fast before ExUnit for accidental same-database overlap, releases with its session, and preserves intentional `MIX_TEST_PARTITION` databases. |
+| completed | Credential artifact storage constraints | Session and email tokens always store 32-byte SHA-256 digests, while API-token metadata is bounded to 1 through 32 and at most 120 Unicode code points; the live PostgreSQL catalog did not enforce those three exact boundaries. | Completed through `ff5f751b` and `89bda46e`, then corrected in final review so Ecto explicitly counts code points like PostgreSQL `char_length`. Decomposed combining and emoji ZWJ regressions protect the 32/33 and 120/121 boundaries without changing stored values, token generation, auth behavior, or product policy. The prior affected lifecycle suite passed 148 tests, the full backend passed 1,214 tests, and all type/quality/format/queue/diff gates passed. |
+| promoted | Ingestion run request bounds | Import-run changesets require positive `page_size` and `pages_requested` values when present, while the live PostgreSQL catalog has no matching checks and both fields remain intentionally nullable. | Promoted to `docs/work/index.md`; two named forward checks and focused direct-write coverage enforce the established positive-when-present contract without adding upper limits, fetched-page relationships, or scheduler policy. |
+| promoted | Taxon attribute storage bounds | TaxonAttribute changesets require non-negative `sort_order` and `min_rep_to_edit`, while the live PostgreSQL catalog has no checks on `taxon_attributes` and current rows contain no negative values. | Promoted to `docs/work/index.md`; two named forward checks and focused direct-write coverage preserve the established zero-or-positive domains without changing ordering, GraphQL projection, or reputation policy. |
+| promoted | Community authored text storage bounds | Community changesets define six thread, post, review, and report text limits, but currently use Ecto's grapheme-counting default while PostgreSQL storage bounds count Unicode code points; the live catalog lacks six matching checks and current rows contain no violations. | Promoted to `docs/work/index.md` as one coherent batch. Before or with the six named checks, all six owning `validate_length/3` calls explicitly change to `count: :codepoints`. Direct- and application-write regressions use decomposed combining text and emoji ZWJ boundaries without changing GraphQL payloads, moderation, write limits, idempotency, whitespace, nullability, or stored values. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
@@ -792,6 +805,42 @@ or `docs/superpowers/plans/`, matching the planning workflow that produced
 them. Use the corresponding `docs/work/*.md` lane doc for completion evidence.
 
 Recent completed plan groups:
+
+- Destructive Action Confirmation:
+  `docs/superpowers/plans/2026-08-04-destructive-action-confirmation-implementation-plan.md`.
+  One Radix AlertDialog boundary now confirms public-link revocation,
+  saved-comparison deletion, API-token revocation, and price-watch deletion
+  while every route retains its existing row-scoped mutation state and outcome
+  handling; the lane doc retains RED/GREEN, focus, complete frontend, client,
+  SSR, bundle, queue-depth, and diff evidence.
+
+- Captured Numeric Evidence Constraints:
+  `docs/superpowers/plans/2026-08-04-captured-numeric-evidence-constraints-implementation-plan.md`.
+  Five named checks preserve source numeric domains across immutable comparison
+  evidence, captured price-watch baselines, and copied alert facts even for
+  direct database writes; the lane doc retains accepted-boundary controls,
+  lifecycle counts, and full repository-gate evidence.
+
+- Application JSON Storage Policy Guard:
+  `docs/superpowers/plans/2026-07-30-application-json-storage-policy-guard-implementation-plan.md`.
+  Compiled persisted-map and PostgreSQL JSON inventories now fail closed unless
+  one narrow semantic classification justifies a matching contract; six
+  legitimate raw/open/request/typed-JSON fields remain allowed, while removed
+  snapshot and alert dumps remain absent. The lane doc retains the clean TEST
+  rebuild, focused and owner-suite counts, and exact-head repository gates.
+
+- Operator Mutation Authorization Freshness:
+  `docs/superpowers/plans/2026-07-31-operator-mutation-authorization-freshness-implementation-plan.md`.
+  All six operator-only mutations now recheck a locked current user in their
+  owning write transaction; the lane doc retains stale-snapshot and both-order
+  actual-operation concurrency evidence for all three transaction families.
+
+- Frontend Radix disclosure controls:
+  `docs/superpowers/plans/2026-07-30-radix-disclosure-controls-implementation-plan.md`.
+  Price-watch creation, comparison sharing, and the three community creation
+  forms now use the existing project Collapsible primitive; the lane doc
+  retains TDD, lazy-loading, form-state, accessibility, SSR, and bundle
+  evidence.
 
 - PostgreSQL Native Storage Types:
   `docs/superpowers/plans/2026-08-03-postgresql-native-storage-types-implementation-plan.md`.

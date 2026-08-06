@@ -2,15 +2,29 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+    only: [
+      assert_blocked_by: 2,
+      capture_select_queries: 1,
+      count_select_queries_targeting_table: 2,
+      hold_operator_revocation: 1,
+      hold_row_lock: 3,
+      release_operator_revocation: 1,
+      release_row_lock: 1,
+      start_unboxed_action: 1
+    ]
 
   import ProductCompare.Fixtures.CJIngestionFixtures
 
+  alias Ecto.Adapters.SQL.Sandbox
+  alias ProductCompare.Accounts
+  alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Ingestion
   alias ProductCompare.Repo
   alias ProductCompareWeb.Resolvers.IngestionResolver
   alias ProductCompareSchemas.Accounts.User
   alias ProductCompareSchemas.Ingestion.CJProgram
+  alias ProductCompareSchemas.Ingestion.MerchantFeedCandidate
+  alias ProductCompareSchemas.Specs.Source
 
   describe "/api/graphql CJ program lifecycle" do
     test "cjPrograms has stable stage-filtered pagination while stage counts remain global", %{
@@ -462,6 +476,119 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
       assert %CJProgram{stage: :declined, note: nil} = Repo.get!(CJProgram, program.id)
     end
 
+    test "updateCjProgram rejects a stale operator snapshot without changing lifecycle state" do
+      operator = AccountsFixtures.operator_fixture()
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "stale-operator",
+          "Stale Operator Merchant",
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z]
+        )
+
+      resolution = %{context: %{current_user: operator}}
+      assert {:ok, %User{is_operator: false}} = Accounts.set_operator_access(operator, false)
+
+      assert {:ok,
+              %{
+                program: nil,
+                errors: [%{code: "FORBIDDEN", message: "forbidden", field: nil}]
+              }} =
+               IngestionResolver.update_cj_program(
+                 nil,
+                 %{
+                   input: %{
+                     id: relay_id(:cj_program, program.entropy_id),
+                     stage: :applied,
+                     expected_changed_at: program.changed_at
+                   }
+                 },
+                 resolution
+               )
+
+      assert %CJProgram{stage: :new, changed_at: changed_at} =
+               Repo.get!(CJProgram, program.id)
+
+      assert DateTime.compare(changed_at, program.changed_at) == :eq
+    end
+
+    test "updateCjProgram waits for revocation and rejects the revoked operator" do
+      fixture = committed_cj_program_fixture()
+      on_exit(fn -> delete_committed_cj_program_fixture(fixture) end)
+
+      {revocation, revocation_backend_pid} = hold_operator_revocation(fixture.operator.id)
+
+      {mutation, mutation_backend_pid} =
+        start_unboxed_action(fn ->
+          graphql(
+            api_token_conn(fixture.token),
+            update_cj_program_mutation(),
+            cj_program_update_variables(fixture.program, "APPLIED")
+          )
+        end)
+
+      assert_blocked_by(mutation_backend_pid, revocation_backend_pid)
+      release_operator_revocation(revocation)
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => nil,
+                   "errors" => [%{"code" => "FORBIDDEN"}]
+                 }
+               }
+             } = Task.await(mutation)
+
+      assert %CJProgram{stage: :new, changed_at: changed_at} =
+               Repo.get!(CJProgram, fixture.program.id)
+
+      assert DateTime.compare(changed_at, fixture.program.changed_at) == :eq
+    end
+
+    test "updateCjProgram holds operator access while waiting for its program row" do
+      fixture = committed_cj_program_fixture()
+      on_exit(fn -> delete_committed_cj_program_fixture(fixture) end)
+
+      {domain_barrier, domain_backend_pid} =
+        hold_row_lock(CJProgram, fixture.program.id, & &1)
+
+      {mutation, mutation_backend_pid} =
+        start_unboxed_action(fn ->
+          graphql(
+            api_token_conn(fixture.token),
+            update_cj_program_mutation(),
+            cj_program_update_variables(fixture.program, "APPLIED")
+          )
+        end)
+
+      assert_blocked_by(mutation_backend_pid, domain_backend_pid)
+
+      {revocation, revocation_backend_pid} =
+        start_unboxed_action(fn ->
+          User
+          |> Repo.get!(fixture.operator.id)
+          |> Accounts.set_operator_access(false)
+        end)
+
+      assert_blocked_by(revocation_backend_pid, mutation_backend_pid)
+      release_row_lock(domain_barrier)
+
+      assert %{
+               "data" => %{
+                 "updateCjProgram" => %{
+                   "program" => %{"stage" => "APPLIED"},
+                   "errors" => []
+                 }
+               }
+             } = Task.await(mutation)
+
+      assert {:ok, %User{is_operator: false}} = Task.await(revocation)
+      assert %CJProgram{stage: :applied} = Repo.get!(CJProgram, fixture.program.id)
+    end
+
     test "updateCjProgram rejects a stale lifecycle snapshot without overwriting it", %{
       conn: conn
     } do
@@ -632,6 +759,51 @@ defmodule ProductCompareWeb.GraphQL.CJProgramQueriesTest do
                &(&1 in ~w(reviewMerchantFeedCandidate merchantFeedCandidates))
              )
     end
+  end
+
+  defp committed_cj_program_fixture do
+    Sandbox.unboxed_run(Repo, fn ->
+      operator = AccountsFixtures.operator_fixture()
+      {:ok, %{plain_text_token: token}} = Accounts.create_api_token(operator.id, %{})
+      source = source_fixture()
+
+      program =
+        program_fixture(
+          source,
+          "concurrent-program-#{System.unique_integer([:positive])}",
+          "Concurrent Program",
+          "new",
+          ~U[2026-07-20 10:00:00.000000Z]
+        )
+
+      feed = Repo.get_by!(MerchantFeedCandidate, cj_program_id: program.id)
+
+      %{feed: feed, operator: operator, program: program, source: source, token: token}
+    end)
+  end
+
+  defp delete_committed_cj_program_fixture(fixture) do
+    Sandbox.unboxed_run(Repo, fn ->
+      Repo.delete!(Repo.get!(MerchantFeedCandidate, fixture.feed.id))
+      Repo.delete!(Repo.get!(CJProgram, fixture.program.id))
+      Repo.delete!(Repo.get!(Source, fixture.source.id))
+      Repo.delete!(Repo.get!(User, fixture.operator.id))
+    end)
+  end
+
+  defp cj_program_update_variables(program, stage) do
+    %{
+      "input" => %{
+        "id" => relay_id(:cj_program, program.entropy_id),
+        "stage" => stage,
+        "expectedChangedAt" => DateTime.to_iso8601(program.changed_at)
+      }
+    }
+  end
+
+  defp api_token_conn(token) do
+    build_conn()
+    |> put_req_header("authorization", "Bearer #{token}")
   end
 
   defp program_fixture(source, advertiser_id, advertiser_name, stage, changed_at, attrs \\ []) do

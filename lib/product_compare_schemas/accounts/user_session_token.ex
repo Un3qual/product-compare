@@ -21,7 +21,15 @@ defmodule ProductCompareSchemas.Accounts.UserSessionToken do
     token
     |> cast(attrs, [:user_id, :token_hash, :context, :sent_to, :expires_at])
     |> validate_required([:user_id, :token_hash, :context, :expires_at])
+    |> validate_change(:token_hash, fn :token_hash, token_hash ->
+      if is_binary(token_hash) and byte_size(token_hash) == 32 do
+        []
+      else
+        [token_hash: "must be a 32-byte digest"]
+      end
+    end)
     |> foreign_key_constraint(:user_id)
+    |> check_constraint(:token_hash, name: :users_tokens_hash_length_check)
     |> unique_constraint([:token_hash, :context], name: :users_tokens_hash_context_uq)
   end
 end

@@ -3,7 +3,7 @@ defmodule ProductCompare.Specs.Corrections do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
+  alias ProductCompare.{Accounts, Repo}
   alias ProductCompare.Specs.TypedValues
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Specs.Attribute
@@ -92,25 +92,31 @@ defmodule ProductCompare.Specs.Corrections do
 
   def moderate_correction(correction_id, moderator_id, decision, attrs) do
     Repo.transaction(fn ->
-      correction =
-        Repo.one(
-          from correction in SpecificationCorrection,
-            where: correction.id == ^correction_id,
-            lock: "FOR UPDATE"
-        )
+      case Accounts.lock_operator(moderator_id) do
+        {:ok, _operator} ->
+          correction =
+            Repo.one(
+              from correction in SpecificationCorrection,
+                where: correction.id == ^correction_id,
+                lock: "FOR UPDATE"
+            )
 
-      case correction do
-        nil ->
-          Repo.rollback(:correction_not_found)
+          case correction do
+            nil ->
+              Repo.rollback(:correction_not_found)
 
-        %SpecificationCorrection{status: ^decision} ->
-          correction
+            %SpecificationCorrection{status: ^decision} ->
+              correction
 
-        %SpecificationCorrection{status: status} when status != :pending ->
-          Repo.rollback(:invalid_status_transition)
+            %SpecificationCorrection{status: status} when status != :pending ->
+              Repo.rollback(:invalid_status_transition)
 
-        %SpecificationCorrection{} = correction ->
-          moderate_pending_correction(correction, moderator_id, decision, attrs)
+            %SpecificationCorrection{} = correction ->
+              moderate_pending_correction(correction, moderator_id, decision, attrs)
+          end
+
+        {:error, reason} ->
+          Repo.rollback(reason)
       end
     end)
     |> case do
