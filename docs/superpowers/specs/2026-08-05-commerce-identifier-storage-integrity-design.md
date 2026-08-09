@@ -42,8 +42,9 @@ validate persisted values only, not change how callers construct them.
 
 ## Proposed Design (Not Executable)
 
-Create `20260805060000_enforce_commerce_identifier_storage_integrity.exs` with
-these named checks:
+After replanning, create a fresh migration later than the current maximum named
+`TIMESTAMP_enforce_commerce_identifier_storage_integrity.exs` with these named
+checks:
 
 ```sql
 slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'

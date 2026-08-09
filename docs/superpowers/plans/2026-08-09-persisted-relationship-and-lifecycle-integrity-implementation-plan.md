@@ -32,8 +32,8 @@ ExUnit.
 
 ## Owned Paths
 
-- `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
-- `priv/repo/migrations/20260805060000_enforce_product_attribute_claim_scope_integrity.exs`
+- `priv/repo/migrations/20260809125800_enforce_ingestion_run_terminal_timestamp_integrity.exs`
+- `priv/repo/migrations/20260809130000_enforce_product_attribute_claim_scope_integrity.exs`
 - `lib/product_compare_schemas/ingestion/import_run.ex`
 - `lib/product_compare_schemas/specs/product_attribute_current.ex`
 - `lib/product_compare_schemas/specs/specification_correction.ex`

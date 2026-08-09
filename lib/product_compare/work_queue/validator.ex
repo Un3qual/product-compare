@@ -209,16 +209,22 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   defp ready_floor_exception_field_errors(section) do
     Enum.flat_map(@ready_floor_exception_fields, fn field ->
-      case Regex.run(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)$/m, section,
-             capture: :all_names
-           ) do
-        [value] ->
+      matches =
+        Regex.scan(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)$/m, section,
+          capture: :all_names
+        )
+
+      case matches do
+        [[value]] ->
           if String.trim(value) == "",
             do: ["Ready Floor Exception has empty #{field}:"],
             else: []
 
-        _ ->
+        [] ->
           ["Ready Floor Exception is missing #{field}:"]
+
+        _duplicates ->
+          ["Ready Floor Exception has duplicate #{field}:"]
       end
     end)
   end

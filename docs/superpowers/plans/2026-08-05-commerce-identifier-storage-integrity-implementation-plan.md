@@ -4,8 +4,9 @@
 > `Merchant.changeset/2` uses PCRE `$` and accepts a single trailing newline,
 > while this draft's PostgreSQL slug predicate rejects it. Choose and align
 > exact end-of-string semantics before replacing this plan. Its proposed
-> `20260805060000` migration version is now assigned to a different ready row;
-> any replacement commerce plan must use a fresh version.
+> `20260805060000` migration version sorts behind migrations that
+> already ship on `main`; any replacement commerce plan must use a fresh
+> version later than the current maximum.
 >
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 

@@ -76,6 +76,25 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     end
   end
 
+  test "rejects duplicate ready-floor exception fields" do
+    for {field, populated_value} <- [
+          {"Reason", "Only one independently shippable outcome is currently validated."},
+          {"Rejected split", "The remaining validated work is internal to this outcome."},
+          {"Replenishment action", "Audit current behavior for the next coherent outcome."}
+        ] do
+      markdown =
+        queue_with_rows(1) <>
+          String.replace(
+            ready_floor_exception(),
+            "#{field}: #{populated_value}",
+            "#{field}: #{populated_value}\n#{field}: conflicting duplicate"
+          )
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Floor Exception has duplicate #{field}:" in errors
+    end
+  end
+
   test "rejects a stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> ready_floor_exception()
 

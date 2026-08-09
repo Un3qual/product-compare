@@ -70,7 +70,7 @@
 
 **Files:**
 
-- Create: `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
+- Create: `priv/repo/migrations/20260809125600_enforce_community_authored_text_storage_bounds.exs`
 - Modify: `lib/product_compare_schemas/discussions/product_thread.ex`
 - Modify: `lib/product_compare_schemas/discussions/thread_post.ex`
 - Modify: `lib/product_compare_schemas/discussions/product_review.ex`

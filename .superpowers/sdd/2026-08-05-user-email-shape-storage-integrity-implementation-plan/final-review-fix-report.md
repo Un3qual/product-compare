@@ -61,7 +61,7 @@ Result: 88 tests, 0 failures.
 
 ## Files and Commit
 
-- `priv/repo/migrations/20260805050000_enforce_user_email_shape_integrity.exs`
+- `priv/repo/migrations/20260809125900_enforce_user_email_shape_integrity.exs`
 - `test/product_compare/repo/user_email_shape_storage_integrity_test.exs`
 - `docs/work/user-email-shape-storage-integrity.md`
 - `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`

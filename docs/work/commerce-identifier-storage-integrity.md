@@ -51,8 +51,8 @@ proposed PostgreSQL POSIX predicate rejects it.
 2. Align application and PostgreSQL end-of-string behavior under that decision.
 3. Revalidate whether merchant slugs and affiliate-network codes still form one
    coherent acceptance boundary before creating a replacement plan.
-4. Use a fresh migration version; the draft's `20260805060000` version is now
-   assigned to a different ready storage-integrity row.
+4. Use a fresh migration version later than the current maximum; the draft's
+   `20260805060000` version sorts behind migrations already shipped on `main`.
 
 ## Prior Validation
 
