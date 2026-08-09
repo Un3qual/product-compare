@@ -57,6 +57,25 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert "Ready Floor Exception has empty Rejected split:" in errors
   end
 
+  test "rejects ready-floor exception fields containing only Unicode whitespace" do
+    for {field, populated_value} <- [
+          {"Reason", "Only one independently shippable outcome is currently validated."},
+          {"Rejected split", "The remaining validated work is internal to this outcome."},
+          {"Replenishment action", "Audit current behavior for the next coherent outcome."}
+        ] do
+      markdown =
+        queue_with_rows(1) <>
+          String.replace(
+            ready_floor_exception(),
+            "#{field}: #{populated_value}",
+            "#{field}: \u00A0"
+          )
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Floor Exception has empty #{field}:" in errors
+    end
+  end
+
   test "rejects a stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> ready_floor_exception()
 

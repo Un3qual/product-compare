@@ -6,7 +6,7 @@
 > exact end-of-string semantics before replacing this plan. Its proposed
 > `20260805060000` migration version is now assigned to a different ready row;
 > any replacement commerce plan must use a fresh version.
-
+>
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make PostgreSQL preserve the established merchant-slug and affiliate-network-code formats when commerce writes bypass their changesets.
@@ -74,7 +74,7 @@
 
 **Files:**
 
-- Create: `priv/repo/migrations/20260805060000_enforce_commerce_identifier_storage_integrity.exs`
+- Create after replanning: `priv/repo/migrations/TIMESTAMP_enforce_commerce_identifier_storage_integrity.exs`
 - Modify: `lib/product_compare_schemas/pricing/merchant.ex`
 - Modify: `lib/product_compare_schemas/affiliate/affiliate_network.ex`
 - Test: `test/product_compare/repo/commerce_identifier_storage_integrity_test.exs`
@@ -142,12 +142,12 @@
   controls succeed, and the 14 existing merchant-detail and affiliate-workflow
   tests pass.
 
-- [ ] **Step 5: Commit the implementation milestone**
+- [ ] **Step 5: Carry the implementation into the repository gates**
 
-  ```bash
-  git add priv/repo/migrations/20260805060000_enforce_commerce_identifier_storage_integrity.exs lib/product_compare_schemas/pricing/merchant.ex lib/product_compare_schemas/affiliate/affiliate_network.ex test/product_compare/repo/commerce_identifier_storage_integrity_test.exs docs/work/commerce-identifier-storage-integrity.md docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md
-  git commit -m "fix: constrain commerce identifier formats"
-  ```
+  Do not make a focused-test-only commit here. Carry the migration, owning
+  schemas, regression test, lane evidence, and this plan together through Task
+  3, then commit the verified implementation milestone once the repository
+  gates pass.
 
 ### Task 3: Record Evidence and Run the Repository Gates
 
@@ -158,7 +158,8 @@
 
 **Interfaces:**
 
-- Consumes: the two constraints and passing focused suites from Task 2.
+- Consumes: the two constraints and results from the passing focused test suites
+  from Task 2.
 - Produces: observed verification evidence for coordinator dispatch closeout.
 
 - [ ] **Step 1: Record actual preflight and direct-write results**
@@ -179,11 +180,11 @@
   git diff --check
   ```
 
-- [ ] **Step 3: Commit the verification record when it changed**
+- [ ] **Step 3: Commit the verified implementation and evidence together**
 
   ```bash
-  git add docs/work/commerce-identifier-storage-integrity.md docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md
-  git commit -m "docs: verify commerce identifier integrity"
+  git add priv/repo/migrations/TIMESTAMP_enforce_commerce_identifier_storage_integrity.exs lib/product_compare_schemas/pricing/merchant.ex lib/product_compare_schemas/affiliate/affiliate_network.ex test/product_compare/repo/commerce_identifier_storage_integrity_test.exs docs/work/commerce-identifier-storage-integrity.md docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md
+  git commit -m "fix: constrain commerce identifier formats"
   ```
 
 Exit condition: PostgreSQL rejects malformed merchant slugs and affiliate

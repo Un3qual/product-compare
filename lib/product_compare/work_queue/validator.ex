@@ -212,9 +212,13 @@ defmodule ProductCompare.WorkQueue.Validator do
       case Regex.run(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)$/m, section,
              capture: :all_names
            ) do
-        [value] when value != "" -> []
-        [_empty] -> ["Ready Floor Exception has empty #{field}:"]
-        _ -> ["Ready Floor Exception is missing #{field}:"]
+        [value] ->
+          if String.trim(value) == "",
+            do: ["Ready Floor Exception has empty #{field}:"],
+            else: []
+
+        _ ->
+          ["Ready Floor Exception is missing #{field}:"]
       end
     end)
   end
