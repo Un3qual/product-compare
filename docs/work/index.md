@@ -12,7 +12,8 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 - A worker should execute only rows with `Status: ready`.
 - At least three complete `ready` implementation rows must exist at every stable
-  dispatch boundary.
+  dispatch boundary unless a complete `Ready Floor Exception` records why the
+  repository currently supports fewer coherent outcomes.
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
@@ -25,15 +26,16 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
   filler. Return fewer coherent batches and record the missing decision when
   the repository does not support the requested count.
 - Before a claim would leave fewer than three other ready rows, the coordinator
-  validates and promotes more work in the same dispatch update.
+  validates and promotes more work or commits a complete ready floor exception
+  in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
-  and ensure the committed queue still satisfies the floor.
+  and ensure the committed queue satisfies the floor or its explicit exception.
 - `needs_decision` rows are coordinator work: resolve the decision, then promote
   every useful source-backed candidate made executable by it.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
-- Workers claim the highest-ranked compatible `ready` row only when three other
-  ready rows will remain.
+- Workers claim the highest-ranked compatible `ready` row when three other ready
+  rows will remain or the ready floor exception covers the smaller truthful set.
 - Dependent, deferred, rejected, blocked, speculative, stale, and unverified
   work cannot be used as queue-depth filler.
 - `active` rows are already owned by a named worker or branch. Do not start a
@@ -47,149 +49,89 @@ None.
 
 ## Ready Work
 
-### 28. Thread Post Parent Scope Storage Integrity
+### Persisted Relationship And Lifecycle Integrity
 
 Status: ready
-Lane: Community relationship storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL permits root posts and requires every non-null parent
-post to belong to the same thread as its child.
-Next action: add a failing direct-write cross-thread parent test plus null,
-same-thread, and parent-deletion controls before adding the composite foreign
-key.
-Owned paths:
-
-- `priv/repo/migrations/20260805070000_enforce_thread_post_parent_scope_integrity.exs`
-- `lib/product_compare_schemas/discussions/thread_post.ex`
-- `test/product_compare/repo/thread_post_parent_scope_storage_integrity_test.exs`
-- `test/product_compare/discussions/thread_post_validation_test.exs`
-- `test/product_compare/discussions/content_lifecycle_test.exs`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
-- `docs/work/thread-post-parent-scope-storage-integrity.md`
-- `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Failing cross-thread characterization with accepted and deletion controls.
-- Unique composite target, same-thread foreign key, and owning schema mapping.
-- Existing self-parent/cycle behavior and community lifecycle parity.
-
-Prerequisites:
-
-- `parent_post_id` remains nullable and parent deletion continues to null only
-  that column.
-- Existing self-parent checks and application cycle locking remain unchanged.
-- No active row owns ThreadPost when this row is claimed and no current parent
-  crosses thread scope.
-
-Verification:
-
-- focused direct-write parent-scope suite
-- thread-post validation, community lifecycle/trust, and GraphQL content suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects cross-thread parent references, root and
-same-thread posts plus parent deletion retain current behavior, and all backend
-gates pass.
-
-### 29. Ingestion Run Terminal Timestamp Integrity
-
-Status: ready
-Lane: Ingestion storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL requires completion timestamps for terminal
-ingestion runs while preserving nullable `finished_at` for running rows.
-Next action: add failing direct-write tests for timestamp-free `succeeded` and
-`failed` rows before adding the named forward check.
+Lane: Cross-domain storage integrity
+Plan: `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
+Batch outcome: PostgreSQL preserves existing parent-scope, terminal-state, and
+claim-scope contracts when writes bypass application changesets.
+Next action: run all three clean preflights, then add the combined failing
+direct-write characterization before changing production schemas or migrations.
 Owned paths:
 
 - `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
+- `priv/repo/migrations/20260805060000_enforce_product_attribute_claim_scope_integrity.exs`
+- `priv/repo/migrations/20260805070000_enforce_thread_post_parent_scope_integrity.exs`
 - `lib/product_compare_schemas/ingestion/import_run.ex`
+- `lib/product_compare_schemas/specs/product_attribute_current.ex`
+- `lib/product_compare_schemas/specs/specification_correction.ex`
+- `lib/product_compare_schemas/discussions/thread_post.ex`
 - `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
+- `test/product_compare/repo/product_attribute_claim_scope_storage_integrity_test.exs`
+- `test/product_compare/repo/thread_post_parent_scope_storage_integrity_test.exs`
 - `test/product_compare/ingestion/cj_run_readiness_test.exs`
 - `test/product_compare/ingestion/cj_run_health_test.exs`
 - `test/product_compare/ingestion/scheduled_cursor_test.exs`
 - `test/product_compare/ingestion/reconciliation_test.exs`
 - `test/product_compare/ingestion/source_health_test.exs`
-- `docs/work/ingestion-run-terminal-timestamp-integrity.md`
-- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
+- `test/product_compare/specs/current_claim_selection_test.exs`
+- `test/product_compare/specs/corrections_test.exs`
+- `test/product_compare/specs/concurrency_test.exs`
+- `test/product_compare/specs/read_helpers_test.exs`
+- `test/product_compare/ingestion/enrichment_test.exs`
+- `test/product_compare/repo/seeds_test.exs`
+- `test/product_compare/catalog/filter_metadata_test.exs`
+- `test/product_compare/catalog/filtering_regression_test.exs`
+- `test/product_compare/recommendations_test.exs`
+- `test/product_compare/comparison_snapshots_test.exs`
+- `test/product_compare/seo_test.exs`
+- `test/product_compare_web/graphql/catalog_queries_test.exs`
+- `test/product_compare/discussions/thread_post_validation_test.exs`
+- `test/product_compare/discussions/content_lifecycle_test.exs`
+- `test/product_compare/discussions/community_trust_test.exs`
+- `test/product_compare_web/graphql/community_content_test.exs`
+- `docs/work/persisted-relationship-and-lifecycle-integrity.md`
+- `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
 
 Internal slices:
 
-- Failing direct-write terminal-timestamp characterization and valid controls.
-- One named forward check and owning changeset mapping.
-- Truthful CJ readiness fixture plus ingestion lifecycle parity and complete
-  backend verification.
+- Same-thread parent composite referential integrity with nullable-root,
+  same-thread, and parent-deletion controls.
+- Terminal ingestion timestamp enforcement with running and timestamped-terminal
+  controls plus the truthful readiness fixture.
+- Product-attribute claim-scope composite referential integrity for both
+  dependents with exact-scope and claim-deletion cascade controls.
 
 Prerequisites:
 
-- `finished_at` remains nullable for running rows and is required only for
-  `succeeded` and `failed` rows.
-- No active row owns the ImportRun schema or affected ingestion tests.
-- No current terminal row has a null completion timestamp.
+- All three recorded preflights remain clean and the original claim foreign
+  keys retain `ON DELETE CASCADE`.
+- The community, ingestion, and specification baseline suites still pass.
+- No active row owns any listed schema, migration, or affected test path.
 
 Verification:
 
-- focused direct-write terminal-timestamp suite
-- CJ readiness/run-health, scheduled-cursor, reconciliation, and source-health
-  suites
+- three direct-write storage suites and their accepted controls
+- owning community, ingestion, and specification lifecycle suites
+- affected seed, catalog, recommendation, snapshot, SEO, and GraphQL consumers
 - full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: PostgreSQL rejects timestamp-free terminal runs, accepts
-unfinished running rows and timestamped terminal rows, readiness fixtures remain
-truthful, and all backend gates pass.
+Exit condition: PostgreSQL rejects all three invalid persisted-state families
+under their named constraints, accepted and deletion boundaries retain current
+behavior, and all affected and repository gates pass.
 
-### 30. Product Attribute Claim Scope Storage Integrity
+## Ready Floor Exception
 
-Status: ready
-Lane: Specification claim referential integrity
-Plan: `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL requires current selections and specification
-corrections to reference claims from the same product-and-attribute scope.
-Next action: add failing direct-write tests for product and attribute mismatches
-on both dependent tables before replacing their claim foreign keys.
-Owned paths:
-
-- `priv/repo/migrations/20260805060000_enforce_product_attribute_claim_scope_integrity.exs`
-- `lib/product_compare_schemas/specs/product_attribute_current.ex`
-- `lib/product_compare_schemas/specs/specification_correction.ex`
-- `test/product_compare/repo/product_attribute_claim_scope_storage_integrity_test.exs`
-- `docs/work/product-attribute-claim-scope-storage-integrity.md`
-- `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
-
-Internal slices:
-
-- Clean live preflight, focused baseline, and eight direct-write boundaries.
-- One composite claim-scope target plus two named composite foreign keys and
-  owning changeset mappings.
-- Claim, correction, ingestion, seed, read-consumer, and complete repository
-  verification.
-
-Prerequisites:
-
-- Both dependents retain `ON DELETE CASCADE` when their referenced claim is
-  deleted.
-- Live preflight returns zero mismatches and both original claim foreign keys
-  have the expected names and cascade action.
-- No active row owns the two dependent schemas or proposed migration path.
-
-Verification:
-
-- focused direct-write, current-claim selection, and correction suites
-- claim concurrency/read, enrichment, seed, catalog, recommendation, snapshot,
-  SEO, and GraphQL consumer suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects both scope-mismatch dimensions for both
-dependent tables, exact-scope rows and claim-deletion cascades retain current
-behavior, and all backend gates pass.
+Reason: Current validation supports one substantial persisted-state integrity
+outcome; the commerce identifier candidate still needs a product decision.
+Rejected split: Same-thread parents, terminal timestamps, and claim scope are
+internal migration-and-test slices of the combined outcome, not three batches.
+Replenishment action: Audit current product behavior and architecture gaps for
+the next independently shippable outcome while the combined row executes, and
+reassess commerce identifiers only after its end-anchor decision is recorded.
 
 ## Needs Decision Work
 

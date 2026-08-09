@@ -12,7 +12,8 @@ defmodule Mix.Tasks.WorkQueue.Validate do
 
     case Validator.validate_file(path, project_root()) do
       {:ok, %{ready_count: ready_count}} ->
-        Mix.shell().info("work queue valid: #{ready_count} ready rows")
+        row_label = if ready_count == 1, do: "row", else: "rows"
+        Mix.shell().info("work queue valid: #{ready_count} ready #{row_label}")
 
       {:error, errors} ->
         Mix.raise(Enum.join(errors, "\n"))

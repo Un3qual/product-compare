@@ -16,24 +16,20 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-04-destructive-action-confirmation-design.md`
 - `docs/superpowers/specs/2026-08-04-test-database-process-exclusivity-design.md`
 - `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
-- `docs/superpowers/specs/2026-08-04-ingestion-run-request-bounds-design.md`
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
-- `docs/superpowers/specs/2026-08-05-taxon-attribute-storage-bounds-design.md`
-- `docs/superpowers/specs/2026-08-05-specification-definition-creation-validity-design.md`
-- `docs/superpowers/specs/2026-08-05-user-email-shape-storage-integrity-design.md`
-- `docs/superpowers/specs/2026-08-05-thread-post-parent-scope-storage-integrity-design.md`
-- `docs/superpowers/specs/2026-08-05-ingestion-run-terminal-timestamp-integrity-design.md`
-- `docs/superpowers/specs/2026-08-06-product-attribute-claim-scope-storage-integrity-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-Current ready storage-integrity plans:
+Current ready storage-integrity plan:
 
-- `docs/superpowers/plans/2026-08-05-thread-post-parent-scope-storage-integrity-implementation-plan.md`
-- `docs/superpowers/plans/2026-08-05-ingestion-run-terminal-timestamp-integrity-implementation-plan.md`
-- `docs/superpowers/plans/2026-08-06-product-attribute-claim-scope-storage-integrity-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
+
+The plan contains same-thread parent, terminal ingestion timestamp, and claim
+scope enforcement as internal slices of one persisted-state outcome. The live
+queue carries a ready floor exception because no other independently shippable
+candidate is currently validated; those slices must not be promoted separately.
 
 The approved attribution observability and foundation-library program is
 dispatched through three reviewable plans:
@@ -59,7 +55,7 @@ readiness scope.
 Ranked Catalog Search completed through
 `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md` and
 `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` under the
-user's explicit one-time 2026-07-27 reserve-floor waiver. The unchanged
+user's explicit one-time 2026-07-27 reserve-floor waiver. The then-current
 validator's exact `Ready Work requires at least 3 complete rows; found 0`
 result remains the sole waived outcome. The plan and design are retained only
 as completion history; neither is an active execution source.
@@ -543,10 +539,11 @@ Implementation plan references (non-dispatch):
 This reference list intentionally retains plans across ready and completed
 states. It is not a candidate pool and must never be used to infer status or
 redispatch work. Read `docs/work/index.md` for the only live status and the
-linked lane document for completion evidence. Three is the live queue floor,
-not a catalog cap; internal slices, per-route steps, and milestone commits do
-not count as separate candidates or ready rows. Batch coherence takes priority
-over requested counts and replenishment depth.
+linked lane document for completion evidence. Three is the default live queue
+floor, not a catalog cap; a complete ready floor exception records a smaller
+truthful set. Internal slices, per-route steps, and milestone commits do not
+count as separate candidates or ready rows. Batch coherence takes priority over
+requested counts and replenishment depth.
 
 The 2026-06-27 cross-project batch of ten work-item plans completed and moved to
 the completed plan archive below.
@@ -565,17 +562,12 @@ batch and should not be recreated or promoted.
 | completed | Destructive action confirmation | Completed on 2026-08-04 with inert open/cancel behavior, focus restoration, and explicit confirmation for all four irreversible route actions. | One Radix AlertDialog boundary now confirms snapshot revocation, saved-comparison deletion, API-token revocation, and price-watch deletion while each route retains its existing row-scoped mutation state and outcomes. The complete frontend passed 1,530 tests, client and SSR builds, and the bundle gate. |
 | completed | Test database process exclusivity | Overlapping external `mix test` processes against the default database produced unrelated `40P01` deadlocks and a `40001` serialization failure, while isolated reruns passed. | Completed on 2026-08-05; one test-only PostgreSQL session advisory lock fails fast before ExUnit for accidental same-database overlap, releases with its session, and preserves intentional `MIX_TEST_PARTITION` databases. |
 | completed | Credential artifact storage constraints | Session and email tokens always store 32-byte SHA-256 digests, while API-token metadata is bounded to 1 through 32 and at most 120 Unicode code points; the live PostgreSQL catalog did not enforce those three exact boundaries. | Completed through `ff5f751b` and `89bda46e`, then corrected in final review so Ecto explicitly counts code points like PostgreSQL `char_length`. Decomposed combining and emoji ZWJ regressions protect the 32/33 and 120/121 boundaries without changing stored values, token generation, auth behavior, or product policy. The prior affected lifecycle suite passed 148 tests, the full backend passed 1,214 tests, and all type/quality/format/queue/diff gates passed. |
-| completed | Ingestion run request bounds | Import-run changesets require positive `page_size` and `pages_requested` values when present, while the live PostgreSQL catalog had no matching checks and both fields remain intentionally nullable. | Completed on 2026-08-05; two named forward checks and focused direct-write coverage enforce the established positive-when-present contract without adding upper limits, fetched-page relationships, or scheduler policy. The focused lifecycle command passed 53 tests and all backend gates passed. |
-| completed | Taxon attribute storage bounds | TaxonAttribute changesets require non-negative `sort_order` and `min_rep_to_edit`, while the live PostgreSQL catalog had no checks on `taxon_attributes` and current rows contained no negative values. | Completed on 2026-08-05; two named forward checks and owning changeset mappings preserve the established zero-or-positive domains without changing ordering, GraphQL projection, or reputation policy. The focused suite passed 3 tests, adjacent behavior passed 53 tests, and all backend gates passed. |
+| completed | Established storage contract enforcement | Four application-owned validation families lacked equivalent direct-write protection: ingestion request bounds, taxon numeric bounds, specification definition creation validity, and user email shape. | Completed as one retrospective storage-integrity outcome through the preserved implementation commits. Seven named checks and their owning changeset mappings now enforce the established contracts without adding product policy. The concise combined completion record replaces twelve redundant per-slice design, plan, and lane files. |
 | completed | Community authored text storage bounds | Community changesets defined six thread, post, review, and report text limits but used Ecto's grapheme-counting default while PostgreSQL `char_length` counts Unicode code points. | Completed on 2026-08-06; six named checks and six explicit code-point validations now agree across direct and application writes. The focused suite passed 67 tests, lifecycle suites passed 189 tests, the full backend passed 1,248 tests, and all remaining gates passed without changing community policy or stored content. |
 | needs_decision | Product attribute claim companion storage integrity | ProductAttributeClaim changesets require numeric values to carry a unit, but the persisted `unit_id` foreign key intentionally uses `ON DELETE SET NULL`. | Not executable: a required-unit check would change established Unit deletion behavior. Decide whether Units remain deletable, numeric claims retain historical unit identity another way, or the application validation is relaxed before creating a replacement plan. |
-| completed | Specification definition creation validity | Attribute changesets require enum-set ownership to match `data_type`, and Unit changesets reject a zero conversion multiplier, while existing PostgreSQL triggers froze definitions only after insertion. | Completed on 2026-08-06; two named row checks close the creation-time gap while preserving native enums, definition immutability triggers, and unit-conversion behavior. The focused GREEN passed 18 tests, downstream suites passed 93 tests, the full backend passed 1,252 tests, and all remaining gates passed. |
-| promoted | Ingestion run terminal timestamp integrity | Import-run completion requires `finished_at` for `succeeded` and `failed` runs, while PostgreSQL currently permits terminal rows with a null completion timestamp. | Promoted after ingestion request-bound row 22 closed. The live preflight found zero invalid rows and the focused ingestion baseline passed 41 tests. |
-| completed | User email shape storage integrity | Both user changesets require at least one `@` and reject ASCII regex whitespace after normalization, while `users.email` had `citext` uniqueness but no matching database check. | Final review corrected the still-unshipped migration to use `COLLATE "C"` so PostgreSQL preserves the existing non-Unicode regex semantics: internal U+2003/U+2028/U+2029 separators remain accepted and ASCII regex whitespace remains rejected. Both owning mappings remain intact, with no RFC, domain, length, or database-normalization policy. Focused suites passed 21 and 88 tests; the final post-fix backend passed 1,258 tests plus all quality/type/format/queue/diff gates. |
 | needs_decision | Commerce identifier storage integrity | Final review proved the Merchant PCRE `$` accepts one trailing newline while the proposed PostgreSQL POSIX end anchor rejects it. | Not executable until exact merchant end-of-string semantics are chosen and application/database anchors are aligned. Revalidate whether merchant slugs and affiliate-network codes still form one coherent batch after that decision. |
 | needs_decision | Shared product slug storage integrity | Canonical product slugs and historical aliases share an Elixir regex whose `$` anchor accepts a final newline, while the proposed PostgreSQL POSIX check rejects it. | Not executable without choosing the canonical end-of-string semantics. Align both application and database regexes under an explicit identity-policy decision before creating a replacement plan; do not silently narrow accepted writes at PostgreSQL. |
-| promoted | Thread post parent scope storage integrity | Community lifecycle validation rejects a parent from another thread, while the database has only a single-column parent foreign key and self-parent check. | Promoted to `docs/work/index.md`; a composite same-thread foreign key preserves nullable roots and parent deletion while leaving recursive cycle protection in the application. Live preflight found zero cross-thread parents and five focused tests passed. |
-| promoted | Product attribute claim scope storage integrity | Current claim selection, imports, and specification corrections require repeated product and attribute IDs to match the referenced claim, while both dependent tables have only independent foreign keys. | Promoted after live preflight returned zero mismatches for both dependents, both original claim foreign keys confirmed `ON DELETE CASCADE`, and the focused application baseline passed 15 tests. One composite target and two composite foreign keys preserve the established relational scope without adding claim-status policy or changeset queries. |
+| promoted | Persisted relationship and lifecycle integrity | Application behavior already rejects cross-thread post parents, terminal ingestion without completion timestamps, and claims cross-wired across product or attribute scope, while PostgreSQL still permits those direct writes. | Promoted as one combined outcome. Its three path-disjoint migration surfaces are internal slices with clean preflights and passing focused baselines; they share one direct-write storage-integrity acceptance boundary and must close once, not as three micro-batches. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |
 
@@ -884,8 +876,8 @@ Recent completed plan groups:
 - 2026-07-27 Ranked Catalog Search:
   `docs/superpowers/specs/2026-07-27-ranked-catalog-search-design.md` and
   `docs/superpowers/plans/2026-07-27-ranked-catalog-search.md`. The lane
-  completed under its one-time reserve-floor waiver; the exact unchanged
-  validator result is
+  completed under its one-time reserve-floor waiver; the exact then-current
+  validator result was
   `Ready Work requires at least 3 complete rows; found 0`.
 
 - 2026-07-20 through 2026-07-21 bounded GraphQL and comparison evidence reads:

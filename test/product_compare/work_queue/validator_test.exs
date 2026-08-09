@@ -18,6 +18,20 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
   end
 
+  test "accepts an empty dispatch surface only with a complete ready-floor exception" do
+    markdown = """
+    # Work Dispatch Index
+
+    ## Ready Work
+
+    None.
+
+    ## Active Work
+    """
+
+    assert {:ok, %{ready_count: 0}} = Validator.validate(markdown <> ready_floor_exception())
+  end
+
   test "rejects an incomplete ready-floor exception" do
     markdown =
       queue_with_rows(1) <>

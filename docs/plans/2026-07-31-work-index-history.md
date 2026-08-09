@@ -3244,39 +3244,34 @@ backend tests with no failures. Typecheck, quality, formatting, queue validation
 with ready rows 22-24 intact, and diff hygiene also passed. Implementation
 commits were `ff5f751b` and `89bda46e`.
 
-## Completed 2026-08-05 Ingestion Run Request Bounds
+## Completed 2026-08-06 Established Storage Contract Enforcement
 
 Status: complete
-Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
 
-PostgreSQL now preserves the established positive-when-present bounds of
-nullable `ingestion_runs.page_size` and `pages_requested` through the named
-`ingestion_runs_page_size_positive` and
-`ingestion_runs_pages_requested_positive` constraints. Direct writes reject
-zero and negative values while `NULL` and positive request metadata remain
-accepted, and the owning changeset maps both database failures.
+Four former queue rows were implementation slices of one storage-integrity
+outcome, not independently substantial batches. PostgreSQL now preserves these
+existing application contracts when writes bypass changesets:
 
-Verification passed 53 focused request-boundary and ingestion lifecycle tests,
-the complete backend test suite, typecheck, quality, formatting, queue
-validation with six ready rows, and diff hygiene. Implementation commits were
-`c49d8c45`, `5af38c07`, and `b949cfce`.
+- nullable ingestion request counts are positive when present;
+- taxonomy sort order and reputation thresholds are non-negative;
+- Attribute enum-set ownership is consistent and Unit multipliers are nonzero;
+  and
+- persisted user email contains `@` and excludes ASCII regex whitespace while
+  retaining the established Unicode-separator behavior through `COLLATE "C"`.
 
-## Completed 2026-08-05 Taxon Attribute Storage Bounds
+The seven named checks and owning changeset mappings add no upper bounds, taxonomy
+policy, definition semantics, RFC email policy, or stored-value normalization.
+The former per-slice design, plan, and lane files were removed because they
+duplicated more than a thousand lines around small migration slices; Git retains
+their exact execution record.
 
-Status: complete
-Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
-
-PostgreSQL now preserves the existing non-negative domains of
-`taxon_attributes.sort_order` and `min_rep_to_edit` through two exact named
-checks, and the owning changeset maps both constraint failures. Direct writes
-reject negative values while zero and representative positive values remain
-accepted; taxonomy ordering, reputation thresholds, and GraphQL behavior are
-unchanged.
-
-Verification passed 3 focused storage-bound tests, 53 adjacent changeset/read/
-GraphQL tests, the complete backend suite, typecheck, quality, formatting,
-queue validation with five ready rows, and diff hygiene. The implementation
-commit was `52d492b2`.
+Slice verification passed 53 ingestion tests; 3 focused and 53 adjacent taxon
+tests; 18 focused and 93 downstream specification tests; and 21 focused plus 88
+affected Accounts tests. The last post-fix backend run passed 1,258 tests with
+no failures, plus typecheck, quality, formatting, queue validation, and diff
+hygiene. Preserved implementation commits are `c49d8c45`, `5af38c07`,
+`b949cfce`, `52d492b2`, `36e6f745`, `c10995af`, `daea220c`, `08213c23`,
+`9a65998b`, `d9b57bfa`, and the email parity correction `29c2329f`.
 
 ## Completed 2026-08-06 Community Authored Text Storage Bounds
 
@@ -3295,45 +3290,6 @@ tests, and 1,248 complete backend tests. Typecheck, quality, formatting, queue
 validation with four ready rows, and diff hygiene also passed. Implementation
 commits were `509e2f8a`, `0adc355b`, and `4509c7ef`.
 
-## Completed 2026-08-06 Specification Definition Creation Validity
-
-Status: complete
-Plan: `docs/superpowers/plans/2026-08-05-specification-definition-creation-validity-implementation-plan.md`
-
-PostgreSQL now rejects invalid initial Attribute enum-set ownership and zero
-Unit conversion multipliers through two named row checks before the existing
-immutability triggers preserve their semantics. The owning changesets map both
-constraint failures; valid enum and non-enum attributes plus positive and
-negative nonzero multipliers remain accepted.
-
-Verification passed 18 focused creation-validity/definition/unit tests, 93
-downstream specification, claim, ingestion, recommendation, and GraphQL tests,
-and 1,252 complete backend tests. Typecheck, quality, formatting, queue
-validation with three ready rows, and diff hygiene also passed. Implementation
-commits were `36e6f745`, `c10995af`, and `daea220c`.
-
-## Completed 2026-08-06 User Email Shape Storage Integrity
-
-Status: complete
-Plan: `docs/superpowers/plans/2026-08-05-user-email-shape-storage-integrity-implementation-plan.md`
-
-PostgreSQL now preserves the existing minimal Accounts email shape through the
-named `users_email_shape_check`: persisted values contain at least one `@` and
-no ASCII regex whitespace. Final review corrected the still-unshipped
-migration to use `COLLATE "C"`, preserving the existing non-Unicode Elixir
-regex semantics: internal U+2003/U+2028/U+2029 separators remain accepted while
-ASCII regex whitespace remains rejected. Both email-owning changesets map the
-database failure while normalization, `citext` uniqueness, registration,
-authentication, sessions, tokens, and GraphQL browser-auth behavior remain
-unchanged.
-
-The original evidence passed 18 focused direct-write/schema tests and 88
-affected Accounts and GraphQL auth tests. The final review correction added the
-Unicode/ASCII parity regressions (21 focused tests); the definitive post-fix
-backend passed 1,258 tests with no failures, plus typecheck, quality, formatting,
-queue validation with ready rows 28–30, and diff hygiene.
-Original implementation commits were `08213c23`, `9a65998b`, and `d9b57bfa`.
-
 ## Dispatch Correction 2026-08-06 Final Storage Review
 
 Final whole-branch review demoted Commerce Identifier Storage Integrity from
@@ -3346,6 +3302,20 @@ The same dispatch boundary promoted Product Attribute Claim Scope Storage
 Integrity after live preflight returned zero mismatches for both
 `product_attribute_current` and `specification_corrections`, confirmed both
 original claim foreign keys use `ON DELETE CASCADE`, and passed the 15-test
-current-selection/correction baseline. Ready rows 28–30 remain coherent and
-path-disjoint. The dispatch also replaced descriptive test ownership in rows 28
-and 29 with exact paths and cataloged the terminal-timestamp design and plan.
+current-selection/correction baseline. It recorded rows 28–30 as coherent and
+path-disjoint, but the 2026-08-09 correction below supersedes the decision to
+count those implementation-sized slices as separate batches.
+
+## Dispatch Correction 2026-08-09 Batch Granularity
+
+Rows 28–30 were individually executable but too small to be truthful queue
+batches. They now form the internal community, ingestion, and specification
+slices of one Persisted Relationship And Lifecycle Integrity outcome with one
+plan, one lane record, and one closeout boundary.
+
+The validator and operating model now support an explicit `Ready Floor
+Exception` when current evidence yields fewer than three independently
+shippable outcomes. The exception records the rejected micro-split and concrete
+replenishment action, and becomes invalid once three coherent rows exist. This
+removes the mechanical incentive to manufacture tiny rows merely to satisfy the
+reserve floor.

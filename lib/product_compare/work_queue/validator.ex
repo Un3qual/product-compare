@@ -37,7 +37,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   ]
 
   @spec validate_file(Path.t(), Path.t()) ::
-          {:ok, %{ready_count: pos_integer()}} | {:error, [String.t()]}
+          {:ok, %{ready_count: non_neg_integer()}} | {:error, [String.t()]}
   def validate_file(path, repository_root) do
     markdown = File.read!(path)
 
@@ -47,7 +47,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   @spec validate(String.t()) ::
-          {:ok, %{ready_count: pos_integer()}} | {:error, [String.t()]}
+          {:ok, %{ready_count: non_neg_integer()}} | {:error, [String.t()]}
   def validate(markdown) when is_binary(markdown) do
     validate_ready_section(markdown, &plan_reference_errors/1)
   end
@@ -61,7 +61,7 @@ defmodule ProductCompare.WorkQueue.Validator do
           ready_count_errors(markdown, rows) ++
           incomplete_row_errors(rows) ++
           trailing_row_content_errors(rows) ++
-          empty_state_errors(ready_section) ++
+          empty_state_errors(markdown, ready_section) ++
           additional_errors.(rows)
 
       case errors do
@@ -309,8 +309,15 @@ defmodule ProductCompare.WorkQueue.Validator do
     end)
   end
 
-  defp empty_state_errors(section) do
-    if Enum.any?(@empty_state_patterns, &Regex.match?(&1, section)) do
+  defp empty_state_errors(markdown, section) do
+    valid_floor_exception? =
+      case ready_floor_exception(markdown) do
+        {:ok, exception} -> ready_floor_exception_field_errors(exception) == []
+        :missing -> false
+      end
+
+    if not valid_floor_exception? and
+         Enum.any?(@empty_state_patterns, &Regex.match?(&1, section)) do
       ["Ready Work contains forbidden empty-state language"]
     else
       []

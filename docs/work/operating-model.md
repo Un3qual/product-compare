@@ -106,7 +106,8 @@ never evidence that the backend has no work.
   row when three other ready rows will remain or when the committed ready floor
   exception explicitly covers the smaller truthful set.
 - Completion evidence stays truthful. Remove completed or blocked queue rows
-  only in a coordinator boundary update that preserves the ready-work floor.
+  only in a coordinator boundary update that preserves the ready-work floor or
+  records a complete exception.
 - If the catalog cannot restore the floor, inspect current product behavior,
   code gaps, tests, architecture gaps, and lane evidence; write executable
   plans; and validate them before dispatch resumes.

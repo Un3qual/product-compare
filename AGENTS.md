@@ -32,7 +32,8 @@
   floor exception, and record the replenishment action. Remove the exception
   as soon as three coherent rows exist.
 - Before a claim would leave fewer than three other `ready` rows, the
-  coordinator replenishes the queue in the same dispatch update.
+  coordinator replenishes the queue or commits a complete ready floor exception
+  in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
   and ensure the committed queue either contains at least three complete ready
   rows or a complete ready floor exception.
