@@ -95,6 +95,13 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     end
   end
 
+  test "rejects duplicate ready-floor exception sections" do
+    markdown = queue_with_rows(1) <> ready_floor_exception() <> "## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must appear exactly once" in errors
+  end
+
   test "rejects a stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> ready_floor_exception()
 

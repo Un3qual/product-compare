@@ -182,6 +182,9 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   defp ready_count_errors(markdown, rows) do
     case {length(rows) >= @minimum_ready_rows, ready_floor_exception(markdown)} do
+      {_floor_reached?, :duplicate} ->
+        ["Ready Floor Exception must appear exactly once"]
+
       {true, :missing} ->
         []
 
@@ -199,7 +202,15 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_floor_exception(markdown) do
-    case Regex.run(~r/^## Ready Floor Exception\s*\n(?<body>.*?)(?=^## |\z)/ms, markdown,
+    case Regex.scan(~r/^## Ready Floor Exception[ \t]*$/m, markdown) do
+      [] -> :missing
+      [_heading] -> ready_floor_exception_body(markdown)
+      _duplicates -> :duplicate
+    end
+  end
+
+  defp ready_floor_exception_body(markdown) do
+    case Regex.run(~r/^## Ready Floor Exception[ \t]*\r?\n(?<body>.*?)(?=^## |\z)/ms, markdown,
            capture: :all_names
          ) do
       [body] -> {:ok, body}
