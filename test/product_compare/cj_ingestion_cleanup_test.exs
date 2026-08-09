@@ -55,7 +55,8 @@ defmodule ProductCompare.TestSupport.CJIngestionCleanupTest do
       surface: "shoppingProducts",
       query: %{},
       status: :succeeded,
-      started_at: ~U[2026-07-31 06:00:00Z]
+      started_at: ~U[2026-07-31 06:00:00Z],
+      finished_at: ~U[2026-07-31 06:05:00Z]
     })
     |> Repo.insert!()
   end

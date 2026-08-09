@@ -72,6 +72,7 @@ Owned paths:
 - `test/product_compare/ingestion/scheduled_cursor_test.exs`
 - `test/product_compare/ingestion/reconciliation_test.exs`
 - `test/product_compare/ingestion/source_health_test.exs`
+- `test/product_compare/cj_ingestion_cleanup_test.exs`
 - `test/product_compare/specs/current_claim_selection_test.exs`
 - `test/product_compare/specs/corrections_test.exs`
 - `test/product_compare/specs/concurrency_test.exs`

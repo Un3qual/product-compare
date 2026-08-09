@@ -41,6 +41,7 @@ ExUnit.
 - `test/product_compare/ingestion/scheduled_cursor_test.exs`
 - `test/product_compare/ingestion/reconciliation_test.exs`
 - `test/product_compare/ingestion/source_health_test.exs`
+- `test/product_compare/cj_ingestion_cleanup_test.exs`
 - `test/product_compare/specs/current_claim_selection_test.exs`
 - `test/product_compare/specs/corrections_test.exs`
 - `test/product_compare/specs/concurrency_test.exs`
@@ -104,7 +105,7 @@ ExUnit.
 ## Task 3: Verify The Combined Outcome And Close It Once
 
 - [ ] Run the affected ingestion suites: CJ readiness and run health,
-  scheduled cursor, reconciliation, and source health.
+  scheduled cursor, reconciliation, source health, and CJ cleanup.
 - [ ] Run the affected specification consumers: claim concurrency and reads,
   enrichment, seeds, filtering, recommendations, snapshots, SEO, and GraphQL
   catalog queries.
