@@ -49,27 +49,24 @@ None.
 
 ## Ready Work
 
-### Persisted Relationship And Lifecycle Integrity
+### Core Persisted Lifecycle And Claim Integrity
 
 Status: ready
-Lane: Cross-domain storage integrity
+Lane: Core data integrity
 Plan: `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL preserves existing parent-scope, terminal-state, and
-claim-scope contracts when writes bypass application changesets.
-Next action: run all three clean preflights, then add the combined failing
+Batch outcome: PostgreSQL preserves existing ingestion terminal-state and
+specification claim-scope contracts when writes bypass application changesets.
+Next action: run both clean preflights, then add the combined failing
 direct-write characterization before changing production schemas or migrations.
 Owned paths:
 
 - `priv/repo/migrations/20260805040000_enforce_ingestion_run_terminal_timestamp_integrity.exs`
 - `priv/repo/migrations/20260805060000_enforce_product_attribute_claim_scope_integrity.exs`
-- `priv/repo/migrations/20260805070000_enforce_thread_post_parent_scope_integrity.exs`
 - `lib/product_compare_schemas/ingestion/import_run.ex`
 - `lib/product_compare_schemas/specs/product_attribute_current.ex`
 - `lib/product_compare_schemas/specs/specification_correction.ex`
-- `lib/product_compare_schemas/discussions/thread_post.ex`
 - `test/product_compare/repo/ingestion_run_terminal_timestamp_integrity_test.exs`
 - `test/product_compare/repo/product_attribute_claim_scope_storage_integrity_test.exs`
-- `test/product_compare/repo/thread_post_parent_scope_storage_integrity_test.exs`
 - `test/product_compare/ingestion/cj_run_readiness_test.exs`
 - `test/product_compare/ingestion/cj_run_health_test.exs`
 - `test/product_compare/ingestion/scheduled_cursor_test.exs`
@@ -87,17 +84,11 @@ Owned paths:
 - `test/product_compare/comparison_snapshots_test.exs`
 - `test/product_compare/seo_test.exs`
 - `test/product_compare_web/graphql/catalog_queries_test.exs`
-- `test/product_compare/discussions/thread_post_validation_test.exs`
-- `test/product_compare/discussions/content_lifecycle_test.exs`
-- `test/product_compare/discussions/community_trust_test.exs`
-- `test/product_compare_web/graphql/community_content_test.exs`
 - `docs/work/persisted-relationship-and-lifecycle-integrity.md`
 - `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
 
 Internal slices:
 
-- Same-thread parent composite referential integrity with nullable-root,
-  same-thread, and parent-deletion controls.
 - Terminal ingestion timestamp enforcement with running and timestamped-terminal
   controls plus the truthful readiness fixture.
 - Product-attribute claim-scope composite referential integrity for both
@@ -105,33 +96,35 @@ Internal slices:
 
 Prerequisites:
 
-- All three recorded preflights remain clean and the original claim foreign
+- Both recorded preflights remain clean and the original claim foreign
   keys retain `ON DELETE CASCADE`.
-- The community, ingestion, and specification baseline suites still pass.
+- The ingestion and specification baseline suites still pass.
 - No active row owns any listed schema, migration, or affected test path.
 
 Verification:
 
-- three direct-write storage suites and their accepted controls
-- owning community, ingestion, and specification lifecycle suites
+- two direct-write storage suites and their accepted controls
+- owning ingestion and specification lifecycle suites
 - affected seed, catalog, recommendation, snapshot, SEO, and GraphQL consumers
 - full backend tests, type checks, quality, and formatting
 - `mix work_queue.validate`
 - `git diff --check`
 
-Exit condition: PostgreSQL rejects all three invalid persisted-state families
-under their named constraints, accepted and deletion boundaries retain current
-behavior, and all affected and repository gates pass.
+Exit condition: PostgreSQL rejects invalid terminal ingestion and claim-scope
+states under their named constraints, accepted and deletion boundaries retain
+current behavior, and all affected and repository gates pass.
 
 ## Ready Floor Exception
 
-Reason: Current validation supports one substantial persisted-state integrity
-outcome; the commerce identifier candidate still needs a product decision.
-Rejected split: Same-thread parents, terminal timestamps, and claim scope are
-internal migration-and-test slices of the combined outcome, not three batches.
+Reason: Current validation supports one substantial core data-integrity outcome;
+identifier candidates still need product decisions and discussion work is
+explicitly deferred.
+Rejected split: Terminal timestamps and claim scope are internal
+migration-and-test slices of the combined outcome, not separate batches.
 Replenishment action: Audit current product behavior and architecture gaps for
-the next independently shippable outcome while the combined row executes, and
-reassess commerce identifiers only after its end-anchor decision is recorded.
+the next independently shippable non-discussion outcome while the combined row
+executes, and reassess commerce identifiers only after their end-anchor decision
+is recorded.
 
 ## Needs Decision Work
 

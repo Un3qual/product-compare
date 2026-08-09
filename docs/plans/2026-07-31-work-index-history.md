@@ -3319,3 +3319,16 @@ shippable outcomes. The exception records the rejected micro-split and concrete
 replenishment action, and becomes invalid once three coherent rows exist. This
 removes the mechanical incentive to manufacture tiny rows merely to satisfy the
 reserve floor.
+
+## Product Scope Deferral 2026-08-09 Discussions And Community
+
+The user explicitly deferred all unstarted Discussions and Community work to
+focus execution on the core project. Same-thread post-parent storage integrity
+moved from the ready outcome to the deferred candidate catalog; no discussion
+schema, migration, test, or GraphQL path remains owned by live work.
+
+The ready outcome is now Core Persisted Lifecycle And Claim Integrity. It keeps
+the ingestion terminal-timestamp and specification claim-scope slices together
+as one substantial core-data batch. Completed community work and its historical
+verification remain unchanged; this decision defers future work rather than
+reverting shipped behavior.
