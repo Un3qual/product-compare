@@ -13,6 +13,17 @@ defmodule ProductCompare.WorkQueue.Validator do
                                       "ms"
                                     )
   @fenced_code_opening_regex ~r/^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
+  @raw_html_tag_opening_regex ~r/^[ ]{0,3}<(?<tag>script|pre|style|textarea)(?:[ \t]|>|$)/i
+  @raw_html_block_tags ~w(
+    address article aside base basefont blockquote body caption center col colgroup dd details
+    dialog dir div dl dt fieldset figcaption figure footer form frame frameset h1 h2 h3 h4 h5
+    h6 head header hgroup hr html iframe legend li link main menu menuitem nav noframes ol
+    optgroup option p param search section summary table tbody td tfoot th thead title tr track ul
+  )
+  @raw_html_block_tag_opening_regex Regex.compile!(
+                                      "^[ ]{0,3}</?(?:#{Enum.join(@raw_html_block_tags, "|")})(?:[ \\t]|/?>|\\r?$)",
+                                      "i"
+                                    )
   @required_markers [
     "Status:",
     "Lane:",
@@ -246,13 +257,39 @@ defmodule ProductCompare.WorkQueue.Validator do
       else: {mask(line), state}
   end
 
+  defp visible_markdown_line(line, {:raw_html, terminator} = state) do
+    if raw_html_closing?(line, terminator),
+      do: {mask(line), :visible},
+      else: {mask(line), state}
+  end
+
+  defp visible_markdown_line(line, :raw_html_until_blank) do
+    if Regex.match?(~r/^[ \t]*\r?$/, line),
+      do: {line, :visible},
+      else: {mask(line), :raw_html_until_blank}
+  end
+
   defp visible_markdown_line(line, state) when state in [:visible, :html_comment] do
     case state == :visible && fence_opening(line) do
       {marker, minimum_length} ->
         {mask(line), {:fence, marker, minimum_length}}
 
       _not_a_fence ->
-        mask_html_comments(line, state)
+        case state == :visible && raw_html_opening(line) do
+          {:until, terminator} ->
+            next_state =
+              if raw_html_closing?(line, terminator),
+                do: :visible,
+                else: {:raw_html, terminator}
+
+            {mask(line), next_state}
+
+          :until_blank ->
+            {mask(line), :raw_html_until_blank}
+
+          _not_raw_html ->
+            mask_html_comments(line, state)
+        end
     end
   end
 
@@ -278,6 +315,30 @@ defmodule ProductCompare.WorkQueue.Validator do
       line
     )
   end
+
+  defp raw_html_opening(line) do
+    case Regex.run(@raw_html_tag_opening_regex, line, capture: :all_names) do
+      [tag] ->
+        {:until, {:closing_tag, String.downcase(tag)}}
+
+      _not_a_tag_block ->
+        cond do
+          Regex.match?(~r/^[ ]{0,3}<\?/, line) -> {:until, :processing_instruction}
+          Regex.match?(~r/^[ ]{0,3}<!\[CDATA\[/, line) -> {:until, :cdata}
+          Regex.match?(~r/^[ ]{0,3}<![A-Z]/, line) -> {:until, :declaration}
+          Regex.match?(@raw_html_block_tag_opening_regex, line) -> :until_blank
+          true -> nil
+        end
+    end
+  end
+
+  defp raw_html_closing?(line, {:closing_tag, tag}) do
+    String.contains?(String.downcase(line), "</#{tag}>")
+  end
+
+  defp raw_html_closing?(line, :processing_instruction), do: String.contains?(line, "?>")
+  defp raw_html_closing?(line, :cdata), do: String.contains?(line, "]]>")
+  defp raw_html_closing?(line, :declaration), do: String.contains?(line, ">")
 
   defp mask_html_comments(line, state) do
     mask_html_comments(line, state, [])

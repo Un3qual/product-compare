@@ -169,6 +169,13 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert "Ready Work requires at least 3 complete rows; found 0" in errors
   end
 
+  test "does not treat CommonMark raw HTML block examples as rendered sections" do
+    for {kind, example} <- raw_html_examples() do
+      assert {:error, errors} = Validator.validate(empty_queue() <> "\n" <> example), kind
+      assert "Ready Work requires at least 3 complete rows; found 0" in errors, kind
+    end
+  end
+
   test "ignores non-rendered examples when one rendered floor exception exists" do
     markdown =
       empty_queue() <>
@@ -180,6 +187,7 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
         <!-- #{String.trim(ready_floor_exception())} -->
         """ <>
+        Enum.map_join(raw_html_examples(), "\n", &elem(&1, 1)) <>
         ready_floor_exception()
 
     assert {:ok, %{ready_count: 0}} = Validator.validate(markdown)
@@ -494,6 +502,22 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
     ## Active Work
     """
+  end
+
+  defp raw_html_examples do
+    exception = String.trim(ready_floor_exception())
+
+    [
+      {"script block", "<script>\n#{exception}\n</script>\n"},
+      {"pre block", "<pre>\n#{exception}\n</pre>\n"},
+      {"style block", "<style>\n#{exception}\n</style>\n"},
+      {"textarea block", "<textarea>\n#{exception}\n</textarea>\n"},
+      {"processing instruction", "<?queue\n#{exception}\n?>\n"},
+      {"declaration", "<!QUEUE\n#{exception}\n>\n"},
+      {"CDATA block", "<![CDATA[\n#{exception}\n]]>\n"},
+      {"block tag", "<div>\n#{exception}\n</div>\n\n"},
+      {"block tag with a non-blank Unicode separator", "<div>\n\u00A0\n#{exception}\n</div>\n\n"}
+    ]
   end
 
   defp write_repository(tmp_dir, queue, opts \\ []) do
