@@ -12,6 +12,32 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert "Ready Work requires at least 3 complete rows; found 2" in errors
   end
 
+  test "accepts fewer coherent rows with a complete ready-floor exception" do
+    markdown = queue_with_rows(1) <> ready_floor_exception()
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
+  test "rejects an incomplete ready-floor exception" do
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "Rejected split: The remaining validated work is internal to this outcome.\n",
+          "Rejected split:\n"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception has empty Rejected split:" in errors
+  end
+
+  test "rejects a stale ready-floor exception once the floor is restored" do
+    markdown = queue_with_rows(3) <> ready_floor_exception()
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
   test "rejects incomplete dispatch contracts" do
     markdown =
       queue_with_rows(3)
@@ -270,6 +296,17 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
     #{rows}
     ## Active Work
+    """
+  end
+
+  defp ready_floor_exception do
+    """
+
+    ## Ready Floor Exception
+
+    Reason: Only one independently shippable outcome is currently validated.
+    Rejected split: The remaining validated work is internal to this outcome.
+    Replenishment action: Audit current behavior for the next coherent outcome.
     """
   end
 

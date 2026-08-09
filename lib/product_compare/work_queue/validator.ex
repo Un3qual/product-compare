@@ -2,6 +2,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   @moduledoc false
 
   @minimum_ready_rows 3
+  @ready_floor_exception_fields ["Reason", "Rejected split", "Replenishment action"]
   @required_markers [
     "Status:",
     "Lane:",
@@ -57,7 +58,7 @@ defmodule ProductCompare.WorkQueue.Validator do
 
       errors =
         terminal_status_errors(markdown) ++
-          ready_count_errors(rows) ++
+          ready_count_errors(markdown, rows) ++
           incomplete_row_errors(rows) ++
           trailing_row_content_errors(rows) ++
           empty_state_errors(ready_section) ++
@@ -179,10 +180,43 @@ defmodule ProductCompare.WorkQueue.Validator do
     |> List.flatten()
   end
 
-  defp ready_count_errors(rows) when length(rows) >= @minimum_ready_rows, do: []
+  defp ready_count_errors(markdown, rows) do
+    case {length(rows) >= @minimum_ready_rows, ready_floor_exception(markdown)} do
+      {true, :missing} ->
+        []
 
-  defp ready_count_errors(rows) do
-    ["Ready Work requires at least #{@minimum_ready_rows} complete rows; found #{length(rows)}"]
+      {true, {:ok, _section}} ->
+        ["Ready Floor Exception must be removed when at least 3 rows are ready"]
+
+      {false, :missing} ->
+        [
+          "Ready Work requires at least #{@minimum_ready_rows} complete rows; found #{length(rows)}"
+        ]
+
+      {false, {:ok, section}} ->
+        ready_floor_exception_field_errors(section)
+    end
+  end
+
+  defp ready_floor_exception(markdown) do
+    case Regex.run(~r/^## Ready Floor Exception\s*\n(?<body>.*?)(?=^## |\z)/ms, markdown,
+           capture: :all_names
+         ) do
+      [body] -> {:ok, body}
+      _ -> :missing
+    end
+  end
+
+  defp ready_floor_exception_field_errors(section) do
+    Enum.flat_map(@ready_floor_exception_fields, fn field ->
+      case Regex.run(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)$/m, section,
+             capture: :all_names
+           ) do
+        [value] when value != "" -> []
+        [_empty] -> ["Ready Floor Exception has empty #{field}:"]
+        _ -> ["Ready Floor Exception is missing #{field}:"]
+      end
+    end)
   end
 
   defp terminal_status_errors(markdown) do
