@@ -61,7 +61,7 @@ defmodule ProductCompare.WorkQueue.Validator do
           ready_count_errors(markdown, rows) ++
           incomplete_row_errors(rows) ++
           trailing_row_content_errors(rows) ++
-          empty_state_errors(markdown, ready_section) ++
+          empty_state_errors(markdown, ready_section, rows) ++
           additional_errors.(rows)
 
       case errors do
@@ -309,14 +309,15 @@ defmodule ProductCompare.WorkQueue.Validator do
     end)
   end
 
-  defp empty_state_errors(markdown, section) do
-    valid_floor_exception? =
-      case ready_floor_exception(markdown) do
-        {:ok, exception} -> ready_floor_exception_field_errors(exception) == []
-        :missing -> false
-      end
+  defp empty_state_errors(markdown, section, rows) do
+    valid_empty_state? =
+      rows == [] and
+        case ready_floor_exception(markdown) do
+          {:ok, exception} -> ready_floor_exception_field_errors(exception) == []
+          :missing -> false
+        end
 
-    if not valid_floor_exception? and
+    if not valid_empty_state? and
          Enum.any?(@empty_state_patterns, &Regex.match?(&1, section)) do
       ["Ready Work contains forbidden empty-state language"]
     else

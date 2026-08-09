@@ -32,6 +32,18 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 0}} = Validator.validate(markdown <> ready_floor_exception())
   end
 
+  test "rejects empty-state language when a ready row exists under a floor exception" do
+    markdown =
+      String.replace(
+        queue_with_rows(1),
+        "## Ready Work\n\n",
+        "## Ready Work\n\nNone.\n\n"
+      ) <> ready_floor_exception()
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work contains forbidden empty-state language" in errors
+  end
+
   test "rejects an incomplete ready-floor exception" do
     markdown =
       queue_with_rows(1) <>
