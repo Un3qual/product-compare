@@ -176,6 +176,38 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     end
   end
 
+  test "does not borrow exception fields from a tab-separated H2 section" do
+    markdown =
+      queue_with_rows(1) <>
+        """
+
+        ## Ready Floor Exception
+
+        Reason: Only one independently shippable outcome is currently validated.
+
+        ##\tNeeds Decision Work
+
+        Rejected split: This belongs to the following section.
+        Replenishment action: This also belongs to the following section.
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception is missing Rejected split:" in errors
+    assert "Ready Floor Exception is missing Replenishment action:" in errors
+  end
+
+  test "does not borrow ready rows from a tab-separated H2 section" do
+    markdown =
+      String.replace(
+        queue_with_rows(3),
+        "## Ready Work\n\n",
+        "## Ready Work\n\n##\tActive Work\n\n"
+      )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 0" in errors
+  end
+
   test "ignores non-rendered examples when one rendered floor exception exists" do
     markdown =
       empty_queue() <>
@@ -516,7 +548,8 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
       {"declaration", "<!QUEUE\n#{exception}\n>\n"},
       {"CDATA block", "<![CDATA[\n#{exception}\n]]>\n"},
       {"block tag", "<div>\n#{exception}\n</div>\n\n"},
-      {"block tag with a non-blank Unicode separator", "<div>\n\u00A0\n#{exception}\n</div>\n\n"}
+      {"block tag with a non-blank Unicode separator", "<div>\n\u00A0\n#{exception}\n</div>\n\n"},
+      {"generic tag", "<queue-proof data-kind=\"example\">\n#{exception}\n</queue-proof>\n\n"}
     ]
   end
 

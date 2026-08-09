@@ -3,15 +3,20 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   @minimum_ready_rows 3
   @ready_floor_exception_fields ["Reason", "Rejected split", "Replenishment action"]
+  @h2_heading_opening_source ~S"##[ \t]+"
   @ready_floor_exception_heading_source ~S"## Ready Floor Exception(?:[ \t]+#+)?[ \t]*\r?"
   @ready_floor_exception_heading_regex Regex.compile!(
                                          "^#{@ready_floor_exception_heading_source}$",
                                          "m"
                                        )
   @ready_floor_exception_body_regex Regex.compile!(
-                                      "^#{@ready_floor_exception_heading_source}\\n(?<body>.*?)(?=^## |\\z)",
+                                      "^#{@ready_floor_exception_heading_source}\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
                                       "ms"
                                     )
+  @ready_section_regex Regex.compile!(
+                         "^## Ready Work\\s*\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
+                         "ms"
+                       )
   @fenced_code_opening_regex ~r/^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
   @raw_html_tag_opening_regex ~r/^[ ]{0,3}<(?<tag>script|pre|style|textarea)(?:[ \t]|>|$)/i
   @raw_html_block_tags ~w(
@@ -24,6 +29,25 @@ defmodule ProductCompare.WorkQueue.Validator do
                                       "^[ ]{0,3}</?(?:#{Enum.join(@raw_html_block_tags, "|")})(?:[ \\t]|/?>|\\r?$)",
                                       "i"
                                     )
+  @raw_html_generic_tag_opening_regex ~r"""
+  ^[ ]{0,3}
+  (?:
+    <
+    [A-Za-z][A-Za-z0-9-]*
+    (?:
+      [ \t]+
+      [A-Za-z_:][A-Za-z0-9_.:-]*
+      (?:
+        [ \t]*=[ \t]*
+        (?:[^ "'=<>`\t\r\n]+|'[^']*'|"[^"]*")
+      )?
+    )*
+    [ \t]*/?>
+    |
+    </[A-Za-z][A-Za-z0-9-]*[ \t]*>
+  )
+  [ \t]*\r?$
+  """x
   @required_markers [
     "Status:",
     "Lane:",
@@ -188,9 +212,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_section(markdown) do
-    case Regex.run(~r/^## Ready Work\s*\n(?<body>.*?)(?=^## |\z)/ms, markdown,
-           capture: :all_names
-         ) do
+    case Regex.run(@ready_section_regex, markdown, capture: :all_names) do
       [body] -> {:ok, body}
       _ -> {:error, ["missing ## Ready Work section"]}
     end
@@ -327,6 +349,7 @@ defmodule ProductCompare.WorkQueue.Validator do
           Regex.match?(~r/^[ ]{0,3}<!\[CDATA\[/, line) -> {:until, :cdata}
           Regex.match?(~r/^[ ]{0,3}<![A-Z]/, line) -> {:until, :declaration}
           Regex.match?(@raw_html_block_tag_opening_regex, line) -> :until_blank
+          Regex.match?(@raw_html_generic_tag_opening_regex, line) -> :until_blank
           true -> nil
         end
     end
