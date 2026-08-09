@@ -19,31 +19,12 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
   end
 
   test "accepts an empty dispatch surface only with a complete ready-floor exception" do
-    markdown = """
-    # Work Dispatch Index
-
-    ## Ready Work
-
-    None.
-
-    ## Active Work
-    """
-
-    assert {:ok, %{ready_count: 0}} = Validator.validate(markdown <> ready_floor_exception())
+    assert {:ok, %{ready_count: 0}} =
+             Validator.validate(empty_queue() <> ready_floor_exception())
   end
 
   test "rejects duplicate ready-floor exception sections for an empty dispatch surface" do
-    markdown = """
-    # Work Dispatch Index
-
-    ## Ready Work
-
-    None.
-
-    ## Active Work
-    """
-
-    duplicate = markdown <> ready_floor_exception() <> "## Ready Floor Exception"
+    duplicate = empty_queue() <> ready_floor_exception() <> "## Ready Floor Exception"
 
     assert {:error, errors} = Validator.validate(duplicate)
     assert "Ready Floor Exception must appear exactly once" in errors
@@ -139,6 +120,60 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
   end
 
+  test "accepts CommonMark indentation for reserved H2 headings" do
+    for indentation <- 0..3 do
+      spaces = String.duplicate(" ", indentation)
+
+      markdown =
+        (queue_with_rows(1) <>
+           String.replace(
+             ready_floor_exception(),
+             "## Ready Floor Exception",
+             "#{spaces}## Ready Floor Exception"
+           ))
+        |> String.replace("## Ready Work", "#{spaces}## Ready Work")
+
+      assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+    end
+  end
+
+  test "does not treat four-space-indented reserved H2 text as headings" do
+    assert {:error, ["missing ## Ready Work section"]} =
+             queue_with_rows(3)
+             |> String.replace("## Ready Work", "    ## Ready Work")
+             |> Validator.validate()
+
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "    ## Ready Floor Exception"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 1" in errors
+  end
+
+  test "accepts a closed ATX Ready Work heading" do
+    markdown = String.replace(queue_with_rows(3), "## Ready Work", "## Ready Work ##")
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
+  end
+
+  test "rejects a stale indented ready-floor exception once the floor is restored" do
+    markdown =
+      queue_with_rows(3) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "   ## Ready Floor Exception"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
   test "does not treat fenced ready-floor exception examples as rendered sections" do
     for fence <- ["```text", "~~~text"] do
       markdown =
@@ -171,9 +206,26 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
   test "does not treat CommonMark raw HTML block examples as rendered sections" do
     for {kind, example} <- raw_html_examples() do
-      assert {:error, errors} = Validator.validate(empty_queue() <> "\n" <> example), kind
+      result = Validator.validate(empty_queue() <> "\n" <> example)
+
+      assert match?({:error, _errors}, result),
+             "#{kind}: expected a validation error, got #{inspect(result)}"
+
+      {:error, errors} = result
       assert "Ready Work requires at least 3 complete rows; found 0" in errors, kind
     end
+  end
+
+  test "does not treat a queue enclosed in a fence as a rendered Ready Work section" do
+    markdown = "```markdown\n" <> queue_with_rows(3) <> "```\n"
+
+    assert {:error, ["missing ## Ready Work section"]} = Validator.validate(markdown)
+  end
+
+  test "ignores terminal statuses in non-rendered examples" do
+    markdown = queue_with_rows(3) <> "\n```markdown\nStatus: complete\n```\n"
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
   end
 
   test "does not borrow exception fields from a tab-separated H2 section" do
@@ -544,6 +596,10 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
       {"pre block", "<pre>\n#{exception}\n</pre>\n"},
       {"style block", "<style>\n#{exception}\n</style>\n"},
       {"textarea block", "<textarea>\n#{exception}\n</textarea>\n"},
+      {"bare script block with CRLF", "<script\r\n#{exception}\r\n</script>\r\n"},
+      {"bare pre block with CRLF", "<pre\r\n#{exception}\r\n</pre>\r\n"},
+      {"bare style block with CRLF", "<style\r\n#{exception}\r\n</style>\r\n"},
+      {"bare textarea block with CRLF", "<textarea\r\n#{exception}\r\n</textarea>\r\n"},
       {"processing instruction", "<?queue\n#{exception}\n?>\n"},
       {"declaration", "<!QUEUE\n#{exception}\n>\n"},
       {"CDATA block", "<![CDATA[\n#{exception}\n]]>\n"},

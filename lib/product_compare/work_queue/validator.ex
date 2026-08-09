@@ -3,8 +3,8 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   @minimum_ready_rows 3
   @ready_floor_exception_fields ["Reason", "Rejected split", "Replenishment action"]
-  @h2_heading_opening_source ~S"##[ \t]+"
-  @ready_floor_exception_heading_source ~S"## Ready Floor Exception(?:[ \t]+#+)?[ \t]*\r?"
+  @h2_heading_opening_source ~S"[ ]{0,3}##[ \t]+"
+  @ready_floor_exception_heading_source "#{@h2_heading_opening_source}Ready Floor Exception(?:[ \\t]+#+)?[ \\t]*\\r?"
   @ready_floor_exception_heading_regex Regex.compile!(
                                          "^#{@ready_floor_exception_heading_source}$",
                                          "m"
@@ -13,12 +13,13 @@ defmodule ProductCompare.WorkQueue.Validator do
                                       "^#{@ready_floor_exception_heading_source}\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
                                       "ms"
                                     )
+  @ready_section_heading_source "#{@h2_heading_opening_source}Ready Work(?:[ \\t]+#+)?[ \\t]*\\r?"
   @ready_section_regex Regex.compile!(
-                         "^## Ready Work\\s*\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
+                         "^#{@ready_section_heading_source}\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
                          "ms"
                        )
   @fenced_code_opening_regex ~r/^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
-  @raw_html_tag_opening_regex ~r/^[ ]{0,3}<(?<tag>script|pre|style|textarea)(?:[ \t]|>|$)/i
+  @raw_html_tag_opening_regex ~r/^[ ]{0,3}<(?<tag>script|pre|style|textarea)(?:[ \t]|>|\r?$)/i
   @raw_html_block_tags ~w(
     address article aside base basefont blockquote body caption center col colgroup dd details
     dialog dir div dl dt fieldset figcaption figure footer form frame frameset h1 h2 h3 h4 h5
@@ -98,12 +99,14 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp validate_ready_section(markdown, additional_errors) do
-    with {:ok, ready_section} <- ready_section(markdown) do
+    visible_markdown = markdown_without_non_rendered_examples(markdown)
+
+    with {:ok, ready_section} <- ready_section(visible_markdown) do
       rows = ready_rows(ready_section)
-      ready_floor_exception = ready_floor_exception(markdown)
+      ready_floor_exception = ready_floor_exception(visible_markdown)
 
       errors =
-        terminal_status_errors(markdown) ++
+        terminal_status_errors(visible_markdown) ++
           ready_count_errors(ready_floor_exception, rows) ++
           incomplete_row_errors(rows) ++
           trailing_row_content_errors(rows) ++
@@ -249,8 +252,6 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_floor_exception(markdown) do
-    markdown = markdown_without_non_rendered_examples(markdown)
-
     case Regex.scan(@ready_floor_exception_heading_regex, markdown) do
       [] -> :missing
       [_heading] -> ready_floor_exception_body(markdown)
