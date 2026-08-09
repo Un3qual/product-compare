@@ -61,6 +61,30 @@ defmodule ProductCompare.Repo.ProductAttributeClaimScopeStorageIntegrityTest do
     )
   end
 
+  test "the current-selection changeset maps the composite claim-scope constraint" do
+    fixture = current_fixture!()
+    other_product = SpecsFixtures.product_fixture()
+
+    changeset =
+      ProductAttributeCurrent.changeset(fixture.current, %{product_id: other_product.id})
+
+    assert changeset.valid?
+    assert {:error, invalid_changeset} = Repo.update(changeset)
+    assert "does not exist" in errors_on(invalid_changeset).claim_id
+  end
+
+  test "the correction changeset maps the composite claim-scope constraint" do
+    fixture = correction_fixture!()
+    other_product = SpecsFixtures.product_fixture()
+
+    changeset =
+      SpecificationCorrection.changeset(fixture.correction, %{product_id: other_product.id})
+
+    assert changeset.valid?
+    assert {:error, invalid_changeset} = Repo.update(changeset)
+    assert "does not exist" in errors_on(invalid_changeset).claim_id
+  end
+
   test "current selections accept their claim's exact product and attribute scope" do
     fixture = current_fixture!()
 

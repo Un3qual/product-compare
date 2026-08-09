@@ -54,6 +54,7 @@ defmodule ProductCompareSchemas.Specs.SpecificationCorrection do
       message: "already has a pending correction"
     )
     |> check_constraint(:base, name: :specification_corrections_evidence_check)
+    |> foreign_key_constraint(:claim_id, name: :specification_corrections_claim_scope_fkey)
   end
 
   @spec moderation_changeset(t(), map()) :: Ecto.Changeset.t()

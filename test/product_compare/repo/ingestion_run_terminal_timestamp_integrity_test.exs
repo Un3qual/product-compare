@@ -1,6 +1,9 @@
 defmodule ProductCompare.Repo.IngestionRunTerminalTimestampIntegrityTest do
   use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Repo
+  alias ProductCompareSchemas.Ingestion.ImportRun
+
   test "ingestion runs reject succeeded rows without a completion timestamp" do
     assert_check_violation(
       insert_ingestion_run("succeeded", nil),
@@ -27,8 +30,23 @@ defmodule ProductCompare.Repo.IngestionRunTerminalTimestampIntegrityTest do
     assert {:ok, _result} = insert_ingestion_run("failed", DateTime.utc_now())
   end
 
+  test "the owning changeset maps the terminal timestamp constraint" do
+    changeset =
+      ImportRun.changeset(%ImportRun{}, %{
+        source_id: insert_source!(),
+        surface: "shoppingProducts",
+        query: %{},
+        status: "succeeded",
+        started_at: DateTime.utc_now()
+      })
+
+    assert changeset.valid?
+    assert {:error, invalid_changeset} = Repo.insert(changeset)
+    assert "is invalid" in errors_on(invalid_changeset).finished_at
+  end
+
   defp insert_ingestion_run(status, finished_at) do
-    ProductCompare.Repo.query(
+    Repo.query(
       """
       INSERT INTO ingestion_runs (
         source_id, integration_surface_id, status, started_at, finished_at,
@@ -42,7 +60,7 @@ defmodule ProductCompare.Repo.IngestionRunTerminalTimestampIntegrityTest do
 
   defp insert_source! do
     {:ok, %{rows: [[source_id]]}} =
-      ProductCompare.Repo.query(
+      Repo.query(
         """
         INSERT INTO sources (source_kind_id, name, inserted_at, updated_at)
         VALUES (1, $1, now(), now())
