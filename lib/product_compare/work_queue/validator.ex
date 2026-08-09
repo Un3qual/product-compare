@@ -12,6 +12,7 @@ defmodule ProductCompare.WorkQueue.Validator do
                                       "^#{@ready_floor_exception_heading_source}\\n(?<body>.*?)(?=^## |\\z)",
                                       "ms"
                                     )
+  @fenced_code_opening_regex ~r/^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
   @required_markers [
     "Status:",
     "Lane:",
@@ -215,6 +216,8 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_floor_exception(markdown) do
+    markdown = markdown_without_non_rendered_examples(markdown)
+
     case Regex.scan(@ready_floor_exception_heading_regex, markdown) do
       [] -> :missing
       [_heading] -> ready_floor_exception_body(markdown)
@@ -228,6 +231,103 @@ defmodule ProductCompare.WorkQueue.Validator do
       _ -> :malformed
     end
   end
+
+  defp markdown_without_non_rendered_examples(markdown) do
+    markdown
+    |> String.split("\n", trim: false)
+    |> Enum.map_reduce(:visible, &visible_markdown_line/2)
+    |> elem(0)
+    |> Enum.join("\n")
+  end
+
+  defp visible_markdown_line(line, {:fence, marker, minimum_length} = state) do
+    if fence_closing?(line, marker, minimum_length),
+      do: {mask(line), :visible},
+      else: {mask(line), state}
+  end
+
+  defp visible_markdown_line(line, state) when state in [:visible, :html_comment] do
+    case state == :visible && fence_opening(line) do
+      {marker, minimum_length} ->
+        {mask(line), {:fence, marker, minimum_length}}
+
+      _not_a_fence ->
+        mask_html_comments(line, state)
+    end
+  end
+
+  defp fence_opening(line) do
+    case Regex.run(@fenced_code_opening_regex, line, capture: :all_but_first) do
+      [fence, info] ->
+        marker = String.first(fence)
+
+        if marker == "`" and String.contains?(info, "`"),
+          do: nil,
+          else: {marker, byte_size(fence)}
+
+      _not_an_opening_fence ->
+        nil
+    end
+  end
+
+  defp fence_closing?(line, marker, minimum_length) do
+    marker = Regex.escape(marker)
+
+    Regex.match?(
+      Regex.compile!("^[ ]{0,3}#{marker}{#{minimum_length},}[ \\t]*\\r?$"),
+      line
+    )
+  end
+
+  defp mask_html_comments(line, state) do
+    mask_html_comments(line, state, [])
+  end
+
+  defp mask_html_comments(line, :visible, masked) do
+    case :binary.match(line, "<!--") do
+      :nomatch ->
+        {IO.iodata_to_binary([masked, line]), :visible}
+
+      {opening_index, _opening_length} ->
+        prefix = binary_part(line, 0, opening_index)
+        comment = binary_part(line, opening_index, byte_size(line) - opening_index)
+
+        case :binary.match(comment, "-->") do
+          :nomatch ->
+            {IO.iodata_to_binary([masked, prefix, mask(comment)]), :html_comment}
+
+          {closing_index, closing_length} ->
+            comment_length = closing_index + closing_length
+            remainder_index = opening_index + comment_length
+            remainder = binary_part(line, remainder_index, byte_size(line) - remainder_index)
+
+            mask_html_comments(
+              remainder,
+              :visible,
+              [masked, prefix, mask(binary_part(comment, 0, comment_length))]
+            )
+        end
+    end
+  end
+
+  defp mask_html_comments(line, :html_comment, masked) do
+    case :binary.match(line, "-->") do
+      :nomatch ->
+        {IO.iodata_to_binary([masked, mask(line)]), :html_comment}
+
+      {closing_index, closing_length} ->
+        comment_length = closing_index + closing_length
+        remainder = binary_part(line, comment_length, byte_size(line) - comment_length)
+
+        mask_html_comments(
+          remainder,
+          :visible,
+          [masked, mask(binary_part(line, 0, comment_length))]
+        )
+    end
+  end
+
+  defp mask(text), do: String.duplicate(" ", byte_size(text))
 
   defp ready_floor_exception_field_errors(section) do
     Enum.flat_map(@ready_floor_exception_fields, fn field ->

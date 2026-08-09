@@ -139,6 +139,52 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
   end
 
+  test "does not treat fenced ready-floor exception examples as rendered sections" do
+    for fence <- ["```text", "~~~text"] do
+      markdown =
+        empty_queue() <>
+          """
+
+          #{fence}
+          #{String.trim(ready_floor_exception())}
+          #{String.slice(fence, 0, 3)}
+          """
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Work requires at least 3 complete rows; found 0" in errors
+    end
+  end
+
+  test "does not treat HTML-commented ready-floor exception examples as rendered sections" do
+    markdown =
+      empty_queue() <>
+        """
+
+        <!--
+        #{String.trim(ready_floor_exception())}
+        -->
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 0" in errors
+  end
+
+  test "ignores non-rendered examples when one rendered floor exception exists" do
+    markdown =
+      empty_queue() <>
+        """
+
+        ```text
+        #{String.trim(ready_floor_exception())}
+        ```
+
+        <!-- #{String.trim(ready_floor_exception())} -->
+        """ <>
+        ready_floor_exception()
+
+    assert {:ok, %{ready_count: 0}} = Validator.validate(markdown)
+  end
+
   test "rejects a malformed stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> "\n## Ready Floor Exception"
 
@@ -435,6 +481,18 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     Reason: Only one independently shippable outcome is currently validated.
     Rejected split: The remaining validated work is internal to this outcome.
     Replenishment action: Audit current behavior for the next coherent outcome.
+    """
+  end
+
+  defp empty_queue do
+    """
+    # Work Dispatch Index
+
+    ## Ready Work
+
+    None.
+
+    ## Active Work
     """
   end
 
