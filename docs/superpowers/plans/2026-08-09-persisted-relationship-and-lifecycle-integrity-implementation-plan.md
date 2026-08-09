@@ -1,5 +1,8 @@
 # Core Persisted Lifecycle And Claim Integrity Implementation Plan
 
+**Status:** Complete on 2026-08-09. The two internal slices shipped and passed
+all focused, affected, and repository gates.
+
 **Goal:** Make PostgreSQL preserve two established core-data contracts that
 application code already enforces: terminal ingestion timestamps and
 product-attribute claim scope.

@@ -22,14 +22,15 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-Current ready storage-integrity plan:
+No implementation plan is currently ready. The most recently completed
+storage-integrity plan is:
 
 - `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
 
-The plan contains terminal ingestion timestamp and claim-scope enforcement as
+The plan completed terminal ingestion timestamp and claim-scope enforcement as
 internal slices of one core persisted-state outcome. The live queue carries a
-ready floor exception because no other independently shippable non-discussion
-candidate is currently validated; those slices must not be promoted separately.
+ready floor exception because no independently shippable non-discussion
+candidate is currently validated; completed slices must not be promoted again.
 
 The approved attribution observability and foundation-library program is
 dispatched through three reviewable plans:
@@ -567,7 +568,7 @@ batch and should not be recreated or promoted.
 | needs_decision | Product attribute claim companion storage integrity | ProductAttributeClaim changesets require numeric values to carry a unit, but the persisted `unit_id` foreign key intentionally uses `ON DELETE SET NULL`. | Not executable: a required-unit check would change established Unit deletion behavior. Decide whether Units remain deletable, numeric claims retain historical unit identity another way, or the application validation is relaxed before creating a replacement plan. |
 | needs_decision | Commerce identifier storage integrity | Final review proved the Merchant PCRE `$` accepts one trailing newline while the proposed PostgreSQL POSIX end anchor rejects it. | Not executable until exact merchant end-of-string semantics are chosen and application/database anchors are aligned. Revalidate whether merchant slugs and affiliate-network codes still form one coherent batch after that decision. |
 | needs_decision | Shared product slug storage integrity | Canonical product slugs and historical aliases share an Elixir regex whose `$` anchor accepts a final newline, while the proposed PostgreSQL POSIX check rejects it. | Not executable without choosing the canonical end-of-string semantics. Align both application and database regexes under an explicit identity-policy decision before creating a replacement plan; do not silently narrow accepted writes at PostgreSQL. |
-| promoted | Core persisted lifecycle and claim integrity | Application behavior already rejects terminal ingestion without completion timestamps and claims cross-wired across product or attribute scope, while PostgreSQL still permits those direct writes. | Promoted as one combined core-data outcome. Its two path-disjoint migration surfaces are internal slices with clean preflights and passing focused baselines; they share one direct-write storage-integrity acceptance boundary and must close once, not as separate micro-batches. |
+| completed | Core persisted lifecycle and claim integrity | Application behavior already rejected terminal ingestion without completion timestamps and claims cross-wired across product or attribute scope, while PostgreSQL still permitted those direct writes. | Completed on 2026-08-09 as one combined core-data outcome. Named database constraints and owning changeset mappings cover both internal slices while preserving running ingestion rows and claim-deletion cascades. Direct and owner suites passed 38 tests, affected suites passed 204 tests, the full backend passed 1,279 tests, and all remaining gates passed. |
 | deferred | Discussions and community implementation | The user explicitly reopens discussion/community product work. | All unstarted Discussions and Community implementation is deferred as of 2026-08-09 so execution can focus on the core project. This includes same-thread post-parent storage integrity. Completed discussion history and shipped behavior remain authoritative and must not be undone. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
 | deferred | Ingestion dashboard and operator pages | A new product decision identifies a concrete non-secret operator outcome beyond the completed unified CJ programs lifecycle page. | Do not infer a general dashboard program from the CJ programs page; source-health dashboards and unrelated operator pages remain deferred. |

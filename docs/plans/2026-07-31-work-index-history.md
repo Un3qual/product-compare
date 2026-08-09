@@ -3332,3 +3332,28 @@ the ingestion terminal-timestamp and specification claim-scope slices together
 as one substantial core-data batch. Completed community work and its historical
 verification remain unchanged; this decision defers future work rather than
 reverting shipped behavior.
+
+## Completed 2026-08-09 Core Persisted Lifecycle And Claim Integrity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
+
+PostgreSQL now requires `finished_at` for `succeeded` and `failed` ingestion
+runs while preserving unfinished `running` rows. Product-attribute current
+selections and specification corrections now reference claims through composite
+product, attribute, and claim foreign keys, preventing cross-wired claim scope
+while retaining claim-deletion cascades. The owning schemas map all three named
+constraints back to their established fields.
+
+The characterization milestone produced the six expected direct-write
+failures, then the direct-write and owner gate passed 38 tests and the affected
+domain gate passed 204 tests. The first complete run exposed one stale cleanup
+fixture that persisted an unfinished success; correcting its terminal timestamp
+made the focused cleanup regression and definitive 1,279-test backend run pass.
+Typecheck, quality, formatting, queue validation, and diff hygiene also passed.
+Implementation commits were `ef71ef57`, `4f44f39d`, and `d1d57f4e`.
+
+No new implementation row was promoted at closeout. Identifier end-anchor and
+claim-unit deletion candidates still need product decisions, Discussions and
+Community remain deferred, and the live queue records the resulting no-filler
+ready-floor exception.

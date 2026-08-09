@@ -2,12 +2,11 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
-- Last verified: 2026-08-06 preflights and focused baselines from the two
-  retained core-data slices.
+- Last verified: 2026-08-09 implementation and complete repository gates.
 
 ## Target Outcome
 
@@ -25,14 +24,19 @@ storage-integrity outcome with a meaningful characterization milestone,
 implementation milestone, and combined parity gate. The former discussion
 slice is deferred by product direction and is not part of this batch.
 
-## Validated Evidence
+## Completed Outcome
 
-- Ingestion preflight found no terminal row with a null `finished_at`, and the
-  41-test focused baseline passed. Only `succeeded` and `failed` require a
-  timestamp; `running` remains unfinished.
-- Both claim-dependent mismatch counts were zero, the original claim foreign
-  keys retain `ON DELETE CASCADE`, and the 15-test current-selection/correction
-  baseline passed.
+- PostgreSQL now rejects a `succeeded` or `failed` ingestion run without
+  `finished_at` under `ingestion_runs_terminal_finished_at_required`; `running`
+  rows remain allowed to be unfinished.
+- Both claim-dependent tables now use composite foreign keys that require the
+  referenced claim to carry the same product and attribute. Claim deletion
+  still cascades, and the owning changesets map the named constraints.
+- Direct-write and owner suites passed 38 tests; the affected domain suite
+  passed 204 tests; and the corrected CJ cleanup fixture passed its focused
+  regression.
+- The complete backend passed 1,279 tests with no failures. Typecheck, quality,
+  formatting, queue validation, and diff hygiene also passed.
 
 ## Boundaries
 
@@ -55,8 +59,8 @@ slice is deferred by product direction and is not part of this batch.
 - full backend tests, type checks, quality, formatting, queue validation, and
   diff hygiene
 
-## Exit Condition
+## Remaining Work
 
-Both core persisted-state gaps reject invalid direct writes under their exact
-named constraints, every accepted and deletion control remains intact, and the
-combined affected and repository gates pass.
+Commerce and shared product slug end-anchor semantics and numeric-claim unit
+deletion policy still need product decisions. Discussions and Community work
+remains explicitly deferred.
