@@ -127,6 +127,18 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
   end
 
+  test "accepts a complete ready-floor exception with a closed ATX heading" do
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "## Ready Floor Exception ##"
+        )
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
   test "rejects a malformed stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> "\n## Ready Floor Exception"
 
@@ -136,6 +148,19 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
   test "rejects a stale ready-floor exception once the floor is restored" do
     markdown = queue_with_rows(3) <> ready_floor_exception()
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
+  test "rejects a stale ready-floor exception with a closed ATX heading" do
+    markdown =
+      queue_with_rows(3) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "## Ready Floor Exception ##"
+        )
 
     assert {:error, errors} = Validator.validate(markdown)
     assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors

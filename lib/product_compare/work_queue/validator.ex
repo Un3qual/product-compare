@@ -3,6 +3,15 @@ defmodule ProductCompare.WorkQueue.Validator do
 
   @minimum_ready_rows 3
   @ready_floor_exception_fields ["Reason", "Rejected split", "Replenishment action"]
+  @ready_floor_exception_heading_source ~S"## Ready Floor Exception(?:[ \t]+#+)?[ \t]*\r?"
+  @ready_floor_exception_heading_regex Regex.compile!(
+                                         "^#{@ready_floor_exception_heading_source}$",
+                                         "m"
+                                       )
+  @ready_floor_exception_body_regex Regex.compile!(
+                                      "^#{@ready_floor_exception_heading_source}\\n(?<body>.*?)(?=^## |\\z)",
+                                      "ms"
+                                    )
   @required_markers [
     "Status:",
     "Lane:",
@@ -206,7 +215,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_floor_exception(markdown) do
-    case Regex.scan(~r/^## Ready Floor Exception[ \t]*\r?$/m, markdown) do
+    case Regex.scan(@ready_floor_exception_heading_regex, markdown) do
       [] -> :missing
       [_heading] -> ready_floor_exception_body(markdown)
       _duplicates -> :duplicate
@@ -214,9 +223,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_floor_exception_body(markdown) do
-    case Regex.run(~r/^## Ready Floor Exception[ \t]*\r?\n(?<body>.*?)(?=^## |\z)/ms, markdown,
-           capture: :all_names
-         ) do
+    case Regex.run(@ready_floor_exception_body_regex, markdown, capture: :all_names) do
       [body] -> {:ok, body}
       _ -> :malformed
     end
