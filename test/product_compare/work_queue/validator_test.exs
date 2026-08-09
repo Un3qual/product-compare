@@ -32,6 +32,23 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 0}} = Validator.validate(markdown <> ready_floor_exception())
   end
 
+  test "rejects duplicate ready-floor exception sections for an empty dispatch surface" do
+    markdown = """
+    # Work Dispatch Index
+
+    ## Ready Work
+
+    None.
+
+    ## Active Work
+    """
+
+    duplicate = markdown <> ready_floor_exception() <> "## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(duplicate)
+    assert "Ready Floor Exception must appear exactly once" in errors
+  end
+
   test "rejects empty-state language when a ready row exists under a floor exception" do
     markdown =
       String.replace(
@@ -100,6 +117,21 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
 
     assert {:error, errors} = Validator.validate(markdown)
     assert "Ready Floor Exception must appear exactly once" in errors
+  end
+
+  test "accepts a complete ready-floor exception with CRLF line endings" do
+    markdown =
+      (queue_with_rows(1) <> ready_floor_exception())
+      |> String.replace("\n", "\r\n")
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
+  test "rejects a malformed stale ready-floor exception once the floor is restored" do
+    markdown = queue_with_rows(3) <> "\n## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
   end
 
   test "rejects a stale ready-floor exception once the floor is restored" do

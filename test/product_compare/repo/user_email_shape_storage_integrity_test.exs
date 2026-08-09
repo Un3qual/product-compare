@@ -19,7 +19,7 @@ defmodule ProductCompare.Repo.UserEmailShapeStorageIntegrityTest do
       changeset =
         User.registration_changeset(%User{}, %{
           email: email,
-          password: "supersecretpass123"
+          password: valid_registration_password()
         })
 
       assert changeset.valid?
@@ -32,7 +32,7 @@ defmodule ProductCompare.Repo.UserEmailShapeStorageIntegrityTest do
       changeset =
         User.registration_changeset(%User{}, %{
           email: "before#{whitespace}after@example.com",
-          password: "supersecretpass123"
+          password: valid_registration_password()
         })
 
       refute changeset.valid?
@@ -67,6 +67,10 @@ defmodule ProductCompare.Repo.UserEmailShapeStorageIntegrityTest do
       """,
       [email, @fixed_password_hash, @fixed_inserted_at]
     )
+  end
+
+  defp valid_registration_password do
+    String.duplicate("fixture-value-", 2)
   end
 
   defp assert_check_violation(result, constraint) do

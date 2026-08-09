@@ -55,13 +55,14 @@ defmodule ProductCompare.WorkQueue.Validator do
   defp validate_ready_section(markdown, additional_errors) do
     with {:ok, ready_section} <- ready_section(markdown) do
       rows = ready_rows(ready_section)
+      ready_floor_exception = ready_floor_exception(markdown)
 
       errors =
         terminal_status_errors(markdown) ++
-          ready_count_errors(markdown, rows) ++
+          ready_count_errors(ready_floor_exception, rows) ++
           incomplete_row_errors(rows) ++
           trailing_row_content_errors(rows) ++
-          empty_state_errors(markdown, ready_section, rows) ++
+          empty_state_errors(ready_floor_exception, ready_section, rows) ++
           additional_errors.(rows)
 
       case errors do
@@ -180,15 +181,15 @@ defmodule ProductCompare.WorkQueue.Validator do
     |> List.flatten()
   end
 
-  defp ready_count_errors(markdown, rows) do
-    case {length(rows) >= @minimum_ready_rows, ready_floor_exception(markdown)} do
+  defp ready_count_errors(ready_floor_exception, rows) do
+    case {length(rows) >= @minimum_ready_rows, ready_floor_exception} do
       {_floor_reached?, :duplicate} ->
         ["Ready Floor Exception must appear exactly once"]
 
       {true, :missing} ->
         []
 
-      {true, {:ok, _section}} ->
+      {true, _present} ->
         ["Ready Floor Exception must be removed when at least 3 rows are ready"]
 
       {false, :missing} ->
@@ -196,13 +197,16 @@ defmodule ProductCompare.WorkQueue.Validator do
           "Ready Work requires at least #{@minimum_ready_rows} complete rows; found #{length(rows)}"
         ]
 
+      {false, :malformed} ->
+        ["Ready Floor Exception is malformed"]
+
       {false, {:ok, section}} ->
         ready_floor_exception_field_errors(section)
     end
   end
 
   defp ready_floor_exception(markdown) do
-    case Regex.scan(~r/^## Ready Floor Exception[ \t]*$/m, markdown) do
+    case Regex.scan(~r/^## Ready Floor Exception[ \t]*\r?$/m, markdown) do
       [] -> :missing
       [_heading] -> ready_floor_exception_body(markdown)
       _duplicates -> :duplicate
@@ -214,14 +218,14 @@ defmodule ProductCompare.WorkQueue.Validator do
            capture: :all_names
          ) do
       [body] -> {:ok, body}
-      _ -> :missing
+      _ -> :malformed
     end
   end
 
   defp ready_floor_exception_field_errors(section) do
     Enum.flat_map(@ready_floor_exception_fields, fn field ->
       matches =
-        Regex.scan(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)$/m, section,
+        Regex.scan(~r/^#{Regex.escape(field)}:[ \t]*(?<value>[^\r\n]*)\r?$/m, section,
           capture: :all_names
         )
 
@@ -330,12 +334,12 @@ defmodule ProductCompare.WorkQueue.Validator do
     end)
   end
 
-  defp empty_state_errors(markdown, section, rows) do
+  defp empty_state_errors(ready_floor_exception, section, rows) do
     valid_empty_state? =
       rows == [] and
-        case ready_floor_exception(markdown) do
+        case ready_floor_exception do
           {:ok, exception} -> ready_floor_exception_field_errors(exception) == []
-          :missing -> false
+          _invalid -> false
         end
 
     if not valid_empty_state? and

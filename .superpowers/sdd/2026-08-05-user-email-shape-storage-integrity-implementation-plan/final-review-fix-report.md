@@ -34,7 +34,7 @@ email::text COLLATE "C" ~ '^[^[:space:]]+@[^[:space:]]+$'
 ```
 
 Only the affected migration was rolled back and reapplied in the test database
-with `Ecto.Migrator.down/4` and `Ecto.Migrator.up/5`; later migrations stayed
+with `Ecto.Migrator.down/4` and `Ecto.Migrator.up/4`; later migrations stayed
 applied and the development database was never reset or touched.
 
 ```bash
