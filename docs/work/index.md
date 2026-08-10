@@ -45,21 +45,17 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### Core Identifier And Reference Integrity
 
-Status: ready
+Status: active
+Worker: Codex `/root` in detached worktree `45ae`
 Lane: Core identifier and reference integrity
 Plan: `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
 Batch outcome: PostgreSQL and Ecto preserve exact canonical identifiers and
 numeric claim reference facts as one consolidated core persisted-integrity
 outcome.
-Next action: run the exact identifier, numeric-companion, numeric-range, and
-Unit-reference preflights, then add the two failing direct-write suites before
-changing production schemas or migrations.
+Next action: run the numeric-companion, numeric-range, and Unit-reference
+preflights, then characterize and enforce claim-reference integrity.
 Owned paths:
 
 - `priv/repo/migrations/20260809130100_enforce_core_identifier_storage_integrity.exs`
@@ -111,6 +107,10 @@ Exit condition: PostgreSQL and Ecto agree on every selected exact identifier,
 numeric claims retain consistent companions and referenced Units, all focused
 and repository gates pass, and one completion record closes the batch without
 promoting internal slices.
+
+## Ready Work
+
+None.
 
 ## Ready Floor Exception
 

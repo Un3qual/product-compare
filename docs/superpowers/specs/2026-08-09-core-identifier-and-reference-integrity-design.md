@@ -14,9 +14,11 @@ than separate queue batches.
 
 ## Product Decisions
 
-- Canonical route and provider identifiers reject trailing newlines and any
-  other character outside their existing ASCII formats. Elixir must use exact
-  whole-string matching, and PostgreSQL must enforce the same accepted set.
+- Canonical stored route and provider identifiers reject trailing newlines and
+  any other character outside their existing ASCII formats. Elixir must use
+  exact whole-string matching, and PostgreSQL must enforce the same accepted
+  set. Affiliate-network input retains its existing normalization before the
+  exact stored-code validation.
 - A specification unit cannot be deleted while a numeric product-attribute
   claim references it. Numeric claims retain both their source unit identity
   and canonical base value.
@@ -60,6 +62,10 @@ The batch has two implementation slices with one acceptance boundary.
 Use exact Elixir anchors (`\A` and `\z`) in each owning pattern. Do not add a
 shared regex module: product, taxonomy, commerce, affiliate, and snapshot
 owners retain their local contracts.
+
+`AffiliateNetwork.changeset/2` continues to normalize input before applying its
+exact pattern. A raw newline may therefore normalize away at the application
+boundary, while malformed stored codes remain impossible through PostgreSQL.
 
 Add named PostgreSQL checks for:
 

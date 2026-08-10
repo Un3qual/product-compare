@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
@@ -10,6 +10,20 @@
   `docs/superpowers/specs/2026-08-09-core-identifier-and-reference-integrity-design.md`
 - Last verified: 2026-08-09 against current schemas, migrations, tests, and the
   approved identifier and Unit-retention decisions.
+
+## Execution Evidence
+
+- Exact identifier preflights returned zero incompatible rows for products,
+  aliases, reservations, merchants, affiliate networks, and taxonomy SEO
+  slugs.
+- RED: the focused suite reported 7 expected failures across exact application
+  anchors and the six missing storage checks.
+- GREEN: the focused suite passed 10 tests; the identifier regression set
+  passed 54 tests across product lookup, merchant, affiliate, taxonomy, SEO,
+  and comparison snapshot behavior.
+- The test database was rebuilt before implementation because migration status
+  proved it retained obsolete migration identities; the clean baseline then
+  passed 1,305 tests.
 
 ## Target Outcome
 
@@ -19,8 +33,10 @@ facts, and all changes ship as one reviewer-sized persisted-integrity batch.
 
 ## Approved Decisions
 
-- Product, historical-alias, merchant, taxonomy SEO, and affiliate-network
-  identifiers reject trailing newlines through exact whole-string semantics.
+- Product, historical-alias, merchant, taxonomy SEO, and stored
+  affiliate-network identifiers reject trailing newlines through exact
+  whole-string semantics; affiliate-network input retains normalization before
+  stored-code validation.
 - Comparison snapshot token changesets and lookup filtering use the exact
   already-persisted token contract.
 - A Unit cannot be deleted while a numeric product-attribute claim references

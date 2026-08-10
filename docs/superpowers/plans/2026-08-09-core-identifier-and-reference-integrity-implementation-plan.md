@@ -10,7 +10,7 @@
 
 ## Global Constraints
 
-- Canonical route and provider identifiers reject trailing newlines and preserve their existing ASCII formats.
+- Canonical stored route and provider identifiers reject trailing newlines and preserve their existing ASCII formats; affiliate-network input retains its existing normalization before stored-code validation.
 - Referenced specification Units cannot be deleted; unreferenced Units retain current deletion behavior.
 - Never rewrite or delete durable data to make a migration pass. Stop on any nonzero preflight and report stable row identifiers.
 - Add no length limit, trimming, normalization, Unicode policy, finiteness policy, identifier framework, or generic storage abstraction.
@@ -147,7 +147,7 @@
 
 - [ ] **Step 2: Write failing identifier tests**
 
-  Create an async `ProductCompare.DataCase` suite that uses real fixtures and `Repo.query/2`. Assert trailing-newline changesets are invalid for Product, ProductSlugAlias, Merchant, AffiliateNetwork, Taxon, and a 42-character-plus-newline ComparisonSnapshot token. Assert direct SQL rejects a space-containing value for each of the six migrated tables under these exact names:
+  Create an async `ProductCompare.DataCase` suite that uses real fixtures and `Repo.query/2`. Assert trailing-newline changesets are invalid for Product, ProductSlugAlias, Merchant, Taxon, and a 42-character-plus-newline ComparisonSnapshot token. Assert AffiliateNetwork continues normalizing raw input before exact validation. Assert direct SQL rejects a space-containing value for each of the six migrated tables under these exact names:
 
   ```elixir
   @identifier_constraints %{
@@ -217,7 +217,8 @@
 
   Add the six owning `check_constraint/3` mappings. Add
   `check_constraint(:public_token, name: :comparison_snapshots_public_token_format)`
-  to the snapshot publish changeset. Do not introduce a shared pattern module.
+  to the snapshot publish changeset. Preserve `AffiliateNetwork.normalize_code/1`
+  and its call order. Do not introduce a shared pattern module.
 
 - [ ] **Step 6: Apply and verify GREEN**
 
