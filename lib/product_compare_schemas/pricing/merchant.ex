@@ -19,7 +19,8 @@ defmodule ProductCompareSchemas.Pricing.Merchant do
     merchant
     |> cast(attrs, [:name, :domain, :slug])
     |> validate_required([:name, :domain, :slug])
-    |> validate_format(:slug, ~r/^[a-z0-9]+(?:-[a-z0-9]+)*$/)
+    |> validate_format(:slug, ~r/\A[a-z0-9]+(?:-[a-z0-9]+)*\z/)
+    |> check_constraint(:slug, name: :merchants_slug_format_check)
     |> unique_constraint(:name)
     |> unique_constraint(:domain)
     |> unique_constraint(:slug)

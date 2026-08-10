@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Schema
+
   @source_types [:scrape, :user, :derived, :editorial]
 
   @type t :: %__MODULE__{}
@@ -23,10 +25,13 @@ defmodule ProductCompareSchemas.Taxonomy.ProductTaxon do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(product_taxon, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
+
     product_taxon
     |> cast(attrs, [:product_id, :taxon_id, :source_type, :confidence, :created_by])
     |> validate_required([:product_id, :taxon_id, :source_type])
     |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
+    |> check_constraint(:confidence, name: :product_taxons_confidence_range)
     |> unique_constraint([:product_id, :taxon_id], name: :product_taxons_product_taxon_uq)
   end
 end

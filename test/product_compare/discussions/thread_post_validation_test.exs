@@ -2,7 +2,12 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
   use ProductCompare.DataCase, async: false
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [assert_blocked_by: 2, capture_select_queries: 1]
+    only: [
+      assert_backend_blocked: 1,
+      assert_blocked_by: 2,
+      assert_not_blocked_by: 2,
+      capture_select_queries: 1
+    ]
 
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -180,6 +185,56 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
 
       assert changeset.valid?
       assert queries == []
+
+      {self_parent_changeset, self_parent_queries} =
+        capture_select_queries(fn ->
+          ThreadPost.changeset(post, %{parent_post_id: post.id, body_md: "Updated"})
+        end)
+
+      refute self_parent_changeset.valid?
+      assert "cannot create a cycle" in errors_on(self_parent_changeset).parent_post_id
+      assert self_parent_queries == []
+
+      assert Enum.any?(Ecto.Changeset.constraints(self_parent_changeset), fn mapping ->
+               mapping.type == :check and
+                 mapping.constraint == "thread_posts_parent_not_self_check"
+             end)
+    end
+
+    test "direct post updates enforce the parent-not-self check in PostgreSQL" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "thread-self-parent-constraint-product"})
+
+      {:ok, thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Self-parent constraint",
+          created_by: user.id
+        })
+
+      {:ok, root_post} =
+        Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: "Root"})
+
+      {:ok, child_post} =
+        Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: "Child"})
+
+      assert {:ok, %{num_rows: 1}} =
+               Repo.query(
+                 "UPDATE thread_posts SET parent_post_id = $1 WHERE id = $2",
+                 [root_post.id, child_post.id]
+               )
+
+      assert {:error,
+              %Postgrex.Error{
+                postgres: %{
+                  code: :check_violation,
+                  constraint: "thread_posts_parent_not_self_check"
+                }
+              }} =
+               Repo.query(
+                 "UPDATE thread_posts SET parent_post_id = id WHERE id = $1",
+                 [child_post.id]
+               )
     end
 
     test "rejects a parent from another thread" do
@@ -202,6 +257,88 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
                Discussions.update_post(post_a, %{parent_post_id: post_b.id})
 
       assert "must belong to the same thread" in errors_on(changeset).parent_post_id
+    end
+
+    test "post deletion returns a changeset error when the post was already deleted" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "stale-post-deletion-product"})
+
+      {:ok, thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Stale deletion",
+          created_by: user.id
+        })
+
+      {:ok, post} =
+        Discussions.create_post(%{
+          thread_id: thread.id,
+          user_id: user.id,
+          body_md: "Delete once"
+        })
+
+      assert {:ok, %ThreadPost{id: deleted_post_id}} = Discussions.delete_post(post)
+      assert deleted_post_id == post.id
+
+      assert {:error, changeset} = Discussions.delete_post(post)
+      assert "does not exist" in errors_on(changeset).id
+    end
+
+    test "concurrent post deletions serialize to one deletion and one changeset error" do
+      fixture = create_committed_cycle_fixture()
+      on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              Repo.one!(
+                from thread in ProductThread,
+                  where: thread.id == ^fixture.thread.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, :concurrent_delete_thread_lock_held)
+
+              receive do
+                :release_concurrent_delete_thread_lock -> :ok
+              after
+                5_000 -> flunk("timed out waiting to release the concurrent delete thread lock")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive :concurrent_delete_thread_lock_held
+
+      delete_tasks =
+        for label <- [:first, :second] do
+          Task.async(fn ->
+            Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+              send(parent, {:concurrent_delete_started, label, backend_pid})
+              Discussions.delete_post(fixture.post_a)
+            end)
+          end)
+        end
+
+      for label <- [:first, :second] do
+        assert_receive {:concurrent_delete_started, ^label, delete_backend_pid}
+        assert_backend_blocked(delete_backend_pid)
+      end
+
+      send(lock_holder.pid, :release_concurrent_delete_thread_lock)
+      assert {:ok, :ok} = Task.await(lock_holder)
+
+      results = Enum.map(delete_tasks, &Task.await/1)
+
+      assert [{:ok, %ThreadPost{id: deleted_post_id}}] =
+               Enum.filter(results, &match?({:ok, %ThreadPost{}}, &1))
+
+      assert deleted_post_id == fixture.post_a.id
+      assert [{:error, changeset}] = Enum.filter(results, &match?({:error, _changeset}, &1))
+      assert "does not exist" in errors_on(changeset).id
     end
 
     test "serializes inverse parent updates so both cannot commit" do
@@ -260,6 +397,161 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       assert persisted_a.parent_post_id == fixture.post_b.id
       assert persisted_b.parent_post_id == nil
     end
+
+    test "direct post creation revalidates its parent after acquiring the thread lock" do
+      fixture = create_committed_cycle_fixture()
+      on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
+
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+
+              Repo.one!(
+                from thread in ProductThread,
+                  where: thread.id == ^fixture.thread.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, {:create_thread_lock_held, backend_pid})
+
+              receive do
+                :move_parent ->
+                  Repo.update_all(
+                    from(post in ThreadPost, where: post.id == ^fixture.post_a.id),
+                    set: [thread_id: fixture.other_thread.id]
+                  )
+              after
+                5_000 -> flunk("timed out waiting to move the candidate parent")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive {:create_thread_lock_held, lock_backend_pid}
+
+      create_task =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+            send(parent, {:direct_create_started, backend_pid})
+
+            Discussions.create_post(%{
+              thread_id: fixture.thread.id,
+              parent_post_id: fixture.post_a.id,
+              user_id: fixture.user.id,
+              body_md: "Concurrent direct post"
+            })
+          end)
+        end)
+
+      assert_receive {:direct_create_started, create_backend_pid}
+      assert_blocked_by(create_backend_pid, lock_backend_pid)
+
+      send(lock_holder.pid, :move_parent)
+      assert {:ok, {1, nil}} = Task.await(lock_holder)
+
+      assert {:error, changeset} = Task.await(create_task)
+      assert "must belong to the same thread" in errors_on(changeset).parent_post_id
+
+      refute Repo.exists?(
+               from post in ThreadPost,
+                 where: post.thread_id == ^fixture.thread.id,
+                 where: post.body_md == "Concurrent direct post"
+             )
+    end
+
+    test "post deletion waits for the thread lock before locking an accepted post" do
+      fixture = create_committed_cycle_fixture()
+      on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
+
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.update_all(
+          from(thread in ProductThread, where: thread.id == ^fixture.thread.id),
+          set: [accepted_post_id: fixture.post_a.id]
+        )
+      end)
+
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+
+              Repo.one!(
+                from thread in ProductThread,
+                  where: thread.id == ^fixture.thread.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, {:delete_thread_lock_held, backend_pid})
+
+              receive do
+                :release_delete_thread_lock -> :ok
+              after
+                5_000 -> flunk("timed out waiting to release the held thread lock")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive {:delete_thread_lock_held, lock_backend_pid}
+
+      delete_task =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+            send(parent, {:delete_post_started, backend_pid})
+            Discussions.delete_post(fixture.post_a)
+          end)
+        end)
+
+      assert_receive {:delete_post_started, delete_backend_pid}
+      assert_blocked_by(delete_backend_pid, lock_backend_pid)
+
+      post_lock_probe =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+              send(parent, {:post_lock_probe_started, backend_pid})
+
+              probed_post =
+                Repo.one(
+                  from post in ThreadPost,
+                    where: post.id == ^fixture.post_a.id,
+                    lock: "FOR UPDATE"
+                )
+
+              send(parent, {:post_lock_probe_acquired, backend_pid, probed_post.id})
+
+              receive do
+                :release_post_lock_probe -> probed_post
+              after
+                5_000 -> flunk("timed out waiting to release the post-lock probe")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive {:post_lock_probe_started, probe_backend_pid}, 2_000
+      assert_not_blocked_by(probe_backend_pid, delete_backend_pid)
+      assert_receive {:post_lock_probe_acquired, ^probe_backend_pid, probed_post_id}, 2_000
+
+      send(post_lock_probe.pid, :release_post_lock_probe)
+      assert {:ok, %ThreadPost{id: ^probed_post_id}} = Task.await(post_lock_probe)
+
+      send(lock_holder.pid, :release_delete_thread_lock)
+      assert {:ok, :ok} = Task.await(lock_holder)
+      assert {:ok, %ThreadPost{id: deleted_post_id}} = Task.await(delete_task)
+
+      assert probed_post_id == deleted_post_id
+    end
   end
 
   defp start_unboxed_update(parent, label, post, attrs) do
@@ -292,10 +584,18 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       {:ok, post_b} =
         Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: "B"})
 
+      {:ok, other_thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Other thread",
+          created_by: user.id
+        })
+
       %{
         brand_id: product.brand_id,
         post_a: post_a,
         post_b: post_b,
+        other_thread: other_thread,
         product: product,
         taxon_id: taxon.id,
         taxonomy_id: taxon.taxonomy_id,

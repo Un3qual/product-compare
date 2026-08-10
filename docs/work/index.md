@@ -53,27 +53,18 @@ None.
 
 ## Ready Floor Exception
 
-Reason: No independently shippable non-discussion outcome is currently
-validated; identifier and claim-unit candidates still require product
-decisions, and discussion work is explicitly deferred.
-Rejected split: Completed core-integrity slices, per-file follow-ups, and
-deferred discussion work cannot be reused as queue filler.
-Replenishment action: Audit current core product behavior and architecture gaps
-for the next substantial outcome, or resolve one of the recorded core product
-decisions before dispatch resumes.
+Reason: No additional independently shippable outcome is currently validated;
+provider/operator and new discussion product work remain explicitly deferred.
+Rejected split: The completed numeric, cross-field, mapping, migration,
+transaction, and guidance slices cannot be reused as queue filler or separate
+batches.
+Replenishment action: Audit current product behavior, code, tests, and
+architecture gaps for the next independently shippable outcome before dispatch
+resumes.
 
 ## Needs Decision Work
 
-### Commerce Identifier Storage Integrity
-
-Status: needs_decision
-Lane: Commerce identifier storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
-Decision: choose whether canonical merchant slugs reject a single trailing
-newline, then align the application and database end anchors before replanning.
-Evidence: `Merchant.changeset/2` uses PCRE `$` and accepts `"north-main\n"`,
-while the proposed PostgreSQL slug predicate rejects that value. The current
-draft is not executable and cannot count toward the ready-row floor.
+None.
 
 ## Blocked Work
 

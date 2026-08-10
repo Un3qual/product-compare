@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Schema
+
   @source_types [:scrape, :user, :import, :derived]
   @type t :: %__MODULE__{}
 
@@ -22,6 +24,8 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(attribute, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
+
     attribute
     |> cast(attrs, [
       :snapshot_product_id,
@@ -45,10 +49,14 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute do
       :source_type
     ])
     |> validate_number(:position, greater_than: 0)
+    |> validate_number(:confidence, greater_than_or_equal_to: 0, less_than_or_equal_to: 1)
     |> unique_constraint([:snapshot_product_id, :position],
       name: :snapshot_attributes_product_position_uq
     )
     |> foreign_key_constraint(:snapshot_product_id)
     |> check_constraint(:position, name: :comparison_snapshot_attributes_position)
+    |> check_constraint(:confidence,
+      name: :comparison_snapshot_attributes_confidence_range
+    )
   end
 end

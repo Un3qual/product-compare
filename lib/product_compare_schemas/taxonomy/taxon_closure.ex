@@ -19,6 +19,7 @@ defmodule ProductCompareSchemas.Taxonomy.TaxonClosure do
     |> cast(attrs, [:ancestor_id, :descendant_id, :depth])
     |> validate_required([:ancestor_id, :descendant_id, :depth])
     |> validate_number(:depth, greater_than_or_equal_to: 0)
+    |> check_constraint(:depth, name: :taxon_closure_depth_nonnegative)
     |> unique_constraint([:ancestor_id, :descendant_id], name: :taxon_closure_anc_desc_uq)
   end
 end

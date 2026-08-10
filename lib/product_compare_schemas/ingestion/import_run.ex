@@ -94,12 +94,16 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> validate_counts()
     |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
     |> validate_sha256_digest(:scope_fingerprint)
+    |> validate_terminal_finished_at()
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:page_size, name: :ingestion_runs_page_size_positive)
     |> check_constraint(:pages_requested, name: :ingestion_runs_pages_requested_positive)
     |> check_constraint(:finished_at, name: :ingestion_runs_terminal_finished_at_required)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
+    |> check_constraint(:offers_deactivated,
+      name: :ingestion_runs_offers_deactivated_non_negative
+    )
     |> check_constraint(:scope_fingerprint, name: :ingestion_runs_scope_fingerprint_sha256_length)
   end
 
@@ -123,6 +127,15 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     Enum.reduce(@count_fields, changeset, fn field, changeset ->
       validate_number(changeset, field, greater_than_or_equal_to: 0)
     end)
+  end
+
+  defp validate_terminal_finished_at(changeset) do
+    if get_field(changeset, :status) in [:succeeded, :failed] and
+         is_nil(get_field(changeset, :finished_at)) do
+      add_error(changeset, :finished_at, "is invalid")
+    else
+      changeset
+    end
   end
 
   defp validate_sha256_digest(changeset, field) do

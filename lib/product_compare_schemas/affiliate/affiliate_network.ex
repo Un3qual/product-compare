@@ -17,7 +17,8 @@ defmodule ProductCompareSchemas.Affiliate.AffiliateNetwork do
     |> cast(attrs, [:code, :name])
     |> put_default_code()
     |> validate_required([:code, :name])
-    |> validate_format(:code, ~r/^[a-z0-9]+(?:_[a-z0-9]+)*$/)
+    |> validate_format(:code, ~r/\A[a-z0-9]+(?:_[a-z0-9]+)*\z/)
+    |> check_constraint(:code, name: :affiliate_networks_code_format_check)
     |> unique_constraint(:code)
     |> unique_constraint(:name)
   end

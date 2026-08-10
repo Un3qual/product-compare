@@ -19,6 +19,7 @@ defmodule ProductCompareSchemas.Catalog.SavedComparisonItem do
     |> cast(attrs, [:saved_comparison_set_id, :product_id, :position])
     |> validate_required([:saved_comparison_set_id, :product_id, :position])
     |> validate_number(:position, greater_than_or_equal_to: 1, less_than_or_equal_to: 3)
+    |> check_constraint(:position, name: :saved_comparison_items_position_range)
     |> assoc_constraint(:saved_comparison_set)
     |> assoc_constraint(:product)
     |> unique_constraint(:position, name: :saved_comparison_items_set_position_uq)

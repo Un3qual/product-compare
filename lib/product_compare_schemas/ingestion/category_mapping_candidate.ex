@@ -38,6 +38,9 @@ defmodule ProductCompareSchemas.Ingestion.CategoryMappingCandidate do
       :last_seen_at
     ])
     |> validate_number(:observation_count, greater_than: 0)
+    |> check_constraint(:observation_count,
+      name: :category_mapping_candidates_observation_count_positive
+    )
     |> unique_constraint([:source_id, :normalized_path],
       name: :category_mapping_candidates_source_path_uq
     )

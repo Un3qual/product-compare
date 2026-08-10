@@ -1,10 +1,12 @@
 defmodule ProductCompare.Discussions.CommunityTrustTest do
   use ProductCompare.DataCase, async: false
 
+  import Ecto.Query
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias Ecto.Adapters.SQL
   alias ProductCompare.Discussions
+  alias ProductCompare.Discussions.Submissions.WriteLimits
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -169,6 +171,17 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
       count: 1
     }
 
+    assert CommunityWriteWindow.changeset(%CommunityWriteWindow{}, attrs).valid?
+
+    invalid_hour_changeset =
+      CommunityWriteWindow.changeset(%CommunityWriteWindow{}, %{
+        attrs
+        | window_started_at: ~U[2026-07-20 19:01:00Z]
+      })
+
+    refute invalid_hour_changeset.valid?
+    assert "is invalid" in errors_on(invalid_hour_changeset).window_started_at
+
     assert {:ok, window} =
              %CommunityWriteWindow{} |> CommunityWriteWindow.changeset(attrs) |> Repo.insert()
 
@@ -194,6 +207,32 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
              |> Repo.insert()
 
     assert DateTime.compare(utc_window.window_started_at, window_started_at) == :eq
+
+    assert {:ok, _result} =
+             insert_community_write_window(user.id, "review", ~U[2026-07-20 20:00:00Z])
+
+    assert {:error,
+            %Postgrex.Error{
+              postgres: %{
+                code: :check_violation,
+                constraint: "community_write_windows_hour_check"
+              }
+            }} =
+             insert_community_write_window(user.id, "report", ~U[2026-07-20 20:01:00Z])
+  end
+
+  test "write limit increments require an outer transaction before mutation" do
+    Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+      user = AccountsFixtures.user_fixture()
+
+      try do
+        assert_raise ArgumentError, fn -> WriteLimits.increment!(user.id, :review) end
+        assert Repo.get_by(CommunityWriteWindow, user_id: user.id) == nil
+      after
+        Repo.delete_all(from window in CommunityWriteWindow, where: window.user_id == ^user.id)
+        Repo.delete!(user)
+      end
+    end)
   end
 
   test "only published reviews affect public lists and aggregates, and offer selection is not purchase proof" do
@@ -1276,6 +1315,18 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     |> Repo.update_all(set: [inserted_at: inserted_at])
 
     Repo.get!(schema, id)
+  end
+
+  defp insert_community_write_window(user_id, action_kind, window_started_at) do
+    Repo.query(
+      """
+      INSERT INTO community_write_windows (
+        user_id, action_kind, window_started_at, count, inserted_at, updated_at
+      )
+      VALUES ($1, $2, $3, 1, now(), now())
+      """,
+      [user_id, action_kind, window_started_at]
+    )
   end
 
   defp emoji_zwj_text(code_point_count) do

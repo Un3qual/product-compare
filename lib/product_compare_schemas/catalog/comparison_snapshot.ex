@@ -35,9 +35,10 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot do
     |> validate_required([:public_token, :user_id, :version, :captured_at])
     |> validate_number(:version, greater_than: 0)
     |> validate_length(:public_token, is: 43)
-    |> validate_format(:public_token, ~r/^[A-Za-z0-9_-]+$/)
+    |> validate_format(:public_token, ~r/\A[A-Za-z0-9_-]+\z/)
     |> validate_length(:title, min: 1, max: 120)
     |> unique_constraint(:public_token)
+    |> check_constraint(:public_token, name: :comparison_snapshots_public_token_format)
     |> check_constraint(:version, name: :comparison_snapshots_version_positive)
     |> assoc_constraint(:user)
   end

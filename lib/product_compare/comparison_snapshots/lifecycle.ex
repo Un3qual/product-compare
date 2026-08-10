@@ -19,7 +19,7 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
   }
 
   @profiles [:lowest_current_cost, :best_value]
-  @public_token_pattern ~r/^[A-Za-z0-9_-]{43}$/
+  @public_token_pattern ~r/\A[A-Za-z0-9_-]{43}\z/
 
   @spec publish(pos_integer(), map(), keyword()) ::
           {:ok, ComparisonSnapshot.t()}

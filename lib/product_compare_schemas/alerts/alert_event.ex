@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
@@ -29,6 +30,16 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(event, attrs) do
+    attrs =
+      Schema.normalize_non_finite_decimals(attrs, [
+        :item_price,
+        :shipping,
+        :landed_price,
+        :baseline_landed_price,
+        :target_amount,
+        :percentage_drop
+      ])
+
     event
     |> cast(attrs, [
       :watch_rule_id,
@@ -58,10 +69,17 @@ defmodule ProductCompareSchemas.Alerts.AlertEvent do
       :landed_price,
       :observed_at
     ])
+    |> validate_number(:item_price, greater_than_or_equal_to: 0)
+    |> validate_number(:shipping, greater_than_or_equal_to: 0)
+    |> validate_number(:landed_price, greater_than_or_equal_to: 0)
+    |> validate_number(:baseline_landed_price, greater_than_or_equal_to: 0)
+    |> validate_number(:target_amount, greater_than_or_equal_to: 0)
+    |> validate_number(:percentage_drop, greater_than: 0, less_than_or_equal_to: 100)
     |> unique_constraint([:watch_rule_id, :triggering_price_point_id],
       name: :alert_events_watch_observation_uq
     )
     |> foreign_key_constraint(:currency, name: :alert_events_currency_id_fkey)
+    |> check_constraint(:item_price, name: :alert_events_numeric_evidence_bounds)
   end
 
   @spec read_changeset(t(), DateTime.t()) :: Ecto.Changeset.t()

@@ -34,12 +34,22 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceLink do
       :is_active
     ])
     |> validate_required([:merchant_id, :destination_url, :link_type])
+    |> validate_affiliate_program()
     |> validate_destination_url()
     |> validate_campaign_params()
     |> unique_constraint(:destination_url, name: :commerce_links_business_key_uq)
     |> foreign_key_constraint(:merchant_id)
     |> foreign_key_constraint(:affiliate_program_id)
     |> check_constraint(:affiliate_program_id, name: :commerce_links_affiliate_program_check)
+  end
+
+  defp validate_affiliate_program(changeset) do
+    if get_field(changeset, :link_type) == :affiliate and
+         is_nil(get_field(changeset, :affiliate_program_id)) do
+      add_error(changeset, :affiliate_program_id, "is invalid")
+    else
+      changeset
+    end
   end
 
   defp validate_campaign_params(changeset) do

@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Schema
+
   @source_types [:scrape, :user, :import, :derived]
   @statuses [:proposed, :accepted, :rejected, :superseded]
   @typed_value_fields [
@@ -60,6 +62,8 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(claim, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
+
     claim
     |> cast(attrs, [
       :product_id,
@@ -90,8 +94,19 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     |> check_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_sha256_length)
     |> unique_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_uq)
     |> validate_single_typed_value()
+    |> check_constraint(:base, name: :product_attribute_claim_single_typed_value)
     |> validate_numeric_fields()
     |> validate_numeric_range_order()
+    |> check_constraint(:confidence, name: :product_attribute_claims_confidence_range)
+    |> check_constraint(:value_num,
+      name: :product_attribute_claims_numeric_companions_check
+    )
+    |> check_constraint(:value_num_base_min,
+      name: :product_attribute_claims_numeric_range_order_check
+    )
+    |> foreign_key_constraint(:unit_id,
+      name: :product_attribute_claims_unit_id_fkey
+    )
   end
 
   defp validate_single_typed_value(changeset) do

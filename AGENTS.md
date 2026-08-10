@@ -71,3 +71,23 @@
   - `docs/plans/2026-03-16-graphql-auth-migration-design.md`
   - `docs/plans/2026-03-16-graphql-auth-migration-implementation-plan.md`
 - If you touch auth during this migration, update those docs when the scope or completion state changes.
+
+## Database Constraint Contract
+
+- Every application-owned same-row PostgreSQL check constraint reachable
+  through an Ecto changeset must have equivalent pre-write validation, an
+  explicit `check_constraint/3` mapping, a changeset behavior test, and direct
+  database coverage in the same batch.
+- A trigger-maintained table without an application write changeset may be an
+  exception only when the originating values are validated and the trigger
+  executes inside the originating SQL statement; document and test the
+  exception.
+- Uniqueness, foreign keys, and cross-row invariants remain
+  database-authoritative. Do not replace them with a race-prone preflight
+  query.
+- When a write depends on an earlier read, perform the read, required row lock,
+  and write in one `Repo.transaction/2`, or use one atomic statement. A lone
+  constrained statement already has PostgreSQL statement atomicity and does
+  not need a ceremonial wrapper transaction.
+- A migration that adds or changes a constraint must update its owning
+  changeset contract and focused tests in the same batch.
