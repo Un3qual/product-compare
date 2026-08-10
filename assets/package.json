@@ -50,6 +50,7 @@
     "@stylexjs/babel-plugin": "0.18.1",
     "@testing-library/jest-dom": "6.9.1",
     "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "^14.6.3",
     "@types/babel__core": "7.20.5",
     "@types/node": "22.19.13",
     "@types/react": "19.2.14",

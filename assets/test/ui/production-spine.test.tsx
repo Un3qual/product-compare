@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { CompareMark } from "../../src/ui/components/brand/CompareMark";
 import { ComparisonContinuity } from "../../src/ui/components/compare/ComparisonContinuity";
@@ -19,7 +20,11 @@ function installProductionTheme() {
   return style;
 }
 
-function expectVisibleFocusRule(style: HTMLStyleElement, selector: string) {
+function expectVisibleFocusRule(style: HTMLStyleElement, element: HTMLElement) {
+  const slot = element.dataset.slot;
+  expect(slot).toBeDefined();
+
+  const selector = `[data-slot="${slot}"]:focus-visible`;
   const rule = Array.from(style.sheet?.cssRules ?? []).find(
     (candidate): candidate is CSSStyleRule =>
       candidate instanceof CSSStyleRule && candidate.selectorText.includes(selector),
@@ -61,8 +66,9 @@ test("skip navigation moves keyboard focus into the main working region", () => 
   expect(main).toHaveFocus();
 });
 
-test("representative controls receive the production visible-focus and 44px touch-target contracts", () => {
+test("representative controls receive the production visible-focus and 44px touch-target contracts", async () => {
   const style = installProductionTheme();
+  const user = userEvent.setup();
   render(
     <>
       <Button>Open comparison</Button>
@@ -73,14 +79,13 @@ test("representative controls receive the production visible-focus and 44px touc
   const button = screen.getByRole("button", { name: "Open comparison" });
   const search = screen.getByRole("textbox", { name: "Search products" });
 
-  for (const control of [button, search]) {
-    fireEvent.keyDown(document, { key: "Tab" });
-    control.focus();
-    expect(control).toHaveFocus();
-  }
+  await user.tab();
+  expect(button).toHaveFocus();
+  expectVisibleFocusRule(style, button);
 
-  expectVisibleFocusRule(style, '[data-slot="button"]:focus-visible');
-  expectVisibleFocusRule(style, '[data-slot="text-field"]:focus-visible');
+  await user.tab();
+  expect(search).toHaveFocus();
+  expectVisibleFocusRule(style, search);
 
   expect(button).toHaveStyle({ minHeight: "44px" });
   const searchTouchTarget = search.closest(".rt-TextFieldRoot");
