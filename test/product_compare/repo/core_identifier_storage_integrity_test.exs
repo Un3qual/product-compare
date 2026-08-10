@@ -152,6 +152,19 @@ defmodule ProductCompare.Repo.CoreIdentifierStorageIntegrityTest do
     )
   end
 
+  test "ASCII identifier checks use deterministic C collation" do
+    for {table, constraint} <- [
+          {"products", "products_slug_format_check"},
+          {"product_slug_aliases", "product_slug_aliases_slug_format_check"},
+          {"product_slug_reservations", "product_slug_reservations_slug_format_check"},
+          {"merchants", "merchants_slug_format_check"},
+          {"affiliate_networks", "affiliate_networks_code_format_check"},
+          {"taxons", "taxons_seo_slug_format_check"}
+        ] do
+      assert constraint_definition(table, constraint) =~ ~s(COLLATE "C")
+    end
+  end
+
   test "storage accepts exact identifiers and nullable taxonomy SEO slugs" do
     product = SpecsFixtures.product_fixture()
     suffix = System.unique_integer([:positive])
@@ -236,5 +249,25 @@ defmodule ProductCompare.Repo.CoreIdentifierStorageIntegrityTest do
   defp assert_check_violation(result, constraint) do
     assert {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: ^constraint}}} =
              result
+  end
+
+  defp constraint_definition(table, constraint) do
+    %{rows: [[definition]]} =
+      Repo.query!(
+        """
+        SELECT pg_get_constraintdef(constraint_record.oid)
+        FROM pg_constraint AS constraint_record
+        JOIN pg_class AS table_record
+          ON table_record.oid = constraint_record.conrelid
+        JOIN pg_namespace AS namespace_record
+          ON namespace_record.oid = table_record.relnamespace
+        WHERE namespace_record.nspname = current_schema()
+          AND table_record.relname = $1
+          AND constraint_record.conname = $2
+        """,
+        [table, constraint]
+      )
+
+    definition
   end
 end

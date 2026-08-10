@@ -3,27 +3,27 @@ defmodule ProductCompare.Repo.Migrations.EnforceCoreIdentifierStorageIntegrity d
 
   def up do
     create constraint(:products, :products_slug_format_check,
-             check: "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+             check: "(slug COLLATE \"C\") ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
            )
 
     create constraint(:product_slug_aliases, :product_slug_aliases_slug_format_check,
-             check: "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+             check: "(slug COLLATE \"C\") ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
            )
 
     create constraint(:product_slug_reservations, :product_slug_reservations_slug_format_check,
-             check: "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+             check: "(slug COLLATE \"C\") ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
            )
 
     create constraint(:merchants, :merchants_slug_format_check,
-             check: "slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+             check: "(slug COLLATE \"C\") ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
            )
 
     create constraint(:affiliate_networks, :affiliate_networks_code_format_check,
-             check: "code ~ '^[a-z0-9]+(_[a-z0-9]+)*$'"
+             check: "(code COLLATE \"C\") ~ '^[a-z0-9]+(_[a-z0-9]+)*$'"
            )
 
     create constraint(:taxons, :taxons_seo_slug_format_check,
-             check: "seo_slug IS NULL OR seo_slug ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
+             check: "seo_slug IS NULL OR (seo_slug COLLATE \"C\") ~ '^[a-z0-9]+(-[a-z0-9]+)*$'"
            )
   end
 

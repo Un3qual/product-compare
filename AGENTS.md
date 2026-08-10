@@ -74,7 +74,7 @@
 
 ## Database Constraint Contract
 
-- Every application-owned same-row PostgreSQL `CHECK` constraint reachable
+- Every application-owned same-row PostgreSQL check constraint reachable
   through an Ecto changeset must have equivalent pre-write validation, an
   explicit `check_constraint/3` mapping, a changeset behavior test, and direct
   database coverage in the same batch.

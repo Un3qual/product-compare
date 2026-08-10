@@ -2,7 +2,7 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
   use ProductCompare.DataCase, async: false
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [assert_blocked_by: 2, capture_select_queries: 1]
+    only: [assert_backend_blocked: 1, assert_blocked_by: 2, capture_select_queries: 1]
 
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -218,6 +218,88 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       assert "must belong to the same thread" in errors_on(changeset).parent_post_id
     end
 
+    test "post deletion returns a changeset error when the post was already deleted" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "stale-post-deletion-product"})
+
+      {:ok, thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Stale deletion",
+          created_by: user.id
+        })
+
+      {:ok, post} =
+        Discussions.create_post(%{
+          thread_id: thread.id,
+          user_id: user.id,
+          body_md: "Delete once"
+        })
+
+      assert {:ok, %ThreadPost{id: deleted_post_id}} = Discussions.delete_post(post)
+      assert deleted_post_id == post.id
+
+      assert {:error, changeset} = Discussions.delete_post(post)
+      assert "does not exist" in errors_on(changeset).id
+    end
+
+    test "concurrent post deletions serialize to one deletion and one changeset error" do
+      fixture = create_committed_cycle_fixture()
+      on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              Repo.one!(
+                from thread in ProductThread,
+                  where: thread.id == ^fixture.thread.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, :concurrent_delete_thread_lock_held)
+
+              receive do
+                :release_concurrent_delete_thread_lock -> :ok
+              after
+                5_000 -> flunk("timed out waiting to release the concurrent delete thread lock")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive :concurrent_delete_thread_lock_held
+
+      delete_tasks =
+        for label <- [:first, :second] do
+          Task.async(fn ->
+            Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+              send(parent, {:concurrent_delete_started, label, backend_pid})
+              Discussions.delete_post(fixture.post_a)
+            end)
+          end)
+        end
+
+      for label <- [:first, :second] do
+        assert_receive {:concurrent_delete_started, ^label, delete_backend_pid}
+        assert_backend_blocked(delete_backend_pid)
+      end
+
+      send(lock_holder.pid, :release_concurrent_delete_thread_lock)
+      assert {:ok, :ok} = Task.await(lock_holder)
+
+      results = Enum.map(delete_tasks, &Task.await/1)
+
+      assert [{:ok, %ThreadPost{id: deleted_post_id}}] =
+               Enum.filter(results, &match?({:ok, %ThreadPost{}}, &1))
+
+      assert deleted_post_id == fixture.post_a.id
+      assert [{:error, changeset}] = Enum.filter(results, &match?({:error, _changeset}, &1))
+      assert "does not exist" in errors_on(changeset).id
+    end
+
     test "serializes inverse parent updates so both cannot commit" do
       fixture = create_committed_cycle_fixture()
       on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
@@ -404,15 +486,14 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
           end)
         end)
 
-      probe_before_release = Task.yield(post_lock_probe, 750)
+      assert {:ok, {:ok, %ThreadPost{id: probed_post_id}}} =
+               Task.yield(post_lock_probe, 750)
 
       send(lock_holder.pid, :release_delete_thread_lock)
       assert {:ok, :ok} = Task.await(lock_holder)
       assert {:ok, %ThreadPost{id: deleted_post_id}} = Task.await(delete_task)
 
-      probe_result = probe_before_release || Task.await(post_lock_probe)
-
-      assert {:ok, {:ok, %ThreadPost{id: ^deleted_post_id}}} = probe_result
+      assert probed_post_id == deleted_post_id
     end
   end
 

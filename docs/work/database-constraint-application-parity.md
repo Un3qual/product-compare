@@ -47,9 +47,16 @@
   mapping-only checks now have direct PostgreSQL control-and-violation tests,
   including a mutation proof that the closure-depth test fails when its check
   is absent and passes again after restoration.
-- The review-fix suite passes 76 focused and adjacent tests. The definitive
-  backend suite now passes 1,359 tests; typecheck, quality, formatting, queue
-  validation, and diff hygiene also pass.
+- The initial review-fix suite passes 76 focused and adjacent tests.
+- Bot-review follow-through now reloads and locks a post after taking its
+  thread lock, so stale and concurrent deletions return the existing changeset
+  error shape instead of raising. The lock-order probe must complete before the
+  thread lock is released, and identifier check constraints pin regex ranges
+  to `C` collation for database-to-changeset ASCII parity.
+- The bot-review focused boundary passes 74 tests, including a mutation proof
+  that removing the post reload and lock reproduces `Ecto.StaleEntryError`.
+  The definitive backend suite now passes 1,362 tests; typecheck, quality,
+  formatting, queue validation, and diff hygiene also pass.
 
 ## Batch Outcome
 

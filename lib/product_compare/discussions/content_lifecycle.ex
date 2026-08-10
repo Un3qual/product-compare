@@ -62,19 +62,17 @@ defmodule ProductCompare.Discussions.ContentLifecycle do
   @spec delete_post(ThreadPost.t()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
   def delete_post(%ThreadPost{} = post) do
     Repo.transaction(fn ->
-      persisted_post = Repo.get!(ThreadPost, post.id)
-
-      Repo.one!(
-        from thread in ProductThread,
-          where: thread.id == ^persisted_post.thread_id,
-          lock: "FOR UPDATE"
-      )
-
-      persisted_post
-      |> Repo.delete()
-      |> case do
-        {:ok, deleted_post} -> deleted_post
-        {:error, changeset} -> Repo.rollback(changeset)
+      with %ThreadPost{} = persisted_post <- Repo.get(ThreadPost, post.id),
+           %ProductThread{} <- lock_thread(persisted_post.thread_id),
+           %ThreadPost{} = locked_post <- lock_post(post.id) do
+        locked_post
+        |> Repo.delete()
+        |> case do
+          {:ok, deleted_post} -> deleted_post
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      else
+        nil -> Repo.rollback(missing_post_changeset(post))
       end
     end)
   end
@@ -124,11 +122,21 @@ defmodule ProductCompare.Discussions.ContentLifecycle do
   defp lock_post_thread(changeset) do
     thread_id = Ecto.Changeset.get_field(changeset, :thread_id)
 
-    Repo.one(
-      from thread in ProductThread,
-        where: thread.id == ^thread_id,
-        lock: "FOR UPDATE"
-    )
+    lock_thread(thread_id)
+  end
+
+  defp lock_thread(thread_id) do
+    Repo.one(from thread in ProductThread, where: thread.id == ^thread_id, lock: "FOR UPDATE")
+  end
+
+  defp lock_post(post_id) do
+    Repo.one(from post in ThreadPost, where: post.id == ^post_id, lock: "FOR UPDATE")
+  end
+
+  defp missing_post_changeset(post) do
+    post
+    |> Ecto.Changeset.change()
+    |> Ecto.Changeset.add_error(:id, "does not exist")
   end
 
   defp update_post_parent(%ThreadPost{} = post, attrs) do

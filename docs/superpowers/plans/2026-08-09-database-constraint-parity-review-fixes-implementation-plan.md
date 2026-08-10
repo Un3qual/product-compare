@@ -21,10 +21,12 @@
 ### Task 1: Make Post Deletion Follow Thread-First Lock Ordering
 
 **Files:**
+
 - Modify: `test/product_compare/discussions/thread_post_validation_test.exs`
 - Modify: `lib/product_compare/discussions/content_lifecycle.ex`
 
 **Interfaces:**
+
 - Consumes: `ContentLifecycle.create_post/1`, `ContentLifecycle.delete_post/1`, `ProductThread.accepted_post_id`, and the existing `FOR UPDATE` thread lock protocol.
 - Produces: unchanged `delete_post/1` result shape with deletion serialized behind the post's thread row.
 
@@ -59,12 +61,14 @@ Run the Task 1 command again and require zero failures.
 ### Task 2: Return Changeset Errors For Remaining Non-Finite Decimal Inputs
 
 **Files:**
+
 - Modify: `test/product_compare/repo/captured_numeric_evidence_constraints_test.exs`
 - Modify: `lib/product_compare_schemas/alerts/price_watch_rule.ex`
 - Modify: `lib/product_compare_schemas/specs/product_attribute_claim.ex`
 - Modify: `lib/product_compare_schemas/taxonomy/product_taxon.ex`
 
 **Interfaces:**
+
 - Consumes: `Schema.normalize_non_finite_decimals/2` and each owner's existing range validator and named check mapping.
 - Produces: invalid changesets, never `ArgumentError`, for NaN and positive or negative infinity.
 
@@ -93,9 +97,11 @@ Run the Task 2 command again and require zero failures.
 ### Task 3: Exercise The Nine Metadata-Only Checks In PostgreSQL
 
 **Files:**
+
 - Modify: `test/product_compare/repo/check_constraint_error_mapping_test.exs`
 
 **Interfaces:**
+
 - Consumes: the existing eleven fixed-scope mapping assertions and normal repository fixtures.
 - Produces: exact `Postgrex.Error` constraint-name assertions for the nine checks without direct database coverage.
 
@@ -134,10 +140,12 @@ Expected: every valid control succeeds and all nine invalid writes report their 
 ### Task 4: Verify And Commit The Review Fixes
 
 **Files:**
+
 - Modify: `docs/work/database-constraint-application-parity.md`
 - Modify: the Task 1-3 files above
 
 **Interfaces:**
+
 - Consumes: all three green milestones.
 - Produces: one verified review-fix commit and truthful lane evidence.
 
