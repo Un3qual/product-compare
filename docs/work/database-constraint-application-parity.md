@@ -54,7 +54,8 @@
   thread lock is released, and identifier check constraints pin regex ranges
   to `C` collation for database-to-changeset ASCII parity.
 - The bot-review focused boundary passes 74 tests, including a mutation proof
-  that removing the post reload and lock reproduces `Ecto.StaleEntryError`.
+  that removing the reload-and-lock step for the post reproduces
+  `Ecto.StaleEntryError`.
   The definitive backend suite now passes 1,362 tests; typecheck, quality,
   formatting, queue validation, and diff hygiene also pass.
 
