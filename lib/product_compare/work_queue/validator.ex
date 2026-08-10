@@ -4,6 +4,7 @@ defmodule ProductCompare.WorkQueue.Validator do
   @minimum_ready_rows 3
   @ready_floor_exception_fields ["Reason", "Rejected split", "Replenishment action"]
   @h2_heading_opening_source ~S"[ ]{0,3}##[ \t]+"
+  @h3_heading_opening_source ~S"[ ]{0,3}###[ \t]+"
   @ready_floor_exception_heading_source "#{@h2_heading_opening_source}Ready Floor Exception(?:[ \\t]+#+)?[ \\t]*\\r?"
   @ready_floor_exception_heading_regex Regex.compile!(
                                          "^#{@ready_floor_exception_heading_source}$",
@@ -14,10 +15,15 @@ defmodule ProductCompare.WorkQueue.Validator do
                                       "ms"
                                     )
   @ready_section_heading_source "#{@h2_heading_opening_source}Ready Work(?:[ \\t]+#+)?[ \\t]*\\r?"
+  @ready_section_heading_regex Regex.compile!("^#{@ready_section_heading_source}$", "m")
   @ready_section_regex Regex.compile!(
                          "^#{@ready_section_heading_source}\\n(?<body>.*?)(?=^#{@h2_heading_opening_source}|\\z)",
                          "ms"
                        )
+  @ready_row_regex Regex.compile!(
+                     "^#{@h3_heading_opening_source}[^\\r\\n]+\\r?\\n(?<body>.*?)(?=^#{@h3_heading_opening_source}|\\z)",
+                     "ms"
+                   )
   @fenced_code_opening_regex ~r/^[ ]{0,3}(`{3,}|~{3,})([^\r\n]*)\r?$/
   @raw_html_tag_opening_regex ~r/^[ ]{0,3}<(?<tag>script|pre|style|textarea)(?:[ \t]|>|\r?$)/i
   @raw_html_block_tags ~w(
@@ -215,14 +221,23 @@ defmodule ProductCompare.WorkQueue.Validator do
   end
 
   defp ready_section(markdown) do
-    case Regex.run(@ready_section_regex, markdown, capture: :all_names) do
-      [body] -> {:ok, body}
-      _ -> {:error, ["missing ## Ready Work section"]}
+    case Regex.scan(@ready_section_heading_regex, markdown) do
+      [] ->
+        {:error, ["missing ## Ready Work section"]}
+
+      [_heading] ->
+        case Regex.run(@ready_section_regex, markdown, capture: :all_names) do
+          [body] -> {:ok, body}
+          _ -> {:error, ["missing ## Ready Work section"]}
+        end
+
+      _duplicates ->
+        {:error, ["Ready Work must appear exactly once"]}
     end
   end
 
   defp ready_rows(section) do
-    ~r/^### .+?\n(?<body>.*?)(?=^### |\z)/ms
+    @ready_row_regex
     |> Regex.scan(section, capture: :all_names)
     |> List.flatten()
   end

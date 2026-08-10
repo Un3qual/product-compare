@@ -30,7 +30,22 @@ defmodule ProductCompare.Repo.SpecificationDefinitionCreationValidityTest do
     )
   end
 
-  test "specification definitions accept valid enum ownership and nonzero unit multipliers" do
+  for {name, multiplier} <- [
+        {"NaN", "NaN"},
+        {"positive infinity", "Infinity"},
+        {"negative infinity", "-Infinity"}
+      ] do
+    test "units reject #{name} multipliers through the named storage constraint" do
+      %{dimension_id: dimension_id} = valid_definition_parents!()
+
+      assert_check_violation(
+        insert_unit(dimension_id, Decimal.new(unquote(multiplier))),
+        "units_multiplier_to_base_nonzero"
+      )
+    end
+  end
+
+  test "specification definitions accept valid enum ownership and finite nonzero unit multipliers" do
     %{dimension_id: dimension_id, enum_set_id: enum_set_id} = valid_definition_parents!()
 
     assert {:ok, _result} = insert_attribute(dimension_id, enum_set_id, "enum")

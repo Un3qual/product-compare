@@ -161,6 +161,36 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
   end
 
+  test "rejects duplicate rendered Ready Work sections" do
+    markdown =
+      empty_queue() <>
+        ready_floor_exception() <>
+        """
+
+        ## Ready Work
+
+        ### Incomplete row
+
+        Status: ready
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work must appear exactly once" in errors
+  end
+
+  test "accepts CommonMark indentation for ready-row H3 headings" do
+    for indentation <- 0..3 do
+      spaces = String.duplicate(" ", indentation)
+
+      markdown =
+        queue_with_rows(1)
+        |> String.replace("### 1. Candidate 1", "#{spaces}### 1. Candidate 1")
+        |> Kernel.<>(ready_floor_exception())
+
+      assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+    end
+  end
+
   test "rejects a stale indented ready-floor exception once the floor is restored" do
     markdown =
       queue_with_rows(3) <>

@@ -9,7 +9,16 @@ defmodule ProductCompare.Repo.Migrations.EnforceSpecificationDefinitionCreationV
              """
            )
 
-    create constraint(:units, :units_multiplier_to_base_nonzero, check: "multiplier_to_base <> 0")
+    create constraint(:units, :units_multiplier_to_base_nonzero,
+             check: """
+             multiplier_to_base <> 0 AND
+               multiplier_to_base NOT IN (
+                 'NaN'::numeric,
+                 'Infinity'::numeric,
+                 '-Infinity'::numeric
+               )
+             """
+           )
   end
 
   def down do
