@@ -81,6 +81,12 @@ type RootQueryType {
   "Returns CJ feeds that cannot be associated with an advertiser program."
   unmatchedCjFeeds(after: String, first: Int!): MerchantFeedCandidateConnection!
 
+  "Returns the essential public homepage workspace."
+  homeWorkspace(selectedSlugs: [String!]!): HomeWorkspace!
+
+  "Returns independent public and viewer-scoped homepage deals."
+  homeDeals(selectedSlugs: [String!]!): HomeDeals!
+
   "Returns merchants ordered by primary key with cursor pagination."
   merchants(after: String, first: Int!): MerchantConnection
 
@@ -487,6 +493,80 @@ type MerchantProductEdge {
 type MerchantProductConnection {
   pageInfo: PageInfo!
   edges: [MerchantProductEdge!]!
+}
+
+enum HomeDealReasonCode {
+  NEW_OFFER
+  TRENDING_BELOW_MEDIAN
+  WATCH_TARGET
+  SAVED_COMPARISON
+  CURRENT_COMPARISON
+}
+
+enum HomePriceSignalCode {
+  BELOW_30_DAY_MEDIAN
+  AT_OR_ABOVE_30_DAY_MEDIAN
+  NO_30_DAY_BASELINE
+}
+
+type HomeWorkspace {
+  products: [HomeWorkspaceProduct!]!
+  selectedProducts: [HomeProductSummary!]!
+  categories: [HomeCategoryShortcut!]!
+}
+
+type HomeWorkspaceProduct {
+  id: ID!
+  name: String!
+  slug: String!
+  highlights: [HomeSpecificationHighlight!]!
+  offer: HomeOfferSummary!
+}
+
+type HomeProductSummary {
+  id: ID!
+  name: String!
+  slug: String!
+}
+
+type HomeCategoryShortcut {
+  id: ID!
+  name: String!
+  slug: String!
+  description: String!
+  qualifiedProductCount: Int!
+}
+
+type HomeSpecificationHighlight {
+  label: String!
+  value: String!
+}
+
+type HomeOfferSummary {
+  merchantProductId: ID!
+  merchantName: String!
+  currency: String!
+  landedPrice: Decimal!
+  activeOfferCount: Int!
+  priceSignal: HomePriceSignalCode!
+  observedAt: DateTime!
+}
+
+type HomeDeals {
+  new: [HomeDeal!]!
+  trending: [HomeDeal!]!
+  forYou: [HomeDeal!]!
+}
+
+type HomeDeal {
+  product: HomeProductSummary!
+  offer: HomeOfferSummary!
+  reasons: [HomeDealReason!]!
+}
+
+type HomeDealReason {
+  code: HomeDealReasonCode!
+  watchTarget: Decimal
 }
 
 input UpdateCjProgramInput {
