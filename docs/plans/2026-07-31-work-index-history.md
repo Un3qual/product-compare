@@ -3357,3 +3357,39 @@ No new implementation row was promoted at closeout. Identifier end-anchor and
 claim-unit deletion candidates still need product decisions, Discussions and
 Community remain deferred, and the live queue records the resulting no-filler
 ready-floor exception.
+
+## Completed 2026-08-09 Core Identifier And Reference Integrity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
+
+One consolidated persisted-integrity batch now protects the established core
+identifier and numeric-claim reference contracts. Product, historical-alias,
+reservation, merchant, affiliate-network, and taxonomy SEO identifiers have
+named PostgreSQL format checks and exact owning Ecto validators. Comparison
+snapshot changesets and lookup filtering now use the exact existing token
+contract. Affiliate-network input retains normalization before exact stored-code
+validation.
+
+Numeric product-attribute claims now require their source Unit and canonical
+base value, reject numeric companions on non-numeric claims, and preserve
+ordered paired ranges. The Unit foreign key retains its original name while
+using `ON DELETE RESTRICT`, so referenced Units cannot disappear and
+unreferenced Units remain deletable. The owning changeset maps both new checks
+and the Unit foreign key without changing existing validation messages or
+typed-value normalization.
+
+Identifier RED characterization produced 7 expected failures before the six
+checks and exact application anchors landed; the focused GREEN suite passed 10
+tests and the identifier regressions passed 54 tests. Numeric-reference RED
+characterization produced 9 expected failures; its GREEN suite passed 12 tests
+and its affected specification boundary passed 52 tests. The complete affected
+boundary passed 180 tests, and the definitive backend run passed 1,327 tests.
+Typecheck, quality, formatting, queue validation with the no-filler ready-floor
+exception, and diff hygiene also passed. The identifier milestone commit was
+`3aa0d639`.
+
+No internal migration or test slice was promoted as another batch, and no new
+implementation row was validated at closeout. Discussions and provider/operator
+work remain deferred; the live queue records the resulting zero-ready
+ready-floor exception and a fresh core-product replenishment action.

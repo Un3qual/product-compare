@@ -45,68 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### Core Identifier And Reference Integrity
-
-Status: active
-Worker: Codex `/root` in detached worktree `45ae`
-Lane: Core identifier and reference integrity
-Plan: `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
-Batch outcome: PostgreSQL and Ecto preserve exact canonical identifiers and
-numeric claim reference facts as one consolidated core persisted-integrity
-outcome.
-Next action: run the numeric-companion, numeric-range, and Unit-reference
-preflights, then characterize and enforce claim-reference integrity.
-Owned paths:
-
-- `priv/repo/migrations/20260809130100_enforce_core_identifier_storage_integrity.exs`
-- `priv/repo/migrations/20260809130200_enforce_product_attribute_claim_reference_integrity.exs`
-- `lib/product_compare_schemas/catalog/product.ex`
-- `lib/product_compare_schemas/catalog/product_slug_alias.ex`
-- `lib/product_compare_schemas/catalog/comparison_snapshot.ex`
-- `lib/product_compare_schemas/pricing/merchant.ex`
-- `lib/product_compare_schemas/affiliate/affiliate_network.ex`
-- `lib/product_compare_schemas/taxonomy/taxon.ex`
-- `lib/product_compare_schemas/specs/product_attribute_claim.ex`
-- `lib/product_compare/comparison_snapshots/lifecycle.ex`
-- `test/product_compare/repo/core_identifier_storage_integrity_test.exs`
-- `test/product_compare/repo/product_attribute_claim_reference_integrity_test.exs`
-- affected regression tests named by the linked plan
-- `docs/work/core-identifier-and-reference-integrity.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/specs/2026-08-05-commerce-identifier-storage-integrity-design.md`
-- `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
-- `docs/work/commerce-identifier-storage-integrity.md`
-
-Internal slices:
-
-- Exact product, alias, reservation, merchant, affiliate-network, taxonomy SEO,
-  and comparison-token identifier boundaries.
-- Numeric claim companion and range constraints plus referenced-Unit retention.
-- Consolidated dispatch, regression verification, history, and superseded-draft
-  cleanup.
-
-Prerequisites:
-
-- All four preflight families return zero invalid rows.
-- The Unit foreign key, product namespace triggers, and comparison token check
-  retain their expected current definitions.
-- No active row owns any listed implementation path.
-
-Verification:
-
-- focused identifier and numeric-reference direct-write suites
-- affected product, pricing, affiliate, taxonomy, comparison, specification,
-  ingestion, catalog, recommendation, SEO, and GraphQL suites named by the plan
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL and Ecto agree on every selected exact identifier,
-numeric claims retain consistent companions and referenced Units, all focused
-and repository gates pass, and one completion record closes the batch without
-promoting internal slices.
+None.
 
 ## Ready Work
 
@@ -114,14 +53,12 @@ None.
 
 ## Ready Floor Exception
 
-Reason: Current validation supports one substantial consolidated core-integrity
-outcome and no independent reserve row; discussion and provider/operator work
-remain explicitly deferred.
-Rejected split: Product, commerce, taxonomy, snapshot, and numeric-reference
-migrations and tests are internal slices of the combined outcome, not reserve
-rows or separate batches.
+Reason: No independently shippable non-discussion outcome is currently
+validated; discussion and provider/operator work remain explicitly deferred.
+Rejected split: The completed product, commerce, taxonomy, snapshot, and
+numeric-reference slices cannot be reused as queue filler or separate batches.
 Replenishment action: Audit current core product behavior and architecture gaps
-for the next independently shippable outcome while this batch executes.
+for the next independently shippable outcome before dispatch resumes.
 
 ## Needs Decision Work
 

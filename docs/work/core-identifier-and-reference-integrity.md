@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
@@ -21,15 +21,39 @@
 - GREEN: the focused suite passed 10 tests; the identifier regression set
   passed 54 tests across product lookup, merchant, affiliate, taxonomy, SEO,
   and comparison snapshot behavior.
+- Numeric-reference preflights returned zero inconsistent companion rows, zero
+  inverted ranges, and zero orphaned Unit references; the inspected foreign key
+  still used `ON DELETE SET NULL` before replacement.
+- RED: the numeric-reference suite reported 9 expected failures across the two
+  missing checks, referenced-Unit deletion, and the missing changeset mapping.
+- GREEN: the numeric-reference suite passed 12 tests and its affected
+  specification boundary passed 52 tests.
+- The complete affected boundary passed 180 tests. The definitive backend run
+  passed 1,327 tests; typecheck and the complete quality pipeline also passed.
 - The test database was rebuilt before implementation because migration status
   proved it retained obsolete migration identities; the clean baseline then
   passed 1,305 tests.
 
-## Target Outcome
+## Batch Outcome
 
-PostgreSQL and Ecto agree on the established exact formats for canonical core
-identifiers, numeric claims cannot contradict or lose their required companion
-facts, and all changes ship as one reviewer-sized persisted-integrity batch.
+PostgreSQL and Ecto now agree on the established exact formats for canonical
+core identifiers. Numeric claims cannot contradict or lose their required
+companion facts, referenced Units cannot be deleted, and unreferenced Units
+remain deletable. The work shipped as one reviewer-sized persisted-integrity
+batch.
+
+## Enforced Constraints
+
+- `products_slug_format_check`
+- `product_slug_aliases_slug_format_check`
+- `product_slug_reservations_slug_format_check`
+- `merchants_slug_format_check`
+- `affiliate_networks_code_format_check`
+- `taxons_seo_slug_format_check`
+- existing `comparison_snapshots_public_token_format`, now mapped by its owner
+- `product_attribute_claims_numeric_companions_check`
+- `product_attribute_claims_numeric_range_order_check`
+- `product_attribute_claims_unit_id_fkey`, replaced with `ON DELETE RESTRICT`
 
 ## Approved Decisions
 
@@ -74,15 +98,15 @@ facts, and all changes ship as one reviewer-sized persisted-integrity batch.
 3. Consolidated dispatch, affected and full verification, completion history,
    and removal of the superseded commerce-only draft documents.
 
-## Prerequisites
+## Verified Preconditions
 
 - Exact identifier, numeric-companion, numeric-range, and Unit-reference
-  preflights return zero invalid rows immediately before implementation.
-- `product_attribute_claims_unit_id_fkey` still targets `units(id)` with
+  preflights returned zero invalid rows immediately before implementation.
+- `product_attribute_claims_unit_id_fkey` targeted `units(id)` with
   `ON DELETE SET NULL` before replacement.
-- Existing product namespace triggers and comparison token check retain their
-  current names and behavior.
-- No active row owns any listed implementation path.
+- Existing product namespace triggers and comparison token check retained their
+  names and behavior.
+- No other active row owned an implementation path.
 
 ## Boundaries
 
@@ -115,8 +139,8 @@ Stop if a preflight returns data, an expected constraint or trigger has drifted,
 or an owned path conflicts with active work. Record exact identifiers and do not
 rewrite rows or widen policy to continue.
 
-## Exit Condition
+## Completion
 
 All exact identifier, numeric companion, range, and referenced-Unit boundaries
-pass focused and repository verification; one observed completion record closes
-the consolidated row; and no internal slice is promoted separately.
+passed focused and repository verification. One observed completion record
+closed the consolidated row, and no internal slice was promoted separately.

@@ -92,6 +92,15 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     |> validate_single_typed_value()
     |> validate_numeric_fields()
     |> validate_numeric_range_order()
+    |> check_constraint(:value_num,
+      name: :product_attribute_claims_numeric_companions_check
+    )
+    |> check_constraint(:value_num_base_min,
+      name: :product_attribute_claims_numeric_range_order_check
+    )
+    |> foreign_key_constraint(:unit_id,
+      name: :product_attribute_claims_unit_id_fkey
+    )
   end
 
   defp validate_single_typed_value(changeset) do
