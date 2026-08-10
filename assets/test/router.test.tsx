@@ -305,6 +305,18 @@ test("every registered application route declares document metadata", () => {
   }
 });
 
+test("router metadata uses customer language instead of internal data-model terms", () => {
+  const metadataCopy = [routes[0], ...(routes[0]?.children ?? [])]
+    .map((route) => route?.handle as RouteMetadataHandle | undefined)
+    .flatMap((handle) => (handle ? [handle.metadata.title, handle.metadata.description] : []));
+
+  for (const copy of metadataCopy) {
+    expect(copy).not.toMatch(
+      /\b(evidence|taxon|merchant product|source artifact|current attributes|qualification|recommendation profile|persisted snapshot)\b/i
+    );
+  }
+});
+
 function buildShouldRevalidateArgs(
   currentPath: string,
   nextPath: string

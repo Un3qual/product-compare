@@ -15,6 +15,8 @@ export const tokens = defineVars({
   actionAccent: "var(--pc-action-accent)",
   actionAccentHover: "var(--pc-action-accent-hover)",
   pricePositive: "var(--pc-price-positive)",
+  fontSans: "var(--pc-font-sans)",
+  fontMono: "var(--pc-font-mono)",
   coupon: "var(--pc-coupon)",
   warning: "var(--pc-warning)",
   unavailable: "var(--pc-unavailable)",

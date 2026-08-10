@@ -99,7 +99,7 @@ export const routes: RouteObject[] = [
         path: "merchants/:slug",
         handle: routeMetadata(
           "Merchant details | Product Compare",
-          "Review a merchant's current product and offer evidence."
+          "Review a merchant's current product and offer details."
         ),
         errorElement: <RouteErrorBoundary resourceName="merchant" title="Merchant details" />,
         lazy: withLazyRouteImportRecovery(async () => {
@@ -114,7 +114,7 @@ export const routes: RouteObject[] = [
         path: "categories/:slug",
         handle: routeMetadata(
           "Product category | Product Compare",
-          "Compare trusted product specifications and current offer evidence by category."
+          "Compare trusted product specifications and current offer details by category."
         ),
         errorElement: <RouteErrorBoundary resourceName="category" title="Product category" />,
         lazy: withLazyRouteImportRecovery(async () => {

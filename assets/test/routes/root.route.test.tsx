@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { usePreloadedQuery } from "react-relay";
 import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
@@ -182,7 +182,8 @@ test("root destinations render guest shopper paths and auth actions", () => {
     "href",
     "/offers"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
+  const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
+  expect(within(guestNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login"
   );
@@ -194,7 +195,7 @@ test("root destinations render guest shopper paths and auth actions", () => {
   expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
 });
 
-test("guest auth links keep the default solid variant without active matching", () => {
+test("guest auth links preserve inactive styles in their menu and home contexts", () => {
   render(
     <MemoryRouter initialEntries={["/auth/login"]}>
       <nav aria-label="Primary">
@@ -206,16 +207,17 @@ test("guest auth links keep the default solid variant without active matching", 
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
   const homeActions = screen.getByRole("region", { name: "Home actions" });
+  const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
 
   for (const name of ["Sign in", "Create account"]) {
-    expectSolidAuthLinkWithoutActiveState(
-      within(primaryNavigation).getByRole("link", { name })
+    expectNavigationMenuLinkWithoutActiveState(
+      within(guestNavigation).getByRole("link", { name })
     );
     expectSolidAuthLinkWithoutActiveState(within(homeActions).getByRole("link", { name }));
   }
 });
 
-test("authenticated sign-out links keep the default solid variant without active matching", () => {
+test("authenticated sign-out links preserve inactive styles in their menu and home contexts", () => {
   const viewer = { id: "viewer-1", email: "person@example.com", isOperator: false };
 
   render(
@@ -229,9 +231,10 @@ test("authenticated sign-out links keep the default solid variant without active
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
   const homeActions = screen.getByRole("region", { name: "Home actions" });
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
 
-  expectSolidAuthLinkWithoutActiveState(
-    within(primaryNavigation).getByRole("link", { name: "Sign out" })
+  expectNavigationMenuLinkWithoutActiveState(
+    within(accountNavigation).getByRole("link", { name: "Sign out" })
   );
   expectSolidAuthLinkWithoutActiveState(
     within(homeActions).getByRole("link", { name: "Sign out" })
@@ -250,7 +253,8 @@ test("root destinations render authenticated account actions with the exact acti
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
   const homeActions = screen.getByRole("region", { name: "Home actions" });
-  const savedComparison = within(primaryNavigation).getByRole("link", {
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
+  const savedComparison = within(accountNavigation).getByRole("link", {
     name: "Saved comparisons"
   });
 
@@ -277,7 +281,7 @@ test("root destinations render authenticated account actions with the exact acti
     "href",
     "/account/api-tokens"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
@@ -297,11 +301,10 @@ test("root destinations keep member account actions but hide operator destinatio
   );
 
   const primary = screen.getByRole("navigation", { name: "Primary" });
-  expect(within(primary).getByRole("link", { name: "Saved comparisons" })).toBeInTheDocument();
-  expect(within(primary).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
-  expect(within(primary).queryByRole("link", { name: "Affiliate setup" })).not.toBeInTheDocument();
-  expect(within(primary).queryByRole("link", { name: "Revenue preview" })).not.toBeInTheDocument();
-  expect(within(primary).queryByRole("link", { name: "CJ programs" })).not.toBeInTheDocument();
+  const accountNavigation = openNavigationMenu(primary, "Account");
+  expect(within(accountNavigation).getByRole("link", { name: "Saved comparisons" })).toBeInTheDocument();
+  expect(within(accountNavigation).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
+  expect(within(primary).queryByRole("button", { name: "Operator menu" })).not.toBeInTheDocument();
 });
 
 test("root layout applies the deepest matched document metadata", async () => {
@@ -333,7 +336,8 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "href",
     "/compare"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
+  const exploreNavigation = openNavigationMenu(primaryNavigation, "Explore");
+  expect(within(exploreNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
     "/merchants"
   );
@@ -352,11 +356,12 @@ test("root layout renders guest auth links in the primary navigation", async () 
       within(primaryNavigation).queryByRole("link", { name: accountDestination })
     ).not.toBeInTheDocument();
   }
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
+  const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
+  expect(within(guestNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Create account" })).toHaveAttribute(
+  expect(within(guestNavigation).getByRole("link", { name: "Create account" })).toHaveAttribute(
     "href",
     "/auth/register"
   );
@@ -372,28 +377,30 @@ test("root layout renders authenticated auth links in the primary navigation", a
   renderRootRoute(authenticatedLoaderData);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
+  const operatorNavigation = openNavigationMenu(primaryNavigation, "Operator");
 
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
     "href",
     "/compare/saved"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
+  expect(within(operatorNavigation).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
     "href",
     "/affiliate/setup"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
+  expect(within(operatorNavigation).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
     "href",
     "/commerce/revenue"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
+  expect(within(operatorNavigation).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
     "/ingestion/cj-programs"
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
     "/account/api-tokens"
   );
@@ -407,10 +414,11 @@ test("root layout identifies one exact active destination on saved comparisons",
   renderRootRoute(authenticatedLoaderData, "/compare/saved");
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
   const compareLink = within(primaryNavigation).getByRole("link", {
     name: "Compare products"
   });
-  const savedLink = within(primaryNavigation).getByRole("link", {
+  const savedLink = within(accountNavigation).getByRole("link", {
     name: "Saved comparisons"
   });
 
@@ -424,8 +432,9 @@ test("root layout reads authenticated viewer state from the preloaded root query
   renderRootRoute(readyLoaderDataWithoutSnapshotViewer);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
 
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
@@ -523,8 +532,9 @@ test("root layout preserves cached viewer state when the root viewer preload is 
   renderRootRoute(degradedAuthenticatedLoaderData);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
+  const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
 
-  expect(within(primaryNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
+  expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
     "/auth/logout"
   );
@@ -645,4 +655,14 @@ function buildAbortableRequest(url: string, signal: AbortSignal): Request {
 function expectSolidAuthLinkWithoutActiveState(link: HTMLElement) {
   expect(link).toHaveAttribute("data-variant", "solid");
   expect(link).not.toHaveAttribute("data-active");
+}
+
+function expectNavigationMenuLinkWithoutActiveState(link: HTMLElement) {
+  expect(link).toHaveAttribute("data-variant", "solid");
+  expect(link).not.toHaveAttribute("data-active");
+}
+
+function openNavigationMenu(primaryNavigation: HTMLElement, label: string) {
+  fireEvent.click(within(primaryNavigation).getByRole("button", { name: `${label} menu` }));
+  return within(primaryNavigation).getByRole("navigation", { name: `${label} navigation` });
 }
