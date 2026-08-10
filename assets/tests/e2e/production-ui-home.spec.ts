@@ -20,6 +20,22 @@ type GraphQLResponder =
   | GraphQLResponse
   | ((request: GraphQLRequest) => GraphQLResponse | Promise<GraphQLResponse>);
 
+type GraphQLStubState = {
+  requests: GraphQLRequest[];
+  unhandledOperations: string[];
+};
+
+const graphqlStubStates = new WeakMap<Page, GraphQLStubState>();
+
+test.afterEach(async ({ page }) => {
+  const unhandledOperations = graphqlStubStates.get(page)?.unhandledOperations ?? [];
+
+  expect(
+    unhandledOperations,
+    `Unhandled GraphQL operations: ${unhandledOperations.join(", ")}`,
+  ).toEqual([]);
+});
+
 const VIEWPORTS = [
   { height: 1_000, name: "desktop", width: 1_440 },
   { height: 1_100, name: "tablet", width: 900 },
@@ -140,17 +156,34 @@ test("guest search and category entry preserve useful catalog navigation", async
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
 
-  await page
-    .getByLabel("Search products, categories, or model numbers")
-    .fill("  precision kettle  ");
-  await page.getByRole("button", { name: "Search catalog" }).click();
+  const search = page.getByLabel("Search products, categories, or model numbers");
+  const searchButton = page.getByRole("button", { name: "Search catalog" });
+  await focusByTab(page, searchButton);
+  await expectVisibleFocus(searchButton);
+  await focusByTab(page, search, { key: "Shift+Tab", maxPresses: 2 });
+  await expectVisibleFocus(search);
+  await page.keyboard.type("  precision kettle  ");
+  await focusByTab(page, searchButton, { maxPresses: 2 });
+  await expectVisibleFocus(searchButton);
+  await page.keyboard.press("Space");
 
   await expect(page).toHaveURL(/\/products\?/);
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("q")).toBe("precision kettle");
+  expect(requests).toContainEqual({
+    operationName: "BrowseProductsRouteQuery",
+    variables: {
+      after: null,
+      filters: { query: "precision kettle", sort: "RELEVANCE" },
+      first: 12,
+    },
+  });
 
   await page.goto("/");
-  await page.getByRole("link", { name: "Coffee grinders" }).click();
+  const categoryLink = page.getByRole("link", { name: "Coffee grinders" });
+  await focusByTab(page, categoryLink);
+  await expectVisibleFocus(categoryLink);
+  await page.keyboard.press("Enter");
 
   await expect(page).toHaveURL(/\/products\?/);
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
@@ -175,19 +208,28 @@ test("guest comparison selection can be added, opened, and removed", async ({ pa
 
   await page.goto("/");
   const firstProduct = page.getByRole("article", { name: "BrewMaster Precision Kettle" });
-  await firstProduct.getByRole("link", { name: "Add to comparison" }).click();
+  const addToComparison = firstProduct.getByRole("link", { name: "Add to comparison" });
+  await focusByTab(page, addToComparison);
+  await expectVisibleFocus(addToComparison);
+  await page.keyboard.press("Enter");
 
   await expect(page).toHaveURL(/\?slug=brewmaster-precision-kettle$/);
   const selection = page.getByRole("region", { name: "Comparison selection" });
   await expect(selection).toContainText("1. BrewMaster Precision Kettle");
 
-  await selection.getByRole("link", { name: "Open comparison" }).click();
+  const openComparison = selection.getByRole("link", { name: "Open comparison" });
+  await focusByTab(page, openComparison);
+  await expectVisibleFocus(openComparison);
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/compare\?slug=brewmaster-precision-kettle$/);
   await expect(page.getByRole("heading", { name: "Compare products" })).toBeVisible();
 
-  await page
-    .getByRole("link", { name: "Remove BrewMaster Precision Kettle from selection" })
-    .click();
+  const removeFromComparison = page.getByRole("link", {
+    name: "Remove BrewMaster Precision Kettle from selection",
+  });
+  await focusByTab(page, removeFromComparison);
+  await expectVisibleFocus(removeFromComparison);
+  await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/compare$/);
   await expect(page.getByText("No products are available to compare yet.")).toBeVisible();
 });
@@ -252,7 +294,10 @@ test("optional deals failure stays local and retry restores offers", async ({ pa
   await expect(page.getByRole("heading", { name: "Products to compare" })).toBeVisible();
   await expect(page.getByText("New and trending offers are unavailable right now.")).toBeVisible();
 
-  await page.getByRole("button", { name: "Try again" }).click();
+  const retry = page.getByRole("button", { name: "Try again" });
+  await focusByTab(page, retry);
+  await expectVisibleFocus(retry);
+  await page.keyboard.press("Space");
 
   await expect(page.getByRole("list", { name: "New offers" })).toContainText(
     "BrewMaster Precision Kettle",
@@ -287,7 +332,8 @@ test("keyboard navigation exposes focus and reduced motion keeps disclosure beha
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/");
   const disclosure = page.getByRole("button", { name: "More details" }).first();
-  await disclosure.focus();
+  await focusByTab(page, disclosure);
+  await expectVisibleFocus(disclosure);
   await page.keyboard.press("Enter");
   await expect(disclosure).toHaveAttribute("aria-expanded", "true");
   const disclosureContent = page.locator('[data-slot="collapsible-content"]').first();
@@ -335,8 +381,8 @@ for (const viewport of VIEWPORTS) {
       await expectTabletLedgerGeometry(page);
     } else if (viewport.name === "mobile") {
       await expectDisclosureTargets(page);
-      await expectMobileLedgerDisclosure(page);
       await expectMobileNavigation(page);
+      await expectMobileLedgerDisclosure(page);
       for (const product of products) {
         await expect(page.getByRole("heading", { name: product.name })).toHaveCount(1);
       }
@@ -352,7 +398,8 @@ for (const viewport of VIEWPORTS) {
 }
 
 async function stubGraphQL(page: Page, responders: Record<string, GraphQLResponder>) {
-  const requests: GraphQLRequest[] = [];
+  const state: GraphQLStubState = { requests: [], unhandledOperations: [] };
+  graphqlStubStates.set(page, state);
 
   await page.route("**/api/graphql", async (route) => {
     const payload = route.request().postDataJSON() as GraphQLPayload;
@@ -360,11 +407,12 @@ async function stubGraphQL(page: Page, responders: Record<string, GraphQLRespond
       operationName: extractOperationName(payload.query ?? ""),
       variables: payload.variables ?? {},
     };
-    requests.push(request);
+    state.requests.push(request);
 
     const responder = responders[request.operationName];
 
     if (!responder) {
+      state.unhandledOperations.push(request.operationName);
       await fulfillGraphQL(route, {
         errors: [{ message: `Unhandled GraphQL operation: ${request.operationName}` }],
       });
@@ -375,7 +423,7 @@ async function stubGraphQL(page: Page, responders: Record<string, GraphQLRespond
     await fulfillGraphQL(route, response);
   });
 
-  return requests;
+  return state.requests;
 }
 
 async function fulfillGraphQL(route: Route, response: GraphQLResponse) {
@@ -551,28 +599,40 @@ function emptyProductPickerData() {
   };
 }
 
-async function focusByTab(page: Page, target: ReturnType<Page["locator"]>) {
-  for (let index = 0; index < 20; index += 1) {
-    await page.keyboard.press("Tab");
+async function focusByTab(
+  page: Page,
+  target: ReturnType<Page["locator"]>,
+  { key = "Tab", maxPresses = 40 }: { key?: "Shift+Tab" | "Tab"; maxPresses?: number } = {},
+) {
+  for (let index = 0; index < maxPresses; index += 1) {
+    await page.keyboard.press(key);
     if (await target.evaluate((element) => element === document.activeElement)) return;
   }
 
-  throw new Error("Keyboard traversal did not reach the target within 20 Tab presses");
+  throw new Error(
+    `Keyboard traversal did not reach the target within ${maxPresses} ${key} presses`,
+  );
 }
 
 async function expectVisibleFocus(target: ReturnType<Page["locator"]>) {
-  expect(
-    await target.evaluate((element) => {
-      const candidates = [element, element.parentElement].filter(
-        (candidate): candidate is Element => candidate !== null,
-      );
+  await expect
+    .poll(() =>
+      target.evaluate((element) => {
+        const candidates = [element, element.parentElement].filter(
+          (candidate): candidate is Element => candidate !== null,
+        );
 
-      return candidates.some((candidate) => {
-        const style = getComputedStyle(candidate);
-        return style.outlineStyle === "solid" && Number.parseFloat(style.outlineWidth) >= 2;
-      });
-    }),
-  ).toBe(true);
+        return candidates.some((candidate) => {
+          const style = getComputedStyle(candidate);
+          return (
+            candidate.matches(":focus-visible") &&
+            style.outlineStyle === "solid" &&
+            Number.parseFloat(style.outlineWidth) >= 2
+          );
+        });
+      }),
+    )
+    .toBe(true);
 }
 
 async function waitForFonts(page: Page) {
@@ -601,12 +661,19 @@ async function waitForFonts(page: Page) {
 async function plainLanguageViolations(page: Page) {
   return page.locator("body").evaluate((body) => {
     const forbidden = [
+      "current attributes",
       "dataloader",
       "ecto",
+      "evidence",
       "graphql",
       "identity count",
+      "merchant product",
+      "persisted snapshot",
+      "qualification",
+      "recommendation profile",
       "relay",
       "resolver",
+      "source artifact",
       "taxon",
     ];
     const visibleCopy = body.innerText.toLowerCase();
@@ -721,7 +788,10 @@ async function expectMobileLedgerDisclosure(page: Page) {
   await expect(article.locator('[data-slot="product-ledger-offer"]')).toBeVisible();
   await expect(article.locator('[data-slot="product-ledger-actions"]')).toBeVisible();
 
-  await article.getByRole("button", { name: "More details" }).click();
+  const trigger = article.getByRole("button", { name: "More details" });
+  await focusByTab(page, trigger);
+  await expectVisibleFocus(trigger);
+  await page.keyboard.press("Space");
   const disclosure = article.locator('[data-slot="collapsible-content"]');
   await expect(disclosure).toBeVisible();
   await expect(disclosure).toContainText(
@@ -729,7 +799,9 @@ async function expectMobileLedgerDisclosure(page: Page) {
   );
   await expect(disclosure).toContainText("Below the 30-day price");
   await expect(disclosure).toContainText("Last checked Aug 10, 2026");
-  await article.getByRole("button", { name: "More details" }).click();
+  await page.keyboard.press("Space");
+  await expect(disclosure).toBeHidden();
+  await trigger.evaluate((element) => element.blur());
 }
 
 async function expectDisclosureTargets(page: Page) {
@@ -761,9 +833,11 @@ async function expectMobileNavigation(page: Page) {
   expect(boxes[2]?.y).toBe(boxes[3]?.y);
   expect(boxes[0]?.x).not.toBe(boxes[1]?.x);
 
-  await explore.click();
+  await focusByTab(page, explore);
+  await expectVisibleFocus(explore);
+  await page.keyboard.press("Space");
   const exploreNavigation = primary.getByRole("navigation", { name: "Explore navigation" });
   await expect(exploreNavigation.getByRole("link", { name: "Offers" })).toBeVisible();
   await expect(exploreNavigation.getByRole("link", { name: "Merchants" })).toBeVisible();
-  await explore.click();
+  await page.keyboard.press("Space");
 }
