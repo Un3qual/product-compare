@@ -75,6 +75,75 @@ owned paths are disjoint and the live queue contract permits it.
   revenue-reporting workspaces; and
 - unrelated backend refactors.
 
+## Complete Functionality Contract
+
+The redesign includes the complete working product, not only its primary happy
+paths. The route matrix below is the complete functional scope of the current
+application at this design snapshot. Every shipped capability exposed by the
+current route, loader, GraphQL operation, and affected test suite remains
+available after redesign unless a later product decision explicitly removes
+it. Visual simplification may change composition, disclosure, labels, or
+interaction mechanics; it may not make an existing capability unreachable.
+
+“Complete functionality” means behavioral parity or an approved improvement,
+not pixel parity. For every applicable feature this includes:
+
+- authorization and ownership rules;
+- URL parsing, normalization, canonical redirects, and shareable state;
+- initial, loading, empty, partial-data, unavailable, invalid, unauthorized,
+  forbidden, not-found, and retry states;
+- field validation, safe generic errors, typed field errors, duplicate-submit
+  protection, row-scoped pending/error state, confirmation, and focus recovery;
+- stable ordering, filtering, sorting, bounded result counts, cursor validation,
+  first/next/load-more navigation, and repeated-cursor protection;
+- safe outbound-link and tracked-redirect behavior;
+- Relay request disposal, request cancellation, SSR preload and hydration,
+  viewer-store updates, document metadata, and route error boundaries; and
+- desktop, tablet, mobile, keyboard, screen-reader, reduced-motion, and degraded
+  network behavior.
+
+The existing reviews and questions-and-answers experience is explicitly in
+scope for preservation. “New discussion/community product features” in the
+out-of-scope list means expanding that product area, not removing or reducing
+the shipped review, question, answer, moderation-state, or owner-action flows.
+
+### Route-by-route feature matrix
+
+| Surface | Complete required functionality |
+| --- | --- |
+| Application shell and `/` | Preserve viewer-aware guest, member, and operator navigation; skip navigation; route metadata; lazy-route recovery; SSR-safe viewer state; and auth revalidation. Ship the approved useful homepage with search, category shortcuts, the six-column product ledger, URL-backed comparison continuity, and a small new/trending deal module. Guests receive globally useful deals; signed-in viewers may receive private, relevant deals with a truthful reason and safe global fallback. |
+| `/products` | Preserve URL-backed search; relevance, catalog-order, product-name, brand-name, and newest sorting; category and descendant-category selection; use-case, numeric-range, boolean, and option filters; filter counts and disabled states; active-filter summary and reset; result count; validated page size and cursor pagination; repeated-cursor protection; product identity and ordered specification highlights; add/remove comparison actions; persistent ordered compare tray; empty, filtered-empty, loading, partial-data, and unavailable states. Internal filter names such as `typeTaxonId` remain implementation details and render as category language. |
+| `/categories/:slug` | Preserve curated category identity, description, qualified product count, canonical and indexability metadata, invalid/unknown-category 404 behavior, trusted product ordering, brand and ordered specification highlights, product-detail and full-catalog paths, cursor pagination, and repeated-cursor protection. |
+| `/products/:slug` | Preserve legacy-alias canonical redirects; canonical/indexability/structured metadata; not-found versus unavailable handling; product identity, description, brand, overview, and grouped ordered specifications; active-offer pagination; merchant identity; current item price, observation time, active coupons, and recent price history; safe tracked merchant actions with pending protection; bounded-more and missing-data copy; partial survival when offers or community data fail; compare add/remove/full states and persistent ordered tray; and the product-scoped price-watch control. Preserve lazy-loaded reviews and Q&A, review summary, published reviews, questions, accepted-answer marking, answer pagination, signed-in review/question/answer creation, owner-only edit and confirmed removal, hidden/rejected owner submissions, moderation states, authored-text safety, and row-scoped lifecycle errors. |
+| `/offers` | Preserve required product scope; selected product and brand context; active/all-offer choice; merchant quick filters; ascending/descending price and merchant-name ordering; page-size control; active-filter summary and reset; current price, availability, merchant/domain, last-seen time, coupons, and recent price history; truthful visible-page price summary with mixed-currency safeguards; active tracked merchant actions and safe inactive direct links; same-origin redirect validation; next/first cursor navigation; and missing-product, non-product, empty, loading, unavailable, and row-action failure states. |
+| `/merchants` and `/merchants/:slug` | Preserve directory page-size and cursor controls, first/next navigation, current-page name filtering, empty/no-match states, normalized safe website links with unsafe domains left as text, and loading/unavailable shell continuity. Preserve merchant-detail canonical metadata and 404 behavior; merchant identity/domain; active, distinct, observed, eligible, fresh, aging, stale, and unobserved offer counts; last-observed time; product, price, shipping, stock, and observation rows; product links; and offer pagination. |
+| `/compare` | Preserve normalized ordered URL selection, de-duplication, the three-product limit, empty-state picker, paginated picker accumulation and filtering, add/remove actions, stable numbered selection order, and selected-product tray. Preserve product summaries, typed and grouped specification alignment, all/differences URL-backed modes, missing-cell behavior, current loaded-offer decision summaries, exact decimal comparison, mixed-currency and incomplete-page safeguards, coupon and recent-price context, partial survival when offer context fails, and missing-product/error states. Preserve signed-in naming and saving of the current ordered set; buying-priority selection and recommendation loading/status/results/reasons/missing-input handling; and publishing, listing through all pages, opening, and row-scoped revocation of public comparison snapshots. |
+| `/compare/saved` | Preserve owner-only access and descriptive sign-in recovery; paginated saved sets; stored product order and fallback labels; filtering by set name or product; current, name, and product-count sorting; first/next navigation; reopen links that restore the ordered comparison; confirmed deletion; overlapping mutation correctness; row-scoped pending/errors; and empty/no-match/forbidden/unavailable states. |
+| `/compare/shared/:token` | Preserve 404 behavior for invalid or revoked tokens; canonical/indexability metadata; immutable title, capture time, disclaimer, products, descriptions, sources, specification details, captured offers, price freshness, and captured buying-priority result; exact product order and fallbacks; and a path into a current live comparison without representing captured data as live. User copy calls source records “details” or “sources,” never internal schema terminology. |
+| `/account/alerts` | Preserve the bounded recent price-change inbox, including unread state and the mark-read action, ahead of watch controls; active and paused watch partitions; product and merchant context; threshold, percentage-drop, and availability rules; currency, baseline/current price, and observation time; create-watch controls on eligible product surfaces; pause/resume and confirmed delete actions; product links; truncation messaging; row-scoped pending/errors; and owner-only access with empty/unavailable states. |
+| Authentication routes | Preserve GraphQL/Phoenix-session login, registration, logout, forgot-password, reset-password, and email-verification flows; field-level credential/validation errors; privacy-safe password-request success; URL token trimming, missing/invalid-token handling, single-use verification behavior, stale-response protection, retry after transient failure, viewer-store updates, successful redirects, generic transport/top-level errors, pending-submit protection, and unchanged viewer state after unsuccessful logout. |
+| `/account/api-tokens` | Preserve owner-only access; all/active/revoked status navigation and expired-status display; validated first/next cursor pagination; token label, prefix, status, creation, expiry, and last-use details; creation with optional label, manual expiry, 30-day, 90-day, one-year, and no-expiration choices; warning-gated one-time secret reveal; rotation with replacement label/expiry and replacement one-time secret; expired-token action policy; confirmed revocation; duplicate-submit protection; independent row pending/errors; and empty, unauthorized, payload-error, and network-error states. |
+| `/affiliate/setup` | Preserve merchant choice pagination and selected-merchant context; affiliate-network upsert; affiliate-program upsert with network, merchant, code, and status; affiliate-link upsert with merchant-product, network, original URL, affiliate URL, and verification time; coupon creation with merchant, network, code, discount type/value/currency, validity dates, and optional fields; normalized submissions; complete saved-result summaries; typed payload errors; and loading, missing-payload, unavailable, and pagination-recovery states. |
+| `/ingestion/cj-programs` | Preserve full-dataset lifecycle counts; lifecycle-stage filtering; sorting; program first/next pagination; advertiser identity, feed count, warnings, current stage, note, and last-change details; every lifecycle-stage choice; optimistic-concurrency-safe stage/note save; stale-response refresh; independent row pending/feedback; lazy per-program feed expansion, retry, and first/next feed pages; unmatched-feed facts and independent pagination; empty and unavailable states; and the permanent `/ingestion/feed-candidates` redirect. |
+| `/commerce/revenue` | Preserve currency, supported-network, from-date, and to-date filters; local-calendar date presets that retain compatible filters; active-filter summary; missing-currency and invalid-range guidance; click, conversion, gross-order-value, commission-revenue, and average-paid-price metrics including valid zero/empty/unavailable values; individual click, user/anonymous, request, program, network, matched-conversion, amount, and attribution-confidence details; independent cursor-based ledger loading, load-more, retry, and filter-reset behavior; and summary survival while the ledger is pending or unavailable. User-facing copy uses “details,” not “evidence.” |
+| Route fallback | Preserve the wildcard 404 route, useful recovery navigation, document metadata on every registered route, route-local error boundaries, abort propagation, and the distinction between not found, unauthorized, forbidden, malformed input, partial failure, and service unavailability. |
+
+### Feature-parity acceptance ledger
+
+The implementation plan must turn this matrix into an executable acceptance
+ledger before the first UI code change. Each row records the route, user
+capability, current query or mutation, authorization rule, URL state, applicable
+states, current tests, cohort owner, and final verification. The code and tests
+at the start of each cohort are checked for drift so a feature added after this
+spec cannot be lost. Any capability without current behavior coverage receives
+a characterization test before its presentation changes.
+
+No cohort may be marked complete while a ledger row is missing, unreachable,
+untested, intentionally hidden at a supported viewport, or deferred as
+“follow-up polish.” Removing a feature, weakening its privacy or safety rule, or
+reducing its supported states requires a separate explicit product decision and
+an amendment to this spec.
+
 ## Visual Thesis
 
 ProductCompare is a warm, precise buying workspace: mineral canvas, warm paper,
@@ -493,6 +562,8 @@ Each cohort closes with:
 The program is complete when:
 
 - the approved visual system and useful homepage are shipped;
+- every feature in the route-by-route matrix remains reachable, behaves under
+  all applicable states, and has a completed acceptance-ledger entry;
 - all four route cohorts use the same production system without route-specific
   visual drift;
 - user-facing pages contain no accidental internal domain vocabulary;
