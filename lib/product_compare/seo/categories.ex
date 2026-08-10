@@ -41,19 +41,7 @@ defmodule ProductCompare.Seo.Categories do
       Map.new(taxons, fn taxon ->
         qualified_product_count = Map.fetch!(counts, taxon.id)
 
-        {taxon.seo_slug,
-         %{
-           id: taxon.id,
-           entropy_id: taxon.entropy_id,
-           name: taxon.name,
-           slug: taxon.seo_slug,
-           description: taxon.seo_description,
-           qualified_product_count: qualified_product_count,
-           indexable:
-             QualificationPolicy.adequate_text?(taxon.seo_description) and
-               qualified_product_count >= QualificationPolicy.minimum_category_products(),
-           now: now
-         }}
+        {taxon.seo_slug, category_summary(taxon, qualified_product_count, now)}
       end)
 
     Map.new(requested_slugs, &{&1, Map.get(categories_by_slug, &1)})

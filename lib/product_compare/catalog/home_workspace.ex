@@ -32,28 +32,29 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
         distinct: price.merchant_product_id,
         order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
 
-    eligible_offer =
+    eligible_product_ids =
       from offer in MerchantProduct,
         join: price in subquery(latest_prices),
         on: price.merchant_product_id == offer.id,
         where:
           offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
             price.observed_at >= ^DateTime.add(now, -86_400, :second),
-        select: offer.product_id
+        distinct: true,
+        select: %{product_id: offer.product_id}
 
-    display_specification =
+    display_specification_product_ids =
       from current in ProductAttributeCurrent,
-        where: current.product_id == parent_as(:product).id
+        distinct: true,
+        select: %{product_id: current.product_id}
 
     Product
     |> Filtering.apply_filters(%{})
-    |> where(
-      [product],
-      exists(
-        subquery(eligible_offer |> where([offer], offer.product_id == parent_as(:product).id))
-      )
+    |> join(:inner, [product: product], eligible in subquery(eligible_product_ids),
+      on: eligible.product_id == product.id
     )
-    |> where([product], exists(display_specification))
+    |> join(:inner, [product: product], current in subquery(display_specification_product_ids),
+      on: current.product_id == product.id
+    )
     |> limit(^limit)
     |> Repo.all()
   end

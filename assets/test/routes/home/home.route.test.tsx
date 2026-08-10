@@ -177,7 +177,7 @@ test("home maps a rejected deferred deals descriptor to the local retry state", 
   expect(revalidateMock).toHaveBeenCalledTimes(1);
 });
 
-test("home renders six desktop ledger headings, one semantic list, and plain deal tabs", async () => {
+test("home renders desktop ledger headings, one semantic list, and restrained deal rows", async () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
     deals: Promise.resolve(DEALS_DESCRIPTOR),
@@ -206,7 +206,24 @@ test("home renders six desktop ledger headings, one semantic list, and plain dea
         ],
       },
     } as never)
-    .mockReturnValueOnce({ homeDeals: { new: [], trending: [], forYou: [] } } as never);
+    .mockReturnValueOnce({
+      homeDeals: {
+        new: [
+          {
+            product: { id: "product-2", name: "Model 2", slug: "model-2" },
+            offer: {
+              merchantName: "Camera Shop",
+              currency: "USD",
+              landedPrice: "399.00",
+              observedAt: "2026-08-10T12:00:00Z",
+            },
+            reasons: [{ code: "NEW_OFFER", watchTarget: null }],
+          },
+        ],
+        trending: [],
+        forYou: [],
+      },
+    } as never);
 
   render(
     <MemoryRouter>
@@ -241,8 +258,23 @@ test("home renders six desktop ledger headings, one semantic list, and plain dea
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), DEALS_DESCRIPTOR);
   expect(screen.getByRole("tab", { name: "Trending" })).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "More details" })).toHaveAttribute(
+  expect(screen.getByRole("button", { hidden: true, name: "More details" })).toHaveAttribute(
     "aria-expanded",
     "false",
+  );
+  const newOffers = screen.getByRole("list", { name: "New offers" });
+  expect(newOffers).toHaveAttribute("data-slot", "home-deals-list");
+  expect(within(newOffers).getByRole("listitem")).toHaveAttribute("data-slot", "home-deals-item");
+  expect(within(newOffers).getByRole("link", { name: "Model 2" })).toHaveAttribute(
+    "data-slot",
+    "home-deals-link",
+  );
+  expect(within(newOffers).getByText("$399.00 at Camera Shop")).toHaveAttribute(
+    "data-slot",
+    "home-deals-offer",
+  );
+  expect(within(newOffers).getByText("New offer")).toHaveAttribute(
+    "data-slot",
+    "home-deals-reason",
   );
 });

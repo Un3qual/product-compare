@@ -54,7 +54,7 @@ test("skip navigation moves keyboard focus into the main working region", () => 
   render(
     <AppShell navigation={<span>Navigation</span>}>
       <button type="button">Start comparing</button>
-    </AppShell>
+    </AppShell>,
   );
 
   const skipLink = screen.getByRole("link", { name: "Skip to main content" });
@@ -73,7 +73,7 @@ test("representative controls receive the production visible-focus and 44px touc
     <>
       <Button>Open comparison</Button>
       <TextField aria-label="Search products" />
-    </>
+    </>,
   );
 
   const button = screen.getByRole("button", { name: "Open comparison" });
@@ -102,10 +102,10 @@ test("comparison continuity presents normalized selections as numbered labels an
         destination="/compare?slug=alpha&slug=beta"
         products={[
           { label: "Alpha Camera", slug: "alpha" },
-          { label: "Beta Camera", slug: "beta" }
+          { label: "Beta Camera", slug: "beta" },
         ]}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const continuity = screen.getByRole("region", { name: "Comparison selection" });
@@ -114,7 +114,7 @@ test("comparison continuity presents normalized selections as numbered labels an
   expect(within(continuity).getByText("2. Beta Camera")).toBeInTheDocument();
   expect(within(continuity).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
-    "/compare?slug=alpha&slug=beta"
+    "/compare?slug=alpha&slug=beta",
   );
 });
 
@@ -131,27 +131,46 @@ test("product ledger keeps all product facts in one semantic list with a disclos
           offer: "$849 at Example Store",
           priceSignal: "Lowest in 30 days",
           secondaryDetails: "Body weight: 520 g",
-          title: "Alpha Camera"
-        }
+          title: "Alpha Camera",
+        },
       ]}
       secondaryDisclosureLabel="More details"
-    />
+    />,
   );
 
   const ledger = screen.getByRole("list", { name: "Products" });
+  const mobileDisclosure = within(ledger).getByRole("button", {
+    hidden: true,
+    name: "More details",
+  });
   expect(within(ledger).getAllByRole("article")).toHaveLength(1);
   expect(within(ledger).getByRole("heading", { name: "Alpha Camera" })).toBeInTheDocument();
-  expect(within(ledger).getByRole("button", { name: "More details" })).toHaveAttribute(
-    "aria-expanded",
-    "false"
-  );
+  expect(mobileDisclosure).toHaveAttribute("aria-expanded", "false");
   expect(within(ledger).getByRole("link", { name: "View Alpha Camera" })).toBeInTheDocument();
   expect(within(ledger).getByText("Cameras")).toHaveAttribute("data-tone", "secondary");
   expect(within(ledger).getByText("Price signal")).toHaveAttribute("data-tone", "secondary");
-  expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
-    "data-tone",
-    "freshness"
+  expect(within(ledger).getByText("Last checked today")).toHaveAttribute("data-tone", "freshness");
+  expect(within(ledger).getByText("24 MP · Weather sealed").closest("[data-slot]")).toHaveAttribute(
+    "data-slot",
+    "product-ledger-highlights",
   );
+  expect(within(ledger).getByText("$849 at Example Store").closest("[data-slot]")).toHaveAttribute(
+    "data-slot",
+    "product-ledger-offer",
+  );
+  expect(within(ledger).getByText("Lowest in 30 days").closest("[data-slot]")).toHaveAttribute(
+    "data-slot",
+    "product-ledger-price-signal",
+  );
+  expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
+    "data-slot",
+    "product-ledger-freshness",
+  );
+  expect(mobileDisclosure).toHaveAttribute("data-slot", "button");
+  expect(mobileDisclosure).toHaveAttribute("data-variant", "soft");
+  expect(mobileDisclosure).toHaveStyle({
+    minHeight: "44px",
+  });
 });
 
 test("compare mark preserves the product identity without ornamental imagery", () => {
@@ -164,31 +183,46 @@ test("responsive navigation keeps search and comparison direct while grouping gu
   const { rerender } = render(
     <MemoryRouter>
       <RootPrimaryNavigation viewer={null} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "Search products" })).toHaveAttribute(
     "href",
-    "/products"
+    "/products",
   );
   expect(screen.getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "href",
-    "/compare"
+    "/compare",
   );
   expect(screen.getByRole("button", { name: "Guest menu" })).toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Offers" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Explore menu" }));
+  const exploreNavigation = screen.getByRole("navigation", { name: "Explore navigation" });
+  expect(within(exploreNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
+    "href",
+    "/offers",
+  );
+  expect(within(exploreNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
+    "href",
+    "/merchants",
+  );
 
   rerender(
     <MemoryRouter>
-      <RootPrimaryNavigation viewer={{ email: "member@example.com", id: "member-1", isOperator: false }} />
-    </MemoryRouter>
+      <RootPrimaryNavigation
+        viewer={{ email: "member@example.com", id: "member-1", isOperator: false }}
+      />
+    </MemoryRouter>,
   );
   expect(screen.getByRole("button", { name: "Account menu" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Operator menu" })).not.toBeInTheDocument();
 
   rerender(
     <MemoryRouter>
-      <RootPrimaryNavigation viewer={{ email: "operator@example.com", id: "operator-1", isOperator: true }} />
-    </MemoryRouter>
+      <RootPrimaryNavigation
+        viewer={{ email: "operator@example.com", id: "operator-1", isOperator: true }}
+      />
+    </MemoryRouter>,
   );
   expect(screen.getByRole("button", { name: "Operator menu" })).toBeInTheDocument();
 });

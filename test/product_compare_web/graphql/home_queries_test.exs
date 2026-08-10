@@ -244,6 +244,46 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            ]
   end
 
+  test "homeDeals keeps only the six highest-ranked viewer candidates", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("viewer-boundary-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    candidates =
+      Enum.map(1..8, fn index ->
+        non_deal_product(
+          "viewer-boundary-#{index}",
+          category,
+          operator,
+          "100",
+          Integer.to_string(100 + index * 10)
+        )
+      end)
+
+    candidates
+    |> Enum.chunk_every(3)
+    |> Enum.with_index(1)
+    |> Enum.each(fn {comparison, index} ->
+      assert {:ok, _} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "Viewer boundary #{index}",
+                 product_ids: Enum.map(comparison, & &1.product.id)
+               })
+    end)
+
+    assert %{"data" => %{"homeDeals" => %{"forYou" => for_you}}} =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => []})
+
+    assert Enum.map(for_you, &get_in(&1, ["product", "id"])) ==
+             candidates
+             |> Enum.reverse()
+             |> Enum.take(6)
+             |> Enum.map(&relay_id(:product, &1.product.id))
+  end
+
   test "home operations retain a fixed read budget and expose only typed deal reasons", %{
     conn: conn
   } do

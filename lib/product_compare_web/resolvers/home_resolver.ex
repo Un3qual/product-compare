@@ -78,7 +78,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     |> Enum.flat_map(fn {product_id, offer} ->
       with true <- offer.new_offer?,
            %Product{} = product <- Map.get(products_by_id, product_id) do
-        [%{product: product, offer: offer, reasons: [%{code: :new_offer, watch_target: nil}]}]
+        [deal(product, offer, %{code: :new_offer, watch_target: nil})]
       else
         _ -> []
       end
@@ -91,13 +91,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     |> Enum.flat_map(fn product_id ->
       with %{below_30_day_median?: true} = offer <- Map.get(offers_by_product_id, product_id),
            %Product{} = product <- Map.get(products_by_id, product_id) do
-        [
-          %{
-            product: product,
-            offer: offer,
-            reasons: [%{code: :trending_below_median, watch_target: nil}]
-          }
-        ]
+        [deal(product, offer, %{code: :trending_below_median, watch_target: nil})]
       else
         _ -> []
       end
@@ -106,7 +100,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp viewer_candidates(nil, _selected_slugs, _now),
-    do: %{relevance: nil, current_product_ids: MapSet.new(), product_ids: []}
+    do: %{relevance: nil, current_product_ids: [], product_ids: []}
 
   defp viewer_candidates(user, selected_slugs, now) do
     relevance = Alerts.home_relevance(user.id)
@@ -115,7 +109,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
       selected_slugs
       |> Catalog.home_workspace_candidates(now: now, limit: @deal_limit)
       |> Map.fetch!(:selected_products)
-      |> MapSet.new(& &1.id)
+      |> Enum.map(& &1.id)
 
     %{
       relevance: relevance,
@@ -124,7 +118,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
         relevance.watch_targets
         |> Map.keys()
         |> Kernel.++(relevance.saved_product_ids)
-        |> Kernel.++(MapSet.to_list(current_product_ids))
+        |> Kernel.++(current_product_ids)
         |> Enum.uniq()
     }
   end
@@ -144,7 +138,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
       |> Enum.flat_map(fn {product_id, offer} ->
         case {Map.get(products_by_id, product_id),
               viewer_reason(product_id, relevance, current_product_ids)} do
-          {%Product{}, %{}} = pair -> [deal_from_viewer_pair(pair, offer)]
+          {%Product{} = product, %{} = reason} -> [deal(product, offer, reason)]
           _ -> []
         end
       end)
@@ -153,9 +147,10 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     if relevant_deals == [], do: fallback_deals(new_deals, trending_deals), else: relevant_deals
   end
 
-  defp deal_from_viewer_pair({product, reason}, offer),
+  defp deal(product, offer, reason),
     do: %{product: product, offer: offer, reasons: [reason]}
 
+  @spec viewer_reason(pos_integer(), map(), [pos_integer()]) :: map() | nil
   defp viewer_reason(product_id, relevance, current_product_ids) do
     cond do
       target = Map.get(relevance.watch_targets, product_id) ->
@@ -164,7 +159,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
       product_id in relevance.saved_product_ids ->
         %{code: :saved_comparison, watch_target: nil}
 
-      MapSet.member?(current_product_ids, product_id) ->
+      product_id in current_product_ids ->
         %{code: :current_comparison, watch_target: nil}
 
       true ->
@@ -184,9 +179,13 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp rank_viewer_deals(deals) do
-    deals
-    |> Enum.sort(&viewer_deal_before?/2)
-    |> Enum.take(@deal_limit)
+    Enum.reduce(deals, [], fn deal, top_deals ->
+      {higher_ranked, lower_ranked} =
+        Enum.split_while(top_deals, &viewer_deal_before?(&1, deal))
+
+      (higher_ranked ++ [deal | lower_ranked])
+      |> Enum.take(@deal_limit)
+    end)
   end
 
   defp viewer_deal_before?(first, second) do

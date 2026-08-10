@@ -13,35 +13,22 @@ import {
 const styles = create({
   headings: {
     color: tokens.textSecondary,
-    display: "grid",
+    display: {
+      default: "grid",
+      "@media (max-width: 62rem)": "none",
+    },
     fontFamily: tokens.fontMono,
     fontSize: "0.7rem",
     gap: "1rem",
-    gridTemplateColumns: {
-      default:
-        "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) auto",
-      "@media (max-width: 62rem)":
-        "minmax(13rem, 1.3fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) auto",
-      "@media (max-width: 42rem)": "minmax(0, 1fr)",
-    },
+    gridTemplateColumns:
+      "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) 10rem",
     letterSpacing: "0.04em",
     padding: "0.6rem 0",
     textTransform: "uppercase",
   },
-  desktopOnly: {
-    display: {
-      default: "block",
-      "@media (max-width: 62rem)": "none",
-    },
-  },
-  tabletOnly: {
-    display: {
-      default: "block",
-      "@media (max-width: 42rem)": "none",
-    },
-  },
   actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
   secondaryDetails: { display: "grid", gap: "0.25rem" },
+  workspace: { maxWidth: "100%", minWidth: 0 },
 });
 
 export type HomeLedgerRow = {
@@ -64,19 +51,13 @@ export function HomeProductLedger({
   selectedSlugs: readonly string[];
 }) {
   return (
-    <section aria-label="Product workspace">
+    <section aria-label="Product workspace" {...props(styles.workspace)}>
       <div aria-hidden="true" data-slot="home-ledger-headings" {...props(styles.headings)}>
         <span>Product</span>
-        <span {...props(styles.tabletOnly)}>
-          Highlights
-        </span>
+        <span>Highlights</span>
         <span>Best offer</span>
-        <span {...props(styles.desktopOnly)}>
-          Price signal
-        </span>
-        <span {...props(styles.desktopOnly)}>
-          Last checked
-        </span>
+        <span>Price signal</span>
+        <span>Last checked</span>
         <span>Actions</span>
       </div>
       <ProductLedger

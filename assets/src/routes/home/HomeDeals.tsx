@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { create, props } from "@stylexjs/stylex";
 import { Await, Link, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import type { HomeDealsRouteQuery } from "../../__generated__/HomeDealsRouteQuery.graphql";
@@ -7,8 +8,47 @@ import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { DetailTabs } from "../../ui/components/layout/DetailTabs";
 import { Button } from "../../ui/primitives/Button";
+import { tokens } from "../../ui/theme/tokens.stylex";
 import homeDealsRouteQuery from "./queries/HomeDealsRouteQuery";
 import { homeDealsViewData } from "./home-view-data";
+
+const styles = create({
+  list: {
+    borderBlockStart: `1px solid ${tokens.borderQuiet}`,
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+  item: {
+    alignItems: "baseline",
+    borderBlockEnd: `1px solid ${tokens.borderQuiet}`,
+    display: "grid",
+    gap: "0.35rem 1rem",
+    gridTemplateColumns: {
+      default: "minmax(12rem, 1fr) minmax(10rem, auto) minmax(10rem, auto)",
+      "@media (max-width: 42rem)": "minmax(0, 1fr)",
+    },
+    paddingBlock: "0.8rem",
+  },
+  link: {
+    color: tokens.actionAccent,
+    fontWeight: 700,
+    textDecoration: "none",
+  },
+  offer: {
+    color: tokens.textSecondary,
+    fontFamily: tokens.fontMono,
+    fontSize: "0.78rem",
+    lineHeight: 1.5,
+    margin: 0,
+  },
+  reason: {
+    color: tokens.textSecondary,
+    fontSize: "0.88rem",
+    lineHeight: 1.5,
+    margin: 0,
+  },
+});
 
 export function HomeDeals({
   deals,
@@ -75,12 +115,22 @@ function HomeDealsPanel({
       items={viewData.tabs.map((tab) => ({
         content:
           tab.deals.length > 0 ? (
-            <ul aria-label={`${tab.label} offers`}>
+            <ul
+              aria-label={`${tab.label} offers`}
+              data-slot="home-deals-list"
+              {...props(styles.list)}
+            >
               {tab.deals.map((deal) => (
-                <li key={deal.id}>
-                  <Link to={deal.href}>{deal.name}</Link>
-                  <p>{deal.offer}</p>
-                  <p>{deal.reason}</p>
+                <li data-slot="home-deals-item" key={deal.id} {...props(styles.item)}>
+                  <Link data-slot="home-deals-link" to={deal.href} {...props(styles.link)}>
+                    {deal.name}
+                  </Link>
+                  <p data-slot="home-deals-offer" {...props(styles.offer)}>
+                    {deal.offer}
+                  </p>
+                  <p data-slot="home-deals-reason" {...props(styles.reason)}>
+                    {deal.reason}
+                  </p>
                 </li>
               ))}
             </ul>

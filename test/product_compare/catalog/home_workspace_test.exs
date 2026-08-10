@@ -55,7 +55,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     {six, six_queries} =
       capture_select_queries(fn -> Catalog.home_workspace_candidates([], now: @now, limit: 6) end)
 
-    assert length(one.products) == 1
+    assert [_product] = one.products
     assert length(six.products) == length(products)
 
     assert count_select_queries_targeting_table(one_queries, :products) ==

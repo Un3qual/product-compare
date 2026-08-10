@@ -1,10 +1,7 @@
 import type { ReactNode } from "react";
-import { create, props } from "@stylexjs/stylex";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from "../../primitives/Collapsible";
+import { create, props, type StyleXStyles } from "@stylexjs/stylex";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../primitives/Collapsible";
+import { Button } from "../../primitives/Button";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
@@ -12,25 +9,32 @@ const styles = create({
     borderBlockStart: `1px solid ${tokens.borderQuiet}`,
     listStyle: "none",
     margin: 0,
-    padding: 0
+    maxWidth: "100%",
+    minWidth: 0,
+    padding: 0,
   },
   row: {
     borderBlockEnd: `1px solid ${tokens.borderQuiet}`,
-    paddingBlock: "1.15rem"
+    paddingBlock: "1.15rem",
   },
   article: {
     display: "grid",
     gap: "1rem",
-    gridTemplateColumns: {
-      default: "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) auto",
-      "@media (max-width: 62rem)": "minmax(13rem, 1.3fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) auto",
-      "@media (max-width: 42rem)": "minmax(0, 1fr)"
-    }
+    gridTemplate: {
+      default:
+        '"identity highlights offer signal freshness actions" / minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) 10rem',
+      "@media (max-width: 62rem)":
+        '"identity highlights" "offer signal" "freshness actions" / minmax(0, 1fr) minmax(0, 1fr)',
+      "@media (max-width: 42rem)": '"identity" "offer" "actions" "disclosure" / minmax(0, 1fr)',
+    },
+    maxWidth: "100%",
+    minWidth: 0,
   },
   identity: {
     display: "grid",
     gap: "0.25rem",
-    minWidth: 0
+    gridArea: "identity",
+    minWidth: 0,
   },
   category: {
     color: tokens.textSecondary,
@@ -38,13 +42,13 @@ const styles = create({
     fontSize: "0.72rem",
     letterSpacing: "0.04em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   title: {
     fontSize: "1.05rem",
     letterSpacing: "-0.015em",
     lineHeight: 1.2,
-    margin: 0
+    margin: 0,
   },
   fact: {
     color: tokens.textSecondary,
@@ -52,63 +56,79 @@ const styles = create({
     fontSize: "0.88rem",
     gap: "0.25rem",
     lineHeight: 1.45,
-    minWidth: 0
+    minWidth: 0,
+  },
+  highlights: {
+    display: {
+      default: "grid",
+      "@media (max-width: 42rem)": "none",
+    },
+    gridArea: "highlights",
+  },
+  offer: {
+    gridArea: "offer",
   },
   factLabel: {
     color: tokens.textSecondary,
     fontFamily: tokens.fontMono,
     fontSize: "0.7rem",
     letterSpacing: "0.04em",
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   priceSignal: {
     color: tokens.textSecondary,
-    fontWeight: 700
+    fontWeight: 700,
+  },
+  signal: {
+    display: {
+      default: "grid",
+      "@media (max-width: 42rem)": "none",
+    },
+    gridArea: "signal",
   },
   freshness: {
     backgroundColor: tokens.freshnessSoft,
     color: tokens.freshnessGreen,
+    display: {
+      default: "inline",
+      "@media (max-width: 42rem)": "none",
+    },
     fontFamily: tokens.fontMono,
     fontSize: "0.75rem",
-    lineHeight: 1.45
+    gridArea: "freshness",
+    lineHeight: 1.45,
   },
   actions: {
     alignItems: {
       default: "end",
-      "@media (max-width: 42rem)": "start"
+      "@media (max-width: 62rem)": "start",
     },
     display: "flex",
     flexDirection: {
       default: "column",
-      "@media (max-width: 42rem)": "row"
+      "@media (max-width: 62rem)": "row",
     },
     flexWrap: "wrap",
-    gap: "0.5rem"
+    gap: "0.5rem",
+    gridArea: "actions",
   },
   disclosure: {
-    gridColumn: {
-      default: "1 / -1",
-      "@media (min-width: 62.0625rem)": "2 / 4"
-    }
+    display: {
+      default: "none",
+      "@media (max-width: 42rem)": "block",
+    },
+    gridArea: "disclosure",
   },
   disclosureTrigger: {
-    backgroundColor: "transparent",
-    border: 0,
-    color: tokens.actionAccent,
-    cursor: "pointer",
-    font: "inherit",
-    fontSize: "0.88rem",
-    fontWeight: 700,
-    minHeight: tokens.controlHeight,
-    padding: 0,
-    textAlign: "start"
+    justifyContent: "start",
+    textAlign: "start",
   },
   disclosureContent: {
     color: tokens.textSecondary,
     fontSize: "0.88rem",
     lineHeight: 1.5,
-    paddingBlockStart: "0.45rem"
-  }
+    paddingBlockStart: "0.45rem",
+  },
 });
 
 export type ProductLedgerRow = {
@@ -126,7 +146,7 @@ export type ProductLedgerRow = {
 export function ProductLedger({
   label = "Products",
   rows,
-  secondaryDisclosureLabel
+  secondaryDisclosureLabel,
 }: {
   label?: string;
   rows: readonly ProductLedgerRow[];
@@ -137,7 +157,7 @@ export function ProductLedger({
       {rows.map((row) => (
         <li key={row.id} {...props(styles.row)}>
           <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
-            <div {...props(styles.identity)}>
+            <div data-slot="product-ledger-identity" {...props(styles.identity)}>
               <p data-tone="secondary" {...props(styles.category)}>
                 {row.category}
               </p>
@@ -145,22 +165,43 @@ export function ProductLedger({
                 {row.title}
               </h3>
             </div>
-            <LedgerFact label="Highlights">{row.highlights}</LedgerFact>
-            <LedgerFact label="Best offer">{row.offer}</LedgerFact>
-            <div {...props(styles.fact)}>
+            <LedgerFact
+              label="Highlights"
+              slot="product-ledger-highlights"
+              style={styles.highlights}
+            >
+              {row.highlights}
+            </LedgerFact>
+            <LedgerFact label="Best offer" slot="product-ledger-offer" style={styles.offer}>
+              {row.offer}
+            </LedgerFact>
+            <div data-slot="product-ledger-price-signal" {...props(styles.fact, styles.signal)}>
               <span data-tone="secondary" {...props(styles.factLabel)}>
                 Price signal
               </span>
               <span {...props(styles.priceSignal)}>{row.priceSignal}</span>
             </div>
-            <span data-slot="product-ledger-freshness" data-tone="freshness" {...props(styles.freshness)}>
+            <span
+              data-slot="product-ledger-freshness"
+              data-tone="freshness"
+              {...props(styles.freshness)}
+            >
               {row.freshness}
             </span>
-            <div {...props(styles.actions)}>{row.actions}</div>
+            <div data-slot="product-ledger-actions" {...props(styles.actions)}>
+              {row.actions}
+            </div>
             {row.secondaryDetails ? (
               <Collapsible {...props(styles.disclosure)}>
-                <CollapsibleTrigger {...props(styles.disclosureTrigger)}>
-                  {secondaryDisclosureLabel}
+                <CollapsibleTrigger asChild>
+                  <Button
+                    size="1"
+                    type="button"
+                    variant="soft"
+                    {...props(styles.disclosureTrigger)}
+                  >
+                    {secondaryDisclosureLabel}
+                  </Button>
                 </CollapsibleTrigger>
                 <CollapsibleContent {...props(styles.disclosureContent)}>
                   {row.secondaryDetails}
@@ -174,9 +215,19 @@ export function ProductLedger({
   );
 }
 
-function LedgerFact({ children, label }: { children: ReactNode; label: string }) {
+function LedgerFact({
+  children,
+  label,
+  slot,
+  style,
+}: {
+  children: ReactNode;
+  label: string;
+  slot: string;
+  style: StyleXStyles;
+}) {
   return (
-    <div {...props(styles.fact)}>
+    <div data-slot={slot} {...props(styles.fact, style)}>
       <span data-tone="secondary" {...props(styles.factLabel)}>
         {label}
       </span>
