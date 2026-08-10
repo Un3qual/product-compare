@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: complete
 - Priority: P1
 - Plan:
   `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
@@ -37,14 +37,30 @@
 - Mapping and cleanup GREEN: all 27 focused tests and 62 owner regressions pass.
   Migration `20260809130300` applied, rolled back to restore both legacy checks,
   and reapplied to leave only the canonical finite, non-negative price checks.
+- Final affected verification passes 222 tests. The definitive backend suite
+  passes 1,347 tests; typecheck, quality, formatting, queue validation, and diff
+  hygiene also pass.
 
-## Target Outcome
+## Batch Outcome
 
-Every reachable application-owned same-row PostgreSQL check has equivalent
+Every reachable application-owned same-row PostgreSQL check now has equivalent
 pre-write Ecto validation and an explicit `check_constraint/3` mapping.
-PostgreSQL remains the final authority, the slug-reservation trigger remains a
-documented exception, and dependent discussion reads, locks, and writes cannot
-run outside their required transaction.
+PostgreSQL remains the final authority, the slug-reservation trigger remains
+the sole documented exception, and dependent discussion reads, locks, and
+writes cannot run outside their required transaction.
+
+## Reconciled Inventory
+
+- The post-migration catalog contains 73 application-owned active checks after
+  excluding five Oban checks.
+- Seventy-two active checks have literal owner `check_constraint/3` mappings
+  and equivalent pre-write validation.
+- `product_slug_reservations_slug_format_check` is the sole unmapped active
+  check. Product and alias changesets validate the exact slug before their
+  originating statements maintain reservations through triggers.
+- `attributes_semantics_immutable`, `merchant_products_identity_immutable`, and
+  `units_semantics_immutable` are intentional trigger-error mappings and are
+  not active `pg_constraint` check rows.
 
 ## Owned Paths
 
@@ -120,6 +136,6 @@ product policy or add a generic framework to continue.
 
 ## Completion
 
-Replace this prospective target with observed mappings, validations, migration,
-transaction, catalog, and verification evidence. Close exactly one queue row;
-do not promote its internal slices separately.
+All validation, mapping, migration, transaction, catalog, and repository gates
+pass. One observed completion record closes the consolidated row; no internal
+slice is promoted separately.

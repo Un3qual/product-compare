@@ -3393,3 +3393,35 @@ No internal migration or test slice was promoted as another batch, and no new
 implementation row was validated at closeout. Discussions and provider/operator
 work remain deferred; the live queue records the resulting zero-ready
 ready-floor exception and a fresh core-product replenishment action.
+
+## Completed 2026-08-09 Database Constraint Application Parity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
+
+The repository-wide constraint audit completed as one application/database
+parity outcome. Immutable snapshot and alert facts, affiliate links, hourly
+community counters, terminal ingestion state, and persisted self-parenting now
+fail in owning changesets before SQL while retaining PostgreSQL enforcement.
+Eleven already-validating owners gained their exact database error mappings.
+The two obsolete price lower-bound checks were removed through a reversible
+migration, leaving their stronger finite, non-negative replacements.
+
+Direct post creation now acquires the thread lock before reading its candidate
+parent and inserting inside one transaction. A parent-move concurrency test
+proves the read is repeated after lock acquisition. The write-limit increment
+primitive rejects calls made outside an outer transaction before mutating its
+hourly row.
+
+The post-migration catalog contains 73 application-owned checks after excluding
+five Oban checks. Seventy-two are prevalidated and mapped;
+`product_slug_reservations_slug_format_check` remains the sole documented
+trigger-maintained exception. The affected boundary passed 222 tests and the
+definitive backend suite passed 1,347 tests. Typecheck, quality, formatting,
+queue validation, and diff hygiene also passed. Implementation commits were
+`66962bdc`, `3572fd7a`, and `a6d9168c`.
+
+No internal slice was promoted as another batch, and no new independently
+shippable outcome was validated at closeout. The live queue records the
+resulting zero-ready ready-floor exception and a fresh product/architecture
+replenishment action.
