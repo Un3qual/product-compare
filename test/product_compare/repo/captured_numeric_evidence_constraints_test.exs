@@ -4,8 +4,209 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   alias ProductCompare.Fixtures.AccountsFixtures
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Attribute, as: SnapshotAttribute
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer, as: SnapshotOffer
+  alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking, as: SnapshotRanking
   alias ProductCompareSchemas.Pricing.PricePoint
+
+  test "snapshot attribute changesets reject confidence outside the database range" do
+    attrs = %{
+      snapshot_product_id: 1,
+      position: 1,
+      attribute_id: 1,
+      claim_id: 1,
+      code: "weight",
+      display_name: "Weight",
+      value_text: "1 kg",
+      source_type: :user,
+      confidence: Decimal.new(0)
+    }
+
+    assert SnapshotAttribute.changeset(%SnapshotAttribute{}, attrs).valid?
+    assert SnapshotAttribute.changeset(%SnapshotAttribute{}, %{attrs | confidence: nil}).valid?
+
+    for confidence <- [
+          Decimal.new("-0.01"),
+          Decimal.new("1.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        SnapshotAttribute.changeset(%SnapshotAttribute{}, %{attrs | confidence: confidence}),
+        :confidence
+      )
+    end
+  end
+
+  test "snapshot offer changesets reject every invalid copied amount" do
+    attrs = %{
+      snapshot_product_id: 1,
+      position: 1,
+      merchant_product_id: 1,
+      price_point_id: 1,
+      merchant_name: "Merchant",
+      currency: "USD",
+      item_price: Decimal.new(0),
+      shipping: Decimal.new(0),
+      landed_price: Decimal.new(0),
+      observed_at: ~U[2026-08-09 12:00:00Z],
+      freshness: :fresh
+    }
+
+    assert SnapshotOffer.changeset(%SnapshotOffer{}, attrs).valid?
+
+    for field <- [:item_price, :shipping, :landed_price],
+        amount <- [
+          Decimal.new("-0.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        SnapshotOffer.changeset(%SnapshotOffer{}, Map.put(attrs, field, amount)),
+        field
+      )
+    end
+  end
+
+  test "snapshot ranking changesets reject invalid copied landed prices" do
+    attrs = %{
+      snapshot_recommendation_id: 1,
+      rank: 1,
+      product_id: 1,
+      product_name: "Product",
+      landed_price: Decimal.new(0),
+      currency: "USD",
+      price_point_id: 1,
+      merchant_product_id: 1,
+      claim_ids: [1],
+      reasons: ["Lowest current cost"]
+    }
+
+    assert SnapshotRanking.changeset(%SnapshotRanking{}, attrs).valid?
+
+    for landed_price <- [
+          Decimal.new("-0.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        SnapshotRanking.changeset(%SnapshotRanking{}, %{attrs | landed_price: landed_price}),
+        :landed_price
+      )
+    end
+  end
+
+  test "alert event changesets reject copied numeric evidence outside database bounds" do
+    attrs = %{
+      watch_rule_id: 1,
+      user_id: 1,
+      triggering_price_point_id: 1,
+      merchant_product_id: 1,
+      rule_type: :percentage_drop,
+      currency: "USD",
+      item_price: Decimal.new(0),
+      shipping: Decimal.new(0),
+      landed_price: Decimal.new(0),
+      observed_at: ~U[2026-08-09 12:00:00Z],
+      baseline_landed_price: nil,
+      target_amount: nil,
+      percentage_drop: nil
+    }
+
+    assert AlertEvent.changeset(%AlertEvent{}, attrs).valid?
+
+    for field <- [
+          :item_price,
+          :shipping,
+          :landed_price,
+          :baseline_landed_price,
+          :target_amount
+        ],
+        amount <- [
+          Decimal.new("-0.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        AlertEvent.changeset(%AlertEvent{}, Map.put(attrs, field, amount)),
+        field
+      )
+    end
+
+    for percentage_drop <- [
+          Decimal.new(0),
+          Decimal.new("100.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        AlertEvent.changeset(%AlertEvent{}, %{attrs | percentage_drop: percentage_drop}),
+        :percentage_drop
+      )
+    end
+  end
+
+  test "price watch creation rejects invalid captured baselines before SQL" do
+    attrs = %{
+      user_id: 1,
+      product_id: 1,
+      rule_type: :percentage_drop,
+      currency: "USD",
+      percentage_drop: Decimal.new(10),
+      baseline_landed_price: Decimal.new(0)
+    }
+
+    assert PriceWatchRule.create_changeset(%PriceWatchRule{}, attrs).valid?
+
+    for baseline <- [
+          Decimal.new("-0.01"),
+          Decimal.new("NaN"),
+          Decimal.new("Infinity"),
+          Decimal.new("-Infinity")
+        ] do
+      assert_invalid_field(
+        PriceWatchRule.create_changeset(%PriceWatchRule{}, %{
+          attrs
+          | baseline_landed_price: baseline
+        }),
+        :baseline_landed_price
+      )
+    end
+  end
+
+  test "captured numeric changesets map their exact database checks" do
+    assert_maps_check(
+      SnapshotAttribute.changeset(%SnapshotAttribute{}, %{}),
+      "comparison_snapshot_attributes_confidence_range"
+    )
+
+    assert_maps_check(
+      SnapshotOffer.changeset(%SnapshotOffer{}, %{}),
+      "comparison_snapshot_offers_amounts_non_negative"
+    )
+
+    assert_maps_check(
+      SnapshotRanking.changeset(%SnapshotRanking{}, %{}),
+      "comparison_snapshot_rankings_landed_price_non_negative"
+    )
+
+    assert_maps_check(
+      AlertEvent.changeset(%AlertEvent{}, %{}),
+      "alert_events_numeric_evidence_bounds"
+    )
+
+    assert_maps_check(
+      PriceWatchRule.create_changeset(%PriceWatchRule{}, %{}),
+      "price_watch_rules_baseline_landed_price_non_negative"
+    )
+  end
 
   test "comparison snapshot attribute confidence accepts null and endpoints and rejects values outside zero through one" do
     snapshot_product_id = insert_snapshot_product!()
@@ -437,6 +638,17 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   defp assert_decimal_cast_error(changeset, field) do
     assert {"is invalid", [type: :decimal, validation: :cast]} =
              Keyword.fetch!(changeset.errors, field)
+  end
+
+  defp assert_invalid_field(changeset, field) do
+    refute changeset.valid?
+    assert Keyword.has_key?(changeset.errors, field)
+  end
+
+  defp assert_maps_check(changeset, constraint) do
+    assert Enum.any?(Ecto.Changeset.constraints(changeset), fn mapping ->
+             mapping.type == :check and mapping.constraint == constraint
+           end)
   end
 
   defp non_finite_decimals,

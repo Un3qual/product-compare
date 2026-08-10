@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @freshness_values [:fresh, :aging, :stale, :unobserved]
   @type t :: %__MODULE__{}
@@ -24,6 +25,8 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(offer, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:item_price, :shipping, :landed_price])
+
     offer
     |> cast(attrs, [
       :snapshot_product_id,
@@ -53,11 +56,17 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer do
       :freshness
     ])
     |> validate_number(:position, greater_than: 0)
+    |> validate_number(:item_price, greater_than_or_equal_to: 0)
+    |> validate_number(:shipping, greater_than_or_equal_to: 0)
+    |> validate_number(:landed_price, greater_than_or_equal_to: 0)
     |> unique_constraint([:snapshot_product_id, :position],
       name: :snapshot_offers_product_position_uq
     )
     |> foreign_key_constraint(:snapshot_product_id)
     |> foreign_key_constraint(:currency, name: :comparison_snapshot_offers_currency_id_fkey)
     |> check_constraint(:position, name: :comparison_snapshot_offers_position)
+    |> check_constraint(:item_price,
+      name: :comparison_snapshot_offers_amounts_non_negative
+    )
   end
 end

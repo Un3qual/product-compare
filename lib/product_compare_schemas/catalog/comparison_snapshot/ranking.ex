@@ -2,6 +2,7 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
   use ProductCompareSchemas.Schema, :relational
 
   alias ProductCompareSchemas.Reference.CurrencyCode
+  alias ProductCompareSchemas.Schema
 
   @type t :: %__MODULE__{}
 
@@ -22,6 +23,8 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(ranking, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:landed_price])
+
     ranking
     |> cast(attrs, [
       :snapshot_recommendation_id,
@@ -48,11 +51,15 @@ defmodule ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking do
       :reasons
     ])
     |> validate_number(:rank, greater_than: 0)
+    |> validate_number(:landed_price, greater_than_or_equal_to: 0)
     |> unique_constraint([:snapshot_recommendation_id, :rank],
       name: :snapshot_rankings_recommendation_rank_uq
     )
     |> foreign_key_constraint(:snapshot_recommendation_id)
     |> foreign_key_constraint(:currency, name: :comparison_snapshot_rankings_currency_id_fkey)
     |> check_constraint(:rank, name: :comparison_snapshot_rankings_rank)
+    |> check_constraint(:landed_price,
+      name: :comparison_snapshot_rankings_landed_price_non_negative
+    )
   end
 end

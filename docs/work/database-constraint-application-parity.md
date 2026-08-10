@@ -11,6 +11,15 @@
 - Last verified: 2026-08-09 against the live PostgreSQL catalog, owning
   changesets, migrations, write contexts, and focused tests.
 
+## Execution Evidence
+
+- Numeric RED: the captured-evidence suite reported 6 expected failures across
+  five missing pre-write validation paths and four missing named mappings.
+- Numeric GREEN: all 15 captured-evidence tests pass. The combined snapshot
+  rollback and locked alert-evaluation boundary passes 33 tests.
+- Snapshot persistence remains inside its repeatable-read transaction, and
+  alert event insertion remains inside the existing locked watch transaction.
+
 ## Target Outcome
 
 Every reachable application-owned same-row PostgreSQL check has equivalent
