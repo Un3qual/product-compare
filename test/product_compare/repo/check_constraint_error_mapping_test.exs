@@ -24,6 +24,14 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "category mapping candidates reject non-positive observation counts before SQL" do
+    changeset =
+      CategoryMappingCandidate.changeset(%CategoryMappingCandidate{}, %{observation_count: 0})
+
+    refute changeset.valid?
+    assert "must be greater than 0" in errors_on(changeset).observation_count
+  end
+
   test "claim dependencies map their self-reference check" do
     assert_maps_check(
       ClaimDependency.changeset(%ClaimDependency{}, %{}),

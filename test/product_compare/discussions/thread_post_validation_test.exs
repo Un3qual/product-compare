@@ -2,7 +2,12 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
   use ProductCompare.DataCase, async: false
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [assert_backend_blocked: 1, assert_blocked_by: 2, capture_select_queries: 1]
+    only: [
+      assert_backend_blocked: 1,
+      assert_blocked_by: 2,
+      assert_not_blocked_by: 2,
+      capture_select_queries: 1
+    ]
 
   alias ProductCompare.Discussions
   alias ProductCompare.Fixtures.AccountsFixtures
@@ -194,6 +199,42 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
                mapping.type == :check and
                  mapping.constraint == "thread_posts_parent_not_self_check"
              end)
+    end
+
+    test "direct post updates enforce the parent-not-self check in PostgreSQL" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture(%{slug: "thread-self-parent-constraint-product"})
+
+      {:ok, thread} =
+        Discussions.create_thread(%{
+          product_id: product.id,
+          title: "Self-parent constraint",
+          created_by: user.id
+        })
+
+      {:ok, root_post} =
+        Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: "Root"})
+
+      {:ok, child_post} =
+        Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: "Child"})
+
+      assert {:ok, %{num_rows: 1}} =
+               Repo.query(
+                 "UPDATE thread_posts SET parent_post_id = $1 WHERE id = $2",
+                 [root_post.id, child_post.id]
+               )
+
+      assert {:error,
+              %Postgrex.Error{
+                postgres: %{
+                  code: :check_violation,
+                  constraint: "thread_posts_parent_not_self_check"
+                }
+              }} =
+               Repo.query(
+                 "UPDATE thread_posts SET parent_post_id = id WHERE id = $1",
+                 [child_post.id]
+               )
     end
 
     test "rejects a parent from another thread" do
@@ -477,17 +518,33 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
         Task.async(fn ->
           Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
             Repo.transaction(fn ->
-              Repo.one(
-                from post in ThreadPost,
-                  where: post.id == ^fixture.post_a.id,
-                  lock: "FOR UPDATE"
-              )
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+              send(parent, {:post_lock_probe_started, backend_pid})
+
+              probed_post =
+                Repo.one(
+                  from post in ThreadPost,
+                    where: post.id == ^fixture.post_a.id,
+                    lock: "FOR UPDATE"
+                )
+
+              send(parent, {:post_lock_probe_acquired, backend_pid, probed_post.id})
+
+              receive do
+                :release_post_lock_probe -> probed_post
+              after
+                5_000 -> flunk("timed out waiting to release the post-lock probe")
+              end
             end)
           end)
         end)
 
-      assert {:ok, {:ok, %ThreadPost{id: probed_post_id}}} =
-               Task.yield(post_lock_probe, 750)
+      assert_receive {:post_lock_probe_started, probe_backend_pid}, 2_000
+      assert_not_blocked_by(probe_backend_pid, delete_backend_pid)
+      assert_receive {:post_lock_probe_acquired, ^probe_backend_pid, probed_post_id}, 2_000
+
+      send(post_lock_probe.pid, :release_post_lock_probe)
+      assert {:ok, %ThreadPost{id: ^probed_post_id}} = Task.await(post_lock_probe)
 
       send(lock_holder.pid, :release_delete_thread_lock)
       assert {:ok, :ok} = Task.await(lock_holder)
