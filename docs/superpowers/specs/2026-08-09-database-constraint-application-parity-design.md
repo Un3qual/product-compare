@@ -143,8 +143,11 @@ Audit every changed write path:
   snapshot transaction;
 - alert evaluation and event insertion remain inside the existing locked watch
   transaction;
-- community submission, write-window accounting, and thread-post creation
-  retain their existing transactional boundary;
+- community submissions retain their existing outer transaction, and the
+  write-window increment primitive rejects any direct call made outside a
+  transaction so its insert, locked read, and update cannot be split;
+- direct thread-post creation moves its parent lookup and insert into one
+  transaction and takes the same thread-row lock used by parent updates;
 - any affiliate workflow that reads authorization, merchant, or program state
   before mutation keeps that read and write in the existing transaction; and
 - ingestion completion retains its locked transaction around current-run state
@@ -191,7 +194,10 @@ Follow RED/GREEN behavior cycles grouped by owner:
    cleanup migration or changed owner.
 4. Run focused snapshot, alert, commerce-attribution, discussion, ingestion,
    specification, taxonomy, catalog, and pricing suites.
-5. Run the complete backend tests, typecheck, quality, formatting, queue
+5. Prove direct post creation owns a transaction and the write-window primitive
+   fails before mutation when invoked without one, while existing submission
+   paths remain successful inside their outer transaction.
+6. Run the complete backend tests, typecheck, quality, formatting, queue
    validation, and diff hygiene.
 
 ## Scope Boundaries
