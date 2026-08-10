@@ -1,4 +1,6 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { hydrateRoot } from "react-dom/client";
+import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../src/relay/environment";
@@ -177,6 +179,77 @@ test("home maps a rejected deferred deals descriptor to the local retry state", 
   expect(revalidateMock).toHaveBeenCalledTimes(1);
 });
 
+test("home keeps the optional deals loading shell stable through hydration and deferred success", async () => {
+  const deals = deferredPromise<typeof DEALS_DESCRIPTOR | null>();
+  const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  const container = document.createElement("div");
+  let root: ReturnType<typeof hydrateRoot> | null = null;
+
+  mockedUseLoaderData.mockReturnValue({
+    workspace: WORKSPACE_DESCRIPTOR,
+    deals: deals.promise,
+    selectedSlugs: [],
+  });
+  mockHomeQueryResults();
+
+  try {
+    const app = (
+      <MemoryRouter>
+        <HomeRoute />
+      </MemoryRouter>
+    );
+    container.innerHTML = renderToString(app);
+    document.body.append(container);
+
+    expect(container).toHaveTextContent("Loading new and trending offers...");
+    expect(container.querySelector("template[data-msg]")).not.toBeInTheDocument();
+
+    await act(async () => {
+      root = hydrateRoot(container, app);
+      await Promise.resolve();
+    });
+
+    expect(container).toHaveTextContent("Loading new and trending offers...");
+    expect(consoleError.mock.calls.filter(([message]) => /hydrat/i.test(String(message)))).toEqual(
+      [],
+    );
+
+    await act(() => deals.resolve(DEALS_DESCRIPTOR));
+
+    expect(within(container).getByRole("tab", { name: "New" })).toBeVisible();
+  } finally {
+    if (root) await act(() => root?.unmount());
+    container.remove();
+    consoleError.mockRestore();
+  }
+});
+
+test("home keeps the workspace available while deferred deals fail after hydration", async () => {
+  const deals = deferredPromise<typeof DEALS_DESCRIPTOR | null>();
+  mockedUseLoaderData.mockReturnValue({
+    workspace: WORKSPACE_DESCRIPTOR,
+    deals: deals.promise,
+    selectedSlugs: [],
+  });
+  mockHomeQueryResults();
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("heading", { name: "Products to compare" })).toBeVisible();
+  expect(screen.getByText("Loading new and trending offers...")).toBeVisible();
+
+  await act(() => deals.reject(new Error("deferred deals unavailable")));
+
+  expect(screen.getByRole("heading", { name: "Products to compare" })).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "New and trending offers are unavailable right now.",
+  );
+});
+
 test("home renders desktop ledger headings, one semantic list, and restrained deal rows", async () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
@@ -278,3 +351,32 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
     "home-deals-reason",
   );
 });
+
+function mockHomeQueryResults() {
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => descriptor as never);
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    const operationName = (queryRef as unknown as { __relayQuery: { operationName: string } })
+      .__relayQuery.operationName;
+
+    if (operationName === "HomeWorkspaceRouteQuery") {
+      return {
+        homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+      } as never;
+    }
+
+    return {
+      homeDeals: { forYou: [], new: [], trending: [] },
+    } as never;
+  });
+}
+
+function deferredPromise<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+
+  return { promise, reject, resolve };
+}

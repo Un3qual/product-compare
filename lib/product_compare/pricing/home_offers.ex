@@ -7,6 +7,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
   alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct, PricePoint}
 
   @max_bigint_id 9_223_372_036_854_775_807
+  @homepage_currency "USD"
 
   @spec summaries([term()] | :all, keyword()) :: %{optional(pos_integer()) => map()}
   def summaries(product_ids, opts) do
@@ -24,20 +25,94 @@ defmodule ProductCompare.Pricing.HomeOffers do
   @spec deal_candidates(keyword()) :: %{optional(pos_integer()) => map()}
   def deal_candidates(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
+    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
 
     :all
-    |> winners_query(now, true)
+    |> winners_query(now, false)
+    |> where([offer], offer.new_offer? or offer.below_30_day_median?)
+    |> order_by([offer],
+      asc: offer.landed_price,
+      desc: offer.observed_at,
+      asc: offer.product_id
+    )
+    |> limit(^limit)
     |> Repo.all()
     |> Map.new(fn row -> {row.product_id, Map.delete(row, :product_id)} end)
   end
 
-  defp winners_query([], _now, _deals_only), do: from(offer in MerchantProduct, where: false)
+  @spec new_deal_candidates(keyword()) :: [map()]
+  def new_deal_candidates(opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
 
-  defp winners_query(product_ids, now, deals_only) do
+    :all
+    |> winners_query(now, true)
+    |> order_by([offer],
+      asc: offer.landed_price,
+      desc: offer.observed_at,
+      asc: offer.product_id
+    )
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @spec trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def trending_deal_candidates(activity_query, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+
+    :all
+    |> winners_query(now, false)
+    |> join(:inner, [offer], activity in subquery(activity_query),
+      on: activity.product_id == offer.product_id
+    )
+    |> where([offer], offer.below_30_day_median? == true)
+    |> order_by([offer, _counts, activity],
+      desc: activity.identity_count,
+      desc: activity.activity_at,
+      asc: offer.product_id
+    )
+    |> limit(^limit)
+    |> Repo.all()
+  end
+
+  @spec viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def viewer_deal_candidates(relevance_query, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+
+    :all
+    |> winners_query(now, false)
+    |> join(:inner, [offer], relevance in subquery(relevance_query),
+      on: relevance.product_id == offer.product_id
+    )
+    |> order_by([offer, _counts, relevance],
+      asc: relevance.reason_rank,
+      desc:
+        fragment(
+          "greatest(coalesce(?, ?) - ?, 0)",
+          offer.median_30d,
+          offer.landed_price,
+          offer.landed_price
+        ),
+      desc: offer.observed_at,
+      asc: offer.product_id
+    )
+    |> limit(^limit)
+    |> select_merge([_offer, _counts, relevance], %{
+      reason_rank: relevance.reason_rank,
+      watch_target: relevance.watch_target
+    })
+    |> Repo.all()
+  end
+
+  defp winners_query([], _now, _only_new), do: from(offer in MerchantProduct, where: false)
+
+  defp winners_query(product_ids, now, only_new) do
     active_counts =
       MerchantProduct
       |> maybe_filter_product_ids(product_ids)
-      |> where([offer], offer.is_active == true)
+      |> where([offer], offer.is_active == true and offer.currency == ^@homepage_currency)
       |> group_by([offer], offer.product_id)
       |> select([offer], %{product_id: offer.product_id, active_offer_count: count(offer.id)})
 
@@ -59,11 +134,13 @@ defmodule ProductCompare.Pricing.HomeOffers do
         join: offer in MerchantProduct,
         on: offer.id == price.merchant_product_id,
         where:
-          not is_nil(price.shipping) and
+          offer.currency == ^@homepage_currency and
+            not is_nil(price.shipping) and
             price.observed_at >= ^DateTime.add(now, -2_592_000, :second),
-        group_by: offer.product_id,
+        group_by: [offer.product_id, offer.currency],
         select: %{
           product_id: offer.product_id,
+          currency: offer.currency,
           median_30d:
             type(
               fragment(
@@ -85,11 +162,12 @@ defmodule ProductCompare.Pricing.HomeOffers do
         on: first.merchant_product_id == offer.id
       )
       |> join(:left, [offer], median in subquery(medians),
-        on: median.product_id == offer.product_id
+        on: median.product_id == offer.product_id and median.currency == offer.currency
       )
       |> where(
         [offer, _merchant, latest],
-        offer.is_active == true and latest.in_stock == true and not is_nil(latest.shipping) and
+        offer.is_active == true and offer.currency == ^@homepage_currency and
+          latest.in_stock == true and not is_nil(latest.shipping) and
           latest.observed_at >= ^DateTime.add(now, -86_400, :second)
       )
       |> maybe_filter_product_ids(product_ids)
@@ -120,9 +198,10 @@ defmodule ProductCompare.Pricing.HomeOffers do
       |> then(fn eligible ->
         from(offer in eligible)
       end)
+      |> maybe_filter_new(only_new)
       |> windows(
         home_offer: [
-          partition_by: :product_id,
+          partition_by: [:product_id, :currency],
           order_by: [asc: :landed_price, asc: :merchant_product_id]
         ]
       )
@@ -135,20 +214,8 @@ defmodule ProductCompare.Pricing.HomeOffers do
         observed_at: offer.observed_at,
         first_seen_at: offer.first_seen_at,
         median_30d: offer.median_30d,
-        new_offer?:
-          type(
-            fragment("bool_or(?) OVER (PARTITION BY ?)", offer.new_offer?, offer.product_id),
-            :boolean
-          ),
-        below_30_day_median?:
-          type(
-            fragment(
-              "bool_or(?) OVER (PARTITION BY ?)",
-              offer.below_30_day_median?,
-              offer.product_id
-            ),
-            :boolean
-          ),
+        new_offer?: offer.new_offer?,
+        below_30_day_median?: offer.below_30_day_median?,
         rank: over(row_number(), :home_offer)
       })
 
@@ -158,8 +225,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
       on: counts.product_id == offer.product_id
     )
     |> where([offer], offer.rank == 1)
-    |> maybe_filter_deals(deals_only)
-    |> order_by([offer], asc: offer.product_id)
     |> select([offer, counts], %{
       product_id: offer.product_id,
       merchant_product_id: offer.merchant_product_id,
@@ -175,10 +240,8 @@ defmodule ProductCompare.Pricing.HomeOffers do
     })
   end
 
-  defp maybe_filter_deals(query, false), do: query
-
-  defp maybe_filter_deals(query, true),
-    do: where(query, [offer], offer.new_offer? or offer.below_30_day_median?)
+  defp maybe_filter_new(query, false), do: query
+  defp maybe_filter_new(query, true), do: where(query, [offer], offer.new_offer? == true)
 
   defp maybe_filter_product_ids(query, :all), do: query
 
@@ -188,8 +251,11 @@ defmodule ProductCompare.Pricing.HomeOffers do
   defp normalize_product_ids(:all), do: :all
 
   defp normalize_product_ids(product_ids) when is_list(product_ids),
-    do: product_ids |> Enum.filter(&valid_id?/1) |> Enum.uniq()
+    do: product_ids |> Enum.filter(&valid_id?/1) |> Enum.uniq() |> Enum.take(6)
 
   defp normalize_product_ids(_), do: []
   defp valid_id?(id), do: is_integer(id) and id > 0 and id <= @max_bigint_id
+
+  defp bounded_limit(limit, _default) when is_integer(limit) and limit > 0, do: min(limit, 6)
+  defp bounded_limit(_limit, default), do: default
 end

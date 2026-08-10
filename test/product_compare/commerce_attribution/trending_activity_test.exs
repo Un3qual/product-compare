@@ -67,6 +67,55 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
              count_select_queries_targeting_table(twenty_queries, :merchant_products)
   end
 
+  test "bounds the public trending id result to the six highest-ranked products" do
+    products =
+      Enum.map(1..8, fn index ->
+        product = offer_product("activity-boundary-#{index}")
+
+        Enum.each(1..(12 - index), fn identity ->
+          click(product, %{anonymous_id: "boundary-#{index}-#{identity}"})
+        end)
+
+        product
+      end)
+
+    assert CommerceAttribution.trending_product_ids(now: @now, limit: 100) ==
+             products |> Enum.take(6) |> Enum.map(& &1.product.id)
+  end
+
+  test "limits trending deals after intersecting activity with below-median USD eligibility" do
+    products =
+      Enum.map(1..8, fn index ->
+        product = offer_product("trending-intersection-#{index}")
+
+        Enum.each(1..(14 - index), fn identity ->
+          click(product, %{anonymous_id: "intersection-#{index}-#{identity}"})
+        end)
+
+        add_price(product.offer, "50", 0)
+
+        if index > 2 do
+          add_price(product.offer, "100", -3_600)
+        end
+
+        product
+      end)
+
+    {candidates, queries} =
+      capture_select_queries(fn ->
+        [now: @now]
+        |> CommerceAttribution.trending_product_candidates_query()
+        |> Pricing.home_trending_deal_candidates(now: @now, limit: 100)
+      end)
+
+    assert [_, _, _, _, _, _] = candidates
+
+    assert Enum.map(candidates, & &1.product_id) ==
+             products |> Enum.drop(2) |> Enum.map(& &1.product.id)
+
+    assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+  end
+
   defp offer_product(slug) do
     product = SpecsFixtures.product_fixture(%{slug: slug})
 
@@ -107,5 +156,16 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
       Ecto.Query.from(session in CommerceClickSession, where: session.id == ^click.id),
       set: [inserted_at: DateTime.add(@now, offset, :second)]
     )
+  end
+
+  defp add_price(offer, price, offset) do
+    {:ok, _price_point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.add(@now, offset, :second),
+        price: price,
+        shipping: "5",
+        in_stock: true
+      })
   end
 end

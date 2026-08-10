@@ -72,6 +72,9 @@ test("home deal copy only maps typed reasons and does not invent ranking explana
   expect(homeDealReasonCopy({ code: "WATCH_TARGET", watchTarget: null }, "USD")).toBe(
     "Matches your price watch",
   );
+  expect(homeDealReasonCopy({ code: "%future added value", watchTarget: null }, "USD")).toBe(
+    "Current offer",
+  );
 
   const deals = homeDealsViewData(
     {
@@ -96,6 +99,34 @@ test("home deal copy only maps typed reasons and does not invent ranking explana
 
   expect(deals.tabs.map((tab) => tab.label)).toEqual(["New", "Trending", "For you"]);
   expect(deals.tabs[2]?.deals[0]).toMatchObject({ reason: "Matches your $450.00 price watch" });
+});
+
+test("home workspace treats a future price signal as unavailable history", () => {
+  const viewData = homeWorkspaceViewData(
+    {
+      categories: [],
+      products: [
+        {
+          id: "future-price-signal",
+          name: "Future signal product",
+          slug: "future-signal-product",
+          highlights: [],
+          offer: {
+            merchantName: "Camera Shop",
+            currency: "USD",
+            landedPrice: "399.00",
+            activeOfferCount: 1,
+            priceSignal: "%future added value",
+            observedAt: "2026-08-10T12:00:00Z",
+          },
+        },
+      ],
+      selectedProducts: [],
+    },
+    [],
+  );
+
+  expect(viewData.ledgerRows[0]?.priceSignal).toBe("No 30-day price history");
 });
 
 test("home deals omit the personal tab for guests and empty states name the active shopping scope", () => {

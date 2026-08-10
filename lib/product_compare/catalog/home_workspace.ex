@@ -37,7 +37,8 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
         join: price in subquery(latest_prices),
         on: price.merchant_product_id == offer.id,
         where:
-          offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
+          offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
+            not is_nil(price.shipping) and
             price.observed_at >= ^DateTime.add(now, -86_400, :second),
         distinct: true,
         select: %{product_id: offer.product_id}

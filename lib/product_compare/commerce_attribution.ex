@@ -60,4 +60,8 @@ defmodule ProductCompare.CommerceAttribution do
 
   @spec trending_product_ids(keyword()) :: [pos_integer()]
   def trending_product_ids(opts \\ []), do: TrendingActivity.product_ids(opts)
+
+  @doc false
+  @spec trending_product_candidates_query(keyword()) :: Ecto.Query.t()
+  def trending_product_candidates_query(opts \\ []), do: TrendingActivity.candidates_query(opts)
 end

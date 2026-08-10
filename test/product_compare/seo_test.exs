@@ -506,6 +506,34 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
+  test "home category shortcuts bound high-cardinality results in the database order" do
+    operator = AccountsFixtures.operator_fixture()
+    taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    categories =
+      Enum.map(1..8, fn index ->
+        category =
+          TaxonomyFixtures.taxon_fixture(%{
+            taxonomy_id: taxonomy.id,
+            code: "home-boundary-#{index}",
+            name: "Home Boundary #{index}",
+            seo_slug: "home-boundary-#{index}",
+            seo_description: @description,
+            seo_indexable: true
+          })
+
+        Enum.each(1..3, &qualified_product("home-boundary-#{index}-#{&1}", operator, category))
+        category
+      end)
+
+    {shortcuts, queries} =
+      capture_select_queries(fn -> Seo.home_category_shortcuts(now: @now, limit: 100) end)
+
+    assert [_, _, _, _, _, _] = shortcuts
+    assert Enum.map(shortcuts, & &1.id) == Enum.map(Enum.take(categories, 6), & &1.id)
+    assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+  end
+
   defp qualified_product(slug, operator, primary_type_taxon \\ nil) do
     product = specified_product(slug, operator, primary_type_taxon)
 

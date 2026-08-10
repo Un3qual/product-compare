@@ -157,6 +157,17 @@ defmodule ProductCompare.Pricing do
   @spec home_deal_candidates(keyword()) :: %{optional(pos_integer()) => map()}
   def home_deal_candidates(opts \\ []), do: HomeOffers.deal_candidates(opts)
 
+  @spec home_new_deal_candidates(keyword()) :: [map()]
+  def home_new_deal_candidates(opts \\ []), do: HomeOffers.new_deal_candidates(opts)
+
+  @spec home_trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def home_trending_deal_candidates(activity_query, opts \\ []),
+    do: HomeOffers.trending_deal_candidates(activity_query, opts)
+
+  @spec home_viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def home_viewer_deal_candidates(relevance_query, opts \\ []),
+    do: HomeOffers.viewer_deal_candidates(relevance_query, opts)
+
   @spec current_offer_truth(term(), keyword()) :: map()
   def current_offer_truth(product_id, opts \\ [])
 

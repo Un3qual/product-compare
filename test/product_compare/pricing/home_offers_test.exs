@@ -79,6 +79,54 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     refute Map.has_key?(candidates, equal.id)
   end
 
+  test "new deal rows identify an offer that is itself new" do
+    product = SpecsFixtures.product_fixture(%{slug: "new-offer-identity"})
+    old_cheap = offer(product, "old-cheap", "40", 0, true)
+    new_expensive = offer(product, "new-expensive", "80", 0, true)
+
+    ProductCompare.Repo.update_all(
+      Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+        where: offer.id == ^old_cheap.id
+      ),
+      set: [inserted_at: DateTime.add(@now, -259_201, :second)]
+    )
+
+    assert [%{merchant_product_id: merchant_product_id, new_offer?: true}] =
+             Pricing.home_new_deal_candidates(now: @now, limit: 6)
+
+    assert merchant_product_id == new_expensive.id
+  end
+
+  test "homepage offer truth uses only USD and computes medians within currency" do
+    product = SpecsFixtures.product_fixture(%{slug: "home-currency-policy"})
+    usd = offer(product, "usd", "90", 0, true, "USD")
+    _eur = offer(product, "eur", "1", 0, true, "EUR")
+    add_price(usd, "110", -1)
+
+    product_id = product.id
+    assert %{^product_id => summary} = Pricing.home_offer_summaries([product.id], now: @now)
+    assert summary.merchant_product_id == usd.id
+    assert summary.currency == "USD"
+    assert summary.active_offer_count == 1
+    assert Decimal.eq?(summary.median_30d, Decimal.new("105"))
+  end
+
+  test "new deal candidates are bounded to the exact six best rows" do
+    products =
+      Enum.map(1..8, fn index ->
+        product = SpecsFixtures.product_fixture(%{slug: "new-boundary-#{index}"})
+        offer(product, "new-boundary-#{index}", Integer.to_string(index * 10), 0, true)
+        product
+      end)
+
+    {candidates, queries} =
+      capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 100) end)
+
+    assert [_, _, _, _, _, _] = candidates
+    assert Enum.map(candidates, & &1.product_id) == Enum.map(Enum.take(products, 6), & &1.id)
+    assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+  end
+
   test "keeps offer read selects bounded as product count grows" do
     products = Enum.map(1..6, &SpecsFixtures.product_fixture(%{slug: "home-offer-budget-#{&1}"}))
     Enum.each(products, &offer(&1, "budget-#{&1.id}", "90", 0, true))
@@ -96,7 +144,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert Enum.any?(six_queries, &String.contains?(&1, "row_number"))
   end
 
-  defp offer(product, suffix, price, observed_offset, in_stock) do
+  defp offer(product, suffix, price, observed_offset, in_stock, currency \\ "USD") do
     {:ok, merchant} =
       Pricing.upsert_merchant(%{
         name: "#{suffix} merchant",
@@ -108,7 +156,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
         merchant_id: merchant.id,
         product_id: product.id,
         url: "https://#{suffix}-#{product.id}.example/offer",
-        currency: "USD",
+        currency: currency,
         is_active: true
       })
 

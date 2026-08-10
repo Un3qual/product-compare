@@ -6,13 +6,10 @@ import { createRelayEnvironment } from "../../src/relay/environment";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
-  useRoutePreloadedQuery
+  useRoutePreloadedQuery,
 } from "../../src/relay/route-preload";
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
-import {
-  RootHomeDestinations,
-  RootPrimaryNavigation
-} from "../../src/routes/RootDestinations";
+import { RootHomeDestinations, RootPrimaryNavigation } from "../../src/routes/RootDestinations";
 import { RootLayout } from "../../src/routes/RootRoute";
 import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
 
@@ -20,8 +17,8 @@ const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock }
   () => ({
     fetchRouteQueryMock: vi.fn(),
     usePreloadedQueryMock: vi.fn(),
-    useRoutePreloadedQueryMock: vi.fn()
-  })
+    useRoutePreloadedQueryMock: vi.fn(),
+  }),
 );
 
 vi.mock("react-relay", async () => {
@@ -29,19 +26,19 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../src/relay/route-preload")>(
-    "../../src/relay/route-preload"
+    "../../src/relay/route-preload",
   );
 
   return {
     ...actual,
     fetchRouteQuery: fetchRouteQueryMock,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -54,14 +51,14 @@ const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "RootViewerRouteQuery",
     text: null,
-    variables: {}
-  }
+    variables: {},
+  },
 };
 
 const guestLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
   status: "ready",
   viewer: null,
-  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR
+  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
 const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
@@ -69,15 +66,15 @@ const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
-    isOperator: true
+    isOperator: true,
   },
-  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR
+  viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
 const readyLoaderDataWithoutSnapshotViewer: Extract<RootLoaderData, { status: "ready" }> = {
   status: "ready",
   viewer: null,
-  viewerQuery: authenticatedLoaderData.viewerQuery
+  viewerQuery: authenticatedLoaderData.viewerQuery,
 };
 
 const degradedAuthenticatedLoaderData = {
@@ -85,9 +82,9 @@ const degradedAuthenticatedLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
-    isOperator: true
+    isOperator: true,
   },
-  viewerQuery: null
+  viewerQuery: null,
 } satisfies RootLoaderData;
 
 function RootTestIndex() {
@@ -104,8 +101,8 @@ beforeEach(() => {
     viewer: {
       id: "viewer-1",
       email: "person@example.com",
-      isOperator: true
-    }
+      isOperator: true,
+    },
   } as never);
 });
 
@@ -118,8 +115,8 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
         handle: {
           metadata: {
             title: "Product Compare",
-            description: "Choose products with clearer specifications and current offers."
-          }
+            description: "Choose products with clearer specifications and current offers.",
+          },
         },
         element: <RootLayout />,
         children: [
@@ -128,32 +125,32 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
             handle: {
               metadata: {
                 title: "Product Compare",
-                description: "Choose products with clearer specifications and current offers."
-              }
+                description: "Choose products with clearer specifications and current offers.",
+              },
             },
-            element: <RootTestIndex />
+            element: <RootTestIndex />,
           },
           {
             path: "*",
             handle: {
               metadata: {
                 title: "Nested | Product Compare",
-                description: "Nested route metadata."
-              }
+                description: "Nested route metadata.",
+              },
             },
-            element: <div>Nested route</div>
-          }
-        ]
-      }
+            element: <div>Nested route</div>,
+          },
+        ],
+      },
     ],
     {
       hydrationData: {
         loaderData: {
-          root: loaderData
-        }
+          root: loaderData,
+        },
       },
-      initialEntries: [initialEntry]
-    }
+      initialEntries: [initialEntry],
+    },
   );
 
   return render(<RouterProvider router={router} />);
@@ -166,7 +163,7 @@ test("root destinations render guest shopper paths and auth actions", () => {
         <RootPrimaryNavigation viewer={null} />
       </nav>
       <RootHomeDestinations viewer={null} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
@@ -175,27 +172,29 @@ test("root destinations render guest shopper paths and auth actions", () => {
 
   expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "href",
-    "/compare"
+    "/compare",
   );
   expect(within(homeActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products"
+    "/products",
   );
   expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
   expect(within(homeActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
     "href",
-    "/offers"
+    "/offers",
   );
   const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
   expect(within(guestNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
-    "/auth/login"
+    "/auth/login",
   );
   expect(within(homeActions).getByRole("link", { name: "Create account" })).toHaveAttribute(
     "href",
-    "/auth/register"
+    "/auth/register",
   );
-  expect(within(primaryNavigation).queryByRole("link", { name: "Saved comparisons" })).not.toBeInTheDocument();
+  expect(
+    within(primaryNavigation).queryByRole("link", { name: "Saved comparisons" }),
+  ).not.toBeInTheDocument();
   expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
 });
 
@@ -206,7 +205,7 @@ test("guest auth links preserve inactive styles in their menu and home contexts"
         <RootPrimaryNavigation viewer={null} />
       </nav>
       <RootHomeDestinations viewer={null} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
@@ -214,10 +213,8 @@ test("guest auth links preserve inactive styles in their menu and home contexts"
   const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
 
   for (const name of ["Sign in", "Create account"]) {
-    expectNavigationMenuLinkWithoutActiveState(
-      within(guestNavigation).getByRole("link", { name })
-    );
-    expectSolidAuthLinkWithoutActiveState(within(homeActions).getByRole("link", { name }));
+    expectSolidLinkWithoutActiveState(within(guestNavigation).getByRole("link", { name }));
+    expectSolidLinkWithoutActiveState(within(homeActions).getByRole("link", { name }));
   }
 });
 
@@ -230,36 +227,38 @@ test("authenticated sign-out links preserve inactive styles in their menu and ho
         <RootPrimaryNavigation viewer={viewer} />
       </nav>
       <RootHomeDestinations viewer={viewer} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
   const homeActions = screen.getByRole("region", { name: "Home actions" });
   const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
 
-  expectNavigationMenuLinkWithoutActiveState(
-    within(accountNavigation).getByRole("link", { name: "Sign out" })
+  expectSolidLinkWithoutActiveState(
+    within(accountNavigation).getByRole("link", { name: "Sign out" }),
   );
-  expectSolidAuthLinkWithoutActiveState(
-    within(homeActions).getByRole("link", { name: "Sign out" })
-  );
+  expectSolidLinkWithoutActiveState(within(homeActions).getByRole("link", { name: "Sign out" }));
 });
 
 test("root destinations render authenticated account actions with the exact active link", () => {
   render(
     <MemoryRouter initialEntries={["/compare/saved"]}>
       <nav aria-label="Primary">
-        <RootPrimaryNavigation viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }} />
+        <RootPrimaryNavigation
+          viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }}
+        />
       </nav>
-      <RootHomeDestinations viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }} />
-    </MemoryRouter>
+      <RootHomeDestinations
+        viewer={{ id: "viewer-1", email: "person@example.com", isOperator: true }}
+      />
+    </MemoryRouter>,
   );
 
   const primaryNavigation = screen.getByRole("navigation", { name: "Primary" });
   const homeActions = screen.getByRole("region", { name: "Home actions" });
   const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
   const savedComparison = within(accountNavigation).getByRole("link", {
-    name: "Saved comparisons"
+    name: "Saved comparisons",
   });
 
   expect(savedComparison).toHaveAttribute("href", "/compare/saved");
@@ -267,30 +266,32 @@ test("root destinations render authenticated account actions with the exact acti
   expect(savedComparison).toHaveAttribute("data-active", "true");
   expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "data-active",
-    "false"
+    "false",
   );
   expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
     "href",
-    "/affiliate/setup"
+    "/affiliate/setup",
   );
   expect(within(homeActions).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
     "href",
-    "/commerce/revenue"
+    "/commerce/revenue",
   );
   expect(within(homeActions).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs"
+    "/ingestion/cj-programs",
   );
   expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
-    "/account/api-tokens"
+    "/account/api-tokens",
   );
   expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
-    "/auth/logout"
+    "/auth/logout",
   );
   expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
-  expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
+  expect(
+    within(homeActions).queryByRole("link", { name: "Create account" }),
+  ).not.toBeInTheDocument();
 });
 
 test("root destinations keep member account actions but hide operator destinations", () => {
@@ -301,12 +302,14 @@ test("root destinations keep member account actions but hide operator destinatio
         <RootPrimaryNavigation viewer={member} />
       </nav>
       <RootHomeDestinations viewer={member} />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const primary = screen.getByRole("navigation", { name: "Primary" });
   const accountNavigation = openNavigationMenu(primary, "Account");
-  expect(within(accountNavigation).getByRole("link", { name: "Saved comparisons" })).toBeInTheDocument();
+  expect(
+    within(accountNavigation).getByRole("link", { name: "Saved comparisons" }),
+  ).toBeInTheDocument();
   expect(within(accountNavigation).getByRole("link", { name: "API tokens" })).toBeInTheDocument();
   expect(within(primary).queryByRole("button", { name: "Operator menu" })).not.toBeInTheDocument();
 });
@@ -321,7 +324,7 @@ test("root layout applies the deepest matched document metadata", async () => {
   expect(document.title).toBe("Product Compare");
   expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
     "content",
-    "Choose products with clearer specifications and current offers."
+    "Choose products with clearer specifications and current offers.",
   );
 });
 
@@ -332,47 +335,46 @@ test("root layout renders guest auth links in the primary navigation", async () 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
 
   expect(primaryNavigation).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
-    "href",
-    "/"
-  );
+  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute("href", "/");
   expect(within(primaryNavigation).getByRole("link", { name: "Compare products" })).toHaveAttribute(
     "href",
-    "/compare"
+    "/compare",
   );
   const exploreNavigation = openNavigationMenu(primaryNavigation, "Explore");
   expect(within(exploreNavigation).getByRole("link", { name: "Merchants" })).toHaveAttribute(
     "href",
-    "/merchants"
+    "/merchants",
   );
   expect(within(primaryNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
     "href",
-    "/offers"
+    "/offers",
   );
   for (const accountDestination of [
     "Saved comparisons",
     "Affiliate setup",
     "Revenue preview",
     "CJ programs",
-    "API tokens"
+    "API tokens",
   ]) {
     expect(
-      within(primaryNavigation).queryByRole("link", { name: accountDestination })
+      within(primaryNavigation).queryByRole("link", { name: accountDestination }),
     ).not.toBeInTheDocument();
   }
   const guestNavigation = openNavigationMenu(primaryNavigation, "Guest");
   expect(within(guestNavigation).getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
-    "/auth/login"
+    "/auth/login",
   );
   expect(within(guestNavigation).getByRole("link", { name: "Create account" })).toHaveAttribute(
     "href",
-    "/auth/register"
+    "/auth/register",
   );
-  expect(within(primaryNavigation).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
+  expect(
+    within(primaryNavigation).queryByRole("link", { name: "Sign out" }),
+  ).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    guestLoaderData.viewerQuery
+    guestLoaderData.viewerQuery,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
 });
@@ -386,31 +388,32 @@ test("root layout renders authenticated auth links in the primary navigation", a
 
   expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
-    "/auth/logout"
+    "/auth/logout",
   );
-  expect(within(accountNavigation).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
-    "href",
-    "/compare/saved"
-  );
+  expect(
+    within(accountNavigation).getByRole("link", { name: "Saved comparisons" }),
+  ).toHaveAttribute("href", "/compare/saved");
   expect(within(operatorNavigation).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
     "href",
-    "/affiliate/setup"
+    "/affiliate/setup",
   );
   expect(within(operatorNavigation).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
     "href",
-    "/commerce/revenue"
+    "/commerce/revenue",
   );
   expect(within(operatorNavigation).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs"
+    "/ingestion/cj-programs",
   );
   expect(within(accountNavigation).getByRole("link", { name: "API tokens" })).toHaveAttribute(
     "href",
-    "/account/api-tokens"
+    "/account/api-tokens",
   );
-  expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   expect(
-    within(primaryNavigation).queryByRole("link", { name: "Create account" })
+    within(primaryNavigation).queryByRole("link", { name: "Sign in" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(primaryNavigation).queryByRole("link", { name: "Create account" }),
   ).not.toBeInTheDocument();
 });
 
@@ -420,10 +423,10 @@ test("root layout identifies one exact active destination on saved comparisons",
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
   const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
   const compareLink = within(primaryNavigation).getByRole("link", {
-    name: "Compare products"
+    name: "Compare products",
   });
   const savedLink = within(accountNavigation).getByRole("link", {
-    name: "Saved comparisons"
+    name: "Saved comparisons",
   });
 
   expect(compareLink).not.toHaveAttribute("aria-current");
@@ -440,11 +443,11 @@ test("root layout reads authenticated viewer state from the preloaded root query
 
   expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
-    "/auth/logout"
+    "/auth/logout",
   );
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    readyLoaderDataWithoutSnapshotViewer.viewerQuery
+    readyLoaderDataWithoutSnapshotViewer.viewerQuery,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
 });
@@ -457,9 +460,11 @@ test("root layout preserves cached viewer state when the root viewer preload is 
 
   expect(within(accountNavigation).getByRole("link", { name: "Sign out" })).toHaveAttribute(
     "href",
-    "/auth/logout"
+    "/auth/logout",
   );
-  expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
+  expect(
+    within(primaryNavigation).queryByRole("link", { name: "Sign in" }),
+  ).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
@@ -481,7 +486,7 @@ test("rootLoader propagates aborted viewer preloads instead of falling back to g
     environment,
     expect.anything(),
     {},
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -492,7 +497,7 @@ test("rootLoader preserves the cached root viewer when the viewer preload fails"
   setRootViewer(environment, {
     id: "viewer-1",
     email: "person@example.com",
-    isOperator: true
+    isOperator: true,
   });
   mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Viewer fetch failed"));
 
@@ -501,15 +506,15 @@ test("rootLoader preserves the cached root viewer when the viewer preload fails"
     viewer: {
       id: "viewer-1",
       email: "person@example.com",
-      isOperator: true
+      isOperator: true,
     },
-    viewerQuery: null
+    viewerQuery: null,
   });
 });
 
 function buildRootLoaderArgs({
   environment = createRelayEnvironment(),
-  request = new Request("https://app.example.com/")
+  request = new Request("https://app.example.com/"),
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -519,28 +524,23 @@ function buildRootLoaderArgs({
     params: {},
     context: createRelayRouterContext(environment),
     pattern: "/",
-    url: new URL(request.url)
+    url: new URL(request.url),
   };
 }
 
 function buildAbortableRequest(url: string, signal: AbortSignal): Request {
   return Object.defineProperty(
     new Request(url, {
-      headers: new Headers()
+      headers: new Headers(),
     }),
     "signal",
     {
-      value: signal
-    }
+      value: signal,
+    },
   );
 }
 
-function expectSolidAuthLinkWithoutActiveState(link: HTMLElement) {
-  expect(link).toHaveAttribute("data-variant", "solid");
-  expect(link).not.toHaveAttribute("data-active");
-}
-
-function expectNavigationMenuLinkWithoutActiveState(link: HTMLElement) {
+function expectSolidLinkWithoutActiveState(link: HTMLElement) {
   expect(link).toHaveAttribute("data-variant", "solid");
   expect(link).not.toHaveAttribute("data-active");
 }

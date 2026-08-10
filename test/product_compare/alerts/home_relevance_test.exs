@@ -50,6 +50,30 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
     assert relevance.saved_product_ids == [second.id, first.id, third.id]
   end
 
+  test "deduplicates saved products in SQL before applying the six-product bound" do
+    owner = AccountsFixtures.user_fixture()
+
+    [shared | products] =
+      Enum.map(1..8, &SpecsFixtures.product_fixture(%{slug: "relevance-boundary-#{&1}"}))
+
+    products
+    |> Enum.chunk_every(2)
+    |> Enum.with_index(1)
+    |> Enum.each(fn {pair, index} ->
+      assert {:ok, _} =
+               Catalog.create_saved_comparison_set(owner.id, %{
+                 name: "Boundary #{index}",
+                 product_ids: [shared.id | Enum.map(pair, & &1.id)]
+               })
+    end)
+
+    saved_product_ids = Alerts.home_relevance(owner.id).saved_product_ids
+
+    assert [_, _, _, _, _, _] = saved_product_ids
+    assert MapSet.size(MapSet.new(saved_product_ids)) == 6
+    assert shared.id in saved_product_ids
+  end
+
   defp offer(product) do
     {:ok, merchant} =
       Pricing.upsert_merchant(%{

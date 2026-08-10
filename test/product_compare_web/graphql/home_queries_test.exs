@@ -284,6 +284,105 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
              |> Enum.map(&relay_id(:product, &1.product.id))
   end
 
+  test "homeDeals New identity belongs to the returned new merchant product", %{conn: conn} do
+    category = category_fixture("new-identity-category")
+    operator = AccountsFixtures.operator_fixture()
+    old_cheap = qualified_product("new-identity", category, operator, "40")
+
+    Repo.update_all(
+      from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+        where: offer.id == ^old_cheap.offer.id
+      ),
+      set: [inserted_at: DateTime.add(DateTime.utc_now(), -259_201, :second)]
+    )
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{
+        name: "new-identity current merchant",
+        domain: "new-identity-current.example"
+      })
+
+    {:ok, new_offer} =
+      Pricing.upsert_merchant_product(%{
+        merchant_id: merchant.id,
+        product_id: old_cheap.product.id,
+        url: "https://new-identity-current.example/offer",
+        currency: "USD",
+        is_active: true
+      })
+
+    {:ok, _} =
+      Pricing.add_price_point(%{
+        merchant_product_id: new_offer.id,
+        observed_at: DateTime.utc_now(),
+        price: "80",
+        shipping: "5",
+        in_stock: true
+      })
+
+    assert %{"data" => %{"homeDeals" => %{"new" => new_deals}}} =
+             graphql(conn, deals_query(), %{"selectedSlugs" => []})
+
+    assert %{
+             "offer" => %{
+               "merchantProductId" => returned_offer_id,
+               "merchantName" => "new-identity current merchant",
+               "currency" => "USD",
+               "landedPrice" => "85"
+             }
+           } =
+             Enum.find(
+               new_deals,
+               &(&1["product"]["id"] == relay_id(:product, old_cheap.product.id))
+             )
+
+    assert returned_offer_id == relay_id(:merchant_product, new_offer.id)
+  end
+
+  test "homepage GraphQL uses the deterministic USD offer instead of price-ranking currencies", %{
+    conn: conn
+  } do
+    category = category_fixture("currency-policy-category")
+    operator = AccountsFixtures.operator_fixture()
+    usd = qualified_product("currency-policy", category, operator, "100")
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "EUR merchant", domain: "currency-policy-eur.example"})
+
+    {:ok, eur_offer} =
+      Pricing.upsert_merchant_product(%{
+        merchant_id: merchant.id,
+        product_id: usd.product.id,
+        url: "https://currency-policy-eur.example/offer",
+        currency: "EUR",
+        is_active: true
+      })
+
+    {:ok, _} =
+      Pricing.add_price_point(%{
+        merchant_product_id: eur_offer.id,
+        observed_at: DateTime.utc_now(),
+        price: "1",
+        shipping: "1",
+        in_stock: true
+      })
+
+    assert %{"data" => %{"homeWorkspace" => %{"products" => products}}} =
+             graphql(conn, workspace_query(), %{"selectedSlugs" => []})
+
+    assert %{
+             "offer" => %{
+               "merchantProductId" => usd_offer_id,
+               "merchantName" => "currency-policy merchant",
+               "currency" => "USD",
+               "landedPrice" => "105",
+               "activeOfferCount" => 1
+             }
+           } = Enum.find(products, &(&1["id"] == relay_id(:product, usd.product.id)))
+
+    assert usd_offer_id == relay_id(:merchant_product, usd.offer.id)
+  end
+
   test "home operations retain a fixed read budget and expose only typed deal reasons", %{
     conn: conn
   } do
@@ -483,9 +582,9 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query HomeDeals($selectedSlugs: [String!]!) {
       homeDeals(selectedSlugs: $selectedSlugs) {
-        new { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
-        trending { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
-        forYou { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
+        new { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
+        trending { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
+        forYou { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
       }
     }
     """

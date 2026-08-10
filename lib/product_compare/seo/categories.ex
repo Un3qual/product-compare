@@ -51,19 +51,37 @@ defmodule ProductCompare.Seo.Categories do
   def home_shortcuts(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+    qualifying_products = qualified_products_query(now)
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    minimum_products = QualificationPolicy.minimum_category_products()
 
-    taxons =
-      Taxon
-      |> where([taxon], taxon.seo_indexable == true and not is_nil(taxon.seo_slug))
-      |> Repo.all()
-
-    counts = qualified_product_counts(Enum.map(taxons, & &1.id), now)
-
-    taxons
-    |> Enum.map(fn taxon -> category_summary(taxon, Map.get(counts, taxon.id, 0), now) end)
-    |> Enum.filter(& &1.indexable)
-    |> Enum.sort_by(&{-&1.qualified_product_count, String.downcase(&1.name || ""), &1.id})
-    |> Enum.take(limit)
+    Taxon
+    |> join(:inner, [taxon], closure in TaxonClosure, on: closure.ancestor_id == taxon.id)
+    |> join(:inner, [_taxon, closure], product in subquery(qualifying_products),
+      on: product.primary_type_taxon_id == closure.descendant_id
+    )
+    |> where(
+      [taxon],
+      taxon.seo_indexable == true and not is_nil(taxon.seo_slug) and
+        fragment(
+          "char_length(trim(coalesce(?, ''))) >= ?",
+          taxon.seo_description,
+          ^minimum_description_length
+        )
+    )
+    |> group_by([taxon], taxon.id)
+    |> having([_taxon, _closure, product], count(product.id, :distinct) >= ^minimum_products)
+    |> order_by([taxon, _closure, product],
+      desc: count(product.id, :distinct),
+      asc: fragment("lower(coalesce(?, ''))", taxon.name),
+      asc: taxon.id
+    )
+    |> limit(^limit)
+    |> select([taxon, _closure, product], {taxon, count(product.id, :distinct)})
+    |> Repo.all()
+    |> Enum.map(fn {taxon, qualified_product_count} ->
+      category_summary(taxon, qualified_product_count, now)
+    end)
   end
 
   @spec qualified_products_for_taxon_query(pos_integer(), DateTime.t()) :: Ecto.Query.t()
@@ -150,8 +168,8 @@ defmodule ProductCompare.Seo.Categories do
     )
     |> where(
       [offer, price],
-      offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
-        price.observed_at >= ^stale_boundary(now)
+      offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
+        not is_nil(price.shipping) and price.observed_at >= ^stale_boundary(now)
     )
   end
 

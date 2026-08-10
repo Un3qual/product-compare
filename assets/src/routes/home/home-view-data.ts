@@ -1,3 +1,5 @@
+import type { HomeDealReasonCode } from "../../__generated__/HomeDealsRouteQuery.graphql";
+import type { HomePriceSignalCode } from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
 import { homeCategoryCatalogPath, homeProductDetailPath } from "./home-paths";
 
 type HomeOffer = {
@@ -6,7 +8,7 @@ type HomeOffer = {
   landedPrice?: string | null;
   merchantName?: string | null;
   observedAt?: string | null;
-  priceSignal?: string | null;
+  priceSignal?: HomePriceSignalCode | null;
 };
 
 type HomeProduct = {
@@ -24,7 +26,7 @@ type HomeDeal = {
 };
 
 export type HomeDealReason = {
-  code: string;
+  code: HomeDealReasonCode;
   watchTarget?: string | null;
 };
 
@@ -94,6 +96,8 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string | nu
       return "In your saved comparison";
     case "CURRENT_COMPARISON":
       return "In your current comparison";
+    case "%future added value":
+      return "Current offer";
     default:
       return "Current offer";
   }
@@ -172,12 +176,14 @@ function formatCurrency(value: string, currency: string) {
   }
 }
 
-function priceSignalCopy(code: string | null | undefined) {
+function priceSignalCopy(code: HomePriceSignalCode | null | undefined) {
   switch (code) {
     case "BELOW_30_DAY_MEDIAN":
       return "Below the 30-day price";
     case "AT_OR_ABOVE_30_DAY_MEDIAN":
       return "At or above the 30-day price";
+    case "%future added value":
+      return "No 30-day price history";
     default:
       return "No 30-day price history";
   }

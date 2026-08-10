@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Await, Link, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
@@ -59,10 +59,20 @@ export function HomeDeals({
   hasViewer: boolean;
   selectedSlugs: readonly string[];
 }) {
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  useEffect(() => {
+    setIsHydrated(true);
+  }, []);
+
+  // The deal rail is optional. Keep SSR and the first client render stable, then
+  // subscribe after hydration so an unresolved deal query cannot delay the page.
+  if (!isHydrated) {
+    return <HomeDealsLoading />;
+  }
+
   return (
-    <Suspense
-      fallback={<FeedbackState kind="loading" title="Loading new and trending offers..." />}
-    >
+    <Suspense fallback={<HomeDealsLoading />}>
       <Await resolve={deals} errorElement={<HomeDealsUnavailable />}>
         {(query) =>
           query ? (
@@ -87,13 +97,15 @@ function HomeDealsBoundary({
 }) {
   return (
     <ResettableErrorBoundary fallback={<HomeDealsUnavailable />} resetToken={query}>
-      <Suspense
-        fallback={<FeedbackState kind="loading" title="Loading new and trending offers..." />}
-      >
+      <Suspense fallback={<HomeDealsLoading />}>
         <HomeDealsPanel hasViewer={hasViewer} query={query} selectedSlugs={selectedSlugs} />
       </Suspense>
     </ResettableErrorBoundary>
   );
+}
+
+function HomeDealsLoading() {
+  return <FeedbackState kind="loading" title="Loading new and trending offers..." />;
 }
 
 function HomeDealsPanel({
