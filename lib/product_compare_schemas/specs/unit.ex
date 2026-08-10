@@ -28,6 +28,7 @@ defmodule ProductCompareSchemas.Specs.Unit do
         []
       end
     end)
+    |> check_constraint(:multiplier_to_base, name: :units_multiplier_to_base_nonzero)
     |> foreign_key_constraint(:dimension_id)
     |> check_constraint(:base,
       name: :units_semantics_immutable,

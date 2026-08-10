@@ -12,6 +12,328 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     assert "Ready Work requires at least 3 complete rows; found 2" in errors
   end
 
+  test "accepts fewer coherent rows with a complete ready-floor exception" do
+    markdown = queue_with_rows(1) <> ready_floor_exception()
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
+  test "accepts an empty dispatch surface only with a complete ready-floor exception" do
+    assert {:ok, %{ready_count: 0}} =
+             Validator.validate(empty_queue() <> ready_floor_exception())
+  end
+
+  test "rejects duplicate ready-floor exception sections for an empty dispatch surface" do
+    duplicate = empty_queue() <> ready_floor_exception() <> "## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(duplicate)
+    assert "Ready Floor Exception must appear exactly once" in errors
+  end
+
+  test "rejects empty-state language when a ready row exists under a floor exception" do
+    markdown =
+      String.replace(
+        queue_with_rows(1),
+        "## Ready Work\n\n",
+        "## Ready Work\n\nNone.\n\n"
+      ) <> ready_floor_exception()
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work contains forbidden empty-state language" in errors
+  end
+
+  test "rejects an incomplete ready-floor exception" do
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "Rejected split: The remaining validated work is internal to this outcome.\n",
+          "Rejected split:\n"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception has empty Rejected split:" in errors
+  end
+
+  test "rejects ready-floor exception fields containing only Unicode whitespace" do
+    for {field, populated_value} <- [
+          {"Reason", "Only one independently shippable outcome is currently validated."},
+          {"Rejected split", "The remaining validated work is internal to this outcome."},
+          {"Replenishment action", "Audit current behavior for the next coherent outcome."}
+        ] do
+      markdown =
+        queue_with_rows(1) <>
+          String.replace(
+            ready_floor_exception(),
+            "#{field}: #{populated_value}",
+            "#{field}: \u00A0"
+          )
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Floor Exception has empty #{field}:" in errors
+    end
+  end
+
+  test "rejects duplicate ready-floor exception fields" do
+    for {field, populated_value} <- [
+          {"Reason", "Only one independently shippable outcome is currently validated."},
+          {"Rejected split", "The remaining validated work is internal to this outcome."},
+          {"Replenishment action", "Audit current behavior for the next coherent outcome."}
+        ] do
+      markdown =
+        queue_with_rows(1) <>
+          String.replace(
+            ready_floor_exception(),
+            "#{field}: #{populated_value}",
+            "#{field}: #{populated_value}\n#{field}: conflicting duplicate"
+          )
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Floor Exception has duplicate #{field}:" in errors
+    end
+  end
+
+  test "rejects duplicate ready-floor exception sections" do
+    markdown = queue_with_rows(1) <> ready_floor_exception() <> "## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must appear exactly once" in errors
+  end
+
+  test "accepts a complete ready-floor exception with CRLF line endings" do
+    markdown =
+      (queue_with_rows(1) <> ready_floor_exception())
+      |> String.replace("\n", "\r\n")
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
+  test "accepts a complete ready-floor exception with a closed ATX heading" do
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "## Ready Floor Exception ##"
+        )
+
+    assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+  end
+
+  test "accepts CommonMark indentation for reserved H2 headings" do
+    for indentation <- 0..3 do
+      spaces = String.duplicate(" ", indentation)
+
+      markdown =
+        (queue_with_rows(1) <>
+           String.replace(
+             ready_floor_exception(),
+             "## Ready Floor Exception",
+             "#{spaces}## Ready Floor Exception"
+           ))
+        |> String.replace("## Ready Work", "#{spaces}## Ready Work")
+
+      assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+    end
+  end
+
+  test "does not treat four-space-indented reserved H2 text as headings" do
+    assert {:error, ["missing ## Ready Work section"]} =
+             queue_with_rows(3)
+             |> String.replace("## Ready Work", "    ## Ready Work")
+             |> Validator.validate()
+
+    markdown =
+      queue_with_rows(1) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "    ## Ready Floor Exception"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 1" in errors
+  end
+
+  test "accepts a closed ATX Ready Work heading" do
+    markdown = String.replace(queue_with_rows(3), "## Ready Work", "## Ready Work ##")
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
+  end
+
+  test "rejects duplicate rendered Ready Work sections" do
+    markdown =
+      empty_queue() <>
+        ready_floor_exception() <>
+        """
+
+        ## Ready Work
+
+        ### Incomplete row
+
+        Status: ready
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work must appear exactly once" in errors
+  end
+
+  test "accepts CommonMark indentation for ready-row H3 headings" do
+    for indentation <- 0..3 do
+      spaces = String.duplicate(" ", indentation)
+
+      markdown =
+        queue_with_rows(1)
+        |> String.replace("### 1. Candidate 1", "#{spaces}### 1. Candidate 1")
+        |> Kernel.<>(ready_floor_exception())
+
+      assert {:ok, %{ready_count: 1}} = Validator.validate(markdown)
+    end
+  end
+
+  test "rejects a stale indented ready-floor exception once the floor is restored" do
+    markdown =
+      queue_with_rows(3) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "   ## Ready Floor Exception"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
+  test "does not treat fenced ready-floor exception examples as rendered sections" do
+    for fence <- ["```text", "~~~text"] do
+      markdown =
+        empty_queue() <>
+          """
+
+          #{fence}
+          #{String.trim(ready_floor_exception())}
+          #{String.slice(fence, 0, 3)}
+          """
+
+      assert {:error, errors} = Validator.validate(markdown)
+      assert "Ready Work requires at least 3 complete rows; found 0" in errors
+    end
+  end
+
+  test "does not treat HTML-commented ready-floor exception examples as rendered sections" do
+    markdown =
+      empty_queue() <>
+        """
+
+        <!--
+        #{String.trim(ready_floor_exception())}
+        -->
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 0" in errors
+  end
+
+  test "does not treat CommonMark raw HTML block examples as rendered sections" do
+    for {kind, example} <- raw_html_examples() do
+      result = Validator.validate(empty_queue() <> "\n" <> example)
+
+      assert match?({:error, _errors}, result),
+             "#{kind}: expected a validation error, got #{inspect(result)}"
+
+      {:error, errors} = result
+      assert "Ready Work requires at least 3 complete rows; found 0" in errors, kind
+    end
+  end
+
+  test "does not treat a queue enclosed in a fence as a rendered Ready Work section" do
+    markdown = "```markdown\n" <> queue_with_rows(3) <> "```\n"
+
+    assert {:error, ["missing ## Ready Work section"]} = Validator.validate(markdown)
+  end
+
+  test "ignores terminal statuses in non-rendered examples" do
+    markdown = queue_with_rows(3) <> "\n```markdown\nStatus: complete\n```\n"
+
+    assert {:ok, %{ready_count: 3}} = Validator.validate(markdown)
+  end
+
+  test "does not borrow exception fields from a tab-separated H2 section" do
+    markdown =
+      queue_with_rows(1) <>
+        """
+
+        ## Ready Floor Exception
+
+        Reason: Only one independently shippable outcome is currently validated.
+
+        ##\tNeeds Decision Work
+
+        Rejected split: This belongs to the following section.
+        Replenishment action: This also belongs to the following section.
+        """
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception is missing Rejected split:" in errors
+    assert "Ready Floor Exception is missing Replenishment action:" in errors
+  end
+
+  test "does not borrow ready rows from a tab-separated H2 section" do
+    markdown =
+      String.replace(
+        queue_with_rows(3),
+        "## Ready Work\n\n",
+        "## Ready Work\n\n##\tActive Work\n\n"
+      )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Work requires at least 3 complete rows; found 0" in errors
+  end
+
+  test "ignores non-rendered examples when one rendered floor exception exists" do
+    markdown =
+      empty_queue() <>
+        """
+
+        ```text
+        #{String.trim(ready_floor_exception())}
+        ```
+
+        <!-- #{String.trim(ready_floor_exception())} -->
+        """ <>
+        Enum.map_join(raw_html_examples(), "\n", &elem(&1, 1)) <>
+        ready_floor_exception()
+
+    assert {:ok, %{ready_count: 0}} = Validator.validate(markdown)
+  end
+
+  test "rejects a malformed stale ready-floor exception once the floor is restored" do
+    markdown = queue_with_rows(3) <> "\n## Ready Floor Exception"
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
+  test "rejects a stale ready-floor exception once the floor is restored" do
+    markdown = queue_with_rows(3) <> ready_floor_exception()
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
+  test "rejects a stale ready-floor exception with a closed ATX heading" do
+    markdown =
+      queue_with_rows(3) <>
+        String.replace(
+          ready_floor_exception(),
+          "## Ready Floor Exception",
+          "## Ready Floor Exception ##"
+        )
+
+    assert {:error, errors} = Validator.validate(markdown)
+    assert "Ready Floor Exception must be removed when at least 3 rows are ready" in errors
+  end
+
   test "rejects incomplete dispatch contracts" do
     markdown =
       queue_with_rows(3)
@@ -271,6 +593,50 @@ defmodule ProductCompare.WorkQueue.ValidatorTest do
     #{rows}
     ## Active Work
     """
+  end
+
+  defp ready_floor_exception do
+    """
+
+    ## Ready Floor Exception
+
+    Reason: Only one independently shippable outcome is currently validated.
+    Rejected split: The remaining validated work is internal to this outcome.
+    Replenishment action: Audit current behavior for the next coherent outcome.
+    """
+  end
+
+  defp empty_queue do
+    """
+    # Work Dispatch Index
+
+    ## Ready Work
+
+    None.
+
+    ## Active Work
+    """
+  end
+
+  defp raw_html_examples do
+    exception = String.trim(ready_floor_exception())
+
+    [
+      {"script block", "<script>\n#{exception}\n</script>\n"},
+      {"pre block", "<pre>\n#{exception}\n</pre>\n"},
+      {"style block", "<style>\n#{exception}\n</style>\n"},
+      {"textarea block", "<textarea>\n#{exception}\n</textarea>\n"},
+      {"bare script block with CRLF", "<script\r\n#{exception}\r\n</script>\r\n"},
+      {"bare pre block with CRLF", "<pre\r\n#{exception}\r\n</pre>\r\n"},
+      {"bare style block with CRLF", "<style\r\n#{exception}\r\n</style>\r\n"},
+      {"bare textarea block with CRLF", "<textarea\r\n#{exception}\r\n</textarea>\r\n"},
+      {"processing instruction", "<?queue\n#{exception}\n?>\n"},
+      {"declaration", "<!QUEUE\n#{exception}\n>\n"},
+      {"CDATA block", "<![CDATA[\n#{exception}\n]]>\n"},
+      {"block tag", "<div>\n#{exception}\n</div>\n\n"},
+      {"block tag with a non-blank Unicode separator", "<div>\n\u00A0\n#{exception}\n</div>\n\n"},
+      {"generic tag", "<queue-proof data-kind=\"example\">\n#{exception}\n</queue-proof>\n\n"}
+    ]
   end
 
   defp write_repository(tmp_dir, queue, opts \\ []) do

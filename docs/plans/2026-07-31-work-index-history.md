@@ -3243,3 +3243,117 @@ Verification passed 148 affected account lifecycle tests and 1,214 complete
 backend tests with no failures. Typecheck, quality, formatting, queue validation
 with ready rows 22-24 intact, and diff hygiene also passed. Implementation
 commits were `ff5f751b` and `89bda46e`.
+
+## Completed 2026-08-06 Established Storage Contract Enforcement
+
+Status: complete
+
+Four former queue rows were implementation slices of one storage-integrity
+outcome, not independently substantial batches. PostgreSQL now preserves these
+existing application contracts when writes bypass changesets:
+
+- nullable ingestion request counts are positive when present;
+- taxonomy sort order and reputation thresholds are non-negative;
+- Attribute enum-set ownership is consistent and Unit multipliers are nonzero;
+  and
+- persisted user email contains `@` and excludes ASCII regex whitespace while
+  retaining the established Unicode-separator behavior through `COLLATE "C"`.
+
+The seven named checks and owning changeset mappings add no upper bounds, taxonomy
+policy, definition semantics, RFC email policy, or stored-value normalization.
+The former per-slice design, plan, and lane files were removed because they
+duplicated more than a thousand lines around small migration slices; Git retains
+their exact execution record.
+
+Slice verification passed 53 ingestion tests; 3 focused and 53 adjacent taxon
+tests; 18 focused and 93 downstream specification tests; and 21 focused plus 88
+affected Accounts tests. The last post-fix backend run passed 1,258 tests with
+no failures, plus typecheck, quality, formatting, queue validation, and diff
+hygiene. Preserved implementation commits are `c49d8c45`, `5af38c07`,
+`b949cfce`, `52d492b2`, `36e6f745`, `c10995af`, `daea220c`, `08213c23`,
+`9a65998b`, `d9b57bfa`, and the email parity correction `29c2329f`.
+
+## Completed 2026-08-06 Community Authored Text Storage Bounds
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
+
+PostgreSQL and the four owning schemas now agree on six Unicode code-point
+bounds covering thread titles and bodies, post bodies, review titles and
+bodies, and report reasons. Decomposed combining text and emoji ZWJ regressions
+protect direct SQL, changeset/context, and GraphQL writes while preserving
+nullability, messages, the existing report `varchar(500)` maximum, moderation,
+idempotency, and stored content.
+
+Verification passed 67 focused boundary tests, 189 serial community lifecycle
+tests, and 1,248 complete backend tests. Typecheck, quality, formatting, queue
+validation with four ready rows, and diff hygiene also passed. Implementation
+commits were `509e2f8a`, `0adc355b`, and `4509c7ef`.
+
+## Dispatch Correction 2026-08-06 Final Storage Review
+
+Final whole-branch review demoted Commerce Identifier Storage Integrity from
+`ready` to `needs_decision`. `Merchant.changeset/2` uses PCRE `$` and accepts a
+single trailing newline, while the proposed PostgreSQL slug predicate rejects
+that value; the draft cannot execute until exact end-of-string semantics are
+chosen and aligned.
+
+The same dispatch boundary promoted Product Attribute Claim Scope Storage
+Integrity after live preflight returned zero mismatches for both
+`product_attribute_current` and `specification_corrections`, confirmed both
+original claim foreign keys use `ON DELETE CASCADE`, and passed the 15-test
+current-selection/correction baseline. It recorded rows 28–30 as coherent and
+path-disjoint, but the 2026-08-09 correction below supersedes the decision to
+count those implementation-sized slices as separate batches.
+
+## Dispatch Correction 2026-08-09 Batch Granularity
+
+Rows 28–30 were individually executable but too small to be truthful queue
+batches. They now form the internal community, ingestion, and specification
+slices of one Persisted Relationship And Lifecycle Integrity outcome with one
+plan, one lane record, and one closeout boundary.
+
+The validator and operating model now support an explicit `Ready Floor
+Exception` when current evidence yields fewer than three independently
+shippable outcomes. The exception records the rejected micro-split and concrete
+replenishment action, and becomes invalid once three coherent rows exist. This
+removes the mechanical incentive to manufacture tiny rows merely to satisfy the
+reserve floor.
+
+## Product Scope Deferral 2026-08-09 Discussions And Community
+
+The user explicitly deferred all unstarted Discussions and Community work to
+focus execution on the core project. Same-thread post-parent storage integrity
+moved from the ready outcome to the deferred candidate catalog; no discussion
+schema, migration, test, or GraphQL path remains owned by live work.
+
+The ready outcome is now Core Persisted Lifecycle And Claim Integrity. It keeps
+the ingestion terminal-timestamp and specification claim-scope slices together
+as one substantial core-data batch. Completed community work and its historical
+verification remain unchanged; this decision defers future work rather than
+reverting shipped behavior.
+
+## Completed 2026-08-09 Core Persisted Lifecycle And Claim Integrity
+
+Status: complete
+Plan: `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
+
+PostgreSQL now requires `finished_at` for `succeeded` and `failed` ingestion
+runs while preserving unfinished `running` rows. Product-attribute current
+selections and specification corrections now reference claims through composite
+product, attribute, and claim foreign keys, preventing cross-wired claim scope
+while retaining claim-deletion cascades. The owning schemas map all three named
+constraints back to their established fields.
+
+The characterization milestone produced the six expected direct-write
+failures, then the direct-write and owner gate passed 38 tests and the affected
+domain gate passed 204 tests. The first complete run exposed one stale cleanup
+fixture that persisted an unfinished success; correcting its terminal timestamp
+made the focused cleanup regression and definitive 1,279-test backend run pass.
+Typecheck, quality, formatting, queue validation, and diff hygiene also passed.
+Implementation commits were `ef71ef57`, `4f44f39d`, and `d1d57f4e`.
+
+No new implementation row was promoted at closeout. Identifier end-anchor and
+claim-unit deletion candidates still need product decisions, Discussions and
+Community remain deferred, and the live queue records the resulting no-filler
+ready-floor exception.

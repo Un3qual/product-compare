@@ -96,6 +96,9 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> validate_sha256_digest(:scope_fingerprint)
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
+    |> check_constraint(:page_size, name: :ingestion_runs_page_size_positive)
+    |> check_constraint(:pages_requested, name: :ingestion_runs_pages_requested_positive)
+    |> check_constraint(:finished_at, name: :ingestion_runs_terminal_finished_at_required)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
     |> check_constraint(:scope_fingerprint, name: :ingestion_runs_scope_fingerprint_sha256_length)
   end

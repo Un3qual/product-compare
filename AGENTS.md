@@ -10,7 +10,8 @@
 - Treat dated docs in `docs/plans/` and `docs/implementation-checklist.md` as historical design/checkpoint context unless `docs/work/index.md` links one as the active plan for a `ready` row.
 - Treat `docs/plans/NOW.md` as a compatibility pointer back to `docs/work/index.md`, not as a separate ledger.
 - Maintain at least three `ready` implementation rows at every stable dispatch
-  boundary.
+  boundary unless the committed queue includes a complete `Ready Floor
+  Exception` proving that fewer coherent outcomes exist.
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
@@ -27,13 +28,15 @@
   sufficient reason by itself to create separate queue rows.
 - Never split work into micro-batches or invent filler merely to reach a
   requested batch count or the ready-row floor. If fewer coherent batches are
-  available, return the smaller truthful set and record the coordinator or
-  product decision needed to create more.
+  available, return the smaller truthful set, add the validator-enforced ready
+  floor exception, and record the replenishment action. Remove the exception
+  as soon as three coherent rows exist.
 - Before a claim would leave fewer than three other `ready` rows, the
-  coordinator replenishes the queue in the same dispatch update.
+  coordinator replenishes the queue or commits a complete ready floor exception
+  in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
-  and ensure the committed queue still contains at least three complete ready
-  rows.
+  and ensure the committed queue either contains at least three complete ready
+  rows or a complete ready floor exception.
 - If the candidate catalog cannot restore the floor, the coordinator validates
   new implementation candidates against current product behavior, code, tests,
   architecture gaps, and lane evidence before dispatch continues.
@@ -43,7 +46,8 @@
 - Coordinators may use `docs/plans/INDEX.md` as the candidate pool only during
   replenishment; workers must not treat it as a second queue.
 - A worker claims the highest-ranked `ready` row that does not conflict with an
-  active row. Other executable rows remain `ready`.
+  active row. Other executable rows remain `ready`; a ready floor exception
+  permits claiming the smaller truthful set it documents.
 - Verify the selected batch against the codebase before assuming it is still unimplemented.
 - Update the relevant `docs/work/*.md` file when lane-local batch status or blockers change.
 - In parallel mode, a worker may edit only files in its row's `Owned paths` plus its lane work doc.

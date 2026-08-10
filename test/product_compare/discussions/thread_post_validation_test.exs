@@ -17,6 +17,98 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
   alias ProductCompareSchemas.Taxonomy.Taxonomy
 
   describe "thread post validations without SQL triggers" do
+    test "thread creation rejects a 201-code-point decomposed title" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+      title = String.duplicate("e\u0301", 100) <> "x"
+
+      assert_codepoint_length(title, 201)
+      assert String.length(title) == 101
+
+      assert {:error, changeset} =
+               Discussions.create_thread(%{
+                 product_id: product.id,
+                 created_by: user.id,
+                 title: title
+               })
+
+      assert "should be at most 200 character(s)" in errors_on(changeset).title
+    end
+
+    test "thread creation rejects a 5,001-code-point emoji ZWJ body" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+      body = emoji_zwj_text(5_001)
+
+      assert_codepoint_length(body, 5_001)
+      assert String.length(body) < 5_001
+
+      assert {:error, changeset} =
+               Discussions.create_thread(%{
+                 product_id: product.id,
+                 created_by: user.id,
+                 title: "Thread",
+                 body_md: body
+               })
+
+      assert "should be at most 5000 character(s)" in errors_on(changeset).body_md
+    end
+
+    test "thread post creation rejects a 5,001-code-point decomposed body" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+      body = String.duplicate("e\u0301", 2_500) <> "x"
+
+      assert {:ok, thread} =
+               Discussions.create_thread(%{
+                 product_id: product.id,
+                 created_by: user.id,
+                 title: "Thread"
+               })
+
+      assert_codepoint_length(body, 5_001)
+      assert String.length(body) == 2_501
+
+      assert {:error, changeset} =
+               Discussions.create_post(%{thread_id: thread.id, user_id: user.id, body_md: body})
+
+      assert "should be at most 5000 character(s)" in errors_on(changeset).body_md
+    end
+
+    test "thread and post creation accept their code-point boundaries" do
+      user = AccountsFixtures.user_fixture()
+      product = SpecsFixtures.product_fixture()
+      title = String.duplicate("e\u0301", 100)
+      thread_body = emoji_zwj_text(5_000)
+      post_body = String.duplicate("e\u0301", 2_500)
+
+      assert_codepoint_length(title, 200)
+      assert_codepoint_length(thread_body, 5_000)
+      assert_codepoint_length(post_body, 5_000)
+
+      assert {:ok, _one_code_point_thread} =
+               Discussions.create_thread(%{
+                 product_id: product.id,
+                 created_by: user.id,
+                 title: "x"
+               })
+
+      assert {:ok, thread} =
+               Discussions.create_thread(%{
+                 product_id: product.id,
+                 created_by: user.id,
+                 title: title,
+                 body_md: thread_body
+               })
+
+      assert {:ok, _post} =
+               Discussions.create_post(%{
+                 thread_id: thread.id,
+                 user_id: user.id,
+                 body_md: post_body
+               })
+    end
+
     test "ignores thread and author identity changes for an existing post" do
       user = AccountsFixtures.user_fixture()
       other_user = AccountsFixtures.user_fixture()
@@ -221,5 +313,18 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
       Repo.delete_all(from taxonomy in Taxonomy, where: taxonomy.id == ^fixture.taxonomy_id)
       Repo.delete_all(from user in User, where: user.id == ^fixture.user.id)
     end)
+  end
+
+  defp emoji_zwj_text(code_point_count) do
+    family = "👩‍👩‍👧‍👦"
+    family_code_point_count = Enum.count(String.codepoints(family))
+    family_count = div(code_point_count, family_code_point_count)
+    remainder = rem(code_point_count, family_code_point_count)
+
+    String.duplicate(family, family_count) <> String.duplicate("x", remainder)
+  end
+
+  defp assert_codepoint_length(text, expected) do
+    assert Enum.count_until(String.codepoints(text), expected + 1) == expected
   end
 end

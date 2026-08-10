@@ -125,6 +125,33 @@ defmodule ProductCompareWeb.GraphQL.CommunityContentTest do
     assert get_in(answer_response, ["data", "answerProductQuestion", "errors"]) == []
   end
 
+  test "community GraphQL writes reject Unicode text past code-point boundaries", %{conn: conn} do
+    user = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+    member_conn = conn |> log_in_user(user) |> put_req_header_same_origin()
+    title = String.duplicate("e\u0301", 100) <> "x"
+
+    assert Enum.count_until(String.codepoints(title), 202) == 201
+    assert String.length(title) == 101
+
+    assert get_in(
+             graphql(member_conn, ask_question_mutation(), %{
+               "input" => %{
+                 "productId" => relay_id(:product, product.id),
+                 "idempotencyKey" => "unicode-question-key-001",
+                 "title" => title
+               }
+             }),
+             ["data", "askProductQuestion", "errors"]
+           ) == [
+             %{
+               "code" => "INVALID_ARGUMENT",
+               "field" => "title",
+               "message" => "should be at most 200 character(s)"
+             }
+           ]
+  end
+
   test "published questions receive moderated answers and an owner-selected accepted answer", %{
     conn: conn
   } do

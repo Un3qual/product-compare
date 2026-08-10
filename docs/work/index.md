@@ -12,7 +12,8 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 - A worker should execute only rows with `Status: ready`.
 - At least three complete `ready` implementation rows must exist at every stable
-  dispatch boundary.
+  dispatch boundary unless a complete `Ready Floor Exception` records why the
+  repository currently supports fewer coherent outcomes.
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful, currently validated candidate whose ownership and prerequisites make
   it executable.
@@ -25,15 +26,16 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
   filler. Return fewer coherent batches and record the missing decision when
   the repository does not support the requested count.
 - Before a claim would leave fewer than three other ready rows, the coordinator
-  validates and promotes more work in the same dispatch update.
+  validates and promotes more work or commits a complete ready floor exception
+  in the same dispatch update.
 - Before removing completed or blocked work, preserve truthful lane evidence
-  and ensure the committed queue still satisfies the floor.
+  and ensure the committed queue satisfies the floor or its explicit exception.
 - `needs_decision` rows are coordinator work: resolve the decision, then promote
   every useful source-backed candidate made executable by it.
 - `blocked` rows need external evidence or a product decision. Do not code around
   them.
-- Workers claim the highest-ranked compatible `ready` row only when three other
-  ready rows will remain.
+- Workers claim the highest-ranked compatible `ready` row when three other ready
+  rows will remain or the ready floor exception covers the smaller truthful set.
 - Dependent, deferred, rejected, blocked, speculative, stale, and unverified
   work cannot be used as queue-depth filler.
 - `active` rows are already owned by a named worker or branch. Do not start a
@@ -47,162 +49,31 @@ None.
 
 ## Ready Work
 
-### 22. Ingestion Run Request Bounds
+None.
 
-Status: ready
-Lane: Ingestion storage integrity
-Plan: `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL retains the positive-when-present bounds of import-run
-request metadata even when writes bypass application changesets.
-Next action: add failing direct-write tests for zero and negative `page_size`
-and `pages_requested` values before adding the named forward constraints.
-Owned paths:
+## Ready Floor Exception
 
-- `priv/repo/migrations/20260804230000_enforce_ingestion_run_request_bounds.exs`
-- `lib/product_compare_schemas/ingestion/import_run.ex`
-- `test/product_compare/repo/ingestion_run_request_bounds_test.exs`
-- affected import-run, scheduled-cursor, reconciliation, source-health, and CJ
-  run-health tests
-- `docs/work/ingestion-run-request-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-04-ingestion-run-request-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write request-boundary characterization.
-- Named forward constraints and owning changeset mappings.
-- Ingestion lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- `page_size` and `pages_requested` remain nullable and must be positive when
-  present.
-- No active row owns the import-run schema, ingestion migrations, or affected
-  ingestion tests.
-- No current data requires a non-null request value below one.
-
-Verification:
-
-- focused ingestion-run direct-write suite
-- import-run, scheduled-cursor, reconciliation, source-health, and CJ run-health
-  suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects zero and negative import-run request
-metadata, null and positive values remain accepted, ingestion behavior is
-unchanged, and all backend gates pass.
-
-### 23. Taxon Attribute Storage Bounds
-
-Status: ready
-Lane: Taxonomy storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL preserves non-negative taxonomy display ordering and
-reputation thresholds even when a write bypasses application changesets.
-Next action: add failing direct-write tests for negative `sort_order` and
-`min_rep_to_edit` values before adding the named forward constraints.
-Owned paths:
-
-- `priv/repo/migrations/20260805000000_enforce_taxon_attribute_storage_bounds.exs`
-- `lib/product_compare_schemas/specs/taxon_attribute.ex`
-- `test/product_compare/repo/taxon_attribute_storage_bounds_test.exs`
-- affected TaxonAttribute changeset, current-attribute read, and catalog
-  GraphQL tests
-- `docs/work/taxon-attribute-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-taxon-attribute-storage-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct-write negative-value characterization and valid boundaries.
-- Named forward constraints and owning changeset mappings.
-- Current-attribute read and GraphQL parity plus complete backend verification.
-
-Prerequisites:
-
-- `sort_order` and `min_rep_to_edit` retain zero defaults and non-negative
-  application validations.
-- No active row owns TaxonAttribute schemas, migrations, or affected tests.
-- No current row contains a negative value in either field.
-
-Verification:
-
-- focused TaxonAttribute direct-write suite
-- TaxonAttribute changeset, current-attribute read, and catalog GraphQL suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL rejects negative taxonomy ordering and reputation
-thresholds, zero and positive values and current ordering remain unchanged, and
-all backend gates pass.
-
-### 24. Community Authored Text Storage Bounds
-
-Status: ready
-Lane: Community content storage integrity
-Plan: `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
-Batch outcome: PostgreSQL and the owning changesets retain established Unicode
-code-point bounds for authored threads, posts, reviews, and reports.
-Next action: add failing direct- and application-write tests for code-point
-boundaries, including decomposed combining text and emoji ZWJ sequences, before
-changing all six owning validations and adding the named forward checks.
-Owned paths:
-
-- `priv/repo/migrations/20260805010000_enforce_community_authored_text_storage_bounds.exs`
-- `lib/product_compare_schemas/discussions/product_thread.ex`
-- `lib/product_compare_schemas/discussions/thread_post.ex`
-- `lib/product_compare_schemas/discussions/product_review.ex`
-- `lib/product_compare_schemas/discussions/community_report.ex`
-- `test/product_compare/repo/community_authored_text_storage_bounds_test.exs`
-- affected community lifecycle, thread-post validation, trust, GraphQL
-  community, node-query, Dataloader, and seed tests
-- `docs/work/community-authored-text-storage-bounds.md`
-- `docs/work/index.md`
-- `docs/plans/INDEX.md`
-- `docs/plans/2026-07-31-work-index-history.md`
-- `docs/superpowers/plans/2026-08-05-community-authored-text-storage-bounds-implementation-plan.md`
-
-Internal slices:
-
-- Failing direct- and application-write code-point boundary characterization.
-- Six explicit code-point changeset validations, named forward checks, and
-  owning constraint mappings.
-- Community lifecycle parity and complete backend verification.
-
-Prerequisites:
-
-- The approved canonical unit is Unicode code points; all six owning
-  `validate_length/3` calls change to `count: :codepoints` while their numeric
-  limits, nullability, and required-field behavior remain unchanged.
-- The existing report-reason `varchar(500)` upper bound remains intact.
-- No active row owns community schemas, migrations, or affected tests.
-- No current community row violates one of the six missing boundaries.
-
-Verification:
-
-- focused community-authored-text direct- and application-write suites with
-  decomposed combining text and emoji ZWJ boundaries
-- content lifecycle, thread-post validation, community trust, GraphQL
-  community content, node-query, Dataloader batching, and deterministic seed
-  suites
-- full backend tests, type checks, quality, and formatting
-- `mix work_queue.validate`
-- `git diff --check`
-
-Exit condition: PostgreSQL and application changesets agree on every Unicode
-code-point boundary, valid authored text remains accepted without rewriting,
-community behavior is otherwise unchanged, and all backend gates pass.
+Reason: No independently shippable non-discussion outcome is currently
+validated; identifier and claim-unit candidates still require product
+decisions, and discussion work is explicitly deferred.
+Rejected split: Completed core-integrity slices, per-file follow-ups, and
+deferred discussion work cannot be reused as queue filler.
+Replenishment action: Audit current core product behavior and architecture gaps
+for the next substantial outcome, or resolve one of the recorded core product
+decisions before dispatch resumes.
 
 ## Needs Decision Work
 
-None.
+### Commerce Identifier Storage Integrity
+
+Status: needs_decision
+Lane: Commerce identifier storage integrity
+Plan: `docs/superpowers/plans/2026-08-05-commerce-identifier-storage-integrity-implementation-plan.md`
+Decision: choose whether canonical merchant slugs reject a single trailing
+newline, then align the application and database end anchors before replanning.
+Evidence: `Merchant.changeset/2` uses PCRE `$` and accepts `"north-main\n"`,
+while the proposed PostgreSQL slug predicate rejects that value. The current
+draft is not executable and cannot count toward the ready-row floor.
 
 ## Blocked Work
 

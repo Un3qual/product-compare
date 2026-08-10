@@ -42,7 +42,7 @@ defmodule ProductCompare.Ingestion.CJRunReadinessTest do
 
       import_run_fixture(source, %{
         surface: "shoppingProducts",
-        status: "succeeded",
+        status: "running",
         started_at: ~U[2026-07-02 13:00:00Z],
         finished_at: nil
       })

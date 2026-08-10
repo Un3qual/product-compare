@@ -22,6 +22,34 @@ defmodule Mix.Tasks.WorkQueue.ValidateTest do
     end
   end
 
+  @tag :tmp_dir
+  test "reports one coherent row grammatically under a ready-floor exception", %{
+    tmp_dir: tmp_dir
+  } do
+    project_root = Path.expand("../../..", __DIR__)
+    queue_path = Path.join(tmp_dir, "queue.md")
+
+    File.write!(
+      queue_path,
+      """
+      # Work Dispatch Index
+
+      ## Ready Work
+
+      #{ready_row(1)}
+      ## Ready Floor Exception
+
+      Reason: Only one independently shippable outcome is currently validated.
+      Rejected split: Its implementation steps are internal slices, not batches.
+      Replenishment action: Audit current behavior for the next coherent outcome.
+      """
+    )
+
+    assert File.cd!(Path.join(project_root, "lib"), fn ->
+             capture_io(fn -> run_task([queue_path]) end)
+           end) == "work queue valid: 1 ready row\n"
+  end
+
   defp queue_fixture do
     rows =
       1..3

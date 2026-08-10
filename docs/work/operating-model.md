@@ -75,8 +75,10 @@ own reviewer decision. It is not the smallest edit an agent can make.
   smaller coherent set is source-backed. Never manufacture micro-batches to
   satisfy the number.
 - The ready-work floor never overrides batch coherence. If the catalog cannot
-  supply three coherent batches, record the coordinator or product decision
-  needed to replenish it instead of subdividing implementation steps.
+  supply three coherent batches, add a `Ready Floor Exception` to the live
+  queue instead of subdividing implementation steps. State why the remaining
+  work cannot be split and the concrete replenishment action. Remove the
+  exception when three coherent rows exist.
 
 Before promotion, the coordinator should be able to answer both questions:
 
@@ -93,16 +95,19 @@ never evidence that the backend has no work.
 - A stable dispatch boundary is the committed queue state after a claim,
   promotion, completion, blocking, or reassignment update.
 - At least three complete `ready` implementation rows must exist at every stable
-  dispatch boundary.
+  dispatch boundary unless a complete `Ready Floor Exception` records why the
+  repository currently supports fewer coherent outcomes.
 - Three is the replenishment floor, not a target or maximum. Promote every
   useful validated candidate found in the same curation pass.
 - Count only `ready` implementation rows; `active`, `blocked`,
   `needs_decision`, deferred, rejected, dependent, speculative, stale, and
   unverified work does not count toward the floor.
 - Before a claim, count the rows that will remain `ready`. A worker may claim a
-  row only when three other ready rows will remain.
+  row when three other ready rows will remain or when the committed ready floor
+  exception explicitly covers the smaller truthful set.
 - Completion evidence stays truthful. Remove completed or blocked queue rows
-  only in a coordinator boundary update that preserves the ready-work floor.
+  only in a coordinator boundary update that preserves the ready-work floor or
+  records a complete exception.
 - If the catalog cannot restore the floor, inspect current product behavior,
   code gaps, tests, architecture gaps, and lane evidence; write executable
   plans; and validate them before dispatch resumes.
@@ -112,6 +117,24 @@ never evidence that the backend has no work.
   separate ready rows.
 - Rows may execute in parallel only when their owned paths and lane work docs do
   not overlap.
+
+A ready floor exception is a temporary, validator-enforced dispatch state, not
+a substitute for curation. It uses this exact shape:
+
+```text
+## Ready Floor Exception
+
+Reason:
+Rejected split:
+Replenishment action:
+```
+
+All three values must be non-empty. `Reason` identifies why fewer than three
+independently shippable outcomes exist. `Rejected split` names the tempting
+micro-batch decomposition that was refused. `Replenishment action` states the
+next source-backed curation step. `mix work_queue.validate` rejects a missing or
+incomplete exception below the floor and rejects a stale exception once the
+floor is restored.
 
 ## Prompt Rules
 
@@ -225,7 +248,8 @@ Next row promoted:
 - Promote `blocked` work only after its missing evidence is recorded, then
   continue replenishing if fewer than three ready successors would remain.
 - Close a lane only after focused verification passes and the coordinator can
-  preserve at least three complete `ready` implementation rows.
+  preserve at least three complete `ready` implementation rows or record a
+  complete ready floor exception.
 - When the catalog cannot preserve the floor, validate new candidates from
   current product and code evidence before another worker claims work.
 - Apply the batch-and-slice test before promotion. A replenishment update that

@@ -36,6 +36,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> validate_required([:email, :hashed_password])
     |> update_change(:email, &normalize_email/1)
     |> validate_format(:email, @email_format, message: "must have the @ sign and no spaces")
+    |> check_constraint(:email, name: :users_email_shape_check)
     |> unique_constraint(:email)
   end
 
@@ -47,6 +48,7 @@ defmodule ProductCompareSchemas.Accounts.User do
     |> validate_length(:password, min: 12, max: 72)
     |> update_change(:email, &normalize_email/1)
     |> validate_format(:email, @email_format, message: "must have the @ sign and no spaces")
+    |> check_constraint(:email, name: :users_email_shape_check)
     |> put_hashed_password()
     |> unique_constraint(:email)
   end

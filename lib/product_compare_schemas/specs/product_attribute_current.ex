@@ -25,7 +25,7 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeCurrent do
     |> unique_constraint(:claim_id, name: :pacur_claim_uq)
     |> foreign_key_constraint(:product_id)
     |> foreign_key_constraint(:attribute_id)
-    |> foreign_key_constraint(:claim_id)
+    |> foreign_key_constraint(:claim_id, name: :product_attribute_current_claim_scope_fkey)
     |> foreign_key_constraint(:selected_by)
   end
 
