@@ -26,7 +26,6 @@ export function Button({
       asChild={asChild}
       color={tone === "danger" ? "red" : undefined}
       data-size={size}
-      data-focus-ring="visible"
       data-slot="button"
       data-tone={tone}
       data-variant={variant}

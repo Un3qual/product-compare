@@ -12,6 +12,23 @@ import { TextField } from "../../src/ui/primitives/TextField";
 const themeCss = readFileSync("src/ui/theme/theme.css", "utf8");
 const productLedgerSource = readFileSync("src/ui/components/products/ProductLedger.tsx", "utf8");
 
+function installProductionTheme() {
+  const style = document.createElement("style");
+  style.textContent = themeCss;
+  document.head.append(style);
+  return style;
+}
+
+function expectVisibleFocusRule(style: HTMLStyleElement, selector: string) {
+  const rule = Array.from(style.sheet?.cssRules ?? []).find(
+    (candidate): candidate is CSSStyleRule =>
+      candidate instanceof CSSStyleRule && candidate.selectorText.includes(selector),
+  );
+
+  expect(rule).toBeDefined();
+  expect(rule?.style.outline).toBe("2px solid var(--pc-brand-500)");
+}
+
 test("production theme supplies the warm paper palette, fonts, and explicit freshness semantics", () => {
   expect(themeCss).toContain("--pc-surface-canvas: #F4F1E9");
   expect(themeCss).toContain("--pc-surface-raised: #FFFCF7");
@@ -44,7 +61,8 @@ test("skip navigation moves keyboard focus into the main working region", () => 
   expect(main).toHaveFocus();
 });
 
-test("representative controls expose a visible-focus and 44px touch-target contract when focused", () => {
+test("representative controls receive the production visible-focus and 44px touch-target contracts", () => {
+  const style = installProductionTheme();
   render(
     <>
       <Button>Open comparison</Button>
@@ -56,15 +74,20 @@ test("representative controls expose a visible-focus and 44px touch-target contr
   const search = screen.getByRole("textbox", { name: "Search products" });
 
   for (const control of [button, search]) {
+    fireEvent.keyDown(document, { key: "Tab" });
     control.focus();
     expect(control).toHaveFocus();
-    expect(control).toHaveAttribute("data-focus-ring", "visible");
   }
+
+  expectVisibleFocusRule(style, '[data-slot="button"]:focus-visible');
+  expectVisibleFocusRule(style, '[data-slot="text-field"]:focus-visible');
 
   expect(button).toHaveStyle({ minHeight: "44px" });
   const searchTouchTarget = search.closest(".rt-TextFieldRoot");
   expect(searchTouchTarget).not.toBeNull();
   expect(searchTouchTarget).toHaveStyle({ minHeight: "44px" });
+
+  style.remove();
 });
 
 test("comparison continuity presents normalized selections as numbered labels and a canonical action", () => {

@@ -299,6 +299,12 @@ a {
   outline-offset: 3px;
 }
 
+[data-slot="button"]:focus-visible,
+[data-slot="text-field"]:focus-visible {
+  outline: 2px solid var(--pc-brand-500);
+  outline-offset: 3px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -8,7 +8,6 @@ export const TextField = forwardRef<ElementRef<typeof RadixTextField.Root>, Text
   function TextField({ style, ...props }, ref) {
     return (
       <RadixTextField.Root
-        data-focus-ring="visible"
         data-slot="text-field"
         ref={ref}
         style={{ ...style, minHeight: MINIMUM_TOUCH_TARGET }}
