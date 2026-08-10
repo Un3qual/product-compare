@@ -22,8 +22,18 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-No implementation plan is currently ready. The most recently completed
-storage-integrity plan is:
+The current consolidated implementation plan is:
+
+- `docs/superpowers/plans/2026-08-09-core-identifier-and-reference-integrity-implementation-plan.md`
+
+It groups exact product, historical-alias, reservation, merchant,
+affiliate-network, taxonomy SEO, and comparison-token identifiers with numeric
+claim companion and referenced-Unit lifecycle enforcement. Those migrations,
+schemas, and tests are internal slices of one core persisted-integrity outcome,
+not separate queue rows. The live queue retains a ready floor exception because
+no independent reserve outcome is currently validated.
+
+The most recently completed storage-integrity plan is:
 
 - `docs/superpowers/plans/2026-08-09-persisted-relationship-and-lifecycle-integrity-implementation-plan.md`
 
@@ -564,9 +574,7 @@ batch and should not be recreated or promoted.
 | completed | Credential artifact storage constraints | Session and email tokens always store 32-byte SHA-256 digests, while API-token metadata is bounded to 1 through 32 and at most 120 Unicode code points; the live PostgreSQL catalog did not enforce those three exact boundaries. | Completed through `ff5f751b` and `89bda46e`, then corrected in final review so Ecto explicitly counts code points like PostgreSQL `char_length`. Decomposed combining and emoji ZWJ regressions protect the 32/33 and 120/121 boundaries without changing stored values, token generation, auth behavior, or product policy. The prior affected lifecycle suite passed 148 tests, the full backend passed 1,214 tests, and all type/quality/format/queue/diff gates passed. |
 | completed | Established storage contract enforcement | Four application-owned validation families lacked equivalent direct-write protection: ingestion request bounds, taxon numeric bounds, specification definition creation validity, and user email shape. | Completed as one retrospective storage-integrity outcome through the preserved implementation commits. Seven named checks and their owning changeset mappings now enforce the established contracts without adding product policy. The concise combined completion record replaces twelve redundant per-slice design, plan, and lane files. |
 | completed | Community authored text storage bounds | Community changesets defined six thread, post, review, and report text limits but used Ecto's grapheme-counting default while PostgreSQL `char_length` counts Unicode code points. | Completed on 2026-08-06; six named checks and six explicit code-point validations now agree across direct and application writes. The focused suite passed 67 tests, lifecycle suites passed 189 tests, the full backend passed 1,248 tests, and all remaining gates passed without changing community policy or stored content. |
-| needs_decision | Product attribute claim companion storage integrity | ProductAttributeClaim changesets require numeric values to carry a unit, but the persisted `unit_id` foreign key intentionally uses `ON DELETE SET NULL`. | Not executable: a required-unit check would change established Unit deletion behavior. Decide whether Units remain deletable, numeric claims retain historical unit identity another way, or the application validation is relaxed before creating a replacement plan. |
-| needs_decision | Commerce identifier storage integrity | Final review proved the Merchant PCRE `$` accepts one trailing newline while the proposed PostgreSQL POSIX end anchor rejects it. | Not executable until exact merchant end-of-string semantics are chosen and application/database anchors are aligned. Revalidate whether merchant slugs and affiliate-network codes still form one coherent batch after that decision. |
-| needs_decision | Shared product slug storage integrity | Canonical product slugs and historical aliases share an Elixir regex whose `$` anchor accepts a final newline, while the proposed PostgreSQL POSIX check rejects it. | Not executable without choosing the canonical end-of-string semantics. Align both application and database regexes under an explicit identity-policy decision before creating a replacement plan; do not silently narrow accepted writes at PostgreSQL. |
+| ready | Core identifier and reference integrity | The user approved exact whole-string identifier semantics and referenced-Unit retention, resolving the product, commerce, and numeric-claim decisions. | One consolidated batch covers product, alias, reservation, merchant, affiliate-network, taxonomy SEO, and comparison-token identifiers plus numeric claim companions, range ordering, and restrictive Unit references. The individual migrations and tests are internal slices and do not count as separate ready rows. |
 | completed | Core persisted lifecycle and claim integrity | Application behavior already rejected terminal ingestion without completion timestamps and claims cross-wired across product or attribute scope, while PostgreSQL still permitted those direct writes. | Completed on 2026-08-09 as one combined core-data outcome. Named database constraints and owning changeset mappings cover both internal slices while preserving running ingestion rows and claim-deletion cascades. Direct and owner suites passed 38 tests, affected suites passed 204 tests, the full backend passed 1,279 tests, and all remaining gates passed. |
 | deferred | Discussions and community implementation | The user explicitly defers discussion/community product work. | All unstarted Discussions and Community implementation is deferred as of 2026-08-09 so execution can focus on the core project. This includes same-thread post-parent storage integrity. Completed discussion history and shipped behavior remain authoritative and must not be undone. |
 | deferred | eBay Browse fallback connector | Product decision reverses the 2026-07-08 deferral and CJ validation records that the approved CJ account lacks usable product catalog scope. | Do not create or promote while eBay is deferred. If reopened, create the fallback plan from CJ decision evidence rather than guessing before the blocker resolves. |
