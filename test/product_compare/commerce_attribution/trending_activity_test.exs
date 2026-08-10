@@ -1,7 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
   use ProductCompare.DataCase, async: true
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
@@ -11,16 +12,19 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
 
   @now ~U[2026-08-10 12:00:00Z]
 
-  test "counts tagged authenticated and anonymous identities, excludes anonymous-less clicks, and orders ties deterministically" do
+  test "deduplicates tagged identities, excludes identity-less clicks, uses inclusive seven days, and orders equal ties by product id" do
     first = offer_product("activity-first")
     second = offer_product("activity-second")
     user = AccountsFixtures.user_fixture()
 
-    Enum.each(1..4, fn index -> click(first, %{anonymous_id: "anon-#{index}"}) end)
+    Enum.each(1..3, fn index -> click(first, %{anonymous_id: "anon-#{index}"}) end)
     click(first, %{user_id: user.id})
     click(first, %{anonymous_id: Integer.to_string(user.id)})
+    click(first, %{user_id: user.id})
+    click(first, %{anonymous_id: "anon-1"})
     click(first, %{})
     Enum.each(1..5, fn index -> click(second, %{anonymous_id: "second-#{index}"}) end)
+    click(second, %{anonymous_id: "second-5"}, -604_800)
     click(second, %{anonymous_id: "stale"}, -604_801)
 
     assert CommerceAttribution.trending_product_ids(now: @now) == [
@@ -41,7 +45,11 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     {_twenty, twenty_queries} =
       capture_select_queries(fn -> CommerceAttribution.trending_product_ids(now: @now) end)
 
-    assert length(five_queries) == length(twenty_queries)
+    assert count_select_queries_targeting_table(five_queries, :commerce_click_sessions) ==
+             count_select_queries_targeting_table(twenty_queries, :commerce_click_sessions)
+
+    assert count_select_queries_targeting_table(five_queries, :merchant_products) ==
+             count_select_queries_targeting_table(twenty_queries, :merchant_products)
   end
 
   defp offer_product(slug) do

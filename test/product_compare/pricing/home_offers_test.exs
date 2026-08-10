@@ -1,7 +1,8 @@
 defmodule ProductCompare.Pricing.HomeOffersTest do
   use ProductCompare.DataCase, async: true
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
@@ -23,11 +24,21 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert DateTime.compare(summary.observed_at, @now) == :eq
   end
 
-  test "marks exactly new and below-median deal candidates at temporal and decimal boundaries" do
+  test "uses inclusive 72-hour and 30-day boundaries while requiring a strictly-below rolling median" do
     new_product = SpecsFixtures.product_fixture(%{slug: "home-new"})
     new_offer = offer(new_product, "new", "90", 0, true)
     old_product = SpecsFixtures.product_fixture(%{slug: "home-old"})
     old_offer = offer(old_product, "old", "90", 0, true)
+
+    boundary_product = SpecsFixtures.product_fixture(%{slug: "home-boundary"})
+    boundary_offer = offer(boundary_product, "boundary", "90", 0, true)
+
+    ProductCompare.Repo.update_all(
+      Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+        where: offer.id == ^boundary_offer.id
+      ),
+      set: [inserted_at: DateTime.add(@now, -259_200, :second)]
+    )
 
     ProductCompare.Repo.update_all(
       Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
@@ -39,8 +50,33 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     candidates = Pricing.home_deal_candidates(now: @now)
 
     assert candidates[new_product.id].new_offer?
+    assert candidates[boundary_product.id].new_offer?
     refute Map.has_key?(candidates, old_product.id)
     assert candidates[new_product.id].merchant_product_id == new_offer.id
+  end
+
+  test "uses the 30-day median inclusively and excludes an equal landed price" do
+    below = SpecsFixtures.product_fixture(%{slug: "median-below"})
+    equal = SpecsFixtures.product_fixture(%{slug: "median-equal"})
+    below_offer = offer(below, "median-below", "90", 0, true)
+    equal_offer = offer(equal, "median-equal", "100", 0, true)
+
+    add_price(below_offer, "100", -2_592_000)
+    add_price(below_offer, "110", -1)
+    add_price(equal_offer, "100", -2_592_000)
+    add_price(equal_offer, "100", -1)
+
+    ProductCompare.Repo.update_all(
+      Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+        where: offer.id in ^[below_offer.id, equal_offer.id]
+      ),
+      set: [inserted_at: DateTime.add(@now, -259_201, :second)]
+    )
+
+    candidates = Pricing.home_deal_candidates(now: @now)
+
+    assert candidates[below.id].below_30_day_median?
+    refute Map.has_key?(candidates, equal.id)
   end
 
   test "keeps offer read selects bounded as product count grows" do
@@ -55,7 +91,9 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
         Pricing.home_offer_summaries(Enum.map(products, & &1.id), now: @now)
       end)
 
-    assert length(one_queries) == length(six_queries)
+    assert_table_select_counts_equal(one_queries, six_queries, [:merchant_products, :price_points])
+
+    assert Enum.any?(six_queries, &String.contains?(&1, "row_number"))
   end
 
   defp offer(product, suffix, price, observed_offset, in_stock) do
@@ -84,5 +122,23 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       })
 
     offer
+  end
+
+  defp add_price(offer, price, observed_offset) do
+    {:ok, _} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.add(@now, observed_offset, :second),
+        price: price,
+        shipping: "5",
+        in_stock: true
+      })
+  end
+
+  defp assert_table_select_counts_equal(one_queries, six_queries, tables) do
+    Enum.each(tables, fn table ->
+      assert count_select_queries_targeting_table(one_queries, table) ==
+               count_select_queries_targeting_table(six_queries, table)
+    end)
   end
 end

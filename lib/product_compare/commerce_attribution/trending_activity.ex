@@ -14,33 +14,35 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
     minimum_identities = opts |> Keyword.get(:minimum_identities, 5) |> bounded_positive(5)
     boundary = DateTime.add(now, -days * 86_400, :second)
 
-    CommerceClickSession
-    |> join(:inner, [click], offer in MerchantProduct, on: offer.id == click.merchant_product_id)
-    |> where([click, offer], click.inserted_at >= ^boundary and offer.is_active == true)
-    |> group_by([_click, offer], offer.product_id)
-    |> having(
-      [click],
-      fragment(
-        "COUNT(DISTINCT CASE WHEN ? IS NOT NULL THEN 'u:' || ?::text WHEN ? IS NOT NULL THEN 'a:' || ? ELSE NULL END)",
-        click.user_id,
-        click.user_id,
-        click.anonymous_id,
-        click.anonymous_id
-      ) >= ^minimum_identities
+    activities =
+      CommerceClickSession
+      |> join(:inner, [click], offer in MerchantProduct,
+        on: offer.id == click.merchant_product_id
+      )
+      |> where([click, offer], click.inserted_at >= ^boundary and offer.is_active == true)
+      |> select([click, offer], %{
+        product_id: offer.product_id,
+        activity_at: click.inserted_at,
+        identity:
+          fragment(
+            "CASE WHEN ? IS NOT NULL THEN 'u:' || ?::text WHEN ? IS NOT NULL THEN 'a:' || ?::text ELSE NULL END",
+            click.user_id,
+            click.user_id,
+            click.anonymous_id,
+            click.anonymous_id
+          )
+      })
+
+    activities
+    |> subquery()
+    |> group_by([activity], activity.product_id)
+    |> having([activity], count(activity.identity, :distinct) >= ^minimum_identities)
+    |> order_by([activity],
+      desc: count(activity.identity, :distinct),
+      desc: max(activity.activity_at),
+      asc: activity.product_id
     )
-    |> order_by([click, offer],
-      desc:
-        fragment(
-          "COUNT(DISTINCT CASE WHEN ? IS NOT NULL THEN 'u:' || ?::text WHEN ? IS NOT NULL THEN 'a:' || ? ELSE NULL END)",
-          click.user_id,
-          click.user_id,
-          click.anonymous_id,
-          click.anonymous_id
-        ),
-      desc: max(click.inserted_at),
-      asc: offer.product_id
-    )
-    |> select([_click, offer], offer.product_id)
+    |> select([activity], activity.product_id)
     |> Repo.all()
   end
 

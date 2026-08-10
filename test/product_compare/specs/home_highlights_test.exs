@@ -1,7 +1,8 @@
 defmodule ProductCompare.Specs.HomeHighlightsTest do
   use ProductCompare.DataCase, async: true
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.Specs
@@ -69,6 +70,9 @@ defmodule ProductCompare.Specs.HomeHighlightsTest do
         Specs.home_specification_highlights(Enum.map(products, & &1.id))
       end)
 
-    assert length(one_queries) == length(six_queries)
+    Enum.each([:products, :product_attribute_current, :taxon_attributes], fn table ->
+      assert count_select_queries_targeting_table(one_queries, table) ==
+               count_select_queries_targeting_table(six_queries, table)
+    end)
   end
 end

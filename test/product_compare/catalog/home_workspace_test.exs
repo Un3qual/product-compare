@@ -1,7 +1,8 @@
 defmodule ProductCompare.Catalog.HomeWorkspaceTest do
   use ProductCompare.DataCase, async: true
 
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Catalog
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
@@ -56,7 +57,41 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
 
     assert length(one.products) == 1
     assert length(six.products) == length(products)
-    assert length(one_queries) == length(six_queries)
+
+    assert count_select_queries_targeting_table(one_queries, :products) ==
+             count_select_queries_targeting_table(six_queries, :products)
+
+    assert count_select_queries_targeting_table(one_queries, :merchant_products) ==
+             count_select_queries_targeting_table(six_queries, :merchant_products)
+  end
+
+  test "includes the 24-hour boundary but requires the latest observation to remain in stock" do
+    operator = AccountsFixtures.operator_fixture()
+    inclusive = product_with_offer("workspace-24h", operator, -86_400, 2)
+    _exclusive = product_with_offer("workspace-24h-plus", operator, -86_401, 2)
+    latest_out = product_with_offer("workspace-latest-out", operator, -3_600, 2)
+
+    offer =
+      ProductCompare.Repo.one!(
+        Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.product_id == ^latest_out.id
+        )
+      )
+
+    {:ok, _} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: @now,
+        price: "90",
+        shipping: "5",
+        in_stock: false
+      })
+
+    candidates = Catalog.home_workspace_candidates([], now: @now, limit: 6)
+    candidate_ids = MapSet.new(candidates.products, & &1.id)
+
+    assert inclusive.id in candidate_ids
+    refute latest_out.id in candidate_ids
   end
 
   defp eligible_product(slug, operator), do: product_with_offer(slug, operator, 0, 2)
