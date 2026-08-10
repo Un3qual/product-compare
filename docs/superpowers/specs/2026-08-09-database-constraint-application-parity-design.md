@@ -121,8 +121,8 @@ immutability, alert evaluation, or persisted values.
   state without `finished_at`; `:running` remains valid without it, and
   `completion_changeset/2` retains its stronger terminal-only contract.
 - A persisted thread post rejects its own id as `parent_post_id` before
-  persistence. Cross-thread parent ownership remains deferred and is not added
-  by this batch.
+  persistence. Existing same-thread parent ownership and cycle prevention
+  remain unchanged.
 
 ### Existing validations missing mappings
 
@@ -198,8 +198,8 @@ Follow RED/GREEN behavior cycles grouped by owner:
 
 - Do not change product policy, accepted ranges, normalization, stored data, or
   public error messages beyond exposing an existing database rule earlier.
-- Do not add cross-thread parent ownership; that discussion/community work
-  remains deferred.
+- Do not change existing same-thread parent ownership or cycle-prevention
+  behavior.
 - Do not add preflight existence or uniqueness queries.
 - Do not generalize validators into a new shared constraint abstraction.
 - Do not add a catalog-driven policy test, static source scan, constraint DSL,
