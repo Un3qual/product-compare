@@ -2,10 +2,13 @@
 
 ## Snapshot
 
-- Status: planned
-- Priority: P1 after the system spine
+- Status: ready
+- Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`
+- Last verified: 2026-08-10 after completion of the shared production UI spine;
+  the owned route, test, browser, and lane paths are disjoint from the other
+  ready cohorts.
 
 ## Target Outcome
 
@@ -25,9 +28,10 @@ Catalog, category, product, offer, and merchant routes use the stable production
 4. Offer and merchant workspaces.
 5. Browser, accessibility, responsive, visual, and full frontend verification.
 
-## Prerequisite
+## Verified Prerequisites
 
-The System Spine And Home row is complete, its shared files are stable, and a fresh ownership audit finds no overlap with another active cohort.
+- The System Spine And Home row is complete and its shared files are stable.
+- A fresh ownership audit found no overlap with another ready cohort.
 
 ## Verification
 

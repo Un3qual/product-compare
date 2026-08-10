@@ -45,79 +45,187 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Production UI System Spine And Home
-
-Status: active
-Owner: Codex subagent-driven implementation in the current managed worktree
-Lane: Production UI system and home
-Plan: `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
-Batch outcome: ProductCompare gains one stable production visual system and a
-useful, SSR-safe homepage with ranked search, category entry, a bounded product
-ledger, URL-backed comparison continuity, and truthful fault-isolated new,
-trending, and owner-private relevant deals.
-Next action: Execute Task 1's RED domain boundary tests, then implement the
-set-based homepage workspace and deal reads without weakening the approved
-eligibility, privacy, or query-budget contract.
-Owned paths:
-
-- Shared frontend package, router, root navigation, layout, feedback,
-  primitive, theme, font, brand, comparison-continuity, and product-ledger
-  paths named by the plan.
-- New `assets/src/routes/home/**`, focused home/root/UI tests, generated Home
-  Relay artifacts, and home Playwright snapshots.
-- Focused Catalog, SEO, Specs, Pricing, Alerts, Commerce Attribution, GraphQL home
-  schema/resolver, and tests named by the plan.
-- `docs/work/production-ui-system-home.md`.
-
-Internal slices:
-
-- Set-based home workspace, offer, activity, watch, and saved-comparison reads.
-- Typed GraphQL workspace/deal operations with privacy and fixed query budgets.
-- Visual tokens, local fonts, responsive navigation/layouts, controls, and
-  reduced-motion behavior.
-- Useful index workbench with essential workspace and optional deals.
-- Browser, accessibility, responsive, visual, bundle, and production gates.
-
-Prerequisites:
-
-- The production UI design and complete route functionality matrix are
-  approved.
-- The current root loader, domain owners, GraphQL schema, frontend stack, and
-  route tests match the plan's verified baseline.
-- The four later cohort plans remain dependent on this shared spine and are not
-  active or ready.
-
-Verification:
-
-- Focused backend boundary and GraphQL semantic/privacy/query-budget suites
-  named by the plan.
-- Focused frontend home/root/router/UI suites and deterministic Playwright,
-  axe, reduced-motion, visual, and no-overflow checks at three widths.
-- `cd assets && pnpm run check`.
-- `mix typecheck`, `mix quality`, `mix format --check-formatted`,
-  `mix work_queue.validate`, and `git diff --check`.
-
-Exit condition: Every system/home feature-parity row and production gate passes,
-the shared owners are stable, the lane records observed evidence, and the
-coordinator closes this row while promoting the four path-disjoint successor
-cohorts together.
+None.
 
 ## Ready Work
 
-None.
+### 1. Production UI Discover And Evaluate
 
-## Ready Floor Exception
+Status: ready
+Lane: Production UI discover and evaluate
+Plan: `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
+Batch outcome: Catalog, category, product, offer, and merchant routes use the
+stable production system while every existing discovery and evaluation feature
+remains executable across responsive and failure states.
+Next action: Run Task 1's RED plain-language, hierarchy, responsive, and
+feature-parity characterization before changing the owned route surfaces.
+Owned paths:
 
-Reason: The only independently shippable outcome is active. Discover & Evaluate,
-Compare & Return, Account & Setup, and Operations all require the stable shared
-system spine before their otherwise path-disjoint plans become executable, so
-no other coherent outcome is currently ready.
-Rejected split: Backend home reads, GraphQL fields, fonts, tokens, shell,
-homepage regions, responsive states, and test gates all enforce the same
-system/home acceptance boundary and are internal slices, not reserve rows.
-Replenishment action: Complete and verify the System Spine And Home row, audit
-the now-stable shared owners, then promote all four approved successor cohort
-plans together at the same coordinator boundary.
+- Catalog, category, product, offer, and merchant route components named by the
+  plan.
+- Their focused tests plus the production discovery Playwright spec and
+  snapshots.
+- `docs/work/production-ui-discover-evaluate.md`.
+
+Internal slices:
+
+- Plain-language and responsive feature characterization.
+- Catalog and category discovery composition.
+- Product detail, offers, price watch, community, and merchant evaluation.
+- Browser, accessibility, responsive, visual, and full frontend verification.
+
+Prerequisites:
+
+- The Production UI System Spine And Home outcome is complete and its shared
+  owners are stable.
+- Its owned route, test, E2E, and lane paths do not overlap the other three
+  ready cohorts.
+
+Verification:
+
+- Complete catalog, category, product, offer, and merchant suites named by the
+  plan.
+- Deterministic Playwright, axe, responsive, visual, and no-overflow checks at
+  three widths.
+- `cd assets && pnpm run check`, `mix work_queue.validate`, and
+  `git diff --check`.
+
+Exit condition: Every discover/evaluate feature-parity row and production gate
+passes, the lane records observed evidence, and no shared-spine or backend
+contract was widened.
+
+### 2. Production UI Compare And Return
+
+Status: ready
+Lane: Production UI compare and return
+Plan: `docs/superpowers/plans/2026-08-10-production-ui-compare-return-implementation-plan.md`
+Batch outcome: Live, saved, and shared comparisons plus price alerts form one
+coherent return lifecycle with stable product numbers, readable differences,
+truthful price scope, immutable captured facts, and owner-private row actions.
+Next action: Run Task 1's RED decision-lifecycle, responsive, and complete
+feature-parity characterization before changing the owned compare and alert
+surfaces.
+Owned paths:
+
+- Live, saved, and shared comparison route components and account alert routes
+  named by the plan.
+- Their focused tests plus the production compare-return Playwright spec and
+  snapshots.
+- `docs/work/production-ui-compare-return.md`.
+
+Internal slices:
+
+- Decision-lifecycle presentation characterization.
+- Live comparison, recommendations, saving, and sharing composition.
+- Saved/shared return paths and alert/watch controls.
+- Browser, accessibility, responsive, visual, and full frontend verification.
+
+Prerequisites:
+
+- The Production UI System Spine And Home outcome is complete and its shared
+  owners are stable.
+- Its owned route, test, E2E, and lane paths do not overlap the other three
+  ready cohorts.
+
+Verification:
+
+- Complete compare, snapshot, saved-comparison, and alert suites named by the
+  plan.
+- Deterministic Playwright, axe, responsive, visual, and no-overflow checks at
+  three widths.
+- `cd assets && pnpm run check`, `mix work_queue.validate`, and
+  `git diff --check`.
+
+Exit condition: Every compare/return feature-parity row and production gate
+passes without weakening Decimal, mixed-currency, ownership, captured-versus-
+live, or row-state behavior.
+
+### 3. Production UI Account And Setup
+
+Status: ready
+Lane: Production UI account and setup
+Plan: `docs/superpowers/plans/2026-08-10-production-ui-account-setup-implementation-plan.md`
+Batch outcome: Authentication, recovery, API-token, and affiliate-setup routes
+make consequences, ownership, one-time values, validation, recovery, and
+destructive actions clear without changing their lifecycle contracts.
+Next action: Run Task 1's RED sensitive-flow, secret-redaction, responsive, and
+feature-parity characterization before changing the owned account/setup routes.
+Owned paths:
+
+- Auth, recovery, API-token, and affiliate-setup route components named by the
+  plan.
+- Their focused tests, existing auth browser coverage, and the production
+  account-setup Playwright spec and snapshots.
+- `docs/work/production-ui-account-setup.md`.
+
+Internal slices:
+
+- Sensitive-flow characterization and secret-redaction guard.
+- Authentication, recovery, and API-token lifecycle composition.
+- Affiliate setup forms and results.
+- Browser, accessibility, responsive, visual, and full frontend verification.
+
+Prerequisites:
+
+- The Production UI System Spine And Home outcome is complete and its shared
+  owners are stable.
+- Its owned route, test, E2E, and lane paths do not overlap the other three
+  ready cohorts.
+
+Verification:
+
+- Complete auth, API-token, and affiliate-setup suites plus the auth browser
+  coverage named by the plan.
+- Deterministic Playwright, axe, responsive, visual, and no-overflow checks at
+  three widths.
+- `cd assets && pnpm run check`, `mix work_queue.validate`, and
+  `git diff --check`.
+
+Exit condition: Every account/setup feature-parity row and production gate
+passes without REST browser auth, one-time-secret leakage, or weaker viewer,
+session, and lifecycle behavior.
+
+### 4. Production UI Operations
+
+Status: ready
+Lane: Production UI operations
+Plan: `docs/superpowers/plans/2026-08-10-production-ui-operations-implementation-plan.md`
+Batch outcome: CJ-program lifecycle and revenue reporting become dense,
+legible operator workspaces while every current filter, mutation, pagination,
+metric, detail, and partial-failure boundary remains executable.
+Next action: Run Task 1's RED operator-language, density, responsive, and
+feature-parity characterization before changing the owned operations routes.
+Owned paths:
+
+- CJ-program lifecycle and revenue route components named by the plan.
+- Their focused tests plus the production operations Playwright spec and
+  snapshots.
+- `docs/work/production-ui-operations.md`.
+
+Internal slices:
+
+- Operator-language, density, and feature characterization.
+- CJ lifecycle, row mutation, feed, and unmatched-feed composition.
+- Revenue controls, metrics, and independently recoverable details.
+- Browser, accessibility, responsive, visual, and full frontend verification.
+
+Prerequisites:
+
+- The Production UI System Spine And Home outcome is complete and its shared
+  owners are stable.
+- Its owned route, test, E2E, and lane paths do not overlap the other three
+  ready cohorts.
+
+Verification:
+
+- Complete CJ-program and revenue suites named by the plan.
+- Deterministic Playwright, axe, responsive, visual, and no-overflow checks at
+  three widths.
+- `cd assets && pnpm run check`, `mix work_queue.validate`, and
+  `git diff --check`.
+
+Exit condition: Every operations feature-parity row and production gate passes
+without merging independent pagination/error regions or hiding operator facts.
 
 ## Needs Decision Work
 

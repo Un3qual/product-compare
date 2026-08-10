@@ -32,12 +32,12 @@ reviewable outcomes:
 - `docs/superpowers/plans/2026-08-10-production-ui-account-setup-implementation-plan.md`
 - `docs/superpowers/plans/2026-08-10-production-ui-operations-implementation-plan.md`
 
-The shared System Spine And Home outcome is the only current `ready` row. The
-other four plans are approved and implementation-ready but remain dependent
-until the shared tokens, layout, navigation, primitives, homepage contracts,
-and production verification harness are stable. Their route paths and lane
-docs remain disjoint so the coordinator can promote them together after the
-prerequisite closes. The durable product and feature-parity contract is
+The shared System Spine And Home outcome is complete. Its tokens, layout,
+navigation, primitives, homepage contracts, and production verification harness
+are stable. Discover And Evaluate, Compare And Return, Account And Setup, and
+Operations are now the four `ready` rows in the live dispatch queue; their route,
+test, browser, and lane paths are disjoint. The durable product and
+feature-parity contract is
 `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
 
 The most recently completed consolidated implementation plan is:
