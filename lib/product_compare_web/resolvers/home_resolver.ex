@@ -29,10 +29,21 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   def home_deals(_parent, args, %{context: context}) do
     now = Map.fetch!(context, :graphql_observed_at)
     selected_slugs = Map.get(args, :selected_slugs, [])
-    offers_by_product_id = Pricing.home_deal_candidates(now: now)
-    products_by_id = deal_products_by_id(Map.keys(offers_by_product_id))
-    new_deals = global_deals(offers_by_product_id, products_by_id, :new_offer)
-    trending_deals = trending_deals(offers_by_product_id, products_by_id, now)
+    public_offers_by_product_id = Pricing.home_deal_candidates(now: now)
+
+    viewer = viewer_candidates(context[:current_user], selected_slugs, now)
+
+    viewer_offers_by_product_id =
+      Pricing.home_offer_summaries(viewer.product_ids, now: now)
+
+    products_by_id =
+      Map.keys(public_offers_by_product_id)
+      |> Kernel.++(viewer.product_ids)
+      |> Enum.uniq()
+      |> deal_products_by_id()
+
+    new_deals = global_deals(public_offers_by_product_id, products_by_id, :new_offer)
+    trending_deals = trending_deals(public_offers_by_product_id, products_by_id, now)
 
     {:ok,
      %{
@@ -40,11 +51,9 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
        trending: trending_deals,
        for_you:
          viewer_deals(
-           context[:current_user],
-           selected_slugs,
-           offers_by_product_id,
+           viewer,
+           viewer_offers_by_product_id,
            products_by_id,
-           now,
            new_deals,
            trending_deals
          )
@@ -96,18 +105,10 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     |> Enum.take(@deal_limit)
   end
 
-  defp viewer_deals(nil, _selected_slugs, _offers, _products, _now, _new_deals, _trending_deals),
-    do: []
+  defp viewer_candidates(nil, _selected_slugs, _now),
+    do: %{relevance: nil, current_product_ids: MapSet.new(), product_ids: []}
 
-  defp viewer_deals(
-         user,
-         selected_slugs,
-         offers_by_product_id,
-         products_by_id,
-         now,
-         new_deals,
-         trending_deals
-       ) do
+  defp viewer_candidates(user, selected_slugs, now) do
     relevance = Alerts.home_relevance(user.id)
 
     current_product_ids =
@@ -116,6 +117,28 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
       |> Map.fetch!(:selected_products)
       |> MapSet.new(& &1.id)
 
+    %{
+      relevance: relevance,
+      current_product_ids: current_product_ids,
+      product_ids:
+        relevance.watch_targets
+        |> Map.keys()
+        |> Kernel.++(relevance.saved_product_ids)
+        |> Kernel.++(MapSet.to_list(current_product_ids))
+        |> Enum.uniq()
+    }
+  end
+
+  defp viewer_deals(%{relevance: nil}, _offers, _products, _new_deals, _trending_deals),
+    do: []
+
+  defp viewer_deals(
+         %{relevance: relevance, current_product_ids: current_product_ids},
+         offers_by_product_id,
+         products_by_id,
+         new_deals,
+         trending_deals
+       ) do
     relevant_deals =
       offers_by_product_id
       |> Enum.flat_map(fn {product_id, offer} ->
@@ -162,20 +185,45 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
   defp rank_viewer_deals(deals) do
     deals
-    |> Enum.sort_by(fn %{product: product, offer: offer, reasons: [reason | _]} ->
-      {
-        viewer_reason_rank(reason.code),
-        offer.landed_price,
-        DateTime.to_unix(offer.observed_at, :microsecond) * -1,
-        product.id
-      }
-    end)
+    |> Enum.sort(&viewer_deal_before?/2)
     |> Enum.take(@deal_limit)
   end
 
+  defp viewer_deal_before?(first, second) do
+    first_reason_rank =
+      first |> Map.fetch!(:reasons) |> hd() |> Map.fetch!(:code) |> viewer_reason_rank()
+
+    second_reason_rank =
+      second |> Map.fetch!(:reasons) |> hd() |> Map.fetch!(:code) |> viewer_reason_rank()
+
+    first_improvement = price_improvement(first.offer)
+    second_improvement = price_improvement(second.offer)
+
+    cond do
+      first_reason_rank != second_reason_rank ->
+        first_reason_rank < second_reason_rank
+
+      Decimal.compare(first_improvement, second_improvement) != :eq ->
+        Decimal.compare(first_improvement, second_improvement) == :gt
+
+      DateTime.compare(first.offer.observed_at, second.offer.observed_at) != :eq ->
+        DateTime.compare(first.offer.observed_at, second.offer.observed_at) == :gt
+
+      true ->
+        first.product.id <= second.product.id
+    end
+  end
+
+  defp price_improvement(%{median_30d: %Decimal{} = median_30d, landed_price: landed_price}) do
+    improvement = Decimal.sub(median_30d, landed_price)
+    if Decimal.compare(improvement, Decimal.new(0)) == :gt, do: improvement, else: Decimal.new(0)
+  end
+
+  defp price_improvement(_offer), do: Decimal.new(0)
+
   defp viewer_reason_rank(:watch_target), do: 0
   defp viewer_reason_rank(:saved_comparison), do: 1
-  defp viewer_reason_rank(:current_comparison), do: 1
+  defp viewer_reason_rank(:current_comparison), do: 2
 
   # Task 1 exposes deal facts by product id but deliberately does not materialize product records.
   # This single set query supplies only the presentation identity needed for those deal rows.

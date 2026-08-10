@@ -1,10 +1,10 @@
 defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
-  import ProductCompare.DatabaseTestHelpers,
-    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+  import Ecto.Query, only: [from: 2]
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.{Alerts, Catalog, Pricing, Specs}
+  alias ProductCompare.{Alerts, Catalog, Pricing, Repo, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
 
   @description String.duplicate("A reliable option with enough detail for comparison. ", 3)
@@ -156,6 +156,94 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            } = no_match_response
   end
 
+  test "homeDeals includes non-deal watched, saved, and current products in reason precedence order",
+       %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("private-candidates-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    watched = non_deal_product("private-watched", category, operator, "120", "100")
+    saved = non_deal_product("private-saved", category, operator, "110", "100")
+    current = non_deal_product("private-current", category, operator, "100", "80")
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: watched.product.id,
+               merchant_product_id: watched.offer.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "90"
+             })
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Private candidates",
+               product_ids: [saved.product.id]
+             })
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "new" => [],
+                 "trending" => [],
+                 "forYou" => for_you
+               }
+             }
+           } =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => [current.product.slug]})
+
+    assert Enum.map(for_you, &get_in(&1, ["product", "id"])) == [
+             relay_id(:product, watched.product.id),
+             relay_id(:product, saved.product.id),
+             relay_id(:product, current.product.id)
+           ]
+
+    assert Enum.map(for_you, &get_in(&1, ["reasons", Access.at(0), "code"])) == [
+             "WATCH_TARGET",
+             "SAVED_COMPARISON",
+             "CURRENT_COMPARISON"
+           ]
+
+    assert Enum.map(for_you, &get_in(&1, ["offer", "priceSignal"])) == [
+             "AT_OR_ABOVE_30_DAY_MEDIAN",
+             "AT_OR_ABOVE_30_DAY_MEDIAN",
+             "AT_OR_ABOVE_30_DAY_MEDIAN"
+           ]
+  end
+
+  test "homeDeals ranks same-reason viewer candidates by improvement before absolute price", %{
+    conn: conn
+  } do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("improvement-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    larger_improvement = non_deal_product("larger-improvement", category, operator, "105", "125")
+
+    lower_absolute_price =
+      non_deal_product("lower-absolute-price", category, operator, "80", "90")
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Improvement ordering",
+               product_ids: [larger_improvement.product.id, lower_absolute_price.product.id]
+             })
+
+    assert %{"data" => %{"homeDeals" => %{"forYou" => for_you}}} =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => []})
+
+    assert Enum.map(for_you, &get_in(&1, ["product", "id"])) == [
+             relay_id(:product, larger_improvement.product.id),
+             relay_id(:product, lower_absolute_price.product.id)
+           ]
+  end
+
   test "home operations retain a fixed read budget and expose only typed deal reasons", %{
     conn: conn
   } do
@@ -163,23 +251,61 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     operator = AccountsFixtures.operator_fixture()
     products = Enum.map(1..6, &qualified_product("budget-#{&1}", category, operator, "100"))
 
-    {_one_response, one_queries} =
+    {guest_one_response, guest_one_queries} =
       capture_select_queries(fn ->
         graphql(conn, home_query(), %{"selectedSlugs" => [hd(products).product.slug]})
       end)
 
-    {_six_response, six_queries} =
+    {guest_six_response, guest_six_queries} =
       capture_select_queries(fn ->
         graphql(conn, home_query(), %{"selectedSlugs" => Enum.map(products, & &1.product.slug)})
       end)
 
-    Enum.each(
-      [:products, :merchant_products, :price_points, :product_attribute_currents],
-      fn table ->
-        assert count_select_queries_targeting_table(one_queries, table) ==
-                 count_select_queries_targeting_table(six_queries, table)
-      end
-    )
+    assert %{"data" => _} = guest_one_response
+    assert %{"data" => _} = guest_six_response
+    assert_select_histograms_equal(guest_one_queries, guest_six_queries)
+
+    owner = AccountsFixtures.user_fixture()
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: hd(products).product.id,
+               merchant_product_id: hd(products).offer.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "99"
+             })
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Budget relevance",
+               product_ids: [Enum.at(products, 1).product.id]
+             })
+
+    authenticated_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+
+    {authenticated_one_response, authenticated_one_queries} =
+      capture_select_queries(fn ->
+        graphql(authenticated_conn, home_query(), %{
+          "selectedSlugs" => [hd(products).product.slug]
+        })
+      end)
+
+    {authenticated_six_response, authenticated_six_queries} =
+      capture_select_queries(fn ->
+        graphql(authenticated_conn, home_query(), %{
+          "selectedSlugs" => Enum.map(products, & &1.product.slug)
+        })
+      end)
+
+    assert %{"data" => _} = authenticated_one_response
+    assert %{"data" => _} = authenticated_six_response
+    assert_select_histograms_equal(authenticated_one_queries, authenticated_six_queries)
+
+    authenticated_histogram = select_histogram(authenticated_one_queries)
+    assert authenticated_histogram["price_watch_rules"] > 0
+    assert authenticated_histogram["saved_comparison_sets"] > 0
+    assert authenticated_histogram["saved_comparison_items"] > 0
 
     assert {:ok, %{data: %{"__type" => %{"fields" => fields}}}} =
              Absinthe.run(
@@ -258,6 +384,45 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     %{product: product, offer: offer}
   end
 
+  defp non_deal_product(slug, category, operator, current_price, historical_price) do
+    result = qualified_product(slug, category, operator, current_price)
+    offer_id = result.offer.id
+
+    assert {:ok, _} =
+             Pricing.add_price_point(%{
+               merchant_product_id: result.offer.id,
+               observed_at: DateTime.add(DateTime.utc_now(), -3_600, :second),
+               price: historical_price,
+               shipping: "5",
+               in_stock: true
+             })
+
+    {1, _} =
+      Repo.update_all(
+        from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.id == ^offer_id
+        ),
+        set: [inserted_at: DateTime.add(DateTime.utc_now(), -259_201, :second)]
+      )
+
+    result
+  end
+
+  defp assert_select_histograms_equal(first_queries, second_queries) do
+    assert length(first_queries) == length(second_queries)
+    assert select_histogram(first_queries) == select_histogram(second_queries)
+  end
+
+  defp select_histogram(queries) do
+    Enum.reduce(queries, %{}, fn query, histogram ->
+      ~r/\b(?:FROM|JOIN)\s+"([^"]+)"/i
+      |> Regex.scan(query, capture: :all_but_first)
+      |> List.flatten()
+      |> MapSet.new()
+      |> Enum.reduce(histogram, fn table, acc -> Map.update(acc, table, 1, &(&1 + 1)) end)
+    end)
+  end
+
   defp graphql(conn, query, variables) do
     conn |> post("/api/graphql", %{query: query, variables: variables}) |> json_response(200)
   end
@@ -278,9 +443,9 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query HomeDeals($selectedSlugs: [String!]!) {
       homeDeals(selectedSlugs: $selectedSlugs) {
-        new { product { id name slug } reasons { code watchTarget } }
-        trending { product { id name slug } reasons { code watchTarget } }
-        forYou { product { id name slug } reasons { code watchTarget } }
+        new { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
+        trending { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
+        forYou { product { id name slug } offer { priceSignal } reasons { code watchTarget } }
       }
     }
     """
