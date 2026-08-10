@@ -106,6 +106,19 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "product attribute claims reject finite confidence outside zero through one before SQL" do
+    for {confidence, message} <- [
+          {Decimal.new("-0.01"), "must be greater than or equal to 0"},
+          {Decimal.new("1.01"), "must be less than or equal to 1"}
+        ] do
+      changeset =
+        ProductAttributeClaim.changeset(%ProductAttributeClaim{}, %{confidence: confidence})
+
+      refute changeset.valid?
+      assert message in errors_on(changeset).confidence
+    end
+  end
+
   test "product media map their non-negative position check" do
     assert_maps_check(
       ProductMedia.changeset(%ProductMedia{}, %{}),
@@ -156,6 +169,18 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
       ProductTaxon.changeset(%ProductTaxon{}, %{}),
       "product_taxons_confidence_range"
     )
+  end
+
+  test "product taxons reject finite confidence outside zero through one before SQL" do
+    for {confidence, message} <- [
+          {Decimal.new("-0.01"), "must be greater than or equal to 0"},
+          {Decimal.new("1.01"), "must be less than or equal to 1"}
+        ] do
+      changeset = ProductTaxon.changeset(%ProductTaxon{}, %{confidence: confidence})
+
+      refute changeset.valid?
+      assert message in errors_on(changeset).confidence
+    end
   end
 
   test "saved comparison items map their position range check" do

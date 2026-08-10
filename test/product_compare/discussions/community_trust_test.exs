@@ -207,6 +207,18 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
              |> Repo.insert()
 
     assert DateTime.compare(utc_window.window_started_at, window_started_at) == :eq
+
+    assert {:ok, _result} =
+             insert_community_write_window(user.id, "review", ~U[2026-07-20 20:00:00Z])
+
+    assert {:error,
+            %Postgrex.Error{
+              postgres: %{
+                code: :check_violation,
+                constraint: "community_write_windows_hour_check"
+              }
+            }} =
+             insert_community_write_window(user.id, "report", ~U[2026-07-20 20:01:00Z])
   end
 
   test "write limit increments require an outer transaction before mutation" do
@@ -1303,6 +1315,18 @@ defmodule ProductCompare.Discussions.CommunityTrustTest do
     |> Repo.update_all(set: [inserted_at: inserted_at])
 
     Repo.get!(schema, id)
+  end
+
+  defp insert_community_write_window(user_id, action_kind, window_started_at) do
+    Repo.query(
+      """
+      INSERT INTO community_write_windows (
+        user_id, action_kind, window_started_at, count, inserted_at, updated_at
+      )
+      VALUES ($1, $2, $3, 1, now(), now())
+      """,
+      [user_id, action_kind, window_started_at]
+    )
   end
 
   defp emoji_zwj_text(code_point_count) do

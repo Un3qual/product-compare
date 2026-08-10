@@ -112,6 +112,31 @@ defmodule ProductCompare.CommerceAttributionTest do
                })
 
       assert "is invalid" in errors_on(changeset).affiliate_program_id
+
+      affiliate_program = affiliate_program_fixture(%{merchant: merchant})
+      suffix = System.unique_integer([:positive])
+
+      assert {:ok, _result} =
+               insert_commerce_link(
+                 merchant.id,
+                 affiliate_program.id,
+                 "affiliate",
+                 "https://affiliate.example.com/direct-valid-#{suffix}"
+               )
+
+      assert {:error,
+              %Postgrex.Error{
+                postgres: %{
+                  code: :check_violation,
+                  constraint: "commerce_links_affiliate_program_check"
+                }
+              }} =
+               insert_commerce_link(
+                 merchant.id,
+                 nil,
+                 "affiliate",
+                 "https://affiliate.example.com/direct-invalid-#{suffix}"
+               )
     end
 
     test "rejects redirect destinations without an http or https URL" do
@@ -2588,6 +2613,18 @@ defmodule ProductCompare.CommerceAttributionTest do
       |> CommerceAttribution.upsert_commerce_link()
 
     commerce_link
+  end
+
+  defp insert_commerce_link(merchant_id, affiliate_program_id, link_type, destination_url) do
+    Repo.query(
+      """
+      INSERT INTO commerce_links (
+        merchant_id, affiliate_program_id, destination_url, link_type, inserted_at, updated_at
+      )
+      VALUES ($1, $2, $3, $4, now(), now())
+      """,
+      [merchant_id, affiliate_program_id, destination_url, link_type]
+    )
   end
 
   defp commerce_link_merchant_id(attrs) do
