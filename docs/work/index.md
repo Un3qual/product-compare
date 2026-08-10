@@ -49,16 +49,72 @@ None.
 
 ## Ready Work
 
-None.
+### Database Constraint Application Parity
+
+Status: ready
+Lane: Database constraint application parity
+Plan: `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
+Batch outcome: Every reachable application-owned same-row PostgreSQL check has
+equivalent pre-write Ecto validation and an explicit error mapping, with
+dependent discussion reads and writes protected by enforceable transaction
+boundaries.
+Next action: add the immutable numeric owner changeset regressions and watch
+them fail before changing the five owning schemas.
+Owned paths:
+
+- `AGENTS.md`
+- `priv/repo/migrations/20260809130300_remove_redundant_price_point_checks.exs`
+- alert, snapshot, catalog, commerce-attribution, discussion, ingestion,
+  specification, and taxonomy schemas named by the linked plan
+- `lib/product_compare/discussions/content_lifecycle.ex`
+- `lib/product_compare/discussions/submissions/write_limits.ex`
+- focused owner, direct-write, mapping, and transaction tests named by the plan
+- `docs/work/database-constraint-application-parity.md`
+- `docs/work/index.md`
+- `docs/plans/INDEX.md`
+- `docs/plans/2026-07-31-work-index-history.md`
+
+Internal slices:
+
+- Immutable snapshot, alert-event, and watch-baseline numeric validation
+  parity.
+- Affiliate-link, write-window, ingestion-terminal, and thread-parent parity
+  with explicit discussion transaction ownership.
+- Existing-validator mappings, redundant price-check retirement, guidance, and
+  consolidated closeout.
+
+Prerequisites:
+
+- The current catalog inventory remains the audited 75 application-owned
+  checks after excluding five Oban checks.
+- Existing named database checks and the slug-reservation trigger retain their
+  audited definitions.
+- No active row owns an implementation path.
+
+Verification:
+
+- RED/GREEN owner, direct-write, mapping, and transaction suites named by the
+  linked plan
+- one-time final catalog-to-owner reconciliation
+- full backend tests, type checks, quality, and formatting
+- `mix work_queue.validate`
+- `git diff --check`
+
+Exit condition: Every active application same-row check with a reachable
+changeset is prevalidated and mapped, the reservation trigger remains the sole
+documented exception, redundant price checks are removed, transaction evidence
+passes, and one completion record closes the batch.
 
 ## Ready Floor Exception
 
-Reason: No independently shippable non-discussion outcome is currently
-validated; discussion and provider/operator work remain explicitly deferred.
-Rejected split: The completed product, commerce, taxonomy, snapshot, and
-numeric-reference slices cannot be reused as queue filler or separate batches.
-Replenishment action: Audit current core product behavior and architecture gaps
-for the next independently shippable outcome before dispatch resumes.
+Reason: The approved catalog audit validates one consolidated integrity outcome
+and no independent reserve row; unrelated provider/operator work remains
+deferred.
+Rejected split: Numeric, cross-field, mapping, migration, test, transaction,
+and guidance work enforce one application/database parity invariant and cannot
+be promoted as separate queue filler.
+Replenishment action: Complete the consolidated parity outcome, then audit
+current product behavior and architecture gaps for a distinct shippable result.
 
 ## Needs Decision Work
 
