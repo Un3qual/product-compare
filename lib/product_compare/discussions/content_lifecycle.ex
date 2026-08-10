@@ -29,10 +29,23 @@ defmodule ProductCompare.Discussions.ContentLifecycle do
 
   @spec create_post(map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
   def create_post(attrs) do
-    %ThreadPost{}
-    |> ThreadPost.changeset(attrs)
-    |> validate_post_parent()
-    |> Repo.insert()
+    changeset = ThreadPost.changeset(%ThreadPost{}, attrs)
+
+    if changeset.valid? do
+      Repo.transaction(fn ->
+        lock_post_thread(changeset)
+
+        changeset
+        |> validate_post_parent()
+        |> Repo.insert()
+        |> case do
+          {:ok, post} -> post
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    else
+      {:error, changeset}
+    end
   end
 
   @spec update_post(ThreadPost.t(), map()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
@@ -90,6 +103,16 @@ defmodule ProductCompare.Discussions.ContentLifecycle do
   end
 
   defp parent_update?(_attrs), do: false
+
+  defp lock_post_thread(changeset) do
+    thread_id = Ecto.Changeset.get_field(changeset, :thread_id)
+
+    Repo.one(
+      from thread in ProductThread,
+        where: thread.id == ^thread_id,
+        lock: "FOR UPDATE"
+    )
+  end
 
   defp update_post_parent(%ThreadPost{} = post, attrs) do
     Repo.transaction(fn ->

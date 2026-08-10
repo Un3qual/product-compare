@@ -11,6 +11,10 @@ defmodule ProductCompare.Discussions.Submissions.WriteLimits do
 
   @spec increment!(pos_integer(), :review | :question | :answer | :report) :: :ok
   def increment!(user_id, action_kind) do
+    unless Repo.in_transaction?() do
+      raise ArgumentError, "write limit increments require an active Repo transaction"
+    end
+
     window_started_at = utc_hour(DateTime.utc_now())
     now = DateTime.utc_now() |> DateTime.truncate(:microsecond)
 

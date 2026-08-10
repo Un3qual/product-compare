@@ -30,19 +30,40 @@ defmodule ProductCompare.Repo.IngestionRunTerminalTimestampIntegrityTest do
     assert {:ok, _result} = insert_ingestion_run("failed", DateTime.utc_now())
   end
 
-  test "the owning changeset maps the terminal timestamp constraint" do
+  test "the owning changeset rejects a missing terminal timestamp before SQL and maps the check" do
     changeset =
       ImportRun.changeset(%ImportRun{}, %{
-        source_id: insert_source!(),
+        source_id: 1,
         surface: "shoppingProducts",
         query: %{},
         status: "succeeded",
         started_at: DateTime.utc_now()
       })
 
-    assert changeset.valid?
-    assert {:error, invalid_changeset} = Repo.insert(changeset)
-    assert "is invalid" in errors_on(invalid_changeset).finished_at
+    refute changeset.valid?
+    assert "is invalid" in errors_on(changeset).finished_at
+
+    assert Enum.any?(Ecto.Changeset.constraints(changeset), fn mapping ->
+             mapping.type == :check and
+               mapping.constraint == "ingestion_runs_terminal_finished_at_required"
+           end)
+
+    assert ImportRun.changeset(%ImportRun{}, %{
+             source_id: 1,
+             surface: "shoppingProducts",
+             query: %{},
+             status: "running",
+             started_at: DateTime.utc_now()
+           }).valid?
+
+    assert ImportRun.changeset(%ImportRun{}, %{
+             source_id: 1,
+             surface: "shoppingProducts",
+             query: %{},
+             status: "failed",
+             started_at: DateTime.utc_now(),
+             finished_at: DateTime.utc_now()
+           }).valid?
   end
 
   defp insert_ingestion_run(status, finished_at) do

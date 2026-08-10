@@ -39,10 +39,22 @@ defmodule ProductCompareSchemas.Discussions.ThreadPost do
     |> cast(attrs, cast_fields)
     |> validate_required([:thread_id, :user_id, :body_md])
     |> validate_length(:body_md, max: 5_000, count: :codepoints)
+    |> validate_parent_not_self()
     |> check_constraint(:body_md, name: :thread_posts_body_length_check)
+    |> check_constraint(:parent_post_id, name: :thread_posts_parent_not_self_check)
     |> foreign_key_constraint(:thread_id)
     |> foreign_key_constraint(:parent_post_id)
     |> foreign_key_constraint(:user_id)
+  end
+
+  defp validate_parent_not_self(changeset) do
+    post_id = changeset.data.id
+
+    if not is_nil(post_id) and get_field(changeset, :parent_post_id) == post_id do
+      add_error(changeset, :parent_post_id, "cannot create a cycle")
+    else
+      changeset
+    end
   end
 
   def moderation_changeset(post, status, moderator_id, note, now) do

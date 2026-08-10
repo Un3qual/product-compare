@@ -88,6 +88,22 @@ defmodule ProductCompare.CommerceAttributionTest do
     test "requires affiliate links to identify their affiliate program" do
       merchant = merchant_fixture()
 
+      changeset =
+        CommerceLink.changeset(%CommerceLink{}, %{
+          merchant_id: merchant.id,
+          destination_url: "https://affiliate.example.com/click",
+          link_type: :affiliate
+        })
+
+      refute changeset.valid?
+      assert "is invalid" in errors_on(changeset).affiliate_program_id
+
+      assert CommerceLink.changeset(%CommerceLink{}, %{
+               merchant_id: merchant.id,
+               destination_url: "https://merchant.example.com/product",
+               link_type: :non_affiliate
+             }).valid?
+
       assert {:error, changeset} =
                CommerceAttribution.upsert_commerce_link(%{
                  merchant_id: merchant.id,

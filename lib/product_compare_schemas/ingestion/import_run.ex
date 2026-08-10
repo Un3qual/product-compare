@@ -94,6 +94,7 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> validate_counts()
     |> validate_number(:offers_deactivated, greater_than_or_equal_to: 0)
     |> validate_sha256_digest(:scope_fingerprint)
+    |> validate_terminal_finished_at()
     |> foreign_key_constraint(:source_id)
     |> foreign_key_constraint(:surface, name: :ingestion_runs_integration_surface_id_fkey)
     |> check_constraint(:page_size, name: :ingestion_runs_page_size_positive)
@@ -123,6 +124,15 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     Enum.reduce(@count_fields, changeset, fn field, changeset ->
       validate_number(changeset, field, greater_than_or_equal_to: 0)
     end)
+  end
+
+  defp validate_terminal_finished_at(changeset) do
+    if get_field(changeset, :status) in [:succeeded, :failed] and
+         is_nil(get_field(changeset, :finished_at)) do
+      add_error(changeset, :finished_at, "is invalid")
+    else
+      changeset
+    end
   end
 
   defp validate_sha256_digest(changeset, field) do

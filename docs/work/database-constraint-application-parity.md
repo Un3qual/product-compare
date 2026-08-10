@@ -19,6 +19,18 @@
   rollback and locked alert-evaluation boundary passes 33 tests.
 - Snapshot persistence remains inside its repeatable-read transaction, and
   alert event insertion remains inside the existing locked watch transaction.
+- Cross-field and transaction RED: 6 expected failures covered affiliate
+  program ownership, UTC-hour alignment, terminal ingestion timestamps,
+  self-parent mapping, direct-create parent races, and unguarded write-limit
+  mutation.
+- Cross-field GREEN: all 127 focused tests and 70 adjacent discussion,
+  ingestion, affiliate, alert, and snapshot regressions pass.
+- Direct post creation now locks its thread before reading the candidate parent
+  and inserting in the same transaction. The concurrency regression moves the
+  parent while the creator is blocked and proves the creator revalidates after
+  lock acquisition. `WriteLimits.increment!/2` rejects untransactional calls
+  before mutation while existing submission paths retain their outer
+  transaction.
 
 ## Target Outcome
 
