@@ -12,9 +12,13 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
 
   @now ~U[2026-08-10 12:00:00Z]
 
-  test "deduplicates tagged identities, excludes identity-less clicks, uses inclusive seven days, and orders equal ties by product id" do
+  test "enforces distinct five-identity thresholds and discriminates inclusive and exclusive seven-day boundaries" do
     first = offer_product("activity-first")
     second = offer_product("activity-second")
+    inclusive_boundary = offer_product("activity-inclusive-boundary")
+    exclusive_boundary = offer_product("activity-exclusive-boundary")
+    four_unique = offer_product("activity-four-unique")
+    five_unique = offer_product("activity-five-unique")
     user = AccountsFixtures.user_fixture()
 
     Enum.each(1..3, fn index -> click(first, %{anonymous_id: "anon-#{index}"}) end)
@@ -24,12 +28,23 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     click(first, %{anonymous_id: "anon-1"})
     click(first, %{})
     Enum.each(1..5, fn index -> click(second, %{anonymous_id: "second-#{index}"}) end)
-    click(second, %{anonymous_id: "second-5"}, -604_800)
-    click(second, %{anonymous_id: "stale"}, -604_801)
+
+    Enum.each(1..4, fn index ->
+      click(inclusive_boundary, %{anonymous_id: "inclusive-#{index}"})
+      click(exclusive_boundary, %{anonymous_id: "exclusive-#{index}"})
+      click(four_unique, %{anonymous_id: "four-#{index}"})
+    end)
+
+    click(inclusive_boundary, %{anonymous_id: "inclusive-5"}, -604_800)
+    click(exclusive_boundary, %{anonymous_id: "exclusive-5"}, -604_801)
+    Enum.each(1..8, fn _ -> click(four_unique, %{anonymous_id: "four-1"}) end)
+    Enum.each(1..5, fn index -> click(five_unique, %{anonymous_id: "five-#{index}"}) end)
 
     assert CommerceAttribution.trending_product_ids(now: @now) == [
              first.product.id,
-             second.product.id
+             second.product.id,
+             inclusive_boundary.product.id,
+             five_unique.product.id
            ]
   end
 

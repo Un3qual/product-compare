@@ -68,7 +68,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
   test "includes the 24-hour boundary but requires the latest observation to remain in stock" do
     operator = AccountsFixtures.operator_fixture()
     inclusive = product_with_offer("workspace-24h", operator, -86_400, 2)
-    _exclusive = product_with_offer("workspace-24h-plus", operator, -86_401, 2)
+    exclusive = product_with_offer("workspace-24h-plus", operator, -86_401, 2)
     latest_out = product_with_offer("workspace-latest-out", operator, -3_600, 2)
 
     offer =
@@ -91,6 +91,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     candidate_ids = MapSet.new(candidates.products, & &1.id)
 
     assert inclusive.id in candidate_ids
+    refute exclusive.id in candidate_ids
     refute latest_out.id in candidate_ids
   end
 
