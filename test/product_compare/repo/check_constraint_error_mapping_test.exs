@@ -39,6 +39,15 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "claim dependencies reject self references before SQL" do
+    changeset =
+      ClaimDependency.changeset(%ClaimDependency{}, %{claim_id: 1, depends_on_claim_id: 1})
+
+    refute changeset.valid?
+
+    assert "must not reference the same claim" in errors_on(changeset).depends_on_claim_id
+  end
+
   test "community reports map their single-target check" do
     assert_maps_check(
       CommunityReport.changeset(%CommunityReport{}, %{}),
@@ -46,11 +55,41 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "community reports enforce exactly one target before SQL" do
+    base_attrs = %{reporter_id: 1, reason: "Constraint parity report"}
+
+    assert CommunityReport.changeset(%CommunityReport{}, Map.put(base_attrs, :review_id, 1)).valid?
+
+    for target_attrs <- [%{}, %{review_id: 1, thread_id: 2}] do
+      changeset =
+        CommunityReport.changeset(%CommunityReport{}, Map.merge(base_attrs, target_attrs))
+
+      refute changeset.valid?
+      assert "must select one item" in errors_on(changeset).target
+    end
+  end
+
   test "import runs map their deactivated-offer count check" do
     assert_maps_check(
       ImportRun.changeset(%ImportRun{}, %{}),
       "ingestion_runs_offers_deactivated_non_negative"
     )
+  end
+
+  test "import runs reject negative deactivated-offer counts before SQL" do
+    changeset =
+      ImportRun.changeset(%ImportRun{}, %{
+        source_id: 1,
+        surface: "shoppingProducts",
+        query: %{},
+        status: :running,
+        started_at: DateTime.utc_now(),
+        offers_deactivated: -1
+      })
+
+    refute changeset.valid?
+
+    assert "must be greater than or equal to 0" in errors_on(changeset).offers_deactivated
   end
 
   test "product attribute claims map their single typed value check" do
@@ -74,11 +113,42 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "product media reject negative positions before SQL" do
+    changeset =
+      ProductMedia.changeset(%ProductMedia{}, %{
+        product_id: 1,
+        url: "https://example.test/media.jpg",
+        role: :gallery,
+        position: -1,
+        observed_at: DateTime.utc_now()
+      })
+
+    refute changeset.valid?
+    assert "must be greater than or equal to 0" in errors_on(changeset).position
+  end
+
   test "product reviews map their rating range check" do
     assert_maps_check(
       ProductReview.changeset(%ProductReview{}, %{}),
       "product_reviews_rating_range"
     )
+  end
+
+  test "product reviews reject ratings outside one through five before SQL" do
+    for {rating, message} <- [
+          {0, "must be greater than or equal to 1"},
+          {6, "must be less than or equal to 5"}
+        ] do
+      changeset =
+        ProductReview.changeset(%ProductReview{}, %{
+          product_id: 1,
+          user_id: 2,
+          rating: rating
+        })
+
+      refute changeset.valid?
+      assert message in errors_on(changeset).rating
+    end
   end
 
   test "product taxons map their confidence range check" do
@@ -95,11 +165,40 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "saved comparison items reject positions outside one through three before SQL" do
+    for {position, message} <- [
+          {0, "must be greater than or equal to 1"},
+          {4, "must be less than or equal to 3"}
+        ] do
+      changeset =
+        SavedComparisonItem.changeset(%SavedComparisonItem{}, %{
+          saved_comparison_set_id: 1,
+          product_id: 2,
+          position: position
+        })
+
+      refute changeset.valid?
+      assert message in errors_on(changeset).position
+    end
+  end
+
   test "taxon closure rows map their non-negative depth check" do
     assert_maps_check(
       TaxonClosure.changeset(%TaxonClosure{}, %{}),
       "taxon_closure_depth_nonnegative"
     )
+  end
+
+  test "taxon closure rows reject negative depths before SQL" do
+    changeset =
+      TaxonClosure.changeset(%TaxonClosure{}, %{
+        ancestor_id: 1,
+        descendant_id: 2,
+        depth: -1
+      })
+
+    refute changeset.valid?
+    assert "must be greater than or equal to 0" in errors_on(changeset).depth
   end
 
   test "category mapping candidates enforce a positive observation count in PostgreSQL" do
