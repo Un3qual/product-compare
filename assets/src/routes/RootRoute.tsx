@@ -1,13 +1,12 @@
 import { usePreloadedQuery } from "react-relay";
-import { Outlet, useLoaderData, useOutletContext } from "react-router-dom";
+import { Outlet, useLoaderData } from "react-router-dom";
 import rootViewerRouteQuery, {
-  type RootViewerRouteQuery
+  type RootViewerRouteQuery,
 } from "../__generated__/RootViewerRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../relay/route-preload";
 import { AppShell } from "../ui/components/layout/AppShell";
-import { PageShell } from "../ui/components/layout/PageShell";
 import { AppProviders } from "../ui/providers/AppProviders";
-import { RootHomeDestinations, RootPrimaryNavigation } from "./RootDestinations";
+import { RootPrimaryNavigation } from "./RootDestinations";
 import { RouteMetadata } from "./RouteMetadata";
 import type { RootLoaderData } from "./root/loader";
 import { projectRootViewer, type RootViewer } from "./root/viewer-data";
@@ -27,13 +26,13 @@ export function RootLayout() {
 }
 
 function ReadyRootLayout({
-  loaderData
+  loaderData,
 }: {
   loaderData: Extract<RootLoaderData, { status: "ready" }>;
 }) {
   const queryRef = useRoutePreloadedQuery<RootViewerRouteQuery>(
     rootViewerRouteQuery,
-    loaderData.viewerQuery
+    loaderData.viewerQuery,
   );
   const data = usePreloadedQuery<RootViewerRouteQuery>(rootViewerRouteQuery, queryRef);
 
@@ -50,20 +49,5 @@ function RootLayoutShell({ viewer }: RootOutletContext) {
         </AppShell>
       </AppProviders>
     </>
-  );
-}
-
-export function RootRoute() {
-  const { viewer } = useOutletContext<RootOutletContext>();
-
-  return (
-    <PageShell
-      description="Find products, compare specifications, and review current offers before you choose what to buy."
-      eyebrow="A clearer path to the right product"
-      title="Product Compare"
-      width="reading"
-    >
-      <RootHomeDestinations viewer={viewer} />
-    </PageShell>
   );
 }

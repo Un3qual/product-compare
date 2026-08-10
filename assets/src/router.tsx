@@ -6,7 +6,7 @@ import { createRelayRouterContext } from "./relay/route-preload";
 import { RouteErrorBoundary } from "./routes/compare/RouteErrorBoundary";
 import { notFoundLoader } from "./routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "./routes/RouteMetadata";
-import { RootLayout, RootRoute } from "./routes/RootRoute";
+import { RootLayout } from "./routes/RootRoute";
 import { rootLoader, ROOT_ROUTE_ID } from "./routes/root/loader";
 
 declare global {
@@ -41,7 +41,13 @@ export const routes: RouteObject[] = [
           "Product Compare",
           "Choose products with clearer specifications and current offers."
         ),
-        element: <RootRoute />
+        lazy: withLazyRouteImportRecovery(async () => {
+          const [{ HomeRoute }, { homeLoader }] = await Promise.all([
+            import("./routes/home/HomeRoute"),
+            import("./routes/home/loader")
+          ]);
+          return { Component: HomeRoute, loader: homeLoader };
+        })
       },
       {
         path: "products",

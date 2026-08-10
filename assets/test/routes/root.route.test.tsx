@@ -13,7 +13,7 @@ import {
   RootHomeDestinations,
   RootPrimaryNavigation
 } from "../../src/routes/RootDestinations";
-import { RootLayout, RootRoute } from "../../src/routes/RootRoute";
+import { RootLayout } from "../../src/routes/RootRoute";
 import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
@@ -90,6 +90,10 @@ const degradedAuthenticatedLoaderData = {
   viewerQuery: null
 } satisfies RootLoaderData;
 
+function RootTestIndex() {
+  return <h1>Test home</h1>;
+}
+
 beforeEach(() => {
   document.title = "";
   mockedFetchRouteQuery.mockReset();
@@ -127,7 +131,7 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
                 description: "Choose products with clearer specifications and current offers."
               }
             },
-            element: <RootRoute />
+            element: <RootTestIndex />
           },
           {
             path: "*",
@@ -312,7 +316,7 @@ test("root layout applies the deepest matched document metadata", async () => {
 
   renderRootRoute(guestLoaderData);
 
-  await screen.findByRole("heading", { name: "Product Compare" });
+  await screen.findByRole("heading", { name: "Test home" });
 
   expect(document.title).toBe("Product Compare");
   expect(document.head.querySelector('meta[name="description"]')).toHaveAttribute(
@@ -445,89 +449,6 @@ test("root layout reads authenticated viewer state from the preloaded root query
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
 });
 
-test("root route renders guest home actions as links while using the shared button wrapper", async () => {
-  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
-  renderRootRoute(guestLoaderData);
-
-  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute(
-    "aria-current",
-    "page"
-  );
-  const homeActions = screen.getByRole("region", { name: "Home actions" });
-  const shopperPaths = within(homeActions).getByRole("list", { name: "Shopper paths" });
-
-  expect(within(shopperPaths).getAllByRole("listitem")).toHaveLength(3);
-
-  expect(within(shopperPaths).getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "href",
-    "/products"
-  );
-  expect(within(shopperPaths).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "href",
-    "/compare"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Merchants" })).toHaveAttribute(
-    "href",
-    "/merchants"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
-    "href",
-    "/offers"
-  );
-  for (const accountDestination of [
-    "Saved comparisons",
-    "Affiliate setup",
-    "Revenue preview",
-    "CJ programs",
-    "API tokens"
-  ]) {
-    expect(
-      within(homeActions).queryByRole("link", { name: accountDestination })
-    ).not.toBeInTheDocument();
-  }
-  expect(within(homeActions).getByRole("link", { name: "Sign in" })).toHaveAttribute(
-    "href",
-    "/auth/login"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Create account" })).toHaveAttribute(
-    "href",
-    "/auth/register"
-  );
-  expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("button", { name: "Browse products" })).not.toBeInTheDocument();
-});
-
-test("root route focuses the home content on the shopper journey", async () => {
-  mockedUsePreloadedQuery.mockReturnValueOnce({ viewer: null } as never);
-  renderRootRoute(guestLoaderData);
-
-  expect(await screen.findByText(/find products/i)).toBeInTheDocument();
-  expect(screen.getByText(/compare specifications/i)).toBeInTheDocument();
-  expect(screen.getByText(/review current offers/i)).toBeInTheDocument();
-  expect(
-    screen.queryByText(/GraphQL-backed browser auth flows/i)
-  ).not.toBeInTheDocument();
-
-  const shopperActions = screen.getByRole("navigation", { name: "Shopper actions" });
-
-  expect(within(shopperActions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "href",
-    "/products"
-  );
-  expect(within(shopperActions).getByRole("link", { name: "Compare products" })).toHaveAttribute(
-    "href",
-    "/compare"
-  );
-  expect(within(shopperActions).getByRole("link", { name: "Review offers" })).toHaveAttribute(
-    "href",
-    "/offers"
-  );
-  expect(within(shopperActions).getByText(/narrow by what matters/i)).toBeInTheDocument();
-  expect(within(shopperActions).getByText(/meaningful differences side by side/i)).toBeInTheDocument();
-  expect(within(shopperActions).getByText(/current prices, availability, and coupons/i)).toBeInTheDocument();
-});
-
 test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {
   renderRootRoute(degradedAuthenticatedLoaderData);
 
@@ -541,44 +462,6 @@ test("root layout preserves cached viewer state when the root viewer preload is 
   expect(within(primaryNavigation).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
-});
-
-test("root route renders authenticated home actions", async () => {
-  renderRootRoute(authenticatedLoaderData);
-
-  expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
-  const homeActions = screen.getByRole("region", { name: "Home actions" });
-
-  expect(
-    within(homeActions).getByRole("navigation", { name: "More Product Compare actions" })
-  ).toBeInTheDocument();
-
-  expect(within(homeActions).getByRole("link", { name: "Sign out" })).toHaveAttribute(
-    "href",
-    "/auth/logout"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Saved comparisons" })).toHaveAttribute(
-    "href",
-    "/compare/saved"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Affiliate setup" })).toHaveAttribute(
-    "href",
-    "/affiliate/setup"
-  );
-  expect(within(homeActions).getByRole("link", { name: "Revenue preview" })).toHaveAttribute(
-    "href",
-    "/commerce/revenue"
-  );
-  expect(within(homeActions).getByRole("link", { name: "CJ programs" })).toHaveAttribute(
-    "href",
-    "/ingestion/cj-programs"
-  );
-  expect(within(homeActions).getByRole("link", { name: "API tokens" })).toHaveAttribute(
-    "href",
-    "/account/api-tokens"
-  );
-  expect(within(homeActions).queryByRole("link", { name: "Sign in" })).not.toBeInTheDocument();
-  expect(within(homeActions).queryByRole("link", { name: "Create account" })).not.toBeInTheDocument();
 });
 
 test("rootLoader propagates aborted viewer preloads instead of falling back to guest", async () => {
