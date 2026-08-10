@@ -65,19 +65,19 @@ export function HomeProductLedger({
 }) {
   return (
     <section aria-label="Product workspace">
-      <div aria-label="Product ledger headings" role="row" {...props(styles.headings)}>
-        <span role="columnheader">Product</span>
-        <span role="columnheader" {...props(styles.tabletOnly)}>
+      <div aria-hidden="true" data-slot="home-ledger-headings" {...props(styles.headings)}>
+        <span>Product</span>
+        <span {...props(styles.tabletOnly)}>
           Highlights
         </span>
-        <span role="columnheader">Best offer</span>
-        <span role="columnheader" {...props(styles.desktopOnly)}>
+        <span>Best offer</span>
+        <span {...props(styles.desktopOnly)}>
           Price signal
         </span>
-        <span role="columnheader" {...props(styles.desktopOnly)}>
+        <span {...props(styles.desktopOnly)}>
           Last checked
         </span>
-        <span role="columnheader">Actions</span>
+        <span>Actions</span>
       </div>
       <ProductLedger
         label="Product results"

@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
@@ -12,14 +12,18 @@ import { homeLoader } from "../../../src/routes/home/loader";
 
 const {
   preloadRouteQueryMock,
+  revalidateMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
+  useRevalidatorMock,
 } = vi.hoisted(() => ({
   preloadRouteQueryMock: vi.fn(),
+  revalidateMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
+  useRevalidatorMock: vi.fn(),
 }));
 
 vi.mock("../../../src/relay/route-preload", async () => {
@@ -34,7 +38,11 @@ vi.mock("../../../src/relay/route-preload", async () => {
 });
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-  return { ...actual, useLoaderData: useLoaderDataMock };
+  return {
+    ...actual,
+    useLoaderData: useLoaderDataMock,
+    useRevalidator: useRevalidatorMock,
+  };
 });
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
@@ -42,6 +50,7 @@ vi.mock("react-relay", async () => {
 });
 
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
+const mockedUseRevalidator = vi.mocked(useRevalidator);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -63,10 +72,12 @@ const DEALS_DESCRIPTOR = {
 
 beforeEach(() => {
   mockedPreloadRouteQuery.mockReset();
+  revalidateMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
+  mockedUseRevalidator.mockReturnValue({ revalidate: revalidateMock } as never);
 });
 
 test("home loader keeps the essential SSR descriptor while deals fail independently", async () => {
@@ -103,7 +114,24 @@ test("home loader preserves an aborted essential workspace request", async () =>
   ).rejects.toBe(abort);
 });
 
-test("home retains search and category recovery when the workspace is unavailable", () => {
+test("home loader rethrows an aborted optional deals preload instead of returning null", async () => {
+  const environment = createRelayEnvironment();
+  const controller = new AbortController();
+  const cancellation = new Error("Route load cancelled");
+  controller.abort(cancellation);
+  mockedPreloadRouteQuery
+    .mockResolvedValueOnce(WORKSPACE_DESCRIPTOR)
+    .mockRejectedValueOnce(new Error("deals request stopped"));
+
+  const result = await homeLoader({
+    context: createRelayRouterContext(environment),
+    request: new Request("https://app.example/", { signal: controller.signal }),
+  } as never);
+
+  await expect(result.deals).rejects.toThrow("deals request stopped");
+});
+
+test("home workspace recovery keeps search, category entry, and retry independent", () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: null,
     deals: Promise.resolve(null),
@@ -117,11 +145,36 @@ test("home retains search and category recovery when the workspace is unavailabl
   );
 
   expect(screen.getByRole("search", { name: "Search products" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Browse all products" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Browse categories and products" })).toHaveAttribute(
     "href",
     "/products?first=12",
   );
+  fireEvent.click(screen.getByRole("button", { name: "Try products again" }));
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
   expect(screen.getByRole("alert")).toHaveTextContent("Products are unavailable right now.");
+});
+
+test("home maps a rejected deferred deals descriptor to the local retry state", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    workspace: WORKSPACE_DESCRIPTOR,
+    deals: Promise.reject(new Error("deals unavailable")),
+    selectedSlugs: [],
+  });
+  mockedUsePreloadedQuery.mockReturnValueOnce({
+    homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+  } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "New and trending offers are unavailable right now.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+  expect(revalidateMock).toHaveBeenCalledTimes(1);
 });
 
 test("home renders six desktop ledger headings, one semantic list, and plain deal tabs", async () => {
@@ -161,16 +214,31 @@ test("home renders six desktop ledger headings, one semantic list, and plain dea
     </MemoryRouter>,
   );
 
-  expect(screen.getByRole("list", { name: "Product results" })).toBeInTheDocument();
-  expect(screen.getAllByRole("columnheader").map((heading) => heading.textContent)).toEqual([
+  const productResults = screen.getByRole("list", { name: "Product results" });
+  expect(productResults).toBeInTheDocument();
+  expect(within(productResults).getAllByRole("article")).toHaveLength(1);
+  for (const label of [
     "Product",
     "Highlights",
     "Best offer",
     "Price signal",
     "Last checked",
     "Actions",
-  ]);
+  ]) {
+    expect(
+      screen.getByText(label, {
+        exact: true,
+        selector: '[data-slot="home-ledger-headings"] span',
+      }),
+    ).toBeVisible();
+  }
+  expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
   expect(await screen.findByRole("tab", { name: "New" })).toBeInTheDocument();
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    WORKSPACE_DESCRIPTOR,
+  );
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), DEALS_DESCRIPTOR);
   expect(screen.getByRole("tab", { name: "Trending" })).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "More details" })).toHaveAttribute(

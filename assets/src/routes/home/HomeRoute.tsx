@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useOutletContext } from "react-router-dom";
+import { Link, useLoaderData, useOutletContext, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import type { HomeWorkspaceRouteQuery } from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
 import { useRoutePreloadedQuery } from "../../relay/route-preload";
@@ -149,15 +149,24 @@ function HomeWorkspace({
 }
 
 function HomeWorkspaceUnavailable({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  const revalidator = useRevalidator();
+
   return (
     <section aria-label="Product workspace" {...props(styles.section)}>
       <FeedbackState
         action={
-          <Button asChild>
-            <Link to={homeCatalogSearchPath("", selectedSlugs)}>Browse all products</Link>
-          </Button>
+          <>
+            <Button onClick={() => revalidator.revalidate()} type="button" variant="soft">
+              Try products again
+            </Button>
+            <Button asChild>
+              <Link to={homeCatalogSearchPath("", selectedSlugs)}>
+                Browse categories and products
+              </Link>
+            </Button>
+          </>
         }
-        description="Search the catalog or browse all products while we reconnect."
+        description="Search by category or model, or browse the catalog while we reconnect."
         kind="error"
         title="Products are unavailable right now."
       />

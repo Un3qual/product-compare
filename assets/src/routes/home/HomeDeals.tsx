@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense } from "react";
 import { Await, Link, useRevalidator } from "react-router-dom";
 import { usePreloadedQuery } from "react-relay";
 import type { HomeDealsRouteQuery } from "../../__generated__/HomeDealsRouteQuery.graphql";
@@ -19,13 +19,7 @@ export function HomeDeals({
   hasViewer: boolean;
   selectedSlugs: readonly string[];
 }) {
-  const [isHydrated, setIsHydrated] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  return isHydrated ? (
+  return (
     <Suspense
       fallback={<FeedbackState kind="loading" title="Loading new and trending offers..." />}
     >
@@ -39,8 +33,6 @@ export function HomeDeals({
         }
       </Await>
     </Suspense>
-  ) : (
-    <FeedbackState kind="loading" title="Loading new and trending offers..." />
   );
 }
 

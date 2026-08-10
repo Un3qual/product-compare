@@ -35,9 +35,13 @@ export async function homeLoader({
     homeDealsRouteQuery,
     variables,
     { signal: request.signal },
-  ).catch((error: unknown) =>
-    recoverRouteLoaderError(error, "Failed to preload home deals route query.", null),
-  );
+  ).catch((error: unknown) => {
+    if (request.signal.aborted || isAbortError(error)) {
+      throw error;
+    }
+
+    return recoverRouteLoaderError(error, "Failed to preload home deals route query.", null);
+  });
 
   try {
     return { deals, selectedSlugs, workspace: await workspace };
