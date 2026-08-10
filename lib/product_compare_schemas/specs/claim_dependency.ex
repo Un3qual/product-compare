@@ -18,6 +18,7 @@ defmodule ProductCompareSchemas.Specs.ClaimDependency do
     |> cast(attrs, [:claim_id, :depends_on_claim_id])
     |> validate_required([:claim_id, :depends_on_claim_id])
     |> validate_not_self_dependency()
+    |> check_constraint(:depends_on_claim_id, name: :claim_dependencies_not_self)
     |> unique_constraint([:claim_id, :depends_on_claim_id], name: :claim_dependencies_uq)
     |> foreign_key_constraint(:claim_id)
     |> foreign_key_constraint(:depends_on_claim_id)

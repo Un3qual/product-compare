@@ -31,6 +31,7 @@ defmodule ProductCompareSchemas.Catalog.ProductMedia do
     ])
     |> validate_required([:product_id, :url, :role, :position, :observed_at])
     |> validate_number(:position, greater_than_or_equal_to: 0)
+    |> check_constraint(:position, name: :product_media_position_non_negative)
     |> validate_length(:alt_text, max: 300)
     |> validate_change(:url, &validate_http_url/2)
     |> unique_constraint([:product_id, :url], name: :product_media_product_url_uq)

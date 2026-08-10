@@ -101,6 +101,9 @@ defmodule ProductCompareSchemas.Ingestion.ImportRun do
     |> check_constraint(:pages_requested, name: :ingestion_runs_pages_requested_positive)
     |> check_constraint(:finished_at, name: :ingestion_runs_terminal_finished_at_required)
     |> check_constraint(:pages_fetched, name: :ingestion_runs_counts_non_negative)
+    |> check_constraint(:offers_deactivated,
+      name: :ingestion_runs_offers_deactivated_non_negative
+    )
     |> check_constraint(:scope_fingerprint, name: :ingestion_runs_scope_fingerprint_sha256_length)
   end
 

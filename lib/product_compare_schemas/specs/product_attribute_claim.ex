@@ -90,8 +90,10 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
     |> check_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_sha256_length)
     |> unique_constraint(:fingerprint, name: :product_attribute_claims_fingerprint_uq)
     |> validate_single_typed_value()
+    |> check_constraint(:base, name: :product_attribute_claim_single_typed_value)
     |> validate_numeric_fields()
     |> validate_numeric_range_order()
+    |> check_constraint(:confidence, name: :product_attribute_claims_confidence_range)
     |> check_constraint(:value_num,
       name: :product_attribute_claims_numeric_companions_check
     )

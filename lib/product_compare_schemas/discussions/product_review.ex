@@ -58,6 +58,7 @@ defmodule ProductCompareSchemas.Discussions.ProductReview do
     |> cast(attrs, cast_fields)
     |> validate_required([:product_id, :user_id, :rating])
     |> validate_number(:rating, greater_than_or_equal_to: 1, less_than_or_equal_to: 5)
+    |> check_constraint(:rating, name: :product_reviews_rating_range)
     |> validate_length(:title, max: 120, count: :codepoints)
     |> validate_length(:body_md, max: 5_000, count: :codepoints)
     |> check_constraint(:title, name: :product_reviews_title_length_check)

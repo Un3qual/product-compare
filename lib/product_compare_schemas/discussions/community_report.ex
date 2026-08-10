@@ -24,6 +24,7 @@ defmodule ProductCompareSchemas.Discussions.CommunityReport do
     |> validate_required([:reporter_id, :reason])
     |> validate_length(:reason, min: 3, max: 500, count: :codepoints)
     |> validate_target()
+    |> check_constraint(:target, name: :community_reports_one_target)
     |> check_constraint(:reason, name: :community_reports_reason_length_check)
     |> unique_constraint([:reporter_id, :review_id])
     |> unique_constraint([:reporter_id, :thread_id])

@@ -31,6 +31,12 @@
   lock acquisition. `WriteLimits.increment!/2` rejects untransactional calls
   before mutation while existing submission paths retain their outer
   transaction.
+- Mapping and cleanup RED: 11 owner-specific mapping tests failed on their
+  exact missing check names, and the price catalog exposed both redundant
+  lower-bound checks.
+- Mapping and cleanup GREEN: all 27 focused tests and 62 owner regressions pass.
+  Migration `20260809130300` applied, rolled back to restore both legacy checks,
+  and reapplied to leave only the canonical finite, non-negative price checks.
 
 ## Target Outcome
 

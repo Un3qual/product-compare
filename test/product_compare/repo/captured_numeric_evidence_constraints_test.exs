@@ -294,6 +294,13 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
     end
   end
 
+  test "price points retain only the canonical finite non-negative amount checks" do
+    assert active_check_names("price_points") == [
+             "price_points_price_finite_non_negative",
+             "price_points_shipping_finite_non_negative"
+           ]
+  end
+
   test "price point changesets return field errors for non-finite Decimal inputs" do
     %{merchant_product_id: merchant_product_id} = insert_alert_event_parents!()
 
@@ -633,6 +640,27 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   defp assert_check_violation(result, constraint) do
     assert {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: ^constraint}}} =
              result
+  end
+
+  defp active_check_names(table) do
+    %{rows: rows} =
+      Repo.query!(
+        """
+        SELECT constraint_record.conname
+        FROM pg_constraint AS constraint_record
+        JOIN pg_class AS table_record
+          ON table_record.oid = constraint_record.conrelid
+        JOIN pg_namespace AS namespace_record
+          ON namespace_record.oid = table_record.relnamespace
+        WHERE namespace_record.nspname = current_schema()
+          AND table_record.relname = $1
+          AND constraint_record.contype = 'c'
+        ORDER BY constraint_record.conname
+        """,
+        [table]
+      )
+
+    Enum.map(rows, &hd/1)
   end
 
   defp assert_decimal_cast_error(changeset, field) do
