@@ -60,7 +60,24 @@ defmodule ProductCompare.Discussions.ContentLifecycle do
   end
 
   @spec delete_post(ThreadPost.t()) :: {:ok, ThreadPost.t()} | {:error, Ecto.Changeset.t()}
-  def delete_post(%ThreadPost{} = post), do: Repo.delete(post)
+  def delete_post(%ThreadPost{} = post) do
+    Repo.transaction(fn ->
+      persisted_post = Repo.get!(ThreadPost, post.id)
+
+      Repo.one!(
+        from thread in ProductThread,
+          where: thread.id == ^persisted_post.thread_id,
+          lock: "FOR UPDATE"
+      )
+
+      persisted_post
+      |> Repo.delete()
+      |> case do
+        {:ok, deleted_post} -> deleted_post
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
 
   @spec create_review(map()) :: {:ok, ProductReview.t()} | {:error, Ecto.Changeset.t()}
   def create_review(attrs) do

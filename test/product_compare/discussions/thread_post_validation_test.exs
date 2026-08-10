@@ -340,6 +340,80 @@ defmodule ProductCompare.Discussions.ThreadPostValidationTest do
                  where: post.body_md == "Concurrent direct post"
              )
     end
+
+    test "post deletion waits for the thread lock before locking an accepted post" do
+      fixture = create_committed_cycle_fixture()
+      on_exit(fn -> cleanup_committed_cycle_fixture(fixture) end)
+
+      Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+        Repo.update_all(
+          from(thread in ProductThread, where: thread.id == ^fixture.thread.id),
+          set: [accepted_post_id: fixture.post_a.id]
+        )
+      end)
+
+      parent = self()
+
+      lock_holder =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+
+              Repo.one!(
+                from thread in ProductThread,
+                  where: thread.id == ^fixture.thread.id,
+                  lock: "FOR UPDATE"
+              )
+
+              send(parent, {:delete_thread_lock_held, backend_pid})
+
+              receive do
+                :release_delete_thread_lock -> :ok
+              after
+                5_000 -> flunk("timed out waiting to release the held thread lock")
+              end
+            end)
+          end)
+        end)
+
+      assert_receive {:delete_thread_lock_held, lock_backend_pid}
+
+      delete_task =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            backend_pid = Repo.query!("SELECT pg_backend_pid()").rows |> hd() |> hd()
+            send(parent, {:delete_post_started, backend_pid})
+            Discussions.delete_post(fixture.post_a)
+          end)
+        end)
+
+      assert_receive {:delete_post_started, delete_backend_pid}
+      assert_blocked_by(delete_backend_pid, lock_backend_pid)
+
+      post_lock_probe =
+        Task.async(fn ->
+          Ecto.Adapters.SQL.Sandbox.unboxed_run(Repo, fn ->
+            Repo.transaction(fn ->
+              Repo.one(
+                from post in ThreadPost,
+                  where: post.id == ^fixture.post_a.id,
+                  lock: "FOR UPDATE"
+              )
+            end)
+          end)
+        end)
+
+      probe_before_release = Task.yield(post_lock_probe, 750)
+
+      send(lock_holder.pid, :release_delete_thread_lock)
+      assert {:ok, :ok} = Task.await(lock_holder)
+      assert {:ok, %ThreadPost{id: deleted_post_id}} = Task.await(delete_task)
+
+      probe_result = probe_before_release || Task.await(post_lock_probe)
+
+      assert {:ok, {:ok, %ThreadPost{id: ^deleted_post_id}}} = probe_result
+    end
   end
 
   defp start_unboxed_update(parent, label, post, attrs) do

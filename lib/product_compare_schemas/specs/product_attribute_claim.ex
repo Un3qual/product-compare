@@ -1,6 +1,8 @@
 defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
   use ProductCompareSchemas.Schema, :relational
 
+  alias ProductCompareSchemas.Schema
+
   @source_types [:scrape, :user, :import, :derived]
   @statuses [:proposed, :accepted, :rejected, :superseded]
   @typed_value_fields [
@@ -60,6 +62,8 @@ defmodule ProductCompareSchemas.Specs.ProductAttributeClaim do
 
   @spec changeset(t(), map()) :: Ecto.Changeset.t()
   def changeset(claim, attrs) do
+    attrs = Schema.normalize_non_finite_decimals(attrs, [:confidence])
+
     claim
     |> cast(attrs, [
       :product_id,

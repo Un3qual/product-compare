@@ -10,6 +10,8 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Offer, as: SnapshotOffer
   alias ProductCompareSchemas.Catalog.ComparisonSnapshot.Ranking, as: SnapshotRanking
   alias ProductCompareSchemas.Pricing.PricePoint
+  alias ProductCompareSchemas.Specs.ProductAttributeClaim
+  alias ProductCompareSchemas.Taxonomy.ProductTaxon
 
   test "snapshot attribute changesets reject confidence outside the database range" do
     attrs = %{
@@ -177,6 +179,70 @@ defmodule ProductCompare.Repo.CapturedNumericEvidenceConstraintsTest do
           | baseline_landed_price: baseline
         }),
         :baseline_landed_price
+      )
+    end
+  end
+
+  test "price watch changesets reject non-finite percentage drops before SQL" do
+    attrs = %{
+      user_id: 1,
+      product_id: 1,
+      rule_type: :percentage_drop,
+      currency: "USD",
+      percentage_drop: Decimal.new(10),
+      baseline_landed_price: Decimal.new(100)
+    }
+
+    watch = struct!(PriceWatchRule, Map.put(attrs, :id, 1))
+
+    for percentage_drop <- non_finite_decimals() do
+      assert_invalid_field(
+        PriceWatchRule.create_changeset(%PriceWatchRule{}, %{
+          attrs
+          | percentage_drop: percentage_drop
+        }),
+        :percentage_drop
+      )
+
+      assert_invalid_field(
+        PriceWatchRule.update_changeset(watch, %{percentage_drop: percentage_drop}),
+        :percentage_drop
+      )
+    end
+  end
+
+  test "mapped confidence changesets reject non-finite Decimals before SQL" do
+    claim_attrs = %{
+      product_id: 1,
+      attribute_id: 1,
+      source_type: :user,
+      status: :proposed,
+      value_text: "value",
+      confidence: Decimal.new(1)
+    }
+
+    product_taxon_attrs = %{
+      product_id: 1,
+      taxon_id: 1,
+      source_type: :user,
+      confidence: Decimal.new(1)
+    }
+
+    for confidence <- non_finite_decimals() do
+      assert_invalid_field(
+        ProductAttributeClaim.changeset(%ProductAttributeClaim{}, %{
+          claim_attrs
+          | confidence: confidence
+        }),
+        :confidence
+      )
+
+      assert_invalid_field(
+        ProductTaxon.changeset(%ProductTaxon{}, %{
+          product_taxon_attrs
+          | confidence: confidence
+        }),
+        :confidence
       )
     end
   end

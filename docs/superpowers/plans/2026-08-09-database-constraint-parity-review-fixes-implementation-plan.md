@@ -144,7 +144,7 @@ Expected: every valid control succeeds and all nine invalid writes report their 
 - [ ] **Step 1: Run the combined affected boundary**
 
 ```bash
-mix test test/product_compare/discussions/thread_post_validation_test.exs test/product_compare/repo/captured_numeric_evidence_constraints_test.exs test/product_compare/repo/check_constraint_error_mapping_test.exs test/product_compare/alerts_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs test/product_compare/taxonomy/taxon_closure_test.exs
+mix test test/product_compare/discussions/thread_post_validation_test.exs test/product_compare/repo/captured_numeric_evidence_constraints_test.exs test/product_compare/repo/check_constraint_error_mapping_test.exs test/product_compare/alerts/alerts_test.exs test/product_compare/specs/product_attribute_claim_changeset_test.exs test/product_compare/taxonomy/taxon_closure_test.exs test/product_compare/taxonomy/use_case_and_guardrail_test.exs
 ```
 
 - [ ] **Step 2: Run repository gates**

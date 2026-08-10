@@ -40,6 +40,16 @@
 - Final affected verification passes 222 tests. The definitive backend suite
   passes 1,347 tests; typecheck, quality, formatting, queue validation, and diff
   hygiene also pass.
+- Review follow-through closes three post-batch gaps. Post deletion now locks
+  the owning thread before deleting an accepted answer, preserving the same
+  thread-before-post lock order as creation. Percentage-drop and confidence
+  changesets normalize non-finite decimal inputs before casting. Nine
+  mapping-only checks now have direct PostgreSQL control-and-violation tests,
+  including a mutation proof that the closure-depth test fails when its check
+  is absent and passes again after restoration.
+- The review-fix suite passes 76 focused and adjacent tests. The definitive
+  backend suite now passes 1,359 tests; typecheck, quality, formatting, queue
+  validation, and diff hygiene also pass.
 
 ## Batch Outcome
 

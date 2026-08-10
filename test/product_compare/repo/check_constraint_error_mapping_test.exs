@@ -1,6 +1,11 @@
 defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
-  use ExUnit.Case, async: true
+  use ProductCompare.DataCase, async: true
 
+  alias ProductCompare.Fixtures.AccountsFixtures
+  alias ProductCompare.Fixtures.CJIngestionFixtures
+  alias ProductCompare.Fixtures.SpecsFixtures
+  alias ProductCompare.Fixtures.TaxonomyFixtures
+  alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.ProductMedia
   alias ProductCompareSchemas.Catalog.SavedComparisonItem
   alias ProductCompareSchemas.Discussions.CommunityReport
@@ -89,10 +94,275 @@ defmodule ProductCompare.Repo.CheckConstraintErrorMappingTest do
     )
   end
 
+  test "category mapping candidates enforce a positive observation count in PostgreSQL" do
+    source = CJIngestionFixtures.source_fixture()
+    suffix = System.unique_integer([:positive])
+
+    assert {:ok, _result} =
+             insert_category_mapping_candidate(source.id, "valid-#{suffix}", 1)
+
+    assert_check_violation(
+      insert_category_mapping_candidate(source.id, "invalid-#{suffix}", 0),
+      "category_mapping_candidates_observation_count_positive"
+    )
+  end
+
+  test "claim dependencies reject self references in PostgreSQL" do
+    product = SpecsFixtures.product_fixture()
+    attribute = SpecsFixtures.attribute_fixture()
+    first_claim_id = insert_boolean_claim!(product.id, attribute.id, true)
+    second_claim_id = insert_boolean_claim!(product.id, attribute.id, false)
+
+    assert {:ok, _result} = insert_claim_dependency(first_claim_id, second_claim_id)
+
+    assert_check_violation(
+      insert_claim_dependency(first_claim_id, first_claim_id),
+      "claim_dependencies_not_self"
+    )
+  end
+
+  test "community reports require exactly one target in PostgreSQL" do
+    review_author = AccountsFixtures.user_fixture()
+    reporter = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture()
+
+    {:ok, %{rows: [[review_id]]}} =
+      Repo.query(
+        """
+        INSERT INTO product_reviews (
+          product_id, user_id, rating, inserted_at, updated_at
+        )
+        VALUES ($1, $2, 5, now(), now())
+        RETURNING id
+        """,
+        [product.id, review_author.id]
+      )
+
+    assert {:ok, _result} = insert_community_report(reporter.id, review_id)
+
+    assert_check_violation(
+      insert_community_report(AccountsFixtures.user_fixture().id, nil),
+      "community_reports_one_target"
+    )
+  end
+
+  test "ingestion runs enforce non-negative deactivated offer counts in PostgreSQL" do
+    source = CJIngestionFixtures.source_fixture()
+
+    assert {:ok, _result} = insert_ingestion_run(source.id, 0)
+
+    assert_check_violation(
+      insert_ingestion_run(source.id, -1),
+      "ingestion_runs_offers_deactivated_non_negative"
+    )
+  end
+
+  test "product media enforce non-negative positions in PostgreSQL" do
+    product = SpecsFixtures.product_fixture()
+    suffix = System.unique_integer([:positive])
+
+    assert {:ok, _result} = insert_product_media(product.id, "valid-#{suffix}", 0)
+
+    assert_check_violation(
+      insert_product_media(product.id, "invalid-#{suffix}", -1),
+      "product_media_position_non_negative"
+    )
+  end
+
+  test "product reviews enforce their rating range in PostgreSQL" do
+    product = SpecsFixtures.product_fixture()
+
+    assert {:ok, _result} =
+             insert_product_review(product.id, AccountsFixtures.user_fixture().id, 5)
+
+    assert_check_violation(
+      insert_product_review(product.id, AccountsFixtures.user_fixture().id, 0),
+      "product_reviews_rating_range"
+    )
+  end
+
+  test "product taxons enforce their confidence range in PostgreSQL" do
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+    first_taxon = TaxonomyFixtures.taxon_fixture(%{})
+    second_taxon = TaxonomyFixtures.taxon_fixture(%{})
+
+    assert {:ok, _result} = insert_product_taxon(first_product.id, first_taxon.id, 1)
+
+    assert_check_violation(
+      insert_product_taxon(second_product.id, second_taxon.id, Decimal.new("1.01")),
+      "product_taxons_confidence_range"
+    )
+  end
+
+  test "saved comparison items enforce their position range in PostgreSQL" do
+    user = AccountsFixtures.user_fixture()
+    first_product = SpecsFixtures.product_fixture()
+    second_product = SpecsFixtures.product_fixture()
+
+    {:ok, %{rows: [[comparison_set_id]]}} =
+      Repo.query(
+        """
+        INSERT INTO saved_comparison_sets (user_id, name, inserted_at, updated_at)
+        VALUES ($1, 'Constraint parity set', now(), now())
+        RETURNING id
+        """,
+        [user.id]
+      )
+
+    assert {:ok, _result} = insert_saved_comparison_item(comparison_set_id, first_product.id, 1)
+
+    assert_check_violation(
+      insert_saved_comparison_item(comparison_set_id, second_product.id, 0),
+      "saved_comparison_items_position_range"
+    )
+  end
+
+  test "taxon closure rows enforce non-negative depth in PostgreSQL" do
+    taxonomy =
+      TaxonomyFixtures.taxonomy_fixture(
+        "constraint-parity-#{System.unique_integer([:positive])}",
+        "Constraint parity"
+      )
+
+    first_taxon = TaxonomyFixtures.taxon_fixture(%{taxonomy_id: taxonomy.id})
+    second_taxon = TaxonomyFixtures.taxon_fixture(%{taxonomy_id: taxonomy.id})
+
+    assert {:ok, _result} = insert_taxon_closure(first_taxon.id, second_taxon.id, 1)
+
+    assert_check_violation(
+      insert_taxon_closure(second_taxon.id, first_taxon.id, -1),
+      "taxon_closure_depth_nonnegative"
+    )
+  end
+
+  defp insert_category_mapping_candidate(source_id, path, observation_count) do
+    Repo.query(
+      """
+      INSERT INTO category_mapping_candidates (
+        source_id, display_path, normalized_path, observation_count,
+        last_seen_at, inserted_at, updated_at
+      )
+      VALUES ($1, $2, $2, $3, now(), now(), now())
+      """,
+      [source_id, path, observation_count]
+    )
+  end
+
+  defp insert_boolean_claim!(product_id, attribute_id, value) do
+    {:ok, %{rows: [[claim_id]]}} =
+      Repo.query(
+        """
+        INSERT INTO product_attribute_claims (
+          product_id, attribute_id, source_type, status, value_bool, inserted_at
+        )
+        VALUES ($1, $2, 'user', 'proposed', $3, now())
+        RETURNING id
+        """,
+        [product_id, attribute_id, value]
+      )
+
+    claim_id
+  end
+
+  defp insert_claim_dependency(claim_id, depends_on_claim_id) do
+    Repo.query(
+      """
+      INSERT INTO claim_dependencies (claim_id, depends_on_claim_id, inserted_at)
+      VALUES ($1, $2, now())
+      """,
+      [claim_id, depends_on_claim_id]
+    )
+  end
+
+  defp insert_community_report(reporter_id, review_id) do
+    Repo.query(
+      """
+      INSERT INTO community_reports (reporter_id, review_id, reason, inserted_at)
+      VALUES ($1, $2, 'Constraint parity report', now())
+      """,
+      [reporter_id, review_id]
+    )
+  end
+
+  defp insert_ingestion_run(source_id, offers_deactivated) do
+    Repo.query(
+      """
+      INSERT INTO ingestion_runs (
+        source_id, integration_surface_id, status, started_at,
+        offers_deactivated, inserted_at, updated_at
+      )
+      VALUES ($1, 1, 'running', now(), $2, now(), now())
+      """,
+      [source_id, offers_deactivated]
+    )
+  end
+
+  defp insert_product_media(product_id, suffix, position) do
+    Repo.query(
+      """
+      INSERT INTO product_media (
+        product_id, url, role, position, observed_at, inserted_at, updated_at
+      )
+      VALUES ($1, $2, 'gallery', $3, now(), now(), now())
+      """,
+      [product_id, "https://#{suffix}.example/media.jpg", position]
+    )
+  end
+
+  defp insert_product_review(product_id, user_id, rating) do
+    Repo.query(
+      """
+      INSERT INTO product_reviews (product_id, user_id, rating, inserted_at, updated_at)
+      VALUES ($1, $2, $3, now(), now())
+      """,
+      [product_id, user_id, rating]
+    )
+  end
+
+  defp insert_product_taxon(product_id, taxon_id, confidence) do
+    Repo.query(
+      """
+      INSERT INTO product_taxons (
+        product_id, taxon_id, source_type, confidence, inserted_at
+      )
+      VALUES ($1, $2, 'user', $3, now())
+      """,
+      [product_id, taxon_id, confidence]
+    )
+  end
+
+  defp insert_saved_comparison_item(comparison_set_id, product_id, position) do
+    Repo.query(
+      """
+      INSERT INTO saved_comparison_items (
+        saved_comparison_set_id, product_id, position, inserted_at
+      )
+      VALUES ($1, $2, $3, now())
+      """,
+      [comparison_set_id, product_id, position]
+    )
+  end
+
+  defp insert_taxon_closure(ancestor_id, descendant_id, depth) do
+    Repo.query(
+      """
+      INSERT INTO taxon_closure (ancestor_id, descendant_id, depth, inserted_at)
+      VALUES ($1, $2, $3, now())
+      """,
+      [ancestor_id, descendant_id, depth]
+    )
+  end
+
   defp assert_maps_check(changeset, constraint) do
     assert Enum.any?(Ecto.Changeset.constraints(changeset), fn mapping ->
              mapping.type == :check and mapping.constraint == constraint
            end),
            "expected #{inspect(changeset.data.__struct__)} to map #{constraint}"
+  end
+
+  defp assert_check_violation(result, constraint) do
+    assert {:error, %Postgrex.Error{postgres: %{code: :check_violation, constraint: ^constraint}}} =
+             result
   end
 end
