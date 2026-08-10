@@ -2,8 +2,9 @@
 
 ## Status
 
-Approved interactively on 2026-08-10. This document is the durable design for
-written-spec review before implementation planning.
+Approved in final written review on 2026-08-10. This document is the durable
+product and feature-parity contract for the five implementation plans cataloged
+in `docs/plans/INDEX.md` and dispatched through `docs/work/index.md`.
 
 ## Problem
 

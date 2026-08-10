@@ -49,18 +49,73 @@ None.
 
 ## Ready Work
 
-None.
+### 1. Production UI System Spine And Home
+
+Status: ready
+Lane: Production UI system and home
+Plan: `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
+Batch outcome: ProductCompare gains one stable production visual system and a
+useful, SSR-safe homepage with ranked search, category entry, a bounded product
+ledger, URL-backed comparison continuity, and truthful fault-isolated new,
+trending, and owner-private relevant deals.
+Next action: Execute Task 1's RED domain boundary tests, then implement the
+set-based homepage workspace and deal reads without weakening the approved
+eligibility, privacy, or query-budget contract.
+Owned paths:
+
+- Shared frontend package, router, root navigation, layout, feedback,
+  primitive, theme, font, brand, comparison-continuity, and product-ledger
+  paths named by the plan.
+- New `assets/src/routes/home/**`, focused home/root/UI tests, generated Home
+  Relay artifacts, and home Playwright snapshots.
+- Focused Catalog, SEO, Specs, Pricing, Alerts, Commerce Attribution, GraphQL home
+  schema/resolver, and tests named by the plan.
+- `docs/work/production-ui-system-home.md`.
+
+Internal slices:
+
+- Set-based home workspace, offer, activity, watch, and saved-comparison reads.
+- Typed GraphQL workspace/deal operations with privacy and fixed query budgets.
+- Visual tokens, local fonts, responsive navigation/layouts, controls, and
+  reduced-motion behavior.
+- Useful index workbench with essential workspace and optional deals.
+- Browser, accessibility, responsive, visual, bundle, and production gates.
+
+Prerequisites:
+
+- The production UI design and complete route functionality matrix are
+  approved.
+- The current root loader, domain owners, GraphQL schema, frontend stack, and
+  route tests match the plan's verified baseline.
+- The four later cohort plans remain dependent on this shared spine and are not
+  active or ready.
+
+Verification:
+
+- Focused backend boundary and GraphQL semantic/privacy/query-budget suites
+  named by the plan.
+- Focused frontend home/root/router/UI suites and deterministic Playwright,
+  axe, reduced-motion, visual, and no-overflow checks at three widths.
+- `cd assets && pnpm run check`.
+- `mix typecheck`, `mix quality`, `mix format --check-formatted`,
+  `mix work_queue.validate`, and `git diff --check`.
+
+Exit condition: Every system/home feature-parity row and production gate passes,
+the shared owners are stable, the lane records observed evidence, and the
+coordinator closes this row while promoting the four path-disjoint successor
+cohorts together.
 
 ## Ready Floor Exception
 
-Reason: No additional independently shippable outcome is currently validated;
-provider/operator and new discussion product work remain explicitly deferred.
-Rejected split: The completed numeric, cross-field, mapping, migration,
-transaction, and guidance slices cannot be reused as queue filler or separate
-batches.
-Replenishment action: Audit current product behavior, code, tests, and
-architecture gaps for the next independently shippable outcome before dispatch
-resumes.
+Reason: One independently shippable outcome is ready. Discover & Evaluate,
+Compare & Return, Account & Setup, and Operations all require the stable shared
+system spine before their otherwise path-disjoint plans become executable.
+Rejected split: Backend home reads, GraphQL fields, fonts, tokens, shell,
+homepage regions, responsive states, and test gates all enforce the same
+system/home acceptance boundary and are internal slices, not reserve rows.
+Replenishment action: Complete and verify the System Spine And Home row, audit
+the now-stable shared owners, then promote all four approved successor cohort
+plans together at the same coordinator boundary.
 
 ## Needs Decision Work
 

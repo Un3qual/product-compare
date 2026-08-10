@@ -23,6 +23,23 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
+The approved Production UI Redesign is planned as five independently
+reviewable outcomes:
+
+- `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-compare-return-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-account-setup-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-operations-implementation-plan.md`
+
+The shared System Spine And Home outcome is the only current `ready` row. The
+other four plans are approved and implementation-ready but remain dependent
+until the shared tokens, layout, navigation, primitives, homepage contracts,
+and production verification harness are stable. Their route paths and lane
+docs remain disjoint so the coordinator can promote them together after the
+prerequisite closes. The durable product and feature-parity contract is
+`docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
+
 The most recently completed consolidated implementation plan is:
 
 - `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
