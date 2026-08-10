@@ -6,6 +6,7 @@ defmodule ProductCompare.Catalog do
   alias ProductCompare.Catalog.Evidence
   alias ProductCompare.Catalog.FilterMetadata
   alias ProductCompare.Catalog.Filtering
+  alias ProductCompare.Catalog.HomeWorkspace
   alias ProductCompare.Catalog.Products
   alias ProductCompare.Catalog.SavedComparisons
   alias ProductCompare.Repo
@@ -27,6 +28,13 @@ defmodule ProductCompare.Catalog do
     |> Filtering.apply_filters(filters)
     |> Repo.all()
   end
+
+  @spec home_workspace_candidates([term()], keyword()) :: %{
+          products: [Product.t()],
+          selected_products: [Product.t()]
+        }
+  def home_workspace_candidates(selected_slugs, opts \\ []) when is_list(selected_slugs),
+    do: HomeWorkspace.candidates(selected_slugs, opts)
 
   @spec product_filter_metadata(map()) :: map()
   def product_filter_metadata(filters) do

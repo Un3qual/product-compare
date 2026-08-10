@@ -5,6 +5,7 @@ defmodule ProductCompare.Alerts do
 
   alias ProductCompare.Alerts.Evaluation
   alias ProductCompare.Alerts.Inbox
+  alias ProductCompare.Alerts.HomeRelevance
   alias ProductCompare.Alerts.WatchRules
   alias ProductCompareSchemas.Alerts.AlertEvent
   alias ProductCompareSchemas.Alerts.PriceWatchRule
@@ -29,6 +30,12 @@ defmodule ProductCompare.Alerts do
   def list_alert_events_query(user_id, opts \\ []) do
     Inbox.list_alert_events_query(user_id, opts)
   end
+
+  @spec home_relevance(term()) :: %{
+          watch_targets: %{optional(pos_integer()) => Decimal.t()},
+          saved_product_ids: [pos_integer()]
+        }
+  def home_relevance(user_id), do: HomeRelevance.relevance(user_id)
 
   @spec update_watch(pos_integer(), Ecto.UUID.t(), map()) ::
           {:ok, PriceWatchRule.t()} | {:error, :not_found | Ecto.Changeset.t()}

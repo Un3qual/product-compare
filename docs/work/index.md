@@ -45,13 +45,10 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Production UI System Spine And Home
 
-Status: ready
+Status: active
+Owner: Codex subagent-driven implementation in the current managed worktree
 Lane: Production UI system and home
 Plan: `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
 Batch outcome: ProductCompare gains one stable production visual system and a
@@ -105,11 +102,16 @@ the shared owners are stable, the lane records observed evidence, and the
 coordinator closes this row while promoting the four path-disjoint successor
 cohorts together.
 
+## Ready Work
+
+None.
+
 ## Ready Floor Exception
 
-Reason: One independently shippable outcome is ready. Discover & Evaluate,
+Reason: The only independently shippable outcome is active. Discover & Evaluate,
 Compare & Return, Account & Setup, and Operations all require the stable shared
-system spine before their otherwise path-disjoint plans become executable.
+system spine before their otherwise path-disjoint plans become executable, so
+no other coherent outcome is currently ready.
 Rejected split: Backend home reads, GraphQL fields, fonts, tokens, shell,
 homepage regions, responsive states, and test gates all enforce the same
 system/home acceptance boundary and are internal slices, not reserve rows.

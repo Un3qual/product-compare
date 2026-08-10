@@ -7,6 +7,7 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompare.CommerceAttribution.ClickLedger
   alias ProductCompare.CommerceAttribution.Conversions
   alias ProductCompare.CommerceAttribution.Revenue
+  alias ProductCompare.CommerceAttribution.TrendingActivity
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
@@ -56,4 +57,7 @@ defmodule ProductCompare.CommerceAttribution do
   @spec network_revenue_summary(String.t(), map() | keyword()) :: map()
   def network_revenue_summary(network, opts \\ %{}),
     do: Revenue.network_revenue_summary(network, opts)
+
+  @spec trending_product_ids(keyword()) :: [pos_integer()]
+  def trending_product_ids(opts \\ []), do: TrendingActivity.product_ids(opts)
 end

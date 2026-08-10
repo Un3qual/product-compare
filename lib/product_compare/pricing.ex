@@ -4,6 +4,7 @@ defmodule ProductCompare.Pricing do
   """
 
   alias ProductCompare.Pricing.Merchants
+  alias ProductCompare.Pricing.HomeOffers
   alias ProductCompare.Pricing.Offers
   alias ProductCompare.Pricing.PriceHistory
   alias ProductCompare.Pricing.TruthReads
@@ -148,6 +149,13 @@ defmodule ProductCompare.Pricing do
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
   def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids),
     do: TruthReads.current_offer_truths(product_ids, opts)
+
+  @spec home_offer_summaries([term()], keyword()) :: %{optional(pos_integer()) => map()}
+  def home_offer_summaries(product_ids, opts \\ []) when is_list(product_ids),
+    do: HomeOffers.summaries(product_ids, opts)
+
+  @spec home_deal_candidates(keyword()) :: %{optional(pos_integer()) => map()}
+  def home_deal_candidates(opts \\ []), do: HomeOffers.deal_candidates(opts)
 
   @spec current_offer_truth(term(), keyword()) :: map()
   def current_offer_truth(product_id, opts \\ [])

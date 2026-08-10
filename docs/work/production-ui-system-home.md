@@ -2,7 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
+- Owner: Codex subagent-driven implementation in the current managed worktree
 - Priority: P0
 - Plan: `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`
@@ -51,3 +52,8 @@ Stop if exact deal semantics cannot remain set-based, viewer facts can cross an 
 ## Completion
 
 Complete every feature-parity ledger row, record observed tests and screenshots, then close this row and promote all four path-disjoint successor cohorts together only after the shared owners are stable.
+
+## Progress
+
+- 2026-08-10: Claimed for implementation. Task 1 domain boundary tests and set-based reads are in progress.
+- 2026-08-10: Task 1 added bounded Catalog, SEO, Specs, Pricing, Alerts, and Commerce Attribution home reads. Focused domain suite passed (21 tests); the full backend suite also passed in an isolated `MIX_TEST_PARTITION=_task1` database while another process held the shared test-database lock.

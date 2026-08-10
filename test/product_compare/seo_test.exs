@@ -471,6 +471,41 @@ defmodule ProductCompare.SeoTest do
              Catalog.update_product(updated, %{slug: "legacy-search-slug"})
   end
 
+  test "home category shortcuts keep only qualified indexable categories in deterministic count order" do
+    operator = AccountsFixtures.operator_fixture()
+    taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    larger =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: taxonomy.id,
+        code: "home-larger",
+        name: "Alpha Home",
+        seo_slug: "alpha-home",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    smaller =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: taxonomy.id,
+        code: "home-smaller",
+        name: "Beta Home",
+        seo_slug: "beta-home",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    Enum.each(1..4, &qualified_product("home-larger-#{&1}", operator, larger))
+    Enum.each(1..3, &qualified_product("home-smaller-#{&1}", operator, smaller))
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, limit: 1), & &1.id) == [larger.id]
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, limit: 6), & &1.id) == [
+             larger.id,
+             smaller.id
+           ]
+  end
+
   defp qualified_product(slug, operator, primary_type_taxon \\ nil) do
     product = specified_product(slug, operator, primary_type_taxon)
 

@@ -59,6 +59,25 @@ defmodule ProductCompare.Seo.Categories do
     Map.new(requested_slugs, &{&1, Map.get(categories_by_slug, &1)})
   end
 
+  @spec home_shortcuts(keyword()) :: [map()]
+  def home_shortcuts(opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+
+    taxons =
+      Taxon
+      |> where([taxon], taxon.seo_indexable == true and not is_nil(taxon.seo_slug))
+      |> Repo.all()
+
+    counts = qualified_product_counts(Enum.map(taxons, & &1.id), now)
+
+    taxons
+    |> Enum.map(fn taxon -> category_summary(taxon, Map.get(counts, taxon.id, 0), now) end)
+    |> Enum.filter(& &1.indexable)
+    |> Enum.sort_by(&{-&1.qualified_product_count, String.downcase(&1.name || ""), &1.id})
+    |> Enum.take(limit)
+  end
+
   @spec qualified_products_for_taxon_query(pos_integer(), DateTime.t()) :: Ecto.Query.t()
   def qualified_products_for_taxon_query(taxon_id, %DateTime{} = now) do
     Product
@@ -205,6 +224,24 @@ defmodule ProductCompare.Seo.Categories do
       distinct: price.merchant_product_id,
       order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
   end
+
+  defp category_summary(taxon, qualified_product_count, now) do
+    %{
+      id: taxon.id,
+      entropy_id: taxon.entropy_id,
+      name: taxon.name,
+      slug: taxon.seo_slug,
+      description: taxon.seo_description,
+      qualified_product_count: qualified_product_count,
+      indexable:
+        QualificationPolicy.adequate_text?(taxon.seo_description) and
+          qualified_product_count >= QualificationPolicy.minimum_category_products(),
+      now: now
+    }
+  end
+
+  defp bounded_limit(limit, _default) when is_integer(limit) and limit > 0, do: min(limit, 6)
+  defp bounded_limit(_limit, default), do: default
 
   defp stale_boundary(now) do
     policy = ProductCompare.Pricing.OfferTruth.policy()
