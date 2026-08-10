@@ -160,6 +160,64 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
+  test "EUR-only facts remain qualified on shared SEO surfaces but not homepage shortcuts" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "eur-only-category",
+        name: "EUR Only Category",
+        seo_slug: "eur-only-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "EUR Only Merchant", domain: "eur-only.example"})
+
+    products =
+      Enum.map(1..3, fn index ->
+        product = specified_product("eur-only-product-#{index}", operator, category)
+
+        {:ok, offer} =
+          Pricing.upsert_merchant_product(%{
+            merchant_id: merchant.id,
+            product_id: product.id,
+            url: "https://eur-only.example/product-#{index}",
+            currency: "EUR",
+            is_active: true
+          })
+
+        {:ok, _point} =
+          Pricing.add_price_point(%{
+            merchant_product_id: offer.id,
+            observed_at: @now,
+            price: "100",
+            shipping: "5",
+            in_stock: true
+          })
+
+        product
+      end)
+
+    assert %{indexable: true, qualified_product_count: 3} =
+             Seo.get_category(category.seo_slug, now: @now)
+
+    assert Enum.map(Repo.all(Seo.qualified_products_for_taxon_query(category.id, @now)), & &1.id) ==
+             Enum.map(products, & &1.id)
+
+    product_paths = MapSet.new(Seo.sitemap_entries(:products, now: @now), & &1.path)
+    merchant_paths = MapSet.new(Seo.sitemap_entries(:merchants, now: @now), & &1.path)
+    category_paths = MapSet.new(Seo.sitemap_entries(:categories, now: @now), & &1.path)
+
+    assert Enum.all?(products, &MapSet.member?(product_paths, "/products/#{&1.slug}"))
+    assert MapSet.member?(merchant_paths, "/merchants/#{merchant.slug}")
+    assert MapSet.member?(category_paths, "/categories/#{category.seo_slug}")
+    refute category.id in Enum.map(Seo.home_category_shortcuts(now: @now), & &1.id)
+  end
+
   test "batch category lookup preserves singular qualification with a fixed query budget" do
     operator = AccountsFixtures.operator_fixture()
     type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")

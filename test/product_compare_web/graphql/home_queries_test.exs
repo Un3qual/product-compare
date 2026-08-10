@@ -214,6 +214,67 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            ]
   end
 
+  test "homeDeals ignores EUR watches and preserves saved/current USD relevance", %{conn: conn} do
+    owner = AccountsFixtures.user_fixture()
+    other = AccountsFixtures.user_fixture()
+    category = category_fixture("watch-currency-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    saved = non_deal_product("watch-currency-saved", category, operator, "120", "100")
+    current = non_deal_product("watch-currency-current", category, operator, "110", "100")
+
+    saved_eur_offer = currency_offer(saved.product, "watch-currency-saved-eur", "EUR", "60")
+    current_eur_offer = currency_offer(current.product, "watch-currency-current-eur", "EUR", "50")
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: saved.product.id,
+               merchant_product_id: saved_eur_offer.id,
+               rule_type: :target_price,
+               currency: "EUR",
+               target_amount: "70"
+             })
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: current.product.id,
+               merchant_product_id: current_eur_offer.id,
+               rule_type: :target_price,
+               currency: "EUR",
+               target_amount: "65"
+             })
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "USD homepage relevance",
+               product_ids: [saved.product.id]
+             })
+
+    assert %{"data" => %{"homeDeals" => %{"forYou" => for_you}}} =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => [current.product.slug]})
+
+    assert Enum.map(for_you, &get_in(&1, ["product", "id"])) == [
+             relay_id(:product, saved.product.id),
+             relay_id(:product, current.product.id)
+           ]
+
+    assert Enum.map(for_you, &get_in(&1, ["reasons", Access.at(0)])) == [
+             %{"code" => "SAVED_COMPARISON", "watchTarget" => nil},
+             %{"code" => "CURRENT_COMPARISON", "watchTarget" => nil}
+           ]
+
+    assert Enum.all?(for_you, &(get_in(&1, ["offer", "currency"]) == "USD"))
+
+    assert %{"data" => %{"homeDeals" => %{"forYou" => []}}} =
+             conn
+             |> log_in_user(other)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => []})
+  end
+
   test "homeDeals ranks same-reason viewer candidates by improvement before absolute price", %{
     conn: conn
   } do
@@ -545,6 +606,31 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       )
 
     result
+  end
+
+  defp currency_offer(product, slug, currency, price) do
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "#{slug} merchant", domain: "#{slug}.example"})
+
+    {:ok, offer} =
+      Pricing.upsert_merchant_product(%{
+        merchant_id: merchant.id,
+        product_id: product.id,
+        url: "https://#{slug}.example/offer",
+        currency: currency,
+        is_active: true
+      })
+
+    {:ok, _point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.utc_now(),
+        price: price,
+        shipping: "5",
+        in_stock: true
+      })
+
+    offer
   end
 
   defp assert_select_histograms_equal(first_queries, second_queries) do

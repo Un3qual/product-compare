@@ -51,7 +51,7 @@ defmodule ProductCompare.Seo.Categories do
   def home_shortcuts(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
-    qualifying_products = qualified_products_query(now)
+    qualifying_products = homepage_qualified_products_query(now)
     minimum_description_length = QualificationPolicy.minimum_description_length()
     minimum_products = QualificationPolicy.minimum_category_products()
 
@@ -168,9 +168,29 @@ defmodule ProductCompare.Seo.Categories do
     )
     |> where(
       [offer, price],
-      offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
-        not is_nil(price.shipping) and price.observed_at >= ^stale_boundary(now)
+      offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
+        price.observed_at >= ^stale_boundary(now)
     )
+  end
+
+  defp homepage_qualified_products_query(now) do
+    homepage_eligible_products =
+      now
+      |> homepage_eligible_offer_scope()
+      |> select([offer], %{product_id: offer.product_id})
+      |> distinct(true)
+
+    now
+    |> qualified_products_query()
+    |> join(:inner, [product], eligible in subquery(homepage_eligible_products),
+      on: eligible.product_id == product.id
+    )
+  end
+
+  defp homepage_eligible_offer_scope(now) do
+    now
+    |> eligible_offer_scope()
+    |> where([offer], offer.currency == ^"USD")
   end
 
   defp qualified_product_counts([], _now), do: %{}

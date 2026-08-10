@@ -1,6 +1,8 @@
 defmodule ProductCompare.Alerts.HomeRelevanceTest do
   use ProductCompare.DataCase, async: true
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
   alias ProductCompare.{Alerts, Catalog}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.Pricing
@@ -74,6 +76,32 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
     assert shared.id in saved_product_ids
   end
 
+  test "bounds homepage watch targets after excluding non-USD watches" do
+    owner = AccountsFixtures.user_fixture()
+
+    eur_products =
+      Enum.map(1..2, &SpecsFixtures.product_fixture(%{slug: "relevance-eur-#{&1}"}))
+
+    usd_products =
+      Enum.map(1..8, &SpecsFixtures.product_fixture(%{slug: "relevance-usd-#{&1}"}))
+
+    Enum.each(eur_products, &create_target_watch(owner.id, &1.id, "EUR", "50"))
+    Enum.each(usd_products, &create_target_watch(owner.id, &1.id, "USD", "75"))
+
+    {relevance, queries} = capture_select_queries(fn -> Alerts.home_relevance(owner.id) end)
+
+    expected_ids = usd_products |> Enum.take(6) |> Enum.map(& &1.id) |> MapSet.new()
+
+    assert map_size(relevance.watch_targets) == 6
+    assert MapSet.new(Map.keys(relevance.watch_targets)) == expected_ids
+
+    assert Enum.all?(relevance.watch_targets, fn {_product_id, target} ->
+             Decimal.eq?(target, Decimal.new("75"))
+           end)
+
+    assert [_watch_query, _saved_query] = queries
+  end
+
   defp offer(product) do
     {:ok, merchant} =
       Pricing.upsert_merchant(%{
@@ -100,5 +128,15 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
       })
 
     offer
+  end
+
+  defp create_target_watch(user_id, product_id, currency, target_amount) do
+    assert {:ok, _watch} =
+             Alerts.create_watch(user_id, %{
+               product_id: product_id,
+               rule_type: :target_price,
+               currency: currency,
+               target_amount: target_amount
+             })
   end
 end

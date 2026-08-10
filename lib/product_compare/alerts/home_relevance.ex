@@ -49,7 +49,8 @@ defmodule ProductCompare.Alerts.HomeRelevance do
       |> where(
         [watch],
         watch.user_id == ^user_id and watch.enabled == true and
-          watch.rule_type == :target_price and not is_nil(watch.target_amount)
+          watch.rule_type == :target_price and watch.currency == ^"USD" and
+          not is_nil(watch.target_amount)
       )
       |> group_by([watch], watch.product_id)
       |> select([watch], relevance_candidate(watch.product_id, 0, min(watch.target_amount)))
@@ -103,7 +104,8 @@ defmodule ProductCompare.Alerts.HomeRelevance do
     PriceWatchRule
     |> where(
       [watch],
-      watch.user_id == ^user_id and watch.enabled == true and watch.rule_type == :target_price
+      watch.user_id == ^user_id and watch.enabled == true and watch.rule_type == :target_price and
+        watch.currency == ^"USD"
     )
     |> where([watch], not is_nil(watch.target_amount))
     |> group_by([watch], watch.product_id)
