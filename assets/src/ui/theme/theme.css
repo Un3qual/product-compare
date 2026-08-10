@@ -38,7 +38,9 @@
   --pc-border-emphasized: #AFA698;
   --pc-action-accent: #2F62D7;
   --pc-action-accent-hover: #2552B8;
-  --pc-price-positive: #1F6B49;
+  --pc-freshness-soft: #E8F4ED;
+  --pc-freshness-green: #1F6B49;
+  --pc-price-positive: var(--pc-freshness-green);
   --pc-coupon: var(--pc-amber-800);
   --pc-warning: var(--pc-amber-800);
   --pc-danger: var(--pc-red-700);
@@ -238,8 +240,8 @@ a {
 }
 
 [data-slot="status-badge"][data-tone="positive"] {
-  background: var(--pc-green-50);
-  color: var(--pc-price-positive);
+  background: var(--pc-freshness-soft);
+  color: var(--pc-freshness-green);
 }
 
 [data-slot="status-badge"][data-tone="warning"] {
@@ -263,8 +265,8 @@ a {
 }
 
 [data-slot="feedback-state"][data-feedback-kind="success"] {
-  background: var(--pc-green-50);
-  border-color: color-mix(in srgb, var(--pc-price-positive) 30%, white);
+  background: var(--pc-freshness-soft);
+  border-color: color-mix(in srgb, var(--pc-freshness-green) 30%, white);
 }
 
 [data-slot="feedback-state"][data-feedback-kind="warning"] {

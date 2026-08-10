@@ -1,24 +1,70 @@
 import { readFileSync } from "node:fs";
-import { render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { CompareMark } from "../../src/ui/components/brand/CompareMark";
 import { ComparisonContinuity } from "../../src/ui/components/compare/ComparisonContinuity";
 import { ProductLedger } from "../../src/ui/components/products/ProductLedger";
 import { RootPrimaryNavigation } from "../../src/routes/RootDestinations";
+import { AppShell } from "../../src/ui/components/layout/AppShell";
+import { Button } from "../../src/ui/primitives/Button";
+import { TextField } from "../../src/ui/primitives/TextField";
 
 const themeCss = readFileSync("src/ui/theme/theme.css", "utf8");
+const productLedgerSource = readFileSync("src/ui/components/products/ProductLedger.tsx", "utf8");
 
-test("production theme supplies the warm paper palette, data fonts, touch target, focus, and reduced-motion contract", () => {
+test("production theme supplies the warm paper palette, fonts, and explicit freshness semantics", () => {
   expect(themeCss).toContain("--pc-surface-canvas: #F4F1E9");
   expect(themeCss).toContain("--pc-surface-raised: #FFFCF7");
   expect(themeCss).toContain("--pc-surface-muted: #ECE7DC");
   expect(themeCss).toContain("--pc-action-accent: #2F62D7");
-  expect(themeCss).toContain("--pc-price-positive: #1F6B49");
+  expect(themeCss).toContain("--pc-text-secondary: #625D54");
+  expect(themeCss).toContain("--pc-freshness-soft: #E8F4ED");
+  expect(themeCss).toContain("--pc-freshness-green: #1F6B49");
+  expect(themeCss).toContain("--pc-price-positive: var(--pc-freshness-green)");
   expect(themeCss).toContain('"Instrument Sans Variable"');
   expect(themeCss).toContain('"IBM Plex Mono"');
-  expect(themeCss).toContain("--pc-control-height: 2.75rem");
-  expect(themeCss).toContain(":focus-visible");
-  expect(themeCss).toContain("prefers-reduced-motion: reduce");
+  expect(productLedgerSource).toContain("color: tokens.textSecondary");
+  expect(productLedgerSource).toContain("backgroundColor: tokens.freshnessSoft");
+  expect(productLedgerSource).toContain("color: tokens.freshnessGreen");
+});
+
+test("skip navigation moves keyboard focus into the main working region", () => {
+  render(
+    <AppShell navigation={<span>Navigation</span>}>
+      <button type="button">Start comparing</button>
+    </AppShell>
+  );
+
+  const skipLink = screen.getByRole("link", { name: "Skip to main content" });
+  const main = screen.getByRole("main");
+
+  skipLink.focus();
+  expect(skipLink).toHaveFocus();
+  fireEvent.click(skipLink);
+  expect(main).toHaveFocus();
+});
+
+test("representative controls expose a visible-focus and 44px touch-target contract when focused", () => {
+  render(
+    <>
+      <Button>Open comparison</Button>
+      <TextField aria-label="Search products" />
+    </>
+  );
+
+  const button = screen.getByRole("button", { name: "Open comparison" });
+  const search = screen.getByRole("textbox", { name: "Search products" });
+
+  for (const control of [button, search]) {
+    control.focus();
+    expect(control).toHaveFocus();
+    expect(control).toHaveAttribute("data-focus-ring", "visible");
+  }
+
+  expect(button).toHaveStyle({ minHeight: "44px" });
+  const searchTouchTarget = search.closest(".rt-TextFieldRoot");
+  expect(searchTouchTarget).not.toBeNull();
+  expect(searchTouchTarget).toHaveStyle({ minHeight: "44px" });
 });
 
 test("comparison continuity presents normalized selections as numbered labels and a canonical action", () => {
@@ -72,6 +118,12 @@ test("product ledger keeps all product facts in one semantic list with a disclos
     "false"
   );
   expect(within(ledger).getByRole("link", { name: "View Alpha Camera" })).toBeInTheDocument();
+  expect(within(ledger).getByText("Cameras")).toHaveAttribute("data-tone", "secondary");
+  expect(within(ledger).getByText("Price signal")).toHaveAttribute("data-tone", "secondary");
+  expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
+    "data-tone",
+    "freshness"
+  );
 });
 
 test("compare mark preserves the product identity without ornamental imagery", () => {

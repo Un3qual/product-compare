@@ -33,7 +33,7 @@ const styles = create({
     minWidth: 0
   },
   category: {
-    color: tokens.textSubtle,
+    color: tokens.textSecondary,
     fontFamily: tokens.fontMono,
     fontSize: "0.72rem",
     letterSpacing: "0.04em",
@@ -55,18 +55,19 @@ const styles = create({
     minWidth: 0
   },
   factLabel: {
-    color: tokens.textSubtle,
+    color: tokens.textSecondary,
     fontFamily: tokens.fontMono,
     fontSize: "0.7rem",
     letterSpacing: "0.04em",
     textTransform: "uppercase"
   },
   priceSignal: {
-    color: tokens.pricePositive,
+    color: tokens.textSecondary,
     fontWeight: 700
   },
   freshness: {
-    color: tokens.textSecondary,
+    backgroundColor: tokens.freshnessSoft,
+    color: tokens.freshnessGreen,
     fontFamily: tokens.fontMono,
     fontSize: "0.75rem",
     lineHeight: 1.45
@@ -137,7 +138,9 @@ export function ProductLedger({
         <li key={row.id} {...props(styles.row)}>
           <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
             <div {...props(styles.identity)}>
-              <p {...props(styles.category)}>{row.category}</p>
+              <p data-tone="secondary" {...props(styles.category)}>
+                {row.category}
+              </p>
               <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
                 {row.title}
               </h3>
@@ -145,10 +148,14 @@ export function ProductLedger({
             <LedgerFact label="Highlights">{row.highlights}</LedgerFact>
             <LedgerFact label="Best offer">{row.offer}</LedgerFact>
             <div {...props(styles.fact)}>
-              <span {...props(styles.factLabel)}>Price signal</span>
+              <span data-tone="secondary" {...props(styles.factLabel)}>
+                Price signal
+              </span>
               <span {...props(styles.priceSignal)}>{row.priceSignal}</span>
             </div>
-            <div {...props(styles.freshness)}>{row.freshness}</div>
+            <span data-slot="product-ledger-freshness" data-tone="freshness" {...props(styles.freshness)}>
+              {row.freshness}
+            </span>
             <div {...props(styles.actions)}>{row.actions}</div>
             {row.secondaryDetails ? (
               <Collapsible {...props(styles.disclosure)}>
@@ -170,7 +177,9 @@ export function ProductLedger({
 function LedgerFact({ children, label }: { children: ReactNode; label: string }) {
   return (
     <div {...props(styles.fact)}>
-      <span {...props(styles.factLabel)}>{label}</span>
+      <span data-tone="secondary" {...props(styles.factLabel)}>
+        {label}
+      </span>
       <span>{children}</span>
     </div>
   );

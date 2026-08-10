@@ -1,4 +1,4 @@
-import type { PropsWithChildren, ReactNode } from "react";
+import type { MouseEvent, PropsWithChildren, ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Separator } from "../../primitives/Separator";
 import { tokens } from "../../theme/tokens.stylex";
@@ -52,13 +52,18 @@ const styles = create({
   }
 });
 
+function focusMainContent(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  document.getElementById("main-content")?.focus();
+}
+
 export function AppShell({
   children,
   navigation
 }: PropsWithChildren<{ navigation?: ReactNode }>) {
   return (
     <div data-slot="app-shell" {...props(styles.shell)}>
-      <a href="#main-content" {...props(styles.skipLink)}>
+      <a href="#main-content" onClick={focusMainContent} {...props(styles.skipLink)}>
         Skip to main content
       </a>
       <nav {...props(styles.nav)} aria-label="Primary">
