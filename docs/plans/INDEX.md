@@ -19,10 +19,20 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
 - `docs/superpowers/specs/2026-08-09-database-constraint-application-parity-design.md`
 - `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
+- `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved Base UI, StyleX, and table foundation is active through:
+
+- `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
+
+It performs one complete Radix-to-Base UI cutover using locally owned
+shadcn-cssinjs source, keeps ProductCompare's existing visual identity,
+converts every current table to TanStack Table v9, and makes the user-supplied
+StyleX mangler deterministic across independent client and SSR builds.
 
 The approved homepage query-scaling outcome is ready through:
 

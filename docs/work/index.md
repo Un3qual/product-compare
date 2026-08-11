@@ -87,9 +87,53 @@ Exit condition: Every existing homepage behavior and contract remains green,
 query-scope and covering-index invariants pass, the lane records observed
 evidence, and no range-specific state or wrapper-only abstraction was added.
 
+### 2. Base UI, StyleX, And Table Foundation
+
+Status: active
+Owner: current Codex managed worktree `d6fa`
+Lane: Base UI, StyleX, and table foundation
+Plan: `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
+Batch outcome: ProductCompare uses one locally owned shadcn-cssinjs and Base UI
+component foundation with its existing visual identity, deterministic short
+StyleX production classes, TanStack Table v9 for every current table, and no
+remaining Radix dependency or compatibility layer.
+Next action: Run Task 1's deterministic client/SSR mangling RED suite before
+moving or enabling the user-supplied plugin.
+Owned paths:
+
+- Frontend dependencies, Vite/StyleX build tooling, bundle scripts, and focused tests.
+- `assets/src/ui/**` and all route consumers required by the Base UI API cutover.
+- Attribution Ledger, Decision Summary, Specification Matrix, and their focused tests.
+- `docs/work/base-ui-stylex-table-foundation.md`, this queue, and the plan catalog.
+
+Internal slices:
+
+- Deterministic StyleX production class-name mangling.
+- ProductCompare-themed shadcn-cssinjs and Base UI primitive cutover.
+- TanStack Table v9 conversion for all current semantic tables.
+- Frontend, browser, bundle, queue, and anti-slop verification.
+
+Prerequisites:
+
+- The user approved the complete cutover and existing visual direction with focused improvements.
+- The active homepage query-scaling row is backend-owned and path-disjoint.
+- The four ready UI cohorts remain unclaimed while this shared foundation owns their paths.
+
+Verification:
+
+- Focused mangler, primitive, provider, overlay, layout, compare, and revenue suites.
+- Complete frontend check plus client/SSR mangling and bundle contracts.
+- Deterministic browser accessibility, focus, reduced-motion, responsive, and visual checks.
+- No Radix dependency/import; queue, backend format, and diff checks pass.
+
+Exit condition: Every current UI and table behavior remains green, client and
+SSR builds use the same deterministic shortened class mapping, browser evidence
+is accepted, the lane records observed verification, and no Radix, dual token
+source, generic DataTable, or compatibility-only wrapper remains.
+
 ## Ready Work
 
-### 2. Production UI Discover And Evaluate
+### 3. Production UI Discover And Evaluate
 
 Status: ready
 Lane: Production UI discover and evaluate
@@ -134,7 +178,7 @@ Exit condition: Every discover/evaluate feature-parity row and production gate
 passes, the lane records observed evidence, and no shared-spine or backend
 contract was widened.
 
-### 3. Production UI Compare And Return
+### 4. Production UI Compare And Return
 
 Status: ready
 Lane: Production UI compare and return
@@ -180,7 +224,7 @@ Exit condition: Every compare/return feature-parity row and production gate
 passes without weakening Decimal, mixed-currency, ownership, captured-versus-
 live, or row-state behavior.
 
-### 4. Production UI Account And Setup
+### 5. Production UI Account And Setup
 
 Status: ready
 Lane: Production UI account and setup
@@ -225,7 +269,7 @@ Exit condition: Every account/setup feature-parity row and production gate
 passes without REST browser auth, one-time-secret leakage, or weaker viewer,
 session, and lifecycle behavior.
 
-### 5. Production UI Operations
+### 6. Production UI Operations
 
 Status: ready
 Lane: Production UI operations
