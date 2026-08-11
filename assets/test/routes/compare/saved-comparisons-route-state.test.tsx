@@ -26,7 +26,7 @@ beforeEach(() => {
   useLoaderDataMock.mockReset();
 });
 
-test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets", async () => {
+test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets", () => {
   renderReadySavedComparisons();
 
   expect(within(actionsFor("Desk setup")).getByRole("link", { name: "Open comparison" })).toHaveAttribute(

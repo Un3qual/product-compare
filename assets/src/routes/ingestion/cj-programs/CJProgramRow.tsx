@@ -206,19 +206,23 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
     });
   };
 
+  const programSummary = (
+    <header {...props(styles.header)}>
+      <div>
+        <h2 {...props(styles.title)}>{programName}</h2>
+        <p {...props(styles.facts)}>
+          <span>Advertiser ID {program.advertiserId}</span>
+          <span>{formatFeedCount(program.feedCount)}</span>
+          {lastChanged ? <span>Last changed {lastChanged}</span> : null}
+        </p>
+      </div>
+      {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
+    </header>
+  );
+
   return (
     <li aria-busy={isUpdateInFlight} {...props(styles.item)}>
-      <header {...props(styles.header)}>
-        <div>
-          <h2 {...props(styles.title)}>{programName}</h2>
-          <p {...props(styles.facts)}>
-            <span>Advertiser ID {program.advertiserId}</span>
-            <span>{formatFeedCount(program.feedCount)}</span>
-            {lastChanged ? <span>Last changed {lastChanged}</span> : null}
-          </p>
-        </div>
-        {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
-      </header>
+      {programSummary}
       {warnings.length > 0 ? (
         <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
           {warnings.map((warning) => (

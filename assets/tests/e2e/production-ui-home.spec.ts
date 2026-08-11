@@ -28,8 +28,8 @@ import {
   expectTabletLedgerGeometry,
 } from "./production-ui-home-visual";
 
-test.afterEach(async ({ page }) => {
-  await expectNoUnhandledGraphQLOperations(page);
+test.afterEach(({ page }) => {
+  expectNoUnhandledGraphQLOperations(page);
 });
 
 test("guest search and category entry preserve useful catalog navigation", async ({ page }) => {

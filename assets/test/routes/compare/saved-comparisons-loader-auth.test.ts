@@ -133,9 +133,9 @@ test("savedComparisonsLoader disposes a page when navigation aborts after the fe
   const request = new Request("https://app.example.test/compare/saved", {
     signal: controller.signal,
   });
-  fetchRouteQueryMock.mockImplementationOnce(async () => {
+  fetchRouteQueryMock.mockImplementationOnce(() => {
     controller.abort(abortError);
-    return {
+    return Promise.resolve({
       data: {
         mySavedComparisonSets: { pageInfo: { endCursor: null, hasNextPage: false } },
       },
@@ -147,7 +147,7 @@ test("savedComparisonsLoader disposes a page when navigation aborts after the fe
         },
       },
       dispose,
-    };
+    });
   });
 
   await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ request }))).rejects.toBe(

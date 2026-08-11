@@ -35,7 +35,7 @@ export function HomeSearch({ selectedSlugs }: { selectedSlugs: readonly string[]
       aria-label="Search products"
       onSubmit={(event) => {
         event.preventDefault();
-        void navigate(homeCatalogSearchPath(query, selectedSlugs));
+        navigate(homeCatalogSearchPath(query, selectedSlugs));
       }}
       role="search"
       {...props(styles.form)}

@@ -8,7 +8,7 @@ type GraphQLMockResponses = Record<string, GraphQLMockResponse | GraphQLMockResp
 
 const unhandledOperationsByPage = new WeakMap<Page, string[]>();
 
-test.afterEach(async ({ page }) => {
+test.afterEach(({ page }) => {
   expect(unhandledOperationsByPage.get(page) ?? []).toEqual([]);
 });
 

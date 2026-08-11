@@ -60,7 +60,7 @@ export async function waitForFonts(page: Page) {
   });
 }
 
-export async function plainLanguageViolations(page: Page) {
+export function plainLanguageViolations(page: Page) {
   return page.locator("body").evaluate((body) => {
     const forbidden = [
       "current attributes",

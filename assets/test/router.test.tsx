@@ -300,11 +300,13 @@ test("every registered application route declares document metadata", () => {
     (route) => route?.handle as RouteMetadataHandle | undefined,
   );
 
-  expect(routeHandles).not.toContain(undefined);
-
   for (const handle of routeHandles) {
-    expect(handle?.metadata.title).toBeTruthy();
-    expect(handle?.metadata.description).toBeTruthy();
+    expect(handle, "route metadata handle").toBeDefined();
+
+    if (handle) {
+      expect(handle.metadata.title).toBeTruthy();
+      expect(handle.metadata.description).toBeTruthy();
+    }
   }
 });
 

@@ -86,7 +86,7 @@ export function VerifyEmailRoute() {
       }
     }
 
-    void consumeVerificationToken();
+    consumeVerificationToken();
 
     return () => {
       cancelled = true;

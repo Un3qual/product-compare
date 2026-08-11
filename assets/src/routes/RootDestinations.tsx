@@ -253,6 +253,21 @@ function NavigationMenu({
   preserveComparison?: boolean;
   selectedSlugs: readonly string[];
 }) {
+  const destinationLinks = destinations.map(({ end, label: destinationLabel, to }) => (
+    <DestinationLink
+      end={end}
+      key={to}
+      label={destinationLabel}
+      matchDestination={!isAuthDestination(to)}
+      onNavigate={() => onOpenChange(false)}
+      preserveComparison={preserveComparison}
+      selectedSlugs={selectedSlugs}
+      style={styles.menuLink}
+      to={to}
+      variant={isAuthDestination(to) ? "solid" : "ghost"}
+    />
+  ));
+
   return (
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
       <Popover.Root onOpenChange={onOpenChange} open={open}>
@@ -272,20 +287,7 @@ function NavigationMenu({
             data-slot="navigation-menu-content"
             {...props(styles.navigationMenuContent)}
           >
-            {destinations.map(({ end, label: destinationLabel, to }) => (
-              <DestinationLink
-                end={end}
-                key={to}
-                label={destinationLabel}
-                matchDestination={!isAuthDestination(to)}
-                onNavigate={() => onOpenChange(false)}
-                preserveComparison={preserveComparison}
-                selectedSlugs={selectedSlugs}
-                style={styles.menuLink}
-                to={to}
-                variant={isAuthDestination(to) ? "solid" : "ghost"}
-              />
-            ))}
+            {destinationLinks}
           </nav>
         </Popover.Content>
       </Popover.Root>

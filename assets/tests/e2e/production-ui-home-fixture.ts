@@ -153,7 +153,7 @@ export const publicDeals: HomeDealsFixture = {
   ]),
 };
 
-export async function expectNoUnhandledGraphQLOperations(page: Page) {
+export function expectNoUnhandledGraphQLOperations(page: Page) {
   const unhandledOperations = graphqlStubStates.get(page)?.unhandledOperations ?? [];
 
   expect(
