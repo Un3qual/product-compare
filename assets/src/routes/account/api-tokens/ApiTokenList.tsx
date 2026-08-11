@@ -31,6 +31,49 @@ type RelayApiTokenListProps = ApiTokenListLifecycleProps & {
   tokenStatus: ApiTokenStatus;
 };
 
+type RelayApiTokenRowProps = {
+  fragmentRef: ApiTokenItem_token$key & { readonly id: string };
+  lifecycle: ApiTokenListLifecycleProps;
+  tokenStatus: ApiTokenStatus;
+  tokenUpdate: ApiTokenRecord | undefined;
+};
+
+function RelayApiTokenRow({
+  fragmentRef,
+  lifecycle,
+  tokenStatus,
+  tokenUpdate,
+}: RelayApiTokenRowProps) {
+  const tokenId = fragmentRef.id;
+  const {
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+  } = lifecycle;
+
+  if (tokenUpdate) {
+    const [visibleUpdate] = applyApiTokenUpdates([tokenUpdate], new Map(), tokenStatus);
+
+    if (!visibleUpdate) return null;
+  }
+
+  return (
+    <ApiTokenItem
+      onRotate={onRotate}
+      onRevoke={onRevoke}
+      revokePending={pendingRevokeIds.has(tokenId)}
+      rotatePending={pendingRotateIds.has(tokenId)}
+      revokeError={revokeErrorsByTokenId.get(tokenId) ?? null}
+      rotateError={rotateErrorsByTokenId.get(tokenId) ?? null}
+      token={fragmentRef}
+      tokenUpdate={tokenUpdate}
+    />
+  );
+}
+
 export function RelayApiTokenList(relayProps: RelayApiTokenListProps) {
   const {
     apiTokenUpdates,
@@ -44,6 +87,14 @@ export function RelayApiTokenList(relayProps: RelayApiTokenListProps) {
     serverTokens,
     tokenStatus,
   } = relayProps;
+  const lifecycle = {
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+  };
 
   return (
     <ul aria-label="API tokens" {...props(styles.list)}>
@@ -59,40 +110,15 @@ export function RelayApiTokenList(relayProps: RelayApiTokenListProps) {
           token={token}
         />
       ))}
-      {serverTokens.map((fragmentRef) => {
-        const tokenUpdate = apiTokenUpdates.get(fragmentRef.id);
-
-        if (tokenUpdate) {
-          const [visibleUpdate] = applyApiTokenUpdates([tokenUpdate], new Map(), tokenStatus);
-
-          return visibleUpdate ? (
-            <ApiTokenItem
-              key={fragmentRef.id}
-              onRotate={onRotate}
-              onRevoke={onRevoke}
-              revokePending={pendingRevokeIds.has(fragmentRef.id)}
-              rotatePending={pendingRotateIds.has(fragmentRef.id)}
-              revokeError={revokeErrorsByTokenId.get(fragmentRef.id) ?? null}
-              rotateError={rotateErrorsByTokenId.get(fragmentRef.id) ?? null}
-              token={fragmentRef}
-              tokenUpdate={tokenUpdate}
-            />
-          ) : null;
-        }
-
-        return (
-          <ApiTokenItem
-            key={fragmentRef.id}
-            onRotate={onRotate}
-            onRevoke={onRevoke}
-            revokePending={pendingRevokeIds.has(fragmentRef.id)}
-            rotatePending={pendingRotateIds.has(fragmentRef.id)}
-            revokeError={revokeErrorsByTokenId.get(fragmentRef.id) ?? null}
-            rotateError={rotateErrorsByTokenId.get(fragmentRef.id) ?? null}
-            token={fragmentRef}
-          />
-        );
-      })}
+      {serverTokens.map((fragmentRef) => (
+        <RelayApiTokenRow
+          fragmentRef={fragmentRef}
+          key={fragmentRef.id}
+          lifecycle={lifecycle}
+          tokenStatus={tokenStatus}
+          tokenUpdate={apiTokenUpdates.get(fragmentRef.id)}
+        />
+      ))}
     </ul>
   );
 }

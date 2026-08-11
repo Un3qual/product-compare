@@ -23,6 +23,7 @@
 ### Task 1: Stable GraphQL identity and truthful viewer relevance
 
 **Files:**
+
 - Modify: `lib/product_compare_web/schema/home/types.ex`
 - Modify: `lib/product_compare/alerts/home_relevance.ex`
 - Modify: `lib/product_compare/pricing/home_offers.ex`
@@ -34,6 +35,7 @@
 - Test: `test/product_compare/pricing/home_offers_test.exs`
 
 **Interfaces:**
+
 - `homeWorkspace.products` exposes a wrapper with `product: Product!`, highlights, and offer.
 - `selectedProducts` and deal products expose the canonical `Product` type.
 - Viewer relevance retains watch merchant scope and admits `WATCH_TARGET` only when the returned eligible offer satisfies the exact target.
@@ -48,6 +50,7 @@
 ### Task 2: Serializable SSR and canonical comparison continuity
 
 **Files:**
+
 - Modify: `assets/src/routes/home/loader.ts`
 - Modify: `assets/src/routes/home/HomeRoute.tsx`
 - Modify: `assets/src/routes/home/HomeDeals.tsx`
@@ -58,6 +61,7 @@
 - Test: `assets/test/routes/root.route.test.tsx`
 
 **Interfaces:**
+
 - Home loader data is fully JSON-serializable.
 - Optional deals start after hydration with Relay query-loader disposal and local retry.
 - Once workspace data resolves, every homepage and global-navigation destination uses canonical selected product slugs.
@@ -73,6 +77,7 @@
 ### Task 3: Bounded homepage reads and non-null workspace assembly
 
 **Files:**
+
 - Modify: `lib/product_compare/pricing/home_offers.ex`
 - Modify: `lib/product_compare/specs.ex`
 - Modify: `lib/product_compare/specs/reads.ex`
@@ -84,6 +89,7 @@
 - Test: `test/product_compare_web/graphql/home_queries_test.exs`
 
 **Interfaces:**
+
 - Trending and viewer medians/latest-price work is scoped to candidate products before aggregation.
 - New-offer selection does not build an unused median query.
 - Home highlights are limited to three rows per product in SQL before nested metadata preloads.
@@ -99,6 +105,7 @@
 ### Task 4: Exact presentation and accessible primary links
 
 **Files:**
+
 - Modify: `assets/src/routes/home/home-view-data.ts`
 - Modify: `assets/src/routes/home/HomeRoute.tsx`
 - Modify: `assets/src/routes/home/HomeDeals.tsx`
@@ -109,6 +116,7 @@
 - Test: `assets/tests/e2e/production-ui-home.spec.ts`
 
 **Interfaces:**
+
 - View-model input types derive from generated Relay responses.
 - Decimal strings format without JavaScript `Number` conversion.
 - Category and deal anchors have at least 44px rendered targets.
@@ -123,6 +131,7 @@
 ### Task 5: Remove dead surfaces and brittle change-detector tests
 
 **Files:**
+
 - Modify: `assets/src/routes/RootDestinations.tsx`
 - Modify: `assets/src/routes/root-destination-data.ts`
 - Modify: `assets/test/routes/root-destination-data.test.ts`
@@ -139,6 +148,7 @@
 - Modify: `docs/work/production-ui-system-home.md`
 
 **Interfaces:**
+
 - Only production-consumed homepage APIs and root destination data remain public.
 - UI tests assert rendered behavior, computed accessibility contracts, and stable visual outcomes rather than source strings or exact private track widths.
 

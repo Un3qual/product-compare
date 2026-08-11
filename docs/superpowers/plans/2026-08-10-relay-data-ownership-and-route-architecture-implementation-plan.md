@@ -30,6 +30,7 @@
 ### Task 1: Persist anonymous visitors and enforce typed click identity
 
 **Files:**
+
 - Create: `priv/repo/migrations/20260810140000_create_anonymous_visitors.exs`
 - Create: `lib/product_compare_schemas/commerce_attribution/anonymous_visitor.ex`
 - Create: `lib/product_compare/commerce_attribution/visitors.ex`
@@ -60,6 +61,7 @@
 - Modify: `assets/test/routes/commerce/revenue/revenue-summary-view-data.test.ts`
 
 **Interfaces:**
+
 - Produces: `ProductCompareSchemas.CommerceAttribution.AnonymousVisitor` with `id :: integer`, `entropy_id :: Ecto.UUID.t()`, and microsecond timestamps.
 - Produces: `ProductCompare.CommerceAttribution.Visitors.get_or_create/1 :: {:ok, AnonymousVisitor.t()} | {:error, Ecto.Changeset.t()}`. It uses one conflict-safe insert against `anonymous_visitors_entropy_id_index`, then reads the row; it never performs a read-before-insert sequence.
 - Produces: `ProductCompareWeb.Plugs.PutAnonymousVisitor` assigning `conn.assigns.anonymous_visitor_entropy_id` and a signed cookie named `_product_compare_visitor`.
@@ -197,6 +199,7 @@ git commit -m "refactor: persist anonymous visitor identities"
 ### Task 2: Convert homepage collections to Relay connections and Product nodes
 
 **Files:**
+
 - Modify: `lib/product_compare_web/schema/home/types.ex`
 - Modify: `lib/product_compare_web/schema/home/queries.ex`
 - Modify: `lib/product_compare_web/resolvers/home_resolver.ex`
@@ -213,6 +216,7 @@ git commit -m "refactor: persist anonymous visitor identities"
 - Modify: `test/product_compare_web/graphql/home_queries_test.exs`
 
 **Interfaces:**
+
 - Produces: `HomeWorkspace.products(first:, after:)` as `HomeWorkspaceProductConnection`; each edge has `node: Product!`, `highlights: [HomeSpecificationHighlight!]!`, and `offer: HomeOfferSummary`.
 - Produces: `HomeWorkspace.categories(first:, after:)` as a forward connection with `HomeCategoryShortcut` nodes.
 - Produces: `HomeDeals.new`, `.trending`, and `.forYou` as `HomeDealConnection`; each edge has `node: Product!`, `offer: HomeOfferSummary!`, and `reasons: [HomeDealReason!]!`.
@@ -297,6 +301,7 @@ Stage only Task 2 backend/test files and confirm `config/dev.exs` remains unstag
 ### Task 3: Migrate the homepage frontend and establish source aliases
 
 **Files:**
+
 - Modify: `assets/vite.config.ts`
 - Modify: `assets/tsconfig.json`
 - Modify: `assets/src/routes/home/HomeRoute.tsx`
@@ -314,6 +319,7 @@ Stage only Task 2 backend/test files and confirm `config/dev.exs` remains unstag
 - Regenerate: matching files under `assets/src/__generated__/`
 
 **Interfaces:**
+
 - Produces aliases `$ui/*`, `$routes/*`, `$relay/*`, `$generated/*` in both Vite `resolve.alias` and TypeScript `compilerOptions.paths` with `baseUrl: "."`.
 - Produces `HOME_PAGE_SIZE = 6` in `HomeRoute.tsx` or `home-view-data.ts`; route operations pass it as `first` for workspace products/categories and deals.
 - Produces colocated `HomeProductLedger_product` or `HomeProductLedger_edge` fragment in `HomeProductLedger.tsx`, and a masked deal-row fragment in `HomeDeals.tsx` for direct GraphQL data consumption.
@@ -386,6 +392,7 @@ Stage exact Task 3 files and generated artifacts only.
 ### Task 4: Give public shopping components Relay data ownership
 
 **Files:**
+
 - Modify: `assets/src/routes/catalog/BrowseRoute.tsx`
 - Modify: `assets/src/routes/catalog/BrowseProductList.tsx`
 - Modify: `assets/src/routes/catalog/browse-route-data.ts`
@@ -433,6 +440,7 @@ Stage exact Task 3 files and generated artifacts only.
 - Regenerate: matching operation and fragment artifacts under `assets/src/__generated__/`
 
 **Interfaces:**
+
 - Each route module exports its top-level query, React component, and `loader`.
 - `BrowseProductList`, the merchant row rendered by `MerchantDirectoryView`, `OfferDiscoveryCard`, `ProductOfferPanel`, and `ProductCommunityPanel` accept generated fragment keys and call `useFragment` internally.
 - Category/merchant-detail one-off headings remain route-owned unless an existing reusable subcomponent directly consumes their GraphQL projection.
@@ -503,6 +511,7 @@ git commit -m "refactor: colocate public route Relay data"
 ### Task 5: Give account, comparison, and operator components Relay data ownership
 
 **Files:**
+
 - Modify: `assets/src/routes/account/alerts/AlertsRoute.tsx`
 - Modify: alert/watch row components in `assets/src/routes/account/alerts/`
 - Modify: `assets/src/routes/account/alerts/alerts-view-data.ts`
@@ -562,6 +571,7 @@ git commit -m "refactor: colocate public route Relay data"
 - Regenerate: matching operation and fragment artifacts under `assets/src/__generated__/`
 
 **Interfaces:**
+
 - `Alert`/watch rows, `ApiTokenItem`, `AttributionLedger` row/connection, product rows rendered by `CompareProductList`, saved-comparison rows, and `CJProgramRow` own masked fragments when they directly consume server projections.
 - `CompareProductPickerBoundary` owns its auxiliary picker query; `RecommendationPanel` owns its auxiliary recommendation query; `CJProgramRow` owns its feed query; `AttributionLedger` owns its ledger query/fragment.
 - `compare-route-data.ts` owns URL slug parsing, three-product normalization, partial-product projection, and loader result types; it has no Relay environment or route-preload mechanics.
@@ -615,6 +625,7 @@ git commit -m "refactor: colocate application Relay data"
 ### Task 6: Complete the structural sweep and import migration
 
 **Files:**
+
 - Modify: `assets/src/**/*.ts` and `assets/src/**/*.tsx` files identified by Step 1's exact cross-boundary import query
 - Modify: frontend tests importing application code across source boundaries
 - Modify: `assets/src/router.tsx`
@@ -622,6 +633,7 @@ git commit -m "refactor: colocate application Relay data"
 - Modify: `docs/superpowers/specs/2026-08-10-relay-data-ownership-and-route-architecture-design.md` only if implementation discovered a contract correction; do not use it as a progress ledger
 
 **Interfaces:**
+
 - Cross-boundary imports use `$ui`, `$routes`, `$relay`, or `$generated`; same-directory/feature imports use `./` or `../` only within that feature tree.
 - No source `routes/**/queries/` directory, `loader.ts`, `@relay(mask: false)`, universal UI barrel, generic route-loader factory, or hidden homepage six-cap remains.
 
@@ -683,10 +695,12 @@ Stage exact frontend source/test/generated files only.
 ### Task 7: Run full production gates and anti-slop review
 
 **Files:**
+
 - Modify: only files required by a reproduced failing gate or a concrete anti-slop finding
 - Modify: `docs/work/production-ui-system-home.md` with final evidence if this remains the active lane and is within the current owned scope
 
 **Interfaces:**
+
 - Produces no new architecture. This task proves the prior six tasks satisfy the approved spec and removes only demonstrated duplication, dead compatibility, or regression.
 
 - [ ] **Step 1: Review the complete diff for unnecessary abstraction and contract drift**
