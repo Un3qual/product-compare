@@ -1,11 +1,12 @@
 import { defineConfig } from "vite";
-import { frontendAliases, reactWithStyleX } from "./stylex-plugin.ts";
+import stylexMangle from "./plugins/stylex-mangle.ts";
+import { frontendAliases, reactWithStyleX, STYLEX_CLASS_NAME_PREFIX } from "./stylex-plugin.ts";
 
 export default defineConfig({
   build: {
     manifest: true,
   },
-  plugins: reactWithStyleX(),
+  plugins: [...reactWithStyleX(), stylexMangle({ classNamePrefix: STYLEX_CLASS_NAME_PREFIX })],
   resolve: {
     alias: frontendAliases,
   },

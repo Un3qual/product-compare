@@ -7,6 +7,8 @@ import react from "@vitejs/plugin-react";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+export const STYLEX_CLASS_NAME_PREFIX = "__pcx_";
+
 export const frontendAliases = {
   $generated: path.join(projectRoot, "src/__generated__"),
   $relay: path.join(projectRoot, "src/relay"),
@@ -32,6 +34,7 @@ export function reactWithStyleX() {
             dev: process.env.NODE_ENV !== "production",
             test: false,
             runtimeInjection: true,
+            classNamePrefix: STYLEX_CLASS_NAME_PREFIX,
             unstable_moduleResolution: {
               type: "commonJS",
               rootDir: projectRoot,
