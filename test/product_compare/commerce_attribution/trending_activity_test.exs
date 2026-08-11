@@ -12,6 +12,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
 
   @now ~U[2026-08-10 12:00:00Z]
@@ -109,6 +110,45 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     refute query =~ "ORDER BY"
   end
 
+  test "counts exact composite identities within inclusive explicit bounds" do
+    offer = offer_product("activity-explicit-range")
+    user = AccountsFixtures.user_fixture()
+
+    visitor =
+      Repo.insert!(%AnonymousVisitor{
+        id: user.id,
+        entropy_id: Ecto.UUID.generate()
+      })
+
+    from = DateTime.add(@now, -259_200, :second)
+    to = DateTime.add(@now, -86_400, :second)
+
+    click_at(offer, %{user_id: user.id}, from)
+    click_at(offer, %{user_id: user.id}, from)
+    click_at(offer, %{anonymous_visitor_id: visitor.id}, to)
+    click_at(offer, anonymous_actor("explicit-range-third"), DateTime.add(from, 86_400, :second))
+    click_at(offer, %{}, DateTime.add(from, 86_400, :second))
+    click_at(offer, anonymous_actor("explicit-range-before"), DateTime.add(from, -1, :second))
+    click_at(offer, anonymous_actor("explicit-range-after"), DateTime.add(to, 1, :second))
+
+    assert [%{identity_count: 3, activity_at: activity_at, product_id: product_id}] =
+             [from: from, to: to, minimum_identities: 3]
+             |> CommerceAttribution.trending_product_candidates_query()
+             |> Repo.all()
+
+    assert product_id == offer.product.id
+    assert DateTime.compare(activity_at, to) == :eq
+  end
+
+  test "rejects reversed explicit activity bounds" do
+    assert_raise ArgumentError, fn ->
+      CommerceAttribution.trending_product_candidates_query(
+        from: @now,
+        to: DateTime.add(@now, -1, :second)
+      )
+    end
+  end
+
   test "limits trending deals after intersecting activity with below-median USD eligibility" do
     products =
       Enum.map(1..8, fn index ->
@@ -188,7 +228,11 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     %{product: product, offer: offer, link: link}
   end
 
-  defp click(%{offer: offer, link: link}, attrs, offset \\ 0) do
+  defp click(offer, attrs, offset \\ 0) do
+    click_at(offer, attrs, DateTime.add(@now, offset, :second))
+  end
+
+  defp click_at(%{offer: offer, link: link}, attrs, inserted_at) do
     params =
       Map.merge(
         %{merchant_product_id: offer.id, commerce_link_id: link.id, source_surface: :web},
@@ -200,7 +244,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
 
     Repo.update_all(
       Ecto.Query.from(session in CommerceClickSession, where: session.id == ^click.id),
-      set: [inserted_at: DateTime.add(@now, offset, :second)]
+      set: [inserted_at: inserted_at]
     )
   end
 

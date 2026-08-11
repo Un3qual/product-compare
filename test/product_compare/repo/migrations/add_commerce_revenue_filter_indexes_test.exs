@@ -4,7 +4,7 @@ defmodule ProductCompare.Repo.Migrations.AddCommerceRevenueFilterIndexesTest do
   alias ProductCompare.Repo
 
   @expected_indexes ~w(
-    commerce_click_sessions_inserted_at_idx
+    commerce_click_sessions_home_activity_idx
     commerce_conversions_revenue_currency_idx
     commerce_conversions_revenue_product_idx
     commerce_conversions_revenue_time_idx
