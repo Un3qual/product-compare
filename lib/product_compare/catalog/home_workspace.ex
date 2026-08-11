@@ -28,6 +28,9 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   end
 
   defp eligible_products(now, offset, limit) do
+    product_correlation =
+      dynamic([candidate], candidate.product_id == parent_as(:product).id)
+
     latest_price =
       PricePoint
       |> where([price], price.merchant_product_id == parent_as(:offer).id)
@@ -44,7 +47,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
       MerchantProduct
       |> from(as: :offer)
       |> join(:inner_lateral, [offer: _offer], price in subquery(latest_price), on: true)
-      |> where([offer: offer], offer.product_id == parent_as(:product).id)
+      |> where(^product_correlation)
       |> where(
         [offer, price],
         offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
@@ -54,7 +57,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
 
     current_specification =
       from current in ProductAttributeCurrent,
-        where: current.product_id == parent_as(:product).id
+        where: ^product_correlation
 
     Product
     |> Filtering.apply_filters(%{})
