@@ -15,22 +15,31 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
 
     CommerceClickSession
     |> join(:inner, [click], offer in MerchantProduct, on: offer.id == click.merchant_product_id)
-    |> where([click, offer], click.inserted_at >= ^boundary and offer.is_active == true)
+    |> where(
+      [click, offer],
+      click.inserted_at >= ^boundary and click.inserted_at <= ^now and offer.is_active == true
+    )
     |> group_by([_click, offer], offer.product_id)
     |> having(
       [click, _offer],
-      count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct) >=
-        ^minimum_identities
-    )
-    |> order_by([click, offer],
-      desc: count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct),
-      desc: max(click.inserted_at),
-      asc: offer.product_id
+      fragment(
+        "count(DISTINCT ROW(?, ?)) FILTER (WHERE ? IS NOT NULL OR ? IS NOT NULL)",
+        click.user_id,
+        click.anonymous_visitor_id,
+        click.user_id,
+        click.anonymous_visitor_id
+      ) >= ^minimum_identities
     )
     |> select([click, offer], %{
       product_id: offer.product_id,
       identity_count:
-        count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct),
+        fragment(
+          "count(DISTINCT ROW(?, ?)) FILTER (WHERE ? IS NOT NULL OR ? IS NOT NULL)",
+          click.user_id,
+          click.anonymous_visitor_id,
+          click.user_id,
+          click.anonymous_visitor_id
+        ),
       activity_at: max(click.inserted_at)
     })
   end

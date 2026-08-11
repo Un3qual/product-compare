@@ -72,6 +72,23 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
              count_select_queries_targeting_table(six_queries, :merchant_products)
   end
 
+  test "qualifies the bounded product page with correlated existence probes" do
+    operator = AccountsFixtures.operator_fixture()
+    _product = eligible_product("workspace-correlated-probes", operator)
+
+    {[_candidate], queries} =
+      capture_select_queries(fn ->
+        Catalog.home_workspace_product_candidates(now: @now, limit: 1)
+      end)
+
+    product_query = Enum.find(queries, &String.contains?(&1, ~s(FROM "products")))
+
+    assert length(Regex.scan(~r/\bEXISTS\s*\(/i, product_query)) >= 2
+    assert product_query =~ ~s(FROM "merchant_products")
+    assert product_query =~ ~s(FROM "product_attribute_current")
+    refute product_query =~ "JOIN (SELECT DISTINCT ON"
+  end
+
   test "includes the 24-hour boundary but requires the latest observation to remain in stock" do
     operator = AccountsFixtures.operator_fixture()
     inclusive = product_with_offer("workspace-24h", operator, -86_400, 2)

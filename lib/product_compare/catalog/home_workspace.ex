@@ -27,36 +27,38 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   end
 
   defp eligible_products(now, offset, limit) do
-    latest_prices =
-      from price in PricePoint,
-        where: price.observed_at <= ^now,
-        distinct: price.merchant_product_id,
-        order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
+    latest_price =
+      PricePoint
+      |> where([price], price.merchant_product_id == parent_as(:offer).id)
+      |> where([price], price.observed_at <= ^now)
+      |> order_by([price], desc: price.observed_at, desc: price.id)
+      |> limit(1)
+      |> select([price], %{
+        observed_at: price.observed_at,
+        shipping: price.shipping,
+        in_stock: price.in_stock
+      })
 
-    eligible_product_ids =
-      from offer in MerchantProduct,
-        join: price in subquery(latest_prices),
-        on: price.merchant_product_id == offer.id,
-        where:
-          offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
-            not is_nil(price.shipping) and
-            price.observed_at >= ^DateTime.add(now, -86_400, :second),
-        distinct: true,
-        select: %{product_id: offer.product_id}
+    eligible_offer =
+      MerchantProduct
+      |> from(as: :offer)
+      |> join(:inner_lateral, [offer: _offer], price in subquery(latest_price), on: true)
+      |> where([offer: offer], offer.product_id == parent_as(:product).id)
+      |> where(
+        [offer, price],
+        offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
+          not is_nil(price.shipping) and
+          price.observed_at >= ^DateTime.add(now, -86_400, :second)
+      )
 
-    display_specification_product_ids =
+    current_specification =
       from current in ProductAttributeCurrent,
-        distinct: true,
-        select: %{product_id: current.product_id}
+        where: current.product_id == parent_as(:product).id
 
     Product
     |> Filtering.apply_filters(%{})
-    |> join(:inner, [product: product], eligible in subquery(eligible_product_ids),
-      on: eligible.product_id == product.id
-    )
-    |> join(:inner, [product: product], current in subquery(display_specification_product_ids),
-      on: current.product_id == product.id
-    )
+    |> where([product: _product], exists(current_specification))
+    |> where([product: _product], exists(eligible_offer))
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()

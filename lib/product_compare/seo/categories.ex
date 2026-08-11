@@ -71,15 +71,15 @@ defmodule ProductCompare.Seo.Categories do
         )
     )
     |> group_by([taxon], taxon.id)
-    |> having([_taxon, _closure, product], count(product.id, :distinct) >= ^minimum_products)
+    |> having([_taxon, _closure, product], count(product.id) >= ^minimum_products)
     |> order_by([taxon, _closure, product],
-      desc: count(product.id, :distinct),
+      desc: count(product.id),
       asc: fragment("lower(coalesce(?, ''))", taxon.name),
       asc: taxon.id
     )
     |> offset(^offset)
     |> limit(^limit)
-    |> select([taxon, _closure, product], {taxon, count(product.id, :distinct)})
+    |> select([taxon, _closure, product], {taxon, count(product.id)})
     |> Repo.all()
     |> then(fn shortcut_rows ->
       canonical_counts =
@@ -189,8 +189,8 @@ defmodule ProductCompare.Seo.Categories do
       |> select([offer], %{product_id: offer.product_id})
       |> distinct(true)
 
-    now
-    |> qualified_products_query()
+    Product
+    |> content_qualified_products_query()
     |> join(:inner, [product], eligible in subquery(homepage_eligible_products),
       on: eligible.product_id == product.id
     )
@@ -214,7 +214,7 @@ defmodule ProductCompare.Seo.Categories do
       )
       |> where([closure], closure.ancestor_id in ^taxon_ids)
       |> group_by([closure], closure.ancestor_id)
-      |> select([closure, product], {closure.ancestor_id, count(product.id, :distinct)})
+      |> select([closure, product], {closure.ancestor_id, count(product.id)})
       |> Repo.all()
       |> Map.new()
 
@@ -222,9 +222,6 @@ defmodule ProductCompare.Seo.Categories do
   end
 
   defp qualified_products_query(queryable, %DateTime{} = now) do
-    minimum_description_length = QualificationPolicy.minimum_description_length()
-    minimum_specification_count = QualificationPolicy.minimum_specification_count()
-
     eligible_products =
       now
       |> eligible_offer_scope()
@@ -232,15 +229,23 @@ defmodule ProductCompare.Seo.Categories do
       |> distinct(true)
 
     queryable
+    |> content_qualified_products_query()
     |> join(:inner, [product], eligible in subquery(eligible_products),
       on: eligible.product_id == product.id
     )
+  end
+
+  defp content_qualified_products_query(queryable) do
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    specification_offset = QualificationPolicy.minimum_specification_count() - 1
+
+    queryable
     |> where(
       [product],
       fragment(
-        "(SELECT count(*) FROM product_attribute_current pac WHERE pac.product_id = ?) >= ?",
+        "EXISTS (SELECT 1 FROM product_attribute_current pac WHERE pac.product_id = ? OFFSET ? LIMIT 1)",
         product.id,
-        ^minimum_specification_count
+        ^specification_offset
       )
     )
     |> where(

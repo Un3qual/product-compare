@@ -42,14 +42,16 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     click(inclusive_boundary, anonymous_actor("inclusive-5"), -604_800)
     click(exclusive_boundary, anonymous_actor("exclusive-5"), -604_801)
     Enum.each(1..8, fn _ -> click(four_unique, anonymous_actor("four-1")) end)
+    click(four_unique, %{})
     Enum.each(1..5, fn index -> click(five_unique, anonymous_actor("five-#{index}")) end)
 
-    assert trending_product_ids(now: @now) == [
-             first.product.id,
-             second.product.id,
-             inclusive_boundary.product.id,
-             five_unique.product.id
-           ]
+    assert MapSet.new(trending_product_ids(now: @now)) ==
+             MapSet.new([
+               first.product.id,
+               second.product.id,
+               inclusive_boundary.product.id,
+               five_unique.product.id
+             ])
   end
 
   test "does not add per-row select work as activity grows" do
@@ -71,7 +73,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
              count_select_queries_targeting_table(twenty_queries, :merchant_products)
   end
 
-  test "returns all qualified candidates in deterministic activity order" do
+  test "returns all qualified candidates with one row per product" do
     products =
       Enum.map(1..8, fn index ->
         product = offer_product("activity-boundary-#{index}")
@@ -83,8 +85,28 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product
       end)
 
-    assert trending_product_ids(now: @now) ==
-             products |> Enum.take(7) |> Enum.map(& &1.product.id)
+    assert MapSet.new(trending_product_ids(now: @now)) ==
+             products |> Enum.take(7) |> MapSet.new(& &1.product.id)
+  end
+
+  test "ignores future clicks and leaves candidate ranking unordered" do
+    offer = offer_product("activity-future-bound")
+
+    Enum.each(1..5, fn index ->
+      click(offer, anonymous_actor("present-#{index}"))
+      click(offer, anonymous_actor("future-#{index}"), 1)
+    end)
+
+    {[candidate], [query]} =
+      capture_select_queries(fn ->
+        [now: @now]
+        |> CommerceAttribution.trending_product_candidates_query()
+        |> Repo.all()
+      end)
+
+    assert candidate.identity_count == 5
+    assert query =~ "count(DISTINCT ROW("
+    refute query =~ "ORDER BY"
   end
 
   test "limits trending deals after intersecting activity with below-median USD eligibility" do

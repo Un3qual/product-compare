@@ -110,5 +110,73 @@ defmodule ProductCompare.Specs.HomeHighlightsTest do
 
     assert current_query =~ "row_number()"
     assert current_query =~ ~r/"rank" <= \$/
+
+    refute Enum.any?(queries, &String.contains?(&1, ~s(FROM "claim_evidence")))
+    refute Enum.any?(queries, &String.contains?(&1, ~s(FROM "source_artifacts")))
+    refute Enum.any?(queries, &String.contains?(&1, ~s(FROM "sources")))
+  end
+
+  test "limited highlights preserve formatted unit and enum values" do
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "highlight-formatted-values"})
+    dimension = SpecsFixtures.dimension_fixture(%{code: "highlight-frequency"})
+
+    unit =
+      SpecsFixtures.unit_fixture(%{
+        dimension: dimension,
+        code: "highlight-hertz",
+        symbol: "Hz"
+      })
+
+    numeric_attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: "highlight-refresh-rate",
+        display_name: "Refresh rate",
+        data_type: :numeric,
+        dimension_id: dimension.id
+      })
+
+    {:ok, enum_set} = Specs.upsert_enum_set(%{code: "highlight-panel-types"})
+
+    {:ok, enum_option} =
+      Specs.upsert_enum_option(%{
+        enum_set_id: enum_set.id,
+        code: "highlight-oled",
+        label: "OLED",
+        sort_order: 1
+      })
+
+    enum_attribute =
+      SpecsFixtures.attribute_fixture(%{
+        code: "highlight-panel-type",
+        display_name: "Panel type",
+        data_type: :enum,
+        enum_set_id: enum_set.id
+      })
+
+    Enum.each(
+      [
+        {numeric_attribute, %{value_num: Decimal.new("27"), unit_id: unit.id}},
+        {enum_attribute, %{enum_option_id: enum_option.id}}
+      ],
+      fn {attribute, value} ->
+        {:ok, claim} =
+          Specs.propose_claim(product.id, attribute.id, value, %{
+            source_type: :user,
+            created_by: operator.id
+          })
+
+        {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
+        {:ok, _} = Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
+      end
+    )
+
+    formatted_values =
+      [product.id]
+      |> Specs.home_specification_highlights(limit: 3)
+      |> Map.fetch!(product.id)
+      |> Enum.map(&ProductCompare.Specs.ClaimValue.format(&1.claim))
+
+    assert formatted_values == ["OLED", "27 Hz"]
   end
 end

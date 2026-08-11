@@ -634,6 +634,17 @@ defmodule ProductCompare.SeoTest do
              Enum.map(Enum.drop(categories, 6), & &1.id)
 
     assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+
+    shortcut_query =
+      Enum.find(queries, fn query ->
+        String.contains?(query, ~s(FROM "taxons")) and String.contains?(query, "LIMIT")
+      end)
+
+    assert length(Regex.scan(~r/SELECT DISTINCT ON/i, shortcut_query)) == 1
+    assert shortcut_query =~ ~s(FROM product_attribute_current)
+    assert shortcut_query =~ "OFFSET"
+    refute shortcut_query =~ "SELECT count(*) FROM product_attribute_current"
+    refute shortcut_query =~ "count(DISTINCT"
   end
 
   defp qualified_product(slug, operator, primary_type_taxon \\ nil) do

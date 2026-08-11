@@ -144,7 +144,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
     |> order_by([current, ranked], asc: current.product_id, asc: ranked.rank)
     |> preload([_current, _ranked, attribute],
       attribute: attribute,
-      claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
+      claim: [:unit, :enum_option]
     )
   end
 
