@@ -1,14 +1,40 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "../../ui/primitives/Button";
-import { ProductLedger } from "../../ui/components/products/ProductLedger";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { graphql, useFragment } from "react-relay";
+import type { HomeProductLedger_products$key } from "$generated/HomeProductLedger_products.graphql";
+import { ProductLedger } from "$ui/components/products/ProductLedger";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
-} from "../compare/paths";
+} from "$routes/compare/paths";
+import { homeLedgerRows, type HomeLedgerRow } from "./home-view-data";
+
+const homeProductLedgerFragment = graphql`
+  fragment HomeProductLedger_products on HomeWorkspaceProductsConnection {
+    edges {
+      node {
+        id
+        name
+        slug
+      }
+      highlights {
+        label
+        value
+      }
+      offer {
+        merchantName
+        currency
+        landedPrice
+        priceSignal
+        observedAt
+      }
+    }
+  }
+`;
 
 const styles = create({
   headings: {
@@ -31,25 +57,16 @@ const styles = create({
   workspace: { maxWidth: "100%", minWidth: 0 },
 });
 
-export type HomeLedgerRow = {
-  category: string;
-  freshness: string;
-  highlights: string;
-  href: string;
-  id: string;
-  name: string;
-  offer: string;
-  priceSignal: string;
-  slug: string;
-};
-
 export function HomeProductLedger({
-  rows,
+  products,
   selectedSlugs,
 }: {
-  rows: readonly HomeLedgerRow[];
+  products: HomeProductLedger_products$key;
   selectedSlugs: readonly string[];
 }) {
+  const data = useFragment(homeProductLedgerFragment, products);
+  const rows = homeLedgerRows(data, selectedSlugs);
+
   return (
     <section aria-label="Product workspace" {...props(styles.workspace)}>
       <div aria-hidden="true" data-slot="home-ledger-headings" {...props(styles.headings)}>

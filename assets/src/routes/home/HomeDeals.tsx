@@ -1,16 +1,67 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { usePreloadedQuery, useQueryLoader, type PreloadedQuery } from "react-relay";
-import type { HomeDealsRouteQuery } from "../../__generated__/HomeDealsRouteQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { DetailTabs } from "../../ui/components/layout/DetailTabs";
-import { StatusBadge } from "../../ui/components/status/StatusBadge";
-import { Button } from "../../ui/primitives/Button";
-import { tokens } from "../../ui/theme/tokens.stylex";
-import homeDealsRouteQuery from "./queries/HomeDealsRouteQuery";
-import { homeDealsViewData } from "./home-view-data";
+import {
+  graphql,
+  useFragment,
+  usePreloadedQuery,
+  useQueryLoader,
+  type PreloadedQuery,
+} from "react-relay";
+import type { HomeDealsQuery } from "$generated/HomeDealsQuery.graphql";
+import type { HomeDeals_deal$key } from "$generated/HomeDeals_deal.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { DetailTabs } from "$ui/components/layout/DetailTabs";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
+import { HOME_PAGE_SIZE, homeDealViewData, homeDealsViewData } from "./home-view-data";
+
+const homeDealsRouteQuery = graphql`
+  query HomeDealsQuery($selectedSlugs: [String!]!, $first: Int!) {
+    homeDeals(selectedSlugs: $selectedSlugs) {
+      new(first: $first) {
+        edges {
+          cursor
+          ...HomeDeals_deal
+        }
+      }
+      trending(first: $first) {
+        edges {
+          cursor
+          ...HomeDeals_deal
+        }
+      }
+      forYou(first: $first) {
+        edges {
+          cursor
+          ...HomeDeals_deal
+        }
+      }
+    }
+  }
+`;
+
+const homeDealFragment = graphql`
+  fragment HomeDeals_deal on HomeDealsEdge {
+    node {
+      id
+      name
+      slug
+    }
+    offer {
+      merchantName
+      currency
+      landedPrice
+      observedAt
+    }
+    reasons {
+      code
+      watchTarget
+    }
+  }
+`;
 
 const styles = create({
   list: {
@@ -68,8 +119,7 @@ export function HomeDeals({
   selectedSlugs: readonly string[];
 }) {
   const [isHydrated, setIsHydrated] = useState(false);
-  const [queryRef, loadQuery, disposeQuery] =
-    useQueryLoader<HomeDealsRouteQuery>(homeDealsRouteQuery);
+  const [queryRef, loadQuery, disposeQuery] = useQueryLoader<HomeDealsQuery>(homeDealsRouteQuery);
   const variablesKey = selectedSlugs.join("\u0000");
 
   useEffect(() => {
@@ -79,10 +129,11 @@ export function HomeDeals({
   useEffect(() => {
     if (!isHydrated) return;
 
-    loadQuery({ selectedSlugs }, { fetchPolicy: "network-only" });
+    loadQuery({ first: HOME_PAGE_SIZE, selectedSlugs }, { fetchPolicy: "network-only" });
   }, [isHydrated, loadQuery, selectedSlugs, variablesKey]);
 
-  const retry = () => loadQuery({ selectedSlugs }, { fetchPolicy: "network-only" });
+  const retry = () =>
+    loadQuery({ first: HOME_PAGE_SIZE, selectedSlugs }, { fetchPolicy: "network-only" });
 
   if (!isHydrated || !queryRef) {
     return <HomeDealsLoading />;
@@ -110,11 +161,11 @@ function HomeDealsPanel({
   selectedSlugs,
 }: {
   hasViewer: boolean;
-  queryRef: PreloadedQuery<HomeDealsRouteQuery>;
+  queryRef: PreloadedQuery<HomeDealsQuery>;
   selectedSlugs: readonly string[];
 }) {
-  const data = usePreloadedQuery<HomeDealsRouteQuery>(homeDealsRouteQuery, queryRef);
-  const viewData = homeDealsViewData(data.homeDeals, hasViewer, selectedSlugs);
+  const data = usePreloadedQuery<HomeDealsQuery>(homeDealsRouteQuery, queryRef);
+  const viewData = homeDealsViewData(data.homeDeals, hasViewer);
 
   return (
     <DetailTabs
@@ -128,24 +179,12 @@ function HomeDealsPanel({
               {...props(styles.list)}
             >
               {tab.deals.map((deal) => (
-                <li data-slot="home-deals-item" key={deal.id} {...props(styles.item)}>
-                  <Link data-slot="home-deals-link" to={deal.href} {...props(styles.link)}>
-                    {deal.name}
-                    <span aria-hidden {...props(styles.linkArrow)}>
-                      →
-                    </span>
-                  </Link>
-                  <p data-slot="home-deals-offer" {...props(styles.offer)}>
-                    {deal.offer}
-                  </p>
-                  <StatusBadge
-                    data-slot="home-deals-reason"
-                    tone={tab.value === "trending" ? "warning" : "accent"}
-                    {...props(styles.reason)}
-                  >
-                    {deal.reason}
-                  </StatusBadge>
-                </li>
+                <HomeDealRow
+                  fragmentRef={deal.fragmentRef}
+                  key={deal.cursor}
+                  selectedSlugs={selectedSlugs}
+                  tone={tab.value === "trending" ? "warning" : "accent"}
+                />
               ))}
             </ul>
           ) : (
@@ -156,6 +195,35 @@ function HomeDealsPanel({
       }))}
       label="Offer lists"
     />
+  );
+}
+
+function HomeDealRow({
+  fragmentRef,
+  selectedSlugs,
+  tone,
+}: {
+  fragmentRef: HomeDeals_deal$key;
+  selectedSlugs: readonly string[];
+  tone: "accent" | "warning";
+}) {
+  const deal = homeDealViewData(useFragment(homeDealFragment, fragmentRef), selectedSlugs);
+
+  return (
+    <li data-slot="home-deals-item" {...props(styles.item)}>
+      <Link data-slot="home-deals-link" to={deal.href} {...props(styles.link)}>
+        {deal.name}
+        <span aria-hidden {...props(styles.linkArrow)}>
+          →
+        </span>
+      </Link>
+      <p data-slot="home-deals-offer" {...props(styles.offer)}>
+        {deal.offer}
+      </p>
+      <StatusBadge data-slot="home-deals-reason" tone={tone} {...props(styles.reason)}>
+        {deal.reason}
+      </StatusBadge>
+    </li>
   );
 }
 

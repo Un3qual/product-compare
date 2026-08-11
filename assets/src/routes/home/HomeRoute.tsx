@@ -1,24 +1,91 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, useOutletContext, useRevalidator } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import type { HomeWorkspaceRouteQuery } from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { ComparisonContinuity } from "../../ui/components/compare/ComparisonContinuity";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../ui/components/layout/PageShell";
-import { Button } from "../../ui/primitives/Button";
-import { tokens } from "../../ui/theme/tokens.stylex";
-import { buildComparePathFromSlugs } from "../compare/paths";
-import type { RootViewer } from "../root/loader";
+import {
+  Link,
+  useLoaderData,
+  useOutletContext,
+  useRevalidator,
+  type LoaderFunctionArgs,
+} from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import {
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { buildComparePathFromSlugs } from "$routes/compare/paths";
+import { isAbortError } from "$routes/loader-errors";
+import type { RootViewer } from "$routes/root/viewer-data";
+import { ComparisonContinuity } from "$ui/components/compare/ComparisonContinuity";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { HomeDeals } from "./HomeDeals";
 import { HomeProductLedger } from "./HomeProductLedger";
 import { HomeSearch } from "./HomeSearch";
-import { homeCatalogSearchPath } from "./home-paths";
-import { homeWorkspaceViewData } from "./home-view-data";
-import { type HomeLoaderData, homeLoader } from "./loader";
-import homeWorkspaceRouteQuery from "./queries/HomeWorkspaceRouteQuery";
+import { homeCatalogSearchPath, selectedHomeCompareSlugs } from "./home-paths";
+import { HOME_PAGE_SIZE, homeWorkspaceViewData } from "./home-view-data";
+
+const homeWorkspaceRouteQuery = graphql`
+  query HomeRouteQuery($selectedSlugs: [String!]!, $first: Int!) {
+    homeWorkspace(selectedSlugs: $selectedSlugs) {
+      categories(first: $first) {
+        edges {
+          node {
+            id
+            name
+            slug
+            description
+          }
+        }
+      }
+      selectedProducts {
+        id
+        name
+        slug
+      }
+      products(first: $first) {
+        edges {
+          cursor
+        }
+        ...HomeProductLedger_products
+      }
+    }
+  }
+`;
+
+export type HomeLoaderData = {
+  selectedSlugs: string[];
+  workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
+};
+
+export async function homeLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<HomeLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);
+  const variables = { first: HOME_PAGE_SIZE, selectedSlugs };
+  const workspace = preloadRouteQuery<HomeRouteQuery>(
+    environment,
+    homeWorkspaceRouteQuery,
+    variables,
+    { signal: request.signal },
+  );
+
+  try {
+    return { selectedSlugs, workspace: await workspace };
+  } catch (error) {
+    if (request.signal.aborted || isAbortError(error)) throw error;
+
+    console.error("Failed to preload home workspace route query.", { error });
+    return { selectedSlugs, workspace: null };
+  }
+}
 
 const styles = create({
   categories: {
@@ -99,8 +166,8 @@ function HomeWorkspace({
   hasViewer: boolean;
   query: NonNullable<HomeLoaderData["workspace"]>;
 }) {
-  const queryRef = useRoutePreloadedQuery<HomeWorkspaceRouteQuery>(homeWorkspaceRouteQuery, query);
-  const data = usePreloadedQuery<HomeWorkspaceRouteQuery>(homeWorkspaceRouteQuery, queryRef);
+  const queryRef = useRoutePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, query);
+  const data = usePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, queryRef);
   const viewData = homeWorkspaceViewData(data.homeWorkspace);
 
   return (
@@ -137,8 +204,11 @@ function HomeWorkspace({
         <h2 id="home-products-title" {...props(styles.sectionTitle)}>
           Products to compare
         </h2>
-        {viewData.ledgerRows.length > 0 ? (
-          <HomeProductLedger rows={viewData.ledgerRows} selectedSlugs={viewData.selectedSlugs} />
+        {data.homeWorkspace.products.edges.length > 0 ? (
+          <HomeProductLedger
+            products={data.homeWorkspace.products}
+            selectedSlugs={viewData.selectedSlugs}
+          />
         ) : (
           <FeedbackState
             action={

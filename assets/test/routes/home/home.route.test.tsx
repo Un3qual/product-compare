@@ -2,15 +2,14 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useFragment, usePreloadedQuery } from "react-relay";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
   preloadRouteQuery,
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
-import { HomeRoute } from "../../../src/routes/home/HomeRoute";
-import { homeLoader } from "../../../src/routes/home/loader";
+import { HomeRoute, homeLoader } from "../../../src/routes/home/HomeRoute";
 
 const {
   preloadRouteQueryMock,
@@ -18,6 +17,7 @@ const {
   loadDealsQueryMock,
   revalidateMock,
   useLoaderDataMock,
+  useFragmentMock,
   usePreloadedQueryMock,
   useQueryLoaderMock,
   useRoutePreloadedQueryMock,
@@ -28,6 +28,7 @@ const {
   loadDealsQueryMock: vi.fn(),
   revalidateMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useQueryLoaderMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
@@ -56,6 +57,7 @@ vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
   return {
     ...actual,
+    useFragment: useFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
     useQueryLoader: useQueryLoaderMock,
   };
@@ -64,21 +66,22 @@ vi.mock("react-relay", async () => {
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
 const mockedUseRevalidator = vi.mocked(useRevalidator);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 const WORKSPACE_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "HomeWorkspaceRouteQuery",
+    operationName: "HomeRouteQuery",
     text: null,
-    variables: { selectedSlugs: ["model-1"] },
+    variables: { first: 6, selectedSlugs: ["model-1"] },
   },
 };
 const DEALS_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "HomeDealsRouteQuery",
+    operationName: "HomeDealsQuery",
     text: null,
-    variables: { selectedSlugs: ["model-1"] },
+    variables: { first: 6, selectedSlugs: ["model-1"] },
   },
 };
 
@@ -86,6 +89,8 @@ beforeEach(() => {
   mockedPreloadRouteQuery.mockReset();
   revalidateMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   mockedUsePreloadedQuery.mockReset();
   useQueryLoaderMock.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
@@ -109,6 +114,10 @@ test("home loader returns only serializable essential workspace state", async ()
   expect(result.selectedSlugs).toEqual(["model-1", "model-2"]);
   expect(result).not.toHaveProperty("deals");
   expect(mockedPreloadRouteQuery).toHaveBeenCalledTimes(1);
+  expect(mockedPreloadRouteQuery.mock.calls[0]?.[2]).toEqual({
+    first: 6,
+    selectedSlugs: ["model-1", "model-2"],
+  });
   expect(mockedPreloadRouteQuery.mock.calls[0]?.[3]).toEqual({ signal: expect.any(AbortSignal) });
 });
 
@@ -157,21 +166,24 @@ test("home actions use the canonical resolved comparison instead of stale URL sl
   });
   mockedUsePreloadedQuery.mockReturnValueOnce({
     homeWorkspace: {
-      categories: [],
+      categories: { edges: [] },
       selectedProducts: [],
-      products: [
-        {
-          product: { id: "product-1", name: "Model 1", slug: "model-1" },
-          highlights: [],
-          offer: {
-            merchantName: "Camera Shop",
-            currency: "USD",
-            landedPrice: "499.00",
-            priceSignal: "BELOW_30_DAY_MEDIAN",
-            observedAt: "2026-08-10T12:00:00Z",
+      products: {
+        edges: [
+          {
+            cursor: "cursor-1",
+            node: { id: "product-1", name: "Model 1", slug: "model-1" },
+            highlights: [],
+            offer: {
+              merchantName: "Camera Shop",
+              currency: "USD",
+              landedPrice: "499.00",
+              priceSignal: "BELOW_30_DAY_MEDIAN",
+              observedAt: "2026-08-10T12:00:00Z",
+            },
           },
-        },
-      ],
+        ],
+      },
     },
   } as never);
 
@@ -196,7 +208,11 @@ test("home maps a rejected client deals query to the local retry state", async (
   useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
   mockedUsePreloadedQuery
     .mockReturnValueOnce({
-      homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+      homeWorkspace: {
+        categories: { edges: [] },
+        selectedProducts: [],
+        products: { edges: [] },
+      },
     } as never)
     .mockImplementationOnce(() => {
       throw new Error("deals unavailable");
@@ -249,7 +265,7 @@ test("home keeps the optional deals loading shell stable through hydration and c
       [],
     );
     expect(loadDealsQueryMock).toHaveBeenCalledWith(
-      { selectedSlugs: [] },
+      { first: 6, selectedSlugs: [] },
       { fetchPolicy: "network-only" },
     );
   } finally {
@@ -268,7 +284,11 @@ test("home keeps the workspace available while the client deals query fails", as
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => descriptor as never);
   mockedUsePreloadedQuery
     .mockReturnValueOnce({
-      homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+      homeWorkspace: {
+        categories: { edges: [] },
+        selectedProducts: [],
+        products: { edges: [] },
+      },
     } as never)
     .mockImplementationOnce(() => {
       throw new Error("deals unavailable");
@@ -296,39 +316,45 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
   mockedUsePreloadedQuery
     .mockReturnValueOnce({
       homeWorkspace: {
-        categories: [],
+        categories: { edges: [] },
         selectedProducts: [{ id: "product-1", name: "Model 1", slug: "model-1" }],
-        products: [
-          {
-            product: { id: "product-1", name: "Model 1", slug: "model-1" },
-            highlights: [],
-            offer: {
-              merchantName: "Camera Shop",
-              currency: "USD",
-              landedPrice: "499.00",
-              priceSignal: "BELOW_30_DAY_MEDIAN",
-              observedAt: "2026-08-10T12:00:00Z",
+        products: {
+          edges: [
+            {
+              cursor: "cursor-1",
+              node: { id: "product-1", name: "Model 1", slug: "model-1" },
+              highlights: [],
+              offer: {
+                merchantName: "Camera Shop",
+                currency: "USD",
+                landedPrice: "499.00",
+                priceSignal: "BELOW_30_DAY_MEDIAN",
+                observedAt: "2026-08-10T12:00:00Z",
+              },
             },
-          },
-        ],
+          ],
+        },
       },
     } as never)
     .mockReturnValueOnce({
       homeDeals: {
-        new: [
-          {
-            product: { id: "product-2", name: "Model 2", slug: "model-2" },
-            offer: {
-              merchantName: "Camera Shop",
-              currency: "USD",
-              landedPrice: "399.00",
-              observedAt: "2026-08-10T12:00:00Z",
+        new: {
+          edges: [
+            {
+              cursor: "deal-cursor-1",
+              node: { id: "product-2", name: "Model 2", slug: "model-2" },
+              offer: {
+                merchantName: "Camera Shop",
+                currency: "USD",
+                landedPrice: "399.00",
+                observedAt: "2026-08-10T12:00:00Z",
+              },
+              reasons: [{ code: "NEW_OFFER", watchTarget: null }],
             },
-            reasons: [{ code: "NEW_OFFER", watchTarget: null }],
-          },
-        ],
-        trending: [],
-        forYou: [],
+          ],
+        },
+        trending: { edges: [] },
+        forYou: { edges: [] },
       },
     } as never);
 
@@ -391,14 +417,22 @@ function mockHomeQueryResults() {
     const operationName = (queryRef as unknown as { __relayQuery: { operationName: string } })
       .__relayQuery.operationName;
 
-    if (operationName === "HomeWorkspaceRouteQuery") {
+    if (operationName === "HomeRouteQuery") {
       return {
-        homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+        homeWorkspace: {
+          categories: { edges: [] },
+          selectedProducts: [],
+          products: { edges: [] },
+        },
       } as never;
     }
 
     return {
-      homeDeals: { forYou: [], new: [], trending: [] },
+      homeDeals: {
+        forYou: { edges: [] },
+        new: { edges: [] },
+        trending: { edges: [] },
+      },
     } as never;
   });
 }

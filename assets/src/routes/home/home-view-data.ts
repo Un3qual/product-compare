@@ -1,18 +1,35 @@
-import type {
-  HomeDealReasonCode,
-  HomeDealsRouteQuery$data,
-} from "../../__generated__/HomeDealsRouteQuery.graphql";
+import type { HomeDealReasonCode, HomeDeals_deal$data } from "$generated/HomeDeals_deal.graphql";
+import type { HomeDealsQuery$data } from "$generated/HomeDealsQuery.graphql";
 import type {
   HomePriceSignalCode,
-  HomeWorkspaceRouteQuery$data,
-} from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
+  HomeProductLedger_products$data,
+} from "$generated/HomeProductLedger_products.graphql";
+import type { HomeRouteQuery$data } from "$generated/HomeRouteQuery.graphql";
 import { homeCategoryCatalogPath, homeProductDetailPath } from "./home-paths";
 
-type HomeWorkspace = HomeWorkspaceRouteQuery$data["homeWorkspace"];
-type HomeWorkspaceProduct = HomeWorkspace["products"][number];
-type HomeDeals = HomeDealsRouteQuery$data["homeDeals"];
-type HomeDeal = HomeDeals["new"][number];
-type HomeOffer = HomeWorkspaceProduct["offer"] | HomeDeal["offer"];
+export const HOME_PAGE_SIZE = 6;
+
+type HomeWorkspace = HomeRouteQuery$data["homeWorkspace"];
+type HomeDeals = HomeDealsQuery$data["homeDeals"];
+type HomeWorkspaceProduct = HomeProductLedger_products$data["edges"][number];
+type HomeDealEdge = HomeDeals["new"]["edges"][number];
+type HomeOffer = {
+  readonly currency: string;
+  readonly landedPrice: unknown;
+  readonly merchantName: string;
+};
+
+export type HomeLedgerRow = {
+  category: string;
+  freshness: string;
+  highlights: string;
+  href: string;
+  id: string;
+  name: string;
+  offer: string;
+  priceSignal: string;
+  slug: string;
+};
 
 export type HomeDealReason = {
   code: HomeDealReasonCode;
@@ -23,35 +40,49 @@ export function homeWorkspaceViewData(workspace: HomeWorkspace) {
   const selectedSlugs = workspace.selectedProducts.map((product) => product.slug);
 
   return {
-    categories: workspace.categories.map((category) => ({
+    categories: workspace.categories.edges.map(({ node: category }) => ({
       description: category.description,
-      href: homeCategoryCatalogPath(category.taxonId, selectedSlugs),
+      href: homeCategoryCatalogPath(category.id, selectedSlugs),
       label: category.name,
     })),
     comparisonProducts: workspace.selectedProducts.map((product) => ({
       label: product.name,
       slug: product.slug,
     })),
-    ledgerRows: workspace.products.slice(0, 6).map((row) => homeLedgerRow(row, selectedSlugs)),
     selectedSlugs,
   };
 }
 
-export function homeDealsViewData(
-  deals: HomeDeals,
-  hasViewer: boolean,
+export function homeLedgerRows(
+  products: HomeProductLedger_products$data,
   selectedSlugs: readonly string[],
 ) {
+  return products.edges.map((edge) => homeLedgerRow(edge, selectedSlugs));
+}
+
+export function homeDealsViewData(deals: HomeDeals, hasViewer: boolean) {
   const tabs = [
-    homeDealTab("new", "New", deals.new, selectedSlugs),
-    homeDealTab("trending", "Trending", deals.trending, selectedSlugs),
+    homeDealTab("new", "New", deals.new.edges),
+    homeDealTab("trending", "Trending", deals.trending.edges),
   ];
 
-  if (hasViewer && deals.forYou.length > 0) {
-    tabs.push(homeDealTab("for-you", "For you", deals.forYou, selectedSlugs));
+  if (hasViewer && deals.forYou.edges.length > 0) {
+    tabs.push(homeDealTab("for-you", "For you", deals.forYou.edges));
   }
 
   return { tabs };
+}
+
+export function homeDealViewData(deal: HomeDeals_deal$data, selectedSlugs: readonly string[]) {
+  return {
+    href: homeProductDetailPath(deal.node.slug, selectedSlugs),
+    id: deal.node.id,
+    name: deal.node.name,
+    offer: formatOffer(deal.offer),
+    reason: deal.reasons[0]
+      ? homeDealReasonCopy(deal.reasons[0], deal.offer.currency)
+      : "Current offer",
+  };
 }
 
 export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
@@ -78,8 +109,8 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
   }
 }
 
-function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string[]) {
-  const { offer, product } = row;
+function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string[]): HomeLedgerRow {
+  const { offer, node: product } = row;
 
   return {
     category: "Product",
@@ -94,22 +125,9 @@ function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string
   };
 }
 
-function homeDealTab(
-  value: string,
-  label: string,
-  deals: ReadonlyArray<HomeDeal>,
-  selectedSlugs: readonly string[],
-) {
+function homeDealTab(value: string, label: string, deals: ReadonlyArray<HomeDealEdge>) {
   return {
-    deals: deals.map((deal) => ({
-      href: homeProductDetailPath(deal.product.slug, selectedSlugs),
-      id: deal.product.id,
-      name: deal.product.name,
-      offer: formatOffer(deal.offer),
-      reason: deal.reasons[0]
-        ? homeDealReasonCopy(deal.reasons[0], deal.offer.currency)
-        : "Current offer",
-    })),
+    deals: deals.map((edge) => ({ cursor: edge.cursor, fragmentRef: edge })),
     emptyTitle: `No ${label.toLowerCase()} offers to show yet.`,
     label,
     value,
@@ -132,9 +150,7 @@ function formatOffer(offer: HomeOffer) {
 function formatCurrency(value: string, currency: string) {
   const match = /^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
 
-  if (!match) {
-    return value;
-  }
+  if (!match) return value;
 
   try {
     const [, sign, whole = "0", rawFraction = ""] = match;

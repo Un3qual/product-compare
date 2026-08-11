@@ -1,8 +1,9 @@
 import { defineConfig } from "vitest/config";
-import { reactWithStyleX } from "./stylex-plugin.ts";
+import { frontendAliases, reactWithStyleX } from "./stylex-plugin.ts";
 
 export default defineConfig({
   plugins: reactWithStyleX(),
+  resolve: { alias: frontendAliases },
   test: {
     globals: true,
     environment: "jsdom",

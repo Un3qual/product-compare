@@ -299,16 +299,16 @@ test("server render does not wait for optional home deals", async () => {
   globalThis.fetch = vi.fn((_input, init) => {
     const body = JSON.parse(String(init?.body)) as { query: string };
 
-    if (body.query.includes("HomeDealsRouteQuery")) {
+    if (body.query.includes("HomeDealsQuery")) {
       return dealsResponse.promise;
     }
 
-    const payload = body.query.includes("HomeWorkspaceRouteQuery")
+    const payload = body.query.includes("HomeRouteQuery")
       ? {
           data: {
             homeWorkspace: {
-              categories: [],
-              products: [],
+              categories: { edges: [] },
+              products: { edges: [] },
               selectedProducts: [],
             },
           },
@@ -334,7 +334,11 @@ test("server render does not wait for optional home deals", async () => {
     dealsResponse.resolve(
       jsonResponse({
         data: {
-          homeDeals: { forYou: [], new: [], trending: [] },
+          homeDeals: {
+            forYou: { edges: [] },
+            new: { edges: [] },
+            trending: { edges: [] },
+          },
         },
       }),
     );

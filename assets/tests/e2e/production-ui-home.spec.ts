@@ -120,34 +120,43 @@ const products = [
 const categories = [
   {
     description: "Temperature-controlled and stovetop kettles for repeatable brewing.",
-    taxonId: "category-kettles",
+    id: "category-kettles",
     name: "Kettles",
     qualifiedProductCount: 18,
     slug: "kettles",
   },
   {
     description: "Hand and electric grinders organized by burr, range, and capacity.",
-    taxonId: "category-grinders",
+    id: "category-grinders",
     name: "Coffee grinders",
     qualifiedProductCount: 26,
     slug: "coffee-grinders",
   },
   {
     description: "Scales, brewers, and storage tools for a complete setup.",
-    taxonId: "category-brewing-tools",
+    id: "category-brewing-tools",
     name: "Brewing tools",
     qualifiedProductCount: 34,
     slug: "brewing-tools",
   },
 ];
 
-const publicDeals = {
-  forYou: [],
-  new: [
+type HomeDealFixture = ReturnType<typeof homeDeal>;
+type HomeDealsFixture = {
+  forYou: ReturnType<typeof edgeConnection<HomeDealFixture>>;
+  new: ReturnType<typeof edgeConnection<HomeDealFixture>>;
+  trending: ReturnType<typeof edgeConnection<HomeDealFixture>>;
+};
+
+const publicDeals: HomeDealsFixture = {
+  forYou: edgeConnection([]),
+  new: edgeConnection([
     homeDeal(products[0], "Kitchen Supply", "129.99", "NEW_OFFER"),
     homeDeal(products[3], "Outdoor Coffee", "64.25", "NEW_OFFER"),
-  ],
-  trending: [homeDeal(products[1], "Coffee Tools", "79.00", "TRENDING_BELOW_MEDIAN")],
+  ]),
+  trending: edgeConnection([
+    homeDeal(products[1], "Coffee Tools", "79.00", "TRENDING_BELOW_MEDIAN"),
+  ]),
 };
 
 test("guest search and category entry preserve useful catalog navigation", async ({ page }) => {
@@ -241,7 +250,7 @@ test("signed-in viewers receive a public For you fallback without a private matc
 }) => {
   const fallbackDeals = {
     ...publicDeals,
-    forYou: [homeDeal(products[3], "Outdoor Coffee", "64.25", "NEW_OFFER")],
+    forYou: edgeConnection([homeDeal(products[3], "Outdoor Coffee", "64.25", "NEW_OFFER")]),
   };
   await stubGraphQL(
     page,
@@ -261,11 +270,11 @@ test("signed-in viewers receive a public For you fallback without a private matc
 test("signed-in viewers see explicit For you match reasons", async ({ page }) => {
   const matchedDeals = {
     ...publicDeals,
-    forYou: [
+    forYou: edgeConnection([
       homeDeal(products[0], "Kitchen Supply", "129.99", "WATCH_TARGET", {
         watchTarget: "135.00",
       }),
-    ],
+    ]),
   };
   await stubGraphQL(
     page,
@@ -283,7 +292,7 @@ test("signed-in viewers see explicit For you match reasons", async ({ page }) =>
 test("optional deals failure stays local and retry restores offers", async ({ page }) => {
   let dealsAttempts = 0;
   const responders = homeResponders();
-  responders.HomeDealsRouteQuery = () => {
+  responders.HomeDealsQuery = () => {
     dealsAttempts += 1;
     return dealsAttempts === 1
       ? { errors: [{ message: "temporary deal read failure" }] }
@@ -450,7 +459,7 @@ function homeResponders({
   deals = publicDeals,
   viewer = null,
 }: {
-  deals?: typeof publicDeals;
+  deals?: HomeDealsFixture;
   viewer?: ReturnType<typeof memberViewer> | null;
 } = {}): Record<string, GraphQLResponder> {
   return {
@@ -461,16 +470,18 @@ function homeResponders({
         comparisonProducts: selectedProducts(variables.slugs).map(compareProduct),
       },
     }),
-    HomeDealsRouteQuery: { data: { homeDeals: deals } },
-    HomeWorkspaceRouteQuery: ({ variables }) => ({
+    HomeDealsQuery: { data: { homeDeals: deals } },
+    HomeRouteQuery: ({ variables }) => ({
       data: {
         homeWorkspace: {
-          categories,
-          products: products.map(({ highlights, id, name, offer, slug }) => ({
-            highlights,
-            offer,
-            product: { id: `${id}-summary`, name, slug },
-          })),
+          categories: nodeConnection(categories),
+          products: edgeConnection(
+            products.map(({ highlights, id, name, offer, slug }) => ({
+              highlights,
+              node: { id: `${id}-summary`, name, slug },
+              offer,
+            })),
+          ),
           selectedProducts: selectedProducts(variables.selectedSlugs).map(({ id, name, slug }) => ({
             id: `${id}-summary`,
             name,
@@ -529,8 +540,28 @@ function homeDeal(
       merchantName,
       observedAt: "2026-08-10T12:00:00Z",
     },
-    product: { id: `${product.id}-summary`, name: product.name, slug: product.slug },
+    node: { id: `${product.id}-summary`, name: product.name, slug: product.slug },
     reasons: [{ code, watchTarget: reason.watchTarget ?? null }],
+  };
+}
+
+function edgeConnection<T extends object>(edges: readonly T[]) {
+  return {
+    edges: edges.map((edge, index) => ({ cursor: `cursor-${index + 1}`, ...edge })),
+    pageInfo: {
+      endCursor: edges.length > 0 ? `cursor-${edges.length}` : null,
+      hasNextPage: false,
+    },
+  };
+}
+
+function nodeConnection<T>(nodes: readonly T[]) {
+  return {
+    edges: nodes.map((node, index) => ({ cursor: `cursor-${index + 1}`, node })),
+    pageInfo: {
+      endCursor: nodes.length > 0 ? `cursor-${nodes.length}` : null,
+      hasNextPage: false,
+    },
   };
 }
 
