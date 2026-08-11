@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -103,6 +104,7 @@ function confirmPublicLinkRevocation() {
 }
 
 test("ShareComparisonControl publishes the ordered products and selected profile", async () => {
+  const user = userEvent.setup();
   render(
     <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
       <ShareComparisonControl
@@ -129,18 +131,21 @@ test("ShareComparisonControl publishes the ordered products and selected profile
   );
 
   const disclosure = screen.getByRole("button", {
-    name: "Share a fixed comparison snapshot",
+    name: "Share this comparison",
   });
+  expect(disclosure).toHaveStyle({ minHeight: "44px" });
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(useLazyLoadQueryMock).not.toHaveBeenCalled();
 
-  fireEvent.click(disclosure);
+  disclosure.focus();
+  await user.keyboard("{Enter}");
 
   expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  expect(disclosure).toHaveFocus();
   expect(useLazyLoadQueryMock).toHaveBeenCalledTimes(1);
   fireEvent.change(screen.getByLabelText("Optional title"), { target: { value: "Travel kit" } });
 
-  fireEvent.click(disclosure);
+  await user.keyboard(" ");
 
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(screen.getByLabelText("Optional title")).not.toBeVisible();
@@ -152,7 +157,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
   expect(screen.getByLabelText("Optional title")).toBeVisible();
   expect(screen.getByLabelText("Optional title")).toHaveValue("Travel kit");
   fireEvent.click(screen.getByLabelText(/Allow search engines/));
-  fireEvent.click(screen.getByRole("button", { name: "Publish snapshot" }));
+  fireEvent.click(screen.getByRole("button", { name: "Publish comparison link" }));
 
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalledTimes(1));
   expect(publishMutationMock).toHaveBeenCalledWith(
@@ -185,7 +190,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
     "href",
     "/compare/shared/public-token",
   );
-  expect(screen.getByRole("status")).toHaveTextContent("facts unchanged");
+  expect(screen.getByRole("status")).toHaveTextContent("prices will remain unchanged");
 });
 
 test("ShareComparisonControl revokes the just-published public link", async () => {
@@ -213,8 +218,8 @@ test("ShareComparisonControl revokes the just-published public link", async () =
       />
     </MemoryRouter>,
   );
-  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
-  fireEvent.click(screen.getByRole("button", { name: "Publish snapshot" }));
+  fireEvent.click(screen.getByText("Share this comparison"));
+  fireEvent.click(screen.getByRole("button", { name: "Publish comparison link" }));
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalled());
   await act(() =>
     publishMutationMock.mock.calls[0]?.[0]?.onCompleted(
@@ -229,14 +234,14 @@ test("ShareComparisonControl revokes the just-published public link", async () =
     ),
   );
   const revokeTrigger = await screen.findByRole("button", {
-    name: "Revoke public link: Open public snapshot",
+    name: "Revoke public link: Open public comparison",
   });
   fireEvent.click(revokeTrigger);
 
   expect(revokeMutationMock).not.toHaveBeenCalled();
   const revokeDialog = screen.getByRole("alertdialog", { name: "Revoke this public link?" });
   expect(revokeDialog).toHaveTextContent(
-    "Revoking the public link for Open public snapshot will make the shared snapshot unavailable.",
+    "Revoking the public link for Open public comparison will make the shared comparison unavailable.",
   );
   fireEvent.click(within(revokeDialog).getByRole("button", { name: "Cancel" }));
   expect(revokeMutationMock).not.toHaveBeenCalled();
@@ -256,7 +261,7 @@ test("ShareComparisonControl revokes the just-published public link", async () =
     ),
   );
   expect(await screen.findByRole("status")).toHaveTextContent("old link now returns not found");
-  expect(screen.queryByRole("link", { name: "Open public snapshot" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Open public comparison" })).not.toBeInTheDocument();
 });
 
 test("ShareComparisonControl manages snapshots discovered after a reload", async () => {
@@ -301,7 +306,7 @@ test("ShareComparisonControl manages snapshots discovered after a reload", async
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+  fireEvent.click(screen.getByText("Share this comparison"));
   expect(await screen.findByRole("link", { name: "Existing shortlist" })).toHaveAttribute(
     "href",
     "/compare/shared/existing-token",
@@ -373,7 +378,7 @@ test("ShareComparisonControl scopes revoke pending and failure state to one snap
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+  fireEvent.click(screen.getByText("Share this comparison"));
 
   const firstLink = await screen.findByRole("link", { name: "First shortlist" });
   const secondLink = screen.getByRole("link", { name: "Second shortlist" });
@@ -514,10 +519,10 @@ test("ShareComparisonControl reaches snapshots beyond the first page", async () 
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByText("Share a fixed comparison snapshot"));
+  fireEvent.click(screen.getByText("Share this comparison"));
   expect(await screen.findByRole("link", { name: "Snapshot 1" })).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Show more snapshots" }));
+  fireEvent.click(screen.getByRole("button", { name: "Show more links" }));
 
   expect(await screen.findByRole("link", { name: "Snapshot 21" })).toBeVisible();
   expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
@@ -648,10 +653,11 @@ test("SharedComparisonRoute renders captured facts, warning, and a live comparis
   expect(screen.getByRole("heading", { name: "Camera shortlist" })).toBeVisible();
   expect(screen.getByRole("note")).toHaveTextContent("captured snapshot");
   expect(screen.getByText("Second camera", { selector: "strong" })).toBeVisible();
-  expect(screen.getByText(/Shop: 90 USD landed/)).toBeVisible();
-  expect(
-    screen.getByText("Accepted claim claim-1 · Acme specifications").closest("dd"),
-  ).toHaveTextContent("Full frame");
+  expect(screen.getByText(/Shop: 90 USD total/)).toBeVisible();
+  expect(screen.getByText("Source: Acme specifications").closest("dd")).toHaveTextContent(
+    "Full frame",
+  );
+  expect(screen.queryByText(/claim-1|lowest-v1|algorithm/i)).not.toBeInTheDocument();
   expect(screen.getByText("Jul 13, 2026, 11:00 PM", { selector: "time" })).toHaveAttribute(
     "datetime",
     "2026-07-13T23:00:00Z",

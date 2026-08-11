@@ -20,7 +20,6 @@ const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 
 const WINNER = {
   profile: "BEST_VALUE",
-  algorithmVersion: "best-supported-current-cost-v1",
   status: "WINNER",
   winnerProductId: "product-1",
   currency: "USD",
@@ -45,7 +44,7 @@ beforeEach(() => {
 });
 
 describe("RecommendationPanel", () => {
-  it("loads the selected profile and shows exact source evidence", () => {
+  it("loads the selected profile and explains its buying recommendation without internal IDs", () => {
     render(
       <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
         <RecommendationPanel slugs={["evidence-camera", "other-camera"]} specMode="differences" />
@@ -61,8 +60,9 @@ describe("RecommendationPanel", () => {
       { fetchPolicy: "store-or-network" },
     );
     expect(screen.getByText("Evidence Camera")).toBeVisible();
-    expect(screen.getByText(/price observation price-point-4/)).toBeVisible();
-    expect(screen.getByText(/2 accepted claim references/)).toBeVisible();
+    expect(screen.getByText("Lowest current total price: USD 119.00")).toBeVisible();
+    expect(screen.getByText("Based on the current price and 2 verified product details.")).toBeVisible();
+    expect(screen.queryByText(/price-point-4|claim-2|algorithm/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lowest current cost" })).toHaveAttribute(
       "href",
       "/compare?slug=evidence-camera&slug=other-camera&specs=differences",

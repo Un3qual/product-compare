@@ -257,7 +257,7 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
 
-test("revenue route renders individual click, user, request, network, and conversion evidence", () => {
+test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
   const loadNext = vi.fn();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD", network: "impact" }));
   mockedUsePaginationFragment.mockReturnValue({
@@ -276,23 +276,22 @@ test("revenue route renders individual click, user, request, network, and conver
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
-  expect(screen.getByText("db8e90c9-c6f2-4f36-a67f-3324033ac114")).toBeInTheDocument();
   expect(screen.getByText("operator@example.test")).toBeInTheDocument();
-  expect(screen.getByText("User ID: user-1")).toBeInTheDocument();
+  expect(screen.getByText("Product Compare website")).toBeInTheDocument();
+  expect(screen.getByText("Partner link")).toBeInTheDocument();
   expect(screen.getByText("https://example.test/compare")).toBeInTheDocument();
   expect(screen.getByText("ExampleBrowser/1.0")).toBeInTheDocument();
   expect(screen.getByText("203.0.113.44")).toBeInTheDocument();
-  expect(screen.getByText("Impact (impact) [network-1]")).toBeInTheDocument();
+  expect(screen.getByText("Impact")).toBeInTheDocument();
   expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
   expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
   expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Status: paid")).toBeInTheDocument();
-  expect(screen.getByText("Attribution: high")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Merchant (conversion-merchant-1)")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Product (conversion-product-1)")).toBeInTheDocument();
-  expect(
-    screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Paid")).toBeInTheDocument();
+  expect(screen.getByText("Strong match")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Product")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Network")).toBeInTheDocument();
+  expect(screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/)).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
@@ -502,10 +501,10 @@ test("revenue route renders equal conversion references from different networks 
     renderRevenueSummaryRoute();
 
     expect(
-      screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+      screen.getByText("Conversion Network"),
     ).toBeVisible();
     expect(
-      screen.getByText("Second Conversion Network (awin) [conversion-network-2]"),
+      screen.getByText("Second Conversion Network"),
     ).toBeVisible();
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
   } finally {

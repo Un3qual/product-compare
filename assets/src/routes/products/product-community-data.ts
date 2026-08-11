@@ -40,7 +40,7 @@ export function resolveProductReviewMutationMessage(
   graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.review && !hasRouteGraphQLErrors(graphQLErrors)
-    ? "Review submitted for moderation."
+    ? "Review submitted for review."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
 
@@ -49,7 +49,7 @@ export function resolveProductQuestionMutationMessage(
   graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.question && !hasRouteGraphQLErrors(graphQLErrors)
-    ? "Question submitted for moderation."
+    ? "Question submitted for review."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
 
@@ -58,7 +58,7 @@ export function resolveProductAnswerMutationMessage(
   graphQLErrors?: readonly unknown[] | null,
 ) {
   return payload?.answer && !hasRouteGraphQLErrors(graphQLErrors)
-    ? "Answer submitted for moderation."
+    ? "Answer submitted for review."
     : routeMutationErrorMessage(payload?.errors, graphQLErrors);
 }
 
@@ -70,7 +70,7 @@ export function resolveProductReviewUpdateMessage(
     payload?.review,
     payload?.errors,
     graphQLErrors,
-    "Review updated and submitted for moderation.",
+    "Review updated and submitted for review.",
   );
 }
 
@@ -82,7 +82,7 @@ export function resolveProductQuestionUpdateMessage(
     payload?.question,
     payload?.errors,
     graphQLErrors,
-    "Question updated and submitted for moderation.",
+    "Question updated and submitted for review.",
   );
 }
 
@@ -94,7 +94,7 @@ export function resolveProductAnswerUpdateMessage(
     payload?.answer,
     payload?.errors,
     graphQLErrors,
-    "Answer updated and submitted for moderation.",
+    "Answer updated and submitted for review.",
   );
 }
 

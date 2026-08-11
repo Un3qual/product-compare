@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import {
@@ -121,6 +121,7 @@ export function HomeDeals({
   const [isHydrated, setIsHydrated] = useState(false);
   const [queryRef, loadQuery, disposeQuery] = useQueryLoader<HomeDealsQuery>(homeDealsRouteQuery);
   const variablesKey = selectedSlugs.join("\u0000");
+  const stableSelectedSlugs = useMemo(() => [...selectedSlugs], [variablesKey]);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -129,11 +130,17 @@ export function HomeDeals({
   useEffect(() => {
     if (!isHydrated) return;
 
-    loadQuery({ first: HOME_PAGE_SIZE, selectedSlugs }, { fetchPolicy: "network-only" });
-  }, [isHydrated, loadQuery, selectedSlugs, variablesKey]);
+    loadQuery(
+      { first: HOME_PAGE_SIZE, selectedSlugs: stableSelectedSlugs },
+      { fetchPolicy: "network-only" },
+    );
+  }, [isHydrated, loadQuery, stableSelectedSlugs]);
 
   const retry = () =>
-    loadQuery({ first: HOME_PAGE_SIZE, selectedSlugs }, { fetchPolicy: "network-only" });
+    loadQuery(
+      { first: HOME_PAGE_SIZE, selectedSlugs: stableSelectedSlugs },
+      { fetchPolicy: "network-only" },
+    );
 
   if (!isHydrated || !queryRef) {
     return <HomeDealsLoading />;
@@ -145,7 +152,11 @@ export function HomeDeals({
       resetToken={queryRef}
     >
       <Suspense fallback={<HomeDealsLoading />}>
-        <HomeDealsPanel hasViewer={hasViewer} queryRef={queryRef} selectedSlugs={selectedSlugs} />
+        <HomeDealsPanel
+          hasViewer={hasViewer}
+          queryRef={queryRef}
+          selectedSlugs={stableSelectedSlugs}
+        />
       </Suspense>
     </ResettableErrorBoundary>
   );

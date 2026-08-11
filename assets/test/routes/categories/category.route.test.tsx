@@ -66,7 +66,7 @@ test("category loader returns 404 for invalid slugs and canonical metadata for c
       category: {
         seo: {
           title: "Compare Cameras",
-          description: "Trusted camera evidence",
+          description: "Trusted camera details",
           canonicalPath: "/categories/cameras",
           indexable: true,
           imageUrl: null,
@@ -105,7 +105,7 @@ test("CategoryRoute renders curated copy, trusted inventory, and browse links", 
       id: "taxon-1",
       name: "Cameras",
       slug: "cameras",
-      description: "Compare curated camera specifications with current complete offer evidence.",
+      description: "Compare curated camera specifications with current complete offers.",
       qualifiedProductCount: 3,
       indexable: true,
       products: {
@@ -139,7 +139,9 @@ test("CategoryRoute renders curated copy, trusted inventory, and browse links", 
     </MemoryRouter>,
   );
   expect(screen.getByRole("heading", { name: "Compare Cameras" })).toBeVisible();
-  expect(screen.getByText(/3 products currently meet/)).toBeVisible();
+  expect(screen.getByText(/3 products currently have the specifications/)).toBeVisible();
+  expect(screen.getByText(/Current qualifying offers available/)).toBeVisible();
+  expect(screen.queryByText(/offer evidence|offer-quality/i)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Field Camera" })).toHaveAttribute(
     "href",
     "/products/field%20%2F%20camera%3F",

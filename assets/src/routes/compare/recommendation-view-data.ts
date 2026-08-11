@@ -1,5 +1,4 @@
 export type RecommendationViewDataInput = {
-  algorithmVersion: string;
   missingInputs: readonly string[];
   rankings: readonly RecommendationRanking[];
   winnerProductId: string | null | undefined;
@@ -7,7 +6,6 @@ export type RecommendationViewDataInput = {
 
 type RecommendationRanking = {
   claimIds: readonly string[];
-  pricePointId: string;
   productId: string;
   productName: string;
   reasons: readonly string[];
@@ -16,7 +14,7 @@ type RecommendationRanking = {
 export type RecommendationViewData =
   | {
       kind: "supported";
-      evidence: string;
+      details: string;
       productName: string;
       reasons: readonly string[];
     }
@@ -36,12 +34,25 @@ export function getRecommendationViewData(
     return { kind: "no-winner", reasons: recommendation.missingInputs };
   }
 
-  const claimReference = winner.claimIds.length === 1 ? "reference" : "references";
+  const detailLabel = winner.claimIds.length === 1 ? "product detail" : "product details";
 
   return {
     kind: "supported",
     productName: winner.productName,
-    reasons: winner.reasons,
-    evidence: `Evidence: price observation ${winner.pricePointId}; ${winner.claimIds.length} accepted claim ${claimReference}. Algorithm ${recommendation.algorithmVersion}.`,
+    reasons: winner.reasons.map(recommendationReasonCopy),
+    details: `Based on the current price and ${winner.claimIds.length} verified ${detailLabel}.`,
   };
+}
+
+export function recommendationReasonCopy(reason: string) {
+  return reason
+    .replace(
+      /accepted specification evidence is unavailable/gi,
+      "Verified product details are unavailable",
+    )
+    .replace(/eligible landed price/gi, "current total price")
+    .replace(/accepted claims?/gi, "verified product details")
+    .replace(/accepted specification evidence/gi, "verified product details")
+    .replace(/price observations?/gi, "current prices")
+    .replace(/insufficient evidence/gi, "not enough product details");
 }

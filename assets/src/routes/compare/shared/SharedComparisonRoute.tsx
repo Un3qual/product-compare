@@ -20,9 +20,7 @@ import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
 const sharedComparisonRouteQuery = graphql`
   query SharedComparisonRouteQuery($token: String!) {
     comparisonSnapshot(token: $token) {
-      id
       title
-      searchIndexable
       seo {
         title
         description
@@ -44,45 +42,25 @@ const sharedComparisonRouteQuery = graphql`
           claimId
           displayName
           valueText
-          sourceType
           evidence {
-            artifactId
-            excerpt
             sourceName
-            sourceDomain
-            url
-            fetchedAt
           }
         }
         offers {
           pricePointId
-          merchantProductId
           merchantName
-          merchantDomain
           currency
-          itemPrice
-          shipping
           landedPrice
           observedAt
-          freshness
         }
       }
       recommendation {
-        profile
-        algorithmVersion
         evaluatedAt
-        status
         winnerProductId
-        currency
         missingInputs
         rankings {
-          rank
           productId
           productName
-          landedPrice
-          currency
-          pricePointId
-          claimIds
           reasons
         }
       }
@@ -159,8 +137,11 @@ export function SharedComparisonRoute() {
 
   if (loaderData.status !== "ready") {
     return (
-      <PageShell eyebrow="Shared decision" title="Comparison not found">
-        <FeedbackState kind="error" title="This snapshot is unavailable or has been revoked." />
+      <PageShell eyebrow="Shared comparison" title="Comparison not found">
+        <FeedbackState
+          kind="error"
+          title="This shared comparison is unavailable or has been revoked."
+        />
       </PageShell>
     );
   }
@@ -191,12 +172,12 @@ function ReadySharedComparison({
 
   return (
     <PageShell
-      description="A fixed, source-backed record of the facts available when this comparison was published."
-      eyebrow="Shared decision"
+      description="A fixed record of the product details and prices available when this comparison was published."
+      eyebrow="Shared comparison"
       title={viewData.title}
     >
       <p {...props(styles.capture)}>
-        Captured{" "}
+        Published{" "}
         <time dateTime={viewData.capturedAt}>
           {formatProductDateTimeLabel(viewData.capturedAt)}
         </time>
@@ -205,7 +186,7 @@ function ReadySharedComparison({
         {viewData.disclaimer}
       </p>
       <SharedRecommendation recommendation={viewData.recommendation} />
-      <section aria-label="Captured products" {...props(styles.grid)}>
+      <section aria-label="Published products" {...props(styles.grid)}>
         {viewData.products.map((product) => (
           <SharedProductCard key={product.id} product={product} />
         ))}
@@ -223,7 +204,7 @@ function SharedRecommendation({
   return (
     <section aria-labelledby="shared-recommendation" {...props(styles.recommendation)}>
       <h2 id="shared-recommendation" {...props(styles.title)}>
-        Captured recommendation
+        Published recommendation
       </h2>
       <strong>{recommendation.label}</strong>
       <ul>
@@ -232,8 +213,7 @@ function SharedRecommendation({
         ))}
       </ul>
       <p {...props(styles.evidence)}>
-        Algorithm {recommendation.algorithmVersion}; evaluated{" "}
-        {formatProductDateTimeLabel(recommendation.evaluatedAt)}.
+        Recommendation checked {formatProductDateTimeLabel(recommendation.evaluatedAt)}.
       </p>
     </section>
   );
@@ -247,23 +227,23 @@ function SharedProductCard({ product }: { product: SharedProductViewData }) {
       {product.description ? <p>{product.description}</p> : null}
       <dl {...props(styles.attributeList)}>
         {product.attributes.map((attribute) => (
-          <div key={attribute.claimId}>
+          <div key={attribute.key}>
             <dt>{attribute.displayName}</dt>
             <dd>
               {attribute.valueText}
-              <p {...props(styles.evidence)}>{attribute.evidenceLabel}</p>
+              <p {...props(styles.evidence)}>{attribute.sourceLabel}</p>
             </dd>
           </div>
         ))}
       </dl>
       {product.offers.map((offer) => (
-        <p key={offer.pricePointId}>
+        <p key={offer.key}>
           {offer.label}
           {offer.observedAt ? (
             <>
               {" "}
               <span {...props(styles.evidence)}>
-                (observed {formatProductDateTimeLabel(offer.observedAt)})
+                (checked {formatProductDateTimeLabel(offer.observedAt)})
               </span>
             </>
           ) : null}

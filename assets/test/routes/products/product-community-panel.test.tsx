@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { useFragment, useLazyLoadQuery, useMutation } from "react-relay";
 import {
   answerProductQuestionMutation,
@@ -172,7 +173,8 @@ test("ProductCommunityPanel explicitly associates every community form label wit
   }
 });
 
-test("ProductCommunityPanel exposes independent accessible creation disclosures", () => {
+test("ProductCommunityPanel exposes independent keyboard-accessible creation disclosures", async () => {
+  const user = userEvent.setup();
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
 
   for (const [triggerName, fieldName, value] of [
@@ -183,16 +185,19 @@ test("ProductCommunityPanel exposes independent accessible creation disclosures"
     const trigger = screen.getByRole("button", { name: triggerName });
     const field = screen.getByLabelText(fieldName);
 
+    expect(trigger).toHaveStyle({ minHeight: "44px" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(field).not.toBeVisible();
 
-    fireEvent.click(trigger);
+    trigger.focus();
+    await user.keyboard("{Enter}");
 
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveFocus();
     expect(field).toBeVisible();
 
     fireEvent.change(field, { target: { value } });
-    fireEvent.click(trigger);
+    await user.keyboard(" ");
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(field).not.toBeVisible();
@@ -244,7 +249,7 @@ test("ProductCommunityPanel reuses a create key after transport failure and repl
       [],
     ),
   );
-  expect(await screen.findByRole("status")).toHaveTextContent("submitted for moderation");
+  expect(await screen.findByRole("status")).toHaveTextContent("submitted for review");
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
   await waitFor(() =>
     expect(reviewMock).toHaveBeenNthCalledWith(
@@ -295,7 +300,7 @@ test("ProductCommunityPanel exposes owner-only edit and confirmed removal contro
       [],
     ),
   );
-  expect(await screen.findByText("Review updated and submitted for moderation.")).toBeVisible();
+  expect(await screen.findByText("Review updated and submitted for review.")).toBeVisible();
   expect(screen.queryByText("<img src=x onerror=alert(1)> held up in rain.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Edit review" })).toBeNull();
 
@@ -379,8 +384,9 @@ test("ProductCommunityPanel gives owners a path to edit hidden and rejected subm
   expect(within(ownerSection).getByRole("button", { name: "Edit review" })).toBeVisible();
   expect(within(ownerSection).getByRole("button", { name: "Edit question" })).toBeVisible();
   expect(within(ownerSection).getByRole("button", { name: "Edit answer" })).toBeVisible();
-  expect(within(ownerSection).getByText("Hidden")).toBeVisible();
-  expect(within(ownerSection).getAllByText("Rejected")).toHaveLength(2);
+  expect(within(ownerSection).getByText("Hidden from shoppers")).toBeVisible();
+  expect(within(ownerSection).getAllByText("Changes requested")).toHaveLength(2);
+  expect(within(ownerSection).queryByText(/HIDDEN|REJECTED|PENDING_REVIEW/)).not.toBeInTheDocument();
 });
 
 test("ProductCommunityPanel keeps lifecycle failures scoped to their content row", async () => {

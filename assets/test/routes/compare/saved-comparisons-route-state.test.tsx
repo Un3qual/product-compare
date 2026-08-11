@@ -1,139 +1,173 @@
-import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
-import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { RelayEnvironmentProvider } from "react-relay";
+import { createOperationDescriptor, getRequest, type PayloadData } from "relay-runtime";
+import savedComparisonsRouteQueryArtifact, {
+  type SavedComparisonsRouteQuery,
+} from "../../../src/__generated__/SavedComparisonsRouteQuery.graphql";
+import { createRelayEnvironment } from "../../../src/relay/environment";
 import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
-import { SavedComparisonSetList } from "../../../src/routes/compare/SavedComparisonSetList";
-import { buildSuccessfulDeleteResponse } from "./saved-comparisons-test-helpers";
-import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
-import { savedProductsForSlugs as savedProducts } from "./saved-comparison-products-test-helpers";
 import { chooseSelectOption } from "../../helpers/radix-select";
 
-const {
-  commitMutationMock,
-  useLoaderDataMock,
-  useMutationMock,
-  useRoutePreloadedQueryMock
-} = vi.hoisted(() => ({
-  commitMutationMock: vi.fn(),
+const { fetchGraphQLMock, useLoaderDataMock } = vi.hoisted(() => ({
+  fetchGraphQLMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
-  useMutationMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
 }));
 
-vi.mock("react-relay", async () => {
-  const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-
-  return {
-    ...actual,
-    useMutation: useMutationMock
-  };
-});
-
-vi.mock("../../../src/relay/route-preload", async () => {
-  const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
-  );
-
-  return {
-    ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
-  };
-});
+vi.mock("../../../src/relay/fetch-graphql", () => ({ fetchGraphQL: fetchGraphQLMock }));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
-
-  return {
-    ...actual,
-    useLoaderData: useLoaderDataMock
-  };
+  return { ...actual, useLoaderData: useLoaderDataMock };
 });
-
-const mockedUseLoaderData = vi.mocked(useLoaderData);
-const mockedUseMutation = vi.mocked(useMutation);
-const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
-
-const SAVED_SET_QUERY_DESCRIPTOR = {
-  __relayQuery: {
-    operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-    variables: {
-      first: 20
-    }
-  }
-};
-const NEXT_SAVED_SET_QUERY_DESCRIPTOR = {
-  __relayQuery: {
-    operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-    variables: {
-      first: 20,
-      after: "cursor-1"
-    }
-  }
-};
-
-const SAVED_SET_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: SAVED_SET_QUERY_DESCRIPTOR.__relayQuery.variables
-};
-
-function buildSavedSet() {
-  return {
-    id: "saved-set-1",
-    name: "Desk setup",
-    products: savedProducts(["chair", "desk"]),
-    productCountText: "2 products in this saved comparison",
-    productNamesText: "Ergonomic Chair, Standing Desk"
-  };
-}
 
 beforeEach(() => {
-  commitMutationMock.mockReset();
-  mockedUseLoaderData.mockReset();
-  mockedUseMutation.mockReset();
-  mockedUseRoutePreloadedQuery.mockReset();
-  SAVED_SET_QUERY_REF.dispose.mockReset();
-  mockedUseMutation.mockReturnValue([commitMutationMock, false]);
-  mockedUseRoutePreloadedQuery.mockReturnValue(SAVED_SET_QUERY_REF as never);
+  fetchGraphQLMock.mockReset();
+  useLoaderDataMock.mockReset();
 });
 
-function confirmSavedComparisonDeletion() {
+test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets", async () => {
+  renderReadySavedComparisons();
+
+  expect(within(actionsFor("Desk setup")).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
+    "href",
+    "/compare?slug=chair&slug=desk",
+  );
+  expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
+    "href",
+    "/compare/saved?after=cursor-2",
+  );
+  expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit"]);
+
+  chooseSelectOption(screen.getByRole("combobox", { name: "Sort saved comparisons" }), "Name A-Z");
+  expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup"]);
+
+  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
+    target: { value: "desk" },
+  });
+  expect(savedComparisonNames()).toEqual(["Desk setup"]);
+});
+
+test("saved comparisons deletes a Relay-backed set after confirmation", async () => {
+  fetchGraphQLMock.mockResolvedValueOnce({
+    data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: { id: "saved-set-1" },
+          errors: [],
+        },
+      },
+  });
+  renderReadySavedComparisons();
+
+  fireEvent.click(within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }));
   fireEvent.click(
     within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
       "button",
-      { name: "Delete comparison" }
-    )
+      { name: "Delete comparison" },
+    ),
+  );
+
+  await waitFor(() => {
+    expect(fetchGraphQLMock).toHaveBeenCalledWith(
+      expect.stringContaining("SavedComparisonSetListDeleteSavedComparisonSetMutation"),
+      { savedComparisonSetId: "saved-set-1" },
+      expect.anything(),
+    );
+  });
+  expect(screen.queryByRole("heading", { name: "Desk setup" })).not.toBeInTheDocument();
+  expect(screen.getByRole("status", { name: "Saved comparisons status" })).toHaveTextContent(
+    "Comparison deleted.",
+  );
+});
+
+test("saved comparisons preserves a set and reports typed deletion failure", async () => {
+  fetchGraphQLMock.mockResolvedValueOnce({
+    data: {
+        deleteSavedComparisonSet: {
+          savedComparisonSet: null,
+          errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Unable to delete this comparison." }],
+        },
+      },
+  });
+  renderReadySavedComparisons();
+
+  fireEvent.click(within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }));
+  fireEvent.click(
+    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
+      "button",
+      { name: "Delete comparison" },
+    ),
+  );
+
+  expect(await screen.findByText("Unable to delete this comparison.")).toBeVisible();
+  expect(screen.getByRole("heading", { name: "Desk setup" })).toBeVisible();
+});
+
+test("saved comparisons shows the sign-in path without mounting Relay data", () => {
+  useLoaderDataMock.mockReturnValue({ status: "unauthorized" });
+
+  render(
+    <MemoryRouter>
+      <SavedComparisonsRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: "Sign in to view saved comparisons" })).toHaveAttribute(
+    "href",
+    "/auth/login",
+  );
+});
+
+function renderReadySavedComparisons() {
+  const environment = createRelayEnvironment();
+  const variables: SavedComparisonsRouteQuery["variables"] = { first: 20 };
+  environment.commitPayload(
+    createOperationDescriptor(getRequest(savedComparisonsRouteQueryArtifact), variables),
+    savedComparisonsResponse(),
+  );
+  const descriptor = {
+    __relayQuery: {
+      operationName: savedComparisonsRouteQueryArtifact.params.name,
+      text: savedComparisonsRouteQueryArtifact.params.text,
+      variables,
+    },
+  };
+  useLoaderDataMock.mockReturnValue({ status: "ready", after: null, query: descriptor });
+
+  return render(
+    <RelayEnvironmentProvider environment={environment}>
+      <MemoryRouter>
+        <SavedComparisonsRoute />
+      </MemoryRouter>
+    </RelayEnvironmentProvider>,
   );
 }
 
-const buildReadyLoaderData = () => {
+function savedComparisonsResponse(): PayloadData {
   return {
-    status: "ready" as const,
-    savedSets: [buildSavedSet()]
+    mySavedComparisonSets: {
+      edges: [
+        {
+          node: {
+            id: "saved-set-1",
+            name: "Desk setup",
+            items: [
+              { position: 2, product: { id: "product-desk", name: "Standing Desk", slug: "desk" } },
+              { position: 1, product: { id: "product-chair", name: "Ergonomic Chair", slug: "chair" } },
+            ],
+          },
+        },
+        {
+          node: {
+            id: "saved-set-2",
+            name: "Alpha kit",
+            items: [{ position: 1, product: { id: "product-lamp", name: "Lamp", slug: "lamp" } }],
+          },
+        },
+      ],
+      pageInfo: { endCursor: "cursor-2", hasNextPage: true },
+    },
   };
-};
-
-function buildSortableSavedSets() {
-  return [
-    {
-      id: "saved-set-1",
-      name: "Desk setup",
-      products: savedProducts(["chair", "desk"])
-    },
-    {
-      id: "saved-set-2",
-      name: "Alpha kit",
-      products: savedProducts(["lamp"])
-    },
-    {
-      id: "saved-set-3",
-      name: "Office suite",
-      products: savedProducts(["monitor", "keyboard", "mouse"])
-    }
-  ];
 }
 
 function savedComparisonNames() {
@@ -142,1072 +176,6 @@ function savedComparisonNames() {
     .map((heading) => heading.textContent);
 }
 
-function savedComparisonsStatus() {
-  return screen.getByRole("status", { name: "Saved comparisons status" });
+function actionsFor(name: string) {
+  return screen.getByRole("group", { name: `Actions for ${name}` });
 }
-
-test("saved comparison presentation exposes controls, actions, and pagination", () => {
-  render(
-    <MemoryRouter>
-      <SavedComparisonSetList
-        actions={{
-          onDelete: vi.fn(),
-          onOpenComparison: () => "/compare?slug=chair&slug=desk",
-          pendingDeleteIds: new Set()
-        }}
-        controls={{
-          filterText: "",
-          onFilterTextChange: vi.fn(),
-          onSortModeChange: vi.fn(),
-          sortMode: "current"
-        }}
-        pagination={{ firstHref: "/compare/saved", nextHref: "/compare/saved?after=cursor-1" }}
-        savedSets={[buildSavedSet()]}
-      />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByRole("textbox", { name: "Filter saved comparisons" })).toBeVisible();
-  expect(screen.getByRole("combobox", { name: "Sort saved comparisons" })).toBeVisible();
-  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
-    "href",
-    "/compare?slug=chair&slug=desk"
-  );
-  expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  expect(screen.getByRole("navigation", { name: "Saved comparison pages" })).toBeVisible();
-});
-
-test("saved comparison presentation disables a pending row deletion", () => {
-  const onDelete = vi.fn();
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonSetList
-        actions={{
-          onDelete,
-          onOpenComparison: () => "/compare?slug=chair&slug=desk",
-          pendingDeleteIds: new Set(["saved-set-1"])
-        }}
-        controls={{
-          filterText: "",
-          onFilterTextChange: vi.fn(),
-          onSortModeChange: vi.fn(),
-          sortMode: "current"
-        }}
-        pagination={{ firstHref: null, nextHref: null }}
-        savedSets={[buildSavedSet()]}
-      />
-    </MemoryRouter>
-  );
-
-  const deleteButton = screen.getByRole("button", { name: "Deleting comparison..." });
-
-  expect(deleteButton).toBeDisabled();
-  fireEvent.click(deleteButton);
-  expect(onDelete).not.toHaveBeenCalled();
-});
-
-test("saved comparison presentation requires confirmation before deleting the selected set", async () => {
-  const onDelete = vi.fn();
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonSetList
-        actions={{
-          onDelete,
-          onOpenComparison: () => "/compare?slug=chair&slug=desk",
-          pendingDeleteIds: new Set()
-        }}
-        controls={{
-          filterText: "",
-          onFilterTextChange: vi.fn(),
-          onSortModeChange: vi.fn(),
-          sortMode: "current"
-        }}
-        pagination={{ firstHref: null, nextHref: null }}
-        savedSets={[buildSavedSet()]}
-      />
-    </MemoryRouter>
-  );
-
-  const deleteTrigger = screen.getByRole("button", { name: "Delete comparison" });
-  fireEvent.click(deleteTrigger);
-
-  expect(onDelete).not.toHaveBeenCalled();
-  const deleteDialog = screen.getByRole("alertdialog", {
-    name: "Delete this saved comparison?"
-  });
-  expect(deleteDialog).toHaveTextContent(
-    "Deleting Desk setup permanently removes this saved comparison."
-  );
-  fireEvent.click(within(deleteDialog).getByRole("button", { name: "Cancel" }));
-  expect(onDelete).not.toHaveBeenCalled();
-  await waitFor(() => expect(deleteTrigger).toHaveFocus());
-
-  fireEvent.click(deleteTrigger);
-  confirmSavedComparisonDeletion();
-  expect(onDelete).toHaveBeenCalledTimes(1);
-  expect(onDelete).toHaveBeenCalledWith("saved-set-1");
-});
-
-test("saved comparison presentation omits the data list when no records are visible", () => {
-  render(
-    <MemoryRouter>
-      <SavedComparisonSetList
-        actions={{
-          onDelete: vi.fn(),
-          onOpenComparison: () => "/compare",
-          pendingDeleteIds: new Set()
-        }}
-        controls={{
-          filterText: "",
-          onFilterTextChange: vi.fn(),
-          onSortModeChange: vi.fn(),
-          sortMode: "current"
-        }}
-        pagination={{ firstHref: null, nextHref: null }}
-        savedSets={[]}
-      >
-        <p>No saved comparisons yet.</p>
-      </SavedComparisonSetList>
-    </MemoryRouter>
-  );
-
-  expect(screen.queryByRole("list", { name: "Saved comparison sets" })).not.toBeInTheDocument();
-  expect(screen.getByText("No saved comparisons yet.")).toBeVisible();
-});
-
-test("saved comparisons route ignores duplicate delete clicks for the same row", async () => {
-  let completeDelete!: (response: DeleteSavedComparisonSetMutationResponse) => void;
-
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    completeDelete = onCompleted;
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const deleteButton = screen.getByRole("button", { name: "Delete comparison" });
-
-  expect(deleteButton).toHaveAttribute("data-tone", "danger");
-
-  fireEvent.click(deleteButton);
-  confirmSavedComparisonDeletion();
-  fireEvent.click(deleteButton);
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledTimes(1);
-  });
-
-  expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
-
-  act(() => {
-    completeDelete(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-});
-
-test("saved comparisons route starts with an empty status region when saved sets are present", () => {
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(savedComparisonsStatus()).toBeEmptyDOMElement();
-  expect(screen.getByRole("region", { name: "Saved comparison records" })).toBeInTheDocument();
-  expect(
-    screen.getByRole("complementary", { name: "Saved comparison controls" })
-  ).toBeInTheDocument();
-});
-
-test("saved comparison cards summarize saved product counts", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: savedProducts(["lamp"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByText("2 products in this saved comparison")).toBeInTheDocument();
-  expect(screen.getByText("1 product in this saved comparison")).toBeInTheDocument();
-});
-
-test("saved comparison cards render product names and preserve stored slug order", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: [
-          { name: "Desk Chair", slug: "chair" },
-          { name: "Standing Desk", slug: "desk" }
-        ]
-      }
-    ]
-  } as never);
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByText("Desk Chair, Standing Desk")).toBeInTheDocument();
-  expect(screen.queryByText("chair, desk")).not.toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Open comparison" })).toHaveAttribute(
-    "href",
-    "/compare?slug=chair&slug=desk"
-  );
-});
-
-test("saved comparison cards scope reopen and delete actions to the set", () => {
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const actions = screen.getByRole("group", { name: "Actions for Desk setup" });
-  const openComparisonLink = within(actions).getByRole("link", { name: "Open comparison" });
-
-  expect(openComparisonLink).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
-  const deleteButton = within(actions).getByRole("button", { name: "Delete comparison" });
-
-  expect(deleteButton).toBeEnabled();
-});
-
-test("saved comparisons route restores current order after another sort", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: buildSortableSavedSets()
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const sortSelect = screen.getByRole("combobox", { name: "Sort saved comparisons" });
-
-  expect(sortSelect).toHaveValue("current");
-  expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
-
-  chooseSelectOption(sortSelect, "Name A-Z");
-  expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
-
-  chooseSelectOption(sortSelect, "Current order");
-  expect(savedComparisonNames()).toEqual(["Desk setup", "Alpha kit", "Office suite"]);
-});
-
-test("saved comparisons route sorts loaded sets by name A-Z", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: buildSortableSavedSets()
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  chooseSelectOption(
-    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
-    "Name A-Z"
-  );
-
-  expect(savedComparisonNames()).toEqual(["Alpha kit", "Desk setup", "Office suite"]);
-});
-
-test("saved comparisons route sorts loaded sets by product count high-to-low", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: buildSortableSavedSets()
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  chooseSelectOption(
-    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
-    "Product count high-to-low"
-  );
-
-  expect(savedComparisonNames()).toEqual(["Office suite", "Desk setup", "Alpha kit"]);
-});
-
-test("saved comparisons route sorts filtered loaded sets by product count low-to-high", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: buildSortableSavedSets()
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
-    target: { value: "e" }
-  });
-  chooseSelectOption(
-    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
-    "Product count low-to-high"
-  );
-
-  expect(savedComparisonNames()).toEqual(["Desk setup", "Office suite"]);
-});
-
-test("saved comparisons route keeps row actions scoped when sorting changes", async () => {
-  const commits: Array<{
-    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
-  }> = [];
-
-  commitMutationMock.mockImplementation((config) => {
-    commits.push(config);
-  });
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: buildSortableSavedSets()
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const sortSelect = screen.getByRole("combobox", { name: "Sort saved comparisons" });
-
-  chooseSelectOption(sortSelect, "Product count high-to-low");
-  const alphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
-
-  expect(within(alphaActions).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
-    "href",
-    "/compare?slug=lamp"
-  );
-
-  fireEvent.click(within(alphaActions).getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commits).toHaveLength(1);
-  });
-
-  chooseSelectOption(sortSelect, "Product count low-to-high");
-
-  const resortedAlphaActions = screen.getByRole("group", { name: "Actions for Alpha kit" });
-
-  expect(
-    within(resortedAlphaActions).getByRole("button", { name: "Deleting comparison..." })
-  ).toBeDisabled();
-  expect(
-    within(resortedAlphaActions).getByRole("link", { name: "Open comparison" })
-  ).toHaveAttribute("href", "/compare?slug=lamp");
-
-  act(() => {
-    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
-  });
-});
-
-test("saved comparisons route announces deletion when deleting the last set", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-  });
-
-  expect(savedComparisonsStatus()).toHaveTextContent("Comparison deleted.");
-  expect(savedComparisonsStatus()).not.toHaveTextContent("No saved comparisons yet.");
-});
-
-test("saved comparisons route uses a descriptive sign-in link for unauthorized state", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "unauthorized",
-    savedSets: []
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(
-    screen.getByRole("link", { name: "Sign in to view saved comparisons" })
-  ).toBeInTheDocument();
-});
-
-test("empty saved comparisons state links to product browsing and comparison", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: []
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(savedComparisonsStatus()).toHaveTextContent("No saved comparisons yet.");
-  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "href",
-    "/products"
-  );
-  expect(screen.getByRole("link", { name: "Start a new comparison" })).toHaveAttribute(
-    "href",
-    "/compare"
-  );
-});
-
-test("saved comparisons route clears stale delete errors when a later delete succeeds", async () => {
-  const commits: Array<{
-    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
-  }> = [];
-
-  commitMutationMock.mockImplementation((config) => {
-    commits.push(config);
-  });
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: savedProducts(["lamp"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
-
-  fireEvent.click(deleteButtons[0]);
-  confirmSavedComparisonDeletion();
-  fireEvent.click(deleteButtons[1]);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commits).toHaveLength(2);
-  });
-
-  act(() => {
-    commits[0].onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: null,
-        errors: [
-          {
-            code: "GRAPHQL_ERROR",
-            field: null,
-            message: "Request failed. Please try again."
-          }
-        ]
-      }
-    });
-  });
-
-  act(() => {
-    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
-  });
-
-  await waitFor(() => {
-    expect(screen.getByText("Desk setup")).toBeInTheDocument();
-    expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
-  });
-
-  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-});
-
-test("saved comparisons route submits the saved-set ID as Relay mutation variables", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
-    );
-  });
-});
-
-test("saved comparisons route keeps the set visible when the Relay mutation returns typed errors", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: null,
-        errors: [
-          {
-            code: "BAD_USER_INPUT",
-            field: "savedComparisonSetId",
-            message: "Could not delete this comparison set."
-          }
-        ]
-      }
-    });
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
-});
-
-test("saved comparisons route filters loaded sets by saved-set name", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: savedProducts(["lamp", "table"])
-      },
-      {
-        id: "saved-set-3",
-        name: "Outdoor gear",
-        products: savedProducts(["tent", "rucksack"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
-
-  fireEvent.change(filterInput, { target: { value: "dEsK" } });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
-  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
-});
-
-test("saved comparisons route filters loaded sets by product slug", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: savedProducts(["lamp", "table"])
-      },
-      {
-        id: "saved-set-3",
-        name: "Outdoor gear",
-        products: savedProducts(["tent", "rucksack"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
-
-  fireEvent.change(filterInput, { target: { value: "TaBlE" } });
-
-  expect(screen.getByText("Office setup")).toBeInTheDocument();
-  expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
-});
-
-test("saved comparisons route filters Relay-backed saved set pages", () => {
-  const savedSets = [
-    {
-      id: "saved-set-1",
-      name: "Desk setup",
-      products: savedProducts(["chair", "desk"])
-    },
-    {
-      id: "saved-set-2",
-      name: "Office setup",
-      products: savedProducts(["lamp", "table"])
-    },
-    {
-      id: "saved-set-3",
-      name: "Outdoor gear",
-      products: savedProducts(["tent", "rucksack"])
-    }
-  ];
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
-    savedSets
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
-
-  fireEvent.change(filterInput, { target: { value: "dEsK" } });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
-  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
-
-  fireEvent.change(filterInput, { target: { value: "TaBlE" } });
-
-  expect(screen.getByText("Office setup")).toBeInTheDocument();
-  expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-  expect(screen.queryByText("Outdoor gear")).not.toBeInTheDocument();
-});
-
-test("saved comparisons route renders first and next page links", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR],
-    savedSets: [{ id: "saved-set-1", name: "Desk setup", products: savedProducts(["desk"]) }],
-    after: "cursor-current",
-    hasNextPage: true,
-    endCursor: "cursor-next"
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByRole("link", { name: "First page" })).toHaveAttribute(
-    "href",
-    "/compare/saved"
-  );
-  expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
-    "href",
-    "/compare/saved?after=cursor-next"
-  );
-});
-
-test("saved comparisons route sorts combined loader saved sets while retaining loaded page queries", () => {
-  const firstPageSavedSets = [
-    {
-      id: "saved-set-1",
-      name: "Desk setup",
-      products: savedProducts(["chair", "desk"])
-    },
-    {
-      id: "saved-set-2",
-      name: "Zoo kit",
-      products: savedProducts(["storage-bin"])
-    }
-  ];
-  const secondPageSavedSets = [
-    {
-      id: "saved-set-3",
-      name: "Alpha kit",
-      products: savedProducts(["lamp"])
-    },
-    {
-      id: "saved-set-4",
-      name: "Office suite",
-      products: savedProducts(["monitor", "keyboard", "mouse"])
-    }
-  ];
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [SAVED_SET_QUERY_DESCRIPTOR, NEXT_SAVED_SET_QUERY_DESCRIPTOR],
-    savedSets: [...firstPageSavedSets, ...secondPageSavedSets]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  chooseSelectOption(
-    screen.getByRole("combobox", { name: "Sort saved comparisons" }),
-    "Name A-Z"
-  );
-
-  expect(savedComparisonNames()).toEqual([
-    "Alpha kit",
-    "Desk setup",
-    "Office suite",
-    "Zoo kit"
-  ]);
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    SAVED_SET_QUERY_DESCRIPTOR
-  );
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    NEXT_SAVED_SET_QUERY_DESCRIPTOR
-  );
-});
-
-test("saved comparisons route shows a no-match message when the filter excludes all saved sets", async () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: savedProducts(["lamp", "table"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
-    target: {
-      value: "non-matching-value"
-    }
-  });
-
-  await waitFor(() => {
-    expect(savedComparisonsStatus()).toHaveTextContent(
-      "No saved comparisons match your filter."
-    );
-  });
-});
-
-test("filtered no-match state links to product browsing and comparison", async () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.change(screen.getByRole("textbox", { name: "Filter saved comparisons" }), {
-    target: {
-      value: "non-matching-value"
-    }
-  });
-
-  await waitFor(() => {
-    expect(savedComparisonsStatus()).toHaveTextContent(
-      "No saved comparisons match your filter."
-    );
-  });
-
-  expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
-    "href",
-    "/products"
-  );
-  expect(screen.getByRole("link", { name: "Start a new comparison" })).toHaveAttribute(
-    "href",
-    "/compare"
-  );
-});
-
-test("saved comparisons route preserves pending delete state when the filter changes", async () => {
-  const commits: Array<{
-    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
-  }> = [];
-
-  commitMutationMock.mockImplementation((config) => {
-    commits.push(config);
-  });
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Desk setup alt",
-        products: savedProducts(["lamp"])
-      }
-    ]
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
-
-  fireEvent.change(filterInput, { target: { value: "desk" } });
-  const [savedSetDeleteButton] = screen.getAllByRole("button", { name: "Delete comparison" });
-  fireEvent.click(savedSetDeleteButton);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commits).toHaveLength(1);
-  });
-
-  fireEvent.change(filterInput, { target: { value: "desk setup" } });
-
-  expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
-
-  act(() => {
-    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-
-  await waitFor(() => {
-    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-    expect(screen.getByText("Desk setup alt")).toBeInTheDocument();
-  });
-});
-
-test("saved comparisons route keeps delete errors visible when the filter changes", async () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: savedProducts(["chair", "desk"])
-      },
-      {
-        id: "saved-set-2",
-        name: "Desk setup alt",
-        products: savedProducts(["lamp"])
-      }
-    ]
-  });
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: null,
-        errors: [
-          {
-            code: "BAD_USER_INPUT",
-            field: "savedComparisonSetId",
-            message: "Could not delete this comparison set."
-          }
-        ]
-      }
-    });
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  const filterInput = screen.getByRole("textbox", { name: "Filter saved comparisons" });
-  const [deleteButton] = screen.getAllByRole("button", { name: "Delete comparison" });
-
-  fireEvent.change(filterInput, { target: { value: "desk setup" } });
-  fireEvent.click(deleteButton);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
-  });
-
-  fireEvent.change(filterInput, { target: { value: "desk setup alt" } });
-
-  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
-});
-
-test("saved comparisons route keeps the set visible when delete completes with top-level GraphQL errors", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"), [
-      { message: "database stacktrace" }
-    ]);
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
-  expect(savedComparisonsStatus()).toBeEmptyDOMElement();
-});
-
-test("saved comparisons route reports Relay mutation network failures", async () => {
-  commitMutationMock.mockImplementation(({ onError }) => {
-    onError(new Error("Network request failed: boom"));
-  });
-  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-});

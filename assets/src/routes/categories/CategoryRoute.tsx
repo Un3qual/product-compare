@@ -127,7 +127,7 @@ function ReadyCategory({
                 <Link to={productDetailPath(product.slug)}>{product.name}</Link>
               </h2>
               <p {...props(styles.facts)}>
-                {product.brandName} · current qualifying offer evidence available
+                {product.brandName} · Current qualifying offers available
               </p>
               <ul
                 aria-label={`${product.name} specification highlights`}

@@ -53,10 +53,8 @@ const attributionLedgerFragment = graphql`
 const attributionLedgerRowFragment = graphql`
   fragment AttributionLedger_row on CommerceAttributionClick {
     affiliateNetworkCode
-    affiliateNetworkId
     affiliateNetworkName
     affiliateProgramCode
-    affiliateProgramId
     anonymousVisitor
     clickId
     insertedAt
@@ -64,32 +62,25 @@ const attributionLedgerRowFragment = graphql`
     linkType
     matchedConversions {
       affiliateNetworkCode
-      affiliateNetworkId
       affiliateNetworkName
       attributionConfidence
       commissionAmount
       currency
-      merchantId
       merchantName
       networkConversionRef
       orderAmount
-      productId
       productName
       purchasedAt
       reportedAt
       status
     }
-    merchantId
     merchantName
     merchantProductExternalSku
-    merchantProductId
-    productId
     productName
     referrer
     sourceSurface
     userAgent
     userEmail
-    userId
   }
 `;
 
@@ -117,7 +108,7 @@ export function AttributionLedger({
         <h2 id="attribution-ledger-heading" {...props(styles.title)}>
           Attribution ledger
         </h2>
-        <p>Individual click and conversion evidence for the active revenue filters.</p>
+        <p>Individual visits and purchases for the active revenue filters.</p>
       </div>
       {clicks.length === 0 ? (
         <p>No attribution clicks match these filters.</p>
@@ -213,28 +204,23 @@ function AttributionLedgerRow({ click: fragmentRef }: { click: AttributionLedger
         <dl {...props(styles.details)}>
           <dt>Merchant</dt>
           <dd>
-            {click.merchantName} ({click.merchantId})
+            {click.merchantName}
           </dd>
           <dt>Product</dt>
           <dd>
             {click.productName ?? "No product"}
-            {click.productId ? ` (${click.productId})` : ""}
           </dd>
           <dt>Merchant product</dt>
           <dd>
             {click.merchantProductExternalSku ?? "No SKU"}
-            {click.merchantProductId ? ` (${click.merchantProductId})` : ""}
           </dd>
           <dt>Program</dt>
           <dd>
             {click.affiliateProgramCode ?? "No affiliate program"}
-            {click.affiliateProgramId ? ` (${click.affiliateProgramId})` : ""}
           </dd>
           <dt>Network</dt>
           <dd>
             {click.affiliateNetworkName ?? "No affiliate network"}
-            {click.affiliateNetworkCode ? ` (${click.affiliateNetworkCode})` : ""}
-            {click.affiliateNetworkId ? ` [${click.affiliateNetworkId}]` : ""}
           </dd>
         </dl>
       </td>
@@ -248,30 +234,24 @@ function AttributionLedgerRow({ click: fragmentRef }: { click: AttributionLedger
 function AttributionClickDetails({ click }: { click: AttributionClick }) {
   return (
     <dl {...props(styles.details)}>
-      <dt>Click ID</dt>
-      <dd>
-        <code>{click.clickId}</code>
-      </dd>
       <dt>Created</dt>
       <dd>
         <time dateTime={click.insertedAt}>{formatProductDateTimeLabel(click.insertedAt)}</time>
       </dd>
       <dt>Source</dt>
-      <dd>{formatLedgerEnum(click.sourceSurface)}</dd>
+      <dd>{sourceSurfaceCopy(click.sourceSurface)}</dd>
       <dt>Link type</dt>
-      <dd>{formatLedgerEnum(click.linkType)}</dd>
+      <dd>{linkTypeCopy(click.linkType)}</dd>
     </dl>
   );
 }
 
 function AttributionIdentity({ click }: { click: AttributionClick }) {
-  if (click.userId) {
+  if (click.userEmail) {
     return (
       <dl {...props(styles.details)}>
         <dt>User</dt>
         <dd>{click.userEmail ?? "No email"}</dd>
-        <dt>User ID</dt>
-        <dd>User ID: {click.userId}</dd>
       </dl>
     );
   }
@@ -293,7 +273,7 @@ function AttributionConversionList({
       {conversions.map((conversion) => (
         <AttributionConversion
           conversion={conversion}
-          key={`${conversion.affiliateNetworkId}:${conversion.networkConversionRef}`}
+          key={`${conversion.affiliateNetworkCode}:${conversion.networkConversionRef}`}
         />
       ))}
     </ul>
@@ -315,24 +295,20 @@ function AttributionConversion({ conversion }: { conversion: AttributionConversi
           Commission: {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
         </dd>
         <dt>Status</dt>
-        <dd>Status: {formatLedgerEnum(conversion.status)}</dd>
+        <dd>{conversionStatusCopy(conversion.status)}</dd>
         <dt>Attribution</dt>
-        <dd>Attribution: {formatLedgerEnum(conversion.attributionConfidence)}</dd>
+        <dd>{attributionConfidenceCopy(conversion.attributionConfidence)}</dd>
         <dt>Conversion merchant</dt>
         <dd>
           {conversion.merchantName ?? "No merchant"}
-          {conversion.merchantId ? ` (${conversion.merchantId})` : ""}
         </dd>
         <dt>Conversion product</dt>
         <dd>
           {conversion.productName ?? "No product"}
-          {conversion.productId ? ` (${conversion.productId})` : ""}
         </dd>
         <dt>Conversion network</dt>
         <dd>
           {conversion.affiliateNetworkName ?? "No affiliate network"}
-          {conversion.affiliateNetworkCode ? ` (${conversion.affiliateNetworkCode})` : ""}
-          {conversion.affiliateNetworkId ? ` [${conversion.affiliateNetworkId}]` : ""}
         </dd>
         <dt>Purchased</dt>
         <dd>
@@ -355,6 +331,54 @@ function AttributionConversion({ conversion }: { conversion: AttributionConversi
   );
 }
 
-function formatLedgerEnum(value: string) {
-  return value.toLowerCase().replaceAll("_", " ");
+function sourceSurfaceCopy(value: string) {
+  switch (value.toUpperCase()) {
+    case "API":
+      return "Connected tool";
+    case "EXTENSION":
+      return "Browser extension";
+    case "WEB":
+      return "Product Compare website";
+    default:
+      return "Source unavailable";
+  }
+}
+
+function linkTypeCopy(value: string) {
+  switch (value.toUpperCase()) {
+    case "AFFILIATE":
+      return "Partner link";
+    case "NON_AFFILIATE":
+      return "Direct link";
+    default:
+      return "Link type unavailable";
+  }
+}
+
+function conversionStatusCopy(value: string) {
+  switch (value.toUpperCase()) {
+    case "APPROVED":
+      return "Approved";
+    case "PAID":
+      return "Paid";
+    case "PENDING":
+      return "Awaiting confirmation";
+    case "REVERSED":
+      return "Reversed";
+    default:
+      return "Status unavailable";
+  }
+}
+
+function attributionConfidenceCopy(value: string) {
+  switch (value.toUpperCase()) {
+    case "HIGH":
+      return "Strong match";
+    case "LOW":
+      return "Possible match";
+    case "UNMATCHED":
+      return "Not matched";
+    default:
+      return "Match unavailable";
+  }
 }

@@ -48,9 +48,9 @@ export type ComparisonSnapshotSourceNode = {
 };
 
 export const PUBLISHED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE =
-  "Public snapshot published. This link will keep the captured facts unchanged.";
+  "Public comparison link published. Its product details and prices will remain unchanged.";
 export const REVOKED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE =
-  "Public snapshot revoked. The old link now returns not found.";
+  "Public comparison link revoked. The old link now returns not found.";
 
 export function buildComparisonSnapshotPublishInput({
   productIds,
@@ -216,5 +216,5 @@ export function snapshotRevocationRowState(
 }
 
 export function comparisonSnapshotLabel(snapshot: PublishedComparisonSnapshot) {
-  return snapshot.title || "Open public snapshot";
+  return snapshot.title || "Open public comparison";
 }

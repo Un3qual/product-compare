@@ -457,7 +457,23 @@ function RemoveCommunityControl({
 
 function ModerationStatus({ ownerView, status }: { ownerView: boolean; status: string }) {
   if (!ownerView) return null;
-  return <p {...props(styles.metadata)}>{status.charAt(0) + status.slice(1).toLowerCase()}</p>;
+  return <p {...props(styles.metadata)}>{moderationStatusCopy(status)}</p>;
+}
+
+function moderationStatusCopy(status: string) {
+  switch (status) {
+    case "PUBLISHED":
+      return "Published";
+    case "PENDING":
+    case "PENDING_REVIEW":
+      return "Awaiting review";
+    case "HIDDEN":
+      return "Hidden from shoppers";
+    case "REJECTED":
+      return "Changes requested";
+    default:
+      return "Review status unavailable";
+  }
 }
 
 function OptionalParagraph({ value }: { value: string | null | undefined }) {

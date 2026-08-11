@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2dd918419d5255ec5417e514bb8c76a9>>
+ * @generated SignedSource<<cc5fbb72f8421f3be102a35834035849>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,15 +9,11 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CreateSavedComparisonSetInput = {
-  name: string;
-  productIds: ReadonlyArray<string>;
+export type SavedComparisonSetListDeleteSavedComparisonSetMutation$variables = {
+  savedComparisonSetId: string;
 };
-export type SavedComparisonOperationsCreateSavedComparisonSetMutation$variables = {
-  input: CreateSavedComparisonSetInput;
-};
-export type SavedComparisonOperationsCreateSavedComparisonSetMutation$data = {
-  readonly createSavedComparisonSet: {
+export type SavedComparisonSetListDeleteSavedComparisonSetMutation$data = {
+  readonly deleteSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
@@ -28,9 +24,9 @@ export type SavedComparisonOperationsCreateSavedComparisonSetMutation$data = {
     } | null | undefined;
   };
 };
-export type SavedComparisonOperationsCreateSavedComparisonSetMutation = {
-  response: SavedComparisonOperationsCreateSavedComparisonSetMutation$data;
-  variables: SavedComparisonOperationsCreateSavedComparisonSetMutation$variables;
+export type SavedComparisonSetListDeleteSavedComparisonSetMutation = {
+  response: SavedComparisonSetListDeleteSavedComparisonSetMutation$data;
+  variables: SavedComparisonSetListDeleteSavedComparisonSetMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -38,7 +34,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "input"
+    "name": "savedComparisonSetId"
   }
 ],
 v1 = [
@@ -47,13 +43,13 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "input",
-        "variableName": "input"
+        "name": "savedComparisonSetId",
+        "variableName": "savedComparisonSetId"
       }
     ],
     "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
-    "name": "createSavedComparisonSet",
+    "name": "deleteSavedComparisonSet",
     "plural": false,
     "selections": [
       {
@@ -115,7 +111,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "SavedComparisonOperationsCreateSavedComparisonSetMutation",
+    "name": "SavedComparisonSetListDeleteSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -124,20 +120,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "SavedComparisonOperationsCreateSavedComparisonSetMutation",
+    "name": "SavedComparisonSetListDeleteSavedComparisonSetMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "30e9f64c24a48b0f67223e85bb653ef5",
+    "cacheID": "00ad523b64b325838e4be1a3be74a3d7",
     "id": null,
     "metadata": {},
-    "name": "SavedComparisonOperationsCreateSavedComparisonSetMutation",
+    "name": "SavedComparisonSetListDeleteSavedComparisonSetMutation",
     "operationKind": "mutation",
-    "text": "mutation SavedComparisonOperationsCreateSavedComparisonSetMutation(\n  $input: CreateSavedComparisonSetInput!\n) {\n  createSavedComparisonSet(input: $input) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation SavedComparisonSetListDeleteSavedComparisonSetMutation(\n  $savedComparisonSetId: ID!\n) {\n  deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "755ae44db86069f66da2e903258476d3";
+(node as any).hash = "c9a104fb4789b122f17c8d9fd677c458";
 
 export default node;

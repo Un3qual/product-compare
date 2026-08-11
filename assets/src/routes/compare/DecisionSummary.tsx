@@ -52,7 +52,7 @@ export function DecisionSummary({
     <section {...props(styles.section)}>
       <h2 {...props(styles.title)}>Decision summary</h2>
       <p {...props(styles.description)}>
-        Relative loaded price compares only the offers already loaded for these products.
+        Price comparisons use the offers currently shown for these products.
       </p>
       <div {...props(styles.tableWrap)}>
         <table aria-label="Decision summary" {...props(styles.table)}>

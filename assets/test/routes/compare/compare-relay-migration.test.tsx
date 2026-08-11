@@ -1,16 +1,11 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
-import { savedComparisonsLoader } from "../../../src/routes/compare/saved-data";
-import {
-  buildCompareLoaderArgs,
-  buildSavedComparisonsLoaderArgs,
-} from "./saved-comparisons-test-helpers";
+import { buildCompareLoaderArgs } from "./saved-comparisons-test-helpers";
 
 const {
   commitMutationMock,
@@ -176,19 +171,6 @@ function buildEmptyOfferContextSummary(productId: string) {
   };
 }
 
-const savedComparisonsRouteQueryDescriptor = {
-  __relayQuery: {
-    operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-    variables: { first: 20 },
-  },
-};
-
-const savedComparisonsQueryRef = {
-  dispose: vi.fn(),
-  variables: savedComparisonsRouteQueryDescriptor.__relayQuery.variables,
-};
-
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
@@ -202,7 +184,6 @@ beforeEach(() => {
   useRoutePreloadedQueryMock.mockReset();
   detailProductQueryRef.dispose.mockReset();
   secondProductQueryRef.dispose.mockReset();
-  savedComparisonsQueryRef.dispose.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
     comparisonRecommendation: {
       algorithmVersion: "test-v1",
@@ -357,166 +338,6 @@ test("compare route saves the current selection through a Relay mutation", async
   expect(await screen.findByRole("status", { name: "Save comparison status" })).toHaveTextContent(
     "Comparison saved.",
   );
-});
-
-test("saved comparisons loader preloads saved-set pages through Relay", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockResolvedValueOnce({
-    data: {
-      mySavedComparisonSets: {
-        edges: [
-          {
-            node: {
-              id: "saved-set-1",
-              name: "Relay saved set",
-              items: [
-                {
-                  position: 1,
-                  product: {
-                    name: DETAIL_PRODUCT.name,
-                    slug: DETAIL_PRODUCT.slug,
-                  },
-                },
-              ],
-            },
-          },
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null,
-        },
-      },
-    },
-    descriptor: savedComparisonsRouteQueryDescriptor,
-    dispose: vi.fn(),
-  });
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Relay saved set",
-        products: [
-          {
-            name: DETAIL_PRODUCT.name,
-            slug: DETAIL_PRODUCT.slug,
-          },
-        ],
-      },
-    ],
-    after: null,
-    hasNextPage: false,
-    endCursor: null,
-  });
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal },
-  );
-  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
-});
-
-test("saved comparisons route renders loader summaries while retaining Relay route queries", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
-    savedSets: [
-      {
-        id: "fallback-saved-set",
-        name: "Fallback saved set",
-        products: [
-          {
-            name: "Fallback product",
-            slug: "fallback-product",
-          },
-        ],
-      },
-    ],
-  });
-  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
-    if (descriptor === savedComparisonsRouteQueryDescriptor) {
-      return savedComparisonsQueryRef;
-    }
-
-    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
-  });
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  expect(screen.getByText("Fallback saved set")).toBeInTheDocument();
-  expect(screen.getByText("Fallback product")).toBeInTheDocument();
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    savedComparisonsRouteQueryDescriptor,
-  );
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
-});
-
-test("saved comparisons route deletes saved sets through a Relay mutation", async () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Relay saved set",
-        products: [
-          {
-            name: DETAIL_PRODUCT.name,
-            slug: DETAIL_PRODUCT.slug,
-          },
-        ],
-      },
-    ],
-  });
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: "saved-set-1",
-        },
-        errors: [],
-      },
-    });
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  fireEvent.click(
-    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
-      "button",
-      { name: "Delete comparison" },
-    ),
-  );
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1",
-        },
-      }),
-    );
-  });
-  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
-  expect(screen.queryByText("Relay saved set")).not.toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
 });
 
 function buildReadyLoaderData() {

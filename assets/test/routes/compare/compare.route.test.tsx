@@ -12,7 +12,7 @@ import {
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader,
-} from "../../../src/routes/compare/saved-data";
+} from "../../../src/routes/compare/SavedComparisonsRoute";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
 import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
@@ -28,21 +28,9 @@ import {
   buildAbortableRequest,
   buildCompareLoaderArgs,
   buildGraphQLResponseWithErrors,
-  buildRouteLoaderGraphQLError,
   buildSavedComparisonsLoaderArgs,
-  buildSuccessfulDeleteResponse,
 } from "./saved-comparisons-test-helpers";
-import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
-
-function confirmSavedComparisonDeletion() {
-  fireEvent.click(
-    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
-      "button",
-      { name: "Delete comparison" },
-    ),
-  );
-}
 
 const {
   commitMutationMock,
@@ -484,7 +472,7 @@ function renderRelativeLoadedPriceCells(
   renderCompareRoute();
 
   const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/,
+    name: /Compared price/,
   });
 
   return within(row)
@@ -2009,16 +1997,16 @@ test("ready compare page renders decision summary rows above the specification m
   expect(
     decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(within(decisionSummary).getByText("Best current price")).toBeVisible();
+  expect(within(decisionSummary).getByText("Lowest current price")).toBeVisible();
   expect(within(decisionSummary).getByText("199.99 USD at Value Mart")).toBeVisible();
   expect(within(decisionSummary).getByText("299.50 USD at Shop Two")).toBeVisible();
-  expect(within(decisionSummary).getByText("Active offer count")).toBeVisible();
-  expect(within(decisionSummary).getByText("3 loaded; More available")).toBeVisible();
-  expect(within(decisionSummary).getByText("1 loaded")).toBeVisible();
-  expect(within(decisionSummary).getByText("Coupon signal")).toBeVisible();
+  expect(within(decisionSummary).getByText("Offers found")).toBeVisible();
+  expect(within(decisionSummary).getByText("3 shown; More available")).toBeVisible();
+  expect(within(decisionSummary).getByText("1 shown")).toBeVisible();
+  expect(within(decisionSummary).getByText("Coupon availability")).toBeVisible();
   expect(within(decisionSummary).getByText("More coupons available")).toBeVisible();
-  expect(within(decisionSummary).getByText("No coupons loaded")).toBeVisible();
-  expect(within(decisionSummary).getByText("Price recency")).toBeVisible();
+  expect(within(decisionSummary).getByText("No coupons found")).toBeVisible();
+  expect(within(decisionSummary).getByText("Price last checked")).toBeVisible();
   expect(within(decisionSummary).getByText("2026-06-29")).toBeVisible();
   expect(within(decisionSummary).getByText("2026-06-24")).toBeVisible();
   expect(
@@ -2041,7 +2029,7 @@ test("ready compare page marks the lowest relative loaded price", () => {
         }),
       },
     }),
-  ).toEqual(["Lowest loaded price", "Above lowest loaded price"]);
+  ).toEqual(["Lowest shown price", "Above lowest shown price"]);
 });
 
 test("ready compare page scopes relative loaded price to already-loaded offers", () => {
@@ -2051,7 +2039,7 @@ test("ready compare page scopes relative loaded price to already-loaded offers",
 
   expect(
     screen.getByText(
-      "Relative loaded price compares only the offers already loaded for these products.",
+      "Price comparisons use the offers currently shown for these products.",
     ),
   ).toBeVisible();
 });
@@ -2068,7 +2056,7 @@ test("ready compare page compares scientific Decimal prices exactly", () => {
         }),
       },
     }),
-  ).toEqual(["Tied for lowest loaded price", "Tied for lowest loaded price"]);
+  ).toEqual(["Tied for lowest shown price", "Tied for lowest shown price"]);
 });
 
 test("ready compare page declines mixed currencies as not comparable", () => {
@@ -2117,7 +2105,7 @@ test("ready compare page compares two safe prices while an unavailable product i
         [THIRD_PRODUCT.id]: buildUnavailableOfferContextSummary(THIRD_PRODUCT.id),
       },
     }),
-  ).toEqual(["Lowest loaded price", "Above lowest loaded price", "Not comparable"]);
+  ).toEqual(["Lowest shown price", "Above lowest shown price", "Not comparable"]);
 });
 
 test("ready compare page keeps specs visible when one offer context is unavailable", () => {
@@ -2160,7 +2148,7 @@ test("ready compare page keeps specs visible when one offer context is unavailab
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
   const matrix = screen.getByRole("table", { name: "Shared specifications" });
 
-  expect(within(decisionSummary).getByText("Offer context unavailable")).toBeVisible();
+  expect(within(decisionSummary).getByText("Offer details unavailable")).toBeVisible();
   expect(within(matrix).getByText("Panel type")).toBeVisible();
   expect(within(matrix).getAllByText("IPS")).toHaveLength(2);
 });
@@ -3459,269 +3447,6 @@ test("renders a not-found message when any selected product is missing", () => {
   expect(screen.getByText("One or more selected products were not found.")).toBeInTheDocument();
 });
 
-test("saved comparisons loader requests the current user's sets and forwards the SSR request", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage(
-      buildSavedComparisonPage({
-        savedSets: [
-          {
-            id: "saved-set-1",
-            name: "Desk setup",
-            products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-          },
-        ],
-      }),
-    ),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-    ],
-    after: null,
-    hasNextPage: false,
-    endCursor: null,
-  });
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal },
-  );
-});
-
-test("saved comparison loader keeps product labels in stored position order", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage({
-      mySavedComparisonSets: {
-        edges: [
-          {
-            node: {
-              id: "saved-set-1",
-              name: "Desk setup",
-              items: [
-                {
-                  position: 2,
-                  product: { name: "Standing Desk", slug: "desk" },
-                },
-                {
-                  position: 1,
-                  product: { name: "Desk Chair", slug: "chair" },
-                },
-              ],
-            },
-          },
-        ],
-        pageInfo: { hasNextPage: false, endCursor: null },
-      },
-    }),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: [
-          { name: "Desk Chair", slug: "chair" },
-          { name: "Standing Desk", slug: "desk" },
-        ],
-      },
-    ],
-    after: null,
-    hasNextPage: false,
-    endCursor: null,
-  });
-});
-
-test("saved comparison loader uses the product slug when its name is missing", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage({
-      mySavedComparisonSets: {
-        edges: [
-          {
-            node: {
-              id: "saved-set-1",
-              name: "Desk setup",
-              items: [
-                {
-                  position: 1,
-                  product: { slug: "standing-desk" },
-                },
-              ],
-            },
-          },
-        ],
-        pageInfo: { hasNextPage: false, endCursor: null },
-      },
-    }),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toMatchObject({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: [{ name: "standing-desk", slug: "standing-desk" }],
-      },
-    ],
-  });
-});
-
-test("saved comparisons loader returns one page and exposes its next cursor", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage(
-      buildSavedComparisonPage({
-        endCursor: "cursor-1",
-        hasNextPage: true,
-        savedSets: [
-          {
-            id: "saved-set-1",
-            name: "Desk setup",
-            products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-          },
-        ],
-      }),
-    ),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "ready",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-      },
-    ],
-    after: null,
-    hasNextPage: true,
-    endCursor: "cursor-1",
-  });
-
-  expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
-    1,
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal },
-  );
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
-});
-
-test("saved comparisons loader returns unauthorized status when GraphQL returns UNAUTHENTICATED", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockRejectedValueOnce(
-    buildRouteLoaderGraphQLError([
-      {
-        message: "Unauthorized",
-        path: ["mySavedComparisonSets"],
-        extensions: {
-          code: "UNAUTHENTICATED",
-        },
-      },
-    ]),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).resolves.toEqual({
-    status: "unauthorized",
-    savedSetQueries: [],
-    savedSets: [],
-  });
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal },
-  );
-});
-
-test("saved comparisons loader does not treat FORBIDDEN as a sign-in state", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-  const forbiddenError = buildRouteLoaderGraphQLError([
-    {
-      message: "Forbidden",
-      path: ["mySavedComparisonSets"],
-      extensions: {
-        code: "FORBIDDEN",
-      },
-    },
-  ]);
-
-  mockedFetchRouteQuery.mockRejectedValueOnce(forbiddenError);
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).rejects.toBe(forbiddenError);
-});
-
-test("saved comparisons route renders persisted sets with reopen links", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  const openComparisonLinks = screen.getAllByRole("link", { name: "Open comparison" });
-
-  expect(screen.getByRole("heading", { name: "Saved comparisons" })).toBeInTheDocument();
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(openComparisonLinks).toHaveLength(2);
-  expect(openComparisonLinks[0]).toHaveAttribute(
-    "href",
-    `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`,
-  );
-});
-
 test("compare route exposes a named region for the compare shell", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
@@ -3784,288 +3509,6 @@ test("compared product actions use named navigation landmarks", () => {
 function openIndividualProductDetails() {
   fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
 }
-
-test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      { id: "saved-set-1", name: "Desk setup", products: buildSavedProducts(["desk", "chair"]) },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  expect(screen.getByRole("list", { name: "Saved comparison sets" })).toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveAttribute("aria-live", "polite");
-});
-
-test("saved comparisons route removes a deleted set from the list", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  fireEvent.click(screen.getAllByRole("button", { name: "Delete comparison" })[0]);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1",
-        },
-      }),
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-    expect(screen.getByText("Office setup")).toBeInTheDocument();
-  });
-
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
-});
-
-test("saved comparisons route keeps the set visible when delete fails and clears pending state", async () => {
-  commitMutationMock.mockImplementation(({ onError }) => {
-    onError(new Error("Network request failed: boom"));
-  });
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  const deleteButton = screen.getAllByRole("button", { name: "Delete comparison" })[0];
-
-  fireEvent.click(deleteButton);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1",
-        },
-      }),
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Request failed. Please try again.");
-});
-
-test("saved comparisons route keeps the set visible when delete returns GraphQL errors and clears pending state", async () => {
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: null,
-        errors: [
-          {
-            code: "BAD_USER_INPUT",
-            field: "savedComparisonSetId",
-            message: "Could not delete this comparison set.",
-          },
-        ],
-      },
-    });
-  });
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1",
-        },
-      }),
-    );
-  });
-
-  await waitFor(() => {
-    expect(screen.getByRole("button", { name: "Delete comparison" })).toBeEnabled();
-  });
-
-  expect(screen.getByText("Desk setup")).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Could not delete this comparison set.");
-});
-
-test("saved comparisons route applies overlapping delete responses against the latest list state", async () => {
-  const commits: Array<{
-    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
-  }> = [];
-
-  commitMutationMock.mockImplementation((config) => {
-    commits.push(config);
-  });
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
-
-  fireEvent.click(deleteButtons[0]);
-  confirmSavedComparisonDeletion();
-  fireEvent.click(deleteButtons[1]);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(commits).toHaveLength(2);
-  });
-
-  act(() => {
-    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
-  });
-
-  act(() => {
-    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-
-  await waitFor(() => {
-    expect(screen.queryByText("Desk setup")).not.toBeInTheDocument();
-    expect(screen.queryByText("Office setup")).not.toBeInTheDocument();
-  });
-
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
-});
-
-test("saved comparisons route keeps later delete rows pending until their own response settles", async () => {
-  const commits: Array<{
-    onCompleted: (response: DeleteSavedComparisonSetMutationResponse) => void;
-  }> = [];
-
-  commitMutationMock.mockImplementation((config) => {
-    commits.push(config);
-  });
-
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
-      },
-      {
-        id: "saved-set-2",
-        name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-      },
-    ],
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>,
-  );
-
-  const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
-
-  fireEvent.click(deleteButtons[0]);
-  confirmSavedComparisonDeletion();
-  fireEvent.click(deleteButtons[1]);
-  confirmSavedComparisonDeletion();
-
-  await waitFor(() => {
-    expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(2);
-    expect(commits).toHaveLength(2);
-  });
-
-  act(() => {
-    commits[0].onCompleted(buildSuccessfulDeleteResponse("saved-set-1"));
-  });
-
-  expect(screen.getAllByRole("button", { name: "Deleting comparison..." })).toHaveLength(1);
-  expect(screen.getByRole("button", { name: "Deleting comparison..." })).toBeDisabled();
-
-  act(() => {
-    commits[1].onCompleted(buildSuccessfulDeleteResponse("saved-set-2"));
-  });
-
-  await waitFor(() => {
-    expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
-  });
-});
 
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -4215,111 +3658,6 @@ test("isUnauthorizedSavedComparisonsResponse returns false when the response has
   ).toBe(false);
 });
 
-test("saved comparisons loader throws when the GraphQL response cannot be parsed", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage({
-      mySavedComparisonSets: {
-        edges: "not-an-array",
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null,
-        },
-      },
-    }),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).rejects.toThrow("Failed to parse saved comparison sets response");
-});
-
-test("saved comparisons loader throws when page metadata cannot be parsed", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage({
-      mySavedComparisonSets: {
-        edges: [],
-        pageInfo: {
-          hasNextPage: "yes",
-          endCursor: null,
-        },
-      },
-    }),
-  );
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).rejects.toThrow("Failed to parse saved comparison sets response");
-});
-
-test("saved comparisons loader returns empty status for zero saved sets with no truncation", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedSavedComparisonPage(
-      buildSavedComparisonPage({
-        savedSets: [],
-      }),
-    ),
-  );
-
-  const result = await savedComparisonsLoader(
-    buildSavedComparisonsLoaderArgs({ environment, request }),
-  );
-
-  expect(result).toEqual({
-    status: "empty",
-    savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
-    savedSets: [],
-    after: null,
-    hasNextPage: false,
-    endCursor: null,
-  });
-});
-
-test("saved comparisons loader aborts pagination when the request is cancelled", async () => {
-  const controller = new AbortController();
-  const environment = createRelayEnvironment();
-  const request = buildAbortableRequest("https://app.example.com/compare/saved", controller.signal);
-
-  mockedFetchRouteQuery.mockImplementationOnce(() => {
-    controller.abort();
-
-    return Promise.resolve({
-      data: buildSavedComparisonPage({
-        endCursor: "cursor-1",
-        hasNextPage: true,
-        savedSets: [
-          {
-            id: "saved-set-1",
-            name: "Desk setup",
-            products: buildSavedProducts([DETAIL_PRODUCT.slug]),
-          },
-        ],
-      }),
-      descriptor: SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR,
-      dispose: vi.fn(),
-    });
-  });
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
-  ).rejects.toThrow(/aborted/i);
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal },
-  );
-});
 
 function getSaveFeedbackStatus() {
   return screen.getAllByRole("status")[0];

@@ -78,19 +78,6 @@ const disclosureStyles = create({
       ":where([data-state='closed'])": "none",
     },
   },
-  trigger: {
-    appearance: "none",
-    backgroundColor: "transparent",
-    border: 0,
-    color: "inherit",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    fontWeight: "inherit",
-    lineHeight: "inherit",
-    padding: 0,
-    textAlign: "start",
-  },
 });
 
 type CommunityProduct = NonNullable<ProductCommunityOperationsQuery["response"]["product"]>;
@@ -193,7 +180,7 @@ function OwnerSubmissionsSection({ submissions }: { submissions: ViewerCommunity
     <section aria-label="Your non-public community submissions" {...props(styles.content)}>
       <h2 {...props(styles.title)}>Your submissions</h2>
       <p {...props(styles.metadata)}>
-        Pending, hidden, and rejected content remains available to edit or remove.
+        Submissions awaiting review or needing changes remain available to edit or remove.
       </p>
       <OwnerReviewSubmissions reviews={submissions.reviews} />
       <OwnerQuestionSubmissions questions={submissions.questions} />
@@ -300,7 +287,9 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Write a review</CollapsibleTrigger>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Write a review</Button>
+      </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
@@ -410,7 +399,9 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Ask a question</CollapsibleTrigger>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Ask a question</Button>
+      </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
@@ -547,8 +538,8 @@ function AnswerForm({ questionId }: { questionId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>
-        Answer this question
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Answer this question</Button>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>

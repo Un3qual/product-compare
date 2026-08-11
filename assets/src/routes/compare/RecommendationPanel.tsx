@@ -17,19 +17,11 @@ import { getRecommendationViewData } from "./recommendation-view-data";
 const compareRecommendationQuery = graphql`
   query RecommendationPanelQuery($slugs: [String!]!, $profile: RecommendationProfile!) {
     comparisonRecommendation(slugs: $slugs, profile: $profile) {
-      profile
-      algorithmVersion
-      status
       winnerProductId
-      currency
       missingInputs
       rankings {
-        rank
         productId
         productName
-        landedPrice
-        currency
-        pricePointId
         claimIds
         reasons
       }
@@ -39,7 +31,7 @@ const compareRecommendationQuery = graphql`
 
 const styles = create({
   controls: { display: "flex", flexWrap: "wrap", gap: "0.75rem" },
-  evidence: { color: "var(--pc-text-secondary)", margin: 0 },
+  details: { color: "var(--pc-text-secondary)", margin: 0 },
   panel: {
     borderBlockStart: "2px solid var(--pc-border-emphasized)",
     display: "grid",
@@ -134,7 +126,7 @@ function RecommendationContent({
               <li key={reason}>{reason}</li>
             ))}
           </ul>
-          <p {...props(styles.evidence)}>{viewData.evidence}</p>
+          <p {...props(styles.details)}>{viewData.details}</p>
         </>
       ) : (
         <>

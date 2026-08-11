@@ -1,5 +1,6 @@
 import type { SharedComparisonRouteQuery } from "$generated/SharedComparisonRouteQuery.graphql";
 import { buildComparePathFromSlugs } from "../paths";
+import { recommendationReasonCopy } from "../recommendation-view-data";
 
 type SharedComparisonSnapshotNode = NonNullable<
   SharedComparisonRouteQuery["response"]["comparisonSnapshot"]
@@ -33,7 +34,7 @@ type SharedComparisonProductInput = Pick<
 
 type SharedComparisonRecommendationInput = Pick<
   SharedComparisonRecommendationNode,
-  "algorithmVersion" | "evaluatedAt" | "missingInputs" | "winnerProductId"
+  "evaluatedAt" | "missingInputs" | "winnerProductId"
 > & {
   readonly rankings: ReadonlyArray<
     Pick<SharedComparisonRankingNode, "productId" | "productName" | "reasons">
@@ -62,18 +63,16 @@ export function buildSharedComparisonViewData(snapshot: SharedComparisonSnapshot
     products: products.map(projectProduct),
     recommendation: winner
       ? {
-          algorithmVersion: recommendation.algorithmVersion,
           evaluatedAt: recommendation.evaluatedAt,
           kind: "winner" as const,
           label: winner.productName,
-          reasons: [...winner.reasons],
+          reasons: winner.reasons.map(recommendationReasonCopy),
         }
       : {
-          algorithmVersion: recommendation.algorithmVersion,
           evaluatedAt: recommendation.evaluatedAt,
           kind: "unsupported" as const,
           label: "No supported winner",
-          reasons: [...recommendation.missingInputs],
+          reasons: recommendation.missingInputs.map(recommendationReasonCopy),
         },
     title: nonBlankText(snapshot.title) ?? "Shared product comparison",
   };
@@ -92,12 +91,10 @@ function projectProduct(product: SharedComparisonProductInput) {
       const sourceName = nonBlankText(attribute.evidence[0]?.sourceName);
 
       return {
-        claimId: attribute.claimId,
+        key: attribute.claimId,
         displayName: attribute.displayName,
         valueText: attribute.valueText,
-        evidenceLabel: sourceName
-          ? `Accepted claim ${attribute.claimId} · ${sourceName}`
-          : `Accepted claim ${attribute.claimId}`,
+        sourceLabel: sourceName ? `Source: ${sourceName}` : "Source details unavailable",
       };
     }),
     offers: product.offers.map((offer) => {
@@ -106,11 +103,11 @@ function projectProduct(product: SharedComparisonProductInput) {
       const currency = nonBlankText(offer.currency);
 
       return {
-        pricePointId: offer.pricePointId,
+        key: offer.pricePointId,
         label:
           landedPrice && currency
-            ? `${merchantName}: ${landedPrice} ${currency} landed`
-            : `${merchantName}: Landed price unavailable`,
+            ? `${merchantName}: ${landedPrice} ${currency} total`
+            : `${merchantName}: Current total price unavailable`,
         observedAt: nonBlankText(offer.observedAt),
       };
     }),

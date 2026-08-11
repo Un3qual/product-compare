@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import {
@@ -455,6 +456,7 @@ test("delete pending and failure feedback stay on the affected watch row", async
 });
 
 test("PriceWatchControl reveals relevant input and submits one typed rule", async () => {
+  const user = userEvent.setup();
   render(
     <MemoryRouter>
       <PriceWatchControl productId="product-id" />
@@ -462,16 +464,19 @@ test("PriceWatchControl reveals relevant input and submits one typed rule", asyn
   );
 
   const disclosure = screen.getByRole("button", { name: "Watch price or availability" });
+  expect(disclosure).toHaveStyle({ minHeight: "44px" });
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(screen.getByLabelText("Target landed price")).not.toBeVisible();
 
-  fireEvent.click(disclosure);
+  disclosure.focus();
+  await user.keyboard("{Enter}");
 
   expect(disclosure).toHaveAttribute("aria-expanded", "true");
+  expect(disclosure).toHaveFocus();
   expect(screen.getByLabelText("Target landed price")).toBeVisible();
   fireEvent.change(screen.getByLabelText("Target landed price"), { target: { value: "75" } });
 
-  fireEvent.click(disclosure);
+  await user.keyboard(" ");
 
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(screen.getByLabelText("Target landed price")).not.toBeVisible();

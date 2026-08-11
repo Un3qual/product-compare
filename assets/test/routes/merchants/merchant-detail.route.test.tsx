@@ -136,7 +136,9 @@ test("MerchantDetailRoute renders complete summary, safe destination, and produc
     </MemoryRouter>,
   );
   expect(screen.getByRole("heading", { name: "Trusted Shop" })).toBeVisible();
-  expect(screen.getByLabelText("Merchant coverage")).toHaveTextContent("Eligible landed prices1");
+  expect(screen.getByLabelText("Merchant coverage")).toHaveTextContent("Offers with complete prices1");
+  expect(screen.getByText(/Current products and offer details/)).toBeVisible();
+  expect(screen.queryByText(/offer evidence|observation|stale|unobserved/i)).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Visit merchant website" })).toHaveAttribute(
     "href",
     "https://trusted.example",

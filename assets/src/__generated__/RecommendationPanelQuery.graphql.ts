@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1fcf450288db6f64c6d294a450ed1f66>>
+ * @generated SignedSource<<520b7a9271f8ef16dd61ada44e227384>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,28 +10,19 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type RecommendationProfile = "BEST_VALUE" | "LOWEST_CURRENT_COST" | "%future added value";
-export type RecommendationStatus = "INSUFFICIENT_EVIDENCE" | "TIE" | "WINNER" | "%future added value";
 export type RecommendationPanelQuery$variables = {
   profile: RecommendationProfile;
   slugs: ReadonlyArray<string>;
 };
 export type RecommendationPanelQuery$data = {
   readonly comparisonRecommendation: {
-    readonly algorithmVersion: string;
-    readonly currency: string | null | undefined;
     readonly missingInputs: ReadonlyArray<string>;
-    readonly profile: RecommendationProfile;
     readonly rankings: ReadonlyArray<{
       readonly claimIds: ReadonlyArray<string>;
-      readonly currency: string;
-      readonly landedPrice: any;
-      readonly pricePointId: string;
       readonly productId: string;
       readonly productName: string;
-      readonly rank: number;
       readonly reasons: ReadonlyArray<string>;
     }>;
-    readonly status: RecommendationStatus;
     readonly winnerProductId: string | null | undefined;
   };
 };
@@ -51,14 +42,7 @@ v1 = {
   "kind": "LocalArgument",
   "name": "slugs"
 },
-v2 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "currency",
-  "storageKey": null
-},
-v3 = [
+v2 = [
   {
     "alias": null,
     "args": [
@@ -82,31 +66,9 @@ v3 = [
         "alias": null,
         "args": null,
         "kind": "ScalarField",
-        "name": "profile",
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "algorithmVersion",
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
-        "name": "status",
-        "storageKey": null
-      },
-      {
-        "alias": null,
-        "args": null,
-        "kind": "ScalarField",
         "name": "winnerProductId",
         "storageKey": null
       },
-      (v2/*: any*/),
       {
         "alias": null,
         "args": null,
@@ -126,13 +88,6 @@ v3 = [
             "alias": null,
             "args": null,
             "kind": "ScalarField",
-            "name": "rank",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
             "name": "productId",
             "storageKey": null
           },
@@ -141,21 +96,6 @@ v3 = [
             "args": null,
             "kind": "ScalarField",
             "name": "productName",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "landedPrice",
-            "storageKey": null
-          },
-          (v2/*: any*/),
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "pricePointId",
             "storageKey": null
           },
           {
@@ -188,7 +128,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "RecommendationPanelQuery",
-    "selections": (v3/*: any*/),
+    "selections": (v2/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -200,19 +140,19 @@ return {
     ],
     "kind": "Operation",
     "name": "RecommendationPanelQuery",
-    "selections": (v3/*: any*/)
+    "selections": (v2/*: any*/)
   },
   "params": {
-    "cacheID": "82ea9cc4e19c244e65f1d2561492ac2f",
+    "cacheID": "24fc2311008e2cf794ae7c78c437b1f5",
     "id": null,
     "metadata": {},
     "name": "RecommendationPanelQuery",
     "operationKind": "query",
-    "text": "query RecommendationPanelQuery(\n  $slugs: [String!]!\n  $profile: RecommendationProfile!\n) {\n  comparisonRecommendation(slugs: $slugs, profile: $profile) {\n    profile\n    algorithmVersion\n    status\n    winnerProductId\n    currency\n    missingInputs\n    rankings {\n      rank\n      productId\n      productName\n      landedPrice\n      currency\n      pricePointId\n      claimIds\n      reasons\n    }\n  }\n}\n"
+    "text": "query RecommendationPanelQuery(\n  $slugs: [String!]!\n  $profile: RecommendationProfile!\n) {\n  comparisonRecommendation(slugs: $slugs, profile: $profile) {\n    winnerProductId\n    missingInputs\n    rankings {\n      productId\n      productName\n      claimIds\n      reasons\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "4e77bf545d969ddd3f42829c7ea21786";
+(node as any).hash = "a89a7653fd5d3a3872eb56cbc35d5975";
 
 export default node;

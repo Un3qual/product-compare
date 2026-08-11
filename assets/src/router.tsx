@@ -208,10 +208,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary title="Saved comparisons" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ SavedComparisonsRoute }, { savedComparisonsLoader }] = await Promise.all([
-            import("./routes/compare/SavedComparisonsRoute"),
-            import("./routes/compare/saved-data"),
-          ]);
+          const { SavedComparisonsRoute, savedComparisonsLoader } =
+            await import("./routes/compare/SavedComparisonsRoute");
           return {
             Component: SavedComparisonsRoute,
             loader: savedComparisonsLoader,

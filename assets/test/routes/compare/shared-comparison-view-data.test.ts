@@ -42,7 +42,6 @@ test("projects the captured winner, source-backed facts, and ordered live path",
       },
     ],
     recommendation: {
-      algorithmVersion: "lowest-v1",
       evaluatedAt: "2026-07-13T23:00:00Z",
       winnerProductId: "product-2",
       missingInputs: [],
@@ -73,16 +72,16 @@ test("projects the captured winner, source-backed facts, and ordered live path",
         brandModelLabel: "Acme · C2",
         attributes: [
           {
-            claimId: "claim-2",
+            key: "claim-2",
             displayName: "Weight",
             valueText: "400 g",
-            evidenceLabel: "Accepted claim claim-2 · Acme specifications",
+            sourceLabel: "Source: Acme specifications",
           },
         ],
         offers: [
           {
-            pricePointId: "point-2",
-            label: "Camera Shop: 90 USD landed",
+            key: "point-2",
+            label: "Camera Shop: 90 USD total",
             observedAt: "2026-07-13T22:00:00Z",
           },
         ],
@@ -97,7 +96,6 @@ test("projects the captured winner, source-backed facts, and ordered live path",
       },
     ],
     recommendation: {
-      algorithmVersion: "lowest-v1",
       evaluatedAt: "2026-07-13T23:00:00Z",
       kind: "winner",
       label: "Second camera",
@@ -112,7 +110,6 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
     snapshotInput({
       title: null,
       recommendation: {
-        algorithmVersion: "best-value-v1",
         evaluatedAt: "2026-07-13T23:00:00Z",
         winnerProductId: null,
         missingInputs: ["Accepted specification evidence is unavailable"],
@@ -150,11 +147,10 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
 
   expect(viewData.title).toBe("Shared product comparison");
   expect(viewData.recommendation).toEqual({
-    algorithmVersion: "best-value-v1",
     evaluatedAt: "2026-07-13T23:00:00Z",
     kind: "unsupported",
     label: "No supported winner",
-    reasons: ["Accepted specification evidence is unavailable"],
+    reasons: ["Verified product details are unavailable"],
   });
   expect(viewData.products).toEqual([
     {
@@ -164,16 +160,16 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
       brandModelLabel: "Unknown brand",
       attributes: [
         {
-          claimId: "claim-1",
+          key: "claim-1",
           displayName: "Resolution",
           valueText: "24 MP",
-          evidenceLabel: "Accepted claim claim-1",
+          sourceLabel: "Source details unavailable",
         },
       ],
       offers: [
         {
-          pricePointId: "point-1",
-          label: "Unknown merchant: Landed price unavailable",
+          key: "point-1",
+          label: "Unknown merchant: Current total price unavailable",
           observedAt: null,
         },
       ],
@@ -195,7 +191,6 @@ function snapshotInput(overrides: Partial<SnapshotInput> = {}): SnapshotInput {
     title: "Camera shortlist",
     products: [],
     recommendation: {
-      algorithmVersion: "lowest-v1",
       evaluatedAt: "2026-07-13T23:00:00Z",
       winnerProductId: null,
       missingInputs: [],

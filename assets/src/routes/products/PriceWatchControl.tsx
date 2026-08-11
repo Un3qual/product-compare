@@ -44,19 +44,6 @@ const styles = create({
     paddingInline: "0.7rem",
   },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
-  summary: {
-    appearance: "none",
-    backgroundColor: "transparent",
-    border: 0,
-    color: "inherit",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    fontWeight: 650,
-    lineHeight: "inherit",
-    padding: 0,
-    textAlign: "start",
-  },
 });
 
 export function PriceWatchControl({ productId }: { productId: string }) {
@@ -98,8 +85,8 @@ function PriceWatchForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible {...props(styles.details)}>
-      <CollapsibleTrigger {...props(styles.summary)}>
-        Watch price or availability
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Watch price or availability</Button>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(styles.content)}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>

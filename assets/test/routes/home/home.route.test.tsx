@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
@@ -10,6 +10,7 @@ import {
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
 import { HomeRoute, homeLoader } from "../../../src/routes/home/HomeRoute";
+import { HomeDeals } from "../../../src/routes/home/HomeDeals";
 
 const {
   preloadRouteQueryMock,
@@ -273,6 +274,31 @@ test("home keeps the optional deals loading shell stable through hydration and c
     container.remove();
     consoleError.mockRestore();
   }
+});
+
+test("HomeDeals does not reload when an equivalent slug array is rerendered", async () => {
+  const view = render(<HomeDeals hasViewer={false} selectedSlugs={["model-1", "model-2"]} />);
+
+  await waitFor(() => expect(loadDealsQueryMock).toHaveBeenCalledTimes(1));
+
+  view.rerender(<HomeDeals hasViewer={false} selectedSlugs={["model-1", "model-2"]} />);
+
+  await act(() => Promise.resolve());
+  expect(loadDealsQueryMock).toHaveBeenCalledTimes(1);
+});
+
+test("HomeDeals reloads once when normalized slug values change", async () => {
+  const view = render(<HomeDeals hasViewer={false} selectedSlugs={["model-1"]} />);
+
+  await waitFor(() => expect(loadDealsQueryMock).toHaveBeenCalledTimes(1));
+
+  view.rerender(<HomeDeals hasViewer={false} selectedSlugs={["model-1", "model-2"]} />);
+
+  await waitFor(() => expect(loadDealsQueryMock).toHaveBeenCalledTimes(2));
+  expect(loadDealsQueryMock).toHaveBeenLastCalledWith(
+    { first: 6, selectedSlugs: ["model-1", "model-2"] },
+    { fetchPolicy: "network-only" },
+  );
 });
 
 test("home keeps the workspace available while the client deals query fails", async () => {

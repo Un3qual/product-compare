@@ -8,7 +8,7 @@ import {
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
-import type { SavedComparisonOperationsCreateSavedComparisonSetMutation } from "$generated/SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql";
+import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
   CompareRouteQuery,
   CompareRouteQuery$data,
@@ -39,7 +39,6 @@ import {
 import { CompareProductList, CompareProductSummaryList } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
 import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
-import { createSavedComparisonSetMutation } from "./SavedComparisonOperations";
 import {
   buildComparePathAfterRemovingSlugIndex,
   buildComparePathFromSlugs,
@@ -136,6 +135,21 @@ const compareRouteQuery = graphql`
   }
 `;
 
+const createSavedComparisonSetMutation = graphql`
+  mutation CompareRouteCreateSavedComparisonSetMutation($input: CreateSavedComparisonSetInput!) {
+    createSavedComparisonSet(input: $input) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
+
 const styles = create({
   tabList: {
     borderBlockEndColor: tokens.borderQuiet,
@@ -222,7 +236,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<SavedComparisonOperationsCreateSavedComparisonSetMutation>(
+    useMutation<CompareRouteCreateSavedComparisonSetMutation>(
       createSavedComparisonSetMutation,
     );
 

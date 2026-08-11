@@ -33,23 +33,23 @@ test("buildDecisionSummaryMetricRows returns exact metric labels and unavailable
   });
 
   expect(rows).toEqual([
-    metricRow("relative-loaded-price", "Relative loaded price", [
+    metricRow("relative-loaded-price", "Compared price", [
       ["first", "Not comparable"],
       ["second", "Not comparable"],
     ]),
-    metricRow("best-price", "Best current price", [
+    metricRow("best-price", "Lowest current price", [
       ["first", "199.99 USD at Value Mart"],
-      ["second", "Offer context unavailable"],
+      ["second", "Offer details unavailable"],
     ]),
-    metricRow("offer-count", "Active offer count", [
-      ["first", "3 loaded; More available"],
+    metricRow("offer-count", "Offers found", [
+      ["first", "3 shown; More available"],
       ["second", "Unavailable"],
     ]),
-    metricRow("coupon-signal", "Coupon signal", [
+    metricRow("coupon-signal", "Coupon availability", [
       ["first", "More coupons available"],
       ["second", "Unavailable"],
     ]),
-    metricRow("price-recency", "Price recency", [
+    metricRow("price-recency", "Price last checked", [
       ["first", "2026-06-29"],
       ["second", "Unavailable"],
     ]),
@@ -64,9 +64,9 @@ test("buildDecisionSummaryMetricRows compares decimal and exponent prices exactl
   });
 
   expect(relativePriceCells).toEqual([
-    "Tied for lowest loaded price",
-    "Tied for lowest loaded price",
-    "Above lowest loaded price",
+    "Tied for lowest shown price",
+    "Tied for lowest shown price",
+    "Above lowest shown price",
   ]);
 });
 
@@ -90,8 +90,8 @@ test("buildDecisionSummaryMetricRows compares safe prices around malformed and m
   });
 
   expect(relativePriceCells).toEqual([
-    "Lowest loaded price",
-    "Above lowest loaded price",
+    "Lowest shown price",
+    "Above lowest shown price",
     "Not comparable",
     "Not comparable",
     "Not comparable",
@@ -110,10 +110,10 @@ test.each([
 
   expect(valuesByKey).toEqual({
     "relative-loaded-price": "Not comparable",
-    "best-price": "No current price loaded",
-    "offer-count": "0 loaded",
-    "coupon-signal": "No coupons loaded",
-    "price-recency": "No price observations loaded",
+    "best-price": "No current price available",
+    "offer-count": "0 shown",
+    "coupon-signal": "No coupons found",
+    "price-recency": "No price check available",
   });
 });
 

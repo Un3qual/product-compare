@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<c5b728c196b623e6c066c959a7b60576>>
+ * @generated SignedSource<<c8b8090995617d0049d104309523f004>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,11 +9,15 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type SavedComparisonOperationsDeleteSavedComparisonSetMutation$variables = {
-  savedComparisonSetId: string;
+export type CreateSavedComparisonSetInput = {
+  name: string;
+  productIds: ReadonlyArray<string>;
 };
-export type SavedComparisonOperationsDeleteSavedComparisonSetMutation$data = {
-  readonly deleteSavedComparisonSet: {
+export type CompareRouteCreateSavedComparisonSetMutation$variables = {
+  input: CreateSavedComparisonSetInput;
+};
+export type CompareRouteCreateSavedComparisonSetMutation$data = {
+  readonly createSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
       readonly field: string | null | undefined;
@@ -24,9 +28,9 @@ export type SavedComparisonOperationsDeleteSavedComparisonSetMutation$data = {
     } | null | undefined;
   };
 };
-export type SavedComparisonOperationsDeleteSavedComparisonSetMutation = {
-  response: SavedComparisonOperationsDeleteSavedComparisonSetMutation$data;
-  variables: SavedComparisonOperationsDeleteSavedComparisonSetMutation$variables;
+export type CompareRouteCreateSavedComparisonSetMutation = {
+  response: CompareRouteCreateSavedComparisonSetMutation$data;
+  variables: CompareRouteCreateSavedComparisonSetMutation$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -34,7 +38,7 @@ var v0 = [
   {
     "defaultValue": null,
     "kind": "LocalArgument",
-    "name": "savedComparisonSetId"
+    "name": "input"
   }
 ],
 v1 = [
@@ -43,13 +47,13 @@ v1 = [
     "args": [
       {
         "kind": "Variable",
-        "name": "savedComparisonSetId",
-        "variableName": "savedComparisonSetId"
+        "name": "input",
+        "variableName": "input"
       }
     ],
     "concreteType": "SavedComparisonSetPayload",
     "kind": "LinkedField",
-    "name": "deleteSavedComparisonSet",
+    "name": "createSavedComparisonSet",
     "plural": false,
     "selections": [
       {
@@ -111,7 +115,7 @@ return {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Fragment",
     "metadata": null,
-    "name": "SavedComparisonOperationsDeleteSavedComparisonSetMutation",
+    "name": "CompareRouteCreateSavedComparisonSetMutation",
     "selections": (v1/*: any*/),
     "type": "RootMutationType",
     "abstractKey": null
@@ -120,20 +124,20 @@ return {
   "operation": {
     "argumentDefinitions": (v0/*: any*/),
     "kind": "Operation",
-    "name": "SavedComparisonOperationsDeleteSavedComparisonSetMutation",
+    "name": "CompareRouteCreateSavedComparisonSetMutation",
     "selections": (v1/*: any*/)
   },
   "params": {
-    "cacheID": "eac21b7dcb6749b97c7fd7fd9ff683cf",
+    "cacheID": "9186b19ed6208d6b6b59f34ad1d1c492",
     "id": null,
     "metadata": {},
-    "name": "SavedComparisonOperationsDeleteSavedComparisonSetMutation",
+    "name": "CompareRouteCreateSavedComparisonSetMutation",
     "operationKind": "mutation",
-    "text": "mutation SavedComparisonOperationsDeleteSavedComparisonSetMutation(\n  $savedComparisonSetId: ID!\n) {\n  deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
+    "text": "mutation CompareRouteCreateSavedComparisonSetMutation(\n  $input: CreateSavedComparisonSetInput!\n) {\n  createSavedComparisonSet(input: $input) {\n    savedComparisonSet {\n      id\n    }\n    errors {\n      code\n      field\n      message\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "9ccc02ccf89c5af9d03dcdcad727897f";
+(node as any).hash = "a13f1b1f64a9e1d9f4a1ef4f4e334f0d";
 
 export default node;

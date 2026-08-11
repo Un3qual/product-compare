@@ -113,7 +113,7 @@ test.each([
 });
 
 test("comparison snapshot state helpers preserve fallback labels and immutable ids", () => {
-  expect(comparisonSnapshotLabel(snapshot("untitled", null))).toBe("Open public snapshot");
+  expect(comparisonSnapshotLabel(snapshot("untitled", null))).toBe("Open public comparison");
   expect(comparisonSnapshotLabel(snapshot("named", "Camera shortlist"))).toBe("Camera shortlist");
 
   const ids = new Set(["keep", "remove"]);
@@ -295,7 +295,8 @@ test("publishComparisonSnapshotState prepends a deduplicated snapshot, clears it
   expect(next).toEqual({
     published: [published, snapshot("older", "Older")],
     revokedSnapshotIds: new Set(["other-revoked"]),
-    message: "Public snapshot published. This link will keep the captured facts unchanged.",
+    message:
+      "Public comparison link published. Its product details and prices will remain unchanged.",
   });
   expect(next.published).not.toBe(state.published);
   expect(next.revokedSnapshotIds).not.toBe(state.revokedSnapshotIds);
@@ -319,7 +320,7 @@ test("revokeComparisonSnapshotState removes a published snapshot, adds its tombs
   expect(next).toEqual({
     published: [snapshot("other", "Other")],
     revokedSnapshotIds: new Set(["already-revoked", "snapshot-1"]),
-    message: "Public snapshot revoked. The old link now returns not found.",
+    message: "Public comparison link revoked. The old link now returns not found.",
   });
   expect(next.published).not.toBe(state.published);
   expect(next.revokedSnapshotIds).not.toBe(state.revokedSnapshotIds);

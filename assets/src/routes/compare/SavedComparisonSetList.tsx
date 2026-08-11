@@ -1,7 +1,15 @@
-import type { ReactElement, ReactNode } from "react";
+import type { ReactElement } from "react";
+import { useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { graphql, useFragment, useMutation } from "react-relay";
+import type { SavedComparisonSetListDeleteSavedComparisonSetMutation } from "$generated/SavedComparisonSetListDeleteSavedComparisonSetMutation.graphql";
+import type {
+  SavedComparisonSetList_savedSets$data,
+  SavedComparisonSetList_savedSets$key,
+} from "$generated/SavedComparisonSetList_savedSets.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
@@ -10,30 +18,54 @@ import { Button } from "$ui/primitives/Button";
 import { Select } from "$ui/primitives/Select";
 import { TextField } from "$ui/primitives/TextField";
 import { tokens } from "$ui/theme/tokens.stylex";
-import type { SavedComparisonSetSummary } from "./saved-data";
+import { addSetValue, removeSetValue } from "../immutable-collection-state";
+import { commitRouteMutation } from "../relay-mutations";
+import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
 import {
+  buildSavedComparisonReopenPath,
+  type SavedComparisonsPagination,
+} from "./saved-comparisons-route-data";
+import {
+  buildSavedComparisonsViewState,
   savedComparisonSortModeFromValue,
+  type SavedComparisonSetSummary,
   type SavedComparisonSetViewState,
-  type SavedComparisonSortMode
+  type SavedComparisonSortMode,
 } from "./saved-view-state";
 
-export type SavedComparisonSetPagination = {
-  firstHref: string | null;
-  nextHref: string | null;
-};
+const savedComparisonSetsFragment = graphql`
+  fragment SavedComparisonSetList_savedSets on SavedComparisonSetConnection {
+    edges {
+      node {
+        id
+        name
+        items {
+          position
+          product {
+            name
+            slug
+          }
+        }
+      }
+    }
+  }
+`;
 
-export type SavedComparisonSetListActions = {
-  onDelete: (savedComparisonSetId: string) => void;
-  onOpenComparison: (savedSet: SavedComparisonSetSummary) => string;
-  pendingDeleteIds: ReadonlySet<string>;
-};
-
-export type SavedComparisonSetListControls = {
-  filterText: string;
-  onFilterTextChange: (filterText: string) => void;
-  onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
-  sortMode: SavedComparisonSortMode;
-};
+export const deleteSavedComparisonSetMutation = graphql`
+  mutation SavedComparisonSetListDeleteSavedComparisonSetMutation($savedComparisonSetId: ID!) {
+    deleteSavedComparisonSet(savedComparisonSetId: $savedComparisonSetId) {
+      savedComparisonSet {
+        id
+      }
+      errors {
+        code
+        field
+        message
+      }
+    }
+  }
+`;
 
 const styles = create({
   actions: {
@@ -43,13 +75,9 @@ const styles = create({
     flexWrap: "wrap",
     gap: "0.65rem",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
-  controlNote: {
-    color: tokens.textSecondary,
-    gridColumn: "1 / -1",
-    margin: 0
-  },
+  controlNote: { color: tokens.textSecondary, gridColumn: "1 / -1", margin: 0 },
   controls: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
@@ -57,82 +85,146 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1rem"
+    padding: "1rem",
   },
-  metadata: {
-    color: tokens.textSecondary,
-    margin: 0
-  },
-  savedSet: {
-    display: "grid",
-    gap: "0.55rem"
-  },
-  title: {
-    fontSize: "1.25rem",
-    letterSpacing: "-0.02em",
-    margin: 0
-  }
+  metadata: { color: tokens.textSecondary, margin: 0 },
+  savedSet: { display: "grid", gap: "0.55rem" },
+  title: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
 });
 
 export function SavedComparisonSetList({
-  actions,
-  children,
-  controls,
+  fragmentRef,
   pagination,
-  savedSets
 }: {
-  actions: SavedComparisonSetListActions;
-  children?: ReactNode;
-  controls: SavedComparisonSetListControls;
-  pagination: SavedComparisonSetPagination;
-  savedSets: readonly SavedComparisonSetViewState[];
+  fragmentRef: SavedComparisonSetList_savedSets$key;
+  pagination: SavedComparisonsPagination;
 }): ReactElement {
-  return (
-    <WorkspaceLayout
-      context={
-        <ContextRail
-          description="Filter and sort the visible page while your saved records remain the primary focus."
-          label="Saved comparison controls"
-        >
-          <SavedComparisonControls
-            filterText={controls.filterText}
-            onFilterTextChange={controls.onFilterTextChange}
-            onSortModeChange={controls.onSortModeChange}
-            sortMode={controls.sortMode}
-          />
-        </ContextRail>
-      }
-      label="Saved comparison records"
-    >
-      {children}
-      {savedSets.length > 0 ? (
-        <DataList label="Saved comparison sets">
-          {savedSets.map((savedSet) => (
-            <DataListItem key={savedSet.id}>
-              <SavedComparisonSetItem
-                onDelete={actions.onDelete}
-                onOpenComparison={actions.onOpenComparison}
-                pendingDeleteIds={actions.pendingDeleteIds}
-                savedSet={savedSet}
-              />
-            </DataListItem>
-          ))}
-        </DataList>
-      ) : null}
-      <Pagination
-        firstHref={pagination.firstHref}
-        label="Saved comparison pages"
-        nextHref={pagination.nextHref}
-      />
-    </WorkspaceLayout>
+  const connection = useFragment(savedComparisonSetsFragment, fragmentRef);
+  const savedSets = summarizeSavedComparisonSets(connection);
+  const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
+  const [pendingDeleteIds, setPendingDeleteIds] = useState<ReadonlySet<string>>(new Set());
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [filterText, setFilterText] = useState("");
+  const [sortMode, setSortMode] = useState<SavedComparisonSortMode>("current");
+  const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
+  const [commitDeleteSavedComparisonSet] =
+    useMutation<SavedComparisonSetListDeleteSavedComparisonSetMutation>(
+      deleteSavedComparisonSetMutation,
+    );
+
+  const finishDelete = (savedComparisonSetId: string) => {
+    inFlightDeleteIdsRef.current.delete(savedComparisonSetId);
+    setPendingDeleteIds((current) => removeSetValue(current, savedComparisonSetId));
+  };
+
+  const handleDelete = (savedComparisonSetId: string) => {
+    if (inFlightDeleteIdsRef.current.has(savedComparisonSetId)) return;
+
+    inFlightDeleteIdsRef.current.add(savedComparisonSetId);
+    setPendingDeleteIds((current) => addSetValue(current, savedComparisonSetId));
+    setDeleteError(null);
+
+    commitRouteMutation(
+      commitDeleteSavedComparisonSet,
+      {
+        variables: { savedComparisonSetId },
+        onCompleted: (response, graphQLErrors) => {
+          const outcome = resolveDeleteSavedComparisonSetMutationOutcome(
+            response.deleteSavedComparisonSet,
+            graphQLErrors,
+          );
+          if (outcome.deletedSavedComparisonSetId) {
+            setDeletedSavedSetIds((current) =>
+              addSetValue(current, outcome.deletedSavedComparisonSetId),
+            );
+          } else {
+            setDeleteError(outcome.error);
+          }
+          finishDelete(savedComparisonSetId);
+        },
+        onError: () => {
+          setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          finishDelete(savedComparisonSetId);
+        },
+      },
+      () => {
+        setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        finishDelete(savedComparisonSetId);
+      },
+    );
+  };
+
+  const viewState = buildSavedComparisonsViewState(
+    { status: savedSets.length === 0 ? "empty" : "ready", savedSets },
+    deletedSavedSetIds,
+    filterText,
+    sortMode,
   );
+  const showReturnActions = viewState.savedSets.length === 0;
+
+  return (
+    <>
+      <p aria-label="Saved comparisons status" aria-live="polite" role="status">
+        {viewState.statusMessage}
+      </p>
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Filter and sort the visible page while your saved records remain the primary focus."
+            label="Saved comparison controls"
+          >
+            <SavedComparisonControls
+              filterText={filterText}
+              onFilterTextChange={setFilterText}
+              onSortModeChange={setSortMode}
+              sortMode={sortMode}
+            />
+          </ContextRail>
+        }
+        label="Saved comparison records"
+      >
+        {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
+        {showReturnActions ? <SavedComparisonReturnActions /> : null}
+        {viewState.savedSets.length > 0 ? (
+          <DataList label="Saved comparison sets">
+            {viewState.savedSets.map((savedSet) => (
+              <DataListItem key={savedSet.id}>
+                <SavedComparisonSetItem
+                  onDelete={handleDelete}
+                  pendingDeleteIds={pendingDeleteIds}
+                  savedSet={savedSet}
+                />
+              </DataListItem>
+            ))}
+          </DataList>
+        ) : null}
+        <Pagination
+          firstHref={pagination.firstHref}
+          label="Saved comparison pages"
+          nextHref={pagination.nextHref}
+        />
+      </WorkspaceLayout>
+    </>
+  );
+}
+
+function summarizeSavedComparisonSets(
+  connection: SavedComparisonSetList_savedSets$data,
+): SavedComparisonSetSummary[] {
+  return connection.edges.map(({ node }) => ({
+    id: node.id,
+    name: node.name,
+    products: [...node.items]
+      .sort((left, right) => left.position - right.position)
+      .map(({ product }) => ({ name: product.name, slug: product.slug })),
+  }));
 }
 
 function SavedComparisonControls({
   filterText,
   onFilterTextChange,
   onSortModeChange,
-  sortMode
+  sortMode,
 }: {
   filterText: string;
   onFilterTextChange: (filterText: string) => void;
@@ -152,14 +244,12 @@ function SavedComparisonControls({
       <label>
         Sort saved comparisons
         <Select
-          onValueChange={(value) =>
-            onSortModeChange(savedComparisonSortModeFromValue(value))
-          }
+          onValueChange={(value) => onSortModeChange(savedComparisonSortModeFromValue(value))}
           options={[
             { label: "Current order", value: "current" },
             { label: "Name A-Z", value: "name-asc" },
             { label: "Product count high-to-low", value: "product-count-desc" },
-            { label: "Product count low-to-high", value: "product-count-asc" }
+            { label: "Product count low-to-high", value: "product-count-asc" },
           ]}
           value={sortMode}
         />
@@ -171,16 +261,15 @@ function SavedComparisonControls({
 
 function SavedComparisonSetItem({
   onDelete,
-  onOpenComparison,
   pendingDeleteIds,
-  savedSet
+  savedSet,
 }: {
   onDelete: (savedComparisonSetId: string) => void;
-  onOpenComparison: (savedSet: SavedComparisonSetSummary) => string;
   pendingDeleteIds: ReadonlySet<string>;
   savedSet: SavedComparisonSetViewState;
 }) {
   const deletePending = pendingDeleteIds.has(savedSet.id);
+  const comparisonPath = buildSavedComparisonReopenPath(savedSet.products.map(({ slug }) => slug));
 
   return (
     <article {...props(styles.savedSet)}>
@@ -190,7 +279,7 @@ function SavedComparisonSetItem({
       <fieldset {...props(styles.actions)}>
         <legend>Actions for {savedSet.name}</legend>
         <Button asChild variant="soft">
-          <Link to={onOpenComparison(savedSet)}>Open comparison</Link>
+          <Link to={comparisonPath}>Open comparison</Link>
         </Button>
         <DestructiveActionDialog
           confirmLabel="Delete comparison"
@@ -206,5 +295,14 @@ function SavedComparisonSetItem({
         />
       </fieldset>
     </article>
+  );
+}
+
+function SavedComparisonReturnActions() {
+  return (
+    <nav aria-label="Saved comparison return paths">
+      <Link to="/products">Browse products</Link>{" "}
+      <Link to="/compare">Start a new comparison</Link>
+    </nav>
   );
 }

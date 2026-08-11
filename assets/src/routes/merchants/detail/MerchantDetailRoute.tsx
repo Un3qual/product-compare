@@ -125,7 +125,7 @@ function ReadyMerchantDetail({
       title={merchant.name}
       description={
         <>
-          Current catalog and offer evidence for {merchant.domain}.{" "}
+          Current products and offer details for {merchant.domain}.{" "}
           {websiteHref ? (
             <a href={websiteHref} target="_blank" rel="noopener noreferrer">
               Visit merchant website

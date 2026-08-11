@@ -10,7 +10,7 @@ test("derives the exact category copy and encoded catalog browse path", () => {
 
   expect(data.title).toBe("Compare Cameras & Lenses");
   expect(data.qualificationCopy).toBe(
-    "12 products currently meet this category’s specification, content, and offer-quality threshold.",
+    "12 products currently have the specifications, product details, and current offers needed for comparison.",
   );
   expect(data.browsePath).toBe(
     "/products?typeTaxonId=taxon%20%2F%20cameras%3F&includeTypeDescendants=1",
