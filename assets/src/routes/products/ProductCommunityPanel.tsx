@@ -10,22 +10,22 @@ import {
 } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
-import type { ProductCommunityOperationsAnswerProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAnswerProductQuestionMutation.graphql";
-import type { ProductCommunityOperationsAskProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAskProductQuestionMutation.graphql";
-import type { ProductCommunityOperationsQuery } from "../../__generated__/ProductCommunityOperationsQuery.graphql";
+import type { ProductCommunityOperationsAnswerProductQuestionMutation } from "$generated/ProductCommunityOperationsAnswerProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsAskProductQuestionMutation } from "$generated/ProductCommunityOperationsAskProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsQuery } from "$generated/ProductCommunityOperationsQuery.graphql";
 import type { ProductCommunityPanelQuestionAnswersQuery } from "$generated/ProductCommunityPanelQuestionAnswersQuery.graphql";
-import type { ProductCommunityOperationsSubmitProductReviewMutation } from "../../__generated__/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { Button } from "../../ui/primitives/Button";
+import type { ProductCommunityOperationsSubmitProductReviewMutation } from "$generated/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { Button } from "$ui/primitives/Button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { Label } from "../../ui/primitives/Label";
-import { Select } from "../../ui/primitives/Select";
-import { TextArea } from "../../ui/primitives/TextArea";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { Label } from "$ui/primitives/Label";
+import { Select } from "$ui/primitives/Select";
+import { TextArea } from "$ui/primitives/TextArea";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
@@ -59,11 +59,7 @@ const productQuestionAnswersQuery = graphql`
         edges {
           node {
             id
-            body
-            authorLabel
-            moderationStatus
-            viewerCanEdit
-            viewerCanRemove
+            ...ProductCommunityItems_answer
           }
         }
         pageInfo {

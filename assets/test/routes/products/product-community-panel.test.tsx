@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { useFragment, useLazyLoadQuery, useMutation } from "react-relay";
 import {
   answerProductQuestionMutation,
   askProductQuestionMutation,
@@ -20,6 +20,7 @@ const {
   updateAnswerMock,
   updateQuestionMock,
   updateReviewMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useMutationMock,
   uuidMock,
@@ -31,6 +32,7 @@ const {
   updateAnswerMock: vi.fn(),
   updateQuestionMock: vi.fn(),
   updateReviewMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
   uuidMock: vi.fn(),
@@ -38,9 +40,15 @@ const {
 
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, useLazyLoadQuery: useLazyLoadQueryMock, useMutation: useMutationMock };
+  return {
+    ...actual,
+    useFragment: useFragmentMock,
+    useLazyLoadQuery: useLazyLoadQueryMock,
+    useMutation: useMutationMock
+  };
 });
 
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 
@@ -93,6 +101,8 @@ beforeEach(() => {
     .mockReturnValueOnce("018f0f45-31f3-7af0-8bb9-2e606355f102")
     .mockReturnValue("018f0f45-31f3-7af0-8bb9-2e606355f103");
   vi.spyOn(globalThis.crypto, "randomUUID").mockImplementation(uuidMock);
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({

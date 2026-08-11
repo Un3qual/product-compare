@@ -19,14 +19,7 @@ export const productCommunityOperationsQuery = graphql`
         edges {
           node {
             id
-            rating
-            title
-            body
-            verifiedPurchase
-            authorLabel
-            moderationStatus
-            viewerCanEdit
-            viewerCanRemove
+            ...ProductCommunityItems_review
           }
         }
         pageInfo {
@@ -38,22 +31,13 @@ export const productCommunityOperationsQuery = graphql`
         edges {
           node {
             id
-            title
-            body
-            authorLabel
-            moderationStatus
-            viewerCanEdit
-            viewerCanRemove
+            ...ProductCommunityItems_question
             acceptedAnswerId
             answers(first: $answerFirst) {
               edges {
                 node {
                   id
-                  body
-                  authorLabel
-                  moderationStatus
-                  viewerCanEdit
-                  viewerCanRemove
+                  ...ProductCommunityItems_answer
                 }
               }
               pageInfo {
@@ -71,31 +55,15 @@ export const productCommunityOperationsQuery = graphql`
       viewerCommunitySubmissions {
         reviews {
           id
-          rating
-          title
-          body
-          verifiedPurchase
-          authorLabel
-          moderationStatus
-          viewerCanEdit
-          viewerCanRemove
+          ...ProductCommunityItems_review
         }
         questions {
           id
-          title
-          body
-          authorLabel
-          moderationStatus
-          viewerCanEdit
-          viewerCanRemove
+          ...ProductCommunityItems_question
         }
         answers {
           id
-          body
-          authorLabel
-          moderationStatus
-          viewerCanEdit
-          viewerCanRemove
+          ...ProductCommunityItems_answer
         }
       }
     }
