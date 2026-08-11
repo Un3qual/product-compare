@@ -267,20 +267,23 @@ function NavigationMenu({
       variant={isAuthDestination(to) ? "solid" : "ghost"}
     />
   ));
+  const menuTrigger = (
+    <Popover.Trigger>
+      <Button
+        aria-label={`${label} menu`}
+        variant="soft"
+        {...props(styles.navigationMenuTrigger)}
+      >
+        <span>{label}</span>
+        <span aria-hidden>⌄</span>
+      </Button>
+    </Popover.Trigger>
+  );
 
   return (
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
       <Popover.Root onOpenChange={onOpenChange} open={open}>
-        <Popover.Trigger>
-          <Button
-            aria-label={`${label} menu`}
-            variant="soft"
-            {...props(styles.navigationMenuTrigger)}
-          >
-            <span>{label}</span>
-            <span aria-hidden>⌄</span>
-          </Button>
-        </Popover.Trigger>
+        {menuTrigger}
         <Popover.Content aria-label={`${label} menu`} align="end" minWidth="12rem" size="1">
           <nav
             aria-label={`${label} navigation`}
