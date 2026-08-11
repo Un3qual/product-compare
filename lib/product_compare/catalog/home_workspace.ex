@@ -11,22 +11,21 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
 
   @max_selection 3
 
-  @spec candidates([term()], keyword()) :: %{
-          products: [Product.t()],
-          selected_products: [Product.t()]
-        }
-  def candidates(selected_slugs, opts) do
+  @spec product_candidates(keyword()) :: [Product.t()]
+  def product_candidates(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
-    slugs = normalized_slugs(selected_slugs)
+    offset = opts |> Keyword.get(:offset, 0) |> non_negative_offset()
+    limit = required_positive_limit(opts)
 
-    %{
-      products: eligible_products(now, limit),
-      selected_products: selected_products(slugs)
-    }
+    eligible_products(now, offset, limit)
   end
 
-  defp eligible_products(now, limit) do
+  @spec selected_products([term()]) :: [Product.t()]
+  def selected_products(selected_slugs) do
+    selected_slugs |> normalized_slugs() |> load_selected_products()
+  end
+
+  defp eligible_products(now, offset, limit) do
     latest_prices =
       from price in PricePoint,
         distinct: price.merchant_product_id,
@@ -56,13 +55,14 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
     |> join(:inner, [product: product], current in subquery(display_specification_product_ids),
       on: current.product_id == product.id
     )
+    |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
   end
 
-  defp selected_products([]), do: []
+  defp load_selected_products([]), do: []
 
-  defp selected_products(slugs) do
+  defp load_selected_products(slugs) do
     products =
       Product
       |> where([product], product.slug in ^slugs)
@@ -80,6 +80,16 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   end
 
   defp normalized_slugs(_), do: []
-  defp bounded_limit(limit, _default) when is_integer(limit) and limit > 0, do: min(limit, 6)
-  defp bounded_limit(_limit, default), do: default
+  defp non_negative_offset(offset) when is_integer(offset) and offset >= 0, do: offset
+  defp non_negative_offset(_offset), do: 0
+
+  defp required_positive_limit(opts) do
+    case Keyword.fetch(opts, :limit) do
+      {:ok, limit} when is_integer(limit) and limit > 0 ->
+        limit
+
+      _missing_or_invalid ->
+        raise ArgumentError, "home workspace limit must be a positive integer"
+    end
+  end
 end

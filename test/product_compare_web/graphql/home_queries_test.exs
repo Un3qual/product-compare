@@ -25,7 +25,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                  "selectedProducts" => selected_products,
                  "categories" => [
                    %{
-                     "taxonId" => category_id,
+                     "id" => category_id,
                      "name" => "Workspace Category",
                      "slug" => "workspace-category",
                      "qualifiedProductCount" => 3
@@ -219,11 +219,11 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     query = """
     query CanonicalHomeProduct($selectedSlugs: [String!]!) {
       homeWorkspace(selectedSlugs: $selectedSlugs) {
-        products { product { id __typename name slug } }
+        products(first: 6) { edges { node { id __typename name slug } } }
         selectedProducts { id __typename name slug }
       }
       homeDeals(selectedSlugs: $selectedSlugs) {
-        new { product { id __typename name slug } }
+        new(first: 6) { edges { node { id __typename name slug } } }
       }
     }
     """
@@ -395,7 +395,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            ]
   end
 
-  test "homeDeals keeps only the six highest-ranked viewer candidates", %{conn: conn} do
+  test "homeDeals paginates all viewer candidates with truthful cursors", %{conn: conn} do
     owner = AccountsFixtures.user_fixture()
     category = category_fixture("viewer-boundary-category")
     operator = AccountsFixtures.operator_fixture()
@@ -422,17 +422,77 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                })
     end)
 
-    assert %{"data" => %{"homeDeals" => %{"forYou" => for_you}}} =
-             conn
-             |> log_in_user(owner)
-             |> put_req_header_same_origin()
-             |> graphql(deals_query(), %{"selectedSlugs" => []})
+    query = """
+    query ViewerDealsPage($selectedSlugs: [String!]!, $first: Int!, $after: String) {
+      homeDeals(selectedSlugs: $selectedSlugs) {
+        forYou(first: $first, after: $after) {
+          edges { node { id } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }
+    }
+    """
 
-    assert Enum.map(for_you, &get_in(&1, ["product", "id"])) ==
-             candidates
-             |> Enum.reverse()
-             |> Enum.take(6)
-             |> Enum.map(&relay_id(:product, &1.product.id))
+    authenticated_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "forYou" => %{
+                   "edges" => first_edges,
+                   "pageInfo" => %{"hasNextPage" => true, "endCursor" => cursor}
+                 }
+               }
+             }
+           } =
+             raw_graphql(authenticated_conn, query, %{
+               "selectedSlugs" => [],
+               "first" => 6,
+               "after" => nil
+             })
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "forYou" => %{
+                   "edges" => second_edges,
+                   "pageInfo" => %{"hasNextPage" => false}
+                 }
+               }
+             }
+           } =
+             raw_graphql(authenticated_conn, query, %{
+               "selectedSlugs" => [],
+               "first" => 6,
+               "after" => cursor
+             })
+
+    expected_ids = candidates |> Enum.reverse() |> Enum.map(&relay_id(:product, &1.product.id))
+    assert Enum.map(first_edges, &get_in(&1, ["node", "id"])) == Enum.take(expected_ids, 6)
+    assert Enum.map(second_edges, &get_in(&1, ["node", "id"])) == Enum.drop(expected_ids, 6)
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "forYou" => %{
+                   "edges" => [],
+                   "pageInfo" => %{"hasNextPage" => true}
+                 }
+               }
+             }
+           } =
+             raw_graphql(authenticated_conn, query, %{
+               "selectedSlugs" => [],
+               "first" => 0,
+               "after" => nil
+             })
+
+    assert %{"data" => nil, "errors" => [%{"message" => "invalid cursor"} | _]} =
+             raw_graphql(authenticated_conn, query, %{
+               "selectedSlugs" => [],
+               "first" => 6,
+               "after" => "not-a-cursor"
+             })
   end
 
   test "homeDeals New identity belongs to the returned new merchant product", %{conn: conn} do
@@ -601,9 +661,16 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert authenticated_histogram["saved_comparison_sets"] > 0
     assert authenticated_histogram["saved_comparison_items"] > 0
 
-    assert {:ok, %{data: %{"__type" => %{"fields" => fields}}}} =
+    assert {:ok,
+            %{data: %{"deal" => nil, "workspaceProduct" => nil, "edge" => %{"fields" => fields}}}} =
              Absinthe.run(
-               "{ __type(name: \"HomeDeal\") { fields { name type { kind name ofType { kind name } } } } }",
+               """
+               {
+                 deal: __type(name: "HomeDeal") { name }
+                 workspaceProduct: __type(name: "HomeWorkspaceProduct") { name }
+                 edge: __type(name: "HomeDealsEdge") { fields { name } }
+               }
+               """,
                ProductCompareWeb.Schema
              )
 
@@ -743,15 +810,54 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
   end
 
   defp graphql(conn, query, variables) do
+    conn |> raw_graphql(query, variables) |> normalize_home_connections()
+  end
+
+  defp raw_graphql(conn, query, variables) do
     conn |> post("/api/graphql", %{query: query, variables: variables}) |> json_response(200)
+  end
+
+  defp normalize_home_connections(%{"data" => data} = response) when is_map(data) do
+    data =
+      data
+      |> Map.update("homeWorkspace", nil, fn
+        nil ->
+          nil
+
+        workspace ->
+          workspace
+          |> Map.update("products", [], &connection_rows(&1, "product"))
+          |> Map.update("categories", [], &connection_nodes/1)
+      end)
+      |> Map.update("homeDeals", nil, fn
+        nil ->
+          nil
+
+        deals ->
+          Enum.reduce(~w(new trending forYou), deals, fn field, normalized ->
+            Map.update(normalized, field, [], &connection_rows(&1, "product"))
+          end)
+      end)
+
+    Map.put(response, "data", data)
+  end
+
+  defp normalize_home_connections(response), do: response
+
+  defp connection_nodes(%{"edges" => edges}), do: Enum.map(edges, & &1["node"])
+
+  defp connection_rows(%{"edges" => edges}, node_key) do
+    Enum.map(edges, fn edge ->
+      edge |> Map.put(node_key, edge["node"]) |> Map.drop(["cursor", "node"])
+    end)
   end
 
   defp workspace_query do
     """
     query HomeWorkspace($selectedSlugs: [String!]!) {
       homeWorkspace(selectedSlugs: $selectedSlugs) {
-        categories { taxonId name slug qualifiedProductCount }
-        products { product { id name slug } highlights { label value } offer { merchantProductId merchantName currency landedPrice activeOfferCount priceSignal observedAt } }
+        categories(first: 6) { edges { node { id name slug qualifiedProductCount } } }
+        products(first: 6) { edges { node { id name slug } highlights { label value } offer { merchantProductId merchantName currency landedPrice activeOfferCount priceSignal observedAt } } }
         selectedProducts { id name slug }
       }
     }
@@ -762,9 +868,9 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query HomeDeals($selectedSlugs: [String!]!) {
       homeDeals(selectedSlugs: $selectedSlugs) {
-        new { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
-        trending { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
-        forYou { product { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } }
+        new(first: 6) { edges { node { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } } }
+        trending(first: 6) { edges { node { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } } }
+        forYou(first: 6) { edges { node { id name slug } offer { merchantProductId merchantName currency landedPrice priceSignal } reasons { code watchTarget } } }
       }
     }
     """
@@ -774,14 +880,14 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query Home($selectedSlugs: [String!]!) {
       homeWorkspace(selectedSlugs: $selectedSlugs) {
-        products { product { id } highlights { label value } offer { merchantProductId merchantName landedPrice activeOfferCount priceSignal observedAt } }
+        products(first: 6) { edges { node { id } highlights { label value } offer { merchantProductId merchantName landedPrice activeOfferCount priceSignal observedAt } } }
         selectedProducts { id }
-        categories { taxonId }
+        categories(first: 6) { edges { node { id } } }
       }
       homeDeals(selectedSlugs: $selectedSlugs) {
-        new { product { id } reasons { code watchTarget } }
-        trending { product { id } reasons { code watchTarget } }
-        forYou { product { id } reasons { code watchTarget } }
+        new(first: 6) { edges { node { id } reasons { code watchTarget } } }
+        trending(first: 6) { edges { node { id } reasons { code watchTarget } } }
+        forYou(first: 6) { edges { node { id } reasons { code watchTarget } } }
       }
     }
     """

@@ -510,23 +510,31 @@ enum HomePriceSignalCode {
 }
 
 type HomeWorkspace {
-  products: [HomeWorkspaceProduct!]!
+  products(after: String, first: Int!): HomeWorkspaceProductsConnection!
   selectedProducts: [Product!]!
-  categories: [HomeCategoryShortcut!]!
+  categories(after: String, first: Int!): HomeCategoryShortcutsConnection!
 }
 
-type HomeWorkspaceProduct {
-  product: Product!
+type HomeWorkspaceProductsEdge {
+  node: Product!
+  cursor: String!
   highlights: [HomeSpecificationHighlight!]!
   offer: HomeOfferSummary!
 }
 
-type HomeCategoryShortcut {
-  taxonId: ID!
-  name: String!
-  slug: String!
-  description: String!
-  qualifiedProductCount: Int!
+type HomeWorkspaceProductsConnection {
+  pageInfo: PageInfo!
+  edges: [HomeWorkspaceProductsEdge!]!
+}
+
+type HomeCategoryShortcutsEdge {
+  node: SeoCategory!
+  cursor: String!
+}
+
+type HomeCategoryShortcutsConnection {
+  pageInfo: PageInfo!
+  edges: [HomeCategoryShortcutsEdge!]!
 }
 
 type HomeSpecificationHighlight {
@@ -545,15 +553,21 @@ type HomeOfferSummary {
 }
 
 type HomeDeals {
-  new: [HomeDeal!]!
-  trending: [HomeDeal!]!
-  forYou: [HomeDeal!]!
+  new(after: String, first: Int!): HomeDealsConnection!
+  trending(after: String, first: Int!): HomeDealsConnection!
+  forYou(after: String, first: Int!): HomeDealsConnection!
 }
 
-type HomeDeal {
-  product: Product!
+type HomeDealsEdge {
+  node: Product!
+  cursor: String!
   offer: HomeOfferSummary!
   reasons: [HomeDealReason!]!
+}
+
+type HomeDealsConnection {
+  pageInfo: PageInfo!
+  edges: [HomeDealsEdge!]!
 }
 
 type HomeDealReason {

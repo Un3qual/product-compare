@@ -47,7 +47,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       set: [inserted_at: DateTime.add(@now, -259_201, :second)]
     )
 
-    candidates = Pricing.home_new_deal_candidates(now: @now)
+    candidates = Pricing.home_new_deal_candidates(now: @now, limit: 6)
     candidates_by_product_id = Map.new(candidates, &{&1.product_id, &1})
 
     assert candidates_by_product_id[new_product.id].new_offer?
@@ -112,7 +112,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert Decimal.eq?(summary.median_30d, Decimal.new("105"))
   end
 
-  test "new deal candidates are bounded to the exact six best rows" do
+  test "new deal candidates support stable windows beyond the presentation page" do
     products =
       Enum.map(1..8, fn index ->
         product = SpecsFixtures.product_fixture(%{slug: "new-boundary-#{index}"})
@@ -123,8 +123,14 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     {candidates, queries} =
       capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 100) end)
 
-    assert [_, _, _, _, _, _] = candidates
-    assert Enum.map(candidates, & &1.product_id) == Enum.map(Enum.take(products, 6), & &1.id)
+    assert length(candidates) == 8
+    assert Enum.map(candidates, & &1.product_id) == Enum.map(products, & &1.id)
+
+    assert Enum.map(
+             Pricing.home_new_deal_candidates(now: @now, offset: 6, limit: 2),
+             & &1.product_id
+           ) == Enum.map(Enum.drop(products, 6), & &1.id)
+
     assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
   end
 
@@ -133,7 +139,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     offer(product, "new-without-median", "90", 0, true)
 
     {[_candidate], [query]} =
-      capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now) end)
+      capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 6) end)
 
     refute String.contains?(query, "percentile_cont")
   end
@@ -153,7 +159,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     {[_candidate], [query]} =
       capture_select_queries(fn ->
-        Pricing.home_viewer_deal_candidates(relevance_query, now: @now)
+        Pricing.home_viewer_deal_candidates(relevance_query, now: @now, limit: 6)
       end)
 
     assert Regex.scan(~r/"product_id" IN \(SELECT/, query) |> Enum.count_until(5) == 5, query

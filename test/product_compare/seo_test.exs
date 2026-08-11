@@ -215,7 +215,7 @@ defmodule ProductCompare.SeoTest do
     assert Enum.all?(products, &MapSet.member?(product_paths, "/products/#{&1.slug}"))
     assert MapSet.member?(merchant_paths, "/merchants/#{merchant.slug}")
     assert MapSet.member?(category_paths, "/categories/#{category.seo_slug}")
-    refute category.id in Enum.map(Seo.home_category_shortcuts(now: @now), & &1.id)
+    refute category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
   end
 
   test "batch category lookup preserves singular qualification with a fixed query budget" do
@@ -564,7 +564,7 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
-  test "home category shortcuts bound high-cardinality results in the database order" do
+  test "home category shortcuts support stable windows in database order" do
     operator = AccountsFixtures.operator_fixture()
     taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
 
@@ -587,8 +587,12 @@ defmodule ProductCompare.SeoTest do
     {shortcuts, queries} =
       capture_select_queries(fn -> Seo.home_category_shortcuts(now: @now, limit: 100) end)
 
-    assert [_, _, _, _, _, _] = shortcuts
-    assert Enum.map(shortcuts, & &1.id) == Enum.map(Enum.take(categories, 6), & &1.id)
+    assert length(shortcuts) == 8
+    assert Enum.map(shortcuts, & &1.id) == Enum.map(categories, & &1.id)
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, offset: 6, limit: 2), & &1.id) ==
+             Enum.map(Enum.drop(categories, 6), & &1.id)
+
     assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
   end
 

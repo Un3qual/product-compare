@@ -1,7 +1,9 @@
 defmodule ProductCompareWeb.Schema.Home.Types do
   use Absinthe.Schema.Notation
+  use Absinthe.Relay.Schema.Notation, :modern
 
   alias ProductCompareWeb.GraphQL.GlobalId
+  alias ProductCompareWeb.Resolvers.HomeResolver
 
   enum :home_deal_reason_code do
     value(:new_offer)
@@ -18,26 +20,45 @@ defmodule ProductCompareWeb.Schema.Home.Types do
   end
 
   object :home_workspace do
-    field :products, non_null(list_of(non_null(:home_workspace_product)))
-    field :selected_products, non_null(list_of(non_null(:product)))
-    field :categories, non_null(list_of(non_null(:home_category_shortcut)))
-  end
-
-  object :home_workspace_product do
-    field :product, non_null(:product)
-    field :highlights, non_null(list_of(non_null(:home_specification_highlight)))
-    field :offer, non_null(:home_offer_summary)
-  end
-
-  object :home_category_shortcut do
-    field :taxon_id, non_null(:id) do
-      resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.id) end)
+    connection field :products,
+                 node_type: :product,
+                 connection: :home_workspace_products,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&HomeResolver.workspace_products/3)
     end
 
-    field :name, non_null(:string)
-    field :slug, non_null(:string)
-    field :description, non_null(:string)
-    field :qualified_product_count, non_null(:integer)
+    field :selected_products, non_null(list_of(non_null(:product)))
+
+    connection field :categories,
+                 node_type: :seo_category,
+                 connection: :home_category_shortcuts,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&HomeResolver.workspace_categories/3)
+    end
+  end
+
+  connection :home_workspace_products,
+    node_type: :product,
+    non_null_edges: true,
+    non_null_edge: true do
+    edge do
+      field :node, non_null(:product)
+      field :cursor, non_null(:string)
+      field :highlights, non_null(list_of(non_null(:home_specification_highlight)))
+      field :offer, non_null(:home_offer_summary)
+    end
+  end
+
+  connection :home_category_shortcuts,
+    node_type: :seo_category,
+    non_null_edges: true,
+    non_null_edge: true do
+    edge do
+      field :node, non_null(:seo_category)
+      field :cursor, non_null(:string)
+    end
   end
 
   object :home_specification_highlight do
@@ -68,15 +89,41 @@ defmodule ProductCompareWeb.Schema.Home.Types do
   end
 
   object :home_deals do
-    field :new, non_null(list_of(non_null(:home_deal)))
-    field :trending, non_null(list_of(non_null(:home_deal)))
-    field :for_you, non_null(list_of(non_null(:home_deal)))
+    connection field :new,
+                 node_type: :product,
+                 connection: :home_deals,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&HomeResolver.new_deals/3)
+    end
+
+    connection field :trending,
+                 node_type: :product,
+                 connection: :home_deals,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&HomeResolver.trending_deals/3)
+    end
+
+    connection field :for_you,
+                 node_type: :product,
+                 connection: :home_deals,
+                 non_null_connection: true,
+                 paginate: :forward do
+      resolve(&HomeResolver.viewer_deals/3)
+    end
   end
 
-  object :home_deal do
-    field :product, non_null(:product)
-    field :offer, non_null(:home_offer_summary)
-    field :reasons, non_null(list_of(non_null(:home_deal_reason)))
+  connection :home_deals,
+    node_type: :product,
+    non_null_edges: true,
+    non_null_edge: true do
+    edge do
+      field :node, non_null(:product)
+      field :cursor, non_null(:string)
+      field :offer, non_null(:home_offer_summary)
+      field :reasons, non_null(list_of(non_null(:home_deal_reason)))
+    end
   end
 
   object :home_deal_reason do

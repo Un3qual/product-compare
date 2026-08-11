@@ -47,7 +47,7 @@ defmodule ProductCompare.Seo do
   def get_categories(slugs, opts \\ []) when is_list(slugs), do: Categories.get_many(slugs, opts)
 
   @spec home_category_shortcuts(keyword()) :: [map()]
-  def home_category_shortcuts(opts \\ []), do: Categories.home_shortcuts(opts)
+  def home_category_shortcuts(opts), do: Categories.home_shortcuts(opts)
 
   @spec category_metadata(map()) :: metadata()
   def category_metadata(category), do: Metadata.category(category)

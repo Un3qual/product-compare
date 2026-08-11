@@ -25,7 +25,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
   @spec new_deal_candidates(keyword()) :: [map()]
   def new_deal_candidates(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+    {offset, limit} = window(opts)
 
     :all
     |> winners_query(now, true, false)
@@ -34,6 +34,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
       desc: offer.observed_at,
       asc: offer.product_id
     )
+    |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -41,7 +42,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
   @spec trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def trending_deal_candidates(activity_query, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+    {offset, limit} = window(opts)
 
     :all
     |> winners_query(now, false)
@@ -54,6 +55,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
       desc: activity.activity_at,
       asc: offer.product_id
     )
+    |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -61,7 +63,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
   @spec viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def viewer_deal_candidates(relevance_query, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+    {offset, limit} = window(opts)
 
     product_ids = candidate_product_ids_query(relevance_query)
     active_counts = active_counts_query(product_ids)
@@ -127,6 +129,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
       desc: offer.observed_at,
       asc: offer.product_id
     )
+    |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
   end
@@ -330,11 +333,21 @@ defmodule ProductCompare.Pricing.HomeOffers do
   defp normalize_product_ids(:all), do: :all
 
   defp normalize_product_ids(product_ids) when is_list(product_ids),
-    do: product_ids |> Enum.filter(&valid_id?/1) |> Enum.uniq() |> Enum.take(6)
+    do: product_ids |> Enum.filter(&valid_id?/1) |> Enum.uniq()
 
   defp normalize_product_ids(_), do: []
   defp valid_id?(id), do: is_integer(id) and id > 0 and id <= @max_bigint_id
 
-  defp bounded_limit(limit, _default) when is_integer(limit) and limit > 0, do: min(limit, 6)
-  defp bounded_limit(_limit, default), do: default
+  defp window(opts) do
+    offset = Keyword.get(opts, :offset, 0)
+    limit = Keyword.get(opts, :limit)
+
+    {
+      if(is_integer(offset) and offset >= 0, do: offset, else: 0),
+      if(is_integer(limit) and limit > 0,
+        do: limit,
+        else: raise(ArgumentError, "home offer limit must be a positive integer")
+      )
+    }
+  end
 end

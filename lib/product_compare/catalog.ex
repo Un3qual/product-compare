@@ -29,12 +29,12 @@ defmodule ProductCompare.Catalog do
     |> Repo.all()
   end
 
-  @spec home_workspace_candidates([term()], keyword()) :: %{
-          products: [Product.t()],
-          selected_products: [Product.t()]
-        }
-  def home_workspace_candidates(selected_slugs, opts \\ []) when is_list(selected_slugs),
-    do: HomeWorkspace.candidates(selected_slugs, opts)
+  @spec home_workspace_product_candidates(keyword()) :: [Product.t()]
+  def home_workspace_product_candidates(opts), do: HomeWorkspace.product_candidates(opts)
+
+  @spec home_workspace_selected_products([term()]) :: [Product.t()]
+  def home_workspace_selected_products(selected_slugs) when is_list(selected_slugs),
+    do: HomeWorkspace.selected_products(selected_slugs)
 
   @spec product_filter_metadata(map()) :: map()
   def product_filter_metadata(filters) do

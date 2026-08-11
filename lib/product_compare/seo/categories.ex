@@ -50,7 +50,8 @@ defmodule ProductCompare.Seo.Categories do
   @spec home_shortcuts(keyword()) :: [map()]
   def home_shortcuts(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
+    offset = opts |> Keyword.get(:offset, 0) |> non_negative_offset()
+    limit = required_positive_limit(opts)
     qualifying_products = homepage_qualified_products_query(now)
     minimum_description_length = QualificationPolicy.minimum_description_length()
     minimum_products = QualificationPolicy.minimum_category_products()
@@ -76,6 +77,7 @@ defmodule ProductCompare.Seo.Categories do
       asc: fragment("lower(coalesce(?, ''))", taxon.name),
       asc: taxon.id
     )
+    |> offset(^offset)
     |> limit(^limit)
     |> select([taxon, _closure, product], {taxon, count(product.id, :distinct)})
     |> Repo.all()
@@ -266,8 +268,15 @@ defmodule ProductCompare.Seo.Categories do
     }
   end
 
-  defp bounded_limit(limit, _default) when is_integer(limit) and limit > 0, do: min(limit, 6)
-  defp bounded_limit(_limit, default), do: default
+  defp non_negative_offset(offset) when is_integer(offset) and offset >= 0, do: offset
+  defp non_negative_offset(_offset), do: 0
+
+  defp required_positive_limit(opts) do
+    case Keyword.fetch(opts, :limit) do
+      {:ok, limit} when is_integer(limit) and limit > 0 -> limit
+      _missing_or_invalid -> raise ArgumentError, "home category limit must be a positive integer"
+    end
+  end
 
   defp stale_boundary(now) do
     policy = ProductCompare.Pricing.OfferTruth.policy()

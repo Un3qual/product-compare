@@ -12,7 +12,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
   @now ~U[2026-08-10 12:00:00Z]
   @description String.duplicate("Useful comparison details. ", 4)
 
-  test "keeps ranked eligible products bounded and preserves normalized selected order" do
+  test "pages ranked eligible products and preserves normalized selected order" do
     operator = AccountsFixtures.operator_fixture()
 
     eligible =
@@ -23,23 +23,26 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     _without_spec = product_with_offer("workspace-no-spec", operator, 0)
     _stale = product_with_offer("workspace-stale", operator, -86_401, 2)
 
-    result =
-      Catalog.home_workspace_candidates(
-        [
-          Enum.at(eligible, 6).slug,
-          "missing",
-          Enum.at(eligible, 1).slug,
-          Enum.at(eligible, 6).slug,
-          Enum.at(eligible, 0).slug,
-          Enum.at(eligible, 2).slug
-        ],
-        now: @now,
-        limit: 6
-      )
+    products = Catalog.home_workspace_product_candidates(now: @now, limit: 6)
 
-    assert Enum.map(result.products, & &1.id) == Enum.map(Enum.take(eligible, 6), & &1.id)
+    selected_products =
+      Catalog.home_workspace_selected_products([
+        Enum.at(eligible, 6).slug,
+        "missing",
+        Enum.at(eligible, 1).slug,
+        Enum.at(eligible, 6).slug,
+        Enum.at(eligible, 0).slug,
+        Enum.at(eligible, 2).slug
+      ])
 
-    assert Enum.map(result.selected_products, & &1.id) == [
+    assert Enum.map(products, & &1.id) == Enum.map(Enum.take(eligible, 6), & &1.id)
+
+    assert Enum.map(
+             Catalog.home_workspace_product_candidates(now: @now, offset: 6, limit: 2),
+             & &1.id
+           ) == [Enum.at(eligible, 6).id]
+
+    assert Enum.map(selected_products, & &1.id) == [
              Enum.at(eligible, 6).id,
              Enum.at(eligible, 1).id
            ]
@@ -50,13 +53,17 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     products = Enum.map(1..6, &eligible_product("workspace-budget-#{&1}", operator))
 
     {one, one_queries} =
-      capture_select_queries(fn -> Catalog.home_workspace_candidates([], now: @now, limit: 1) end)
+      capture_select_queries(fn ->
+        Catalog.home_workspace_product_candidates(now: @now, limit: 1)
+      end)
 
     {six, six_queries} =
-      capture_select_queries(fn -> Catalog.home_workspace_candidates([], now: @now, limit: 6) end)
+      capture_select_queries(fn ->
+        Catalog.home_workspace_product_candidates(now: @now, limit: 6)
+      end)
 
-    assert [_product] = one.products
-    assert length(six.products) == length(products)
+    assert [_product] = one
+    assert length(six) == length(products)
 
     assert count_select_queries_targeting_table(one_queries, :products) ==
              count_select_queries_targeting_table(six_queries, :products)
@@ -87,8 +94,8 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
         in_stock: false
       })
 
-    candidates = Catalog.home_workspace_candidates([], now: @now, limit: 6)
-    candidate_ids = MapSet.new(candidates.products, & &1.id)
+    candidates = Catalog.home_workspace_product_candidates(now: @now, limit: 6)
+    candidate_ids = MapSet.new(candidates, & &1.id)
 
     assert inclusive.id in candidate_ids
     refute exclusive.id in candidate_ids
