@@ -396,10 +396,10 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp home_offer_summary_field?(%{schema_node: %{type: type}}, resolution) do
-    case Absinthe.Schema.lookup_type(resolution.schema, Type.unwrap(type)) do
-      %{identifier: :home_offer_summary} -> true
-      _other_type -> false
-    end
+    match?(
+      %{identifier: :home_offer_summary},
+      Absinthe.Schema.lookup_type(resolution.schema, Type.unwrap(type))
+    )
   end
 
   defp home_offer_summary_field?(_introspection_field, _resolution), do: false
