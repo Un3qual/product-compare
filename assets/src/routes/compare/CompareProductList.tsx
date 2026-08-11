@@ -82,20 +82,24 @@ export function CompareProductList({
           {
             content: (
               <DataList label="Compared products">
-                {loaderData.products.map((product, index) => (
-                  <DataListItem key={product.id}>
-                    {fragmentsBySlug.has(product.slug) ? (
-                      <CompareProductCard
-                        product={fragmentsBySlug.get(product.slug)!}
-                        selectedSlugs={loaderData.slugs}
-                        selectedIndex={index}
-                        specMode={loaderData.specMode}
-                      />
-                    ) : (
-                      <CompareProductSummaryCard product={product} />
-                    )}
-                  </DataListItem>
-                ))}
+                {loaderData.products.map((product, index) => {
+                  const fragment = fragmentsBySlug.get(product.slug);
+
+                  return (
+                    <DataListItem key={product.id}>
+                      {fragment ? (
+                        <CompareProductCard
+                          product={fragment}
+                          selectedSlugs={loaderData.slugs}
+                          selectedIndex={index}
+                          specMode={loaderData.specMode}
+                        />
+                      ) : (
+                        <CompareProductSummaryCard product={product} />
+                      )}
+                    </DataListItem>
+                  );
+                })}
               </DataList>
             ),
             label: "Individual product details",

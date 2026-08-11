@@ -33,7 +33,7 @@ const styles = create({
 
 export function CompareMark({ label }: { label: string }) {
   return (
-    <span aria-label={label} {...props(styles.mark)}>
+    <span {...props(styles.mark)}>
       <span aria-hidden="true" {...props(styles.glyph)}>
         <span {...props(styles.leftBar)} />
         <span {...props(styles.rightBar)} />

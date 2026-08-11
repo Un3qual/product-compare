@@ -179,9 +179,14 @@ test("product ledger keeps all product facts in one semantic list with a disclos
 });
 
 test("compare mark preserves the product identity without ornamental imagery", () => {
-  render(<CompareMark label="Product Compare" />);
+  render(
+    <a href="/">
+      <CompareMark label="Product Compare" />
+    </a>,
+  );
 
-  expect(screen.getByLabelText("Product Compare")).toHaveTextContent("Product Compare");
+  expect(screen.getByRole("link", { name: "Product Compare" })).toHaveAttribute("href", "/");
+  expect(screen.getByText("Product Compare")).not.toHaveAttribute("aria-label");
 });
 
 test("responsive navigation keeps search and comparison direct while grouping guest, member, and operator destinations", () => {

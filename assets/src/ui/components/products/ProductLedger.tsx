@@ -158,63 +158,70 @@ export function ProductLedger({
   return (
     <ol aria-label={label} {...props(styles.list)}>
       {rows.map((row) => (
-        <li key={row.id} {...props(styles.row)}>
-          <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
-            <div data-slot="product-ledger-identity" {...props(styles.identity)}>
-              <p data-tone="secondary" {...props(styles.category)}>
-                {row.category}
-              </p>
-              <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
-                {row.title}
-              </h3>
-            </div>
-            <LedgerFact
-              label="Highlights"
-              slot="product-ledger-highlights"
-              style={styles.highlights}
-            >
-              {row.highlights}
-            </LedgerFact>
-            <LedgerFact label="Best offer" slot="product-ledger-offer" style={styles.offer}>
-              {row.offer}
-            </LedgerFact>
-            <div data-slot="product-ledger-price-signal" {...props(styles.fact, styles.signal)}>
-              <span data-tone="secondary" {...props(styles.factLabel)}>
-                Price signal
-              </span>
-              <span {...props(styles.priceSignal)}>{row.priceSignal}</span>
-            </div>
-            <StatusBadge
-              data-slot="product-ledger-freshness"
-              tone="positive"
-              {...props(styles.freshness)}
-            >
-              {row.freshness}
-            </StatusBadge>
-            <div data-slot="product-ledger-actions" {...props(styles.actions)}>
-              {row.actions}
-            </div>
-            {row.secondaryDetails ? (
-              <Collapsible {...props(styles.disclosure)}>
-                <CollapsibleTrigger asChild>
-                  <Button
-                    size="1"
-                    type="button"
-                    variant="soft"
-                    {...props(styles.disclosureTrigger)}
-                  >
-                    {secondaryDisclosureLabel}
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent {...props(styles.disclosureContent)}>
-                  {row.secondaryDetails}
-                </CollapsibleContent>
-              </Collapsible>
-            ) : null}
-          </article>
-        </li>
+        <ProductLedgerItem
+          key={row.id}
+          row={row}
+          secondaryDisclosureLabel={secondaryDisclosureLabel}
+        />
       ))}
     </ol>
+  );
+}
+
+function ProductLedgerItem({
+  row,
+  secondaryDisclosureLabel,
+}: {
+  row: ProductLedgerRow;
+  secondaryDisclosureLabel: string;
+}) {
+  return (
+    <li {...props(styles.row)}>
+      <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
+        <div data-slot="product-ledger-identity" {...props(styles.identity)}>
+          <p data-tone="secondary" {...props(styles.category)}>
+            {row.category}
+          </p>
+          <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
+            {row.title}
+          </h3>
+        </div>
+        <LedgerFact label="Highlights" slot="product-ledger-highlights" style={styles.highlights}>
+          {row.highlights}
+        </LedgerFact>
+        <LedgerFact label="Best offer" slot="product-ledger-offer" style={styles.offer}>
+          {row.offer}
+        </LedgerFact>
+        <div data-slot="product-ledger-price-signal" {...props(styles.fact, styles.signal)}>
+          <span data-tone="secondary" {...props(styles.factLabel)}>
+            Price signal
+          </span>
+          <span {...props(styles.priceSignal)}>{row.priceSignal}</span>
+        </div>
+        <StatusBadge
+          data-slot="product-ledger-freshness"
+          tone="positive"
+          {...props(styles.freshness)}
+        >
+          {row.freshness}
+        </StatusBadge>
+        <div data-slot="product-ledger-actions" {...props(styles.actions)}>
+          {row.actions}
+        </div>
+        {row.secondaryDetails ? (
+          <Collapsible {...props(styles.disclosure)}>
+            <CollapsibleTrigger asChild>
+              <Button size="1" type="button" variant="soft" {...props(styles.disclosureTrigger)}>
+                {secondaryDisclosureLabel}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent {...props(styles.disclosureContent)}>
+              {row.secondaryDetails}
+            </CollapsibleContent>
+          </Collapsible>
+        ) : null}
+      </article>
+    </li>
   );
 }
 
