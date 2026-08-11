@@ -152,10 +152,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ CJProgramsRoute }, { cjProgramsLoader }] = await Promise.all([
-            import("./routes/ingestion/cj-programs/CJProgramsRoute"),
-            import("./routes/ingestion/cj-programs/loader"),
-          ]);
+          const { CJProgramsRoute, cjProgramsLoader } =
+            await import("./routes/ingestion/cj-programs/CJProgramsRoute");
           return {
             Component: CJProgramsRoute,
             loader: cjProgramsLoader,

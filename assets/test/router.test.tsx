@@ -9,8 +9,10 @@ import { LogoutRoute } from "../src/routes/auth/LogoutRoute";
 import { RouteErrorBoundary } from "../src/routes/compare/RouteErrorBoundary";
 import { RevenueSummaryRoute } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { revenueSummaryLoader } from "../src/routes/commerce/revenue/RevenueSummaryRoute";
-import { CJProgramsRoute } from "../src/routes/ingestion/cj-programs/CJProgramsRoute";
-import { cjProgramsLoader } from "../src/routes/ingestion/cj-programs/loader";
+import {
+  CJProgramsRoute,
+  cjProgramsLoader,
+} from "../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirectoryRoute";
 import { merchantDirectoryLoader } from "../src/routes/merchants/MerchantDirectoryRoute";
 import {
