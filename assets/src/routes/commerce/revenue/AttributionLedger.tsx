@@ -1,13 +1,23 @@
 import { create, props } from "@stylexjs/stylex";
 import { useState } from "react";
-import { graphql, usePaginationFragment } from "react-relay";
+import { graphql, useFragment, usePaginationFragment } from "react-relay";
 import type {
   AttributionLedger_connection$data,
   AttributionLedger_connection$key,
-} from "../../../__generated__/AttributionLedger_connection.graphql";
+} from "$generated/AttributionLedger_connection.graphql";
+import type {
+  AttributionLedger_row$data,
+  AttributionLedger_row$key,
+} from "$generated/AttributionLedger_row.graphql";
 import { formatProductDateTimeLabel } from "../../product-formatting";
 import { Button } from "../../../ui/primitives/Button";
 import { ATTRIBUTION_LEDGER_PAGE_SIZE, formatCurrencyAmount } from "./revenue-summary-view-data";
+
+export const attributionLedgerRouteQuery = graphql`
+  query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $first: Int!, $after: String) {
+    ...AttributionLedger_connection @arguments(input: $input, first: $first, after: $after)
+  }
+`;
 
 const styles = create({
   cell: { verticalAlign: "top" },
@@ -32,47 +42,54 @@ const attributionLedgerFragment = graphql`
       @connection(key: "AttributionLedger_commerceAttributionClicks") {
       edges {
         node {
-          affiliateNetworkCode
-          affiliateNetworkId
-          affiliateNetworkName
-          affiliateProgramCode
-          affiliateProgramId
-          anonymousVisitor
           clickId
-          insertedAt
-          ipAddress
-          linkType
-          matchedConversions {
-            affiliateNetworkCode
-            affiliateNetworkId
-            affiliateNetworkName
-            attributionConfidence
-            commissionAmount
-            currency
-            merchantId
-            merchantName
-            networkConversionRef
-            orderAmount
-            productId
-            productName
-            purchasedAt
-            reportedAt
-            status
-          }
-          merchantId
-          merchantName
-          merchantProductExternalSku
-          merchantProductId
-          productId
-          productName
-          referrer
-          sourceSurface
-          userAgent
-          userEmail
-          userId
+          ...AttributionLedger_row
         }
       }
     }
+  }
+`;
+
+const attributionLedgerRowFragment = graphql`
+  fragment AttributionLedger_row on CommerceAttributionClick {
+    affiliateNetworkCode
+    affiliateNetworkId
+    affiliateNetworkName
+    affiliateProgramCode
+    affiliateProgramId
+    anonymousVisitor
+    clickId
+    insertedAt
+    ipAddress
+    linkType
+    matchedConversions {
+      affiliateNetworkCode
+      affiliateNetworkId
+      affiliateNetworkName
+      attributionConfidence
+      commissionAmount
+      currency
+      merchantId
+      merchantName
+      networkConversionRef
+      orderAmount
+      productId
+      productName
+      purchasedAt
+      reportedAt
+      status
+    }
+    merchantId
+    merchantName
+    merchantProductExternalSku
+    merchantProductId
+    productId
+    productName
+    referrer
+    sourceSurface
+    userAgent
+    userEmail
+    userId
   }
 `;
 
@@ -169,10 +186,11 @@ function AttributionPaginationControl({
   ) : null;
 }
 
-type AttributionClick =
-  AttributionLedger_connection$data["commerceAttributionClicks"]["edges"][number]["node"];
+type AttributionClick = AttributionLedger_row$data;
 
-function AttributionLedgerRow({ click }: { click: AttributionClick }) {
+function AttributionLedgerRow({ click: fragmentRef }: { click: AttributionLedger_row$key }) {
+  const click = useFragment(attributionLedgerRowFragment, fragmentRef);
+
   return (
     <tr {...props(styles.row)}>
       <td {...props(styles.cell)}>

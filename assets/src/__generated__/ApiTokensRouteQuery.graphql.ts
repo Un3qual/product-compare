@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9a77b00233a664202b7f84f932b6d723>>
+ * @generated SignedSource<<644fe0bc5c1ea52aca6bfd9aacdd9244>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,31 +10,36 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type AffiliateSetupOperationsQuery$variables = {
+export type ApiTokenStatusFilter = "ACTIVE" | "ALL" | "REVOKED" | "%future added value";
+export type ApiTokensRouteQuery$variables = {
   after?: string | null | undefined;
   first: number;
+  status?: ApiTokenStatusFilter | null | undefined;
 };
-export type AffiliateSetupOperationsQuery$data = {
-  readonly merchants: {
+export type ApiTokensRouteQuery$data = {
+  readonly myApiTokens: {
     readonly edges: ReadonlyArray<{
       readonly cursor: string;
       readonly node: {
+        readonly expiresAt: any | null | undefined;
         readonly id: string;
-        readonly name: string;
-        readonly " $fragmentSpreads": FragmentRefs<"MerchantDirectoryView_item">;
+        readonly insertedAt: any;
+        readonly label: string | null | undefined;
+        readonly lastUsedAt: any | null | undefined;
+        readonly revokedAt: any | null | undefined;
+        readonly tokenPrefix: string;
+        readonly " $fragmentSpreads": FragmentRefs<"ApiTokenItem_token">;
       };
     }>;
     readonly pageInfo: {
       readonly endCursor: string | null | undefined;
       readonly hasNextPage: boolean;
-      readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
     };
-  } | null | undefined;
+  };
 };
-export type AffiliateSetupOperationsQuery = {
-  response: AffiliateSetupOperationsQuery$data;
-  variables: AffiliateSetupOperationsQuery$variables;
+export type ApiTokensRouteQuery = {
+  response: ApiTokensRouteQuery$data;
+  variables: ApiTokensRouteQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -48,7 +53,12 @@ v1 = {
   "kind": "LocalArgument",
   "name": "first"
 },
-v2 = [
+v2 = {
+  "defaultValue": null,
+  "kind": "LocalArgument",
+  "name": "status"
+},
+v3 = [
   {
     "kind": "Variable",
     "name": "after",
@@ -58,30 +68,70 @@ v2 = [
     "kind": "Variable",
     "name": "first",
     "variableName": "first"
+  },
+  {
+    "kind": "Variable",
+    "name": "status",
+    "variableName": "status"
   }
 ],
-v3 = {
+v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "cursor",
   "storageKey": null
 },
-v4 = {
+v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "id",
   "storageKey": null
 },
-v5 = {
+v6 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "name",
+  "name": "label",
   "storageKey": null
 },
-v6 = {
+v7 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "tokenPrefix",
+  "storageKey": null
+},
+v8 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "lastUsedAt",
+  "storageKey": null
+},
+v9 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "expiresAt",
+  "storageKey": null
+},
+v10 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "revokedAt",
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "insertedAt",
+  "storageKey": null
+},
+v12 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -100,20 +150,6 @@ v6 = {
       "alias": null,
       "args": null,
       "kind": "ScalarField",
-      "name": "hasPreviousPage",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "startCursor",
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
       "name": "endCursor",
       "storageKey": null
     }
@@ -124,43 +160,49 @@ return {
   "fragment": {
     "argumentDefinitions": [
       (v0/*: any*/),
-      (v1/*: any*/)
+      (v1/*: any*/),
+      (v2/*: any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "AffiliateSetupOperationsQuery",
+    "name": "ApiTokensRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
-        "concreteType": "MerchantConnection",
+        "args": (v3/*: any*/),
+        "concreteType": "ApiTokenConnection",
         "kind": "LinkedField",
-        "name": "merchants",
+        "name": "myApiTokens",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "MerchantEdge",
+            "concreteType": "ApiTokenEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Merchant",
+                "concreteType": "ApiToken",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
                   (v5/*: any*/),
+                  (v6/*: any*/),
+                  (v7/*: any*/),
+                  (v8/*: any*/),
+                  (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
-                    "name": "MerchantDirectoryView_item"
+                    "name": "ApiTokenItem_token"
                   }
                 ],
                 "storageKey": null
@@ -168,7 +210,7 @@ return {
             ],
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v12/*: any*/)
         ],
         "storageKey": null
       }
@@ -180,75 +222,67 @@ return {
   "operation": {
     "argumentDefinitions": [
       (v1/*: any*/),
-      (v0/*: any*/)
+      (v0/*: any*/),
+      (v2/*: any*/)
     ],
     "kind": "Operation",
-    "name": "AffiliateSetupOperationsQuery",
+    "name": "ApiTokensRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
-        "concreteType": "MerchantConnection",
+        "args": (v3/*: any*/),
+        "concreteType": "ApiTokenConnection",
         "kind": "LinkedField",
-        "name": "merchants",
+        "name": "myApiTokens",
         "plural": false,
         "selections": [
           {
             "alias": null,
             "args": null,
-            "concreteType": "MerchantEdge",
+            "concreteType": "ApiTokenEdge",
             "kind": "LinkedField",
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v4/*: any*/),
               {
                 "alias": null,
                 "args": null,
-                "concreteType": "Merchant",
+                "concreteType": "ApiToken",
                 "kind": "LinkedField",
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
                   (v5/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "domain",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "slug",
-                    "storageKey": null
-                  }
+                  (v6/*: any*/),
+                  (v7/*: any*/),
+                  (v8/*: any*/),
+                  (v9/*: any*/),
+                  (v10/*: any*/),
+                  (v11/*: any*/)
                 ],
                 "storageKey": null
               }
             ],
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v12/*: any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "1a016ccc7b1993c275485706e22829a2",
+    "cacheID": "1a1ea85143dc1f185620e78138c371d2",
     "id": null,
     "metadata": {},
-    "name": "AffiliateSetupOperationsQuery",
+    "name": "ApiTokensRouteQuery",
     "operationKind": "query",
-    "text": "query AffiliateSetupOperationsQuery(\n  $first: Int!\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        ...MerchantDirectoryView_item\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n\nfragment MerchantDirectoryView_item on Merchant {\n  id\n  name\n  domain\n  slug\n}\n"
+    "text": "query ApiTokensRouteQuery(\n  $first: Int!\n  $after: String\n  $status: ApiTokenStatusFilter\n) {\n  myApiTokens(first: $first, after: $after, status: $status) {\n    edges {\n      cursor\n      node {\n        id\n        label\n        tokenPrefix\n        lastUsedAt\n        expiresAt\n        revokedAt\n        insertedAt\n        ...ApiTokenItem_token\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n\nfragment ApiTokenItem_token on ApiToken {\n  id\n  label\n  tokenPrefix\n  lastUsedAt\n  expiresAt\n  revokedAt\n  insertedAt\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a8875ae82b73a4ecd3e5bbad1d7d94f6";
+(node as any).hash = "74017161b3e1294fca5a219f8d549c4a";
 
 export default node;

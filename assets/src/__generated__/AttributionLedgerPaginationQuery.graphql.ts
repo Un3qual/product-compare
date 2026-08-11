@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<4c0530b7cd3dd647976de60130b74828>>
+ * @generated SignedSource<<4ee353859ff410f7091e7a453aa08566>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -161,6 +161,13 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "clickId",
+                    "storageKey": null
+                  },
                   (v2/*: any*/),
                   (v3/*: any*/),
                   (v4/*: any*/),
@@ -183,13 +190,6 @@ return {
                     "args": null,
                     "kind": "ScalarField",
                     "name": "anonymousVisitor",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "clickId",
                     "storageKey": null
                   },
                   {
@@ -402,16 +402,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "cf6131fb661af92616c0bbf5010b5a61",
+    "cacheID": "96da99e978faad5d4d1b1ca87e101d5f",
     "id": null,
     "metadata": {},
     "name": "AttributionLedgerPaginationQuery",
     "operationKind": "query",
-    "text": "query AttributionLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n  $input: RevenueSummaryInput\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousVisitor\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          affiliateNetworkCode\n          affiliateNetworkId\n          affiliateNetworkName\n          attributionConfidence\n          commissionAmount\n          currency\n          merchantId\n          merchantName\n          networkConversionRef\n          orderAmount\n          productId\n          productName\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query AttributionLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n  $input: RevenueSummaryInput\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        clickId\n        ...AttributionLedger_row\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment AttributionLedger_row on CommerceAttributionClick {\n  affiliateNetworkCode\n  affiliateNetworkId\n  affiliateNetworkName\n  affiliateProgramCode\n  affiliateProgramId\n  anonymousVisitor\n  clickId\n  insertedAt\n  ipAddress\n  linkType\n  matchedConversions {\n    affiliateNetworkCode\n    affiliateNetworkId\n    affiliateNetworkName\n    attributionConfidence\n    commissionAmount\n    currency\n    merchantId\n    merchantName\n    networkConversionRef\n    orderAmount\n    productId\n    productName\n    purchasedAt\n    reportedAt\n    status\n  }\n  merchantId\n  merchantName\n  merchantProductExternalSku\n  merchantProductId\n  productId\n  productName\n  referrer\n  sourceSurface\n  userAgent\n  userEmail\n  userId\n}\n"
   }
 };
 })();
 
-(node as any).hash = "2bd97bae77c1c9967d59d3bfcd3162d0";
+(node as any).hash = "0c0b37b5ba210723492a12c1a516c313";
 
 export default node;

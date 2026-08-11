@@ -120,10 +120,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ AffiliateSetupRoute }, { affiliateSetupLoader }] = await Promise.all([
-            import("./routes/affiliate/setup/AffiliateSetupRoute"),
-            import("./routes/affiliate/setup/loader"),
-          ]);
+          const { AffiliateSetupRoute, affiliateSetupLoader } =
+            await import("./routes/affiliate/setup/AffiliateSetupRoute");
           return {
             Component: AffiliateSetupRoute,
             loader: affiliateSetupLoader,
@@ -235,10 +233,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="revenue report" title="Revenue" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ RevenueSummaryRoute }, { revenueSummaryLoader }] = await Promise.all([
-            import("./routes/commerce/revenue/RevenueSummaryRoute"),
-            import("./routes/commerce/revenue/loader"),
-          ]);
+          const { RevenueSummaryRoute, revenueSummaryLoader } =
+            await import("./routes/commerce/revenue/RevenueSummaryRoute");
           return {
             Component: RevenueSummaryRoute,
             loader: revenueSummaryLoader,
@@ -265,10 +261,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ ApiTokensRoute }, { apiTokensLoader }] = await Promise.all([
-            import("./routes/account/api-tokens/ApiTokensRoute"),
-            import("./routes/account/api-tokens/loader"),
-          ]);
+          const { ApiTokensRoute, apiTokensLoader } =
+            await import("./routes/account/api-tokens/ApiTokensRoute");
           return {
             Component: ApiTokensRoute,
             loader: apiTokensLoader,

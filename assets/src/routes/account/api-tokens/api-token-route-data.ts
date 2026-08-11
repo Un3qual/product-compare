@@ -1,6 +1,10 @@
 import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { nextRelayPageCursor } from "../../relay-pagination";
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../../route-errors";
+import {
+  hasRouteGraphQLErrors,
+  isRouteRecord,
+  routeMutationErrorMessage,
+} from "../../route-errors";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -312,6 +316,65 @@ export function summarizeMutationApiToken(token?: MutationApiToken | null) {
     revokedAt,
     insertedAt,
   } satisfies ApiTokenRecord;
+}
+
+export function summarizeApiTokensPage(data: unknown): {
+  tokens: ApiTokenRecord[];
+  hasNextPage: boolean;
+  endCursor: string | null;
+} {
+  const connection = isRouteRecord(data) ? data.myApiTokens : null;
+
+  if (
+    !isRouteRecord(connection) ||
+    !Array.isArray(connection.edges) ||
+    !isRouteRecord(connection.pageInfo)
+  ) {
+    throw new Error("Failed to parse API tokens response");
+  }
+
+  const { hasNextPage, endCursor } = connection.pageInfo;
+
+  if (typeof hasNextPage !== "boolean" || !(endCursor == null || typeof endCursor === "string")) {
+    throw new Error("Failed to parse API tokens response");
+  }
+
+  return {
+    tokens: connection.edges.map((edge) => {
+      if (!isRouteRecord(edge)) {
+        throw new Error("Failed to parse API tokens response");
+      }
+
+      return summarizeApiTokenRecord(edge.node);
+    }),
+    hasNextPage,
+    endCursor: endCursor ?? null,
+  };
+}
+
+function summarizeApiTokenRecord(node: unknown): ApiTokenRecord {
+  if (
+    !isRouteRecord(node) ||
+    typeof node.id !== "string" ||
+    !(node.label == null || typeof node.label === "string") ||
+    typeof node.tokenPrefix !== "string" ||
+    !(node.lastUsedAt == null || typeof node.lastUsedAt === "string") ||
+    !(node.expiresAt == null || typeof node.expiresAt === "string") ||
+    !(node.revokedAt == null || typeof node.revokedAt === "string") ||
+    typeof node.insertedAt !== "string"
+  ) {
+    throw new Error("Failed to parse API tokens response");
+  }
+
+  return {
+    id: node.id,
+    label: node.label ?? null,
+    tokenPrefix: node.tokenPrefix,
+    lastUsedAt: node.lastUsedAt ?? null,
+    expiresAt: node.expiresAt ?? null,
+    revokedAt: node.revokedAt ?? null,
+    insertedAt: node.insertedAt,
+  };
 }
 
 export function markTokenRotated(previousToken: ApiTokenRecord, rotatedToken: ApiTokenRecord) {

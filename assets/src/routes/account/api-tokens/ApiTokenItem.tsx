@@ -1,68 +1,99 @@
 import { type FormEvent, useId, useRef } from "react";
 import { create, props } from "@stylexjs/stylex";
+import { graphql, useFragment } from "react-relay";
+import type { ApiTokenItem_token$key } from "$generated/ApiTokenItem_token.graphql";
 import { StatusBadge } from "../../../ui/components/status/StatusBadge";
 import { DestructiveActionDialog } from "../../../ui/components/overlays/DestructiveActionDialog";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
-import {
-  API_TOKEN_EXPIRES_AT_PRESETS,
-  buildApiTokenExpiresAtInputValue
-} from "./date-presets";
+import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
   buildApiTokenActionPolicy,
-  buildApiTokenDisplayData
+  buildApiTokenDisplayData,
+  summarizeMutationApiToken,
+  type ApiTokenRecord,
 } from "./api-token-route-data";
-import type { ApiTokenSummary } from "./loader";
+
+const apiTokenItemFragment = graphql`
+  fragment ApiTokenItem_token on ApiToken {
+    id
+    label
+    tokenPrefix
+    lastUsedAt
+    expiresAt
+    revokedAt
+    insertedAt
+  }
+`;
 
 const styles = create({
   item: {
     borderBlockEndColor: tokens.borderQuiet,
     borderBlockEndStyle: "solid",
     borderBlockEndWidth: "1px",
-    paddingBlock: "1.25rem"
+    paddingBlock: "1.25rem",
   },
   token: {
     display: "grid",
-    gap: "0.85rem"
+    gap: "0.85rem",
   },
   tokenTitle: {
     fontSize: "1.2rem",
-    margin: 0
+    margin: 0,
   },
   rotateForm: {
     backgroundColor: tokens.surfaceMuted,
     borderRadius: "var(--pc-radius-medium)",
     display: "grid",
     gap: "0.75rem",
-    padding: "0.9rem"
-  }
+    padding: "0.9rem",
+  },
 });
 
-type ApiTokenItemProps = {
-  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
+type ApiTokenItemLifecycleProps = {
+  onRotate: (token: ApiTokenRecord, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   revokeError: string | null;
   revokePending: boolean;
   rotateError: string | null;
   rotatePending: boolean;
-  token: ApiTokenSummary;
 };
 
 export function ApiTokenItem({
+  token: fragmentRef,
+  tokenUpdate,
+  ...lifecycle
+}: ApiTokenItemLifecycleProps & {
+  token: ApiTokenItem_token$key;
+  tokenUpdate?: ApiTokenRecord;
+}) {
+  const data = useFragment(apiTokenItemFragment, fragmentRef);
+  const serverToken = summarizeMutationApiToken(data);
+
+  if (!serverToken) return null;
+
+  const token = tokenUpdate
+    ? { ...serverToken, revokedAt: serverToken.revokedAt ?? tokenUpdate.revokedAt }
+    : serverToken;
+
+  return <ApiTokenSummaryItem {...lifecycle} token={token} />;
+}
+
+export function ApiTokenSummaryItem({
   onRotate,
   onRevoke,
   revokeError,
   revokePending,
   rotateError,
   rotatePending,
-  token
-}: ApiTokenItemProps) {
+  token,
+}: ApiTokenItemLifecycleProps & { token: ApiTokenRecord }) {
   const displayData = buildApiTokenDisplayData(token);
   const { displayLabel } = displayData;
   const actionPolicy = buildApiTokenActionPolicy(token, {
     revokePending,
-    rotatePending
+    rotatePending,
   });
 
   function handleRotateSubmit(event: FormEvent<HTMLFormElement>) {
@@ -90,10 +121,10 @@ export function ApiTokenItem({
 
 function ApiTokenDetails({
   displayData,
-  token
+  token,
 }: {
   displayData: ReturnType<typeof buildApiTokenDisplayData>;
-  token: ApiTokenSummary;
+  token: ApiTokenRecord;
 }) {
   return (
     <dl>
@@ -116,9 +147,7 @@ function ApiTokenDetails({
       <div>
         <dt>Status</dt>
         <dd>
-          <StatusBadge tone={displayData.statusTone}>
-            {displayData.statusLabel}
-          </StatusBadge>
+          <StatusBadge tone={displayData.statusTone}>{displayData.statusLabel}</StatusBadge>
         </dd>
       </div>
     </dl>
@@ -127,7 +156,7 @@ function ApiTokenDetails({
 
 function ApiTokenRowErrors({
   revokeError,
-  rotateError
+  rotateError,
 }: {
   revokeError: string | null;
   rotateError: string | null;
@@ -145,13 +174,13 @@ function ApiTokenActions({
   displayLabel,
   onRevoke,
   onRotateSubmit,
-  token
+  token,
 }: {
   actionPolicy: ReturnType<typeof buildApiTokenActionPolicy>;
   displayLabel: string;
   onRevoke: (tokenId: string) => void;
   onRotateSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  token: ApiTokenSummary;
+  token: ApiTokenRecord;
 }) {
   const rotateExpiresAtInputRef = useRef<HTMLInputElement>(null);
   const rotateExpiresAtPresetInputRef = useRef<HTMLInputElement>(null);
@@ -200,7 +229,7 @@ function ApiTokenActions({
                   if (rotateExpiresAtInputRef.current) {
                     rotateExpiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
                       preset.label,
-                      new Date(Date.now())
+                      new Date(Date.now()),
                     );
                   }
                   if (rotateExpiresAtPresetInputRef.current) {

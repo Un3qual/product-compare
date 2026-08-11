@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePaginationFragment, usePreloadedQuery } from "react-relay";
+import { useFragment, usePaginationFragment, usePreloadedQuery } from "react-relay";
 import type { AttributionLedgerRouteQuery$variables } from "../../../../src/__generated__/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
 import {
@@ -14,7 +14,7 @@ import {
   RevenueSummaryMetrics,
   RevenueSummaryView,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
-import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
+import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
@@ -22,11 +22,13 @@ import {
 
 const {
   useLoaderDataMock,
+  useFragmentMock,
   usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
@@ -46,6 +48,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
@@ -63,6 +66,7 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -179,6 +183,8 @@ const ATTRIBUTION_LEDGER_PAGE = {
 
 beforeEach(() => {
   useLoaderDataMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   REVENUE_QUERY_REF.dispose.mockReset();

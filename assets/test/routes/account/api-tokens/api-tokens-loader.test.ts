@@ -1,6 +1,6 @@
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../../src/relay/environment";
 import { createRelayRouterContext, fetchRouteQuery } from "../../../../src/relay/route-preload";
-import { apiTokensLoader } from "../../../../src/routes/account/api-tokens/loader";
+import { apiTokensLoader } from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import type { GraphQLResponse } from "relay-runtime";
 
@@ -238,8 +238,8 @@ function apiTokensQueryDescriptor(variables: {
 }) {
   return {
     __relayQuery: {
-      operationName: "ApiTokenOperationsQuery",
-      text: "query ApiTokenOperationsQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
+      operationName: "ApiTokensRouteQuery",
+      text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
       variables,
     },
   };

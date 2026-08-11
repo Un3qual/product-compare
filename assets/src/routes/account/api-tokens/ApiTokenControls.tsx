@@ -5,12 +5,11 @@ import { ActionDialog } from "../../../ui/components/overlays/ActionDialog";
 import { Button } from "../../../ui/primitives/Button";
 import { TextField } from "../../../ui/primitives/TextField";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
-  API_TOKEN_EXPIRES_AT_PRESETS,
-  buildApiTokenExpiresAtInputValue
-} from "./date-presets";
-import { buildApiTokenStatusFilterNavigationData } from "./api-token-route-data";
-import type { ApiTokensRouteLoaderData } from "./loader";
+  buildApiTokenStatusFilterNavigationData,
+  type ApiTokenStatus,
+} from "./api-token-route-data";
 
 const styles = create({
   createForm: {
@@ -19,8 +18,8 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1.15rem"
-  }
+    padding: "1.15rem",
+  },
 });
 
 type ApiTokenControlsProps = {
@@ -31,7 +30,7 @@ type ApiTokenControlsProps = {
   onCreate: (event: FormEvent<HTMLFormElement>) => void;
   onCreateDialogOpenChange: (open: boolean) => void;
   submitting: boolean;
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
+  tokenStatus: ApiTokenStatus;
 };
 
 export function ApiTokenControls({
@@ -42,7 +41,7 @@ export function ApiTokenControls({
   onCreate,
   onCreateDialogOpenChange,
   submitting,
-  tokenStatus
+  tokenStatus,
 }: ApiTokenControlsProps) {
   return (
     <>
@@ -80,7 +79,7 @@ function CreateApiTokenForm({
   expiresAtInputRef,
   expiresAtPresetInputRef,
   onSubmit,
-  submitting
+  submitting,
 }: {
   expiresAtInputRef: RefObject<HTMLInputElement | null>;
   expiresAtPresetInputRef: RefObject<HTMLInputElement | null>;
@@ -91,12 +90,7 @@ function CreateApiTokenForm({
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
       <div>
         <span id="api-token-label">Label</span>
-        <TextField
-          aria-labelledby="api-token-label"
-          autoComplete="off"
-          name="label"
-          type="text"
-        />
+        <TextField aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
       </div>
       <label>
         Expires at
@@ -120,7 +114,7 @@ function CreateApiTokenForm({
               if (expiresAtInputRef.current) {
                 expiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
                   preset.label,
-                  new Date(Date.now())
+                  new Date(Date.now()),
                 );
               }
               if (expiresAtPresetInputRef.current) {
@@ -142,20 +136,13 @@ function CreateApiTokenForm({
   );
 }
 
-function ApiTokenStatusFilters({
-  tokenStatus
-}: {
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
-}) {
+function ApiTokenStatusFilters({ tokenStatus }: { tokenStatus: ApiTokenStatus }) {
   return (
     <nav aria-label="API token status filters">
       <ul>
         {buildApiTokenStatusFilterNavigationData({ tokenStatus }).map((filter) => (
           <li key={filter.status}>
-            <Link
-              aria-current={filter.isCurrent ? "page" : undefined}
-              to={filter.href}
-            >
+            <Link aria-current={filter.isCurrent ? "page" : undefined} to={filter.href}>
               {filter.label}
             </Link>
           </li>
