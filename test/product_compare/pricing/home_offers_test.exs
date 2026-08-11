@@ -165,6 +165,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 6) end)
 
     refute String.contains?(query, "percentile_cont")
+    assert first_observation_relation?(query)
   end
 
   test "new deal selection bounds merchant products before first-seen history" do
@@ -226,7 +227,43 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       end)
 
     assert query =~ "percentile_cont"
-    refute query =~ "min("
+    refute first_observation_relation?(query)
+  end
+
+  test "workspace omits history facts while fallback requests only branch-required history" do
+    new_product = SpecsFixtures.product_fixture(%{slug: "rail-history-new"})
+    offer(new_product, "rail-history-new", "90", 0, true)
+
+    trending_product = SpecsFixtures.product_fixture(%{slug: "rail-history-trending"})
+    trending_offer = offer(trending_product, "rail-history-trending", "90", 0, true)
+    add_price(trending_offer, "110", -3_600)
+
+    activity_query =
+      from candidate in Product,
+        where: candidate.id == ^trending_product.id,
+        select: %{
+          product_id: candidate.id,
+          identity_count: type(^5, :integer),
+          activity_at: type(^@now, :utc_datetime_usec)
+        }
+
+    {_summaries, [workspace_query]} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_summaries([new_product.id],
+          now: @now,
+          requested_fields: MapSet.new()
+        )
+      end)
+
+    {_fallback, [fallback_query]} =
+      capture_select_queries(fn ->
+        Pricing.home_fallback_deal_candidates(activity_query, now: @now, limit: 6)
+      end)
+
+    refute first_observation_relation?(workspace_query)
+    refute workspace_query =~ "percentile_cont"
+    assert first_observation_relation?(fallback_query)
+    assert fallback_query =~ "percentile_cont"
   end
 
   test "page facts are page-scoped and honor requested fields" do
@@ -387,13 +424,49 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert query =~ ~s("home_relevance" AS MATERIALIZED), query
     assert query =~ ~s(FROM "home_relevance"), query
-    refute query =~ "min("
+    assert query =~ "percentile_cont"
+    refute first_observation_relation?(query)
 
     refute Regex.match?(
              ~r/SELECT DISTINCT [a-z0-9]+\."product_id" FROM "home_relevance"/,
              query
            ),
            query
+  end
+
+  test "viewer deal existence applies relevance and availability without output work" do
+    owner = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "viewer-existence"})
+    merchant_product = offer(product, "viewer-existence", "90", 0, true)
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Viewer existence",
+               product_ids: [product.id]
+             })
+
+    relevance_query = Alerts.home_relevance_candidates_query(owner.id, [])
+
+    {exists?, [query]} =
+      capture_queries(fn ->
+        Pricing.home_viewer_deal_exists?(relevance_query, now: @now)
+      end)
+
+    assert exists?
+    assert query =~ ~s("home_relevance" AS MATERIALIZED), query
+    refute query =~ "percentile_cont", query
+    refute query =~ ~s(AS "viewer_rank"), query
+    refute query =~ ~s(JOIN "products"), query
+
+    {1, _} =
+      ProductCompare.Repo.update_all(
+        from(candidate in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: candidate.id == ^merchant_product.id
+        ),
+        set: [is_active: false]
+      )
+
+    refute Pricing.home_viewer_deal_exists?(relevance_query, now: @now)
   end
 
   test "keeps offer read selects bounded as product count grows" do
@@ -468,5 +541,12 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       assert count_select_queries_targeting_table(one_queries, table) ==
                count_select_queries_targeting_table(six_queries, table)
     end)
+  end
+
+  defp first_observation_relation?(query) do
+    Regex.match?(
+      ~r/ORDER BY [a-z0-9]+\."observed_at"(?: ASC)?, [a-z0-9]+\."id"(?: ASC)? LIMIT 1/,
+      query
+    )
   end
 end

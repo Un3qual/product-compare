@@ -198,19 +198,30 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
     relevance_query = Alerts.home_relevance_candidates_query(user.id, current_product_ids)
 
-    case Pricing.home_viewer_deal_candidates(relevance_query, now: now, offset: 0, limit: 1) do
+    case Pricing.home_viewer_deal_candidates(relevance_query,
+           now: now,
+           offset: window.offset,
+           limit: window.fetch_limit
+         ) do
       [] ->
-        fallback_deal_rows(requested_fields, now, window)
+        empty_viewer_deal_rows(relevance_query, requested_fields, now, window)
 
-      [_match] ->
-        relevance_query
-        |> Pricing.home_viewer_deal_candidates(
-          now: now,
-          offset: window.offset,
-          limit: window.fetch_limit
-        )
+      offers ->
+        offers
         |> hydrate_offer_page(requested_fields, now, window.fetch_limit - 1)
         |> viewer_rows()
+    end
+  end
+
+  defp empty_viewer_deal_rows(_relevance_query, requested_fields, now, %{offset: 0} = window) do
+    fallback_deal_rows(requested_fields, now, window)
+  end
+
+  defp empty_viewer_deal_rows(relevance_query, requested_fields, now, window) do
+    if Pricing.home_viewer_deal_exists?(relevance_query, now: now) do
+      []
+    else
+      fallback_deal_rows(requested_fields, now, window)
     end
   end
 

@@ -456,6 +456,119 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            ]
   end
 
+  test "a non-empty first For You page executes one viewer ranking query" do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("viewer-page-first-budget-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    candidate =
+      non_deal_product("viewer-page-first-budget", category, operator, "80", "120")
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Viewer page-first budget",
+               product_ids: [candidate.product.id]
+             })
+
+    {{:ok, connection}, queries} =
+      capture_select_queries(fn ->
+        HomeResolver.viewer_deals(
+          %{current_user: owner, now: DateTime.utc_now(), selected_slugs: []},
+          %{first: 1},
+          %{}
+        )
+      end)
+
+    assert [%{node: %{id: product_id}}] = connection.edges
+    assert product_id == candidate.product.id
+    assert Enum.count(queries, &viewer_ranking_query?/1) == 1
+  end
+
+  test "a first-page viewer no-match falls back" do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("viewer-first-page-fallback-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    unmatched =
+      non_deal_product("viewer-first-page-unmatched", category, operator, "80", "120")
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: unmatched.product.id,
+               merchant_product_id: unmatched.offer.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "1"
+             })
+
+    fallback = qualified_product("viewer-first-page-fallback", category, operator, "90")
+
+    assert {:ok, connection} =
+             HomeResolver.viewer_deals(
+               %{current_user: owner, now: DateTime.utc_now(), selected_slugs: []},
+               %{first: 1},
+               %{}
+             )
+
+    assert [%{node: %{id: product_id}, reasons: [%{code: :new_offer}]}] = connection.edges
+    assert product_id == fallback.product.id
+  end
+
+  test "an empty later viewer page distinguishes exhaustion from true fallback" do
+    owner_with_match = AccountsFixtures.user_fixture()
+    owner_without_match = AccountsFixtures.user_fixture()
+    category = category_fixture("viewer-later-page-branch-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    personalized =
+      non_deal_product("viewer-later-page-exhausted", category, operator, "80", "120")
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner_with_match.id, %{
+               name: "Viewer page exhaustion",
+               product_ids: [personalized.product.id]
+             })
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner_without_match.id, %{
+               product_id: personalized.product.id,
+               merchant_product_id: personalized.offer.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "1"
+             })
+
+    first_fallback =
+      qualified_product("viewer-later-page-fallback-first", category, operator, "90")
+
+    second_fallback =
+      qualified_product("viewer-later-page-fallback-second", category, operator, "100")
+
+    after_first = Absinthe.Relay.Connection.offset_to_cursor(0)
+
+    assert {:ok, exhausted_page} =
+             HomeResolver.viewer_deals(
+               %{current_user: owner_with_match, now: DateTime.utc_now(), selected_slugs: []},
+               %{first: 1, after: after_first},
+               %{}
+             )
+
+    assert exhausted_page.edges == []
+
+    assert {:ok, later_fallback} =
+             HomeResolver.viewer_deals(
+               %{current_user: owner_without_match, now: DateTime.utc_now(), selected_slugs: []},
+               %{first: 1, after: after_first},
+               %{}
+             )
+
+    assert [%{node: %{id: fallback_product_id}, reasons: [%{code: :new_offer}]}] =
+             later_fallback.edges
+
+    assert fallback_product_id == second_fallback.product.id
+    refute fallback_product_id == first_fallback.product.id
+  end
+
   test "homeDeals paginates all viewer candidates with truthful cursors", %{conn: conn} do
     owner = AccountsFixtures.user_fixture()
     category = category_fixture("viewer-boundary-category")
@@ -693,6 +806,50 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
     assert {length(one_queries), length(page_queries), length(grown_queries)} == {2, 2, 2}
     assert length(irrelevant_products) > length(candidates)
+  end
+
+  test "New priceSignal hydration excludes the Relay lookahead row", %{conn: conn} do
+    category = category_fixture("new-price-signal-lookahead-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    returned = qualified_product("new-price-signal-returned", category, operator, "80")
+    lookahead = qualified_product("new-price-signal-lookahead", category, operator, "90")
+    add_price(returned.offer, "120", -3_600)
+    add_price(lookahead.offer, "130", -3_600)
+
+    query = """
+    query NewPriceSignalLookahead {
+      homeDeals(selectedSlugs: []) {
+        new(first: 1) {
+          edges { node { id } offer { priceSignal } }
+        }
+      }
+    }
+    """
+
+    {response, events} =
+      capture_select_query_events(fn -> raw_graphql(conn, query, %{}) end)
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "new" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{"id" => returned_id},
+                       "offer" => %{"priceSignal" => "BELOW_30_DAY_MEDIAN"}
+                     }
+                   ]
+                 }
+               }
+             }
+           } = response
+
+    assert returned_id == relay_id(:product, returned.product.id)
+    assert [median_event] = Enum.filter(events, &page_fact_median_query?(&1.query))
+    params = query_param_values(median_event.params)
+    assert returned.product.id in params
+    refute lookahead.product.id in params
   end
 
   test "New selection and its lazy priceSignal share the request observation boundary", %{
@@ -1394,6 +1551,18 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       ~r/^SELECT\s+\w+\."product_id",\s*\w+\."currency_id",\s*percentile_cont/s,
       query
     )
+  end
+
+  defp viewer_ranking_query?(query) do
+    String.contains?(query, ~s("home_relevance" AS MATERIALIZED)) and
+      String.contains?(query, ~s(AS "viewer_rank"))
+  end
+
+  defp query_param_values(params) do
+    Enum.flat_map(params, fn
+      values when is_list(values) -> values
+      value -> [value]
+    end)
   end
 
   defp graphql(conn, query, variables) do

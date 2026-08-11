@@ -220,17 +220,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
     ranked_viewer_offers =
       product_ids
       |> median_eligible_query(now)
-      |> subquery()
-      |> join(:inner, [offer], relevance in "home_relevance",
-        on: field(relevance, :product_id) == offer.product_id
-      )
-      |> where(
-        [offer, relevance],
-        field(relevance, :reason_rank) != 0 or
-          (offer.landed_price <= field(relevance, :watch_target) and
-             (is_nil(field(relevance, :merchant_product_id)) or
-                field(relevance, :merchant_product_id) == offer.merchant_product_id))
-      )
+      |> join_viewer_relevance()
       |> windows(
         [offer, relevance],
         viewer_product: [
@@ -284,6 +274,17 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
+  end
+
+  @spec viewer_deal_exists?(Ecto.Query.t(), keyword()) :: boolean()
+  def viewer_deal_exists?(relevance_query, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+
+    relevance_product_ids_query()
+    |> current_eligible_query(now)
+    |> join_viewer_relevance()
+    |> with_cte("home_relevance", as: ^relevance_query, materialized: true)
+    |> Repo.exists?()
   end
 
   defp winners_query(eligible_offers) do
@@ -482,6 +483,21 @@ defmodule ProductCompare.Pricing.HomeOffers do
   defp relevance_product_ids_query do
     from relevance in "home_relevance",
       select: %{product_id: field(relevance, :product_id)}
+  end
+
+  defp join_viewer_relevance(offers) do
+    offers
+    |> subquery()
+    |> join(:inner, [offer], relevance in "home_relevance",
+      on: field(relevance, :product_id) == offer.product_id
+    )
+    |> where(
+      [offer, relevance],
+      field(relevance, :reason_rank) != 0 or
+        (offer.landed_price <= field(relevance, :watch_target) and
+           (is_nil(field(relevance, :merchant_product_id)) or
+              field(relevance, :merchant_product_id) == offer.merchant_product_id))
+    )
   end
 
   defp maybe_filter_product_ids(query, :all), do: query

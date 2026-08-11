@@ -181,6 +181,10 @@ defmodule ProductCompare.Pricing do
   def home_viewer_deal_candidates(relevance_query, opts),
     do: HomeOffers.viewer_deal_candidates(relevance_query, opts)
 
+  @spec home_viewer_deal_exists?(Ecto.Query.t(), keyword()) :: boolean()
+  def home_viewer_deal_exists?(relevance_query, opts),
+    do: HomeOffers.viewer_deal_exists?(relevance_query, opts)
+
   @spec current_offer_truth(term(), keyword()) :: map()
   def current_offer_truth(product_id, opts \\ [])
 
