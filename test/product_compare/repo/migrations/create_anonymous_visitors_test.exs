@@ -31,6 +31,19 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
     with_base_schema(fn prefix ->
       assert :ok = migrate_up(prefix)
 
+      assert column_exists?(prefix, "commerce_click_sessions", "anonymous_id")
+      assert constraint_validated?(prefix, "commerce_click_sessions_anonymous_visitor_id_fkey")
+      assert constraint_validated?(prefix, "commerce_click_sessions_single_actor")
+      assert index_exists?(prefix, "commerce_click_sessions_anonymous_visitor_idx")
+
+      assert [["legacy-one"], ["legacy-one"]] =
+               MigrationRepo.query!("""
+               SELECT anonymous_id
+               FROM "#{prefix}"."commerce_click_sessions"
+               WHERE click_id IN ('first', 'repeat')
+               ORDER BY click_id
+               """).rows
+
       rows =
         MigrationRepo.query!(
           ~s(SELECT click_id, user_id, anonymous_visitor_id FROM "#{prefix}"."commerce_click_sessions" ORDER BY click_id)
@@ -46,6 +59,20 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
              ] = rows
 
       refute first_id == second_id
+
+      assert {:ok, _result} =
+               MigrationRepo.query(
+                 ~s[INSERT INTO "#{prefix}"."commerce_click_sessions" (click_id, anonymous_id) VALUES ('late', 'late-legacy')]
+               )
+
+      assert [[late_visitor_id]] =
+               MigrationRepo.query!("""
+               SELECT anonymous_visitor_id
+               FROM "#{prefix}"."commerce_click_sessions"
+               WHERE click_id = 'late'
+               """).rows
+
+      assert is_integer(late_visitor_id)
 
       assert {:error,
               %Postgrex.Error{postgres: %{constraint: "commerce_click_sessions_single_actor"}}} =
@@ -69,27 +96,64 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
     end)
   end
 
-  test "down restores stable anonymous text equality" do
+  test "down preserves every legacy anonymous id byte-for-byte" do
     with_base_schema(fn prefix ->
       assert :ok = migrate_up(prefix)
       assert :ok = migrate_down(prefix)
 
       assert [
-               ["authenticated", 1, nil],
-               ["blank", nil, nil],
-               ["first", nil, first],
+               ["authenticated", 1, "legacy-user-value"],
+               ["blank", nil, "  "],
+               ["first", nil, "legacy-one"],
                ["none", nil, nil],
-               ["repeat", nil, first],
-               ["second", nil, second]
+               ["repeat", nil, "legacy-one"],
+               ["second", nil, "legacy-two"]
              ] =
                MigrationRepo.query!(
                  ~s(SELECT click_id, user_id, anonymous_id FROM "#{prefix}"."commerce_click_sessions" ORDER BY click_id)
                ).rows
 
-      assert {:ok, _} = Ecto.UUID.cast(first)
-      assert {:ok, _} = Ecto.UUID.cast(second)
-      refute first == second
       refute table_exists?(prefix, "anonymous_visitors")
+    end)
+  end
+
+  test "single-actor constraint rejects direct dual-actor inserts" do
+    with_base_schema(fn prefix ->
+      assert :ok = migrate_up(prefix)
+
+      [[visitor_id]] =
+        MigrationRepo.query!(~s[SELECT id FROM "#{prefix}"."anonymous_visitors" LIMIT 1]).rows
+
+      assert {:error,
+              %Postgrex.Error{postgres: %{constraint: "commerce_click_sessions_single_actor"}}} =
+               MigrationRepo.query(
+                 """
+                 INSERT INTO "#{prefix}"."commerce_click_sessions"
+                   (click_id, user_id, anonymous_id, anonymous_visitor_id)
+                 VALUES ('dual-actor-insert', 1, 'legacy-user-value', $1)
+                 """,
+                 [visitor_id]
+               )
+    end)
+  end
+
+  test "single-actor constraint rejects dual-column updates to authenticated legacy rows" do
+    with_base_schema(fn prefix ->
+      assert :ok = migrate_up(prefix)
+
+      [[visitor_id]] =
+        MigrationRepo.query!(~s[SELECT id FROM "#{prefix}"."anonymous_visitors" LIMIT 1]).rows
+
+      assert {:error,
+              %Postgrex.Error{postgres: %{constraint: "commerce_click_sessions_single_actor"}}} =
+               MigrationRepo.query(
+                 """
+                 UPDATE "#{prefix}"."commerce_click_sessions"
+                 SET anonymous_id = 'changed-legacy-user-value', anonymous_visitor_id = $1
+                 WHERE click_id = 'authenticated'
+                 """,
+                 [visitor_id]
+               )
     end)
   end
 
@@ -156,6 +220,44 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
       )
       """,
       [prefix, table]
+    ).rows == [[true]]
+  end
+
+  defp column_exists?(prefix, table, column) do
+    MigrationRepo.query!(
+      """
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = $1 AND table_name = $2 AND column_name = $3
+      )
+      """,
+      [prefix, table, column]
+    ).rows == [[true]]
+  end
+
+  defp constraint_validated?(prefix, constraint) do
+    MigrationRepo.query!(
+      """
+      SELECT constraint_record.convalidated
+      FROM pg_constraint AS constraint_record
+      JOIN pg_namespace AS namespace ON namespace.oid = constraint_record.connamespace
+      WHERE namespace.nspname = $1 AND constraint_record.conname = $2
+      """,
+      [prefix, constraint]
+    ).rows == [[true]]
+  end
+
+  defp index_exists?(prefix, index) do
+    MigrationRepo.query!(
+      """
+      SELECT EXISTS (
+        SELECT 1
+        FROM pg_indexes
+        WHERE schemaname = $1 AND indexname = $2
+      )
+      """,
+      [prefix, index]
     ).rows == [[true]]
   end
 end

@@ -8,6 +8,31 @@ defmodule ProductCompare.DatabaseTestHelpers do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Accounts.User
 
+  def capture_queries(fun) when is_function(fun, 0) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if caller_process?(pid) do
+            send(pid, {message_ref, metadata.query})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
   def capture_select_queries(fun) when is_function(fun, 0) do
     handler_id = {__MODULE__, System.unique_integer([:positive])}
     ref = make_ref()

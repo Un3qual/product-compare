@@ -1,6 +1,8 @@
 defmodule ProductCompare.CommerceAttribution.AnonymousVisitorsTest do
   use ProductCompare.DataCase, async: false
 
+  import ProductCompare.DatabaseTestHelpers, only: [capture_queries: 1]
+
   alias ProductCompare.CommerceAttribution.Visitors
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
@@ -10,11 +12,15 @@ defmodule ProductCompare.CommerceAttribution.AnonymousVisitorsTest do
     entropy_id = Ecto.UUID.generate()
 
     assert {:ok, first} = Visitors.get_or_create(entropy_id)
-    assert {:ok, second} = Visitors.get_or_create(entropy_id)
 
-    assert first.id == second.id
+    assert {{:ok, same}, queries} =
+             capture_queries(fn -> Visitors.get_or_create(entropy_id) end)
+
+    assert same.id == first.id
     assert first.entropy_id == entropy_id
     assert Repo.aggregate(AnonymousVisitor, :count, :id) == 1
+    assert Enum.count(queries, &String.starts_with?(String.trim_leading(&1), "SELECT")) == 1
+    refute Enum.any?(queries, &String.starts_with?(String.trim_leading(&1), "INSERT"))
   end
 
   test "concurrent first clicks converge on one visitor row" do
