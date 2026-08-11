@@ -12,7 +12,7 @@ import {
   fetchRouteQuery,
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
-import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import { BrowseRoute, browseLoader } from "../../../src/routes/catalog/BrowseRoute";
 import { CatalogAdvancedFilters } from "../../../src/routes/catalog/CatalogAdvancedFilters";
 import {

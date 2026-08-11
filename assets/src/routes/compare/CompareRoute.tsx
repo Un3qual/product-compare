@@ -1,44 +1,140 @@
 import { Suspense, type ReactNode, useRef, useState } from "react";
-import { Content as TabsContent, List as TabsList, Root as TabsRoot, Trigger as TabsTrigger } from "@radix-ui/react-tabs";
+import {
+  Content as TabsContent,
+  List as TabsList,
+  Root as TabsRoot,
+  Trigger as TabsTrigger,
+} from "@radix-ui/react-tabs";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
+import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { SavedComparisonOperationsCreateSavedComparisonSetMutation } from "../../__generated__/SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql";
-import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
+import type {
+  CompareRouteQuery,
+  CompareRouteQuery$data,
+} from "../../__generated__/CompareRouteQuery.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
+import {
+  fetchRouteQuery,
+  getRelayEnvironmentFromRouterContext,
+  useRoutePreloadedQuery,
+} from "../../relay/route-preload";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { ContextRail } from "../../ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
+import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { CompareShell } from "./CompareShell";
 import {
-  compareLoader,
+  compareQueryViewData,
+  compareSpecModeFromUrl,
+  COMPARE_OFFER_CONTEXT_PAGE_SIZE,
   MAX_COMPARE_PRODUCTS,
   type CompareSpecMode,
-  type CompareRouteLoaderData
-} from "./loader";
-import {
-  CompareProductList,
-  CompareProductSummaryList
-} from "./CompareProductList";
+  type CompareRouteLoaderData,
+} from "./compare-route-data";
+import { CompareProductList, CompareProductSummaryList } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
 import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
 import { createSavedComparisonSetMutation } from "./SavedComparisonOperations";
 import {
   buildComparePathAfterRemovingSlugIndex,
-  buildComparePathFromSlugs
+  buildComparePathFromSlugs,
+  selectedCompareSlugsFromSearch,
 } from "./paths";
 import { CompareSelectionTray } from "./CompareSelectionTray";
 import { ShareComparisonControl } from "./ShareComparisonControl";
-import { compareRouteQuery } from "./queries/CompareRouteQuery";
 import {
   buildSavedComparisonSetMutationInput,
-  resolveSavedComparisonSetMutationOutcome
+  resolveSavedComparisonSetMutationOutcome,
 } from "./saved-comparison-mutation-data";
+
+export {
+  recommendationProfileFromUrl,
+  shouldRevalidateCompareLoader,
+  type RecommendationProfile,
+} from "./recommendation-route-data";
+
+const compareRouteQuery = graphql`
+  query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) {
+    comparisonProducts(slugs: $slugs) {
+      id
+      name
+      slug
+      description
+      brand {
+        id
+        name
+      }
+      currentAttributes {
+        attributeId
+        code
+        displayName
+        dataType
+        valueText
+        sortOrder
+        groupLabel
+        isRequired
+        numericValue
+        booleanValue
+        enumOptionId
+        unitSymbol
+      }
+      merchantProducts(first: $offerFirst, activeOnly: true) {
+        edges {
+          node {
+            id
+            currency
+            merchant {
+              id
+              name
+              domain
+            }
+            latestPrice {
+              id
+              price
+              observedAt
+            }
+            activeCoupons(first: 2) {
+              edges {
+                node {
+                  code
+                  discountType
+                  discountValue
+                  currency
+                  validTo
+                }
+              }
+              pageInfo {
+                hasNextPage
+              }
+            }
+            priceHistory(first: 3) {
+              edges {
+                node {
+                  id
+                  price
+                  observedAt
+                }
+              }
+              pageInfo {
+                hasNextPage
+              }
+            }
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+      }
+      ...CompareProductList_product
+    }
+  }
+`;
 
 const styles = create({
   tabList: {
@@ -47,7 +143,7 @@ const styles = create({
     borderBlockEndWidth: "1px",
     display: "flex",
     gap: "0.25rem",
-    overflowX: "auto"
+    overflowX: "auto",
   },
   tab: {
     borderBlockEndColor: "transparent",
@@ -57,18 +153,56 @@ const styles = create({
     fontWeight: 650,
     paddingBlock: "0.65rem",
     paddingInline: "0.9rem",
-    textDecoration: "none"
+    textDecoration: "none",
   },
   tabActive: {
     borderBlockEndColor: tokens.actionAccent,
-    color: tokens.text
-  }
+    color: tokens.text,
+  },
 });
 
 interface SaveFeedbackState {
   error: string | null;
   isInFlight: boolean;
   message: string | null;
+}
+
+export async function compareLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
+  const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
+  const specMode = compareSpecModeFromUrl(request.url);
+
+  if (slugs.length === 0) return { status: "empty", specMode, slugs: [] };
+  if (slugs.length > MAX_COMPARE_PRODUCTS) return { status: "too_many", specMode, slugs };
+
+  const environment = getRelayEnvironmentFromRouterContext(context);
+
+  try {
+    const fetchedQuery = await fetchRouteQuery<CompareRouteQuery>(
+      environment,
+      compareRouteQuery,
+      { slugs, offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE },
+      { signal: request.signal },
+    );
+    const viewData = compareQueryViewData(slugs, fetchedQuery.data);
+
+    if (!viewData) {
+      fetchedQuery.dispose();
+      return { status: "not_found", specMode, slugs };
+    }
+
+    return {
+      status: "ready",
+      specMode,
+      slugs,
+      query: fetchedQuery.descriptor,
+      ...viewData,
+    };
+  } catch (error) {
+    throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
+  }
 }
 
 export function CompareRoute() {
@@ -78,21 +212,19 @@ export function CompareRoute() {
   return <CompareSelectionRoute key={selectionKey} loaderData={loaderData} />;
 }
 
-function CompareSelectionRoute({
-  loaderData
-}: {
-  loaderData: CompareRouteLoaderData;
-}) {
+function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderData }) {
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
     error: null,
     isInFlight: false,
-    message: null
+    message: null,
   });
   const isSaveInFlightRef = useRef(false);
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<SavedComparisonOperationsCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+    useMutation<SavedComparisonOperationsCreateSavedComparisonSetMutation>(
+      createSavedComparisonSetMutation,
+    );
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -105,21 +237,21 @@ function CompareSelectionRoute({
 
     isSaveInFlightRef.current = true;
     const saveRequest = {
-      id: nextSaveRequestIdRef.current + 1
+      id: nextSaveRequestIdRef.current + 1,
     };
     nextSaveRequestIdRef.current = saveRequest.id;
     activeSaveRequestRef.current = saveRequest;
     setSaveFeedback({
       error: null,
       isInFlight: true,
-      message: null
+      message: null,
     });
 
     commitRouteMutation(
       commitCreateSavedComparisonSet,
       {
         variables: {
-          input: buildSavedComparisonSetMutationInput(loaderData.products)
+          input: buildSavedComparisonSetMutationInput(loaderData.products),
         },
         onCompleted: (response, graphQLErrors) => {
           if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
@@ -128,7 +260,7 @@ function CompareSelectionRoute({
 
           const outcome = resolveSavedComparisonSetMutationOutcome(
             response.createSavedComparisonSet,
-            graphQLErrors
+            graphQLErrors,
           );
 
           setSaveFeedback({ ...outcome, isInFlight: false });
@@ -144,11 +276,11 @@ function CompareSelectionRoute({
           setSaveFeedback({
             error: DEFAULT_ROUTE_ERROR_MESSAGE,
             isInFlight: false,
-            message: null
+            message: null,
           });
           activeSaveRequestRef.current = null;
           isSaveInFlightRef.current = false;
-        }
+        },
       },
       () => {
         if (!isActiveSaveRequest(activeSaveRequestRef.current, saveRequest)) {
@@ -158,71 +290,21 @@ function CompareSelectionRoute({
         setSaveFeedback({
           error: DEFAULT_ROUTE_ERROR_MESSAGE,
           isInFlight: false,
-          message: null
+          message: null,
         });
         activeSaveRequestRef.current = null;
         isSaveInFlightRef.current = false;
-      }
+      },
     );
   }
 
   if (loaderData.status === "ready") {
-    const saveInFlight = saveFeedback.isInFlight;
-
     return (
-      <CompareShell title="Compare products">
-        {loaderData.query ? <CompareRouteQueryRetainer query={loaderData.query} /> : null}
-        <WorkspaceLayout
-          context={
-            <ContextRail
-              description="Save this set, remove selected products, or add another product."
-              label="Comparison controls"
-            >
-              <Button disabled={saveInFlight} onClick={handleSave} type="button">
-                {saveInFlight ? "Saving comparison..." : "Save comparison"}
-              </Button>
-              <ShareComparisonControl products={loaderData.products} />
-              <p aria-label="Save comparison status" aria-live="polite" role="status">
-                {saveFeedback.message ?? ""}
-              </p>
-              <CompareSelectionTray
-                items={loaderData.products.map((product) => ({
-                  label: product.name,
-                  slug: product.slug
-                }))}
-                maxProducts={MAX_COMPARE_PRODUCTS}
-                openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
-                  specMode: loaderData.specMode
-                })}
-                removePathForIndex={(index) =>
-                  buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
-                    specMode: loaderData.specMode
-                  })
-                }
-                selectedSlugs={loaderData.slugs}
-              />
-              {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
-                <CompareProductPickerBoundary
-                  heading="Add another product"
-                  specMode={loaderData.specMode}
-                  selectedSlugs={loaderData.slugs}
-                />
-              ) : null}
-            </ContextRail>
-          }
-          label="Comparison workspace"
-        >
-          {saveFeedback.error ? (
-            <FeedbackState kind="error" title={saveFeedback.error} />
-          ) : null}
-          <CompareSpecModeControls
-            selectedSlugs={loaderData.slugs}
-            specMode={loaderData.specMode}
-          >
-            <CompareProductDetailsBoundary loaderData={loaderData} />
-          </CompareSpecModeControls>
-        </WorkspaceLayout>
-      </CompareShell>
+      <ReadyCompareSelectionRoute
+        loaderData={loaderData}
+        onSave={handleSave}
+        saveFeedback={saveFeedback}
+      />
     );
   }
 
@@ -247,19 +329,78 @@ function CompareSelectionRoute({
   );
 }
 
-function CompareRouteQueryRetainer({
-  query
+function ReadyCompareSelectionRoute({
+  loaderData,
+  onSave,
+  saveFeedback,
 }: {
-  query: Extract<CompareRouteLoaderData, { status: "ready" }>["query"];
+  loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
+  onSave: () => void;
+  saveFeedback: SaveFeedbackState;
 }) {
-  useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, query);
+  const queryRef = useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, loaderData.query);
+  const data = usePreloadedQuery<CompareRouteQuery>(compareRouteQuery, queryRef);
+  const saveInFlight = saveFeedback.isInFlight;
 
-  return null;
+  return (
+    <CompareShell title="Compare products">
+      <WorkspaceLayout
+        context={
+          <ContextRail
+            description="Save this set, remove selected products, or add another product."
+            label="Comparison controls"
+          >
+            <Button disabled={saveInFlight} onClick={onSave} type="button">
+              {saveInFlight ? "Saving comparison..." : "Save comparison"}
+            </Button>
+            <ShareComparisonControl products={loaderData.products} />
+            <p aria-label="Save comparison status" aria-live="polite" role="status">
+              {saveFeedback.message ?? ""}
+            </p>
+            <CompareSelectionTray
+              items={loaderData.products.map((product) => ({
+                label: product.name,
+                slug: product.slug,
+              }))}
+              maxProducts={MAX_COMPARE_PRODUCTS}
+              openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
+                specMode: loaderData.specMode,
+              })}
+              removePathForIndex={(index) =>
+                buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
+                  specMode: loaderData.specMode,
+                })
+              }
+              selectedSlugs={loaderData.slugs}
+            />
+            {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
+              <CompareProductPickerBoundary
+                heading="Add another product"
+                specMode={loaderData.specMode}
+                selectedSlugs={loaderData.slugs}
+              />
+            ) : null}
+          </ContextRail>
+        }
+        label="Comparison workspace"
+      >
+        {saveFeedback.error ? <FeedbackState kind="error" title={saveFeedback.error} /> : null}
+        <CompareSpecModeControls selectedSlugs={loaderData.slugs} specMode={loaderData.specMode}>
+          <CompareProductDetailsBoundary
+            fragmentProducts={data.comparisonProducts}
+            loaderData={loaderData}
+          />
+        </CompareSpecModeControls>
+      </WorkspaceLayout>
+    </CompareShell>
+  );
 }
 
 function CompareProductDetailsBoundary({
-  loaderData
+  fragmentProducts,
+  loaderData,
 }: {
+  fragmentProducts: CompareRouteQuery$data["comparisonProducts"];
   loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
 }) {
   return (
@@ -273,7 +414,7 @@ function CompareProductDetailsBoundary({
       }
     >
       <Suspense fallback={<FeedbackState kind="loading" title="Loading comparison..." />}>
-        <CompareProductList loaderData={loaderData} />
+        <CompareProductList fragmentProducts={fragmentProducts} loaderData={loaderData} />
       </Suspense>
     </ResettableErrorBoundary>
   );
@@ -282,7 +423,7 @@ function CompareProductDetailsBoundary({
 function CompareSpecModeControls({
   children,
   selectedSlugs,
-  specMode
+  specMode,
 }: {
   children: ReactNode;
   selectedSlugs: readonly string[];
@@ -298,10 +439,7 @@ function CompareSpecModeControls({
             <Link
               aria-current={item.isCurrent ? "page" : undefined}
               to={item.path}
-              {...props(
-                styles.tab,
-                item.isCurrent ? styles.tabActive : null
-              )}
+              {...props(styles.tab, item.isCurrent ? styles.tabActive : null)}
             >
               {item.label}
             </Link>
@@ -309,12 +447,7 @@ function CompareSpecModeControls({
         ))}
       </TabsList>
       {navigation.modes.map((item) => (
-        <TabsContent
-          forceMount
-          hidden={!item.isCurrent}
-          key={item.mode}
-          value={item.mode}
-        >
+        <TabsContent forceMount hidden={!item.isCurrent} key={item.mode} value={item.mode}>
           {item.isCurrent ? children : null}
         </TabsContent>
       ))}
@@ -324,7 +457,7 @@ function CompareSpecModeControls({
 
 function isActiveSaveRequest(
   activeSaveRequest: { id: number } | null,
-  saveRequest: { id: number }
+  saveRequest: { id: number },
 ) {
   return activeSaveRequest?.id === saveRequest.id;
 }

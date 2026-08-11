@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1dde623c14196c409d2d6ab9d22345be>>
+ * @generated SignedSource<<5363d0f9f038773c94da6e3c712b1293>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,11 +9,11 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CompareProductPickerQuery$variables = {
+export type CompareProductPickerBoundaryQuery$variables = {
   after?: string | null | undefined;
   first: number;
 };
-export type CompareProductPickerQuery$data = {
+export type CompareProductPickerBoundaryQuery$data = {
   readonly products: {
     readonly edges: ReadonlyArray<{
       readonly node: {
@@ -32,9 +32,9 @@ export type CompareProductPickerQuery$data = {
     };
   } | null | undefined;
 };
-export type CompareProductPickerQuery = {
-  response: CompareProductPickerQuery$data;
-  variables: CompareProductPickerQuery$variables;
+export type CompareProductPickerBoundaryQuery = {
+  response: CompareProductPickerBoundaryQuery$data;
+  variables: CompareProductPickerBoundaryQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -163,7 +163,7 @@ return {
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "CompareProductPickerQuery",
+    "name": "CompareProductPickerBoundaryQuery",
     "selections": (v4/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
@@ -175,20 +175,20 @@ return {
       (v0/*: any*/)
     ],
     "kind": "Operation",
-    "name": "CompareProductPickerQuery",
+    "name": "CompareProductPickerBoundaryQuery",
     "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "34d7aed28a897c79edced5fc453ca69b",
+    "cacheID": "27ede87f01f19b8b7a7a61ff46bcc6ca",
     "id": null,
     "metadata": {},
-    "name": "CompareProductPickerQuery",
+    "name": "CompareProductPickerBoundaryQuery",
     "operationKind": "query",
-    "text": "query CompareProductPickerQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
+    "text": "query CompareProductPickerBoundaryQuery(\n  $first: Int!\n  $after: String\n) {\n  products(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        name\n        slug\n        brand {\n          id\n          name\n        }\n      }\n    }\n    pageInfo {\n      hasNextPage\n      endCursor\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "b9045dc8348d8ecded649aa263a337e4";
+(node as any).hash = "a21d2ef4aebea4be2e7b351e1461adca";
 
 export default node;

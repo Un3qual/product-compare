@@ -1,19 +1,12 @@
-import type { LoaderFunctionArgs } from "react-router-dom";
 import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
-import {
-  fetchRouteQuery,
-  getRelayEnvironmentFromRouterContext,
-  type RelayRouteQueryDescriptor,
-} from "../../relay/route-preload";
+import type { RelayRouteQueryDescriptor } from "../../relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { parseGraphQLDateTime } from "../graphql-datetime";
-import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import {
   MAX_COMPARE_PRODUCTS,
   selectedCompareSlugsFromSearch,
   type CompareSpecMode,
 } from "./paths";
-import { compareRouteQuery } from "./queries/CompareRouteQuery";
 
 export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
 export {
@@ -100,66 +93,20 @@ type PresentCompareProduct = NonNullable<CompareProduct>;
 type CompareOfferConnection = NonNullable<PresentCompareProduct["merchantProducts"]>;
 type CompareOfferContextNode = CompareOfferConnection["edges"][number]["node"];
 
-export async function compareLoader({
-  context,
-  request,
-}: LoaderFunctionArgs): Promise<CompareRouteLoaderData> {
-  const slugs = selectedCompareSlugsFromSearch(new URL(request.url).search);
-  const specMode = compareSpecModeFromUrl(request.url);
+export function compareQueryViewData(
+  slugs: readonly string[],
+  data: CompareRouteQuery["response"],
+) {
+  const products = orderProductsByRequestedSlugs(slugs, data.comparisonProducts);
 
-  if (slugs.length === 0) {
-    return {
-      status: "empty",
-      specMode,
-      slugs: [],
-    };
-  }
+  if (products.some((product) => !product)) return null;
 
-  if (slugs.length > MAX_COMPARE_PRODUCTS) {
-    return {
-      status: "too_many",
-      specMode,
-      slugs,
-    };
-  }
+  const presentProducts = products.filter(isPresentProduct);
 
-  const environment = getRelayEnvironmentFromRouterContext(context);
-
-  try {
-    const fetchedQuery = await fetchRouteQuery<CompareRouteQuery>(
-      environment,
-      compareRouteQuery,
-      {
-        slugs,
-        offerFirst: COMPARE_OFFER_CONTEXT_PAGE_SIZE,
-      },
-      { signal: request.signal },
-    );
-    const products = orderProductsByRequestedSlugs(slugs, fetchedQuery.data.comparisonProducts);
-
-    if (products.some((product) => !product)) {
-      fetchedQuery.dispose();
-
-      return {
-        status: "not_found",
-        specMode,
-        slugs,
-      };
-    }
-
-    const presentProducts = products.filter(isPresentProduct);
-
-    return {
-      status: "ready",
-      specMode,
-      slugs,
-      query: fetchedQuery.descriptor,
-      offerContexts: summarizeOfferContexts(presentProducts),
-      products: presentProducts.map(summarizeProduct),
-    };
-  } catch (error) {
-    throw normalizeRouteLoaderThrownError(error, "Comparison fetch failed");
-  }
+  return {
+    offerContexts: summarizeOfferContexts(presentProducts),
+    products: presentProducts.map(summarizeProduct),
+  };
 }
 
 export function compareSpecModeFromUrl(requestUrl: string): CompareSpecMode {

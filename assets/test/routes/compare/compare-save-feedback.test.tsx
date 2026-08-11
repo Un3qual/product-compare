@@ -1,24 +1,26 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 
 const {
   commitMutationMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("react-relay", async () => {
@@ -26,20 +28,21 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -48,11 +51,12 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
@@ -65,9 +69,9 @@ const DESK_LAMP = {
   description: "A warm desk lamp.",
   brand: {
     id: "brand-1",
-    name: "Acme"
+    name: "Acme",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } as const;
 
 const DESK_CHAIR = {
@@ -77,61 +81,61 @@ const DESK_CHAIR = {
   description: "An ergonomic chair.",
   brand: {
     id: "brand-2",
-    name: "OfficeCo"
+    name: "OfficeCo",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } as const;
 
 const deskLampQueryDescriptor = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DESK_LAMP.slug }
-  }
+    variables: { slug: DESK_LAMP.slug },
+  },
 };
 
 const deskChairQueryDescriptor = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DESK_CHAIR.slug }
-  }
+    variables: { slug: DESK_CHAIR.slug },
+  },
 };
 
 const deskLampQueryRef = {
   dispose: vi.fn(),
-  variables: deskLampQueryDescriptor.__relayQuery.variables
+  variables: deskLampQueryDescriptor.__relayQuery.variables,
 };
 
 const deskChairQueryRef = {
   dispose: vi.fn(),
-  variables: deskChairQueryDescriptor.__relayQuery.variables
+  variables: deskChairQueryDescriptor.__relayQuery.variables,
 };
 
 const deskLampCompareQueryDescriptor = {
   __relayQuery: {
     operationName: "CompareRouteQuery",
     text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
-    variables: { slugs: [DESK_LAMP.slug] }
-  }
+    variables: { slugs: [DESK_LAMP.slug] },
+  },
 };
 
 const deskChairCompareQueryDescriptor = {
   __relayQuery: {
     operationName: "CompareRouteQuery",
     text: "query CompareRouteQuery($slugs: [String!]!) { comparisonProducts(slugs: $slugs) { id } }",
-    variables: { slugs: [DESK_CHAIR.slug] }
-  }
+    variables: { slugs: [DESK_CHAIR.slug] },
+  },
 };
 
 const deskLampCompareQueryRef = {
   dispose: vi.fn(),
-  variables: deskLampCompareQueryDescriptor.__relayQuery.variables
+  variables: deskLampCompareQueryDescriptor.__relayQuery.variables,
 };
 
 const deskChairCompareQueryRef = {
   dispose: vi.fn(),
-  variables: deskChairCompareQueryDescriptor.__relayQuery.variables
+  variables: deskChairCompareQueryDescriptor.__relayQuery.variables,
 };
 
 const READY_LOADER_DATA = {
@@ -147,9 +151,9 @@ const READY_LOADER_DATA = {
       slug: DESK_LAMP.slug,
       description: DESK_LAMP.description,
       brandName: DESK_LAMP.brand.name,
-      currentAttributes: []
-    }
-  ]
+      currentAttributes: [],
+    },
+  ],
 } as const;
 
 const SECOND_READY_LOADER_DATA = {
@@ -165,13 +169,15 @@ const SECOND_READY_LOADER_DATA = {
       slug: DESK_CHAIR.slug,
       description: DESK_CHAIR.description,
       brandName: DESK_CHAIR.brand.name,
-      currentAttributes: []
-    }
-  ]
+      currentAttributes: [],
+    },
+  ],
 } as const;
 
 beforeEach(() => {
   commitMutationMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUseMutation.mockReset();
@@ -181,8 +187,8 @@ beforeEach(() => {
   deskChairQueryRef.dispose.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
-      edges: []
-    }
+      edges: [],
+    },
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockRouteQueryRefs();
@@ -216,10 +222,10 @@ test("compare route only submits one save mutation while the request is in fligh
     pendingCompletion?.({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
 
@@ -233,10 +239,10 @@ test("compare route keeps a stable status region in the DOM before and after sav
     onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
@@ -253,10 +259,10 @@ test("compare route keeps a stable status region in the DOM before and after sav
         variables: {
           input: {
             name: "Desk Lamp comparison",
-            productIds: ["product-1"]
-          }
-        }
-      })
+            productIds: ["product-1"],
+          },
+        },
+      }),
     );
   });
 
@@ -271,18 +277,18 @@ test("compare route reports a generic error when save completes with top-level G
       {
         createSavedComparisonSet: {
           savedComparisonSet: {
-            id: "saved-set-1"
+            id: "saved-set-1",
           },
           errors: [
             {
               code: "INVALID_ARGUMENT",
               field: "productIds",
-              message: "Payload detail should not win"
-            }
-          ]
-        }
+              message: "Payload detail should not win",
+            },
+          ],
+        },
       },
-      [{ message: "database stacktrace" }]
+      [{ message: "database stacktrace" }],
     );
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
@@ -317,10 +323,10 @@ test("compare route allows a later save after the current request settles", asyn
     completions[0]?.({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
 
@@ -336,10 +342,10 @@ test("compare route clears save feedback when the selected comparison changes", 
     onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
   mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
@@ -386,10 +392,10 @@ test("compare route ignores stale save completions after the selected comparison
     completeFirstSelection?.({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
 
@@ -449,15 +455,27 @@ function compareRouteElement() {
 
 function mockProductQueries() {
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === deskLampCompareQueryRef) {
+      return {
+        comparisonProducts: [DESK_LAMP],
+      };
+    }
+
+    if (queryRef === deskChairCompareQueryRef) {
+      return {
+        comparisonProducts: [DESK_CHAIR],
+      };
+    }
+
     if (queryRef === deskLampQueryRef) {
       return {
-        product: DESK_LAMP
+        product: DESK_LAMP,
       };
     }
 
     if (queryRef === deskChairQueryRef) {
       return {
-        product: DESK_CHAIR
+        product: DESK_CHAIR,
       };
     }
 

@@ -17,7 +17,7 @@ import {
 import { TextField } from "../../ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
-import type { CompareProductSummary } from "./loader";
+import type { CompareProductSummary } from "./compare-route-data";
 import {
   comparisonSharingOperationsQuery,
   publishComparisonSnapshotMutation,

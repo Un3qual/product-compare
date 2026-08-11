@@ -464,7 +464,7 @@ function homeResponders({
 } = {}): Record<string, GraphQLResponder> {
   return {
     BrowseRouteQuery: { data: emptyBrowseData() },
-    CompareProductPickerQuery: { data: emptyProductPickerData() },
+    CompareProductPickerBoundaryQuery: { data: emptyProductPickerData() },
     CompareRouteQuery: ({ variables }) => ({
       data: {
         comparisonProducts: selectedProducts(variables.slugs).map(compareProduct),

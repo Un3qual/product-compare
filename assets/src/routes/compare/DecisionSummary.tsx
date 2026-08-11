@@ -4,45 +4,42 @@ import { Link } from "react-router-dom";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { productOffersPath } from "../offers/paths";
 
-import type {
-  CompareProductSummary,
-  CompareRouteLoaderData
-} from "./loader";
+import type { CompareProductSummary, CompareRouteLoaderData } from "./compare-route-data";
 import {
   buildDecisionSummaryMetricRows,
-  type DecisionSummaryMetricRow
+  type DecisionSummaryMetricRow,
 } from "./decision-summary-data";
 
 const styles = create({
   section: {
     display: "grid",
-    gap: "0.85rem"
+    gap: "0.85rem",
   },
   title: {
     fontSize: "1.25rem",
-    margin: 0
+    margin: 0,
   },
   description: {
     color: tokens.textSecondary,
-    margin: 0
+    margin: 0,
   },
   tableWrap: {
     borderColor: tokens.borderQuiet,
     borderRadius: "var(--pc-radius-large)",
     borderStyle: "solid",
     borderWidth: "1px",
-    overflowX: "auto"
+    overflowX: "auto",
   },
   table: {
     borderCollapse: "collapse",
     minWidth: "48rem",
-    width: "100%"
-  }
+    width: "100%",
+  },
 });
 
 export function DecisionSummary({
   offerContexts,
-  products
+  products,
 }: {
   offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
   products: CompareProductSummary[];
@@ -69,7 +66,7 @@ export function DecisionSummary({
 
 function DecisionSummaryBody({
   offerContexts,
-  products
+  products,
 }: {
   offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
   products: CompareProductSummary[];
@@ -99,7 +96,7 @@ function DecisionSummaryHeader({ products }: { products: CompareProductSummary[]
 
 function DecisionSummaryMetricRows({
   offerContexts,
-  products
+  products,
 }: {
   offerContexts: Extract<CompareRouteLoaderData, { status: "ready" }>["offerContexts"];
   products: CompareProductSummary[];
@@ -131,9 +128,7 @@ function ReviewOffersRow({ products }: { products: CompareProductSummary[] }) {
       label="Review offers link"
       products={products}
       renderCell={(product) => (
-        <Link to={productOffersPath(product.id)}>
-          Review {product.name} offers
-        </Link>
+        <Link to={productOffersPath(product.id)}>Review {product.name} offers</Link>
       )}
     />
   );
@@ -143,7 +138,7 @@ function DecisionSummaryRow({
   cellKey,
   label,
   products,
-  renderCell
+  renderCell,
 }: {
   cellKey: string;
   label: string;

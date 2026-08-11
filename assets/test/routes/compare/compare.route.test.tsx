@@ -1,36 +1,27 @@
 import { startTransition } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../src/relay/environment";
-import {
-  fetchRouteQuery,
-  useRoutePreloadedQuery
-} from "../../../src/relay/route-preload";
-import {
-  MemoryRouter,
-  useLoaderData,
-  useLocation,
-  useRouteError
-} from "react-router-dom";
-import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
+import { MemoryRouter, useLoaderData, useLocation, useRouteError } from "react-router-dom";
+import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 import {
-  compareLoader,
   MAX_COMPARE_PRODUCTS,
-  type CompareRouteLoaderData
-} from "../../../src/routes/compare/loader";
+  type CompareRouteLoaderData,
+} from "../../../src/routes/compare/compare-route-data";
 import {
   isUnauthorizedSavedComparisonsResponse,
-  savedComparisonsLoader
+  savedComparisonsLoader,
 } from "../../../src/routes/compare/saved-data";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
-import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
+import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
 import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
 import { CompareSpecificationMatrix } from "../../../src/routes/compare/CompareSpecificationMatrix";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
-  selectedCompareSlugsFromSearch
+  selectedCompareSlugsFromSearch,
 } from "../../../src/routes/compare/paths";
 import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
 import {
@@ -39,7 +30,7 @@ import {
   buildGraphQLResponseWithErrors,
   buildRouteLoaderGraphQLError,
   buildSavedComparisonsLoaderArgs,
-  buildSuccessfulDeleteResponse
+  buildSuccessfulDeleteResponse,
 } from "./saved-comparisons-test-helpers";
 import type { DeleteSavedComparisonSetMutationResponse } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
@@ -48,40 +39,42 @@ function confirmSavedComparisonDeletion() {
   fireEvent.click(
     within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
       "button",
-      { name: "Delete comparison" }
-    )
+      { name: "Delete comparison" },
+    ),
   );
 }
 
 const {
   commitMutationMock,
   fetchRouteQueryMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
   useRouteErrorMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRouteErrorMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
     fetchRouteQuery: fetchRouteQueryMock,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -90,9 +83,10 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
@@ -102,13 +96,14 @@ vi.mock("react-router-dom", async () => {
   return {
     ...actual,
     useLoaderData: useLoaderDataMock,
-    useRouteError: useRouteErrorMock
+    useRouteError: useRouteErrorMock,
   };
 });
 
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRouteError = vi.mocked(useRouteError);
@@ -187,9 +182,9 @@ const DETAIL_PRODUCT = {
   description: "A narrow product detail baseline.",
   brand: {
     id: "brand-1",
-    name: "Acme"
+    name: "Acme",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } satisfies CompareTestProduct;
 const SECOND_PRODUCT = {
   id: "UHJvZHVjdDoy",
@@ -198,9 +193,9 @@ const SECOND_PRODUCT = {
   description: "Another product for comparison.",
   brand: {
     id: "brand-2",
-    name: "Bravo"
+    name: "Bravo",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } satisfies CompareTestProduct;
 const THIRD_PRODUCT = {
   id: "UHJvZHVjdDoz",
@@ -209,48 +204,48 @@ const THIRD_PRODUCT = {
   description: "A third product for selection editing coverage.",
   brand: {
     id: "brand-3",
-    name: "Charlie"
+    name: "Charlie",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } satisfies CompareTestProduct;
 
 const DETAIL_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null }
-  }
+    variables: { slug: DETAIL_PRODUCT.slug, offerFirst: 3, offersAfter: null },
+  },
 };
 
 const SECOND_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null }
-  }
+    variables: { slug: SECOND_PRODUCT.slug, offerFirst: 3, offersAfter: null },
+  },
 };
 
 const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null }
-  }
+    variables: { slug: THIRD_PRODUCT.slug, offerFirst: 3, offersAfter: null },
+  },
 };
 
 const DETAIL_PRODUCT_QUERY_REF = {
   dispose: vi.fn(),
-  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const SECOND_PRODUCT_QUERY_REF = {
   dispose: vi.fn(),
-  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const THIRD_PRODUCT_QUERY_REF = {
   dispose: vi.fn(),
-  variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
@@ -259,22 +254,22 @@ const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
     text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3
-    }
-  }
+      offerFirst: 3,
+    },
+  },
 };
 
 const COMPARE_ROUTE_QUERY_REF = {
   dispose: vi.fn(),
-  variables: COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
     operationName: "SavedComparisonOperationsQuery",
     text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-    variables
-  }
+    variables,
+  },
 });
 
 const SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR = savedComparisonsQueryDescriptor({ first: 20 });
@@ -283,7 +278,7 @@ const COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE = 3;
 
 function buildOfferContextConnection({
   hasNextPage = false,
-  offers
+  offers,
 }: {
   hasNextPage?: boolean;
   offers: CompareOfferTestNode[];
@@ -295,22 +290,22 @@ function buildOfferContextConnection({
         activeCoupons: {
           edges: node.activeCoupons?.edges ?? [],
           pageInfo: {
-            hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false
-          }
+            hasNextPage: node.activeCoupons?.pageInfo.hasNextPage ?? false,
+          },
         },
         priceHistory: {
           edges: node.priceHistory?.edges ?? [],
           pageInfo: {
-            hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false
-          }
+            hasNextPage: node.priceHistory?.pageInfo.hasNextPage ?? false,
+          },
         },
-        ...node
-      }
+        ...node,
+      },
     })),
     pageInfo: {
       endCursor: offers.length > 0 ? `offer-cursor-${offers.length}` : null,
-      hasNextPage
-    }
+      hasNextPage,
+    },
   };
 }
 
@@ -319,7 +314,7 @@ const buildFetchedProductQuery = (
   descriptor:
     | typeof DETAIL_PRODUCT_QUERY_DESCRIPTOR
     | typeof SECOND_PRODUCT_QUERY_DESCRIPTOR
-    | typeof THIRD_PRODUCT_QUERY_DESCRIPTOR
+    | typeof THIRD_PRODUCT_QUERY_DESCRIPTOR,
 ) => ({
   data: {
     product,
@@ -327,25 +322,25 @@ const buildFetchedProductQuery = (
       product
         ? {
             ...product,
-            merchantProducts: buildOfferContextConnection({ offers: [] })
+            merchantProducts: buildOfferContextConnection({ offers: [] }),
           }
-        : null
+        : null,
     ],
     products: {
       edges: [],
       pageInfo: {
         endCursor: null,
-        hasNextPage: false
-      }
-    }
+        hasNextPage: false,
+      },
+    },
   },
   descriptor,
-  dispose: vi.fn()
+  dispose: vi.fn(),
 });
 
 const buildFetchedCompareRouteQuery = ({
   products,
-  offerConnections = new Map<string, ReturnType<typeof buildOfferContextConnection> | null>()
+  offerConnections = new Map<string, ReturnType<typeof buildOfferContextConnection> | null>(),
 }: {
   products: Array<CompareTestProduct | null>;
   offerConnections?: Map<string, ReturnType<typeof buildOfferContextConnection> | null>;
@@ -357,13 +352,13 @@ const buildFetchedCompareRouteQuery = ({
             ...product,
             merchantProducts: offerConnections.has(product.id)
               ? offerConnections.get(product.id)
-              : buildOfferContextConnection({ offers: [] })
+              : buildOfferContextConnection({ offers: [] }),
           }
-        : null
-    )
+        : null,
+    ),
   },
   descriptor: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-  dispose: vi.fn()
+  dispose: vi.fn(),
 });
 
 const buildAvailableOfferContextSummary = (
@@ -379,7 +374,7 @@ const buildAvailableOfferContextSummary = (
     hasMoreActiveOffers: boolean;
     hasMoreCoupons: boolean;
     latestPriceObservedAt: string | null;
-  }> = {}
+  }> = {},
 ) => ({
   status: "available" as const,
   productId,
@@ -389,18 +384,18 @@ const buildAvailableOfferContextSummary = (
   hasMoreActiveOffers: false,
   hasMoreCoupons: false,
   latestPriceObservedAt: null,
-  ...overrides
+  ...overrides,
 });
 
 const buildUnavailableOfferContextSummary = (productId: string) => ({
   status: "unavailable" as const,
-  productId
+  productId,
 });
 
 const buildDefaultOfferContexts = () => ({
   [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
   [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id),
-  [THIRD_PRODUCT.id]: buildAvailableOfferContextSummary(THIRD_PRODUCT.id)
+  [THIRD_PRODUCT.id]: buildAvailableOfferContextSummary(THIRD_PRODUCT.id),
 });
 
 const buildProductSummary = (product: CompareTestProduct) => ({
@@ -420,8 +415,8 @@ const buildProductSummary = (product: CompareTestProduct) => ({
     numericValue: attribute.numericValue,
     booleanValue: attribute.booleanValue,
     enumOptionId: attribute.enumOptionId,
-    unitSymbol: attribute.unitSymbol
-  }))
+    unitSymbol: attribute.unitSymbol,
+  })),
 });
 
 const buildSavedProducts = (slugs: string[]) =>
@@ -430,7 +425,7 @@ const buildSavedProducts = (slugs: string[]) =>
 const buildSavedComparisonPage = ({
   endCursor = null,
   hasNextPage = false,
-  savedSets
+  savedSets,
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
@@ -450,57 +445,58 @@ const buildSavedComparisonPage = ({
         name: savedSet.name,
         items: savedSet.products.map((product, index) => ({
           position: index + 1,
-          product
-        }))
-      }
+          product,
+        })),
+      },
     })),
     pageInfo: {
       hasNextPage,
-      endCursor
-    }
-  }
+      endCursor,
+    },
+  },
 });
 
 const buildFetchedSavedComparisonPage = (
   data: unknown,
-  descriptor = SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR
+  descriptor = SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR,
 ) => ({
   data,
   descriptor,
-  dispose: vi.fn()
+  dispose: vi.fn(),
 });
 
 const buildReadyCompareLoaderData = (
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>> = {}
+  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>> = {},
 ) => ({
   status: "ready" as const,
   specMode: "shared" as const,
   slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
   query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
   offerContexts: buildDefaultOfferContexts(),
-  products: [
-    buildProductSummary(DETAIL_PRODUCT),
-    buildProductSummary(SECOND_PRODUCT)
-  ],
-  ...overrides
+  products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
+  ...overrides,
 });
 
 function renderRelativeLoadedPriceCells(
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>
+  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>,
 ) {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
   renderCompareRoute();
 
   const row = within(screen.getByRole("table", { name: "Decision summary" })).getByRole("row", {
-    name: /Relative loaded price/
+    name: /Relative loaded price/,
   });
 
-  return within(row).getAllByRole("cell").map((cell) => cell.textContent);
+  return within(row)
+    .getAllByRole("cell")
+    .map((cell) => cell.textContent);
 }
 
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
@@ -511,8 +507,8 @@ beforeEach(() => {
   SECOND_PRODUCT_QUERY_REF.dispose.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
-      edges: []
-    }
+      edges: [],
+    },
   });
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
   mockCompareRouteQueries();
@@ -529,15 +525,15 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
               code: "refresh-rate",
               displayName: "Refresh rate",
               valueText: "144 Hz",
-              sortOrder: 20
+              sortOrder: 20,
             },
             {
               code: "panel-type",
               displayName: "Panel type",
               valueText: "IPS",
-              sortOrder: 10
-            }
-          ]
+              sortOrder: 10,
+            },
+          ],
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
@@ -546,42 +542,38 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
               code: "panel-type",
               displayName: "Panel type",
               valueText: "OLED",
-              sortOrder: 10
-            }
-          ]
-        }
+              sortOrder: 10,
+            },
+          ],
+        },
       ]}
       specMode="all"
-    />
+    />,
   );
 
   expect(screen.getByRole("heading", { name: "All specifications" })).toBeInTheDocument();
   const rows = within(screen.getByRole("table", { name: "All specifications" })).getAllByRole(
-    "row"
+    "row",
   );
   expect(within(rows[1]).getByRole("rowheader")).toHaveTextContent("Panel type");
-  expect(within(rows[1]).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "IPS",
-    "OLED"
-  ]);
+  expect(
+    within(rows[1])
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent),
+  ).toEqual(["IPS", "OLED"]);
   expect(within(rows[2]).getByRole("rowheader")).toHaveTextContent("Refresh rate");
-  expect(within(rows[2]).getAllByRole("cell").map((cell) => cell.textContent)).toEqual([
-    "144 Hz",
-    "Not available"
-  ]);
+  expect(
+    within(rows[2])
+      .getAllByRole("cell")
+      .map((cell) => cell.textContent),
+  ).toEqual(["144 Hz", "Not available"]);
 });
 
 test("comparison matrix uses product ordering when the environment default is Swedish", () => {
   const defaultLocaleCompare = vi
     .spyOn(String.prototype, "localeCompare")
-    .mockImplementation(function localeCompareWithSwedishDefault(
-      this: string,
-      other: string
-    ) {
-      return new Intl.Collator("sv-SE", { sensitivity: "base" }).compare(
-        String(this),
-        other
-      );
+    .mockImplementation(function localeCompareWithSwedishDefault(this: string, other: string) {
+      return new Intl.Collator("sv-SE", { sensitivity: "base" }).compare(String(this), other);
     });
 
   try {
@@ -592,19 +584,19 @@ test("comparison matrix uses product ordering when the environment default is Sw
             ...buildProductSummary(DETAIL_PRODUCT),
             currentAttributes: [
               { code: "zeta", displayName: "Zebra", valueText: "1" },
-              { code: "accent", displayName: "Älg", valueText: "2" }
-            ]
+              { code: "accent", displayName: "Älg", valueText: "2" },
+            ],
           },
           {
             ...buildProductSummary(SECOND_PRODUCT),
             currentAttributes: [
               { code: "zeta", displayName: "Zebra", valueText: "1" },
-              { code: "accent", displayName: "Älg", valueText: "2" }
-            ]
-          }
+              { code: "accent", displayName: "Älg", valueText: "2" },
+            ],
+          },
         ]}
         specMode="all"
-      />
+      />,
     );
 
     const rowLabels = within(screen.getByRole("table", { name: "All specifications" }))
@@ -621,44 +613,37 @@ test("comparison matrix uses product ordering when the environment default is Sw
 test("compare path helpers normalize selected slugs and cap serialized route query strings", () => {
   expect(
     selectedCompareSlugsFromSearch(
-      "?slug=detail-product&slug=&slug=second-product&slug=detail-product"
-    )
+      "?slug=detail-product&slug=&slug=second-product&slug=detail-product",
+    ),
   ).toEqual(["detail-product", "second-product"]);
   expect(
-    selectedCompareSlugsAfterAdding(["detail-product"], "second-product", MAX_COMPARE_PRODUCTS)
+    selectedCompareSlugsAfterAdding(["detail-product"], "second-product", MAX_COMPARE_PRODUCTS),
   ).toEqual(["detail-product", "second-product"]);
   expect(
-    selectedCompareSlugsAfterAdding(["detail-product"], "detail-product", MAX_COMPARE_PRODUCTS)
+    selectedCompareSlugsAfterAdding(["detail-product"], "detail-product", MAX_COMPARE_PRODUCTS),
   ).toEqual(["detail-product"]);
   expect(
     buildCurrentRoutePathWithCompareSlugs(
       "/products",
       "?first=24&slug=detail-product&typeTaxonId=type-laptops",
-      [
-        DETAIL_PRODUCT.slug,
-        SECOND_PRODUCT.slug,
-        THIRD_PRODUCT.slug,
-        "fourth-product"
-      ]
-    )
+      [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug, "fourth-product"],
+    ),
   ).toBe(
-    "/products?first=24&typeTaxonId=type-laptops&slug=detail-product&slug=second-product&slug=third-product"
+    "/products?first=24&typeTaxonId=type-laptops&slug=detail-product&slug=second-product&slug=third-product",
   );
   expect(
     buildComparePathFromSlugs(
       [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug, "fourth-product"],
-      { specMode: "all" }
-    )
+      { specMode: "all" },
+    ),
   ).toBe("/compare?slug=detail-product&slug=second-product&slug=third-product&specs=all");
 });
 
 test("compare loader returns an empty state when no slugs are selected", async () => {
-  await expect(
-    compareLoader(buildCompareLoaderArgs())
-  ).resolves.toEqual({
+  await expect(compareLoader(buildCompareLoaderArgs())).resolves.toEqual({
     specMode: "shared",
     status: "empty",
-    slugs: []
+    slugs: [],
   });
 });
 
@@ -666,52 +651,49 @@ test.each([
   ["all", "all"],
   ["differences", "differences"],
   ["", "shared"],
-  ["unsupported", "shared"]
-] as const)(
-  "compare loader parses specs=%s as %s mode",
-  async (rawSpecMode, expectedSpecMode) => {
-    await expect(
-      compareLoader(
-        buildCompareLoaderArgs({
-          request: new Request(`https://app.example.com/compare?specs=${rawSpecMode}`)
-        })
-      )
-    ).resolves.toEqual({
-      specMode: expectedSpecMode,
-      status: "empty",
-      slugs: []
-    });
-  }
-);
+  ["unsupported", "shared"],
+] as const)("compare loader parses specs=%s as %s mode", async (rawSpecMode, expectedSpecMode) => {
+  await expect(
+    compareLoader(
+      buildCompareLoaderArgs({
+        request: new Request(`https://app.example.com/compare?specs=${rawSpecMode}`),
+      }),
+    ),
+  ).resolves.toEqual({
+    specMode: expectedSpecMode,
+    status: "empty",
+    slugs: [],
+  });
+});
 
 test("compare loader rejects more than three selected slugs", async () => {
   await expect(
     compareLoader(
       buildCompareLoaderArgs({
         request: new Request(
-          "https://app.example.com/compare?slug=one&slug=two&slug=three&slug=four"
-        )
-      })
-    )
+          "https://app.example.com/compare?slug=one&slug=two&slug=three&slug=four",
+        ),
+      }),
+    ),
   ).resolves.toEqual({
     specMode: "shared",
     status: "too_many",
-    slugs: ["one", "two", "three", "four"]
+    slugs: ["one", "two", "three", "four"],
   });
 });
 
 test("compare loader requests selected product details and preserves URL order", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] })
+    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     specMode: "shared",
@@ -719,12 +701,9 @@ test("compare loader requests selected product details and preserves URL order",
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
-      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
+      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id),
     },
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT)
-    ]
+    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
@@ -732,9 +711,9 @@ test("compare loader requests selected product details and preserves URL order",
     expect.anything(),
     {
       slugs: ["detail-product", "second-product"],
-      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -744,14 +723,14 @@ test("compare loader keeps single-product requests on the core comparison query"
   const request = new Request("https://app.example.com/compare?slug=detail-product");
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+    buildFetchedProductQuery(DETAIL_PRODUCT, DETAIL_PRODUCT_QUERY_DESCRIPTOR),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
-    slugs: ["detail-product"]
+    slugs: ["detail-product"],
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
@@ -759,31 +738,31 @@ test("compare loader keeps single-product requests on the core comparison query"
     expect.anything(),
     {
       slugs: [DETAIL_PRODUCT.slug],
-      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
 test("compare loader restores requested slug order when response order diverges", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedCompareRouteQuery({ products: [SECOND_PRODUCT, DETAIL_PRODUCT] })
+    buildFetchedCompareRouteQuery({ products: [SECOND_PRODUCT, DETAIL_PRODUCT] }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
     products: [
       { id: DETAIL_PRODUCT.id, slug: DETAIL_PRODUCT.slug },
-      { id: SECOND_PRODUCT.id, slug: SECOND_PRODUCT.slug }
-    ]
+      { id: SECOND_PRODUCT.id, slug: SECOND_PRODUCT.slug },
+    ],
   });
 });
 
@@ -805,17 +784,17 @@ test("compare loader preserves typed attribute metadata for compare rows", async
         numericValue: "144",
         booleanValue: null,
         enumOptionId: null,
-        unitSymbol: "Hz"
-      }
-    ]
+        unitSymbol: "Hz",
+      },
+    ],
   } satisfies CompareTestProduct;
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedProductQuery(productWithMetadata, DETAIL_PRODUCT_QUERY_DESCRIPTOR)
+    buildFetchedProductQuery(productWithMetadata, DETAIL_PRODUCT_QUERY_DESCRIPTOR),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     products: [
@@ -832,21 +811,21 @@ test("compare loader preserves typed attribute metadata for compare rows", async
             numericValue: "144",
             booleanValue: null,
             enumOptionId: null,
-            unitSymbol: "Hz"
-          }
-        ]
-      }
+            unitSymbol: "Hz",
+          },
+        ],
+      },
     ],
     offerContexts: {
-      [productWithMetadata.id]: buildAvailableOfferContextSummary(productWithMetadata.id)
-    }
+      [productWithMetadata.id]: buildAvailableOfferContextSummary(productWithMetadata.id),
+    },
   });
 });
 
 test("compare loader summarizes bounded offer-context pages without treating incomplete pages as globally ranked", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
   const detailOffers = buildOfferContextConnection({
     hasNextPage: true,
@@ -857,18 +836,18 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         merchant: {
           id: "merchant-1",
           name: "Full Price Shop",
-          domain: "full.example"
+          domain: "full.example",
         },
         latestPrice: {
           id: "price-1",
           price: "249.99",
-          observedAt: "2026-06-27T08:00:00Z"
+          observedAt: "2026-06-27T08:00:00Z",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
+            hasNextPage: false,
+          },
         },
         priceHistory: {
           edges: [
@@ -876,14 +855,14 @@ test("compare loader summarizes bounded offer-context pages without treating inc
               node: {
                 id: "history-1",
                 price: "259.99",
-                observedAt: "2026-06-26T08:00:00Z"
-              }
-            }
+                observedAt: "2026-06-26T08:00:00Z",
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
+            hasNextPage: false,
+          },
+        },
       },
       {
         id: "merchant-product-2",
@@ -891,12 +870,12 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         merchant: {
           id: "merchant-2",
           name: "Value Mart",
-          domain: "value.example"
+          domain: "value.example",
         },
         latestPrice: {
           id: "price-2",
           price: "199.99",
-          observedAt: "2026-06-29T12:00:00Z"
+          observedAt: "2026-06-29T12:00:00Z",
         },
         activeCoupons: {
           edges: [
@@ -906,13 +885,13 @@ test("compare loader summarizes bounded offer-context pages without treating inc
                 discountType: "PERCENT",
                 discountValue: "20",
                 currency: null,
-                validTo: "2026-07-15T00:00:00Z"
-              }
-            }
+                validTo: "2026-07-15T00:00:00Z",
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: true
-          }
+            hasNextPage: true,
+          },
         },
         priceHistory: {
           edges: [
@@ -920,14 +899,14 @@ test("compare loader summarizes bounded offer-context pages without treating inc
               node: {
                 id: "history-2",
                 price: "199.99",
-                observedAt: "2026-06-29T12:00:00Z"
-              }
-            }
+                observedAt: "2026-06-29T12:00:00Z",
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: true
-          }
-        }
+            hasNextPage: true,
+          },
+        },
       },
       {
         id: "merchant-product-3",
@@ -935,21 +914,21 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         merchant: {
           id: "merchant-3",
           name: "Budget Depot",
-          domain: "budget.example"
+          domain: "budget.example",
         },
         latestPrice: {
           id: "price-3",
           price: "219.99",
-          observedAt: "2026-06-28T09:00:00Z"
+          observedAt: "2026-06-28T09:00:00Z",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ]
+            hasNextPage: false,
+          },
+        },
+      },
+    ],
   });
   const secondOffers = buildOfferContextConnection({
     offers: [
@@ -959,27 +938,27 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         merchant: {
           id: "merchant-4",
           name: "Shop Two",
-          domain: "two.example"
+          domain: "two.example",
         },
         latestPrice: {
           id: "price-4",
           price: "299.50",
-          observedAt: "2026-06-24T10:00:00Z"
+          observedAt: "2026-06-24T10:00:00Z",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
+            hasNextPage: false,
+          },
         },
         priceHistory: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ]
+            hasNextPage: false,
+          },
+        },
+      },
+    ],
   });
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
@@ -987,13 +966,13 @@ test("compare loader summarizes bounded offer-context pages without treating inc
       products: [DETAIL_PRODUCT, SECOND_PRODUCT],
       offerConnections: new Map([
         [DETAIL_PRODUCT.id, detailOffers],
-        [SECOND_PRODUCT.id, secondOffers]
-      ])
-    })
+        [SECOND_PRODUCT.id, secondOffers],
+      ]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     offerContexts: {
@@ -1005,7 +984,7 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         hasLoadedCoupons: true,
         hasMoreActiveOffers: true,
         hasMoreCoupons: true,
-        latestPriceObservedAt: "2026-06-29T12:00:00Z"
+        latestPriceObservedAt: "2026-06-29T12:00:00Z",
       },
       [SECOND_PRODUCT.id]: {
         status: "available",
@@ -1014,14 +993,14 @@ test("compare loader summarizes bounded offer-context pages without treating inc
         bestCurrentPrice: {
           currency: "USD",
           merchantName: "Shop Two",
-          price: "299.50"
+          price: "299.50",
         },
         hasLoadedCoupons: false,
         hasMoreActiveOffers: false,
         hasMoreCoupons: false,
-        latestPriceObservedAt: "2026-06-24T10:00:00Z"
-      }
-    }
+        latestPriceObservedAt: "2026-06-24T10:00:00Z",
+      },
+    },
   });
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -1037,31 +1016,31 @@ test("compare loader does not paginate offer context past the first page", async
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Merchant 1"
+          name: "Merchant 1",
         },
-        latestPrice: null
-      }
-    ]
+        latestPrice: null,
+      },
+    ],
   });
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
     buildFetchedCompareRouteQuery({
       products: [DETAIL_PRODUCT],
-      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]])
-    })
+      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     offerContexts: {
       [DETAIL_PRODUCT.id]: {
         status: "available",
         activeOfferCount: 1,
-        hasMoreActiveOffers: true
-      }
-    }
+        hasMoreActiveOffers: true,
+      },
+    },
   });
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -1078,7 +1057,7 @@ test("compare loader excludes invalid observations and compares explicit offsets
         latestPrice: {
           id: "price-first-valid",
           price: "200",
-          observedAt: "2026-06-30T01:00:00+02:00"
+          observedAt: "2026-06-30T01:00:00+02:00",
         },
         priceHistory: {
           edges: [
@@ -1086,19 +1065,19 @@ test("compare loader excludes invalid observations and compares explicit offsets
               node: {
                 id: "history-impossible",
                 price: "201",
-                observedAt: "2026-02-30T10:15:00Z"
-              }
+                observedAt: "2026-02-30T10:15:00Z",
+              },
             },
             {
               node: {
                 id: "history-missing-offset",
                 price: "202",
-                observedAt: "2999-06-29T10:15:00"
-              }
-            }
+                observedAt: "2999-06-29T10:15:00",
+              },
+            },
           ],
-          pageInfo: { hasNextPage: false }
-        }
+          pageInfo: { hasNextPage: false },
+        },
       },
       {
         id: "merchant-product-latest-valid",
@@ -1107,7 +1086,7 @@ test("compare loader excludes invalid observations and compares explicit offsets
         latestPrice: {
           id: "price-latest-valid",
           price: "199",
-          observedAt: "2026-06-29T20:30:00-04:00"
+          observedAt: "2026-06-29T20:30:00-04:00",
         },
         priceHistory: {
           edges: [
@@ -1115,32 +1094,32 @@ test("compare loader excludes invalid observations and compares explicit offsets
               node: {
                 id: "history-malformed",
                 price: "203",
-                observedAt: "not-a-timestamp"
-              }
-            }
+                observedAt: "not-a-timestamp",
+              },
+            },
           ],
-          pageInfo: { hasNextPage: false }
-        }
-      }
-    ]
+          pageInfo: { hasNextPage: false },
+        },
+      },
+    ],
   });
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
     buildFetchedCompareRouteQuery({
       products: [DETAIL_PRODUCT],
-      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]])
-    })
+      offerConnections: new Map([[DETAIL_PRODUCT.id, connection]]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     offerContexts: {
       [DETAIL_PRODUCT.id]: {
-        latestPriceObservedAt: "2026-06-29T20:30:00-04:00"
-      }
-    }
+        latestPriceObservedAt: "2026-06-29T20:30:00-04:00",
+      },
+    },
   });
 });
 
@@ -1155,42 +1134,42 @@ test("compare loader does not choose a best current price across mixed currencie
         [
           DETAIL_PRODUCT.id,
           buildOfferContextConnection({
-          offers: [
-            {
-              id: "merchant-product-usd",
-              currency: "USD",
-              merchant: {
-                id: "merchant-usd",
-                name: "US Shop"
+            offers: [
+              {
+                id: "merchant-product-usd",
+                currency: "USD",
+                merchant: {
+                  id: "merchant-usd",
+                  name: "US Shop",
+                },
+                latestPrice: {
+                  id: "price-usd",
+                  price: "199.99",
+                  observedAt: "2026-06-29T12:00:00Z",
+                },
               },
-              latestPrice: {
-                id: "price-usd",
-                price: "199.99",
-                observedAt: "2026-06-29T12:00:00Z"
-              }
-            },
-            {
-              id: "merchant-product-eur",
-              currency: "EUR",
-              merchant: {
-                id: "merchant-eur",
-                name: "EU Shop"
+              {
+                id: "merchant-product-eur",
+                currency: "EUR",
+                merchant: {
+                  id: "merchant-eur",
+                  name: "EU Shop",
+                },
+                latestPrice: {
+                  id: "price-eur",
+                  price: "149.99",
+                  observedAt: "2026-06-29T13:00:00Z",
+                },
               },
-              latestPrice: {
-                id: "price-eur",
-                price: "149.99",
-                observedAt: "2026-06-29T13:00:00Z"
-              }
-            }
-          ]
-          })
-        ]
-      ])
-    })
+            ],
+          }),
+        ],
+      ]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     offerContexts: {
@@ -1198,9 +1177,9 @@ test("compare loader does not choose a best current price across mixed currencie
         status: "available",
         activeOfferCount: 2,
         bestCurrentPrice: null,
-        latestPriceObservedAt: "2026-06-29T13:00:00Z"
-      }
-    }
+        latestPriceObservedAt: "2026-06-29T13:00:00Z",
+      },
+    },
   });
 });
 
@@ -1223,8 +1202,8 @@ test("compare loader selects the exact lowest price beyond Number precision", as
                 latestPrice: {
                   id: "price-higher",
                   price: "9007199254740993.00",
-                  observedAt: "2026-06-29T12:00:00Z"
-                }
+                  observedAt: "2026-06-29T12:00:00Z",
+                },
               },
               {
                 id: "merchant-product-lower",
@@ -1233,18 +1212,18 @@ test("compare loader selects the exact lowest price beyond Number precision", as
                 latestPrice: {
                   id: "price-lower",
                   price: "9007199254740992.00",
-                  observedAt: "2026-06-29T13:00:00Z"
-                }
-              }
-            ]
-          })
-        ]
-      ])
-    })
+                  observedAt: "2026-06-29T13:00:00Z",
+                },
+              },
+            ],
+          }),
+        ],
+      ]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     offerContexts: {
@@ -1252,17 +1231,17 @@ test("compare loader selects the exact lowest price beyond Number precision", as
         bestCurrentPrice: {
           currency: "USD",
           merchantName: "Lower Shop",
-          price: "9007199254740992.00"
-        }
-      }
-    }
+          price: "9007199254740992.00",
+        },
+      },
+    },
   });
 });
 
 test("compare loader keeps product specs when one offer-context query fails", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
   const detailOffers = buildOfferContextConnection({
     offers: [
@@ -1271,21 +1250,21 @@ test("compare loader keeps product specs when one offer-context query fails", as
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Value Mart"
+          name: "Value Mart",
         },
         latestPrice: {
           id: "price-1",
           price: "199.99",
-          observedAt: "2026-06-29T12:00:00Z"
+          observedAt: "2026-06-29T12:00:00Z",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ]
+            hasNextPage: false,
+          },
+        },
+      },
+    ],
   });
 
   mockedFetchRouteQuery.mockResolvedValueOnce(
@@ -1293,39 +1272,36 @@ test("compare loader keeps product specs when one offer-context query fails", as
       products: [DETAIL_PRODUCT, SECOND_PRODUCT],
       offerConnections: new Map([
         [DETAIL_PRODUCT.id, detailOffers],
-        [SECOND_PRODUCT.id, null]
-      ])
-    })
+        [SECOND_PRODUCT.id, null],
+      ]),
+    }),
   );
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT)
-    ],
+    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
     offerContexts: {
       [DETAIL_PRODUCT.id]: {
-        status: "available"
+        status: "available",
       },
-      [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id)
-    }
+      [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id),
+    },
   });
 });
 
 test("compare loader rethrows an aborted combined request", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
   const abortError = new DOMException("The operation was aborted.", "AbortError");
   mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
 
-  await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
-  ).rejects.toBe(abortError);
+  await expect(compareLoader(buildCompareLoaderArgs({ environment, request }))).rejects.toBe(
+    abortError,
+  );
 });
 
 test("compare loader rethrows combined request failures when the route signal is aborted", async () => {
@@ -1333,25 +1309,25 @@ test("compare loader rethrows combined request failures when the route signal is
   const environment = createRelayEnvironment();
   const request = buildAbortableRequest(
     "https://app.example.com/compare?slug=detail-product",
-    controller.signal
+    controller.signal,
   );
   const abortedFetchError = new Error("route request was aborted");
 
   controller.abort();
   mockedFetchRouteQuery.mockRejectedValueOnce(abortedFetchError);
 
-  await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
-  ).rejects.toBe(abortedFetchError);
+  await expect(compareLoader(buildCompareLoaderArgs({ environment, request }))).rejects.toBe(
+    abortedFetchError,
+  );
 });
 
 test("compare loader forwards the route abort signal to the combined Relay preload", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
   mockedFetchRouteQuery.mockResolvedValueOnce(
-    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] })
+    buildFetchedCompareRouteQuery({ products: [DETAIL_PRODUCT, SECOND_PRODUCT] }),
   );
 
   await compareLoader(buildCompareLoaderArgs({ environment, request }));
@@ -1361,9 +1337,9 @@ test("compare loader forwards the route abort signal to the combined Relay prelo
     expect.anything(),
     {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE
+      offerFirst: COMPARE_OFFER_CONTEXT_TEST_PAGE_SIZE,
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -1371,7 +1347,7 @@ test("compare loader forwards the route abort signal to the combined Relay prelo
 test("compare loader returns not_found when any selected product is missing", async () => {
   const environment = createRelayEnvironment();
   const combinedQuery = buildFetchedCompareRouteQuery({
-    products: [DETAIL_PRODUCT, null]
+    products: [DETAIL_PRODUCT, null],
   });
 
   mockedFetchRouteQuery.mockResolvedValueOnce(combinedQuery);
@@ -1381,14 +1357,14 @@ test("compare loader returns not_found when any selected product is missing", as
       buildCompareLoaderArgs({
         environment,
         request: new Request(
-          "https://app.example.com/compare?slug=detail-product&slug=missing-product"
-        )
-      })
-    )
+          "https://app.example.com/compare?slug=detail-product&slug=missing-product",
+        ),
+      }),
+    ),
   ).resolves.toEqual({
     status: "not_found",
     specMode: "shared",
-    slugs: ["detail-product", "missing-product"]
+    slugs: ["detail-product", "missing-product"],
   });
   expect(combinedQuery.dispose).toHaveBeenCalledTimes(1);
 });
@@ -1402,10 +1378,10 @@ test("compare loader throws when the combined request fails", async () => {
       buildCompareLoaderArgs({
         environment,
         request: new Request(
-          "https://app.example.com/compare?slug=detail-product&slug=broken-product"
-        )
-      })
-    )
+          "https://app.example.com/compare?slug=detail-product&slug=broken-product",
+        ),
+      }),
+    ),
   ).rejects.toThrow("Network request failed: boom");
 });
 
@@ -1413,7 +1389,7 @@ test("compare loader rethrows AbortError-like rejected reasons without wrapping"
   const environment = createRelayEnvironment();
   const abortError = {
     name: "AbortError",
-    message: "The operation was aborted."
+    message: "The operation was aborted.",
   };
 
   mockedFetchRouteQuery.mockRejectedValueOnce(abortError);
@@ -1422,9 +1398,9 @@ test("compare loader rethrows AbortError-like rejected reasons without wrapping"
     compareLoader(
       buildCompareLoaderArgs({
         environment,
-        request: new Request("https://app.example.com/compare?slug=detail-product")
-      })
-    )
+        request: new Request("https://app.example.com/compare?slug=detail-product"),
+      }),
+    ),
   ).rejects.toBe(abortError);
 });
 
@@ -1439,8 +1415,8 @@ test("compare loader wraps non-error rejected reasons with the original cause", 
     await compareLoader(
       buildCompareLoaderArgs({
         environment,
-        request: new Request("https://app.example.com/compare?slug=detail-product")
-      })
+        request: new Request("https://app.example.com/compare?slug=detail-product"),
+      }),
     );
   } catch (error) {
     caughtError = error;
@@ -1460,10 +1436,10 @@ test("compare loader gives combined request failures precedence over missing-pro
       buildCompareLoaderArgs({
         environment,
         request: new Request(
-          "https://app.example.com/compare?slug=detail-product&slug=broken-product"
-        )
-      })
-    )
+          "https://app.example.com/compare?slug=detail-product&slug=broken-product",
+        ),
+      }),
+    ),
   ).rejects.toThrow("Network request failed: boom");
 });
 
@@ -1480,28 +1456,28 @@ test("product picker view filters loaded options, clears the filter, and keeps r
             brandName: "DisplayCo",
             href: "/compare?slug=monitor-alpha",
             id: "Product:monitor-alpha",
-            name: "Monitor Alpha"
+            name: "Monitor Alpha",
           },
           {
             brandName: "ViewCo",
             href: "/compare?slug=monitor-beta",
             id: "Product:monitor-beta",
-            name: "Monitor Beta"
-          }
+            name: "Monitor Beta",
+          },
         ]}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
   expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toHaveAttribute(
     "href",
-    "/compare?slug=monitor-alpha"
+    "/compare?slug=monitor-alpha",
   );
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
     "href",
-    "/compare?slug=monitor-beta"
+    "/compare?slug=monitor-beta",
   );
 
   fireEvent.change(filter, { target: { value: "beta" } });
@@ -1525,7 +1501,7 @@ test("empty compare page lets users choose products without editing the URL", ()
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
@@ -1535,19 +1511,19 @@ test("empty compare page lets users choose products without editing the URL", ()
             id: "Product:monitor-a",
             name: "Monitor A",
             slug: "monitor-a",
-            brand: { id: "Brand:displayco", name: "DisplayCo" }
-          }
+            brand: { id: "Brand:displayco", name: "DisplayCo" },
+          },
         },
         {
           node: {
             id: "Product:monitor-b",
             name: "Monitor B",
             slug: "monitor-b",
-            brand: { id: "Brand:viewco", name: "ViewCo" }
-          }
-        }
-      ]
-    }
+            brand: { id: "Brand:viewco", name: "ViewCo" },
+          },
+        },
+      ],
+    },
   });
 
   renderCompareRoute();
@@ -1556,16 +1532,16 @@ test("empty compare page lets users choose products without editing the URL", ()
   expect(screen.getByRole("heading", { name: "Choose products" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Compare Monitor A" })).toHaveAttribute(
     "href",
-    "/compare?slug=monitor-a"
+    "/compare?slug=monitor-a",
   );
   expect(screen.getByRole("link", { name: "Compare Monitor B" })).toHaveAttribute(
     "href",
-    "/compare?slug=monitor-b"
+    "/compare?slug=monitor-b",
   );
   expect(mockedUseLazyLoadQuery).toHaveBeenCalledWith(
     expect.anything(),
     { first: 24, after: null },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
 });
 
@@ -1573,7 +1549,7 @@ test("product picker keeps brandless products alongside branded results", () => 
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
@@ -1583,23 +1559,23 @@ test("product picker keeps brandless products alongside branded results", () => 
             id: "Product:brandless",
             name: "Brandless Product",
             slug: "brandless-product",
-            brand: null
-          }
+            brand: null,
+          },
         },
         {
           node: {
             id: "Product:branded",
             name: "Branded Product",
             slug: "branded-product",
-            brand: { id: "Brand:acme", name: "Acme" }
-          }
-        }
+            brand: { id: "Brand:acme", name: "Acme" },
+          },
+        },
       ],
       pageInfo: {
         hasNextPage: false,
-        endCursor: null
-      }
-    }
+        endCursor: null,
+      },
+    },
   });
 
   renderCompareRoute();
@@ -1614,7 +1590,7 @@ test("product picker can advance beyond the first picker page", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
     if ((variables as { after?: string | null }).after === "next-products") {
@@ -1626,15 +1602,15 @@ test("product picker can advance beyond the first picker page", () => {
                 id: "Product:monitor-c",
                 name: "Monitor C",
                 slug: "monitor-c",
-                brand: { id: "Brand:panelco", name: "PanelCo" }
-              }
-            }
+                brand: { id: "Brand:panelco", name: "PanelCo" },
+              },
+            },
           ],
           pageInfo: {
             hasNextPage: false,
-            endCursor: null
-          }
-        }
+            endCursor: null,
+          },
+        },
       };
     }
 
@@ -1643,9 +1619,9 @@ test("product picker can advance beyond the first picker page", () => {
         edges: [],
         pageInfo: {
           hasNextPage: true,
-          endCursor: "next-products"
-        }
-      }
+          endCursor: "next-products",
+        },
+      },
     };
   });
 
@@ -1656,11 +1632,11 @@ test("product picker can advance beyond the first picker page", () => {
   expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
     expect.anything(),
     { first: 24, after: "next-products" },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
     "href",
-    "/compare?slug=monitor-c"
+    "/compare?slug=monitor-c",
   );
 });
 
@@ -1671,9 +1647,9 @@ test("product picker stops when the next page repeats the current cursor", async
       edges: [],
       pageInfo: {
         hasNextPage: true,
-        endCursor: "next-products"
-      }
-    }
+        endCursor: "next-products",
+      },
+    },
   }));
 
   renderCompareRoute();
@@ -1688,7 +1664,7 @@ test("product picker keeps previous products visible when loading another page",
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockImplementation((_query, variables) => {
     if ((variables as { after?: string | null }).after === "next-products") {
@@ -1700,15 +1676,15 @@ test("product picker keeps previous products visible when loading another page",
                 id: "Product:monitor-c",
                 name: "Monitor C",
                 slug: "monitor-c",
-                brand: { id: "Brand:panelco", name: "PanelCo" }
-              }
-            }
+                brand: { id: "Brand:panelco", name: "PanelCo" },
+              },
+            },
           ],
           pageInfo: {
             hasNextPage: false,
-            endCursor: null
-          }
-        }
+            endCursor: null,
+          },
+        },
       };
     }
 
@@ -1720,15 +1696,15 @@ test("product picker keeps previous products visible when loading another page",
               id: "Product:monitor-a",
               name: "Monitor A",
               slug: "monitor-a",
-              brand: { id: "Brand:displayco", name: "DisplayCo" }
-            }
-          }
+              brand: { id: "Brand:displayco", name: "DisplayCo" },
+            },
+          },
         ],
         pageInfo: {
           hasNextPage: true,
-          endCursor: "next-products"
-        }
-      }
+          endCursor: "next-products",
+        },
+      },
     };
   });
 
@@ -1745,7 +1721,7 @@ test("product picker filters loaded product names without hiding pagination", ()
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
@@ -1755,23 +1731,23 @@ test("product picker filters loaded product names without hiding pagination", ()
             id: "Product:monitor-a",
             name: "Monitor Alpha",
             slug: "monitor-alpha",
-            brand: { id: "Brand:displayco", name: "DisplayCo" }
-          }
+            brand: { id: "Brand:displayco", name: "DisplayCo" },
+          },
         },
         {
           node: {
             id: "Product:monitor-b",
             name: "Monitor Beta",
             slug: "monitor-beta",
-            brand: { id: "Brand:viewco", name: "ViewCo" }
-          }
-        }
+            brand: { id: "Brand:viewco", name: "ViewCo" },
+          },
+        },
       ],
       pageInfo: {
         hasNextPage: true,
-        endCursor: "next-products"
-      }
-    }
+        endCursor: "next-products",
+      },
+    },
   });
 
   renderCompareRoute();
@@ -1781,7 +1757,7 @@ test("product picker filters loaded product names without hiding pagination", ()
   expect(filter.id).not.toBe("");
   expect(filter).toHaveAttribute("aria-labelledby");
   expect(document.getElementById(filter.getAttribute("aria-labelledby") ?? "")).toHaveTextContent(
-    "Filter loaded products"
+    "Filter loaded products",
   );
 
   fireEvent.change(filter, { target: { value: "bEtA" } });
@@ -1805,7 +1781,7 @@ test("product picker filtering is stable when the browser locale has special cas
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
@@ -1815,15 +1791,15 @@ test("product picker filtering is stable when the browser locale has special cas
             id: "Product:istanbul",
             name: "Istanbul",
             slug: "istanbul",
-            brand: { id: "Brand:displayco", name: "DisplayCo" }
-          }
-        }
+            brand: { id: "Brand:displayco", name: "DisplayCo" },
+          },
+        },
       ],
       pageInfo: {
         hasNextPage: false,
-        endCursor: null
-      }
-    }
+        endCursor: null,
+      },
+    },
   });
   const localeLowerCase = vi
     .spyOn(String.prototype, "toLocaleLowerCase")
@@ -1835,7 +1811,7 @@ test("product picker filtering is stable when the browser locale has special cas
     renderCompareRoute();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Filter loaded products" }), {
-      target: { value: "i" }
+      target: { value: "i" },
     });
 
     expect(screen.getByRole("link", { name: "Compare Istanbul" })).toBeInTheDocument();
@@ -1851,9 +1827,9 @@ test("product picker resets pagination before rendering a changed selected set",
     slugs: [DETAIL_PRODUCT.slug],
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
-      [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id)
+      [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
     },
-    products: [buildProductSummary(DETAIL_PRODUCT)]
+    products: [buildProductSummary(DETAIL_PRODUCT)],
   };
   mockedUseLoaderData.mockImplementation(() => loaderData);
   mockedUseLazyLoadQuery
@@ -1862,9 +1838,9 @@ test("product picker resets pagination before rendering a changed selected set",
         edges: [],
         pageInfo: {
           hasNextPage: true,
-          endCursor: "next-products"
-        }
-      }
+          endCursor: "next-products",
+        },
+      },
     })
     .mockReturnValueOnce({
       products: {
@@ -1874,24 +1850,24 @@ test("product picker resets pagination before rendering a changed selected set",
               id: "Product:monitor-c",
               name: "Monitor C",
               slug: "monitor-c",
-              brand: { id: "Brand:panelco", name: "PanelCo" }
-            }
-          }
+              brand: { id: "Brand:panelco", name: "PanelCo" },
+            },
+          },
         ],
         pageInfo: {
           hasNextPage: false,
-          endCursor: null
-        }
-      }
+          endCursor: null,
+        },
+      },
     })
     .mockReturnValue({
       products: {
         edges: [],
         pageInfo: {
           hasNextPage: false,
-          endCursor: null
-        }
-      }
+          endCursor: null,
+        },
+      },
     });
 
   const { rerender } = renderCompareRoute();
@@ -1899,7 +1875,7 @@ test("product picker resets pagination before rendering a changed selected set",
   expect(mockedUseLazyLoadQuery).toHaveBeenLastCalledWith(
     expect.anything(),
     { first: 24, after: "next-products" },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
 
   const callsBeforeSelectionChange = mockedUseLazyLoadQuery.mock.calls.length;
@@ -1910,23 +1886,23 @@ test("product picker resets pagination before rendering a changed selected set",
     query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id),
-      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
+      [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id),
     },
-    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)]
+    products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
   };
 
   rerender(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(
     mockedUseLazyLoadQuery.mock.calls
       .slice(callsBeforeSelectionChange)
-      .some(([, variables]) =>
-        JSON.stringify(variables) === JSON.stringify({ first: 24, after: null })
-      )
+      .some(
+        ([, variables]) => JSON.stringify(variables) === JSON.stringify({ first: 24, after: null }),
+      ),
   ).toBe(true);
 });
 
@@ -1934,12 +1910,12 @@ test("empty compare page handles an empty product picker", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "empty",
     specMode: "shared",
-    slugs: []
+    slugs: [],
   });
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
-      edges: []
-    }
+      edges: [],
+    },
   });
 
   renderCompareRoute();
@@ -1951,14 +1927,14 @@ test("renders a limit message when more than three products are selected", () =>
   mockedUseLoaderData.mockReturnValue({
     status: "too_many",
     specMode: "shared",
-    slugs: ["one", "two", "three", "four"]
+    slugs: ["one", "two", "three", "four"],
   });
 
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(
-    screen.getByText(`You can compare up to ${MAX_COMPARE_PRODUCTS} products.`)
+    screen.getByText(`You can compare up to ${MAX_COMPARE_PRODUCTS} products.`),
   ).toBeInTheDocument();
 });
 
@@ -1978,20 +1954,20 @@ test("ready compare page renders decision summary rows above the specification m
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
-      valueText: "144 Hz"
-    }
+      valueText: "144 Hz",
+    },
   ];
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes
+          currentAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes
-        }
+          currentAttributes,
+        },
       ],
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
@@ -1999,27 +1975,27 @@ test("ready compare page renders decision summary rows above the specification m
           bestCurrentPrice: {
             currency: "USD",
             merchantName: "Value Mart",
-            price: "199.99"
+            price: "199.99",
           },
           hasLoadedCoupons: true,
           hasMoreActiveOffers: true,
           hasMoreCoupons: true,
-          latestPriceObservedAt: "2026-06-29T12:00:00Z"
+          latestPriceObservedAt: "2026-06-29T12:00:00Z",
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
           activeOfferCount: 1,
           bestCurrentPrice: {
             currency: "USD",
             merchantName: "Shop Two",
-            price: "299.50"
+            price: "299.50",
           },
           hasLoadedCoupons: false,
           hasMoreActiveOffers: false,
           hasMoreCoupons: false,
-          latestPriceObservedAt: "2026-06-24T10:00:00Z"
-        })
-      }
-    })
+          latestPriceObservedAt: "2026-06-24T10:00:00Z",
+        }),
+      },
+    }),
   );
 
   renderCompareRoute();
@@ -2031,7 +2007,7 @@ test("ready compare page renders decision summary rows above the specification m
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
 
   expect(
-    decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING
+    decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(within(decisionSummary).getByText("Best current price")).toBeVisible();
   expect(within(decisionSummary).getByText("199.99 USD at Value Mart")).toBeVisible();
@@ -2046,10 +2022,10 @@ test("ready compare page renders decision summary rows above the specification m
   expect(within(decisionSummary).getByText("2026-06-29")).toBeVisible();
   expect(within(decisionSummary).getByText("2026-06-24")).toBeVisible();
   expect(
-    within(decisionSummary).getByRole("link", { name: "Review Detail Product offers" })
+    within(decisionSummary).getByRole("link", { name: "Review Detail Product offers" }),
   ).toHaveAttribute("href", `/offers?productId=${DETAIL_PRODUCT.id}`);
   expect(
-    within(decisionSummary).getByRole("link", { name: "Review Second Product offers" })
+    within(decisionSummary).getByRole("link", { name: "Review Second Product offers" }),
   ).toHaveAttribute("href", `/offers?productId=${SECOND_PRODUCT.id}`);
 });
 
@@ -2058,13 +2034,13 @@ test("ready compare page marks the lowest relative loaded price", () => {
     renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" },
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" }
-        })
-      }
-    })
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" },
+        }),
+      },
+    }),
   ).toEqual(["Lowest loaded price", "Above lowest loaded price"]);
 });
 
@@ -2075,8 +2051,8 @@ test("ready compare page scopes relative loaded price to already-loaded offers",
 
   expect(
     screen.getByText(
-      "Relative loaded price compares only the offers already loaded for these products."
-    )
+      "Relative loaded price compares only the offers already loaded for these products.",
+    ),
   ).toBeVisible();
 });
 
@@ -2085,13 +2061,13 @@ test("ready compare page compares scientific Decimal prices exactly", () => {
     renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "1E+3" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "1E+3" },
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "1000" }
-        })
-      }
-    })
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "1000" },
+        }),
+      },
+    }),
   ).toEqual(["Tied for lowest loaded price", "Tied for lowest loaded price"]);
 });
 
@@ -2100,13 +2076,13 @@ test("ready compare page declines mixed currencies as not comparable", () => {
     renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" },
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
-          bestCurrentPrice: { currency: "EUR", merchantName: "Shop Two", price: "89.99" }
-        })
-      }
-    })
+          bestCurrentPrice: { currency: "EUR", merchantName: "Shop Two", price: "89.99" },
+        }),
+      },
+    }),
   ).toEqual(["Not comparable", "Not comparable"]);
 });
 
@@ -2115,11 +2091,11 @@ test("ready compare page declines malformed and missing loaded prices as not com
     renderRelativeLoadedPriceCells({
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "not-a-price" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "not-a-price" },
         }),
-        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id)
-      }
-    })
+        [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id),
+      },
+    }),
   ).toEqual(["Not comparable", "Not comparable"]);
 });
 
@@ -2129,18 +2105,18 @@ test("ready compare page compares two safe prices while an unavailable product i
       products: [
         buildProductSummary(DETAIL_PRODUCT),
         buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT)
+        buildProductSummary(THIRD_PRODUCT),
       ],
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Value Mart", price: "99.99" },
         }),
         [SECOND_PRODUCT.id]: buildAvailableOfferContextSummary(SECOND_PRODUCT.id, {
-          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" }
+          bestCurrentPrice: { currency: "USD", merchantName: "Shop Two", price: "120.00" },
         }),
-        [THIRD_PRODUCT.id]: buildUnavailableOfferContextSummary(THIRD_PRODUCT.id)
-      }
-    })
+        [THIRD_PRODUCT.id]: buildUnavailableOfferContextSummary(THIRD_PRODUCT.id),
+      },
+    }),
   ).toEqual(["Lowest loaded price", "Above lowest loaded price", "Not comparable"]);
 });
 
@@ -2149,20 +2125,20 @@ test("ready compare page keeps specs visible when one offer context is unavailab
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
-    }
+      valueText: "IPS",
+    },
   ];
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes
+          currentAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes
-        }
+          currentAttributes,
+        },
       ],
       offerContexts: {
         [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
@@ -2170,13 +2146,13 @@ test("ready compare page keeps specs visible when one offer context is unavailab
           bestCurrentPrice: {
             currency: "USD",
             merchantName: "Value Mart",
-            price: "199.99"
+            price: "199.99",
           },
-          latestPriceObservedAt: "2026-06-29T12:00:00Z"
+          latestPriceObservedAt: "2026-06-29T12:00:00Z",
         }),
-        [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id)
-      }
-    })
+        [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id),
+      },
+    }),
   );
 
   renderCompareRoute();
@@ -2190,32 +2166,36 @@ test("ready compare page keeps specs visible when one offer context is unavailab
 });
 
 test("ready compare cards render product attributes", () => {
+  const fragmentProducts = [
+    {
+      ...DETAIL_PRODUCT,
+      currentAttributes: [
+        {
+          code: "refresh-rate",
+          dataType: "numeric",
+          displayName: "Refresh rate",
+          valueText: "144 Hz",
+        },
+      ],
+    },
+    {
+      ...SECOND_PRODUCT,
+      currentAttributes: [
+        {
+          code: "refresh-rate",
+          dataType: "numeric",
+          displayName: "Refresh rate",
+          valueText: "165 Hz",
+        },
+      ],
+    },
+  ];
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
-      products: [
-        {
-          ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: [
-            {
-              code: "refresh-rate",
-              displayName: "Refresh rate",
-              valueText: "144 Hz"
-            }
-          ]
-        },
-        {
-          ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: [
-            {
-              code: "refresh-rate",
-              displayName: "Refresh rate",
-              valueText: "165 Hz"
-            }
-          ]
-        }
-      ]
-    })
+      products: fragmentProducts.map(buildProductSummary),
+    }),
   );
+  mockBatchedCompareProducts(fragmentProducts);
 
   renderCompareRoute();
 
@@ -2236,13 +2216,13 @@ test("ready compare cards render from batched loader data without synthetic prod
             {
               code: "refresh-rate",
               displayName: "Refresh rate",
-              valueText: "144 Hz"
-            }
-          ]
+              valueText: "144 Hz",
+            },
+          ],
         },
-        buildProductSummary(SECOND_PRODUCT)
-      ]
-    })
+        buildProductSummary(SECOND_PRODUCT),
+      ],
+    }),
   );
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === COMPARE_ROUTE_QUERY_DESCRIPTOR) {
@@ -2251,8 +2231,27 @@ test("ready compare cards render from batched loader data without synthetic prod
 
     throw new Error(`Unexpected synthetic product descriptor: ${JSON.stringify(descriptor)}`);
   });
-  mockedUsePreloadedQuery.mockImplementation(() => {
-    throw new Error("Compare cards must not issue store-only product reads");
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({
+        products: [
+          {
+            ...DETAIL_PRODUCT,
+            currentAttributes: [
+              {
+                code: "refresh-rate",
+                dataType: "numeric",
+                displayName: "Refresh rate",
+                valueText: "144 Hz",
+              },
+            ],
+          },
+          SECOND_PRODUCT,
+        ],
+      }).data;
+    }
+
+    throw new Error(`Compare cards must not issue per-product reads: ${String(queryRef)}`);
   });
 
   renderCompareRoute();
@@ -2264,7 +2263,8 @@ test("ready compare cards render from batched loader data without synthetic prod
   expect(screen.getByText("Refresh rate")).toBeInTheDocument();
   expect(screen.getByText("144 Hz")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledTimes(1);
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), COMPARE_ROUTE_QUERY_REF);
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test("ready compare page aligns shared product attributes in a matrix", () => {
@@ -2273,34 +2273,34 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
       code: "refresh-rate",
       displayName: "Refresh rate",
       dataType: "numeric",
-      valueText: "144 Hz"
+      valueText: "144 Hz",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
       dataType: "enum",
-      valueText: "IPS"
+      valueText: "IPS",
     },
     {
       code: "brightness",
       displayName: "Brightness",
       dataType: "numeric",
-      valueText: "350 nits"
-    }
+      valueText: "350 nits",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "panel-type",
       displayName: "Panel type",
       dataType: "enum",
-      valueText: "OLED"
+      valueText: "OLED",
     },
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
       dataType: "numeric",
-      valueText: "165 Hz"
-    }
+      valueText: "165 Hz",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue({
@@ -2311,36 +2311,27 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
         currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
+          valueText,
+        })),
       },
       {
         ...buildProductSummary(SECOND_PRODUCT),
         currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
-      }
-    ]
+          valueText,
+        })),
+      },
+    ],
   });
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...DETAIL_PRODUCT,
-          currentAttributes: detailProductAttributes
-        }
-      };
-    }
-
-    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...SECOND_PRODUCT,
-          currentAttributes: secondProductAttributes
-        }
-      };
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({
+        products: [
+          { ...DETAIL_PRODUCT, currentAttributes: detailProductAttributes },
+          { ...SECOND_PRODUCT, currentAttributes: secondProductAttributes },
+        ],
+      }).data;
     }
 
     throw new Error(`Unexpected query ref: ${String(queryRef)}`);
@@ -2351,11 +2342,11 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
   const matrix = screen.getByRole("table", { name: "Shared specifications" });
   const rows = within(matrix).getAllByRole("row");
 
-  expect(within(rows[0]).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
-    "Specification",
-    "Detail Product",
-    "Second Product"
-  ]);
+  expect(
+    within(rows[0])
+      .getAllByRole("columnheader")
+      .map((header) => header.textContent),
+  ).toEqual(["Specification", "Detail Product", "Second Product"]);
   expect(rows[1]).toHaveTextContent("Panel type");
   expect(rows[1]).toHaveTextContent("IPS");
   expect(rows[1]).toHaveTextContent("OLED");
@@ -2373,40 +2364,40 @@ test("ready compare matrix orders specification rows by sort order before displa
       code: "panel-type",
       displayName: "Panel type",
       valueText: "IPS",
-      sortOrder: 30
+      sortOrder: 30,
     },
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
       valueText: "144 Hz",
-      sortOrder: 10
+      sortOrder: 10,
     },
     {
       code: "brightness",
       displayName: "Brightness",
       valueText: "350 nits",
-      sortOrder: 20
-    }
+      sortOrder: 20,
+    },
   ];
   const secondProductAttributes = [
     {
       code: "brightness",
       displayName: "Brightness",
       valueText: "400 nits",
-      sortOrder: 20
+      sortOrder: 20,
     },
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
       valueText: "165 Hz",
-      sortOrder: 10
+      sortOrder: 10,
     },
     {
       code: "panel-type",
       displayName: "Panel type",
       valueText: "OLED",
-      sortOrder: 30
-    }
+      sortOrder: 30,
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2415,14 +2406,14 @@ test("ready compare matrix orders specification rows by sort order before displa
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2441,16 +2432,16 @@ test("ready compare page renders an empty shared-attribute state when no attribu
       code: "refresh-rate",
       displayName: "Refresh rate",
       dataType: "numeric",
-      valueText: "144 Hz"
-    }
+      valueText: "144 Hz",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "panel-type",
       displayName: "Panel type",
       dataType: "enum",
-      valueText: "OLED"
-    }
+      valueText: "OLED",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue({
@@ -2461,36 +2452,27 @@ test("ready compare page renders an empty shared-attribute state when no attribu
         currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
+          valueText,
+        })),
       },
       {
         ...buildProductSummary(SECOND_PRODUCT),
         currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
-      }
-    ]
+          valueText,
+        })),
+      },
+    ],
   });
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...DETAIL_PRODUCT,
-          currentAttributes: detailProductAttributes
-        }
-      };
-    }
-
-    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...SECOND_PRODUCT,
-          currentAttributes: secondProductAttributes
-        }
-      };
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({
+        products: [
+          { ...DETAIL_PRODUCT, currentAttributes: detailProductAttributes },
+          { ...SECOND_PRODUCT, currentAttributes: secondProductAttributes },
+        ],
+      }).data;
     }
 
     throw new Error(`Unexpected query ref: ${String(queryRef)}`);
@@ -2509,22 +2491,22 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
       code: "refresh-rate",
       displayName: "Refresh rate",
       dataType: "numeric",
-      valueText: "144 Hz"
+      valueText: "144 Hz",
     },
     {
       code: "refresh-rate",
       displayName: "Refresh rate duplicate",
       dataType: "numeric",
-      valueText: "Overwritten duplicate"
-    }
+      valueText: "Overwritten duplicate",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
       dataType: "numeric",
-      valueText: "165 Hz"
-    }
+      valueText: "165 Hz",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue({
@@ -2535,36 +2517,27 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
         currentAttributes: detailProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
+          valueText,
+        })),
       },
       {
         ...buildProductSummary(SECOND_PRODUCT),
         currentAttributes: secondProductAttributes.map(({ code, displayName, valueText }) => ({
           code,
           displayName,
-          valueText
-        }))
-      }
-    ]
+          valueText,
+        })),
+      },
+    ],
   });
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
-    if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...DETAIL_PRODUCT,
-          currentAttributes: detailProductAttributes
-        }
-      };
-    }
-
-    if (queryRef === SECOND_PRODUCT_QUERY_REF) {
-      return {
-        product: {
-          ...SECOND_PRODUCT,
-          currentAttributes: secondProductAttributes
-        }
-      };
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({
+        products: [
+          { ...DETAIL_PRODUCT, currentAttributes: detailProductAttributes },
+          { ...SECOND_PRODUCT, currentAttributes: secondProductAttributes },
+        ],
+      }).data;
     }
 
     throw new Error(`Unexpected query ref: ${String(queryRef)}`);
@@ -2582,27 +2555,24 @@ test("ready compare matrix uses the first attribute value for duplicate codes", 
 test("ready compare page renders specification mode tabs with stable URL state", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
-      specMode: "differences"
-    })
+      specMode: "differences",
+    }),
   );
 
   renderCompareRoute();
 
   expect(screen.getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product"
+    "/compare?slug=detail-product&slug=second-product",
   );
   expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&specs=differences"
+    "/compare?slug=detail-product&slug=second-product&specs=differences",
   );
-  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute(
-    "aria-current",
-    "page"
-  );
+  expect(screen.getByRole("tab", { name: "Differences" })).toHaveAttribute("aria-current", "page");
   expect(screen.getByRole("tab", { name: "All specs" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&specs=all"
+    "/compare?slug=detail-product&slug=second-product&specs=all",
   );
 
   for (const tab of screen.getAllByRole("tab")) {
@@ -2630,26 +2600,24 @@ test("specification mode tab clicks navigate to loader-backed URL state", () => 
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   render(
-    <MemoryRouter
-      initialEntries={["/compare?slug=detail-product&slug=second-product"]}
-    >
+    <MemoryRouter initialEntries={["/compare?slug=detail-product&slug=second-product"]}>
       <CompareRoute />
       <LocationProbe />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("tab", { name: "Differences" }));
 
   expect(screen.getByTestId("location-probe")).toHaveTextContent(
-    "/compare?slug=detail-product&slug=second-product&specs=differences"
+    "/compare?slug=detail-product&slug=second-product&specs=differences",
   );
 });
 
 test("ready compare page preserves specification mode in product-picker append links", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyCompareLoaderData({
-      specMode: "all"
-    })
+      specMode: "all",
+    }),
   );
   mockedUseLazyLoadQuery.mockReturnValue({
     products: {
@@ -2659,18 +2627,18 @@ test("ready compare page preserves specification mode in product-picker append l
             id: "Product:monitor-c",
             name: "Monitor C",
             slug: "monitor-c",
-            brand: { id: "Brand:panelco", name: "PanelCo" }
-          }
-        }
-      ]
-    }
+            brand: { id: "Brand:panelco", name: "PanelCo" },
+          },
+        },
+      ],
+    },
   });
 
   renderCompareRoute();
 
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&slug=monitor-c&specs=all"
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c&specs=all",
   );
 });
 
@@ -2682,9 +2650,9 @@ test("ready compare page preserves specification mode in remove links", () => {
       products: [
         buildProductSummary(DETAIL_PRODUCT),
         buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT)
-      ]
-    })
+        buildProductSummary(THIRD_PRODUCT),
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2695,15 +2663,12 @@ test("ready compare page preserves specification mode in remove links", () => {
 
   expect(
     within(selectionTray).getByRole("link", {
-      name: "Remove Detail Product from selection"
-    })
-  ).toHaveAttribute(
-    "href",
-    "/compare?slug=second-product&slug=third-product&specs=differences"
-  );
+      name: "Remove Detail Product from selection",
+    }),
+  ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product&specs=differences");
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
-    "/compare?slug=second-product&slug=third-product&specs=differences"
+    "/compare?slug=second-product&slug=third-product&specs=differences",
   );
 });
 
@@ -2712,25 +2677,25 @@ test("ready compare page renders all specification rows with missing cells", () 
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
-      valueText: "144 Hz"
+      valueText: "144 Hz",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
-    }
+      valueText: "IPS",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
+      valueText: "IPS",
     },
     {
       code: "brightness",
       displayName: "Brightness",
-      valueText: "350 nits"
-    }
+      valueText: "350 nits",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2739,14 +2704,14 @@ test("ready compare page renders all specification rows with missing cells", () 
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2770,35 +2735,35 @@ test("ready compare page renders only different specification rows", () => {
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
-      valueText: "144 Hz"
+      valueText: "144 Hz",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
+      valueText: "IPS",
     },
     {
       code: "weight",
       displayName: "Weight",
-      valueText: "5 lb"
-    }
+      valueText: "5 lb",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
-      valueText: "165 Hz"
+      valueText: "165 Hz",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
+      valueText: "IPS",
     },
     {
       code: "brightness",
       displayName: "Brightness",
-      valueText: "350 nits"
-    }
+      valueText: "350 nits",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2807,14 +2772,14 @@ test("ready compare page renders only different specification rows", () => {
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2840,38 +2805,38 @@ test("ready compare differences compare typed numeric and boolean values before 
       code: "refresh-rate",
       displayName: "Refresh rate",
       valueText: "144 Hz",
-      numericValue: "144"
+      numericValue: "144",
     },
     {
       code: "hdr",
       displayName: "HDR",
       valueText: "Yes",
-      booleanValue: true
+      booleanValue: true,
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
-    }
+      valueText: "IPS",
+    },
   ];
   const secondProductAttributes = [
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
       valueText: "144.0 hertz",
-      numericValue: "144"
+      numericValue: "144",
     },
     {
       code: "hdr",
       displayName: "HDR",
       valueText: "true",
-      booleanValue: true
+      booleanValue: true,
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "OLED"
-    }
+      valueText: "OLED",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2880,14 +2845,14 @@ test("ready compare differences compare typed numeric and boolean values before 
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2908,8 +2873,8 @@ test("ready compare differences include numeric rows when units differ", () => {
       displayName: "Depth",
       valueText: "1 in",
       numericValue: "1.0",
-      unitSymbol: "in"
-    }
+      unitSymbol: "in",
+    },
   ];
   const secondProductAttributes = [
     {
@@ -2917,8 +2882,8 @@ test("ready compare differences include numeric rows when units differ", () => {
       displayName: "Depth",
       valueText: "1 cm",
       numericValue: "1",
-      unitSymbol: "cm"
-    }
+      unitSymbol: "cm",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2927,14 +2892,14 @@ test("ready compare differences include numeric rows when units differ", () => {
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -2953,13 +2918,13 @@ test("ready compare differences normalize exponent numeric values", () => {
       displayName: "Storage",
       valueText: "1000 GB",
       numericValue: "1e3",
-      unitSymbol: "GB"
+      unitSymbol: "GB",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
-    }
+      valueText: "IPS",
+    },
   ];
   const secondProductAttributes = [
     {
@@ -2967,13 +2932,13 @@ test("ready compare differences normalize exponent numeric values", () => {
       displayName: "Storage",
       valueText: "1000.0 GB",
       numericValue: "1000",
-      unitSymbol: "GB"
+      unitSymbol: "GB",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "OLED"
-    }
+      valueText: "OLED",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -2982,14 +2947,14 @@ test("ready compare differences normalize exponent numeric values", () => {
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes: detailProductAttributes
+          currentAttributes: detailProductAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes: secondProductAttributes
-        }
-      ]
-    })
+          currentAttributes: secondProductAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -3007,13 +2972,13 @@ test("ready compare page renders an empty differences state when specifications 
     {
       code: "refresh-rate",
       displayName: "Refresh rate",
-      valueText: "144 Hz"
+      valueText: "144 Hz",
     },
     {
       code: "panel-type",
       displayName: "Panel type",
-      valueText: "IPS"
-    }
+      valueText: "IPS",
+    },
   ];
 
   mockedUseLoaderData.mockReturnValue(
@@ -3022,14 +2987,14 @@ test("ready compare page renders an empty differences state when specifications 
       products: [
         {
           ...buildProductSummary(DETAIL_PRODUCT),
-          currentAttributes
+          currentAttributes,
         },
         {
           ...buildProductSummary(SECOND_PRODUCT),
-          currentAttributes
-        }
-      ]
-    })
+          currentAttributes,
+        },
+      ],
+    }),
   );
 
   renderCompareRoute();
@@ -3049,19 +3014,19 @@ test("ready compare page lets users append a product without editing the URL", (
             id: DETAIL_PRODUCT.id,
             name: DETAIL_PRODUCT.name,
             slug: DETAIL_PRODUCT.slug,
-            brand: DETAIL_PRODUCT.brand
-          }
+            brand: DETAIL_PRODUCT.brand,
+          },
         },
         {
           node: {
             id: "Product:monitor-c",
             name: "Monitor C",
             slug: "monitor-c",
-            brand: { id: "Brand:panelco", name: "PanelCo" }
-          }
-        }
-      ]
-    }
+            brand: { id: "Brand:panelco", name: "PanelCo" },
+          },
+        },
+      ],
+    },
   });
 
   renderCompareRoute();
@@ -3069,21 +3034,22 @@ test("ready compare page lets users append a product without editing the URL", (
   expect(screen.queryByRole("link", { name: "Compare Detail Product" })).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&slug=monitor-c"
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c",
   );
 });
 
 test("ready compare page renders a selected-product tray with ordered remove links", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT),
-      buildProductSummary(THIRD_PRODUCT)
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT),
+      ],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
 
   renderCompareRoute();
 
@@ -3092,12 +3058,12 @@ test("ready compare page renders a selected-product tray with ordered remove lin
   const selectionCount = within(selectionTray).getByRole("status");
 
   expect(selectionCount).toHaveTextContent(
-    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`,
   );
   expect(selectionCount).toHaveAttribute("aria-live", "polite");
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&slug=third-product"
+    "/compare?slug=detail-product&slug=second-product&slug=third-product",
   );
   expect(selectedProducts).toHaveLength(3);
   expect(selectedProducts[0]).toHaveTextContent("Detail Product");
@@ -3105,28 +3071,29 @@ test("ready compare page renders a selected-product tray with ordered remove lin
   expect(selectedProducts[2]).toHaveTextContent("Third Product");
   expect(
     within(selectedProducts[0]).getByRole("link", {
-      name: "Remove Detail Product from selection"
-    })
+      name: "Remove Detail Product from selection",
+    }),
   ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product");
   expect(
     within(selectedProducts[1]).getByRole("link", {
-      name: "Remove Second Product from selection"
-    })
+      name: "Remove Second Product from selection",
+    }),
   ).toHaveAttribute("href", "/compare?slug=detail-product&slug=third-product");
   expect(
     within(selectedProducts[2]).getByRole("link", {
-      name: "Remove Third Product from selection"
-    })
+      name: "Remove Third Product from selection",
+    }),
   ).toHaveAttribute("href", "/compare?slug=detail-product&slug=second-product");
 });
 
 test("ready compare page handles an empty selected-product tray defensively", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [],
-    products: []
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [],
+      products: [],
+    }),
+  );
+  mockBatchedCompareProducts([]);
 
   renderCompareRoute();
 
@@ -3136,7 +3103,7 @@ test("ready compare page handles an empty selected-product tray defensively", ()
   expect(selectionCount).toHaveTextContent(`0 of ${MAX_COMPARE_PRODUCTS} products selected.`);
   expect(within(selectionTray).queryAllByRole("listitem")).toHaveLength(0);
   expect(
-    within(selectionTray).queryByRole("link", { name: /Remove .+ from selection/ })
+    within(selectionTray).queryByRole("link", { name: /Remove .+ from selection/ }),
   ).not.toBeInTheDocument();
 });
 
@@ -3150,11 +3117,11 @@ test("ready compare page labels the picker as an add-another-product path", () =
             id: "Product:monitor-c",
             name: "Monitor C",
             slug: "monitor-c",
-            brand: { id: "Brand:panelco", name: "PanelCo" }
-          }
-        }
-      ]
-    }
+            brand: { id: "Brand:panelco", name: "PanelCo" },
+          },
+        },
+      ],
+    },
   });
 
   renderCompareRoute();
@@ -3162,21 +3129,22 @@ test("ready compare page labels the picker as an add-another-product path", () =
   expect(screen.getByRole("heading", { name: "Add another product" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Compare Monitor C" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product&slug=monitor-c"
+    "/compare?slug=detail-product&slug=second-product&slug=monitor-c",
   );
 });
 
 test("ready compare cards include a remove link for the first selected product", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT),
-      buildProductSummary(THIRD_PRODUCT)
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT),
+      ],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
 
   renderCompareRoute();
 
@@ -3184,21 +3152,22 @@ test("ready compare cards include a remove link for the first selected product",
 
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
-    "/compare?slug=second-product&slug=third-product"
+    "/compare?slug=second-product&slug=third-product",
   );
 });
 
 test("ready compare cards include a remove link for a middle selected product", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT),
-      buildProductSummary(THIRD_PRODUCT)
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT),
+      ],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
 
   renderCompareRoute();
 
@@ -3206,21 +3175,22 @@ test("ready compare cards include a remove link for a middle selected product", 
 
   expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=third-product"
+    "/compare?slug=detail-product&slug=third-product",
   );
 });
 
 test("ready compare cards include a remove link for the last selected product", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-    products: [
-      buildProductSummary(DETAIL_PRODUCT),
-      buildProductSummary(SECOND_PRODUCT),
-      buildProductSummary(THIRD_PRODUCT)
-    ]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
+      products: [
+        buildProductSummary(DETAIL_PRODUCT),
+        buildProductSummary(SECOND_PRODUCT),
+        buildProductSummary(THIRD_PRODUCT),
+      ],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
 
   renderCompareRoute();
 
@@ -3228,17 +3198,18 @@ test("ready compare cards include a remove link for the last selected product", 
 
   expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
     "href",
-    "/compare?slug=detail-product&slug=second-product"
+    "/compare?slug=detail-product&slug=second-product",
   );
 });
 
 test("ready compare card remove link clears all selected slugs when only one is selected", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug],
-    products: [buildProductSummary(DETAIL_PRODUCT)]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug],
+      products: [buildProductSummary(DETAIL_PRODUCT)],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT]);
 
   renderCompareRoute();
 
@@ -3246,7 +3217,7 @@ test("ready compare card remove link clears all selected slugs when only one is 
 
   expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
     "href",
-    "/compare"
+    "/compare",
   );
 });
 
@@ -3257,10 +3228,10 @@ test("compare route renders the compare error boundary when the loader throws", 
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "A network error occurred while loading the comparison."
+    "A network error occurred while loading the comparison.",
   );
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "Please check your internet connection and try again."
+    "Please check your internet connection and try again.",
   );
 });
 
@@ -3271,10 +3242,10 @@ test("compare route keeps non-network TypeErrors on the generic error path", () 
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "An unexpected error occurred while loading the comparison."
+    "An unexpected error occurred while loading the comparison.",
   );
   expect(screen.getByRole("alert")).not.toHaveTextContent(
-    "Please check your internet connection and try again."
+    "Please check your internet connection and try again.",
   );
 });
 
@@ -3285,12 +3256,12 @@ test("compare error boundary supports route-specific resource copy", () => {
 
   expect(screen.getByRole("heading", { name: "Revenue" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "A network error occurred while loading the revenue report."
+    "A network error occurred while loading the revenue report.",
   );
   expect(screen.getByRole("alert")).not.toHaveTextContent("comparison");
   expect(screen.queryByText("Decision workspace")).not.toBeInTheDocument();
   expect(
-    screen.queryByText(/compare the product details and offer signals/i)
+    screen.queryByText(/compare the product details and offer signals/i),
   ).not.toBeInTheDocument();
 });
 
@@ -3299,10 +3270,10 @@ test("compare route saves the current ready-state selection", async () => {
     onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
 
@@ -3318,10 +3289,10 @@ test("compare route saves the current ready-state selection", async () => {
         variables: {
           input: {
             name: "Detail Product vs Second Product",
-            productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id]
-          }
-        }
-      })
+            productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id],
+          },
+        },
+      }),
     );
   });
 
@@ -3335,10 +3306,10 @@ test("compare route clears stale save feedback when selected products change", a
     onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
@@ -3346,7 +3317,7 @@ test("compare route clears stale save feedback when selected products change", a
   const { rerender } = render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
@@ -3355,27 +3326,29 @@ test("compare route clears stale save feedback when selected products change", a
     expect(getSaveFeedbackStatus()).toHaveTextContent("Comparison saved.");
   });
 
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    specMode: "shared",
-    slugs: [DETAIL_PRODUCT.slug],
-    products: [buildProductSummary(DETAIL_PRODUCT)]
-  });
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      slugs: [DETAIL_PRODUCT.slug],
+      products: [buildProductSummary(DETAIL_PRODUCT)],
+    }),
+  );
+  mockBatchedCompareProducts([DETAIL_PRODUCT]);
 
   rerender(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(getSaveFeedbackStatus()).toHaveTextContent("");
 
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+  mockCompareRouteQueries();
 
   rerender(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(getSaveFeedbackStatus()).toHaveTextContent("");
@@ -3389,9 +3362,9 @@ test("compare save completion settles the visible selection when a new selection
       ...COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery,
       variables: {
         ...COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
-        slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug]
-      }
-    }
+        slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug],
+      },
+    },
   };
 
   commitMutationMock.mockImplementation(({ onCompleted }) => {
@@ -3399,8 +3372,8 @@ test("compare save completion settles the visible selection when a new selection
       onCompleted({
         createSavedComparisonSet: {
           savedComparisonSet: { id: "saved-set-1" },
-          errors: []
-        }
+          errors: [],
+        },
       });
   });
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
@@ -3408,7 +3381,7 @@ test("compare save completion settles the visible selection when a new selection
   const { rerender } = render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
@@ -3418,8 +3391,8 @@ test("compare save completion settles the visible selection when a new selection
     buildReadyCompareLoaderData({
       products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(THIRD_PRODUCT)],
       query: suspendingQueryDescriptor,
-      slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug]
-    })
+      slugs: [DETAIL_PRODUCT.slug, THIRD_PRODUCT.slug],
+    }),
   );
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === suspendingQueryDescriptor) {
@@ -3438,7 +3411,7 @@ test("compare save completion settles the visible selection when a new selection
       rerender(
         <MemoryRouter>
           <CompareRoute />
-        </MemoryRouter>
+        </MemoryRouter>,
       );
     });
   });
@@ -3477,7 +3450,7 @@ test("renders a not-found message when any selected product is missing", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "not_found",
     specMode: "shared",
-    slugs: ["detail-product", "missing-product"]
+    slugs: ["detail-product", "missing-product"],
   });
 
   renderCompareRoute();
@@ -3496,15 +3469,15 @@ test("saved comparisons loader requests the current user's sets and forwards the
           {
             id: "saved-set-1",
             name: "Desk setup",
-            products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
-          }
-        ]
-      })
-    )
+            products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
+          },
+        ],
+      }),
+    ),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
@@ -3512,19 +3485,19 @@ test("saved comparisons loader requests the current user's sets and forwards the
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
-      }
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
+      },
     ],
     after: null,
     hasNextPage: false,
-    endCursor: null
+    endCursor: null,
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20 },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -3542,23 +3515,23 @@ test("saved comparison loader keeps product labels in stored position order", as
               items: [
                 {
                   position: 2,
-                  product: { name: "Standing Desk", slug: "desk" }
+                  product: { name: "Standing Desk", slug: "desk" },
                 },
                 {
                   position: 1,
-                  product: { name: "Desk Chair", slug: "chair" }
-                }
-              ]
-            }
-          }
+                  product: { name: "Desk Chair", slug: "chair" },
+                },
+              ],
+            },
+          },
         ],
-        pageInfo: { hasNextPage: false, endCursor: null }
-      }
-    })
+        pageInfo: { hasNextPage: false, endCursor: null },
+      },
+    }),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
@@ -3568,13 +3541,13 @@ test("saved comparison loader keeps product labels in stored position order", as
         name: "Desk setup",
         products: [
           { name: "Desk Chair", slug: "chair" },
-          { name: "Standing Desk", slug: "desk" }
-        ]
-      }
+          { name: "Standing Desk", slug: "desk" },
+        ],
+      },
     ],
     after: null,
     hasNextPage: false,
-    endCursor: null
+    endCursor: null,
   });
 });
 
@@ -3592,28 +3565,28 @@ test("saved comparison loader uses the product slug when its name is missing", a
               items: [
                 {
                   position: 1,
-                  product: { slug: "standing-desk" }
-                }
-              ]
-            }
-          }
+                  product: { slug: "standing-desk" },
+                },
+              ],
+            },
+          },
         ],
-        pageInfo: { hasNextPage: false, endCursor: null }
-      }
-    })
+        pageInfo: { hasNextPage: false, endCursor: null },
+      },
+    }),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     savedSets: [
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: [{ name: "standing-desk", slug: "standing-desk" }]
-      }
-    ]
+        products: [{ name: "standing-desk", slug: "standing-desk" }],
+      },
+    ],
   });
 });
 
@@ -3621,23 +3594,23 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
   const environment = createRelayEnvironment();
   const request = new Request("https://app.example.com/compare/saved");
   mockedFetchRouteQuery.mockResolvedValueOnce(
-      buildFetchedSavedComparisonPage(
-        buildSavedComparisonPage({
-          endCursor: "cursor-1",
-          hasNextPage: true,
-          savedSets: [
-            {
-              id: "saved-set-1",
-              name: "Desk setup",
-              products: buildSavedProducts([DETAIL_PRODUCT.slug])
-            }
-          ]
-        })
-      )
-    );
+    buildFetchedSavedComparisonPage(
+      buildSavedComparisonPage({
+        endCursor: "cursor-1",
+        hasNextPage: true,
+        savedSets: [
+          {
+            id: "saved-set-1",
+            name: "Desk setup",
+            products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+          },
+        ],
+      }),
+    ),
+  );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "ready",
     savedSetQueries: [SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR],
@@ -3645,12 +3618,12 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug])
-      }
+        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+      },
     ],
     after: null,
     hasNextPage: true,
-    endCursor: "cursor-1"
+    endCursor: "cursor-1",
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenNthCalledWith(
@@ -3658,7 +3631,7 @@ test("saved comparisons loader returns one page and exposes its next cursor", as
     environment,
     expect.anything(),
     { first: 20 },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -3673,25 +3646,25 @@ test("saved comparisons loader returns unauthorized status when GraphQL returns 
         message: "Unauthorized",
         path: ["mySavedComparisonSets"],
         extensions: {
-          code: "UNAUTHENTICATED"
-        }
-      }
-    ])
+          code: "UNAUTHENTICATED",
+        },
+      },
+    ]),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).resolves.toEqual({
     status: "unauthorized",
     savedSetQueries: [],
-    savedSets: []
+    savedSets: [],
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { first: 20 },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -3703,15 +3676,15 @@ test("saved comparisons loader does not treat FORBIDDEN as a sign-in state", asy
       message: "Forbidden",
       path: ["mySavedComparisonSets"],
       extensions: {
-        code: "FORBIDDEN"
-      }
-    }
+        code: "FORBIDDEN",
+      },
+    },
   ]);
 
   mockedFetchRouteQuery.mockRejectedValueOnce(forbiddenError);
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).rejects.toBe(forbiddenError);
 });
 
@@ -3722,20 +3695,20 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const openComparisonLinks = screen.getAllByRole("link", { name: "Open comparison" });
@@ -3745,7 +3718,7 @@ test("saved comparisons route renders persisted sets with reopen links", () => {
   expect(openComparisonLinks).toHaveLength(2);
   expect(openComparisonLinks[0]).toHaveAttribute(
     "href",
-    `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`
+    `/compare?slug=${SECOND_PRODUCT.slug}&slug=${DETAIL_PRODUCT.slug}`,
   );
 });
 
@@ -3756,8 +3729,8 @@ test("compare route exposes a named region for the compare shell", () => {
 
   expect(
     screen.getByRole("region", {
-      name: "Compare products"
-    })
+      name: "Compare products",
+    }),
   ).toBeInTheDocument();
 });
 
@@ -3770,11 +3743,11 @@ test("compare route presents URL-driven specification modes as tabs", () => {
 
   expect(within(tabs).getByRole("tab", { name: "Shared specs" })).toHaveAttribute(
     "aria-selected",
-    "true"
+    "true",
   );
   expect(within(tabs).getByRole("tab", { name: "Differences" })).toHaveAttribute(
     "href",
-    expect.stringContaining("specs=differences")
+    expect.stringContaining("specs=differences"),
   );
 });
 
@@ -3785,8 +3758,12 @@ test("comparison matrix keeps its selected view inside a named workspace", () =>
 
   const workspace = screen.getByRole("region", { name: "Specification comparison" });
 
-  expect(within(workspace).getByRole("heading", { name: "Shared specifications" })).toBeInTheDocument();
-  expect(within(workspace).getByText("No shared specifications across these products yet.")).toBeInTheDocument();
+  expect(
+    within(workspace).getByRole("heading", { name: "Shared specifications" }),
+  ).toBeInTheDocument();
+  expect(
+    within(workspace).getByText("No shared specifications across these products yet."),
+  ).toBeInTheDocument();
 });
 
 test("compared product actions use named navigation landmarks", () => {
@@ -3796,8 +3773,12 @@ test("compared product actions use named navigation landmarks", () => {
 
   openIndividualProductDetails();
 
-  expect(screen.getByRole("navigation", { name: "Actions for Detail Product" })).toBeInTheDocument();
-  expect(screen.getByRole("navigation", { name: "Actions for Second Product" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("navigation", { name: "Actions for Detail Product" }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole("navigation", { name: "Actions for Second Product" }),
+  ).toBeInTheDocument();
 });
 
 function openIndividualProductDetails() {
@@ -3807,13 +3788,15 @@ function openIndividualProductDetails() {
 test("saved comparisons route exposes a named saved-set list and polite feedback region", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    savedSets: [{ id: "saved-set-1", name: "Desk setup", products: buildSavedProducts(["desk", "chair"]) }]
+    savedSets: [
+      { id: "saved-set-1", name: "Desk setup", products: buildSavedProducts(["desk", "chair"]) },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("list", { name: "Saved comparison sets" })).toBeInTheDocument();
@@ -3831,20 +3814,20 @@ test("saved comparisons route removes a deleted set from the list", async () => 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getAllByRole("button", { name: "Delete comparison" })[0]);
@@ -3854,9 +3837,9 @@ test("saved comparisons route removes a deleted set from the list", async () => 
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
+          savedComparisonSetId: "saved-set-1",
+        },
+      }),
     );
   });
 
@@ -3879,15 +3862,15 @@ test("saved comparisons route keeps the set visible when delete fails and clears
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const deleteButton = screen.getAllByRole("button", { name: "Delete comparison" })[0];
@@ -3899,9 +3882,9 @@ test("saved comparisons route keeps the set visible when delete fails and clears
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
+          savedComparisonSetId: "saved-set-1",
+        },
+      }),
     );
   });
 
@@ -3922,10 +3905,10 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
           {
             code: "BAD_USER_INPUT",
             field: "savedComparisonSetId",
-            message: "Could not delete this comparison set."
-          }
-        ]
-      }
+            message: "Could not delete this comparison set.",
+          },
+        ],
+      },
     });
   });
 
@@ -3935,15 +3918,15 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
@@ -3953,9 +3936,9 @@ test("saved comparisons route keeps the set visible when delete returns GraphQL 
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
+          savedComparisonSetId: "saved-set-1",
+        },
+      }),
     );
   });
 
@@ -3982,20 +3965,20 @@ test("saved comparisons route applies overlapping delete responses against the l
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
@@ -4040,20 +4023,20 @@ test("saved comparisons route keeps later delete rows pending until their own re
       {
         id: "saved-set-1",
         name: "Desk setup",
-        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug])
+        products: buildSavedProducts([SECOND_PRODUCT.slug, DETAIL_PRODUCT.slug]),
       },
       {
         id: "saved-set-2",
         name: "Office setup",
-        products: buildSavedProducts([DETAIL_PRODUCT.slug])
-      }
-    ]
+        products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const deleteButtons = screen.getAllByRole("button", { name: "Delete comparison" });
@@ -4087,19 +4070,20 @@ test("saved comparisons route keeps later delete rows pending until their own re
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "unauthorized",
-    savedSets: []
+    savedSets: [],
   });
 
   render(
     <MemoryRouter>
       <SavedComparisonsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByText("Sign in to view saved comparisons.")).toBeInTheDocument();
-  expect(
-    screen.getByRole("link", { name: "Sign in to view saved comparisons" })
-  ).toHaveAttribute("href", "/auth/login");
+  expect(screen.getByRole("link", { name: "Sign in to view saved comparisons" })).toHaveAttribute(
+    "href",
+    "/auth/login",
+  );
 });
 
 test("isUnauthorizedSavedComparisonsResponse detects a structured unauthorized GraphQL error targeting the saved sets field", () => {
@@ -4110,11 +4094,11 @@ test("isUnauthorizedSavedComparisonsResponse detects a structured unauthorized G
           message: "Unauthorized",
           path: ["mySavedComparisonSets"],
           extensions: {
-            code: "UNAUTHENTICATED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHENTICATED",
+          },
+        },
+      ]),
+    ),
   ).toBe(true);
 });
 
@@ -4126,11 +4110,11 @@ test("isUnauthorizedSavedComparisonsResponse detects an unauthorized response fr
           message: "Authentication failed",
           path: ["mySavedComparisonSets"],
           extensions: {
-            code: "UNAUTHENTICATED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHENTICATED",
+          },
+        },
+      ]),
+    ),
   ).toBe(true);
 });
 
@@ -4142,11 +4126,11 @@ test("isUnauthorizedSavedComparisonsResponse ignores a forbidden response from e
           message: "Forbidden",
           path: ["mySavedComparisonSets"],
           extensions: {
-            code: "FORBIDDEN"
-          }
-        }
-      ])
-    )
+            code: "FORBIDDEN",
+          },
+        },
+      ]),
+    ),
   ).toBe(false);
 });
 
@@ -4156,10 +4140,10 @@ test("isUnauthorizedSavedComparisonsResponse ignores fuzzy auth messages without
       errors: [
         {
           message: "Access denied for saved comparison sets",
-          path: ["mySavedComparisonSets"]
-        }
-      ]
-    })
+          path: ["mySavedComparisonSets"],
+        },
+      ],
+    }),
   ).toBe(false);
 });
 
@@ -4169,10 +4153,10 @@ test("isUnauthorizedSavedComparisonsResponse ignores not authorized messages wit
       errors: [
         {
           message: "You are not authorized to access saved comparison sets",
-          path: ["mySavedComparisonSets"]
-        }
-      ]
-    })
+          path: ["mySavedComparisonSets"],
+        },
+      ],
+    }),
   ).toBe(false);
 });
 
@@ -4184,11 +4168,11 @@ test("isUnauthorizedSavedComparisonsResponse detects pathless unauthorized error
           message: "Unauthorized",
           path: [],
           extensions: {
-            code: "UNAUTHENTICATED"
-          }
-        }
-      ])
-    )
+            code: "UNAUTHENTICATED",
+          },
+        },
+      ]),
+    ),
   ).toBe(true);
 });
 
@@ -4198,10 +4182,10 @@ test("isUnauthorizedSavedComparisonsResponse returns false for unrelated GraphQL
       errors: [
         {
           message: "Internal server error",
-          path: ["mySavedComparisonSets"]
-        }
-      ]
-    })
+          path: ["mySavedComparisonSets"],
+        },
+      ],
+    }),
   ).toBe(false);
 });
 
@@ -4211,10 +4195,10 @@ test("isUnauthorizedSavedComparisonsResponse returns false for unauthorized erro
       errors: [
         {
           message: "Unauthorized",
-          path: ["someOtherField"]
-        }
-      ]
-    })
+          path: ["someOtherField"],
+        },
+      ],
+    }),
   ).toBe(false);
 });
 
@@ -4224,10 +4208,10 @@ test("isUnauthorizedSavedComparisonsResponse returns false when the response has
       data: {
         mySavedComparisonSets: {
           edges: [],
-          pageInfo: { hasNextPage: false, endCursor: null }
-        }
-      }
-    })
+          pageInfo: { hasNextPage: false, endCursor: null },
+        },
+      },
+    }),
   ).toBe(false);
 });
 
@@ -4241,14 +4225,14 @@ test("saved comparisons loader throws when the GraphQL response cannot be parsed
         edges: "not-an-array",
         pageInfo: {
           hasNextPage: false,
-          endCursor: null
-        }
-      }
-    })
+          endCursor: null,
+        },
+      },
+    }),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
@@ -4262,14 +4246,14 @@ test("saved comparisons loader throws when page metadata cannot be parsed", asyn
         edges: [],
         pageInfo: {
           hasNextPage: "yes",
-          endCursor: null
-        }
-      }
-    })
+          endCursor: null,
+        },
+      },
+    }),
   );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).rejects.toThrow("Failed to parse saved comparison sets response");
 });
 
@@ -4280,13 +4264,13 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
   mockedFetchRouteQuery.mockResolvedValueOnce(
     buildFetchedSavedComparisonPage(
       buildSavedComparisonPage({
-        savedSets: []
-      })
-    )
+        savedSets: [],
+      }),
+    ),
   );
 
   const result = await savedComparisonsLoader(
-    buildSavedComparisonsLoaderArgs({ environment, request })
+    buildSavedComparisonsLoaderArgs({ environment, request }),
   );
 
   expect(result).toEqual({
@@ -4295,17 +4279,14 @@ test("saved comparisons loader returns empty status for zero saved sets with no 
     savedSets: [],
     after: null,
     hasNextPage: false,
-    endCursor: null
+    endCursor: null,
   });
 });
 
 test("saved comparisons loader aborts pagination when the request is cancelled", async () => {
   const controller = new AbortController();
   const environment = createRelayEnvironment();
-  const request = buildAbortableRequest(
-    "https://app.example.com/compare/saved",
-    controller.signal
-  );
+  const request = buildAbortableRequest("https://app.example.com/compare/saved", controller.signal);
 
   mockedFetchRouteQuery.mockImplementationOnce(() => {
     controller.abort();
@@ -4318,17 +4299,17 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
           {
             id: "saved-set-1",
             name: "Desk setup",
-            products: buildSavedProducts([DETAIL_PRODUCT.slug])
-          }
-        ]
+            products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+          },
+        ],
       }),
       descriptor: SAVED_COMPARISONS_FIRST_PAGE_DESCRIPTOR,
-      dispose: vi.fn()
+      dispose: vi.fn(),
     });
   });
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).rejects.toThrow(/aborted/i);
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
@@ -4336,7 +4317,7 @@ test("saved comparisons loader aborts pagination when the request is cancelled",
     environment,
     expect.anything(),
     { first: 20 },
-    { signal: request.signal }
+    { signal: request.signal },
   );
 });
 
@@ -4348,7 +4329,7 @@ function renderCompareRoute() {
   return render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -4391,23 +4372,33 @@ function mockCompareRouteQueries() {
 
     if (queryRef === DETAIL_PRODUCT_QUERY_REF) {
       return {
-        product: DETAIL_PRODUCT
+        product: DETAIL_PRODUCT,
       };
     }
 
     if (queryRef === SECOND_PRODUCT_QUERY_REF) {
       return {
-        product: SECOND_PRODUCT
+        product: SECOND_PRODUCT,
       };
     }
 
     if (queryRef === THIRD_PRODUCT_QUERY_REF) {
       return {
-        product: THIRD_PRODUCT
+        product: THIRD_PRODUCT,
       };
     }
 
     throw new Error(`Unexpected query ref: ${String(queryRef)}`);
+  });
+}
+
+function mockBatchedCompareProducts(products: Array<CompareTestProduct | null>) {
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === COMPARE_ROUTE_QUERY_REF) {
+      return buildFetchedCompareRouteQuery({ products }).data;
+    }
+
+    throw new Error(`Unexpected per-product query ref: ${String(queryRef)}`);
   });
 }
 
@@ -4426,11 +4417,11 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-1",
               name: "Set 1",
-              products: buildSavedProducts([DETAIL_PRODUCT.slug])
-            }
-          ]
-        })
-      )
+              products: buildSavedProducts([DETAIL_PRODUCT.slug]),
+            },
+          ],
+        }),
+      ),
     )
     .mockResolvedValueOnce(
       buildFetchedSavedComparisonPage(
@@ -4441,15 +4432,15 @@ test("saved comparisons loader throws when pagination cursor does not advance", 
             {
               id: "saved-set-2",
               name: "Set 2",
-              products: buildSavedProducts([SECOND_PRODUCT.slug])
-            }
-          ]
+              products: buildSavedProducts([SECOND_PRODUCT.slug]),
+            },
+          ],
         }),
-        secondPageDescriptor
-      )
+        secondPageDescriptor,
+      ),
     );
 
   await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request })),
   ).rejects.toThrow("Invalid pagination cursor");
 });

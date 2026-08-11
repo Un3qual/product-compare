@@ -9,7 +9,7 @@ import {
   preloadRouteQuery,
   useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
-import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import {
   ProductDecisionActions,
   type ProductDecisionCompareAction,
