@@ -1,10 +1,5 @@
 import { graphQLDateTimeLabel } from "../../graphql-datetime";
 
-export type PriceAlertViewSource = {
-  ruleType: string;
-  observedAt: string;
-};
-
 export type PriceWatchViewSource = {
   ruleType: string;
   currency: string;
@@ -21,10 +16,10 @@ const ALERT_RULE_LABELS: Readonly<Record<string, string>> = {
   NEWLY_AVAILABLE: "Newly available",
 };
 
-export function buildAlertsViewData<
-  TAlert extends PriceAlertViewSource,
-  TWatch extends PriceWatchViewSource,
->(alerts: readonly TAlert[], watches: readonly TWatch[]) {
+export function buildAlertsViewData<TAlert, TWatch extends Pick<PriceWatchViewSource, "enabled">>(
+  alerts: readonly TAlert[],
+  watches: readonly TWatch[],
+) {
   return {
     alerts,
     activeWatches: watches.filter((watch) => watch.enabled),

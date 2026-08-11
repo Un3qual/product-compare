@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<e2e1fffe18d015d744eb5554d7d21bee>>
+ * @generated SignedSource<<57595eb63c6611e9a4627db2005c8beb>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,17 +9,17 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type RootViewerRouteQuery$variables = Record<PropertyKey, never>;
-export type RootViewerRouteQuery$data = {
+export type RootRouteQuery$variables = Record<PropertyKey, never>;
+export type RootRouteQuery$data = {
   readonly viewer: {
     readonly email: string;
     readonly id: string;
     readonly isOperator: boolean;
   } | null | undefined;
 };
-export type RootViewerRouteQuery = {
-  response: RootViewerRouteQuery$data;
-  variables: RootViewerRouteQuery$variables;
+export type RootRouteQuery = {
+  response: RootRouteQuery$data;
+  variables: RootRouteQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -62,7 +62,7 @@ return {
     "argumentDefinitions": [],
     "kind": "Fragment",
     "metadata": null,
-    "name": "RootViewerRouteQuery",
+    "name": "RootRouteQuery",
     "selections": (v0/*: any*/),
     "type": "RootQueryType",
     "abstractKey": null
@@ -71,20 +71,20 @@ return {
   "operation": {
     "argumentDefinitions": [],
     "kind": "Operation",
-    "name": "RootViewerRouteQuery",
+    "name": "RootRouteQuery",
     "selections": (v0/*: any*/)
   },
   "params": {
-    "cacheID": "5a9abb7ca427edcc6dc33aa9779f187e",
+    "cacheID": "9ee512622d83fbf8088e5bf97a78269c",
     "id": null,
     "metadata": {},
-    "name": "RootViewerRouteQuery",
+    "name": "RootRouteQuery",
     "operationKind": "query",
-    "text": "query RootViewerRouteQuery {\n  viewer {\n    id\n    email\n    isOperator\n  }\n}\n"
+    "text": "query RootRouteQuery {\n  viewer {\n    id\n    email\n    isOperator\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "8ffe3b068359ec7370b48fae4f249829";
+(node as any).hash = "20b8d9fc104413135d9518645692234f";
 
 export default node;

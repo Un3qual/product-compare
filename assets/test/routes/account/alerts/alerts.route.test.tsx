@@ -1,31 +1,38 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
-import { useMutation } from "react-relay";
-import { AlertsRoute } from "../../../../src/routes/account/alerts/AlertsRoute";
+import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import {
+  AlertsRoute,
   alertsLoader,
-  summarizeAlertsRoute,
   type AlertsRouteLoaderData,
-} from "../../../../src/routes/account/alerts/loader";
+} from "../../../../src/routes/account/alerts/AlertsRoute";
+import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { PriceWatchControl } from "../../../../src/routes/products/PriceWatchControl";
 
 const {
   commitMutationMock,
   fetchRouteQueryMock,
+  useFragmentMock,
   useLoaderDataMock,
   useMutationMock,
+  usePreloadedQueryMock,
   useRevalidatorMock,
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
   useRevalidatorMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("../../../../src/relay/route-preload", () => ({
   fetchRouteQuery: fetchRouteQueryMock,
   getRelayEnvironmentFromRouterContext: vi.fn(() => ({})),
+  useRoutePreloadedQuery: useRoutePreloadedQueryMock,
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -35,24 +42,37 @@ vi.mock("react-router-dom", async () => {
 
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, useMutation: useMutationMock };
+  return {
+    ...actual,
+    useFragment: useFragmentMock,
+    useMutation: useMutationMock,
+    usePreloadedQuery: usePreloadedQueryMock,
+  };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUseRevalidator = vi.mocked(useRevalidator);
+const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
+const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLoaderDataMock.mockReset();
   useMutationMock.mockReset();
+  mockedUsePreloadedQuery.mockReset();
   useRevalidatorMock.mockReset();
+  mockedUseRoutePreloadedQuery.mockReset();
+  mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
   mockedUseMutation.mockReturnValue([commitMutationMock, false] as never);
   mockedUseRevalidator.mockReturnValue({ revalidate: vi.fn(), state: "idle" } as never);
 });
 
-test("alertsLoader disposes its Relay query after copying route summaries", async () => {
+test("alertsLoader preserves its Relay descriptor for component-owned fragments", async () => {
   const dispose = vi.fn();
   fetchRouteQueryMock.mockResolvedValue({
     data: {
@@ -61,8 +81,8 @@ test("alertsLoader disposes its Relay query after copying route summaries", asyn
     },
     descriptor: {
       __relayQuery: {
-        operationName: "AlertOperationsQuery",
-        text: "query AlertOperationsQuery { myAlertEvents { edges { node { id } } } }",
+        operationName: "AlertsRouteQuery",
+        text: "query AlertsRouteQuery { myAlertEvents { edges { node { id } } } }",
         variables: { first: 50 },
       },
     },
@@ -80,65 +100,15 @@ test("alertsLoader disposes its Relay query after copying route summaries", asyn
 
   expect(result).toEqual({
     status: "ready",
-    alerts: [],
-    watches: [],
-    hasMoreAlerts: false,
-    hasMoreWatches: false,
-  });
-  expect(dispose).toHaveBeenCalledTimes(1);
-});
-
-test("summarizeAlertsRoute keeps valid event and watch facts", () => {
-  expect(
-    summarizeAlertsRoute({
-      myAlertEvents: {
-        edges: [
-          {
-            node: {
-              id: "event-1",
-              productName: "Display",
-              productSlug: "display",
-              merchantName: "Shop",
-              ruleType: "TARGET_PRICE",
-              currency: "USD",
-              landedPrice: "90",
-              observedAt: "2026-07-13T20:00:00Z",
-              readAt: null,
-            },
-          },
-        ],
-        pageInfo: { hasNextPage: false },
-      },
-      myPriceWatches: {
-        edges: [
-          {
-            node: {
-              id: "watch-1",
-              productName: "Display",
-              productSlug: "display",
-              merchantName: null,
-              ruleType: "TARGET_PRICE",
-              currency: "USD",
-              targetAmount: "100",
-              percentageDrop: null,
-              baselineLandedPrice: "120",
-              enabled: true,
-            },
-          },
-        ],
-        pageInfo: { hasNextPage: true },
-      },
+    query: expect.objectContaining({
+      __relayQuery: expect.objectContaining({ operationName: "AlertsRouteQuery" }),
     }),
-  ).toMatchObject({
-    alerts: [{ id: "event-1", landedPrice: "90" }],
-    watches: [{ id: "watch-1", targetAmount: "100" }],
-    hasMoreAlerts: false,
-    hasMoreWatches: true,
   });
+  expect(dispose).not.toHaveBeenCalled();
 });
 
 test("AlertsRoute presents unread changes before active watch controls", () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [
       {
@@ -169,7 +139,7 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
     ],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -189,7 +159,7 @@ test("AlertsRoute presents unread changes before active watch controls", () => {
 });
 
 test("AlertsRoute keeps malformed observation sources visible instead of normalizing them", () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [
       {
@@ -229,7 +199,7 @@ test("AlertsRoute keeps malformed observation sources visible instead of normali
     watches: [],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -244,7 +214,7 @@ test("AlertsRoute keeps malformed observation sources visible instead of normali
 });
 
 test("AlertsRoute encodes alert and watch product slugs in detail links", () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [
       {
@@ -275,7 +245,7 @@ test("AlertsRoute encodes alert and watch product slugs in detail links", () => 
     ],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -294,7 +264,7 @@ test("AlertsRoute encodes alert and watch product slugs in detail links", () => 
 });
 
 test("AlertsRoute keeps paused watches visible and resumes them", async () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [],
     watches: [
@@ -313,7 +283,7 @@ test("AlertsRoute keeps paused watches visible and resumes them", async () => {
     ],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -336,13 +306,13 @@ test("AlertsRoute keeps paused watches visible and resumes them", async () => {
 });
 
 test("mark-read pending and failure feedback stay on the affected alert row", async () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [alertSummary("alert-one", "First alert"), alertSummary("alert-two", "Second alert")],
     watches: [],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -379,13 +349,13 @@ test("mark-read pending and failure feedback stay on the affected alert row", as
 });
 
 test("toggle pending and failure feedback stay on the affected watch row", async () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [],
     watches: [watchSummary("watch-one", "First watch"), watchSummary("watch-two", "Second watch")],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -422,13 +392,13 @@ test("toggle pending and failure feedback stay on the affected watch row", async
 });
 
 test("delete pending and failure feedback stay on the affected watch row", async () => {
-  mockedUseLoaderData.mockReturnValue({
+  mockReadyAlerts({
     status: "ready",
     alerts: [],
     watches: [watchSummary("watch-one", "First watch"), watchSummary("watch-two", "Second watch")],
     hasMoreAlerts: false,
     hasMoreWatches: false,
-  } satisfies AlertsRouteLoaderData);
+  });
 
   render(
     <MemoryRouter>
@@ -561,7 +531,52 @@ test("PriceWatchControl resets all product-scoped form state when the product ch
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
 
-function alertSummary(id: string, productName: string) {
+function mockReadyAlerts({
+  alerts,
+  watches,
+  hasMoreAlerts,
+  hasMoreWatches,
+}: {
+  status: "ready";
+  alerts: ReturnType<typeof alertSummary>[];
+  watches: ReturnType<typeof watchSummary>[];
+  hasMoreAlerts: boolean;
+  hasMoreWatches: boolean;
+}) {
+  const query = {
+    __relayQuery: {
+      operationName: "AlertsRouteQuery",
+      text: "query AlertsRouteQuery($first: Int!) { myAlertEvents(first: $first) { edges { node { id } } } }",
+      variables: { first: 50 },
+    },
+  };
+  mockedUseLoaderData.mockReturnValue({ status: "ready", query } satisfies AlertsRouteLoaderData);
+  mockedUsePreloadedQuery.mockReturnValue({
+    myAlertEvents: {
+      edges: alerts.map((node) => ({ node })),
+      pageInfo: { hasNextPage: hasMoreAlerts },
+    },
+    myPriceWatches: {
+      edges: watches.map((node) => ({ node })),
+      pageInfo: { hasNextPage: hasMoreWatches },
+    },
+  } as never);
+}
+
+function alertSummary(
+  id: string,
+  productName: string,
+): {
+  id: string;
+  productName: string;
+  productSlug: string;
+  merchantName: string;
+  ruleType: string;
+  currency: string;
+  landedPrice: string;
+  observedAt: string;
+  readAt: string | null;
+} {
   return {
     id,
     productName,

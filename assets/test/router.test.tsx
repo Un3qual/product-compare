@@ -18,7 +18,7 @@ import {
   offerDiscoveryLoader,
 } from "../src/routes/offers/OfferDiscoveryRoute";
 import { ProductDetailRoute, productDetailLoader } from "../src/routes/products/ProductDetailRoute";
-import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
+import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/RootRoute";
 import { notFoundLoader } from "../src/routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "../src/routes/RouteMetadata";
 

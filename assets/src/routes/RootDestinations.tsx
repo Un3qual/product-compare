@@ -10,7 +10,7 @@ import {
   selectedCompareSlugsFromSearch,
 } from "./compare/paths";
 import { getRootDestinationData, type RootDestination } from "./root-destination-data";
-import type { RootViewer } from "./root/loader";
+import type { RootViewer } from "./root/viewer-data";
 
 const styles = create({
   link: {

@@ -490,7 +490,7 @@ function homeResponders({
         },
       },
     }),
-    RootViewerRouteQuery: { data: { viewer } },
+    RootRouteQuery: { data: { viewer } },
   };
 }
 

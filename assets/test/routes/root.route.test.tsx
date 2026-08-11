@@ -11,7 +11,7 @@ import {
 import { setRootViewer } from "../../src/routes/auth/viewer-store";
 import { RootPrimaryNavigation } from "../../src/routes/RootDestinations";
 import { RootLayout } from "../../src/routes/RootRoute";
-import { rootLoader, type RootLoaderData } from "../../src/routes/root/loader";
+import { rootLoader, type RootLoaderData } from "../../src/routes/RootRoute";
 
 const { fetchRouteQueryMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } = vi.hoisted(
   () => ({
@@ -49,7 +49,7 @@ const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 const ROOT_VIEWER_QUERY_REF = { dispose: vi.fn() };
 const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "RootViewerRouteQuery",
+    operationName: "RootRouteQuery",
     text: null,
     variables: {},
   },

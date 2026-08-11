@@ -7,7 +7,7 @@ import { RouteErrorBoundary } from "./routes/compare/RouteErrorBoundary";
 import { notFoundLoader } from "./routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "./routes/RouteMetadata";
 import { RootLayout } from "./routes/RootRoute";
-import { rootLoader, ROOT_ROUTE_ID } from "./routes/root/loader";
+import { rootLoader, ROOT_ROUTE_ID } from "./routes/RootRoute";
 
 declare global {
   interface Window {
@@ -253,10 +253,7 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="price alerts" title="Price alerts" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ AlertsRoute }, { alertsLoader }] = await Promise.all([
-            import("./routes/account/alerts/AlertsRoute"),
-            import("./routes/account/alerts/loader"),
-          ]);
+          const { AlertsRoute, alertsLoader } = await import("./routes/account/alerts/AlertsRoute");
           return { Component: AlertsRoute, loader: alertsLoader };
         }),
       },

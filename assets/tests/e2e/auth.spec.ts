@@ -74,7 +74,7 @@ function rootViewerResponse(viewer: { id: string; email: string } | null = null)
 
 test("login redirects to the home route after a successful session mutation", async ({ page }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    RootRouteQuery: [
       rootViewerResponse(),
       rootViewerResponse({ id: "1", email: "person@example.com" }),
     ],
@@ -111,7 +111,7 @@ test("login redirects to the home route after a successful session mutation", as
 
 test("login renders typed credential errors from the GraphQL payload", async ({ page }) => {
   await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
     LoginMutation: {
       data: {
         login: {
@@ -141,7 +141,7 @@ test("register redirects to the home route after a successful session mutation",
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    RootRouteQuery: [
       rootViewerResponse(),
       rootViewerResponse({ id: "2", email: "new@example.com" }),
     ],
@@ -177,7 +177,7 @@ test("register redirects to the home route after a successful session mutation",
 
 test("forgot password shows the privacy-safe success state", async ({ page }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
     ForgotPasswordMutation: {
       data: {
         forgotPassword: {
@@ -205,7 +205,7 @@ test("reset password consumes the token from the URL and shows the success state
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
     ResetPasswordMutation: {
       data: {
         resetPassword: {
@@ -234,19 +234,19 @@ test("reset password shows an invalid-token alert when the URL token is missing"
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
   });
 
   await page.goto("/auth/reset-password");
 
   await expect(page.getByRole("alert")).toContainText("This reset link is missing or invalid.");
   await expect(page.getByRole("button", { name: "Update password" })).toBeDisabled();
-  expect(requests).toEqual([{ operationName: "RootViewerRouteQuery", variables: {} }]);
+  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
 });
 
 test("verify email consumes the token from the URL and reports success", async ({ page }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
     VerifyEmailMutation: {
       data: {
         verifyEmail: {
@@ -270,7 +270,7 @@ test("verify email shows an invalid-token alert when the URL token is missing", 
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
   });
 
   await page.goto("/auth/verify-email");
@@ -278,14 +278,14 @@ test("verify email shows an invalid-token alert when the URL token is missing", 
   await expect(page.getByRole("alert")).toContainText(
     "This verification link is missing or invalid.",
   );
-  expect(requests).toEqual([{ operationName: "RootViewerRouteQuery", variables: {} }]);
+  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
 });
 
 test("logout clears the browser session through GraphQL and returns to sign in", async ({
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    RootRouteQuery: [
       rootViewerResponse({ id: "viewer-1", email: "person@example.com" }),
       rootViewerResponse(),
     ],
