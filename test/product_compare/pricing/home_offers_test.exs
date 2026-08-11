@@ -2,7 +2,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
   use ProductCompare.DataCase, async: true
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+    only: [capture_queries: 1, capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.{Alerts, Catalog, Pricing}
@@ -164,6 +164,183 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     refute String.contains?(query, "percentile_cont")
   end
 
+  test "new deal selection bounds merchant products before first-seen history" do
+    old_products =
+      Enum.map(1..8, fn index ->
+        product = SpecsFixtures.product_fixture(%{slug: "old-history-#{index}"})
+        old_offer = offer(product, "old-history-#{index}", "90", 0, true)
+
+        ProductCompare.Repo.update_all(
+          Ecto.Query.from(candidate in ProductCompareSchemas.Pricing.MerchantProduct,
+            where: candidate.id == ^old_offer.id
+          ),
+          set: [inserted_at: DateTime.add(@now, -259_201, :second)]
+        )
+
+        Enum.each(
+          1..4,
+          &add_price(old_offer, Integer.to_string(90 + &1), -604_800 - &1)
+        )
+
+        product
+      end)
+
+    new_product = SpecsFixtures.product_fixture(%{slug: "bounded-new-history"})
+    new_offer = offer(new_product, "bounded-new-history", "80", 0, true)
+
+    {[candidate], [query]} =
+      capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 2) end)
+
+    assert candidate.product_id == new_product.id
+    assert candidate.product.id == new_product.id
+    assert candidate.merchant_product_id == new_offer.id
+    refute candidate.product_id in Enum.map(old_products, & &1.id)
+
+    assert {cutoff_position, _length} =
+             :binary.match(query, ~s("inserted_at" >=))
+
+    assert {first_seen_position, _length} = :binary.match(query, "min(")
+    assert cutoff_position < first_seen_position
+  end
+
+  test "page facts are page-scoped and honor requested fields" do
+    products =
+      Enum.map(1..8, fn index ->
+        product = SpecsFixtures.product_fixture(%{slug: "page-facts-#{index}"})
+        offer(product, "page-facts-#{index}", Integer.to_string(80 + index), 0, true)
+        product
+      end)
+
+    page = Pricing.home_new_deal_candidates(now: @now, limit: 2)
+    page_offer_ids = MapSet.new(page, & &1.merchant_product_id)
+
+    {empty_page_facts, empty_page_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts([], MapSet.new([:active_offer_count, :price_signal]),
+          now: @now
+        )
+      end)
+
+    assert empty_page_facts == %{}
+    assert empty_page_queries == []
+
+    {empty_field_facts, empty_field_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts(page, MapSet.new(), now: @now)
+      end)
+
+    assert empty_field_facts == %{}
+    assert empty_field_queries == []
+
+    {active_facts, active_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts(page, MapSet.new([:active_offer_count]), now: @now)
+      end)
+
+    assert MapSet.new(Map.keys(active_facts)) == page_offer_ids
+    assert Enum.all?(active_facts, fn {_id, facts} -> facts.active_offer_count == 1 end)
+    assert length(active_queries) == 1
+    assert hd(active_queries) =~ "count("
+    refute hd(active_queries) =~ "percentile_cont"
+
+    {signal_facts, signal_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts(page, MapSet.new([:price_signal]), now: @now)
+      end)
+
+    assert MapSet.new(Map.keys(signal_facts)) == page_offer_ids
+    assert length(signal_queries) == 1
+    assert hd(signal_queries) =~ "percentile_cont"
+    refute hd(signal_queries) =~ "count("
+
+    {all_facts, all_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts(
+          page,
+          MapSet.new([:active_offer_count, :price_signal]),
+          now: @now
+        )
+      end)
+
+    assert MapSet.new(Map.keys(all_facts)) == page_offer_ids
+    assert length(all_queries) <= 2
+    assert Enum.count(all_queries, &String.contains?(&1, "count(")) == 1
+    assert Enum.count(all_queries, &String.contains?(&1, "percentile_cont")) == 1
+
+    {_single_facts, single_queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts(
+          Enum.take(page, 1),
+          MapSet.new([:active_offer_count, :price_signal]),
+          now: @now
+        )
+      end)
+
+    assert length(single_queries) == length(all_queries)
+    assert length(products) > length(page)
+  end
+
+  test "page facts derive an existing median without another query" do
+    product = SpecsFixtures.product_fixture(%{slug: "page-facts-existing-median"})
+    merchant_product = offer(product, "page-facts-existing-median", "90", 0, true)
+
+    row = %{
+      product_id: product.id,
+      merchant_product_id: merchant_product.id,
+      median_30d: Decimal.new("100"),
+      below_30_day_median?: true
+    }
+
+    {facts, queries} =
+      capture_select_queries(fn ->
+        Pricing.home_offer_page_facts([row], MapSet.new([:price_signal]), now: @now)
+      end)
+
+    assert queries == []
+    assert Decimal.eq?(facts[merchant_product.id].median_30d, Decimal.new("100"))
+    assert facts[merchant_product.id].below_30_day_median?
+  end
+
+  test "viewer deal watches choose the tightest satisfied target after listing scope" do
+    owner = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "viewer-multiple-targets"})
+    first_offer = offer(product, "viewer-multiple-first", "85", 0, true)
+    second_offer = offer(product, "viewer-multiple-second", "65", 0, true)
+
+    create_target_watch(owner.id, product.id, first_offer.id, "80")
+    create_target_watch(owner.id, product.id, first_offer.id, "100")
+    create_target_watch(owner.id, product.id, second_offer.id, "60")
+    create_target_watch(owner.id, product.id, second_offer.id, "75")
+
+    relevance_query = Alerts.home_relevance_candidates_query(owner.id, [])
+
+    assert [candidate] =
+             Pricing.home_viewer_deal_candidates(relevance_query, now: @now, limit: 6)
+
+    assert candidate.product.id == product.id
+    assert candidate.merchant_product_id == second_offer.id
+    assert Decimal.eq?(candidate.landed_price, Decimal.new("70"))
+    assert Decimal.eq?(candidate.watch_target, Decimal.new("75"))
+  end
+
+  test "viewer deal watches retain a satisfied product target above an unmet target" do
+    owner = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "viewer-product-targets"})
+    merchant_product = offer(product, "viewer-product-targets", "85", 0, true)
+
+    create_target_watch(owner.id, product.id, nil, "80")
+    create_target_watch(owner.id, product.id, nil, "100")
+
+    relevance_query = Alerts.home_relevance_candidates_query(owner.id, [])
+
+    assert [candidate] =
+             Pricing.home_viewer_deal_candidates(relevance_query, now: @now, limit: 6)
+
+    assert candidate.merchant_product_id == merchant_product.id
+    assert Decimal.eq?(candidate.landed_price, Decimal.new("90"))
+    assert Decimal.eq?(candidate.watch_target, Decimal.new("100"))
+  end
+
   test "viewer deal price aggregates are scoped to relevant product candidates" do
     owner = AccountsFixtures.user_fixture()
     product = SpecsFixtures.product_fixture(%{slug: "viewer-price-scope"})
@@ -178,11 +355,18 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     relevance_query = Alerts.home_relevance_candidates_query(owner.id, [])
 
     {[_candidate], [query]} =
-      capture_select_queries(fn ->
+      capture_queries(fn ->
         Pricing.home_viewer_deal_candidates(relevance_query, now: @now, limit: 6)
       end)
 
-    assert Regex.scan(~r/"product_id" IN \(SELECT/, query) |> Enum.count_until(5) == 5, query
+    assert query =~ ~s("home_relevance" AS MATERIALIZED), query
+    assert query =~ ~s(FROM "home_relevance"), query
+
+    refute Regex.match?(
+             ~r/SELECT DISTINCT [a-z0-9]+\."product_id" FROM "home_relevance"/,
+             query
+           ),
+           query
   end
 
   test "keeps offer read selects bounded as product count grows" do
@@ -239,6 +423,17 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
         shipping: "5",
         in_stock: true
       })
+  end
+
+  defp create_target_watch(user_id, product_id, merchant_product_id, target_amount) do
+    assert {:ok, _watch} =
+             Alerts.create_watch(user_id, %{
+               product_id: product_id,
+               merchant_product_id: merchant_product_id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: target_amount
+             })
   end
 
   defp assert_table_select_counts_equal(one_queries, six_queries, tables) do

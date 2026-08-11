@@ -162,6 +162,13 @@ defmodule ProductCompare.Pricing do
       when is_list(merchant_product_ids),
       do: HomeOffers.price_signals(merchant_product_ids, opts)
 
+  @spec home_offer_page_facts([map()], MapSet.t(atom()), keyword()) :: %{
+          optional(pos_integer()) => map()
+        }
+  def home_offer_page_facts(offers, requested_fields, opts \\ [])
+      when is_list(offers) and is_struct(requested_fields, MapSet),
+      do: HomeOffers.page_facts(offers, requested_fields, opts)
+
   @spec home_trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def home_trending_deal_candidates(activity_query, opts),
     do: HomeOffers.trending_deal_candidates(activity_query, opts)

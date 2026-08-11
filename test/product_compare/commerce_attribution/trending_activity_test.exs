@@ -147,6 +147,14 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     assert Enum.map(candidates, & &1.product_id) ==
              products |> Enum.drop(2) |> Enum.map(& &1.product.id)
 
+    assert Enum.all?(candidates, &(&1.product.id == &1.product_id))
+    assert query_event.query =~ ~s("home_activity" AS MATERIALIZED)
+
+    refute Regex.match?(
+             ~r/SELECT DISTINCT [a-z0-9]+\."product_id" FROM "home_activity"/,
+             query_event.query
+           )
+
     aggregate_group_counts = explain_aggregate_group_counts(query_event)
 
     assert aggregate_group_counts != []

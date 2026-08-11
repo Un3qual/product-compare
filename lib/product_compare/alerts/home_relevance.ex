@@ -48,14 +48,13 @@ defmodule ProductCompare.Alerts.HomeRelevance do
           watch.rule_type == :target_price and watch.currency == ^"USD" and
           not is_nil(watch.target_amount)
       )
-      |> group_by([watch], [watch.product_id, watch.merchant_product_id])
       |> select(
         [watch],
         relevance_candidate(
           watch.product_id,
           watch.merchant_product_id,
           0,
-          min(watch.target_amount)
+          watch.target_amount
         )
       )
 

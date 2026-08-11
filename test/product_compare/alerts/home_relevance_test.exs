@@ -117,6 +117,25 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
     assert [_relevance_query] = queries
   end
 
+  test "preserves every enabled USD target until offer satisfaction is evaluated" do
+    owner = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "relevance-multiple-targets"})
+
+    create_target_watch(owner.id, product.id, "USD", "80")
+    create_target_watch(owner.id, product.id, "USD", "100")
+
+    watch_candidates =
+      owner.id
+      |> Alerts.home_relevance_candidates_query([])
+      |> Repo.all()
+      |> Enum.filter(&(&1.reason_rank == 0))
+
+    assert Enum.map(watch_candidates, & &1.product_id) == [product.id, product.id]
+
+    assert MapSet.new(watch_candidates, &Decimal.to_string(&1.watch_target)) ==
+             MapSet.new(["80", "100"])
+  end
+
   defp offer(product) do
     {:ok, merchant} =
       Pricing.upsert_merchant(%{
