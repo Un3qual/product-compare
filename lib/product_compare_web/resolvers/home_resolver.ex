@@ -2,15 +2,16 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @moduledoc false
 
   import Ecto.Query
-  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ProductCompare.{Alerts, Catalog, CommerceAttribution, Pricing, Repo, Seo, Specs}
   alias ProductCompareWeb.GraphQL.Connection
-  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @comparison_limit 3
+
+  # For You is a bounded homepage teaser, not an exhaustive catalog browser. Keeping its
+  # traversal window finite prevents Relay offsets from scaling database sort/discard work.
+  @fallback_traversal_limit 1_000
 
   @spec home_workspace(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
   def home_workspace(_parent, args, %{context: context}) do
@@ -75,15 +76,24 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @spec new_deals(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def new_deals(%{now: now}, args, _resolution) do
-    build_connection(
-      args,
-      fn window ->
-        now
-        |> new_offer_page(window)
-        |> deal_rows(:new_offer)
-      end,
-      &deal_edge/2
-    )
+    case Repo.repeatable_read_transaction(
+           fn ->
+             build_connection(
+               args,
+               fn window ->
+                 now
+                 |> new_offer_page(window)
+                 |> hydrate_price_signals(now, window.fetch_limit - 1, fn _offer -> true end)
+                 |> deal_rows(:new_offer)
+               end,
+               &deal_edge/2
+             )
+           end,
+           "home New deal reads"
+         ) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @spec trending_deals(map(), map(), Absinthe.Resolution.t()) ::
@@ -111,35 +121,20 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
         args,
         _resolution
       ) do
-    build_connection(
-      args,
-      fn window -> viewer_deal_rows(user, selected_slugs, now, window) end,
-      &deal_edge/2
-    )
+    with {:ok, window} <- Connection.batch_window_result(args),
+         :ok <- validate_fallback_window(window),
+         {:ok, rows} <- viewer_deal_rows(user, selected_slugs, now, window),
+         {:ok, connection} <- Connection.from_prefetched_page(rows, args) do
+      {:ok, maybe_map_edges(connection, &deal_edge/2)}
+    else
+      {:error, :invalid_first} -> {:error, "invalid first"}
+      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
+      {:error, message} when is_binary(message) -> {:error, message}
+    end
   end
 
   @spec price_signal(map(), map(), Absinthe.Resolution.t()) ::
-          {:ok, atom()} | Absinthe.Resolution.Helpers.dataloader_tuple()
-  def price_signal(
-        %{price_signal_pending?: true, merchant_product_id: merchant_product_id},
-        _args,
-        %{context: %{loader: loader}}
-      ) do
-    source = Loader.home_offer_summary_source()
-    batch = {:one, MerchantProduct}
-    item = [price_signal: merchant_product_id]
-
-    loader
-    |> Dataloader.load(source, batch, item)
-    |> on_load(fn loader ->
-      signal =
-        Dataloader.get(loader, source, batch, item) ||
-          %{median_30d: nil, below_30_day_median?: false}
-
-      {:ok, price_signal_code(signal)}
-    end)
-  end
-
+          {:ok, atom()}
   def price_signal(offer, _args, _resolution), do: {:ok, price_signal_code(offer)}
 
   defp workspace_rows(products, now) do
@@ -173,38 +168,77 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
         fallback_deal_rows(now, window)
 
       [_match] ->
-        relevance_query
-        |> Pricing.home_viewer_deal_candidates(
-          now: now,
-          offset: window.offset,
-          limit: window.fetch_limit
-        )
-        |> viewer_rows()
+        rows =
+          relevance_query
+          |> Pricing.home_viewer_deal_candidates(
+            now: now,
+            offset: window.offset,
+            limit: window.fetch_limit
+          )
+          |> viewer_rows()
+
+        {:ok, rows}
     end
   end
 
   defp fallback_deal_rows(now, window) do
-    offers =
-      [now: now]
-      |> CommerceAttribution.trending_product_candidates_query()
-      |> Pricing.home_fallback_deal_candidates(
-        now: now,
-        offset: window.offset,
-        limit: window.fetch_limit
-      )
+    Repo.repeatable_read_transaction(
+      fn ->
+        offers =
+          [now: now]
+          |> CommerceAttribution.trending_product_candidates_query()
+          |> Pricing.home_fallback_deal_candidates(
+            now: now,
+            offset: window.offset,
+            limit: window.fetch_limit
+          )
+          |> hydrate_price_signals(now, window.fetch_limit - 1, &(&1.reason_rank == 0))
 
-    products_by_id =
+        products_by_id =
+          offers
+          |> Enum.map(& &1.product_id)
+          |> deal_products_by_id()
+
+        Enum.map(offers, fn offer ->
+          deal(
+            Map.fetch!(products_by_id, offer.product_id),
+            offer,
+            reason(fallback_reason_code(offer.reason_rank))
+          )
+        end)
+      end,
+      "home fallback deal reads"
+    )
+  end
+
+  defp hydrate_price_signals(offers, now, page_size, hydrate?) do
+    offer_ids =
       offers
-      |> Enum.map(& &1.product_id)
-      |> deal_products_by_id()
+      |> Enum.take(page_size)
+      |> Enum.filter(hydrate?)
+      |> Enum.map(& &1.merchant_product_id)
+
+    offer_id_set = MapSet.new(offer_ids)
+
+    signals =
+      case offer_ids do
+        [] -> %{}
+        ids -> Pricing.home_offer_price_signals(ids, now: now)
+      end
 
     Enum.map(offers, fn offer ->
-      deal(
-        Map.fetch!(products_by_id, offer.product_id),
-        offer,
-        reason(fallback_reason_code(offer.reason_rank))
-      )
+      if MapSet.member?(offer_id_set, offer.merchant_product_id) do
+        Map.merge(offer, Map.fetch!(signals, offer.merchant_product_id))
+      else
+        offer
+      end
     end)
+  end
+
+  defp validate_fallback_window(%{offset: offset, fetch_limit: fetch_limit}) do
+    if offset + fetch_limit <= @fallback_traversal_limit,
+      do: :ok,
+      else: {:error, "invalid cursor"}
   end
 
   defp new_offer_page(now, window) do

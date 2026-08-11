@@ -11,6 +11,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
   alias ProductCompare.{Alerts, Catalog, Pricing, Repo, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
   alias ProductCompareWeb.Plugs.PutAbsintheContext
+  alias ProductCompareWeb.Resolvers.HomeResolver
   alias ProductCompareWeb.Schema
 
   @description String.duplicate("A reliable option with enough detail for comparison. ", 3)
@@ -636,8 +637,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert Enum.all?(edges, &(get_in(&1, ["offer", "priceSignal"]) == "BELOW_30_DAY_MEDIAN"))
     assert grown_response == page_response
 
-    assert length(one_queries) == length(page_queries)
-    assert length(grown_queries) == length(page_queries)
+    assert {length(one_queries), length(page_queries), length(grown_queries)} == {3, 3, 3}
     assert length(irrelevant_products) > length(candidates)
   end
 
@@ -742,44 +742,56 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     refute Enum.any?(shortcuts, &(&1["id"] == relay_id(:taxon, ineligible.id)))
   end
 
-  test "deep fallback pagination keeps SQL fetch limits bounded to the requested page", %{
-    conn: conn
-  } do
+  test "fallback rejects traversal beyond the homepage feed window before database work" do
     owner = AccountsFixtures.user_fixture()
-    category = category_fixture("fallback-deep-category")
-    operator = AccountsFixtures.operator_fixture()
-    _candidate = qualified_product("fallback-deep", category, operator, "90")
-
-    query = """
-    query FallbackPage($after: String) {
-      homeDeals(selectedSlugs: []) {
-        forYou(first: 6, after: $after) {
-          edges { node { id } }
-          pageInfo { hasNextPage }
-        }
-      }
-    }
-    """
-
     cursor = Absinthe.Relay.Connection.offset_to_cursor(10_000)
-    authenticated_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
 
-    {response, events} =
+    {result, events} =
       capture_select_query_events(fn ->
-        raw_graphql(authenticated_conn, query, %{"after" => cursor})
+        HomeResolver.viewer_deals(
+          %{current_user: owner, now: DateTime.utc_now(), selected_slugs: []},
+          %{first: 6, after: cursor},
+          %{}
+        )
       end)
 
-    assert %{
-             "data" => %{
-               "homeDeals" => %{
-                 "forYou" => %{"edges" => [], "pageInfo" => %{"hasNextPage" => false}}
-               }
-             }
-           } = response
+    assert result == {:error, "invalid cursor"}
+    assert events == []
+  end
 
-    limit_values = query_limit_values(events)
-    assert limit_values != []
-    assert Enum.max(limit_values) <= 101
+  test "fallback New price signals keep a fixed page-scoped query budget" do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("fallback-price-signal-budget-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    Enum.each(1..3, fn index ->
+      candidate =
+        qualified_product(
+          "fallback-price-signal-budget-#{index}",
+          category,
+          operator,
+          "#{80 + index}"
+        )
+
+      add_price(candidate.offer, "#{110 + index}", -3_600)
+    end)
+
+    read_page = fn first ->
+      capture_select_query_events(fn ->
+        HomeResolver.viewer_deals(
+          %{current_user: owner, now: DateTime.utc_now(), selected_slugs: []},
+          %{first: first},
+          %{}
+        )
+      end)
+    end
+
+    {{:ok, one_page}, one_queries} = read_page.(1)
+    {{:ok, three_page}, three_queries} = read_page.(3)
+
+    assert Enum.all?(one_page.edges, & &1.offer.below_30_day_median?)
+    assert Enum.all?(three_page.edges, & &1.offer.below_30_day_median?)
+    assert {length(one_queries), length(three_queries)} == {5, 5}
   end
 
   test "homepage GraphQL uses the deterministic USD offer instead of price-ranking currencies", %{
@@ -1051,16 +1063,6 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
         shipping: "5",
         in_stock: true
       })
-  end
-
-  defp query_limit_values(events) do
-    Enum.flat_map(events, fn %{query: query, params: params} ->
-      ~r/\bLIMIT \$(\d+)/
-      |> Regex.scan(query, capture: :all_but_first)
-      |> List.flatten()
-      |> Enum.map(fn position -> Enum.at(params, String.to_integer(position) - 1) end)
-      |> Enum.filter(&is_integer/1)
-    end)
   end
 
   defp assert_select_histograms_equal(first_queries, second_queries) do

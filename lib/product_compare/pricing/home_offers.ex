@@ -37,7 +37,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
-    |> Enum.map(&Map.put(&1, :price_signal_pending?, true))
   end
 
   @spec price_signals([term()], keyword()) :: %{optional(pos_integer()) => map()}
@@ -137,11 +136,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
-    |> Enum.map(fn offer ->
-      if offer.reason_rank == 0,
-        do: Map.put(offer, :price_signal_pending?, true),
-        else: offer
-    end)
   end
 
   @spec viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]

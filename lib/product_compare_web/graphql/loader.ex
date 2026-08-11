@@ -12,7 +12,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
   @community_connection_source {__MODULE__, :community_connections}
   @viewer_submission_source {__MODULE__, :viewer_community_submissions}
   @offer_connection_source {__MODULE__, :offer_connections}
-  @home_offer_summary_source {__MODULE__, :home_offer_summaries}
   @category_source {__MODULE__, :categories}
   @authorized_node_source {__MODULE__, :authorized_nodes}
 
@@ -42,10 +41,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
       ParentSources.offer_connections()
     )
     |> Dataloader.add_source(
-      @home_offer_summary_source,
-      ParentSources.home_offer_summaries(params)
-    )
-    |> Dataloader.add_source(
       @category_source,
       ParentSources.categories()
     )
@@ -69,9 +64,6 @@ defmodule ProductCompareWeb.GraphQL.Loader do
 
   @spec offer_connection_source() :: {module(), :offer_connections}
   def offer_connection_source, do: @offer_connection_source
-
-  @spec home_offer_summary_source() :: {module(), :home_offer_summaries}
-  def home_offer_summary_source, do: @home_offer_summary_source
 
   @spec category_source() :: {module(), :categories}
   def category_source, do: @category_source
