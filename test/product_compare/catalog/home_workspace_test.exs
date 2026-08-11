@@ -104,7 +104,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
 
     product_query = Enum.find(queries, &String.contains?(&1, ~s(FROM "products")))
 
-    assert length(Regex.scan(~r/\bEXISTS\s*\(/i, product_query)) >= 2
+    assert Enum.count_until(Regex.scan(~r/\bEXISTS\s*\(/i, product_query), 2) == 2
     assert product_query =~ ~s(FROM "merchant_products")
     assert product_query =~ ~s(FROM "product_attribute_current")
     refute product_query =~ "JOIN (SELECT DISTINCT ON"

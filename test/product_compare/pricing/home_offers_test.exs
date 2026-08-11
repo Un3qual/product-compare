@@ -239,9 +239,9 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert MapSet.new(Map.keys(active_facts)) == page_offer_ids
     assert Enum.all?(active_facts, fn {_id, facts} -> facts.active_offer_count == 1 end)
-    assert length(active_queries) == 1
-    assert hd(active_queries) =~ "count("
-    refute hd(active_queries) =~ "percentile_cont"
+    assert [active_query] = active_queries
+    assert active_query =~ "count("
+    refute active_query =~ "percentile_cont"
 
     {signal_facts, signal_queries} =
       capture_select_queries(fn ->
@@ -249,9 +249,9 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       end)
 
     assert MapSet.new(Map.keys(signal_facts)) == page_offer_ids
-    assert length(signal_queries) == 1
-    assert hd(signal_queries) =~ "percentile_cont"
-    refute hd(signal_queries) =~ "count("
+    assert [signal_query] = signal_queries
+    assert signal_query =~ "percentile_cont"
+    refute signal_query =~ "count("
 
     {all_facts, all_queries} =
       capture_select_queries(fn ->
@@ -263,7 +263,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       end)
 
     assert MapSet.new(Map.keys(all_facts)) == page_offer_ids
-    assert length(all_queries) <= 2
+    assert Enum.count_until(all_queries, 3) <= 2
     assert Enum.count(all_queries, &String.contains?(&1, "count(")) == 1
     assert Enum.count(all_queries, &String.contains?(&1, "percentile_cont")) == 1
 

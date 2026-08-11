@@ -640,7 +640,7 @@ defmodule ProductCompare.SeoTest do
         String.contains?(query, ~s(FROM "taxons")) and String.contains?(query, "LIMIT")
       end)
 
-    assert length(Regex.scan(~r/SELECT DISTINCT ON/i, shortcut_query)) == 1
+    assert [_distinct_on] = Regex.scan(~r/SELECT DISTINCT ON/i, shortcut_query)
     assert shortcut_query =~ ~s(FROM product_attribute_current)
     assert shortcut_query =~ "OFFSET"
     refute shortcut_query =~ "SELECT count(*) FROM product_attribute_current"
