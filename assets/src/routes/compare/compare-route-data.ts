@@ -1,5 +1,5 @@
-import type { CompareRouteQuery } from "../../__generated__/CompareRouteQuery.graphql";
-import type { RelayRouteQueryDescriptor } from "../../relay/route-preload";
+import type { CompareRouteQuery } from "$generated/CompareRouteQuery.graphql";
+import type { RelayRouteQueryDescriptor } from "$relay/route-preload";
 import { compareDecimalStrings } from "../decimal-values";
 import { parseGraphQLDateTime } from "../graphql-datetime";
 import {

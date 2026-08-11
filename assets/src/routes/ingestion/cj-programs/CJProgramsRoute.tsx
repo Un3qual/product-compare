@@ -2,21 +2,21 @@ import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
+import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
 import {
   getRelayEnvironmentFromRouterContext,
   preloadRouteQuery,
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
-} from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../../ui/primitives/Button";
-import { Select } from "../../../ui/primitives/Select";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+} from "$relay/route-preload";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "../../loader-errors";
 import { CJProgramList } from "./CJProgramList";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";

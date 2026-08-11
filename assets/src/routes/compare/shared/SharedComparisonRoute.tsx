@@ -1,16 +1,16 @@
 import { create, props } from "@stylexjs/stylex";
 import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
-import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "../../../__generated__/SharedComparisonRouteQuery.graphql";
+import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "$generated/SharedComparisonRouteQuery.graphql";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
-} from "../../../relay/route-preload";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+} from "$relay/route-preload";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { normalizeRouteLoaderThrownError } from "../../loader-errors";
 import { formatProductDateTimeLabel } from "../../product-formatting";
 import type { RouteDocumentMetadata } from "../../RouteMetadata";

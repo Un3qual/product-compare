@@ -2,11 +2,11 @@ import { type FormEvent, useId, useRef } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { ApiTokenItem_token$key } from "$generated/ApiTokenItem_token.graphql";
-import { StatusBadge } from "../../../ui/components/status/StatusBadge";
-import { DestructiveActionDialog } from "../../../ui/components/overlays/DestructiveActionDialog";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
+import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
+import { Button } from "$ui/primitives/Button";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
   buildApiTokenActionPolicy,

@@ -1,8 +1,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { CompareProductPickerBoundaryQuery } from "$generated/CompareProductPickerBoundaryQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import {
   appendUniqueComparePickerProducts,
   availableComparePickerProducts,

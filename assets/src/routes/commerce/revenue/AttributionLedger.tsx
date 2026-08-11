@@ -10,7 +10,7 @@ import type {
   AttributionLedger_row$key,
 } from "$generated/AttributionLedger_row.graphql";
 import { formatProductDateTimeLabel } from "../../product-formatting";
-import { Button } from "../../../ui/primitives/Button";
+import { Button } from "$ui/primitives/Button";
 import { ATTRIBUTION_LEDGER_PAGE_SIZE, formatCurrencyAmount } from "./revenue-summary-view-data";
 
 export const attributionLedgerRouteQuery = graphql`

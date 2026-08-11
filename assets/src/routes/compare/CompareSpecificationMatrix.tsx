@@ -5,7 +5,7 @@ import {
   Viewport as ScrollAreaViewport,
 } from "@radix-ui/react-scroll-area";
 import { create, props } from "@stylexjs/stylex";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
 import {
   buildSpecificationMatrixRows,

@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { productOffersPath } from "../offers/paths";
 
 import type { CompareProductSummary, CompareRouteLoaderData } from "./compare-route-data";

@@ -3,10 +3,10 @@ import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { GraphQLResponse } from "relay-runtime";
 import type { ApiTokensRouteQuery } from "$generated/ApiTokensRouteQuery.graphql";
-import type { ApiTokenOperationsCreateApiTokenMutation } from "../../../__generated__/ApiTokenOperationsCreateApiTokenMutation.graphql";
-import type { ApiTokenOperationsRevokeApiTokenMutation } from "../../../__generated__/ApiTokenOperationsRevokeApiTokenMutation.graphql";
-import type { ApiTokenOperationsRotateApiTokenMutation } from "../../../__generated__/ApiTokenOperationsRotateApiTokenMutation.graphql";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
+import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTokenOperationsCreateApiTokenMutation.graphql";
+import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
+import type { ApiTokenOperationsRotateApiTokenMutation } from "$generated/ApiTokenOperationsRotateApiTokenMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
@@ -15,10 +15,10 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Pagination } from "../../../ui/components/navigation/Pagination";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Pagination } from "$ui/components/navigation/Pagination";
 import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
 import {
   addSetValue,

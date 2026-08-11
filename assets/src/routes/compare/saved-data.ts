@@ -1,12 +1,12 @@
 import type { GraphQLResponse } from "relay-runtime";
 import type { LoaderFunctionArgs } from "react-router-dom";
-import type { SavedComparisonOperationsQuery } from "../../__generated__/SavedComparisonOperationsQuery.graphql";
-import { RouteLoaderGraphQLError } from "../../relay/environment";
+import type { SavedComparisonOperationsQuery } from "$generated/SavedComparisonOperationsQuery.graphql";
+import { RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
   type RelayRouteQueryDescriptor,
-} from "../../relay/route-preload";
+} from "$relay/route-preload";
 import { isRouteRecord } from "../route-errors";
 import { savedComparisonOperationsQuery } from "./SavedComparisonOperations";
 import type { SavedComparisonSetSummary } from "./saved-view-state";

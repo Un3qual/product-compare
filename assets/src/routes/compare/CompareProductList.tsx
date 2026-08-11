@@ -2,10 +2,10 @@ import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { CompareProductList_product$key } from "$generated/CompareProductList_product.graphql";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
-import { DisclosureGroup } from "../../ui/components/feedback/DisclosureGroup";
-import { Button } from "../../ui/primitives/Button";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { DisclosureGroup } from "$ui/components/feedback/DisclosureGroup";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { ProductAttributeList } from "../products/ProductAttributeList";
 import type {
   CompareProductSummary,

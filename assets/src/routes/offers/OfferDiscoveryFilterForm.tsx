@@ -1,11 +1,11 @@
 import { Fragment } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "../../ui/primitives/Button";
-import { Checkbox } from "../../ui/primitives/Checkbox";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { Button } from "$ui/primitives/Button";
+import { Checkbox } from "$ui/primitives/Checkbox";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   getOfferDiscoveryFilterData,
   OFFER_DISCOVERY_SORT_OPTIONS,

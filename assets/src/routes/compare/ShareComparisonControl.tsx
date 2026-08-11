@@ -2,19 +2,19 @@ import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState }
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
 import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
-import type { ComparisonSharingOperationsQuery } from "../../__generated__/ComparisonSharingOperationsQuery.graphql";
-import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { DestructiveActionDialog } from "../../ui/components/overlays/DestructiveActionDialog";
-import { Button } from "../../ui/primitives/Button";
-import { Checkbox } from "../../ui/primitives/Checkbox";
+import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";
+import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
+import { Button } from "$ui/primitives/Button";
+import { Checkbox } from "$ui/primitives/Checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./compare-route-data";

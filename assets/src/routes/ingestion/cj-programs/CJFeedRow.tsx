@@ -1,7 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
-import type { CJFeedRow_feed$key } from "../../../__generated__/CJFeedRow_feed.graphql";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import type { CJFeedRow_feed$key } from "$generated/CJFeedRow_feed.graphql";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { formatCJDateTime, formatFeedProductCount } from "./cj-program-data";
 
 const cjFeedFragment = graphql`

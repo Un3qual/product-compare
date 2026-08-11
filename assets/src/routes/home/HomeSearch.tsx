@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useNavigate } from "react-router-dom";
-import { Button } from "../../ui/primitives/Button";
-import { Label } from "../../ui/primitives/Label";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { Button } from "$ui/primitives/Button";
+import { Label } from "$ui/primitives/Label";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { homeCatalogSearchPath } from "./home-paths";
 
 const styles = create({

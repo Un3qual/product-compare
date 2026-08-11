@@ -1,10 +1,10 @@
 import { graphql, useFragment } from "react-relay";
 import type { OfferDiscoveryList_connection$key } from "$generated/OfferDiscoveryList_connection.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
-import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { Pagination } from "../../ui/components/navigation/Pagination";
-import { StatusBadge } from "../../ui/components/status/StatusBadge";
+import { SummaryStrip } from "$ui/components/data/SummaryStrip";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { Pagination } from "$ui/components/navigation/Pagination";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
 import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "../offer-snapshot";
 import {

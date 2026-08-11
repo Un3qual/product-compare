@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { graphql, useMutation } from "react-relay";
-import type { ForgotPasswordRouteMutation } from "../../__generated__/ForgotPasswordRouteMutation.graphql";
+import type { ForgotPasswordRouteMutation } from "$generated/ForgotPasswordRouteMutation.graphql";
 import { routeFormValue } from "../form-data";
 import { commitRouteMutation } from "../relay-mutations";
 import {

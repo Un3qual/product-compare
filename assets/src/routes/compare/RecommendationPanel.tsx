@@ -3,8 +3,8 @@ import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
 import { graphql, useLazyLoadQuery } from "react-relay";
 import type { RecommendationPanelQuery } from "$generated/RecommendationPanelQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import type { CompareSpecMode } from "./compare-route-data";
 import {
   buildRecommendationQueryInput,

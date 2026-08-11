@@ -14,7 +14,7 @@ import { isCanonicalSlug } from "$routes/route-params";
 import { routeMetadataFromSeo } from "$routes/seo";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { productDetailPath } from "../products/product-detail-route-data";
 import { getCategoryViewData } from "./category-view-data";
 

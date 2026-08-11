@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
-import type { LogoutRouteMutation } from "../../__generated__/LogoutRouteMutation.graphql";
+import type { LogoutRouteMutation } from "$generated/LogoutRouteMutation.graphql";
 import { commitRouteMutation } from "../relay-mutations";
 import {
   isSuccessfulActionResult,

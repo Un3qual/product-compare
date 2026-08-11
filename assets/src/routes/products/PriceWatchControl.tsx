@@ -2,15 +2,15 @@ import { type FormEvent, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { AlertOperationsCreatePriceWatchMutation } from "../../__generated__/AlertOperationsCreatePriceWatchMutation.graphql";
-import { Button } from "../../ui/primitives/Button";
+import type { AlertOperationsCreatePriceWatchMutation } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
+import { Button } from "$ui/primitives/Button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {

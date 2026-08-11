@@ -10,10 +10,10 @@ import {
   relayRouteQueryDescriptorIdentity,
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
-} from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../../ui/components/layout/PageShell";
+} from "$relay/route-preload";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
 import { recoverRouteLoaderError } from "../../loader-errors";
 import { AttributionLedger, attributionLedgerRouteQuery } from "./AttributionLedger";
 import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";

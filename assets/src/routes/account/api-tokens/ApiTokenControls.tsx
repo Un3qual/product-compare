@@ -1,10 +1,10 @@
 import type { FormEvent, RefObject } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { ActionDialog } from "../../../ui/components/overlays/ActionDialog";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import { ActionDialog } from "$ui/components/overlays/ActionDialog";
+import { Button } from "$ui/primitives/Button";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
   buildApiTokenStatusFilterNavigationData,

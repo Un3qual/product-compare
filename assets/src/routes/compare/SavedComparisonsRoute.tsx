@@ -1,14 +1,14 @@
 import { useRef, useState } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { SavedComparisonOperationsDeleteSavedComparisonSetMutation } from "../../__generated__/SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql";
-import type { SavedComparisonOperationsQuery } from "../../__generated__/SavedComparisonOperationsQuery.graphql";
+import type { SavedComparisonOperationsDeleteSavedComparisonSetMutation } from "$generated/SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql";
+import type { SavedComparisonOperationsQuery } from "$generated/SavedComparisonOperationsQuery.graphql";
 import {
   relayRouteQueryDescriptorIdentity,
   useRoutePreloadedQuery
-} from "../../relay/route-preload";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { Button } from "../../ui/primitives/Button";
+} from "$relay/route-preload";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { Button } from "$ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
 import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import {

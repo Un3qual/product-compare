@@ -1,8 +1,8 @@
 import { useState, type MouseEvent } from "react";
 import { graphql, useMutation } from "react-relay";
-import type { TrackedCommerceClickActionMutation } from "../../__generated__/TrackedCommerceClickActionMutation.graphql";
-import { resolveGraphQLEndpoint } from "../../relay/fetch-graphql";
-import { Button } from "../../ui/primitives/Button";
+import type { TrackedCommerceClickActionMutation } from "$generated/TrackedCommerceClickActionMutation.graphql";
+import { resolveGraphQLEndpoint } from "$relay/fetch-graphql";
+import { Button } from "$ui/primitives/Button";
 import { commitRouteMutation } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {

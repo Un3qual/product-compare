@@ -11,7 +11,7 @@ import { Pagination } from "$ui/components/navigation/Pagination";
 import { Button } from "$ui/primitives/Button";
 import { Select } from "$ui/primitives/Select";
 import { TextField } from "$ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildMerchantDirectoryRows,
   getMerchantDirectoryViewData,

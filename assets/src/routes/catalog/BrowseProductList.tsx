@@ -5,7 +5,7 @@ import { graphql, useFragment } from "react-relay";
 import type { BrowseProductList_item$key } from "$generated/BrowseProductList_item.graphql";
 import type { BrowseProductList_products$key } from "$generated/BrowseProductList_products.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { selectBrowseProductSpecificationHighlights } from "./browse-product-list-data";
 
 const browseProductListFragment = graphql`

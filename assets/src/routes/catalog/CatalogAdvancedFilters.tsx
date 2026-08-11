@@ -1,7 +1,7 @@
-import { Checkbox } from "../../ui/primitives/Checkbox";
-import { Radio } from "../../ui/primitives/Radio";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+import { Checkbox } from "$ui/primitives/Checkbox";
+import { Radio } from "$ui/primitives/Radio";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import type { CatalogFilters } from "./filters";
 import {

@@ -8,22 +8,22 @@ import {
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
-import type { SavedComparisonOperationsCreateSavedComparisonSetMutation } from "../../__generated__/SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql";
+import type { SavedComparisonOperationsCreateSavedComparisonSetMutation } from "$generated/SavedComparisonOperationsCreateSavedComparisonSetMutation.graphql";
 import type {
   CompareRouteQuery,
   CompareRouteQuery$data,
-} from "../../__generated__/CompareRouteQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
+} from "$generated/CompareRouteQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
   useRoutePreloadedQuery,
-} from "../../relay/route-preload";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../ui/primitives/Button";
-import { tokens } from "../../ui/theme/tokens.stylex";
+} from "$relay/route-preload";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";

@@ -2,7 +2,7 @@ import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { OfferDiscoveryCard_offer$key } from "$generated/OfferDiscoveryCard_offer.graphql";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
 import {

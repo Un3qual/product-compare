@@ -2,9 +2,9 @@ import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, useRevalidator, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, useFragment, useMutation, usePreloadedQuery } from "react-relay";
-import type { AlertOperationsDeletePriceWatchMutation } from "../../../__generated__/AlertOperationsDeletePriceWatchMutation.graphql";
-import type { AlertOperationsMarkAlertReadMutation } from "../../../__generated__/AlertOperationsMarkAlertReadMutation.graphql";
-import type { AlertOperationsUpdatePriceWatchMutation } from "../../../__generated__/AlertOperationsUpdatePriceWatchMutation.graphql";
+import type { AlertOperationsDeletePriceWatchMutation } from "$generated/AlertOperationsDeletePriceWatchMutation.graphql";
+import type { AlertOperationsMarkAlertReadMutation } from "$generated/AlertOperationsMarkAlertReadMutation.graphql";
+import type { AlertOperationsUpdatePriceWatchMutation } from "$generated/AlertOperationsUpdatePriceWatchMutation.graphql";
 import type {
   AlertsRoute_alert$data,
   AlertsRoute_alert$key,
@@ -21,10 +21,10 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { DestructiveActionDialog } from "../../../ui/components/overlays/DestructiveActionDialog";
-import { Button } from "../../../ui/primitives/Button";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
+import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, isRouteRecord } from "../../route-errors";

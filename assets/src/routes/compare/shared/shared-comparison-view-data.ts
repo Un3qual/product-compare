@@ -1,4 +1,4 @@
-import type { SharedComparisonRouteQuery } from "../../../__generated__/SharedComparisonRouteQuery.graphql";
+import type { SharedComparisonRouteQuery } from "$generated/SharedComparisonRouteQuery.graphql";
 import { buildComparePathFromSlugs } from "../paths";
 
 type SharedComparisonSnapshotNode = NonNullable<

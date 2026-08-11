@@ -9,20 +9,20 @@ import {
   useQueryLoader,
   type PreloadedQuery,
 } from "react-relay";
-import type { CJProgramRowFeedsQuery } from "../../../__generated__/CJProgramRowFeedsQuery.graphql";
-import type { CJProgramRow_program$key } from "../../../__generated__/CJProgramRow_program.graphql";
-import type { CJProgramRowUpdateCJProgramMutation } from "../../../__generated__/CJProgramRowUpdateCJProgramMutation.graphql";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { StatusBadge } from "../../../ui/components/status/StatusBadge";
+import type { CJProgramRowFeedsQuery } from "$generated/CJProgramRowFeedsQuery.graphql";
+import type { CJProgramRow_program$key } from "$generated/CJProgramRow_program.graphql";
+import type { CJProgramRowUpdateCJProgramMutation } from "$generated/CJProgramRowUpdateCJProgramMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../../ui/primitives/Collapsible";
-import { Button } from "../../../ui/primitives/Button";
-import { Select } from "../../../ui/primitives/Select";
-import { TextArea } from "../../../ui/primitives/TextArea";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+} from "$ui/primitives/Collapsible";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { TextArea } from "$ui/primitives/TextArea";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
   cjProgramStageLabel,

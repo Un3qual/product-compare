@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Popover } from "@radix-ui/themes";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
-import { CompareMark } from "../ui/components/brand/CompareMark";
-import { Button, type ButtonProps } from "../ui/primitives/Button";
+import { CompareMark } from "$ui/components/brand/CompareMark";
+import { Button, type ButtonProps } from "$ui/primitives/Button";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,

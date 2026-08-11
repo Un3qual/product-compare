@@ -1,5 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildProductAttributeListData,
   type ProductAttributeListItem

@@ -1,16 +1,16 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { ActiveFilterChips } from "../../ui/components/filters/ActiveFilterChips";
-import { Button } from "../../ui/primitives/Button";
-import { Checkbox } from "../../ui/primitives/Checkbox";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+import { ActiveFilterChips } from "$ui/components/filters/ActiveFilterChips";
+import { Button } from "$ui/primitives/Button";
+import { Checkbox } from "$ui/primitives/Checkbox";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
+} from "$ui/primitives/Collapsible";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import {
   CATALOG_PRODUCT_SORTS,
