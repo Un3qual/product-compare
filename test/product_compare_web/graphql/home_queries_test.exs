@@ -1,8 +1,12 @@
 defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
   use ProductCompareWeb.ConnCase, async: false
 
+  @moduletag sandbox_isolation: "REPEATABLE READ"
+
   import Ecto.Query, only: [from: 2]
-  import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
+
+  import ProductCompare.DatabaseTestHelpers,
+    only: [capture_select_queries: 1, capture_select_query_events: 1]
 
   alias ProductCompare.{Alerts, Catalog, Pricing, Repo, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
@@ -550,6 +554,134 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert returned_offer_id == relay_id(:merchant_product, new_offer.id)
   end
 
+  test "workspace offer price signals preserve below and equal median outcomes", %{conn: conn} do
+    category = category_fixture("workspace-price-signal-category")
+    operator = AccountsFixtures.operator_fixture()
+    below = qualified_product("workspace-price-signal-below", category, operator, "90")
+    equal = qualified_product("workspace-price-signal-equal", category, operator, "100")
+    _third = qualified_product("workspace-price-signal-third", category, operator, "120")
+
+    add_price(below.offer, "110", -3_600)
+    add_price(equal.offer, "100", -3_600)
+
+    assert %{"data" => %{"homeWorkspace" => %{"products" => products}}} =
+             graphql(conn, workspace_query(), %{"selectedSlugs" => []})
+
+    signals = Map.new(products, &{&1["product"]["id"], &1["offer"]["priceSignal"]})
+    assert signals[relay_id(:product, below.product.id)] == "BELOW_30_DAY_MEDIAN"
+    assert signals[relay_id(:product, equal.product.id)] == "AT_OR_ABOVE_30_DAY_MEDIAN"
+  end
+
+  test "New priceSignal is loaded truthfully in one page-scoped batch", %{conn: conn} do
+    category = category_fixture("new-price-signal-category")
+    operator = AccountsFixtures.operator_fixture()
+
+    candidates =
+      Enum.map(1..3, fn index ->
+        candidate =
+          qualified_product("new-price-signal-#{index}", category, operator, "#{80 + index}")
+
+        add_price(candidate.offer, "#{110 + index}", -3_600)
+        candidate
+      end)
+
+    query = """
+    query NewPriceSignal {
+      homeDeals(selectedSlugs: []) {
+        new(first: 6) {
+          edges { node { id } offer { merchantProductId priceSignal } }
+        }
+      }
+    }
+    """
+
+    {response, queries} = capture_select_queries(fn -> raw_graphql(conn, query, %{}) end)
+
+    assert %{"data" => %{"homeDeals" => %{"new" => %{"edges" => edges}}}} = response
+    assert length(edges) == length(candidates)
+    assert Enum.all?(edges, &(get_in(&1, ["offer", "priceSignal"]) == "BELOW_30_DAY_MEDIAN"))
+
+    median_queries = Enum.filter(queries, &String.contains?(&1, "percentile_cont"))
+    assert [median_query] = median_queries
+    assert String.contains?(median_query, ~s("product_id" IN (SELECT))
+  end
+
+  test "home category shortcuts return canonical identity fields while keeping USD-only eligibility",
+       %{conn: conn} do
+    operator = AccountsFixtures.operator_fixture()
+    eligible = category_fixture("mixed-currency-home-category")
+    ineligible = category_fixture("mixed-currency-ineligible-category")
+
+    Enum.each(1..3, &qualified_product("mixed-usd-#{&1}", eligible, operator, "100"))
+    eur_only_product("mixed-eur-4", eligible, operator)
+
+    Enum.each(1..2, &qualified_product("ineligible-usd-#{&1}", ineligible, operator, "100"))
+    eur_only_product("ineligible-eur-3", ineligible, operator)
+
+    query = """
+    query CategoryIdentity($slug: String!) {
+      homeWorkspace(selectedSlugs: []) {
+        categories(first: 100) {
+          edges { node { id name slug qualifiedProductCount indexable } }
+        }
+      }
+      category(slug: $slug) { id name slug qualifiedProductCount indexable }
+    }
+    """
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{"categories" => %{"edges" => shortcut_edges}},
+               "category" => canonical
+             }
+           } = raw_graphql(conn, query, %{"slug" => eligible.seo_slug})
+
+    shortcuts = Enum.map(shortcut_edges, & &1["node"])
+    assert Enum.find(shortcuts, &(&1["id"] == canonical["id"])) == canonical
+    assert canonical["qualifiedProductCount"] == 4
+    refute Enum.any?(shortcuts, &(&1["id"] == relay_id(:taxon, ineligible.id)))
+  end
+
+  test "deep fallback pagination keeps SQL fetch limits bounded to the requested page", %{
+    conn: conn
+  } do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("fallback-deep-category")
+    operator = AccountsFixtures.operator_fixture()
+    _candidate = qualified_product("fallback-deep", category, operator, "90")
+
+    query = """
+    query FallbackPage($after: String) {
+      homeDeals(selectedSlugs: []) {
+        forYou(first: 6, after: $after) {
+          edges { node { id } }
+          pageInfo { hasNextPage }
+        }
+      }
+    }
+    """
+
+    cursor = Absinthe.Relay.Connection.offset_to_cursor(10_000)
+    authenticated_conn = conn |> log_in_user(owner) |> put_req_header_same_origin()
+
+    {response, events} =
+      capture_select_query_events(fn ->
+        raw_graphql(authenticated_conn, query, %{"after" => cursor})
+      end)
+
+    assert %{
+             "data" => %{
+               "homeDeals" => %{
+                 "forYou" => %{"edges" => [], "pageInfo" => %{"hasNextPage" => false}}
+               }
+             }
+           } = response
+
+    limit_values = query_limit_values(events)
+    assert limit_values != []
+    assert Enum.max(limit_values) <= 101
+  end
+
   test "homepage GraphQL uses the deterministic USD offer instead of price-ranking currencies", %{
     conn: conn
   } do
@@ -792,6 +924,43 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       })
 
     offer
+  end
+
+  defp eur_only_product(slug, category, operator) do
+    result = qualified_product(slug, category, operator, "100")
+
+    {1, _} =
+      Repo.update_all(
+        from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.id == ^result.offer.id
+        ),
+        set: [is_active: false]
+      )
+
+    _eur_offer = currency_offer(result.product, "#{slug}-eur", "EUR", "100")
+
+    result.product
+  end
+
+  defp add_price(offer, price, observed_offset) do
+    {:ok, _point} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.add(DateTime.utc_now(), observed_offset, :second),
+        price: price,
+        shipping: "5",
+        in_stock: true
+      })
+  end
+
+  defp query_limit_values(events) do
+    Enum.flat_map(events, fn %{query: query, params: params} ->
+      ~r/\bLIMIT \$(\d+)/
+      |> Regex.scan(query, capture: :all_but_first)
+      |> List.flatten()
+      |> Enum.map(fn position -> Enum.at(params, String.to_integer(position) - 1) end)
+      |> Enum.filter(&is_integer/1)
+    end)
   end
 
   defp assert_select_histograms_equal(first_queries, second_queries) do

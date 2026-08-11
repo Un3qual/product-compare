@@ -18,7 +18,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> winners_query(now, false)
     |> Repo.all()
     |> Map.new(fn row ->
-      {row.product_id, Map.drop(row, [:product_id, :new_offer?, :below_30_day_median?])}
+      {row.product_id, Map.drop(row, [:product_id, :new_offer?])}
     end)
   end
 
@@ -37,14 +37,39 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
+    |> Enum.map(&Map.put(&1, :price_signal_pending?, true))
+  end
+
+  @spec price_signals([term()], keyword()) :: %{optional(pos_integer()) => map()}
+  def price_signals(merchant_product_ids, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    merchant_product_ids = normalize_product_ids(merchant_product_ids)
+
+    candidate_product_ids =
+      MerchantProduct
+      |> where([offer], offer.id in ^merchant_product_ids)
+      |> distinct([offer], offer.product_id)
+      |> select([offer], %{product_id: offer.product_id})
+
+    candidate_product_ids
+    |> eligible_offers_query(now, false, true)
+    |> where([offer], offer.merchant_product_id in ^merchant_product_ids)
+    |> select([offer], %{
+      merchant_product_id: offer.merchant_product_id,
+      median_30d: offer.median_30d,
+      below_30_day_median?: offer.below_30_day_median?
+    })
+    |> Repo.all()
+    |> Map.new(&{&1.merchant_product_id, Map.delete(&1, :merchant_product_id)})
   end
 
   @spec trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def trending_deal_candidates(activity_query, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
     {offset, limit} = window(opts)
+    product_ids = candidate_product_ids_query(activity_query)
 
-    :all
+    product_ids
     |> winners_query(now, false)
     |> join(:inner, [offer], activity in subquery(activity_query),
       on: activity.product_id == offer.product_id
@@ -58,6 +83,65 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> offset(^offset)
     |> limit(^limit)
     |> Repo.all()
+  end
+
+  @spec fallback_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def fallback_deal_candidates(activity_query, opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    {offset, limit} = window(opts)
+    activity_product_ids = candidate_product_ids_query(activity_query)
+
+    new_candidates =
+      :all
+      |> winners_query(now, true, false)
+      |> select_merge([offer], %{
+        reason_rank: 0,
+        identity_count: 0,
+        activity_at: offer.observed_at
+      })
+
+    trending_candidates =
+      activity_product_ids
+      |> winners_query(now, false)
+      |> join(:inner, [offer], activity in subquery(activity_query),
+        on: activity.product_id == offer.product_id
+      )
+      |> where([offer], offer.below_30_day_median? == true)
+      |> select_merge([offer, _counts, activity], %{
+        reason_rank: 1,
+        identity_count: activity.identity_count,
+        activity_at: activity.activity_at
+      })
+
+    ranked_candidates =
+      new_candidates
+      |> union_all(^trending_candidates)
+      |> subquery()
+      |> windows(
+        [offer],
+        fallback_product: [partition_by: offer.product_id, order_by: offer.reason_rank]
+      )
+      |> select_merge([offer], %{fallback_rank: over(row_number(), :fallback_product)})
+
+    ranked_candidates
+    |> subquery()
+    |> where([offer], offer.fallback_rank == 1)
+    |> order_by([offer],
+      asc: offer.reason_rank,
+      asc: fragment("CASE WHEN ? = 0 THEN ? END", offer.reason_rank, offer.landed_price),
+      desc: fragment("CASE WHEN ? = 0 THEN ? END", offer.reason_rank, offer.observed_at),
+      desc: fragment("CASE WHEN ? = 1 THEN ? END", offer.reason_rank, offer.identity_count),
+      desc: fragment("CASE WHEN ? = 1 THEN ? END", offer.reason_rank, offer.activity_at),
+      asc: offer.product_id
+    )
+    |> offset(^offset)
+    |> limit(^limit)
+    |> Repo.all()
+    |> Enum.map(fn offer ->
+      if offer.reason_rank == 0,
+        do: Map.put(offer, :price_signal_pending?, true),
+        else: offer
+    end)
   end
 
   @spec viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
@@ -189,8 +273,8 @@ defmodule ProductCompare.Pricing.HomeOffers do
   end
 
   defp eligible_offers_query(product_ids, now, only_new, include_median) do
-    latest_prices = latest_prices_query(product_ids)
-    first_seen = first_seen_query(product_ids)
+    latest_prices = latest_prices_query(product_ids, now)
+    first_seen = first_seen_query(product_ids, now)
     medians = medians_query(product_ids, now, include_median)
 
     MerchantProduct
@@ -236,10 +320,11 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> maybe_filter_new(only_new)
   end
 
-  defp latest_prices_query(product_ids) do
+  defp latest_prices_query(product_ids, now) do
     PricePoint
     |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
     |> maybe_filter_price_product_ids(product_ids)
+    |> where([price], price.observed_at <= ^now)
     |> distinct([price], price.merchant_product_id)
     |> order_by([price],
       asc: price.merchant_product_id,
@@ -249,10 +334,11 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> select([price], price)
   end
 
-  defp first_seen_query(product_ids) do
+  defp first_seen_query(product_ids, now) do
     PricePoint
     |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
     |> maybe_filter_price_product_ids(product_ids)
+    |> where([price], price.observed_at <= ^now)
     |> group_by([price], price.merchant_product_id)
     |> select([price], %{
       merchant_product_id: price.merchant_product_id,
@@ -278,7 +364,8 @@ defmodule ProductCompare.Pricing.HomeOffers do
       [price, offer],
       offer.currency == ^@homepage_currency and
         not is_nil(price.shipping) and
-        price.observed_at >= ^DateTime.add(now, -2_592_000, :second)
+        price.observed_at >= ^DateTime.add(now, -2_592_000, :second) and
+        price.observed_at <= ^now
     )
     |> group_by([_price, offer], [offer.product_id, offer.currency])
     |> select([price, offer], %{

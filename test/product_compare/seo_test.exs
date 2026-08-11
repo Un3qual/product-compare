@@ -218,6 +218,46 @@ defmodule ProductCompare.SeoTest do
     refute category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
   end
 
+  test "future observations do not replace current category qualification facts" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "future-category",
+        name: "Future Category",
+        seo_slug: "future-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    products = Enum.map(1..3, &qualified_product("future-category-#{&1}", operator, category))
+
+    offers =
+      Repo.all(
+        Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.product_id in ^Enum.map(products, & &1.id)
+        )
+      )
+
+    Enum.each(offers, fn offer ->
+      {:ok, _future} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(@now, 3_600, :second),
+          price: "1",
+          shipping: "0",
+          in_stock: false
+        })
+    end)
+
+    assert %{indexable: true, qualified_product_count: 3} =
+             Seo.get_category(category.seo_slug, now: @now)
+
+    assert category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
+  end
+
   test "batch category lookup preserves singular qualification with a fixed query budget" do
     operator = AccountsFixtures.operator_fixture()
     type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")

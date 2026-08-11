@@ -2,10 +2,13 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @moduledoc false
 
   import Ecto.Query
+  import Absinthe.Resolution.Helpers, only: [on_load: 2]
 
   alias ProductCompare.{Alerts, Catalog, CommerceAttribution, Pricing, Repo, Seo, Specs}
   alias ProductCompareWeb.GraphQL.Connection
+  alias ProductCompareWeb.GraphQL.Loader
   alias ProductCompareSchemas.Catalog.Product
+  alias ProductCompareSchemas.Pricing.MerchantProduct
 
   @comparison_limit 3
 
@@ -23,20 +26,28 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @spec workspace_products(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def workspace_products(%{now: now}, args, _resolution) do
-    build_connection(
-      args,
-      fn window ->
-        products =
-          Catalog.home_workspace_product_candidates(
-            now: now,
-            offset: window.offset,
-            limit: window.fetch_limit
-          )
+    case Repo.repeatable_read_transaction(
+           fn ->
+             build_connection(
+               args,
+               fn window ->
+                 products =
+                   Catalog.home_workspace_product_candidates(
+                     now: now,
+                     offset: window.offset,
+                     limit: window.fetch_limit
+                   )
 
-        workspace_rows(products, now)
-      end,
-      &workspace_edge/2
-    )
+                 workspace_rows(products, now)
+               end,
+               &workspace_edge/2
+             )
+           end,
+           "home workspace reads"
+         ) do
+      {:ok, result} -> result
+      {:error, reason} -> {:error, reason}
+    end
   end
 
   @spec workspace_categories(map(), map(), Absinthe.Resolution.t()) ::
@@ -107,6 +118,30 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     )
   end
 
+  @spec price_signal(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, atom()} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def price_signal(
+        %{price_signal_pending?: true, merchant_product_id: merchant_product_id},
+        _args,
+        %{context: %{loader: loader}}
+      ) do
+    source = Loader.home_offer_summary_source()
+    batch = {:one, MerchantProduct}
+    item = [price_signal: merchant_product_id]
+
+    loader
+    |> Dataloader.load(source, batch, item)
+    |> on_load(fn loader ->
+      signal =
+        Dataloader.get(loader, source, batch, item) ||
+          %{median_30d: nil, below_30_day_median?: false}
+
+      {:ok, price_signal_code(signal)}
+    end)
+  end
+
+  def price_signal(offer, _args, _resolution), do: {:ok, price_signal_code(offer)}
+
   defp workspace_rows(products, now) do
     product_ids = Enum.map(products, & &1.id)
     highlights_by_product_id = Specs.home_specification_highlights(product_ids, limit: 3)
@@ -149,27 +184,26 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp fallback_deal_rows(now, window) do
-    fetch_limit = window.offset + window.fetch_limit
-
-    offers_with_reasons =
-      now
-      |> new_offer_page(%{offset: 0, fetch_limit: fetch_limit})
-      |> Enum.map(&{&1, :new_offer})
-      |> Kernel.++(
-        now
-        |> trending_offer_page(%{offset: 0, fetch_limit: fetch_limit})
-        |> Enum.map(&{&1, :trending_below_median})
+    offers =
+      [now: now]
+      |> CommerceAttribution.trending_product_candidates_query()
+      |> Pricing.home_fallback_deal_candidates(
+        now: now,
+        offset: window.offset,
+        limit: window.fetch_limit
       )
-      |> Enum.uniq_by(fn {offer, _reason} -> offer.product_id end)
-      |> Enum.slice(window.offset, window.fetch_limit)
 
     products_by_id =
-      offers_with_reasons
-      |> Enum.map(fn {offer, _reason} -> offer.product_id end)
+      offers
+      |> Enum.map(& &1.product_id)
       |> deal_products_by_id()
 
-    Enum.map(offers_with_reasons, fn {offer, reason_code} ->
-      deal(Map.fetch!(products_by_id, offer.product_id), offer, reason(reason_code))
+    Enum.map(offers, fn offer ->
+      deal(
+        Map.fetch!(products_by_id, offer.product_id),
+        offer,
+        reason(fallback_reason_code(offer.reason_rank))
+      )
     end)
   end
 
@@ -211,6 +245,9 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     do: %{product: product, offer: offer, reasons: [reason]}
 
   defp reason(code), do: %{code: code, watch_target: nil}
+
+  defp fallback_reason_code(0), do: :new_offer
+  defp fallback_reason_code(1), do: :trending_below_median
 
   defp viewer_reason(%{reason_rank: 0, watch_target: target}),
     do: %{code: :watch_target, watch_target: target}
@@ -265,4 +302,8 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     |> Repo.all()
     |> Map.new(&{&1.id, &1})
   end
+
+  defp price_signal_code(%{median_30d: nil}), do: :no_30_day_baseline
+  defp price_signal_code(%{below_30_day_median?: true}), do: :below_30_day_median
+  defp price_signal_code(_offer), do: :at_or_above_30_day_median
 end

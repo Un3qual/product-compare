@@ -81,8 +81,15 @@ defmodule ProductCompare.Seo.Categories do
     |> limit(^limit)
     |> select([taxon, _closure, product], {taxon, count(product.id, :distinct)})
     |> Repo.all()
-    |> Enum.map(fn {taxon, qualified_product_count} ->
-      category_summary(taxon, qualified_product_count, now)
+    |> then(fn shortcut_rows ->
+      canonical_counts =
+        shortcut_rows
+        |> Enum.map(fn {taxon, _homepage_count} -> taxon.id end)
+        |> qualified_product_counts(now)
+
+      Enum.map(shortcut_rows, fn {taxon, _homepage_count} ->
+        category_summary(taxon, Map.fetch!(canonical_counts, taxon.id), now)
+      end)
     end)
   end
 
@@ -165,7 +172,7 @@ defmodule ProductCompare.Seo.Categories do
   @spec eligible_offer_scope(DateTime.t()) :: Ecto.Query.t()
   def eligible_offer_scope(%DateTime{} = now) do
     MerchantProduct
-    |> join(:inner, [offer], price in subquery(latest_prices_query()),
+    |> join(:inner, [offer], price in subquery(latest_prices_query(now)),
       on: price.merchant_product_id == offer.id
     )
     |> where(
@@ -247,8 +254,9 @@ defmodule ProductCompare.Seo.Categories do
     )
   end
 
-  defp latest_prices_query do
+  defp latest_prices_query(now) do
     from price in PricePoint,
+      where: price.observed_at <= ^now,
       distinct: price.merchant_product_id,
       order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
   end

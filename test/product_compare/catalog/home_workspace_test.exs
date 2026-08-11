@@ -102,6 +102,30 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     refute latest_out.id in candidate_ids
   end
 
+  test "ignores a future out-of-stock observation when choosing the current workspace offer" do
+    operator = AccountsFixtures.operator_fixture()
+    product = eligible_product("workspace-future", operator)
+
+    offer =
+      ProductCompare.Repo.one!(
+        Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.product_id == ^product.id
+        )
+      )
+
+    {:ok, _future} =
+      Pricing.add_price_point(%{
+        merchant_product_id: offer.id,
+        observed_at: DateTime.add(@now, 3_600, :second),
+        price: "1",
+        shipping: "0",
+        in_stock: false
+      })
+
+    assert [candidate] = Catalog.home_workspace_product_candidates(now: @now, limit: 6)
+    assert candidate.id == product.id
+  end
+
   defp eligible_product(slug, operator), do: product_with_offer(slug, operator, 0, 2)
 
   defp product_with_offer(slug, operator, observed_offset, specifications \\ 0) do

@@ -84,7 +84,7 @@ defmodule ProductCompareWeb.Schema.Home.Types do
     field :currency, non_null(:string)
     field :landed_price, non_null(:decimal)
     field :active_offer_count, non_null(:integer)
-    field :price_signal, non_null(:home_price_signal_code), resolve: &price_signal/3
+    field :price_signal, non_null(:home_price_signal_code), resolve: &HomeResolver.price_signal/3
     field :observed_at, non_null(:datetime)
   end
 
@@ -130,11 +130,4 @@ defmodule ProductCompareWeb.Schema.Home.Types do
     field :code, non_null(:home_deal_reason_code)
     field :watch_target, :decimal
   end
-
-  defp price_signal(%{median_30d: nil}, _args, _resolution), do: {:ok, :no_30_day_baseline}
-
-  defp price_signal(%{below_30_day_median?: true}, _args, _resolution),
-    do: {:ok, :below_30_day_median}
-
-  defp price_signal(_offer, _args, _resolution), do: {:ok, :at_or_above_30_day_median}
 end

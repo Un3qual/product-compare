@@ -77,7 +77,27 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     summaries = Pricing.home_offer_summaries([below.id, equal.id], now: @now)
 
     assert Decimal.lt?(summaries[below.id].landed_price, summaries[below.id].median_30d)
+    assert summaries[below.id].below_30_day_median?
     assert Decimal.eq?(summaries[equal.id].landed_price, summaries[equal.id].median_30d)
+    refute summaries[equal.id].below_30_day_median?
+  end
+
+  test "ignores future observations when selecting current offers and rolling medians" do
+    product = SpecsFixtures.product_fixture(%{slug: "home-future-price"})
+    offer = offer(product, "home-future-price", "90", 0, true)
+    add_price(offer, "120", -3_600)
+    add_price(offer, "1", 3_600)
+
+    product_id = product.id
+    assert %{^product_id => summary} = Pricing.home_offer_summaries([product.id], now: @now)
+    assert Decimal.eq?(summary.landed_price, Decimal.new("95"))
+    assert Decimal.eq?(summary.median_30d, Decimal.new("110"))
+
+    assert [%{merchant_product_id: merchant_product_id, landed_price: landed_price}] =
+             Pricing.home_new_deal_candidates(now: @now, limit: 6)
+
+    assert merchant_product_id == offer.id
+    assert Decimal.eq?(landed_price, Decimal.new("95"))
   end
 
   test "new deal rows identify an offer that is itself new" do

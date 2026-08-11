@@ -160,6 +160,29 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     project_prefetched_pages(merchant_product_ids, pages, connection_args)
   end
 
+  @spec home_offer_summaries(map()) :: Dataloader.Ecto.t()
+  def home_offer_summaries(params) do
+    now = Map.get_lazy(params, :graphql_observed_at, &DateTime.utc_now/0)
+
+    Dataloader.Ecto.new(Repo,
+      run_batch: fn schema, query, operation, ids, repo_opts ->
+        home_offer_summary_batch(schema, query, operation, ids, repo_opts, now)
+      end
+    )
+  end
+
+  defp home_offer_summary_batch(
+         MerchantProduct,
+         _query,
+         :price_signal,
+         merchant_product_ids,
+         _repo_opts,
+         now
+       ) do
+    signals = Pricing.home_offer_price_signals(merchant_product_ids, now: now)
+    batch_values(merchant_product_ids, signals)
+  end
+
   @spec categories() :: Dataloader.Ecto.t()
   def categories do
     Dataloader.Ecto.new(Repo, run_batch: &category_batch/5)

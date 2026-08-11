@@ -29,6 +29,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   defp eligible_products(now, offset, limit) do
     latest_prices =
       from price in PricePoint,
+        where: price.observed_at <= ^now,
         distinct: price.merchant_product_id,
         order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
 

@@ -33,6 +33,31 @@ defmodule ProductCompare.DatabaseTestHelpers do
     end
   end
 
+  def capture_select_query_events(fun) when is_function(fun, 0) do
+    handler_id = {__MODULE__, System.unique_integer([:positive])}
+    ref = make_ref()
+    test_pid = self()
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        fn _event, _measurements, metadata, {pid, message_ref} ->
+          if caller_process?(pid) and select_query?(metadata.query) do
+            send(pid, {message_ref, %{query: metadata.query, params: metadata.params}})
+          end
+        end,
+        {test_pid, ref}
+      )
+
+    try do
+      result = fun.()
+      {result, drain_queries(ref, [])}
+    after
+      :telemetry.detach(handler_id)
+    end
+  end
+
   @spec count_select_queries_targeting_table([String.t()], atom()) :: non_neg_integer()
   def count_select_queries_targeting_table(queries, table) when is_atom(table) do
     Enum.count(queries, &String.contains?(&1, ~s(FROM "#{table}")))

@@ -32,7 +32,7 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
 
     with :ok <- validate_product_ids(product_ids),
          :ok <- validate_profile(profile) do
-      repeatable_read_transaction(fn ->
+      fn ->
         with {:ok, products} <- Capture.load_products(product_ids) do
           facts = Capture.capture(products, profile, now)
 
@@ -57,7 +57,8 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
         else
           {:error, reason} -> Repo.rollback(reason)
         end
-      end)
+      end
+      |> Repo.repeatable_read_transaction("comparison snapshot publication")
     end
   end
 
@@ -280,31 +281,6 @@ defmodule ProductCompare.ComparisonSnapshots.Lifecycle do
 
   defp validate_profile(profile) when profile in @profiles, do: :ok
   defp validate_profile(_profile), do: {:error, :invalid_profile}
-
-  defp repeatable_read_transaction(fun) when is_function(fun, 0) do
-    already_in_transaction? = Repo.in_transaction?()
-
-    Repo.transaction(fn ->
-      if already_in_transaction? do
-        ensure_repeatable_read!()
-      else
-        Repo.query!("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ")
-      end
-
-      fun.()
-    end)
-  end
-
-  defp ensure_repeatable_read! do
-    case Repo.query!("SHOW transaction_isolation").rows do
-      [[level]] when level in ["repeatable read", "serializable"] ->
-        :ok
-
-      [[level]] ->
-        raise ArgumentError,
-              "comparison snapshot publication requires repeatable read or serializable isolation, got: #{level}"
-    end
-  end
 
   defp normalize_title(nil), do: nil
   defp normalize_title(title) when is_binary(title), do: String.trim(title)

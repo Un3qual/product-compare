@@ -114,6 +114,10 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
              products |> Enum.drop(2) |> Enum.map(& &1.product.id)
 
     assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+
+    assert Enum.all?(queries, fn query ->
+             Regex.scan(~r/"product_id" IN \(SELECT/, query) |> Enum.count_until(5) == 5
+           end)
   end
 
   defp offer_product(slug) do
