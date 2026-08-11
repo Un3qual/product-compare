@@ -2,8 +2,8 @@
 
 ## Snapshot
 
-- Status: ready
-- Owner: unclaimed
+- Status: active
+- Owner: `codex/production-ui-home-quality-remediation`
 - Priority: P0
 - Plan: `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`

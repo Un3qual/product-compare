@@ -45,13 +45,10 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
-
-## Ready Work
-
 ### 1. Homepage Query Scaling And Ownership
 
-Status: ready
+Status: active
+Owner: `codex/production-ui-home-quality-remediation`
 Lane: Homepage query scaling and ownership
 Plan: `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
 Batch outcome: Homepage workspace and deal reads retain exact results and all
@@ -89,6 +86,8 @@ Verification:
 Exit condition: Every existing homepage behavior and contract remains green,
 query-scope and covering-index invariants pass, the lane records observed
 evidence, and no range-specific state or wrapper-only abstraction was added.
+
+## Ready Work
 
 ### 2. Production UI Discover And Evaluate
 
