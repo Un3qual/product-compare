@@ -46,7 +46,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
     limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
 
     :all
-    |> winners_query(now, true)
+    |> winners_query(now, true, false)
     |> order_by([offer],
       asc: offer.landed_price,
       desc: offer.observed_at,
@@ -86,7 +86,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
 
     ranked_viewer_offers =
       product_ids
-      |> eligible_offers_query(now, false)
+      |> eligible_offers_query(now, false, true)
       |> subquery()
       |> join(:inner, [offer], counts in subquery(active_counts),
         on: counts.product_id == offer.product_id
@@ -149,14 +149,17 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> Repo.all()
   end
 
-  defp winners_query([], _now, _only_new), do: from(offer in MerchantProduct, where: false)
+  defp winners_query(product_ids, now, only_new, include_median \\ true)
 
-  defp winners_query(product_ids, now, only_new) do
+  defp winners_query([], _now, _only_new, _include_median),
+    do: from(offer in MerchantProduct, where: false)
+
+  defp winners_query(product_ids, now, only_new, include_median) do
     active_counts = active_counts_query(product_ids)
 
     ranked_offers =
       product_ids
-      |> eligible_offers_query(now, only_new)
+      |> eligible_offers_query(now, only_new, include_median)
       |> subquery()
       |> windows(
         [offer],
@@ -200,42 +203,10 @@ defmodule ProductCompare.Pricing.HomeOffers do
     })
   end
 
-  defp eligible_offers_query(product_ids, now, only_new) do
-    latest_prices =
-      from price in PricePoint,
-        distinct: price.merchant_product_id,
-        order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
-
-    first_seen =
-      from price in PricePoint,
-        group_by: price.merchant_product_id,
-        select: %{
-          merchant_product_id: price.merchant_product_id,
-          first_seen_at: min(price.observed_at)
-        }
-
-    medians =
-      from price in PricePoint,
-        join: offer in MerchantProduct,
-        on: offer.id == price.merchant_product_id,
-        where:
-          offer.currency == ^@homepage_currency and
-            not is_nil(price.shipping) and
-            price.observed_at >= ^DateTime.add(now, -2_592_000, :second),
-        group_by: [offer.product_id, offer.currency],
-        select: %{
-          product_id: offer.product_id,
-          currency: offer.currency,
-          median_30d:
-            type(
-              fragment(
-                "percentile_cont(0.5) WITHIN GROUP (ORDER BY (? + ?))",
-                price.price,
-                price.shipping
-              ),
-              :decimal
-            )
-        }
+  defp eligible_offers_query(product_ids, now, only_new, include_median) do
+    latest_prices = latest_prices_query(product_ids)
+    first_seen = first_seen_query(product_ids)
+    medians = medians_query(product_ids, now, include_median)
 
     MerchantProduct
     |> maybe_filter_product_ids(product_ids)
@@ -280,6 +251,66 @@ defmodule ProductCompare.Pricing.HomeOffers do
     |> maybe_filter_new(only_new)
   end
 
+  defp latest_prices_query(product_ids) do
+    PricePoint
+    |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
+    |> maybe_filter_price_product_ids(product_ids)
+    |> distinct([price], price.merchant_product_id)
+    |> order_by([price],
+      asc: price.merchant_product_id,
+      desc: price.observed_at,
+      desc: price.id
+    )
+    |> select([price], price)
+  end
+
+  defp first_seen_query(product_ids) do
+    PricePoint
+    |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
+    |> maybe_filter_price_product_ids(product_ids)
+    |> group_by([price], price.merchant_product_id)
+    |> select([price], %{
+      merchant_product_id: price.merchant_product_id,
+      first_seen_at: min(price.observed_at)
+    })
+  end
+
+  defp medians_query(_product_ids, _now, false) do
+    from offer in MerchantProduct,
+      where: false,
+      select: %{
+        product_id: offer.product_id,
+        currency: offer.currency,
+        median_30d: type(fragment("NULL"), :decimal)
+      }
+  end
+
+  defp medians_query(product_ids, now, true) do
+    PricePoint
+    |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
+    |> maybe_filter_price_product_ids(product_ids)
+    |> where(
+      [price, offer],
+      offer.currency == ^@homepage_currency and
+        not is_nil(price.shipping) and
+        price.observed_at >= ^DateTime.add(now, -2_592_000, :second)
+    )
+    |> group_by([_price, offer], [offer.product_id, offer.currency])
+    |> select([price, offer], %{
+      product_id: offer.product_id,
+      currency: offer.currency,
+      median_30d:
+        type(
+          fragment(
+            "percentile_cont(0.5) WITHIN GROUP (ORDER BY (? + ?))",
+            price.price,
+            price.shipping
+          ),
+          :decimal
+        )
+    })
+  end
+
   defp active_counts_query(product_ids) do
     MerchantProduct
     |> maybe_filter_product_ids(product_ids)
@@ -305,6 +336,14 @@ defmodule ProductCompare.Pricing.HomeOffers do
 
   defp maybe_filter_product_ids(query, product_ids),
     do: where(query, [offer], offer.product_id in ^product_ids)
+
+  defp maybe_filter_price_product_ids(query, :all), do: query
+
+  defp maybe_filter_price_product_ids(query, %Ecto.Query{} = product_ids_query),
+    do: where(query, [_price, offer], offer.product_id in subquery(product_ids_query))
+
+  defp maybe_filter_price_product_ids(query, product_ids),
+    do: where(query, [_price, offer], offer.product_id in ^product_ids)
 
   defp normalize_product_ids(:all), do: :all
 

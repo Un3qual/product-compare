@@ -8,6 +8,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   alias ProductCompareSchemas.Catalog.Product
 
   @deal_limit 6
+  @comparison_limit 3
 
   @spec home_workspace(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
   def home_workspace(_parent, args, %{context: context}) do
@@ -60,12 +61,20 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     highlights_by_product_id = Specs.home_specification_highlights(product_ids, limit: 3)
     offers_by_product_id = Pricing.home_offer_summaries(product_ids, now: now)
 
-    Enum.map(products, fn product ->
-      %{
-        product: product,
-        highlights: Map.get(highlights_by_product_id, product.id, []),
-        offer: Map.get(offers_by_product_id, product.id)
-      }
+    Enum.flat_map(products, fn product ->
+      case Map.get(offers_by_product_id, product.id) do
+        nil ->
+          []
+
+        offer ->
+          [
+            %{
+              product: product,
+              highlights: Map.get(highlights_by_product_id, product.id, []),
+              offer: offer
+            }
+          ]
+      end
     end)
   end
 
@@ -75,8 +84,11 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   defp viewer_candidates(user, selected_slugs, now) do
     current_product_ids =
       selected_slugs
-      |> Catalog.home_workspace_candidates(now: now, limit: @deal_limit)
-      |> Map.fetch!(:selected_products)
+      |> Enum.filter(&is_binary/1)
+      |> Enum.uniq()
+      |> Enum.take(@comparison_limit)
+      |> Catalog.list_products_by_slugs()
+      |> Enum.reject(&is_nil/1)
       |> Enum.map(& &1.id)
 
     user.id

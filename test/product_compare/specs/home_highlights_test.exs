@@ -75,4 +75,40 @@ defmodule ProductCompare.Specs.HomeHighlightsTest do
                count_select_queries_targeting_table(six_queries, table)
     end)
   end
+
+  test "limits current attribute rows per product before loading nested metadata" do
+    operator = AccountsFixtures.operator_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "highlight-sql-bound"})
+
+    Enum.each(1..8, fn index ->
+      attribute =
+        SpecsFixtures.attribute_fixture(%{
+          code: "highlight-sql-bound-#{index}",
+          display_name: "Highlight #{index}",
+          data_type: :text
+        })
+
+      {:ok, claim} =
+        Specs.propose_claim(product.id, attribute.id, %{value_text: "Value #{index}"}, %{
+          source_type: :user,
+          created_by: operator.id
+        })
+
+      {:ok, claim} = Specs.accept_claim(claim.id, operator.id)
+      {:ok, _} = Specs.select_current_claim(product.id, attribute.id, claim.id, operator.id)
+    end)
+
+    {highlights, queries} =
+      capture_select_queries(fn ->
+        Specs.home_specification_highlights([product.id], limit: 3)
+      end)
+
+    assert length(highlights[product.id]) == 3
+
+    current_query =
+      Enum.find(queries, &String.contains?(&1, ~s(FROM "product_attribute_current")))
+
+    assert current_query =~ "row_number()"
+    assert current_query =~ ~r/"rank" <= \$/
+  end
 end

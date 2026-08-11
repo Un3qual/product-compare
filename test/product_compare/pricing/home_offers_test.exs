@@ -4,8 +4,8 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
   import ProductCompare.DatabaseTestHelpers,
     only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
-  alias ProductCompare.Fixtures.SpecsFixtures
-  alias ProductCompare.Pricing
+  alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
+  alias ProductCompare.{Alerts, Catalog, Pricing}
 
   @now ~U[2026-08-10 12:00:00Z]
 
@@ -125,6 +125,37 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert [_, _, _, _, _, _] = candidates
     assert Enum.map(candidates, & &1.product_id) == Enum.map(Enum.take(products, 6), & &1.id)
     assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+  end
+
+  test "new deal selection does not compute an unused rolling median" do
+    product = SpecsFixtures.product_fixture(%{slug: "new-without-median"})
+    offer(product, "new-without-median", "90", 0, true)
+
+    {[_candidate], [query]} =
+      capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now) end)
+
+    refute String.contains?(query, "percentile_cont")
+  end
+
+  test "viewer deal price aggregates are scoped to relevant product candidates" do
+    owner = AccountsFixtures.user_fixture()
+    product = SpecsFixtures.product_fixture(%{slug: "viewer-price-scope"})
+    offer(product, "viewer-price-scope", "90", 0, true)
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Viewer price scope",
+               product_ids: [product.id]
+             })
+
+    relevance_query = Alerts.home_relevance_candidates_query(owner.id, [])
+
+    {[_candidate], [query]} =
+      capture_select_queries(fn ->
+        Pricing.home_viewer_deal_candidates(relevance_query, now: @now)
+      end)
+
+    assert length(Regex.scan(~r/"product_id" IN \(SELECT/, query)) >= 5, query
   end
 
   test "keeps offer read selects bounded as product count grows" do

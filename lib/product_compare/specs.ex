@@ -7,7 +7,6 @@ defmodule ProductCompare.Specs do
   alias ProductCompare.Specs.Claims
   alias ProductCompare.Specs.Corrections
   alias ProductCompare.Specs.Definitions
-  alias ProductCompare.Specs.HomeHighlights
   alias ProductCompare.Specs.Reads
   alias ProductCompareSchemas.Specs.Attribute
   alias ProductCompareSchemas.Specs.Dimension
@@ -157,8 +156,15 @@ defmodule ProductCompare.Specs do
   @spec home_specification_highlights([term()], keyword()) :: %{
           optional(pos_integer()) => [map()]
         }
-  def home_specification_highlights(product_ids, opts \\ []) when is_list(product_ids),
-    do: HomeHighlights.highlights(product_ids, opts)
+  def home_specification_highlights(product_ids, opts \\ []) when is_list(product_ids) do
+    limit =
+      case Keyword.get(opts, :limit, 3) do
+        value when is_integer(value) and value > 0 -> min(value, 3)
+        _ -> 3
+      end
+
+    Reads.list_current_attributes_for_products(product_ids, limit: limit)
+  end
 
   @spec list_current_attributes_for_product(term()) :: [map()]
   def list_current_attributes_for_product(product_id) when valid_id_guard(product_id) do

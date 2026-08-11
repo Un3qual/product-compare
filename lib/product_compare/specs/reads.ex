@@ -16,12 +16,11 @@ defmodule ProductCompare.Specs.Reads do
   @spec get_source_artifacts([term()]) :: %{optional(pos_integer()) => SourceArtifact.t() | nil}
   defdelegate get_source_artifacts(ids), to: Artifacts, as: :get_many
 
-  @spec list_current_attributes_for_products([pos_integer()]) :: %{
+  @spec list_current_attributes_for_products([pos_integer()], keyword()) :: %{
           optional(pos_integer()) => [map()]
         }
-  defdelegate list_current_attributes_for_products(product_ids),
-    to: CurrentAttributes,
-    as: :for_products
+  def list_current_attributes_for_products(product_ids, opts \\ []),
+    do: CurrentAttributes.for_products(product_ids, opts)
 
   @spec list_current_attributes_for_product(term()) :: [map()]
   defdelegate list_current_attributes_for_product(product_id),
