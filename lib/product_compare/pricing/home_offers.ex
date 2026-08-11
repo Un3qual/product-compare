@@ -22,24 +22,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
     end)
   end
 
-  @spec deal_candidates(keyword()) :: %{optional(pos_integer()) => map()}
-  def deal_candidates(opts) do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
-
-    :all
-    |> winners_query(now, false)
-    |> where([offer], offer.new_offer? or offer.below_30_day_median?)
-    |> order_by([offer],
-      asc: offer.landed_price,
-      desc: offer.observed_at,
-      asc: offer.product_id
-    )
-    |> limit(^limit)
-    |> Repo.all()
-    |> Map.new(fn row -> {row.product_id, Map.delete(row, :product_id)} end)
-  end
-
   @spec new_deal_candidates(keyword()) :: [map()]
   def new_deal_candidates(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())

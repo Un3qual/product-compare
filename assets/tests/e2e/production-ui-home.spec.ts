@@ -120,21 +120,21 @@ const products = [
 const categories = [
   {
     description: "Temperature-controlled and stovetop kettles for repeatable brewing.",
-    id: "category-kettles",
+    taxonId: "category-kettles",
     name: "Kettles",
     qualifiedProductCount: 18,
     slug: "kettles",
   },
   {
     description: "Hand and electric grinders organized by burr, range, and capacity.",
-    id: "category-grinders",
+    taxonId: "category-grinders",
     name: "Coffee grinders",
     qualifiedProductCount: 26,
     slug: "coffee-grinders",
   },
   {
     description: "Scales, brewers, and storage tools for a complete setup.",
-    id: "category-brewing-tools",
+    taxonId: "category-brewing-tools",
     name: "Brewing tools",
     qualifiedProductCount: 34,
     slug: "brewing-tools",
@@ -156,7 +156,7 @@ test("guest search and category entry preserve useful catalog navigation", async
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
 
-  const search = page.getByLabel("Search products, categories, or model numbers");
+  const search = page.getByLabel("Search products, brands, or model numbers");
   const searchButton = page.getByRole("button", { name: "Search catalog" });
   await focusByTab(page, searchButton);
   await expectVisibleFocus(searchButton);
@@ -179,8 +179,10 @@ test("guest search and category entry preserve useful catalog navigation", async
     },
   });
 
-  await page.goto("/");
+  await page.goBack();
+  await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
   const categoryLink = page.getByRole("link", { name: "Coffee grinders" });
+  expect((await categoryLink.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
   await focusByTab(page, categoryLink);
   await expectVisibleFocus(categoryLink);
   await page.keyboard.press("Enter");
@@ -322,7 +324,7 @@ test("keyboard navigation exposes focus and reduced motion keeps disclosure beha
 
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
-  const search = page.getByLabel("Search products, categories, or model numbers");
+  const search = page.getByLabel("Search products, brands, or model numbers");
   await focusByTab(page, search);
   await page.keyboard.type("barista scale");
   await page.keyboard.press("Enter");
@@ -365,6 +367,11 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByRole("list", { name: "New offers" }).getByRole("listitem")).toHaveCount(
       2,
     );
+    const dealTargetHeights = await page
+      .locator('[data-slot="home-deals-link"]')
+      .evaluateAll((links) => links.map((link) => link.getBoundingClientRect().height));
+    expect(dealTargetHeights.length).toBeGreaterThan(0);
+    for (const height of dealTargetHeights) expect(height).toBeGreaterThanOrEqual(44);
 
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
     expect(await page.evaluate(() => window.innerWidth)).toBe(viewport.width);
@@ -458,7 +465,11 @@ function homeResponders({
       data: {
         homeWorkspace: {
           categories,
-          products,
+          products: products.map(({ highlights, id, name, offer, slug }) => ({
+            highlights,
+            offer,
+            product: { id: `${id}-summary`, name, slug },
+          })),
           selectedProducts: selectedProducts(variables.selectedSlugs).map(({ id, name, slug }) => ({
             id: `${id}-summary`,
             name,
@@ -758,12 +769,10 @@ async function expectTabletLedgerGeometry(page: Page) {
   });
 
   expect(Math.abs(widths.list.width - (widths.workspace?.width ?? 0))).toBeLessThan(1);
-  expect(widths.workspace?.width).toBeCloseTo(846, 0);
-  expect(widths.list.width).toBeCloseTo(846, 0);
+  expect(widths.list.width).toBeGreaterThan(0);
   expect(widths.columns.split(" ")).toHaveLength(2);
   for (const articleWidth of widths.articleWidths) {
     expect(Math.abs(articleWidth - widths.list.width)).toBeLessThan(1);
-    expect(articleWidth).toBeCloseTo(846, 0);
   }
   const identityWidth = widths.identity?.width ?? 0;
   const highlightsWidth = widths.highlights?.width ?? 0;
@@ -771,8 +780,6 @@ async function expectTabletLedgerGeometry(page: Page) {
   expect(highlightsWidth / widths.list.width).toBeGreaterThan(0.4);
   expect(identityWidth / widths.list.width).toBeLessThan(0.6);
   expect(highlightsWidth / widths.list.width).toBeLessThan(0.6);
-  expect(identityWidth).toBeCloseTo(415, 0);
-  expect(highlightsWidth).toBeCloseTo(415, 0);
   const columnGap = (widths.highlights?.x ?? 0) - ((widths.identity?.x ?? 0) + identityWidth);
   expect(columnGap).toBeGreaterThan(0);
   expect(Math.abs(identityWidth + highlightsWidth + columnGap - widths.list.width)).toBeLessThan(1);

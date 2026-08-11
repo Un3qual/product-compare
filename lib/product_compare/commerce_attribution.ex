@@ -58,9 +58,6 @@ defmodule ProductCompare.CommerceAttribution do
   def network_revenue_summary(network, opts \\ %{}),
     do: Revenue.network_revenue_summary(network, opts)
 
-  @spec trending_product_ids(keyword()) :: [pos_integer()]
-  def trending_product_ids(opts \\ []), do: TrendingActivity.product_ids(opts)
-
   @doc false
   @spec trending_product_candidates_query(keyword()) :: Ecto.Query.t()
   def trending_product_candidates_query(opts \\ []), do: TrendingActivity.candidates_query(opts)

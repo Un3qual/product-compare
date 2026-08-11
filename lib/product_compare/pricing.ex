@@ -154,9 +154,6 @@ defmodule ProductCompare.Pricing do
   def home_offer_summaries(product_ids, opts \\ []) when is_list(product_ids),
     do: HomeOffers.summaries(product_ids, opts)
 
-  @spec home_deal_candidates(keyword()) :: %{optional(pos_integer()) => map()}
-  def home_deal_candidates(opts \\ []), do: HomeOffers.deal_candidates(opts)
-
   @spec home_new_deal_candidates(keyword()) :: [map()]
   def home_new_deal_candidates(opts \\ []), do: HomeOffers.new_deal_candidates(opts)
 

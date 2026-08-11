@@ -31,12 +31,6 @@ defmodule ProductCompare.Alerts do
     Inbox.list_alert_events_query(user_id, opts)
   end
 
-  @spec home_relevance(term()) :: %{
-          watch_targets: %{optional(pos_integer()) => Decimal.t()},
-          saved_product_ids: [pos_integer()]
-        }
-  def home_relevance(user_id), do: HomeRelevance.relevance(user_id)
-
   @doc false
   @spec home_relevance_candidates_query(term(), [pos_integer()]) :: Ecto.Query.t()
   def home_relevance_candidates_query(user_id, current_product_ids),

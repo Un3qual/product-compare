@@ -40,7 +40,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     Enum.each(1..8, fn _ -> click(four_unique, %{anonymous_id: "four-1"}) end)
     Enum.each(1..5, fn index -> click(five_unique, %{anonymous_id: "five-#{index}"}) end)
 
-    assert CommerceAttribution.trending_product_ids(now: @now) == [
+    assert trending_product_ids(now: @now) == [
              first.product.id,
              second.product.id,
              inclusive_boundary.product.id,
@@ -53,12 +53,12 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     Enum.each(1..5, fn index -> click(offer, %{anonymous_id: "budget-#{index}"}) end)
 
     {_five, five_queries} =
-      capture_select_queries(fn -> CommerceAttribution.trending_product_ids(now: @now) end)
+      capture_select_queries(fn -> trending_product_ids(now: @now) end)
 
     Enum.each(6..20, fn index -> click(offer, %{anonymous_id: "budget-#{index}"}) end)
 
     {_twenty, twenty_queries} =
-      capture_select_queries(fn -> CommerceAttribution.trending_product_ids(now: @now) end)
+      capture_select_queries(fn -> trending_product_ids(now: @now) end)
 
     assert count_select_queries_targeting_table(five_queries, :commerce_click_sessions) ==
              count_select_queries_targeting_table(twenty_queries, :commerce_click_sessions)
@@ -67,7 +67,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
              count_select_queries_targeting_table(twenty_queries, :merchant_products)
   end
 
-  test "bounds the public trending id result to the six highest-ranked products" do
+  test "returns all qualified candidates in deterministic activity order" do
     products =
       Enum.map(1..8, fn index ->
         product = offer_product("activity-boundary-#{index}")
@@ -79,8 +79,8 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product
       end)
 
-    assert CommerceAttribution.trending_product_ids(now: @now, limit: 100) ==
-             products |> Enum.take(6) |> Enum.map(& &1.product.id)
+    assert trending_product_ids(now: @now) ==
+             products |> Enum.take(7) |> Enum.map(& &1.product.id)
   end
 
   test "limits trending deals after intersecting activity with below-median USD eligibility" do
@@ -167,5 +167,12 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         shipping: "5",
         in_stock: true
       })
+  end
+
+  defp trending_product_ids(opts) do
+    opts
+    |> CommerceAttribution.trending_product_candidates_query()
+    |> Repo.all()
+    |> Enum.map(& &1.product_id)
   end
 end

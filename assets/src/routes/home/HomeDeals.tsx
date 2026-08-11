@@ -34,7 +34,7 @@ const styles = create({
     color: tokens.actionAccent,
     display: "flex",
     fontWeight: 700,
-    minHeight: tokens.controlHeight,
+    minHeight: "var(--pc-control-height)",
     textDecoration: "none",
   },
   offer: {

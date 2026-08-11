@@ -3,7 +3,6 @@ defmodule ProductCompare.Alerts.HomeRelevance do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
   alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.{Product, SavedComparisonItem, SavedComparisonSet}
 
@@ -31,16 +30,6 @@ defmodule ProductCompare.Alerts.HomeRelevance do
       type(fragment("NULL"), :integer)
     end
   end
-
-  @spec relevance(pos_integer()) :: %{
-          watch_targets: %{optional(pos_integer()) => Decimal.t()},
-          saved_product_ids: [pos_integer()]
-        }
-  def relevance(user_id) when is_integer(user_id) and user_id > 0 do
-    %{watch_targets: watch_targets(user_id), saved_product_ids: saved_product_ids(user_id)}
-  end
-
-  def relevance(_user_id), do: %{watch_targets: %{}, saved_product_ids: []}
 
   @spec candidates_query(pos_integer(), [pos_integer()]) :: Ecto.Query.t()
   def candidates_query(user_id, current_product_ids)
@@ -90,12 +79,9 @@ defmodule ProductCompare.Alerts.HomeRelevance do
         relevance_candidate(product.id, null_bigint(), 2, null_decimal())
       )
 
-    candidates =
-      watch_candidates
-      |> union_all(^saved_candidates)
-      |> union_all(^current_candidates)
-
-    candidates
+    watch_candidates
+    |> union_all(^saved_candidates)
+    |> union_all(^current_candidates)
   end
 
   def candidates_query(_user_id, _current_product_ids) do
@@ -105,64 +91,5 @@ defmodule ProductCompare.Alerts.HomeRelevance do
       [product],
       relevance_candidate(product.id, null_bigint(), 2, null_decimal())
     )
-  end
-
-  defp watch_targets(user_id) do
-    PriceWatchRule
-    |> where(
-      [watch],
-      watch.user_id == ^user_id and watch.enabled == true and watch.rule_type == :target_price and
-        watch.currency == ^"USD"
-    )
-    |> where([watch], not is_nil(watch.target_amount))
-    |> group_by([watch], watch.product_id)
-    |> order_by([watch], asc: watch.product_id)
-    |> select([watch], {watch.product_id, min(watch.target_amount)})
-    |> limit(^@limit)
-    |> Repo.all()
-    |> Map.new()
-  end
-
-  # Saved comparison persistence belongs to Catalog. This read joins those owner-scoped
-  # rows here because the approved home contract exposes one relevance result.
-  defp saved_product_ids(user_id) do
-    ranked_items =
-      SavedComparisonSet
-      |> join(:inner, [set], item in SavedComparisonItem,
-        on: item.saved_comparison_set_id == set.id
-      )
-      |> where([set], set.user_id == ^user_id)
-      |> windows([set, item],
-        saved_product: [
-          partition_by: item.product_id,
-          order_by: [
-            desc: set.inserted_at,
-            desc: set.id,
-            asc: item.position,
-            asc: item.id
-          ]
-        ]
-      )
-      |> select([set, item], %{
-        product_id: item.product_id,
-        set_inserted_at: set.inserted_at,
-        set_id: set.id,
-        item_position: item.position,
-        item_id: item.id,
-        rank: over(row_number(), :saved_product)
-      })
-
-    ranked_items
-    |> subquery()
-    |> where([item], item.rank == 1)
-    |> order_by([item],
-      desc: item.set_inserted_at,
-      desc: item.set_id,
-      asc: item.item_position,
-      asc: item.item_id
-    )
-    |> select([item], item.product_id)
-    |> limit(^@limit)
-    |> Repo.all()
   end
 end

@@ -11,7 +11,6 @@ import { Button } from "../../src/ui/primitives/Button";
 import { TextField } from "../../src/ui/primitives/TextField";
 
 const themeCss = readFileSync("src/ui/theme/theme.css", "utf8");
-const productLedgerSource = readFileSync("src/ui/components/products/ProductLedger.tsx", "utf8");
 
 function installProductionTheme() {
   const style = document.createElement("style");
@@ -34,20 +33,22 @@ function expectVisibleFocusRule(style: HTMLStyleElement, element: HTMLElement) {
   expect(rule?.style.outline).toBe("2px solid var(--pc-brand-500)");
 }
 
-test("production theme supplies the warm paper palette, fonts, and explicit freshness semantics", () => {
-  expect(themeCss).toContain("--pc-surface-canvas: #F4F1E9");
-  expect(themeCss).toContain("--pc-surface-raised: #FFFCF7");
-  expect(themeCss).toContain("--pc-surface-muted: #ECE7DC");
-  expect(themeCss).toContain("--pc-action-accent: #2F62D7");
-  expect(themeCss).toContain("--pc-text-secondary: #625D54");
-  expect(themeCss).toContain("--pc-freshness-soft: #E8F4ED");
-  expect(themeCss).toContain("--pc-freshness-green: #1F6B49");
-  expect(themeCss).toContain("--pc-price-positive: var(--pc-freshness-green)");
-  expect(themeCss).toContain('"Instrument Sans Variable"');
-  expect(themeCss).toContain('"IBM Plex Mono"');
-  expect(productLedgerSource).toContain("color: tokens.textSecondary");
-  expect(productLedgerSource).toContain("backgroundColor: tokens.freshnessSoft");
-  expect(productLedgerSource).toContain("color: tokens.freshnessGreen");
+test("production theme exposes the approved palette and typography to rendered pages", () => {
+  const style = installProductionTheme();
+  const theme = getComputedStyle(document.documentElement);
+
+  expect(theme.getPropertyValue("--pc-surface-canvas").trim()).toBe("#F4F1E9");
+  expect(theme.getPropertyValue("--pc-surface-raised").trim()).toBe("#FFFCF7");
+  expect(theme.getPropertyValue("--pc-surface-muted").trim()).toBe("#ECE7DC");
+  expect(theme.getPropertyValue("--pc-action-accent").trim()).toBe("#2F62D7");
+  expect(theme.getPropertyValue("--pc-text-secondary").trim()).toBe("#625D54");
+  expect(theme.getPropertyValue("--pc-freshness-soft").trim()).toBe("#E8F4ED");
+  expect(theme.getPropertyValue("--pc-freshness-green").trim()).toBe("#1F6B49");
+  expect(theme.getPropertyValue("--pc-price-positive").trim()).toBe("var(--pc-freshness-green)");
+  expect(theme.getPropertyValue("--pc-font-sans")).toContain("Instrument Sans Variable");
+  expect(theme.getPropertyValue("--pc-font-mono")).toContain("IBM Plex Mono");
+
+  style.remove();
 });
 
 test("skip navigation moves keyboard focus into the main working region", () => {

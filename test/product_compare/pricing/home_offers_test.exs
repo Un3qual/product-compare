@@ -47,12 +47,13 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       set: [inserted_at: DateTime.add(@now, -259_201, :second)]
     )
 
-    candidates = Pricing.home_deal_candidates(now: @now)
+    candidates = Pricing.home_new_deal_candidates(now: @now)
+    candidates_by_product_id = Map.new(candidates, &{&1.product_id, &1})
 
-    assert candidates[new_product.id].new_offer?
-    assert candidates[boundary_product.id].new_offer?
-    refute Map.has_key?(candidates, old_product.id)
-    assert candidates[new_product.id].merchant_product_id == new_offer.id
+    assert candidates_by_product_id[new_product.id].new_offer?
+    assert candidates_by_product_id[boundary_product.id].new_offer?
+    refute Map.has_key?(candidates_by_product_id, old_product.id)
+    assert candidates_by_product_id[new_product.id].merchant_product_id == new_offer.id
   end
 
   test "uses the 30-day median inclusively and excludes an equal landed price" do
@@ -73,10 +74,10 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       set: [inserted_at: DateTime.add(@now, -259_201, :second)]
     )
 
-    candidates = Pricing.home_deal_candidates(now: @now)
+    summaries = Pricing.home_offer_summaries([below.id, equal.id], now: @now)
 
-    assert candidates[below.id].below_30_day_median?
-    refute Map.has_key?(candidates, equal.id)
+    assert Decimal.lt?(summaries[below.id].landed_price, summaries[below.id].median_30d)
+    assert Decimal.eq?(summaries[equal.id].landed_price, summaries[equal.id].median_30d)
   end
 
   test "new deal rows identify an offer that is itself new" do
@@ -155,7 +156,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
         Pricing.home_viewer_deal_candidates(relevance_query, now: @now)
       end)
 
-    assert length(Regex.scan(~r/"product_id" IN \(SELECT/, query)) >= 5, query
+    assert Regex.scan(~r/"product_id" IN \(SELECT/, query) |> Enum.count_until(5) == 5, query
   end
 
   test "keeps offer read selects bounded as product count grows" do

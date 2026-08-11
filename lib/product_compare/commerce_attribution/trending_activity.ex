@@ -3,21 +3,8 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.Pricing.MerchantProduct
-
-  @spec product_ids(keyword()) :: [pos_integer()]
-  def product_ids(opts) do
-    limit = opts |> Keyword.get(:limit, 6) |> bounded_limit(6)
-
-    opts
-    |> candidates_query()
-    |> limit(^limit)
-    |> exclude(:select)
-    |> select([activity], activity.product_id)
-    |> Repo.all()
-  end
 
   @spec candidates_query(keyword()) :: Ecto.Query.t()
   def candidates_query(opts) do
@@ -63,7 +50,4 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
 
   defp bounded_positive(value, _default) when is_integer(value) and value > 0, do: value
   defp bounded_positive(_value, default), do: default
-
-  defp bounded_limit(value, _default) when is_integer(value) and value > 0, do: min(value, 6)
-  defp bounded_limit(_value, default), do: default
 end

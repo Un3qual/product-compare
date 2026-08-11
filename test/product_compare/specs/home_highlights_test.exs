@@ -103,7 +103,7 @@ defmodule ProductCompare.Specs.HomeHighlightsTest do
         Specs.home_specification_highlights([product.id], limit: 3)
       end)
 
-    assert length(highlights[product.id]) == 3
+    assert [_, _, _] = highlights[product.id]
 
     current_query =
       Enum.find(queries, &String.contains?(&1, ~s(FROM "product_attribute_current")))

@@ -5,8 +5,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
-  alias ProductCompareSchemas.Specs.TaxonAttribute
+  alias ProductCompareSchemas.Specs.{Attribute, ProductAttributeCurrent, TaxonAttribute}
 
   @max_bigint_id 9_223_372_036_854_775_807
 
@@ -114,7 +113,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
       ProductAttributeCurrent
       |> where([current], current.product_id in ^product_ids)
       |> join(:inner, [current], product in Product, on: product.id == current.product_id)
-      |> join(:inner, [current], attribute in assoc(current, :attribute))
+      |> join(:inner, [current], attribute in Attribute, on: attribute.id == current.attribute_id)
       |> join(:left, [_current, product, attribute], taxon_attribute in TaxonAttribute,
         on:
           taxon_attribute.taxon_id == product.primary_type_taxon_id and

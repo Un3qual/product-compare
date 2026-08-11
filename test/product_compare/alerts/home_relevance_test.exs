@@ -3,11 +3,11 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
 
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
-  alias ProductCompare.{Alerts, Catalog}
+  alias ProductCompare.{Alerts, Catalog, Repo}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.Pricing
 
-  test "returns only the viewer watch targets and saved products in durable saved order" do
+  test "returns only the viewer watch targets and deduplicated saved products" do
     owner = AccountsFixtures.user_fixture()
     other = AccountsFixtures.user_fixture()
 
@@ -45,14 +45,20 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
                product_ids: [second.id, first.id]
              })
 
-    relevance = Alerts.home_relevance(owner.id)
+    candidates = owner.id |> Alerts.home_relevance_candidates_query([]) |> Repo.all()
+    watch = Enum.find(candidates, &(&1.reason_rank == 0))
 
-    assert Decimal.eq?(relevance.watch_targets[first.id], Decimal.new("88"))
-    refute Map.has_key?(relevance.watch_targets, second.id)
-    assert relevance.saved_product_ids == [second.id, first.id, third.id]
+    saved_product_ids =
+      candidates |> Enum.filter(&(&1.reason_rank == 1)) |> Enum.map(& &1.product_id)
+
+    assert watch.product_id == first.id
+    assert watch.merchant_product_id == offer.id
+    assert Decimal.eq?(watch.watch_target, Decimal.new("88"))
+    refute Enum.any?(candidates, &(&1.reason_rank == 0 and &1.product_id == second.id))
+    assert MapSet.new(saved_product_ids) == MapSet.new([second.id, first.id, third.id])
   end
 
-  test "deduplicates saved products in SQL before applying the six-product bound" do
+  test "deduplicates saved products in the composable relevance query" do
     owner = AccountsFixtures.user_fixture()
 
     [shared | products] =
@@ -69,14 +75,19 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
                })
     end)
 
-    saved_product_ids = Alerts.home_relevance(owner.id).saved_product_ids
+    saved_product_ids =
+      owner.id
+      |> Alerts.home_relevance_candidates_query([])
+      |> Repo.all()
+      |> Enum.filter(&(&1.reason_rank == 1))
+      |> Enum.map(& &1.product_id)
 
-    assert [_, _, _, _, _, _] = saved_product_ids
-    assert MapSet.size(MapSet.new(saved_product_ids)) == 6
+    assert [_, _, _, _, _, _, _, _] = saved_product_ids
+    assert MapSet.size(MapSet.new(saved_product_ids)) == 8
     assert shared.id in saved_product_ids
   end
 
-  test "bounds homepage watch targets after excluding non-USD watches" do
+  test "excludes non-USD watches before composing viewer relevance" do
     owner = AccountsFixtures.user_fixture()
 
     eur_products =
@@ -88,18 +99,22 @@ defmodule ProductCompare.Alerts.HomeRelevanceTest do
     Enum.each(eur_products, &create_target_watch(owner.id, &1.id, "EUR", "50"))
     Enum.each(usd_products, &create_target_watch(owner.id, &1.id, "USD", "75"))
 
-    {relevance, queries} = capture_select_queries(fn -> Alerts.home_relevance(owner.id) end)
+    {candidates, queries} =
+      capture_select_queries(fn ->
+        owner.id |> Alerts.home_relevance_candidates_query([]) |> Repo.all()
+      end)
 
-    expected_ids = usd_products |> Enum.take(6) |> Enum.map(& &1.id) |> MapSet.new()
+    watch_candidates = Enum.filter(candidates, &(&1.reason_rank == 0))
+    expected_ids = usd_products |> Enum.map(& &1.id) |> MapSet.new()
 
-    assert map_size(relevance.watch_targets) == 6
-    assert MapSet.new(Map.keys(relevance.watch_targets)) == expected_ids
+    assert [_, _, _, _, _, _, _, _] = watch_candidates
+    assert MapSet.new(watch_candidates, & &1.product_id) == expected_ids
 
-    assert Enum.all?(relevance.watch_targets, fn {_product_id, target} ->
-             Decimal.eq?(target, Decimal.new("75"))
+    assert Enum.all?(watch_candidates, fn candidate ->
+             Decimal.eq?(candidate.watch_target, Decimal.new("75"))
            end)
 
-    assert [_watch_query, _saved_query] = queries
+    assert [_relevance_query] = queries
   end
 
   defp offer(product) do
