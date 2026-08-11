@@ -45,47 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### 1. Homepage Query Scaling And Ownership
-
-Status: active
-Owner: `codex/production-ui-home-quality-remediation`
-Lane: Homepage query scaling and ownership
-Plan: `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
-Batch outcome: Homepage workspace and deal reads retain exact results and all
-GraphQL contracts while current availability has one owner, unused and repeated
-history work is removed, normal For You ranking runs once, and exact arbitrary-
-range activity reads use a covering index without persisted summaries.
-Next action: Run Task 1's temporal/current-offer characterization RED suite
-before renaming `TruthReads` or changing a query relation.
-Owned paths:
-
-- Pricing history/current/home modules and facade named by the plan.
-- Homepage Catalog/SEO eligibility consumers, resolver, Trending activity, and focused tests named by the plan.
-- The new exact activity covering-index migration and isolated migration test.
-- `docs/work/homepage-query-scaling-and-ownership.md`.
-
-Internal slices:
-
-- Exact arbitrary-bound price history and centralized current availability.
-- Fact-selective homepage ranking and page-first viewer behavior.
-- Exact arbitrary-range activity covering-index migration.
-- Full backend, quality, migration, queue, and anti-slop verification.
-
-Prerequisites:
-
-- Homepage database remediation is complete and the approved design forbids new summaries, approximate statistics, and net-new pricing modules.
-- Four disjoint production UI rows remain ready after this row is claimed.
-- The pre-existing `config/dev.exs` worktree change remains user-owned and excluded.
-
-Verification:
-
-- Complete focused Pricing, Catalog, SEO, activity, migration, resolver, and concurrency suites named by the plan.
-- Complete `mix test`, `mix quality`, `mix typecheck`, and full format checks.
-- `mix work_queue.validate` and `git diff --check`.
-
-Exit condition: Every existing homepage behavior and contract remains green,
-query-scope and covering-index invariants pass, the lane records observed
-evidence, and no range-specific state or wrapper-only abstraction was added.
+None.
 
 ## Ready Work
 
