@@ -2,12 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: completed
 - Owner: `codex/production-ui-home-quality-remediation`
 - Priority: P0
 - Plan: `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
-- Last validated: 2026-08-11 against current Pricing, Catalog, SEO, Commerce Attribution, GraphQL, migration, and homepage query-budget coverage.
+- Last validated: 2026-08-11 at `47ed4dea` against current Pricing, Catalog,
+  SEO, Commerce Attribution, GraphQL, migration, and homepage query-budget
+  coverage.
 
 ## Target Outcome
 
@@ -42,10 +44,32 @@ ranking in `HomeOffers`—without a new pricing module or persisted summary.
 
 ## Verification
 
-- Characterization-first RED/GREEN tests for exact temporal bounds, offer truth, every home rail, fallback/exhaustion, projection, and concurrency.
-- Isolated-prefix concurrent-index retry/repair/up/down coverage.
-- Fixed query-budget and relation-scope assertions without new timing/planner thresholds.
-- The complete focused command and repository gates in Task 4 of the plan.
+- The exact 12-file focused command passed 119 tests with 0 failures at seed 0
+  in 13.4 seconds (7.9s async, 5.5s sync).
+- Fresh `mix test` passed 1,482 tests with 0 failures at seed 417339 in 114.6
+  seconds (15.3s async, 99.2s sync).
+- `mix quality` passed: Credo found no issues across 533 source files and 4,907
+  modules/functions; ExDNA remained at its 3/3 clone budget with no new clone;
+  cross-function analysis found no issues with 12 baseline findings suppressed;
+  and Dialyzer passed successfully.
+- `mix typecheck`, full `mix format --check-formatted`, and `git diff --check`
+  exited 0. `mix work_queue.validate` reported 4 ready rows.
+- Exact query-scope assertions prove workspace, Trending, and For You omit
+  first-observation history; New and fallback New opt in; median aggregation is
+  absent from selection when unused and is page- or candidate-scoped when
+  required; a non-empty first For You page performs one viewer ranking query;
+  and the later-page existence read omits Product hydration, median work,
+  output ranking, and page facts.
+- The activity migration installs
+  `(inserted_at, merchant_product_id) INCLUDE (user_id, anonymous_visitor_id)`
+  concurrently, verifies its exact definition, repairs invalid or wrong
+  same-named indexes, preserves an access path during up/down, and is retryable
+  and prefix-aware.
+- Final ownership review found no executable `TruthReads` reference, no net-new
+  pricing module, no range-specific persisted state, no duplicated eligibility
+  policy, no unused first-seen or median relation, no GraphQL schema or Relay
+  artifact change, no task-commit ownership leak, and no unexplained wrapper or
+  delegation layer.
 
 ## Blocker Rule
 
@@ -57,6 +81,6 @@ SQL, migration, or ownership evidence; do not widen scope or weaken a rule.
 
 ## Completion
 
-Complete all internal slices, preserve the four other ready rows, record fresh
-verification here, and remove this row from the live queue only at a committed
-coordinator boundary that maintains the ready floor.
+All internal slices and lane-owned verification are complete. The four other
+ready rows remain preserved. The coordinator must remove this row from the live
+queue only at a committed boundary that maintains the ready floor.
