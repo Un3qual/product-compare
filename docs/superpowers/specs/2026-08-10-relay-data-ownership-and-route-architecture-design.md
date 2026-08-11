@@ -101,10 +101,22 @@ moved.
 ### Storage
 
 `commerce_click_sessions.user_id` remains the authenticated identity and
-continues to reference `users.id`. Replace the free-form `anonymous_id` text
-column with `anonymous_visitor_id uuid`. The UUID is the opaque browser visitor
-identifier itself; it does not reference an otherwise empty visitor-profile
-table.
+continues to reference `users.id`. Add an `anonymous_visitors` table following
+the repository's relational identity convention:
+
+- an internal bigint `id` primary key;
+- a non-null generated UUID `entropy_id` with a unique index; and
+- microsecond `inserted_at` and `updated_at` timestamps.
+
+The table deliberately has no profile, fingerprint, account association,
+activity counters, or mutable last-seen field. It is a first-class relational
+identity and foreign-key target, not a visitor analytics model.
+
+Replace the free-form `commerce_click_sessions.anonymous_id` text column with
+`anonymous_visitor_id`, a nullable bigint foreign key to
+`anonymous_visitors.id`. Use `ON DELETE SET NULL`, matching the existing user
+deletion behavior: removing an identity detaches it from historical clicks
+without deleting attribution and conversion records.
 
 Add a named same-row check that prevents `user_id` and
 `anonymous_visitor_id` from both being populated. A click may still have
@@ -119,31 +131,44 @@ test, and direct database coverage.
 The migration must preserve equality groups without assuming existing text
 values are UUIDs. It will:
 
-1. add nullable `anonymous_visitor_id uuid`;
-2. build a transaction-local mapping from each distinct, nonblank legacy
-   `anonymous_id` to one generated UUID;
-3. backfill guest rows through that mapping;
-4. leave the new anonymous value null when `user_id` is present, matching the
+1. create `anonymous_visitors` and its unique entropy-ID index;
+2. add nullable `commerce_click_sessions.anonymous_visitor_id` with its foreign
+   key and lookup index;
+3. build a transaction-local mapping from each distinct, nonblank legacy
+   `anonymous_id` to one newly inserted visitor row;
+4. backfill guest clicks with the mapped internal visitor IDs;
+5. leave the new anonymous value null when `user_id` is present, matching the
    existing user-first trending semantics;
-5. add the named mutual-exclusion check; and
-6. drop the legacy text column and temporary mapping.
+6. add the named mutual-exclusion check; and
+7. drop the legacy text column and temporary mapping.
 
-The migration must not create a durable anonymous-visitor table, rewrite user
-identities, or expose the generated UUIDs through GraphQL.
+Repeated legacy strings must resolve to one visitor row, while distinct legacy
+strings resolve to distinct rows. The reverse migration restores a text
+anonymous ID from each related visitor's entropy UUID before removing the
+foreign key and visitor table, preserving identity equality even though it
+cannot recover the original opaque legacy text. The migration must not rewrite
+user identities or expose visitor IDs through GraphQL.
 
 ### Browser lifecycle
 
 A narrowly scoped web plug owns a signed, HTTP-only first-party visitor UUID
-cookie. It verifies an existing signed UUID or generates one, makes the UUID
-available to trusted click-tracking code, and renews or sets the cookie with
-`SameSite=Lax`, a deliberate long-lived maximum age, and secure transport in
-production.
+cookie. The cookie value is the visitor row's entropy UUID, never its internal
+primary key. The plug verifies an existing signed UUID or generates one, makes
+the UUID available to trusted click-tracking code, and renews or sets the
+cookie with `SameSite=Lax`, a deliberate long-lived maximum age, and secure
+transport in production.
 
-Tracked guest clicks persist `anonymous_visitor_id`; authenticated clicks
-persist only `user_id`. Browser GraphQL input does not accept an arbitrary
-visitor ID. Direct and GraphQL tracked-click paths use the same server-owned
-identity selection. Invalid or forged cookies are replaced rather than
-accepted.
+Visitor rows are created lazily when a guest performs a tracked commerce
+click, not on ordinary page views. The commerce-attribution visitor boundary
+resolves or inserts the cookie entropy UUID through a unique constraint and an
+atomic conflict-safe insert, then persists the resulting internal foreign key
+on the click. Concurrent first clicks carrying the same cookie must converge on
+one visitor row without a read-then-insert race.
+
+Authenticated clicks skip visitor lookup and persist only `user_id`. Browser
+GraphQL input does not accept an arbitrary visitor ID. Direct and GraphQL
+tracked-click paths use the same server-owned identity selection. Invalid or
+forged cookies are replaced rather than accepted.
 
 ### Trending aggregation
 
@@ -153,9 +178,10 @@ activity computes:
 `count(distinct user_id) + count(distinct anonymous_visitor_id)`
 
 The mutual-exclusion constraint makes the sum an exact count of qualifying
-activity identities. Ordering, seven-day boundaries, the five-identity
-threshold, active-offer qualification, and the rule that identity counts are
-never exposed remain unchanged.
+activity identities. The anonymous count uses internal visitor foreign keys;
+it does not join or group by cookie UUIDs. Ordering, seven-day boundaries, the
+five-identity threshold, active-offer qualification, and the rule that identity
+counts are never exposed remain unchanged.
 
 ## Relay-Native Homepage Contract
 
@@ -355,12 +381,16 @@ Follow test-driven red-green-refactor cycles for every milestone.
 
 ### Identity coverage
 
+- anonymous-visitor changeset, unique entropy-ID, click foreign-key, deletion,
+  and direct-database tests;
 - changeset and direct-database tests for the user/visitor mutual-exclusion
   check;
 - migration coverage for repeated legacy IDs, authenticated legacy rows,
   blank/nil IDs, and mapping equality;
 - signed-cookie tests for reuse, generation, forgery replacement, production
   flags, and guest/member precedence;
+- concurrent first-click coverage proving one visitor row is created for one
+  signed entropy UUID;
 - GraphQL and direct redirect tests proving guest visitor persistence without
   accepting a browser-supplied identity; and
 - trending tests proving separate user/visitor counts, collision resistance,
@@ -399,8 +429,9 @@ bundle budget, queue validation, and diff hygiene.
 
 ## Non-Goals
 
-- A durable anonymous visitor profile, visitor analytics API, cross-device
-  identity merge, or account-linking model.
+- Anonymous visitor profiles, visitor analytics APIs, cross-device identity
+  merge, account linking, fingerprint data, or mutable visit statistics beyond
+  the identity row required by the approved foreign key.
 - Browser-provided visitor IDs or fingerprinting from IP address, user agent,
   or other request diagnostics.
 - Connections around fixed-size value lists.
@@ -415,9 +446,12 @@ bundle budget, queue validation, and diff hygiene.
 
 ## Acceptance Criteria
 
-- Guest browser clicks carry a valid server-owned UUID identity, member clicks
-  carry only their user foreign key, and PostgreSQL prevents a click from
-  carrying both.
+- Guest browser clicks reference one persisted anonymous-visitor row through an
+  internal foreign key, member clicks carry only their user foreign key, and
+  PostgreSQL prevents a click from carrying both.
+- Signed visitor entropy UUIDs are resolved through a race-safe unique insert;
+  ordinary page views do not create visitor rows, and visitor deletion detaches
+  historical clicks without deleting attribution records.
 - Trending activity contains no tagged string concatenation and counts
   distinct user and visitor columns correctly.
 - Every growing homepage collection is a valid forward Relay connection with
