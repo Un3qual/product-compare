@@ -240,7 +240,6 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.create_click_session(%{
           commerce_link_id: commerce_link.id,
           click_id: click_id,
-          anonymous_id: "anon-123",
           source_surface: :web,
           referrer: "https://app.example.com/products/desk",
           user_agent: "ProductCompareTest/1.0",
@@ -943,7 +942,6 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.create_click_session(%{
           commerce_link_id: commerce_link.id,
           merchant_product_id: merchant_product.id,
-          anonymous_id: "anon-#{System.unique_integer([:positive])}",
           source_surface: :web
         })
 
@@ -999,7 +997,6 @@ defmodule ProductCompare.CommerceAttributionTest do
         CommerceAttribution.create_click_session(%{
           commerce_link_id: commerce_link.id,
           merchant_product_id: clicked_merchant_product.id,
-          anonymous_id: "anon-#{System.unique_integer([:positive])}",
           source_surface: :web
         })
 
@@ -2591,7 +2588,6 @@ defmodule ProductCompare.CommerceAttributionTest do
       CommerceAttribution.create_click_session(%{
         commerce_link_id: commerce_link.id,
         click_id: Ecto.UUID.generate(),
-        anonymous_id: "anon-#{System.unique_integer([:positive])}",
         source_surface: :web
       })
 

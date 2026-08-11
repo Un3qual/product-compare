@@ -3,6 +3,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Sessions do
 
   alias ProductCompare.CommerceAttribution.Clicks.Destinations
   alias ProductCompare.CommerceAttribution.Clicks.Links
+  alias ProductCompare.CommerceAttribution.Visitors
   alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
@@ -42,7 +43,9 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Sessions do
     Repo.transaction(fn ->
       with {:ok, commerce_link} <- Links.upsert(Links.tracked_attrs(destination)),
            :ok <- Links.ensure_active(commerce_link),
-           {:ok, click_session} <- create(click_session_attrs(attrs, commerce_link.id)) do
+           {:ok, actor_attrs} <- actor_attrs(attrs),
+           {:ok, click_session} <-
+             create(attrs |> click_session_attrs(commerce_link.id) |> Map.merge(actor_attrs)) do
         %{
           commerce_link: commerce_link,
           click_session: click_session,
@@ -64,9 +67,7 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Sessions do
   defp take_click_session_attrs(attrs) do
     Enum.reduce(
       [
-        :user_id,
         :merchant_product_id,
-        :anonymous_id,
         :source_surface,
         :referrer,
         :user_agent,
@@ -81,4 +82,23 @@ defmodule ProductCompare.CommerceAttribution.Clicks.Sessions do
       end
     )
   end
+
+  defp actor_attrs(attrs) do
+    case Input.fetch_attr(attrs, :user_id) do
+      user_id when is_integer(user_id) ->
+        {:ok, %{user_id: user_id}}
+
+      _no_user ->
+        anonymous_visitor_attrs(Input.fetch_attr(attrs, :anonymous_visitor_entropy_id))
+    end
+  end
+
+  defp anonymous_visitor_attrs(entropy_id) when is_binary(entropy_id) do
+    case Visitors.get_or_create(entropy_id) do
+      {:ok, visitor} -> {:ok, %{anonymous_visitor_id: visitor.id}}
+      {:error, changeset} -> {:error, changeset}
+    end
+  end
+
+  defp anonymous_visitor_attrs(_entropy_id), do: {:ok, %{}}
 end

@@ -7,6 +7,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
+  alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
 
   describe "/api/graphql commerce click tracking" do
     test "creates a tracked commerce click from only a merchant product ID", %{conn: conn} do
@@ -43,8 +44,10 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
 
       assert Repo.aggregate(CommerceLink, :count, :id) == 1
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 1
+      assert Repo.aggregate(AnonymousVisitor, :count, :id) == 1
 
       assert %CommerceClickSession{
+               anonymous_visitor_id: anonymous_visitor_id,
                merchant_product_id: merchant_product_id,
                referrer: "https://app.example.com/products/desk",
                user_agent: "ProductCompareTest/1.0",
@@ -53,6 +56,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
                Repo.one(CommerceClickSession)
 
       assert merchant_product_id == merchant_product.id
+      assert is_integer(anonymous_visitor_id)
     end
 
     test "rejects raw browser-provided destinations", %{conn: conn} do
@@ -76,6 +80,24 @@ defmodule ProductCompareWeb.GraphQL.CommerceClickTest do
       assert message =~ ~s("destinationUrl")
       assert message =~ "Unknown field"
       assert Repo.aggregate(CommerceLink, :count, :id) == 0
+      assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
+    end
+
+    test "rejects browser-provided visitor identities without creating one", %{conn: conn} do
+      merchant_product = merchant_product_fixture()
+
+      response =
+        graphql(conn, track_commerce_click_mutation(), %{
+          "input" => %{
+            "merchantProductId" => relay_id(:merchant_product, merchant_product.id),
+            "anonymousVisitorId" => "visitor-from-browser"
+          }
+        })
+
+      assert %{"errors" => [%{"message" => message} | _]} = response
+      assert message =~ ~s("anonymousVisitorId")
+      assert message =~ "Unknown field"
+      assert Repo.aggregate(AnonymousVisitor, :count, :id) == 0
       assert Repo.aggregate(CommerceClickSession, :count, :id) == 0
     end
 

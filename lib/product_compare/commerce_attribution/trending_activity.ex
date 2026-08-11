@@ -13,38 +13,25 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivity do
     minimum_identities = opts |> Keyword.get(:minimum_identities, 5) |> bounded_positive(5)
     boundary = DateTime.add(now, -days * 86_400, :second)
 
-    activities =
-      CommerceClickSession
-      |> join(:inner, [click], offer in MerchantProduct,
-        on: offer.id == click.merchant_product_id
-      )
-      |> where([click, offer], click.inserted_at >= ^boundary and offer.is_active == true)
-      |> select([click, offer], %{
-        product_id: offer.product_id,
-        activity_at: click.inserted_at,
-        identity:
-          fragment(
-            "CASE WHEN ? IS NOT NULL THEN 'u:' || ?::text WHEN ? IS NOT NULL THEN 'a:' || ?::text ELSE NULL END",
-            click.user_id,
-            click.user_id,
-            click.anonymous_id,
-            click.anonymous_id
-          )
-      })
-
-    activities
-    |> subquery()
-    |> group_by([activity], activity.product_id)
-    |> having([activity], count(activity.identity, :distinct) >= ^minimum_identities)
-    |> order_by([activity],
-      desc: count(activity.identity, :distinct),
-      desc: max(activity.activity_at),
-      asc: activity.product_id
+    CommerceClickSession
+    |> join(:inner, [click], offer in MerchantProduct, on: offer.id == click.merchant_product_id)
+    |> where([click, offer], click.inserted_at >= ^boundary and offer.is_active == true)
+    |> group_by([_click, offer], offer.product_id)
+    |> having(
+      [click, _offer],
+      count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct) >=
+        ^minimum_identities
     )
-    |> select([activity], %{
-      product_id: activity.product_id,
-      identity_count: count(activity.identity, :distinct),
-      activity_at: max(activity.activity_at)
+    |> order_by([click, offer],
+      desc: count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct),
+      desc: max(click.inserted_at),
+      asc: offer.product_id
+    )
+    |> select([click, offer], %{
+      product_id: offer.product_id,
+      identity_count:
+        count(click.user_id, :distinct) + count(click.anonymous_visitor_id, :distinct),
+      activity_at: max(click.inserted_at)
     })
   end
 

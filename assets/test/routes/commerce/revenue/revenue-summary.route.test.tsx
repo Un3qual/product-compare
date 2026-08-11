@@ -132,7 +132,7 @@ const ATTRIBUTION_LEDGER_PAGE = {
           affiliateNetworkName: "Impact",
           affiliateProgramCode: "impact-program",
           affiliateProgramId: "program-1",
-          anonymousId: null,
+          anonymousVisitor: false,
           clickId: "db8e90c9-c6f2-4f36-a67f-3324033ac114",
           insertedAt: "2026-05-31T12:30:00Z",
           ipAddress: "203.0.113.44",
@@ -381,7 +381,7 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
             cursor: "ledger-cursor-anonymous",
             node: {
               ...ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node,
-              anonymousId: "anonymous-42",
+              anonymousVisitor: true,
               matchedConversions: [],
               userEmail: null,
               userId: null,
@@ -402,7 +402,7 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
     </MemoryRouter>,
   );
 
-  expect(screen.getByText("Anonymous click: anonymous-42")).toBeInTheDocument();
+  expect(screen.getByText("Anonymous visitor")).toBeInTheDocument();
   expect(screen.getByText("No matched conversions.")).toBeInTheDocument();
 
   mockedUsePaginationFragment.mockReturnValue({

@@ -12,11 +12,13 @@ defmodule ProductCompareWeb.Router do
   pipeline :api_session do
     plug :fetch_session
     plug ProductCompareWeb.Plugs.FetchCurrentUser, same_origin_only: true
+    plug ProductCompareWeb.Plugs.PutAnonymousVisitor
   end
 
   pipeline :graphql_session do
     plug :fetch_session
     plug ProductCompareWeb.Plugs.FetchCurrentUser, same_origin_only: true
+    plug ProductCompareWeb.Plugs.PutAnonymousVisitor
   end
 
   pipeline :same_origin_session_boundary do

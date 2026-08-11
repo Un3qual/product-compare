@@ -951,7 +951,7 @@ type CommerceAttributionClick {
   sourceSurface: CommerceClickSourceSurface!
   userId: ID
   userEmail: String
-  anonymousId: String
+  anonymousVisitor: Boolean!
   referrer: String
   userAgent: String
   ipAddress: String

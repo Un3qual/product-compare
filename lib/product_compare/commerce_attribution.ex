@@ -8,10 +8,16 @@ defmodule ProductCompare.CommerceAttribution do
   alias ProductCompare.CommerceAttribution.Conversions
   alias ProductCompare.CommerceAttribution.Revenue
   alias ProductCompare.CommerceAttribution.TrendingActivity
+  alias ProductCompare.CommerceAttribution.Visitors
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.CommerceConversion
   alias ProductCompareSchemas.CommerceAttribution.CommerceLink
   alias ProductCompareSchemas.CommerceAttribution.PurchasePriceFact
+  alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
+
+  @spec get_or_create_anonymous_visitor(Ecto.UUID.t()) ::
+          {:ok, AnonymousVisitor.t()} | {:error, Ecto.Changeset.t()}
+  def get_or_create_anonymous_visitor(entropy_id), do: Visitors.get_or_create(entropy_id)
   @spec upsert_commerce_link(map()) :: {:ok, CommerceLink.t()} | {:error, Ecto.Changeset.t()}
   def upsert_commerce_link(attrs), do: Clicks.upsert_commerce_link(attrs)
 

@@ -21,24 +21,24 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     five_unique = offer_product("activity-five-unique")
     user = AccountsFixtures.user_fixture()
 
-    Enum.each(1..3, fn index -> click(first, %{anonymous_id: "anon-#{index}"}) end)
+    Enum.each(1..3, fn index -> click(first, anonymous_actor("anon-#{index}")) end)
     click(first, %{user_id: user.id})
-    click(first, %{anonymous_id: Integer.to_string(user.id)})
+    click(first, anonymous_actor("same-digits-as-user-#{user.id}"))
     click(first, %{user_id: user.id})
-    click(first, %{anonymous_id: "anon-1"})
+    click(first, anonymous_actor("anon-1"))
     click(first, %{})
-    Enum.each(1..5, fn index -> click(second, %{anonymous_id: "second-#{index}"}) end)
+    Enum.each(1..5, fn index -> click(second, anonymous_actor("second-#{index}")) end)
 
     Enum.each(1..4, fn index ->
-      click(inclusive_boundary, %{anonymous_id: "inclusive-#{index}"})
-      click(exclusive_boundary, %{anonymous_id: "exclusive-#{index}"})
-      click(four_unique, %{anonymous_id: "four-#{index}"})
+      click(inclusive_boundary, anonymous_actor("inclusive-#{index}"))
+      click(exclusive_boundary, anonymous_actor("exclusive-#{index}"))
+      click(four_unique, anonymous_actor("four-#{index}"))
     end)
 
-    click(inclusive_boundary, %{anonymous_id: "inclusive-5"}, -604_800)
-    click(exclusive_boundary, %{anonymous_id: "exclusive-5"}, -604_801)
-    Enum.each(1..8, fn _ -> click(four_unique, %{anonymous_id: "four-1"}) end)
-    Enum.each(1..5, fn index -> click(five_unique, %{anonymous_id: "five-#{index}"}) end)
+    click(inclusive_boundary, anonymous_actor("inclusive-5"), -604_800)
+    click(exclusive_boundary, anonymous_actor("exclusive-5"), -604_801)
+    Enum.each(1..8, fn _ -> click(four_unique, anonymous_actor("four-1")) end)
+    Enum.each(1..5, fn index -> click(five_unique, anonymous_actor("five-#{index}")) end)
 
     assert trending_product_ids(now: @now) == [
              first.product.id,
@@ -50,12 +50,12 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
 
   test "does not add per-row select work as activity grows" do
     offer = offer_product("activity-budget")
-    Enum.each(1..5, fn index -> click(offer, %{anonymous_id: "budget-#{index}"}) end)
+    Enum.each(1..5, fn index -> click(offer, anonymous_actor("budget-#{index}")) end)
 
     {_five, five_queries} =
       capture_select_queries(fn -> trending_product_ids(now: @now) end)
 
-    Enum.each(6..20, fn index -> click(offer, %{anonymous_id: "budget-#{index}"}) end)
+    Enum.each(6..20, fn index -> click(offer, anonymous_actor("budget-#{index}")) end)
 
     {_twenty, twenty_queries} =
       capture_select_queries(fn -> trending_product_ids(now: @now) end)
@@ -73,7 +73,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product = offer_product("activity-boundary-#{index}")
 
         Enum.each(1..(12 - index), fn identity ->
-          click(product, %{anonymous_id: "boundary-#{index}-#{identity}"})
+          click(product, anonymous_actor("boundary-#{index}-#{identity}"))
         end)
 
         product
@@ -89,7 +89,7 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product = offer_product("trending-intersection-#{index}")
 
         Enum.each(1..(14 - index), fn identity ->
-          click(product, %{anonymous_id: "intersection-#{index}-#{identity}"})
+          click(product, anonymous_actor("intersection-#{index}-#{identity}"))
         end)
 
         add_price(product.offer, "50", 0)
@@ -156,6 +156,20 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
       Ecto.Query.from(session in CommerceClickSession, where: session.id == ^click.id),
       set: [inserted_at: DateTime.add(@now, offset, :second)]
     )
+  end
+
+  defp anonymous_actor(key) do
+    process_key = {__MODULE__, key}
+
+    visitor_id =
+      Process.get(process_key) ||
+        then(Ecto.UUID.generate(), fn entropy_id ->
+          {:ok, visitor} = CommerceAttribution.get_or_create_anonymous_visitor(entropy_id)
+          Process.put(process_key, visitor.id)
+          visitor.id
+        end)
+
+    %{anonymous_visitor_id: visitor_id}
   end
 
   defp add_price(offer, price, offset) do

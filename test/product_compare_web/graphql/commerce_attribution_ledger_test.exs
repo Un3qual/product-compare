@@ -503,7 +503,6 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
       user_click =
         click_fixture(link, merchant_product, %{
           user_id: user.id,
-          anonymous_id: nil,
           source_surface: :extension,
           referrer: "https://productcompare.example/products/ledger",
           user_agent: "Ledger Browser/1.0",
@@ -513,7 +512,6 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
 
       anonymous_click =
         click_fixture(link, merchant_product, %{
-          anonymous_id: "anonymous-ledger-visitor",
           referrer: nil,
           user_agent: "Anonymous Browser/1.0",
           ip_address: "198.51.100.8"
@@ -564,7 +562,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
                          "sourceSurface" => "EXTENSION",
                          "userId" => user_id,
                          "userEmail" => "ledger-user@example.com",
-                         "anonymousId" => nil,
+                         "anonymousVisitor" => false,
                          "referrer" => "https://productcompare.example/products/ledger",
                          "userAgent" => "Ledger Browser/1.0",
                          "ipAddress" => "203.0.113.17",
@@ -588,7 +586,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
                          "clickId" => anonymous_click_id,
                          "userId" => nil,
                          "userEmail" => nil,
-                         "anonymousId" => "anonymous-ledger-visitor",
+                         "anonymousVisitor" => true,
                          "matchedConversions" => []
                        }
                      }
@@ -641,7 +639,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
       assert Enum.sort(Enum.map(click_fields, & &1["name"])) ==
                Enum.sort(~w(
                  affiliateNetworkCode affiliateNetworkId affiliateNetworkName
-                 affiliateProgramCode affiliateProgramId anonymousId clickId insertedAt ipAddress
+                 affiliateProgramCode affiliateProgramId anonymousVisitor clickId insertedAt ipAddress
                  linkType matchedConversions merchantId merchantName merchantProductExternalSku
                  merchantProductId productId productName referrer sourceSurface userAgent userEmail userId
                ))
@@ -701,7 +699,7 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
             sourceSurface
             userId
             userEmail
-            anonymousId
+            anonymousVisitor
             referrer
             userAgent
             ipAddress
@@ -849,13 +847,23 @@ defmodule ProductCompareWeb.GraphQL.CommerceAttributionLedgerTest do
   end
 
   defp click_fixture(link, merchant_product, attrs) do
+    visitor_attrs =
+      if Map.has_key?(attrs, :user_id) do
+        %{}
+      else
+        {:ok, visitor} =
+          CommerceAttribution.get_or_create_anonymous_visitor(Ecto.UUID.generate())
+
+        %{anonymous_visitor_id: visitor.id}
+      end
+
     params =
       attrs
       |> Map.put(:commerce_link_id, link.id)
       |> maybe_put_id(:merchant_product_id, merchant_product)
       |> Map.put_new(:click_id, Ecto.UUID.generate())
-      |> Map.put_new(:anonymous_id, "ledger-anonymous-#{System.unique_integer([:positive])}")
       |> Map.put_new(:source_surface, :web)
+      |> Map.merge(visitor_attrs)
 
     {:ok, click} = CommerceAttribution.create_click_session(params)
     click

@@ -37,7 +37,7 @@ const attributionLedgerFragment = graphql`
           affiliateNetworkName
           affiliateProgramCode
           affiliateProgramId
-          anonymousId
+          anonymousVisitor
           clickId
           insertedAt
           ipAddress
@@ -258,7 +258,7 @@ function AttributionIdentity({ click }: { click: AttributionClick }) {
     );
   }
 
-  return <p>Anonymous click: {click.anonymousId ?? "No anonymous ID"}</p>;
+  return <p>{click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}</p>;
 }
 
 function AttributionConversionList({

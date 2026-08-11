@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<82548c4b88346475a89dc66b98f05cfe>>
+ * @generated SignedSource<<650966ca745ef3c0248f83c810cf3a0d>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -23,7 +23,7 @@ export type AttributionLedger_connection$data = {
         readonly affiliateNetworkName: string | null | undefined;
         readonly affiliateProgramCode: string | null | undefined;
         readonly affiliateProgramId: string | null | undefined;
-        readonly anonymousId: string | null | undefined;
+        readonly anonymousVisitor: boolean;
         readonly clickId: string;
         readonly insertedAt: any;
         readonly ipAddress: string | null | undefined;
@@ -215,7 +215,7 @@ return {
                   "alias": null,
                   "args": null,
                   "kind": "ScalarField",
-                  "name": "anonymousId",
+                  "name": "anonymousVisitor",
                   "storageKey": null
                 },
                 {
@@ -427,6 +427,6 @@ return {
 };
 })();
 
-(node as any).hash = "230eb3f1208eba32add731030729955f";
+(node as any).hash = "2bd97bae77c1c9967d59d3bfcd3162d0";
 
 export default node;

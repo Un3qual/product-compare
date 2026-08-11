@@ -23,6 +23,7 @@ defmodule ProductCompareWeb.CommerceRedirectController do
              |> RequestDiagnostics.from_conn()
              |> Map.merge(%{
                merchant_product_id: merchant_product_id,
+               anonymous_visitor_entropy_id: conn.assigns[:anonymous_visitor_entropy_id],
                source_surface: :web,
                user_id: current_user_id(conn)
              })
