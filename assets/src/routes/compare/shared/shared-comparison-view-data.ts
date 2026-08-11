@@ -1,6 +1,9 @@
 import type { SharedComparisonRouteQuery } from "$generated/SharedComparisonRouteQuery.graphql";
 import { buildComparePathFromSlugs } from "../paths";
-import { recommendationReasonCopy } from "../recommendation-view-data";
+import {
+  recommendationBlockerReasons,
+  recommendationReasonCopy,
+} from "../recommendation-view-data";
 
 type SharedComparisonSnapshotNode = NonNullable<
   SharedComparisonRouteQuery["response"]["comparisonSnapshot"]
@@ -72,7 +75,7 @@ export function buildSharedComparisonViewData(snapshot: SharedComparisonSnapshot
           evaluatedAt: recommendation.evaluatedAt,
           kind: "unsupported" as const,
           label: "No supported winner",
-          reasons: recommendation.missingInputs.map(recommendationReasonCopy),
+          reasons: recommendationBlockerReasons(recommendation.missingInputs),
         },
     title: nonBlankText(snapshot.title) ?? "Shared product comparison",
   };

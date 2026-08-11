@@ -61,7 +61,9 @@ describe("RecommendationPanel", () => {
     );
     expect(screen.getByText("Evidence Camera")).toBeVisible();
     expect(screen.getByText("Lowest current total price: USD 119.00")).toBeVisible();
-    expect(screen.getByText("Based on the current price and 2 verified product details.")).toBeVisible();
+    expect(
+      screen.getByText("Based on the current price and 2 verified product details."),
+    ).toBeVisible();
     expect(screen.queryByText(/price-point-4|claim-2|algorithm/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lowest current cost" })).toHaveAttribute(
       "href",
@@ -91,7 +93,10 @@ describe("RecommendationPanel", () => {
     );
 
     expect(screen.getByText("No supported winner")).toBeVisible();
-    expect(screen.getByText("Products do not share one eligible offer currency.")).toBeVisible();
+    expect(
+      screen.getByText("These products do not have current prices in the same currency."),
+    ).toBeVisible();
+    expect(screen.queryByText(/eligible offer currency/i)).not.toBeInTheDocument();
   });
 });
 

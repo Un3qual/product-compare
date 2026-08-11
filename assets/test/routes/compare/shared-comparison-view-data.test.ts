@@ -150,7 +150,7 @@ test("uses exact unsupported, product, claim, and offer fallbacks", () => {
     evaluatedAt: "2026-07-13T23:00:00Z",
     kind: "unsupported",
     label: "No supported winner",
-    reasons: ["Verified product details are unavailable"],
+    reasons: ["One or more products need verified product details."],
   });
   expect(viewData.products).toEqual([
     {

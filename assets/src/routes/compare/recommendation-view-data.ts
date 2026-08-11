@@ -23,6 +23,9 @@ export type RecommendationViewData =
       reasons: readonly string[];
     };
 
+const RECOMMENDATION_BLOCKER_FALLBACK =
+  "More product or price details are needed before a winner can be recommended.";
+
 export function getRecommendationViewData(
   recommendation: RecommendationViewDataInput,
 ): RecommendationViewData {
@@ -31,7 +34,10 @@ export function getRecommendationViewData(
   );
 
   if (!winner) {
-    return { kind: "no-winner", reasons: recommendation.missingInputs };
+    return {
+      kind: "no-winner",
+      reasons: recommendationBlockerReasons(recommendation.missingInputs),
+    };
   }
 
   const detailLabel = winner.claimIds.length === 1 ? "product detail" : "product details";
@@ -42,6 +48,34 @@ export function getRecommendationViewData(
     reasons: winner.reasons.map(recommendationReasonCopy),
     details: `Based on the current price and ${winner.claimIds.length} verified ${detailLabel}.`,
   };
+}
+
+export function recommendationBlockerReasons(blockers: readonly string[]) {
+  if (blockers.length === 0) return [RECOMMENDATION_BLOCKER_FALLBACK];
+
+  return [...new Set(blockers.map(recommendationBlockerCopy))];
+}
+
+function recommendationBlockerCopy(blocker: string) {
+  const normalized = blocker.trim().replace(/\s+/g, " ");
+
+  if (/accepted specification evidence/i.test(normalized)) {
+    return "One or more products need verified product details.";
+  }
+  if (/eligible offer currency|shared eligible currency/i.test(normalized)) {
+    return "These products do not have current prices in the same currency.";
+  }
+  if (/same eligible landed price/i.test(normalized)) {
+    return "The leading products have the same current total price.";
+  }
+  if (/recommendations require two or three existing products/i.test(normalized)) {
+    return "Choose two or three available products to get a recommendation.";
+  }
+  if (/unsupported recommendation profile/i.test(normalized)) {
+    return "This recommendation option is unavailable.";
+  }
+
+  return RECOMMENDATION_BLOCKER_FALLBACK;
 }
 
 export function recommendationReasonCopy(reason: string) {

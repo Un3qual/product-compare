@@ -52,20 +52,55 @@ describe("getRecommendationViewData", () => {
     ["missing winner", null, [buildRanking()]],
     ["unmatched winner", "product-not-ranked", [buildRanking()]],
   ] as const)(
-    "uses source-ordered missing inputs for a %s",
+    "translates recommendation blockers without exposing backend text for a %s",
     (_caseName, winnerProductId, rankings) => {
       const recommendation = buildRecommendation({
         winnerProductId,
         rankings,
-        missingInputs: ["No complete in-stock offer.", "No shared eligible currency."],
+        missingInputs: [
+          "Products do not share one eligible offer currency.",
+          "price_point_id=price-point-42 failed internal policy v3",
+        ],
       });
 
       expect(getRecommendationViewData(recommendation)).toEqual({
         kind: "no-winner",
-        reasons: ["No complete in-stock offer.", "No shared eligible currency."],
+        reasons: [
+          "These products do not have current prices in the same currency.",
+          "More product or price details are needed before a winner can be recommended.",
+        ],
       });
     },
   );
+
+  test("explains a blocker safely when the backend supplies no details", () => {
+    expect(
+      getRecommendationViewData(
+        buildRecommendation({ winnerProductId: null, rankings: [], missingInputs: [] }),
+      ),
+    ).toEqual({
+      kind: "no-winner",
+      reasons: ["More product or price details are needed before a winner can be recommended."],
+    });
+  });
+
+  test.each([
+    [
+      "Top products have the same eligible landed price.",
+      "The leading products have the same current total price.",
+    ],
+    [
+      "Recommendations require two or three existing products.",
+      "Choose two or three available products to get a recommendation.",
+    ],
+    ["Unsupported recommendation profile.", "This recommendation option is unavailable."],
+  ] as const)("translates the current backend blocker %s", (missingInput, expectedReason) => {
+    expect(
+      getRecommendationViewData(
+        buildRecommendation({ winnerProductId: null, rankings: [], missingInputs: [missingInput] }),
+      ),
+    ).toEqual({ kind: "no-winner", reasons: [expectedReason] });
+  });
 
   test.each([
     [[], "Based on the current price and 0 verified product details."],
