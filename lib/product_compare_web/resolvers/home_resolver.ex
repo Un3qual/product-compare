@@ -1,17 +1,13 @@
 defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @moduledoc false
 
-  import Ecto.Query
-
+  alias Absinthe.Relay.Connection, as: RelayConnection
+  alias Absinthe.Resolution
   alias ProductCompare.{Alerts, Catalog, CommerceAttribution, Pricing, Repo, Seo, Specs}
   alias ProductCompareWeb.GraphQL.Connection
-  alias ProductCompareSchemas.Catalog.Product
 
-  @comparison_limit 3
-
-  # For You is a bounded homepage teaser, not an exhaustive catalog browser. Keeping its
-  # traversal window finite prevents Relay offsets from scaling database sort/discard work.
-  @fallback_traversal_limit 1_000
+  @homepage_traversal_limit 1_000
+  @page_fact_fields MapSet.new([:active_offer_count, :price_signal])
 
   @spec home_workspace(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
   def home_workspace(_parent, args, %{context: context}) do
@@ -20,45 +16,54 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
     {:ok,
      %{
        now: Map.fetch!(context, :graphql_observed_at),
-       selected_products: Catalog.home_workspace_selected_products(selected_slugs)
+       selected_slugs: selected_slugs
      }}
+  end
+
+  @spec selected_products(map(), map(), Absinthe.Resolution.t()) :: {:ok, [map()]}
+  def selected_products(%{selected_slugs: selected_slugs}, _args, _resolution) do
+    {:ok, Catalog.home_workspace_selected_products(selected_slugs)}
   end
 
   @spec workspace_products(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def workspace_products(%{now: now}, args, _resolution) do
-    case Repo.repeatable_read_transaction(
-           fn ->
-             build_connection(
-               args,
-               fn window ->
-                 products =
-                   Catalog.home_workspace_product_candidates(
-                     now: now,
-                     offset: window.offset,
-                     limit: window.fetch_limit
-                   )
+  def workspace_products(%{now: now}, args, resolution) do
+    requested_fields = requested_page_fact_fields(resolution)
 
-                 workspace_rows(products, now)
-               end,
-               &workspace_edge/2
-             )
-           end,
-           "home workspace reads"
-         ) do
-      {:ok, result} -> result
-      {:error, reason} -> {:error, reason}
-    end
+    build_connection(
+      args,
+      fn window ->
+        Repo.repeatable_read_transaction(
+          fn ->
+            products =
+              Catalog.home_workspace_product_candidates(
+                now: now,
+                offset: window.offset,
+                limit: window.fetch_limit
+              )
+
+            workspace_rows(products, requested_fields, now, window.fetch_limit - 1)
+          end,
+          "home workspace reads"
+        )
+      end,
+      &workspace_edge/2
+    )
   end
 
   @spec workspace_categories(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def workspace_categories(%{now: now}, args, _resolution) do
     build_connection(args, fn window ->
-      Seo.home_category_shortcuts(
-        now: now,
-        offset: window.offset,
-        limit: window.fetch_limit
+      Repo.repeatable_read_transaction(
+        fn ->
+          Seo.home_category_shortcuts(
+            now: now,
+            offset: window.offset,
+            limit: window.fetch_limit
+          )
+        end,
+        "home category shortcut reads"
       )
     end)
   end
@@ -75,36 +80,43 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
   @spec new_deals(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def new_deals(%{now: now}, args, _resolution) do
-    case Repo.repeatable_read_transaction(
-           fn ->
-             build_connection(
-               args,
-               fn window ->
-                 now
-                 |> new_offer_page(window)
-                 |> hydrate_price_signals(now, window.fetch_limit - 1, fn _offer -> true end)
-                 |> deal_rows(:new_offer)
-               end,
-               &deal_edge/2
-             )
-           end,
-           "home New deal reads"
-         ) do
-      {:ok, result} -> result
-      {:error, reason} -> {:error, reason}
-    end
+  def new_deals(%{now: now}, args, resolution) do
+    requested_fields = requested_page_fact_fields(resolution)
+
+    build_connection(
+      args,
+      fn window ->
+        Repo.repeatable_read_transaction(
+          fn ->
+            now
+            |> new_offer_page(window)
+            |> hydrate_offer_page(requested_fields, now, window.fetch_limit - 1)
+            |> deal_rows(:new_offer)
+          end,
+          "home New deal reads"
+        )
+      end,
+      &deal_edge/2
+    )
   end
 
   @spec trending_deals(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
-  def trending_deals(%{now: now}, args, _resolution) do
+  def trending_deals(%{now: now}, args, resolution) do
+    requested_fields = requested_page_fact_fields(resolution)
+
     build_connection(
       args,
       fn window ->
-        now
-        |> trending_offer_page(window)
-        |> deal_rows(:trending_below_median)
+        Repo.repeatable_read_transaction(
+          fn ->
+            now
+            |> trending_offer_page(window)
+            |> hydrate_offer_page(requested_fields, now, window.fetch_limit - 1)
+            |> deal_rows(:trending_below_median)
+          end,
+          "home Trending deal reads"
+        )
       end,
       &deal_edge/2
     )
@@ -113,132 +125,106 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   @spec viewer_deals(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def viewer_deals(%{current_user: nil}, args, _resolution) do
-    build_connection(args, fn _window -> [] end, &deal_edge/2)
+    build_connection(args, fn _window -> {:ok, []} end, &deal_edge/2)
   end
 
   def viewer_deals(
         %{current_user: user, now: now, selected_slugs: selected_slugs},
         args,
-        _resolution
+        resolution
       ) do
-    with {:ok, window} <- Connection.batch_window_result(args),
-         :ok <- validate_fallback_window(window),
-         {:ok, rows} <- viewer_deal_rows(user, selected_slugs, now, window),
-         {:ok, connection} <- Connection.from_prefetched_page(rows, args) do
-      {:ok, maybe_map_edges(connection, &deal_edge/2)}
-    else
-      {:error, :invalid_first} -> {:error, "invalid first"}
-      {:error, :invalid_cursor} -> {:error, "invalid cursor"}
-      {:error, message} when is_binary(message) -> {:error, message}
-    end
+    requested_fields = requested_page_fact_fields(resolution)
+
+    build_connection(
+      args,
+      fn window ->
+        Repo.repeatable_read_transaction(
+          fn ->
+            viewer_deal_rows(
+              user,
+              selected_slugs,
+              requested_fields,
+              now,
+              window
+            )
+          end,
+          "home signed-in For You deal reads"
+        )
+      end,
+      &deal_edge/2
+    )
   end
 
   @spec price_signal(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, atom()}
   def price_signal(offer, _args, _resolution), do: {:ok, price_signal_code(offer)}
 
-  defp workspace_rows(products, now) do
+  defp workspace_rows(products, requested_fields, now, page_size) do
     product_ids = Enum.map(products, & &1.id)
     highlights_by_product_id = Specs.home_specification_highlights(product_ids, limit: 3)
-    offers_by_product_id = Pricing.home_offer_summaries(product_ids, now: now)
+    empty_fields = MapSet.new()
 
-    Enum.map(products, fn product ->
-      %{
-        product: product,
-        highlights: Map.get(highlights_by_product_id, product.id, []),
-        offer: Map.fetch!(offers_by_product_id, product.id)
-      }
+    offers_by_product_id =
+      Pricing.home_offer_summaries(product_ids,
+        now: now,
+        requested_fields: empty_fields
+      )
+
+    products
+    |> Enum.flat_map(fn product ->
+      case Map.get(offers_by_product_id, product.id) do
+        nil ->
+          []
+
+        offer ->
+          [
+            %{
+              product: product,
+              highlights: Map.get(highlights_by_product_id, product.id, []),
+              offer: Map.put(offer, :product_id, product.id)
+            }
+          ]
+      end
     end)
+    |> hydrate_row_page(requested_fields, now, page_size)
   end
 
-  defp viewer_deal_rows(user, selected_slugs, now, window) do
+  defp viewer_deal_rows(user, selected_slugs, requested_fields, now, window) do
     current_product_ids =
       selected_slugs
-      |> Enum.filter(&is_binary/1)
-      |> Enum.uniq()
-      |> Enum.take(@comparison_limit)
-      |> Catalog.list_products_by_slugs()
-      |> Enum.reject(&is_nil/1)
+      |> Catalog.home_workspace_selected_products()
       |> Enum.map(& &1.id)
 
     relevance_query = Alerts.home_relevance_candidates_query(user.id, current_product_ids)
 
     case Pricing.home_viewer_deal_candidates(relevance_query, now: now, offset: 0, limit: 1) do
       [] ->
-        fallback_deal_rows(now, window)
+        fallback_deal_rows(requested_fields, now, window)
 
       [_match] ->
-        rows =
-          relevance_query
-          |> Pricing.home_viewer_deal_candidates(
-            now: now,
-            offset: window.offset,
-            limit: window.fetch_limit
-          )
-          |> viewer_rows()
-
-        {:ok, rows}
+        relevance_query
+        |> Pricing.home_viewer_deal_candidates(
+          now: now,
+          offset: window.offset,
+          limit: window.fetch_limit
+        )
+        |> hydrate_offer_page(requested_fields, now, window.fetch_limit - 1)
+        |> viewer_rows()
     end
   end
 
-  defp fallback_deal_rows(now, window) do
-    Repo.repeatable_read_transaction(
-      fn ->
-        offers =
-          [now: now]
-          |> CommerceAttribution.trending_product_candidates_query()
-          |> Pricing.home_fallback_deal_candidates(
-            now: now,
-            offset: window.offset,
-            limit: window.fetch_limit
-          )
-          |> hydrate_price_signals(now, window.fetch_limit - 1, &(&1.reason_rank == 0))
-
-        products_by_id =
-          offers
-          |> Enum.map(& &1.product_id)
-          |> deal_products_by_id()
-
-        Enum.map(offers, fn offer ->
-          deal(
-            Map.fetch!(products_by_id, offer.product_id),
-            offer,
-            reason(fallback_reason_code(offer.reason_rank))
-          )
-        end)
-      end,
-      "home fallback deal reads"
+  defp fallback_deal_rows(requested_fields, now, window) do
+    [now: now]
+    |> CommerceAttribution.trending_product_candidates_query()
+    |> Pricing.home_fallback_deal_candidates(
+      now: now,
+      offset: window.offset,
+      limit: window.fetch_limit
     )
-  end
-
-  defp hydrate_price_signals(offers, now, page_size, hydrate?) do
-    offer_ids =
-      offers
-      |> Enum.take(page_size)
-      |> Enum.filter(hydrate?)
-      |> Enum.map(& &1.merchant_product_id)
-
-    offer_id_set = MapSet.new(offer_ids)
-
-    signals =
-      case offer_ids do
-        [] -> %{}
-        ids -> Pricing.home_offer_price_signals(ids, now: now)
-      end
-
-    Enum.map(offers, fn offer ->
-      if MapSet.member?(offer_id_set, offer.merchant_product_id) do
-        Map.merge(offer, Map.fetch!(signals, offer.merchant_product_id))
-      else
-        offer
-      end
+    |> hydrate_offer_page(requested_fields, now, window.fetch_limit - 1)
+    |> Enum.map(fn offer ->
+      deal(offer.product, offer, reason(fallback_reason_code(offer.reason_rank)))
     end)
-  end
-
-  defp validate_fallback_window(%{offset: offset, fetch_limit: fetch_limit}) do
-    if offset + fetch_limit <= @fallback_traversal_limit,
-      do: :ok,
-      else: {:error, "invalid cursor"}
   end
 
   defp new_offer_page(now, window) do
@@ -260,19 +246,54 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp viewer_rows(offers) do
-    products_by_id = offers |> Enum.map(& &1.product_id) |> deal_products_by_id()
-
     Enum.map(offers, fn offer ->
-      deal(Map.fetch!(products_by_id, offer.product_id), offer, viewer_reason(offer))
+      deal(offer.product, offer, viewer_reason(offer))
     end)
   end
 
   defp deal_rows(offers, reason_code) do
-    products_by_id = offers |> Enum.map(& &1.product_id) |> deal_products_by_id()
-
     Enum.map(offers, fn offer ->
-      deal(Map.fetch!(products_by_id, offer.product_id), offer, reason(reason_code))
+      deal(offer.product, offer, reason(reason_code))
     end)
+  end
+
+  defp hydrate_offer_page(offers, requested_fields, now, page_size) do
+    facts = page_facts(offers, requested_fields, now, page_size)
+
+    offers
+    |> Enum.with_index()
+    |> Enum.map(fn {offer, index} ->
+      if index < page_size do
+        Map.merge(offer, Map.get(facts, offer.merchant_product_id, %{}))
+      else
+        offer
+      end
+    end)
+  end
+
+  defp hydrate_row_page(rows, requested_fields, now, page_size) do
+    facts =
+      rows
+      |> Enum.map(& &1.offer)
+      |> page_facts(requested_fields, now, page_size)
+
+    rows
+    |> Enum.with_index()
+    |> Enum.map(fn {row, index} ->
+      if index < page_size do
+        Map.update!(row, :offer, fn offer ->
+          Map.merge(offer, Map.get(facts, offer.merchant_product_id, %{}))
+        end)
+      else
+        row
+      end
+    end)
+  end
+
+  defp page_facts(offers, requested_fields, now, page_size) do
+    offers
+    |> Enum.take(page_size)
+    |> Pricing.home_offer_page_facts(requested_fields, now: now)
   end
 
   defp deal(product, offer, reason),
@@ -294,14 +315,70 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
   defp build_connection(args, rows_fun, edge_fun \\ nil) do
     with {:ok, window} <- Connection.batch_window_result(args),
-         rows <- rows_fun.(window),
-         {:ok, connection} <- Connection.from_prefetched_page(rows, args) do
+         :ok <- validate_home_window(window),
+         {:ok, rows} <- rows_fun.(window),
+         {:ok, connection} <- connection_from_prefetched_page(rows, window) do
       {:ok, maybe_map_edges(connection, edge_fun)}
     else
       {:error, :invalid_first} -> {:error, "invalid first"}
       {:error, :invalid_cursor} -> {:error, "invalid cursor"}
       {:error, message} when is_binary(message) -> {:error, message}
     end
+  end
+
+  defp validate_home_window(%{offset: offset, fetch_limit: fetch_limit}) do
+    if offset + fetch_limit <= @homepage_traversal_limit,
+      do: :ok,
+      else: {:error, "invalid cursor"}
+  end
+
+  defp connection_from_prefetched_page(rows, %{offset: offset, fetch_limit: fetch_limit}) do
+    first = fetch_limit - 1
+
+    RelayConnection.from_slice(Enum.take(rows, first), offset,
+      has_previous_page: offset > 0,
+      has_next_page: length(rows) > first
+    )
+  end
+
+  defp requested_page_fact_fields(%Resolution{} = resolution) do
+    resolution
+    |> projected_field_identifiers()
+    |> MapSet.intersection(@page_fact_fields)
+  end
+
+  defp requested_page_fact_fields(_direct_call), do: @page_fact_fields
+
+  defp projected_field_identifiers(%Resolution{} = resolution) do
+    resolution
+    |> Resolution.project()
+    |> collect_projected_field_identifiers(resolution, MapSet.new())
+  end
+
+  defp collect_projected_field_identifiers(fields, resolution, identifiers) do
+    Enum.reduce(fields, identifiers, fn field, acc ->
+      acc =
+        case field.schema_node do
+          %{identifier: identifier} -> MapSet.put(acc, identifier)
+          _introspection_field -> acc
+        end
+
+      case field.selections do
+        [] ->
+          acc
+
+        _selections ->
+          child_resolution = %{
+            resolution
+            | definition: field,
+              path: [field | resolution.path]
+          }
+
+          child_resolution
+          |> Resolution.project()
+          |> collect_projected_field_identifiers(child_resolution, acc)
+      end
+    end)
   end
 
   defp maybe_map_edges(connection, nil), do: connection
@@ -326,15 +403,6 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
       offer: row.offer,
       reasons: row.reasons
     })
-  end
-
-  defp deal_products_by_id([]), do: %{}
-
-  defp deal_products_by_id(product_ids) do
-    Product
-    |> where([product], product.id in ^product_ids)
-    |> Repo.all()
-    |> Map.new(&{&1.id, &1})
   end
 
   defp price_signal_code(%{median_30d: nil}), do: :no_30_day_baseline

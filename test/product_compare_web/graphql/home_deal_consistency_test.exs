@@ -4,11 +4,13 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
   @moduletag sandbox_isolation: "REPEATABLE READ"
 
   alias Ecto.Adapters.SQL.Sandbox
-  alias ProductCompare.{Pricing, Repo}
+  alias ProductCompare.{Alerts, CommerceAttribution, Pricing, Repo}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompareWeb.Schema
   alias ProductCompareSchemas.Accounts.User
+  alias ProductCompareSchemas.Alerts.PriceWatchRule
   alias ProductCompareSchemas.Catalog.{Brand, Product}
+  alias ProductCompareSchemas.CommerceAttribution.{AnonymousVisitor, CommerceClickSession}
   alias ProductCompareSchemas.Pricing.{Merchant, MerchantProduct}
   alias ProductCompareSchemas.Taxonomy.Taxon
 
@@ -20,6 +22,128 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
 
   test "signed-in fallback New landed price and price signal use one database snapshot" do
     assert_new_offer_snapshot(:fallback)
+  end
+
+  test "Trending keeps candidate Product and selected facts in one snapshot during deletion" do
+    fixture = Sandbox.unboxed_run(Repo, &committed_trending_fixture/0)
+    on_exit(fn -> Sandbox.unboxed_run(Repo, fn -> delete_fixture(fixture) end) end)
+    parent = self()
+
+    reader =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          context = Schema.context(%{graphql_observed_at: @now})
+          send(parent, {:reader_ready, self()})
+
+          receive do
+            :read -> :ok
+          after
+            5_000 -> flunk("timed out waiting to read Trending")
+          end
+
+          Absinthe.run(query(:trending), Schema, context: context)
+        end)
+      end)
+
+    assert_receive {:reader_ready, reader_pid}, 2_000
+    attach_offer_barrier(reader_pid, parent, :trending)
+    send(reader_pid, :read)
+    assert_receive {:home_offer_selected, ^reader_pid}, 2_000
+
+    Sandbox.unboxed_run(Repo, fn ->
+      {1, _} = Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+    end)
+
+    send(reader_pid, :continue_home_offer)
+
+    assert {:ok,
+            %{
+              data: %{
+                "homeDeals" => %{
+                  "trending" => %{
+                    "edges" => [
+                      %{
+                        "node" => %{"id" => product_id},
+                        "offer" => %{
+                          "merchantProductId" => offer_id,
+                          "landedPrice" => "1",
+                          "activeOfferCount" => 1,
+                          "priceSignal" => "BELOW_30_DAY_MEDIAN"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }} = Task.await(reader, 10_000)
+
+    assert product_id == global_id(:product, fixture.product.id)
+    assert offer_id == global_id(:merchant_product, fixture.offer.id)
+  end
+
+  test "signed-in viewer classification and selected page remain in one snapshot" do
+    fixture = Sandbox.unboxed_run(Repo, &committed_viewer_fixture/0)
+    on_exit(fn -> Sandbox.unboxed_run(Repo, fn -> delete_fixture(fixture) end) end)
+    parent = self()
+
+    reader =
+      Task.async(fn ->
+        Sandbox.unboxed_run(Repo, fn ->
+          context =
+            %{graphql_observed_at: @now, current_user: fixture.user}
+            |> Schema.context()
+
+          send(parent, {:reader_ready, self()})
+
+          receive do
+            :read -> :ok
+          after
+            5_000 -> flunk("timed out waiting to read For You")
+          end
+
+          Absinthe.run(query(:viewer), Schema, context: context)
+        end)
+      end)
+
+    assert_receive {:reader_ready, reader_pid}, 2_000
+    attach_offer_barrier(reader_pid, parent, :viewer)
+    send(reader_pid, :read)
+    assert_receive {:home_offer_selected, ^reader_pid}, 2_000
+
+    Sandbox.unboxed_run(Repo, fn ->
+      {1, _} =
+        Repo.update_all(
+          from(watch in PriceWatchRule, where: watch.id == ^fixture.watch.id),
+          set: [enabled: false]
+        )
+    end)
+
+    send(reader_pid, :continue_home_offer)
+
+    assert {:ok,
+            %{
+              data: %{
+                "homeDeals" => %{
+                  "forYou" => %{
+                    "edges" => [
+                      %{
+                        "node" => %{"id" => product_id},
+                        "offer" => %{
+                          "merchantProductId" => offer_id,
+                          "landedPrice" => "1",
+                          "activeOfferCount" => 1,
+                          "priceSignal" => "BELOW_30_DAY_MEDIAN"
+                        },
+                        "reasons" => [%{"code" => "WATCH_TARGET"}]
+                      }
+                    ]
+                  }
+                }
+              }
+            }} = Task.await(reader, 10_000)
+
+    assert product_id == global_id(:product, fixture.product.id)
+    assert offer_id == global_id(:merchant_product, fixture.offer.id)
   end
 
   defp assert_new_offer_snapshot(surface) do
@@ -92,6 +216,20 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
     assert merchant_product_id == global_id(:merchant_product, fixture.offer.id)
   end
 
+  defp attach_offer_barrier(reader_pid, test_pid, surface) do
+    handler_id = {__MODULE__, surface, make_ref()}
+
+    :ok =
+      :telemetry.attach(
+        handler_id,
+        [:product_compare, :repo, :query],
+        &pause_after_offer_selection/4,
+        {handler_id, reader_pid, test_pid, surface}
+      )
+
+    on_exit(fn -> :telemetry.detach(handler_id) end)
+  end
+
   defp pause_after_offer_selection(
          _event,
          _measurements,
@@ -117,6 +255,17 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
 
   defp offer_selection_query?(query, :fallback) when is_binary(query) do
     String.contains?(query, ~s(AS "fallback_rank"))
+  end
+
+  defp offer_selection_query?(query, :trending) when is_binary(query) do
+    String.contains?(query, ~s("home_activity" AS MATERIALIZED)) and
+      String.contains?(query, ~s(AS "identity_count")) and
+      not String.contains?(query, ~s(AS "fallback_rank"))
+  end
+
+  defp offer_selection_query?(query, :viewer) when is_binary(query) do
+    String.contains?(query, ~s("home_relevance" AS MATERIALIZED)) and
+      String.contains?(query, ~s(AS "viewer_rank"))
   end
 
   defp committed_new_offer_fixture do
@@ -163,10 +312,68 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
     %{merchant: merchant, offer: offer, product: product, user: user}
   end
 
+  defp committed_trending_fixture do
+    fixture = committed_new_offer_fixture()
+
+    {:ok, link} =
+      CommerceAttribution.upsert_commerce_link(%{
+        merchant_id: fixture.merchant.id,
+        destination_url: "https://home-deal-consistency.example/trending",
+        link_type: :non_affiliate,
+        is_active: true
+      })
+
+    visitors =
+      Enum.map(1..5, fn _index ->
+        {:ok, visitor} =
+          CommerceAttribution.get_or_create_anonymous_visitor(Ecto.UUID.generate())
+
+        {:ok, click} =
+          %CommerceClickSession{}
+          |> CommerceClickSession.changeset(%{
+            commerce_link_id: link.id,
+            merchant_product_id: fixture.offer.id,
+            anonymous_visitor_id: visitor.id,
+            source_surface: :web
+          })
+          |> Repo.insert()
+
+        Repo.update_all(
+          from(session in CommerceClickSession, where: session.id == ^click.id),
+          set: [inserted_at: @now]
+        )
+
+        visitor
+      end)
+
+    Map.merge(fixture, %{link: link, visitors: visitors})
+  end
+
+  defp committed_viewer_fixture do
+    fixture = committed_new_offer_fixture()
+
+    {:ok, watch} =
+      Alerts.create_watch(fixture.user.id, %{
+        product_id: fixture.product.id,
+        merchant_product_id: fixture.offer.id,
+        rule_type: :target_price,
+        currency: "USD",
+        target_amount: "2"
+      })
+
+    Map.put(fixture, :watch, watch)
+  end
+
   defp delete_fixture(fixture) do
     Repo.delete_all(from merchant in Merchant, where: merchant.id == ^fixture.merchant.id)
     Repo.delete_all(from user in User, where: user.id == ^fixture.user.id)
     Repo.delete_all(from product in Product, where: product.id == ^fixture.product.id)
+
+    Repo.delete_all(
+      from visitor in AnonymousVisitor,
+        where: visitor.id in ^Enum.map(Map.get(fixture, :visitors, []), & &1.id)
+    )
+
     Repo.delete_all(from brand in Brand, where: brand.id == ^fixture.product.brand_id)
 
     Repo.delete_all(
@@ -199,6 +406,37 @@ defmodule ProductCompareWeb.GraphQL.HomeDealConsistencyTest do
         forYou(first: 1) {
           edges {
             offer { merchantProductId landedPrice priceSignal }
+            reasons { code }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp query(:trending) do
+    """
+    query TrendingDealSnapshot {
+      homeDeals(selectedSlugs: []) {
+        trending(first: 1) {
+          edges {
+            node { id }
+            offer { merchantProductId landedPrice activeOfferCount priceSignal }
+          }
+        }
+      }
+    }
+    """
+  end
+
+  defp query(:viewer) do
+    """
+    query ViewerDealSnapshot {
+      homeDeals(selectedSlugs: []) {
+        forYou(first: 1) {
+          edges {
+            node { id }
+            offer { merchantProductId landedPrice activeOfferCount priceSignal }
             reasons { code }
           }
         }

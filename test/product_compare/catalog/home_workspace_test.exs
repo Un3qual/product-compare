@@ -48,6 +48,27 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
            ]
   end
 
+  test "selected products resolve historical slugs to one canonical product in input order" do
+    first = SpecsFixtures.product_fixture(%{slug: "workspace-alias-first"})
+    second = SpecsFixtures.product_fixture(%{slug: "workspace-alias-second"})
+
+    assert {:ok, canonical_first} =
+             Catalog.update_product(first, %{slug: "workspace-alias-first-current"})
+
+    assert Enum.map(
+             Catalog.home_workspace_selected_products([
+               first.slug,
+               second.slug,
+               canonical_first.slug,
+               "missing"
+             ]),
+             &{&1.id, &1.slug}
+           ) == [
+             {canonical_first.id, canonical_first.slug},
+             {second.id, second.slug}
+           ]
+  end
+
   test "uses a fixed select budget for one and six eligible products" do
     operator = AccountsFixtures.operator_fixture()
     products = Enum.map(1..6, &eligible_product("workspace-budget-#{&1}", operator))

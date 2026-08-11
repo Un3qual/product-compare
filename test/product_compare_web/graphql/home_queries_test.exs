@@ -253,6 +253,60 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert selected["__typename"] == "Product"
   end
 
+  test "historical selected slugs resolve once to the canonical workspace and viewer Product", %{
+    conn: conn
+  } do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("canonical-home-alias")
+    operator = AccountsFixtures.operator_fixture()
+    candidate = qualified_product("canonical-home-alias-old", category, operator, "80")
+
+    assert {:ok, canonical_product} =
+             Catalog.update_product(candidate.product, %{slug: "canonical-home-alias-current"})
+
+    query = """
+    query CanonicalHomeAlias($selectedSlugs: [String!]!) {
+      homeWorkspace(selectedSlugs: $selectedSlugs) {
+        selectedProducts { id slug }
+      }
+      homeDeals(selectedSlugs: $selectedSlugs) {
+        forYou(first: 6) {
+          edges { node { id slug } reasons { code } }
+        }
+      }
+    }
+    """
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{
+                 "selectedProducts" => [%{"id" => selected_id, "slug" => selected_slug}]
+               },
+               "homeDeals" => %{
+                 "forYou" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{"id" => viewer_id, "slug" => viewer_slug},
+                       "reasons" => [%{"code" => "CURRENT_COMPARISON"}]
+                     }
+                   ]
+                 }
+               }
+             }
+           } =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> raw_graphql(query, %{
+               "selectedSlugs" => [candidate.product.slug, canonical_product.slug]
+             })
+
+    assert selected_id == relay_id(:product, canonical_product.id)
+    assert viewer_id == selected_id
+    assert selected_slug == canonical_product.slug
+    assert viewer_slug == selected_slug
+  end
+
   test "homeDeals matches the exact listing watch and falls back when a target is unmet", %{
     conn: conn
   } do
@@ -637,7 +691,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert Enum.all?(edges, &(get_in(&1, ["offer", "priceSignal"]) == "BELOW_30_DAY_MEDIAN"))
     assert grown_response == page_response
 
-    assert {length(one_queries), length(page_queries), length(grown_queries)} == {3, 3, 3}
+    assert {length(one_queries), length(page_queries), length(grown_queries)} == {2, 2, 2}
     assert length(irrelevant_products) > length(candidates)
   end
 
@@ -742,21 +796,199 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     refute Enum.any?(shortcuts, &(&1["id"] == relay_id(:taxon, ineligible.id)))
   end
 
-  test "fallback rejects traversal beyond the homepage feed window before database work" do
+  test "every homepage rail rejects deep traversal before domain database work" do
     owner = AccountsFixtures.user_fixture()
     cursor = Absinthe.Relay.Connection.offset_to_cursor(10_000)
+    now = DateTime.utc_now()
+    args = %{first: 6, after: cursor}
 
-    {result, events} =
-      capture_select_query_events(fn ->
+    reads = [
+      workspace_products: fn -> HomeResolver.workspace_products(%{now: now}, args, %{}) end,
+      workspace_categories: fn -> HomeResolver.workspace_categories(%{now: now}, args, %{}) end,
+      new: fn -> HomeResolver.new_deals(%{now: now}, args, %{}) end,
+      trending: fn -> HomeResolver.trending_deals(%{now: now}, args, %{}) end,
+      guest_for_you: fn ->
         HomeResolver.viewer_deals(
-          %{current_user: owner, now: DateTime.utc_now(), selected_slugs: []},
-          %{first: 6, after: cursor},
+          %{current_user: nil, now: now, selected_slugs: []},
+          args,
           %{}
         )
+      end,
+      signed_in_for_you: fn ->
+        HomeResolver.viewer_deals(
+          %{current_user: owner, now: now, selected_slugs: []},
+          args,
+          %{}
+        )
+      end
+    ]
+
+    assert Map.new(reads, fn {rail, read} ->
+             {result, events} = capture_select_query_events(read)
+             {rail, {result, events}}
+           end) ==
+             Map.new(reads, fn {rail, _read} ->
+               {rail, {{:error, "invalid cursor"}, []}}
+             end)
+  end
+
+  test "deep workspace Products rejects before selected-slug SQL when selectedProducts is absent",
+       %{
+         conn: conn
+       } do
+    selected = SpecsFixtures.product_fixture(%{slug: "deep-workspace-products-selected"})
+    cursor = Absinthe.Relay.Connection.offset_to_cursor(10_000)
+
+    query = """
+    query DeepWorkspaceProducts($selectedSlugs: [String!]!, $after: String) {
+      homeWorkspace(selectedSlugs: $selectedSlugs) {
+        products(first: 6, after: $after) { edges { node { id } } }
+      }
+    }
+    """
+
+    {response, events} =
+      capture_select_query_events(fn ->
+        raw_graphql(conn, query, %{
+          "selectedSlugs" => [selected.slug],
+          "after" => cursor
+        })
       end)
 
-    assert result == {:error, "invalid cursor"}
+    assert %{"data" => nil, "errors" => [%{"message" => "invalid cursor"} | _]} = response
     assert events == []
+  end
+
+  test "deep workspace categories rejects before selected-slug SQL when selectedProducts is absent",
+       %{conn: conn} do
+    selected = SpecsFixtures.product_fixture(%{slug: "deep-workspace-categories-selected"})
+    cursor = Absinthe.Relay.Connection.offset_to_cursor(10_000)
+
+    query = """
+    query DeepWorkspaceCategories($selectedSlugs: [String!]!, $after: String) {
+      homeWorkspace(selectedSlugs: $selectedSlugs) {
+        categories(first: 6, after: $after) { edges { node { id } } }
+      }
+    }
+    """
+
+    {response, events} =
+      capture_select_query_events(fn ->
+        raw_graphql(conn, query, %{
+          "selectedSlugs" => [selected.slug],
+          "after" => cursor
+        })
+      end)
+
+    assert %{"data" => nil, "errors" => [%{"message" => "invalid cursor"} | _]} = response
+    assert events == []
+  end
+
+  test "homepage offer facts follow aliases and fragment projection without unselected aggregates",
+       %{
+         conn: conn
+       } do
+    category = category_fixture("home-projected-facts")
+    operator = AccountsFixtures.operator_fixture()
+    candidate = qualified_product("home-projected-facts", category, operator, "80")
+    add_price(candidate.offer, "120", -3_600)
+
+    production_deals_query = """
+    fragment ProductionHomeDeal on HomeDealsEdge {
+      node { id name slug }
+      offer { merchantName currency landedPrice observedAt }
+      reasons { code watchTarget }
+    }
+
+    query ProductionHomeDeals {
+      homeDeals(selectedSlugs: []) {
+        new(first: 1) { edges { ...ProductionHomeDeal } }
+        trending(first: 1) { edges { ...ProductionHomeDeal } }
+        forYou(first: 1) { edges { ...ProductionHomeDeal } }
+      }
+    }
+    """
+
+    {deals_response, deal_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, production_deals_query, %{}) end)
+
+    assert %{"data" => %{"homeDeals" => %{}}} = deals_response
+    refute Enum.any?(deal_queries, &active_offer_count_query?/1)
+    refute Enum.any?(deal_queries, &page_fact_median_query?/1)
+
+    production_workspace_query = """
+    fragment ProductionWorkspaceOffer on HomeOfferSummary {
+      merchantName
+      currency
+      landedPrice
+      priceSignal
+      observedAt
+    }
+
+    query ProductionHomeWorkspace {
+      homeWorkspace(selectedSlugs: []) {
+        products(first: 1) {
+          edges { node { id name slug } offer { ...ProductionWorkspaceOffer } }
+        }
+      }
+    }
+    """
+
+    {workspace_response, workspace_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, production_workspace_query, %{}) end)
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{"offer" => %{"priceSignal" => "BELOW_30_DAY_MEDIAN"}}
+                   ]
+                 }
+               }
+             }
+           } = workspace_response
+
+    refute Enum.any?(workspace_queries, &active_offer_count_query?/1)
+    assert Enum.count(workspace_queries, &page_fact_median_query?/1) == 1
+
+    facts_query = """
+    fragment ProjectedOfferFacts on HomeOfferSummary {
+      count: activeOfferCount
+      signal: priceSignal
+    }
+
+    query HomeWithProjectedFacts {
+      homeWorkspace(selectedSlugs: []) {
+        products(first: 1) {
+          edges { offer { ...ProjectedOfferFacts } }
+        }
+      }
+    }
+    """
+
+    {facts_response, fact_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, facts_query, %{}) end)
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{
+                       "offer" => %{
+                         "count" => 1,
+                         "signal" => "BELOW_30_DAY_MEDIAN"
+                       }
+                     }
+                   ]
+                 }
+               }
+             }
+           } = facts_response
+
+    assert Enum.count(fact_queries, &active_offer_count_query?/1) == 1
+    assert Enum.count(fact_queries, &page_fact_median_query?/1) == 1
   end
 
   test "fallback New price signals keep a fixed page-scoped query budget" do
@@ -791,7 +1023,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
     assert Enum.all?(one_page.edges, & &1.offer.below_30_day_median?)
     assert Enum.all?(three_page.edges, & &1.offer.below_30_day_median?)
-    assert {length(one_queries), length(three_queries)} == {5, 5}
+    assert {length(one_queries), length(three_queries)} == {4, 4}
   end
 
   test "homepage GraphQL uses the deterministic USD offer instead of price-ranking currencies", %{
@@ -1078,6 +1310,20 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       |> MapSet.new()
       |> Enum.reduce(histogram, fn table, acc -> Map.update(acc, table, 1, &(&1 + 1)) end)
     end)
+  end
+
+  defp active_offer_count_query?(query) do
+    Regex.match?(
+      ~r/SELECT\s+\w+\."product_id",\s*count\(\w+\."id"\).*FROM "merchant_products"/s,
+      query
+    )
+  end
+
+  defp page_fact_median_query?(query) do
+    Regex.match?(
+      ~r/^SELECT\s+\w+\."product_id",\s*\w+\."currency_id",\s*percentile_cont/s,
+      query
+    )
   end
 
   defp graphql(conn, query, variables) do

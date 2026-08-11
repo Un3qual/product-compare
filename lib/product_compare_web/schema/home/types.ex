@@ -28,7 +28,9 @@ defmodule ProductCompareWeb.Schema.Home.Types do
       resolve(&HomeResolver.workspace_products/3)
     end
 
-    field :selected_products, non_null(list_of(non_null(:product)))
+    field :selected_products, non_null(list_of(non_null(:product))) do
+      resolve(&HomeResolver.selected_products/3)
+    end
 
     connection field :categories,
                  node_type: :seo_category,

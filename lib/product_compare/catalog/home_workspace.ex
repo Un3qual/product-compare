@@ -3,6 +3,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
 
   import Ecto.Query
 
+  alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Input
   alias ProductCompare.Repo
@@ -67,13 +68,11 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   defp load_selected_products([]), do: []
 
   defp load_selected_products(slugs) do
-    products =
-      Product
-      |> where([product], product.slug in ^slugs)
-      |> Repo.all()
-      |> Map.new(&{&1.slug, &1})
+    products_by_slug = Catalog.get_products_by_slugs(slugs)
 
-    Enum.flat_map(slugs, fn slug -> List.wrap(Map.get(products, slug)) end)
+    slugs
+    |> Enum.flat_map(fn slug -> List.wrap(Map.get(products_by_slug, slug)) end)
+    |> Enum.uniq_by(& &1.id)
   end
 
   defp normalized_slugs(slugs) when is_list(slugs) do

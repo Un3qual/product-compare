@@ -9,6 +9,7 @@ defmodule ProductCompare.Pricing.HomeOffers do
 
   @max_bigint_id 9_223_372_036_854_775_807
   @homepage_currency "USD"
+  @summary_fact_fields MapSet.new([:active_offer_count, :price_signal])
 
   @spec summaries([term()] | :all, keyword()) :: %{optional(pos_integer()) => map()}
   def summaries(product_ids, opts) do
@@ -17,14 +18,15 @@ defmodule ProductCompare.Pricing.HomeOffers do
     offers =
       product_ids
       |> normalize_product_ids()
-      |> winners_query(now, false)
+      |> winners_query(now, false, false)
       |> Repo.all()
 
-    facts = page_facts(offers, MapSet.new([:active_offer_count, :price_signal]), now: now)
+    requested_fields = summary_requested_fields(opts)
+    facts = page_facts(offers, requested_fields, now: now)
 
     offers
     |> Map.new(fn row ->
-      summary = row |> Map.merge(Map.fetch!(facts, row.merchant_product_id))
+      summary = row |> Map.merge(Map.get(facts, row.merchant_product_id, %{}))
       {row.product_id, Map.drop(summary, [:product_id, :new_offer?])}
     end)
   end
@@ -520,6 +522,16 @@ defmodule ProductCompare.Pricing.HomeOffers do
 
   defp below_median?(_landed_price, nil), do: false
   defp below_median?(landed_price, median), do: Decimal.lt?(landed_price, median)
+
+  defp summary_requested_fields(opts) do
+    case Keyword.get(opts, :requested_fields, @summary_fact_fields) do
+      %MapSet{} = requested_fields ->
+        MapSet.intersection(requested_fields, @summary_fact_fields)
+
+      _invalid ->
+        raise ArgumentError, "home offer summary requested_fields must be a MapSet"
+    end
+  end
 
   defp active_counts_query(product_ids) do
     MerchantProduct
