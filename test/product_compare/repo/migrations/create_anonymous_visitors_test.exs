@@ -14,6 +14,7 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
                     "priv/repo/migrations/20260810140000_create_anonymous_visitors.exs"
                   )
   @migration_version 20_260_810_140_000
+  @retry_migration_version @migration_version + 1
 
   Code.require_file(@migration_path)
 
@@ -99,11 +100,41 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
   test "down preserves every legacy anonymous id byte-for-byte" do
     with_base_schema(fn prefix ->
       assert :ok = migrate_up(prefix)
+
+      entropy_id = Ecto.UUID.generate()
+
+      [[visitor_id]] =
+        MigrationRepo.query!(
+          """
+          INSERT INTO "#{prefix}"."anonymous_visitors" (entropy_id, inserted_at, updated_at)
+          VALUES ($1, now(), now())
+          RETURNING id
+          """,
+          [Ecto.UUID.dump!(entropy_id)]
+        ).rows
+
+      MigrationRepo.query!(
+        """
+        INSERT INTO "#{prefix}"."commerce_click_sessions"
+          (click_id, anonymous_visitor_id)
+        VALUES ('current-version', $1)
+        """,
+        [visitor_id]
+      )
+
+      assert [[nil]] =
+               MigrationRepo.query!("""
+               SELECT anonymous_id
+               FROM "#{prefix}"."commerce_click_sessions"
+               WHERE click_id = 'current-version'
+               """).rows
+
       assert :ok = migrate_down(prefix)
 
       assert [
                ["authenticated", 1, "legacy-user-value"],
                ["blank", nil, "  "],
+               ["current-version", nil, ^entropy_id],
                ["first", nil, "legacy-one"],
                ["none", nil, nil],
                ["repeat", nil, "legacy-one"],
@@ -114,6 +145,109 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
                ).rows
 
       refute table_exists?(prefix, "anonymous_visitors")
+    end)
+  end
+
+  test "up and down converge when every committed phase is retried" do
+    with_base_schema(fn prefix ->
+      assert :ok = migrate_up(prefix)
+      lookup_index_oid = index_oid(prefix, "commerce_click_sessions_anonymous_visitor_idx")
+
+      assert :ok = migrate_up(prefix, @retry_migration_version)
+
+      assert lookup_index_oid ==
+               index_oid(prefix, "commerce_click_sessions_anonymous_visitor_idx")
+
+      assert constraint_validated?(prefix, "commerce_click_sessions_anonymous_visitor_id_fkey")
+      assert constraint_validated?(prefix, "commerce_click_sessions_single_actor")
+
+      assert [[2]] =
+               MigrationRepo.query!("""
+               SELECT count(*)
+               FROM "#{prefix}"."anonymous_visitors"
+               WHERE legacy_anonymous_id IS NOT NULL
+               """).rows
+
+      assert :ok = migrate_down(prefix, @retry_migration_version)
+      assert :ok = migrate_down(prefix)
+      refute table_exists?(prefix, "anonymous_visitors")
+      refute column_exists?(prefix, "commerce_click_sessions", "anonymous_visitor_id")
+    end)
+  end
+
+  test "up repairs an invalid same-named concurrent lookup index" do
+    with_base_schema(fn prefix ->
+      assert_raise Postgrex.Error, fn ->
+        MigrationRepo.query!("""
+        CREATE UNIQUE INDEX CONCURRENTLY commerce_click_sessions_anonymous_visitor_idx
+        ON "#{prefix}"."commerce_click_sessions" (anonymous_id)
+        """)
+      end
+
+      refute index_valid?(prefix, "commerce_click_sessions_anonymous_visitor_idx")
+
+      assert :ok = migrate_up(prefix)
+      assert index_valid?(prefix, "commerce_click_sessions_anonymous_visitor_idx")
+
+      assert index_definition(prefix, "commerce_click_sessions_anonymous_visitor_idx") =~
+               "(anonymous_visitor_id)"
+    end)
+  end
+
+  test "repeat legacy writes keep the mapped visitor row version unchanged" do
+    with_base_schema(fn prefix ->
+      assert :ok = migrate_up(prefix)
+
+      MigrationRepo.query!("""
+      INSERT INTO "#{prefix}"."commerce_click_sessions" (click_id, anonymous_id)
+      VALUES ('legacy-repeat-one', 'repeat-without-churn')
+      """)
+
+      before_version = visitor_row_version(prefix, "repeat-without-churn")
+
+      MigrationRepo.query!("""
+      INSERT INTO "#{prefix}"."commerce_click_sessions" (click_id, anonymous_id)
+      VALUES ('legacy-repeat-two', 'repeat-without-churn')
+      """)
+
+      assert before_version == visitor_row_version(prefix, "repeat-without-churn")
+    end)
+  end
+
+  test "concurrent first legacy writes converge on one authoritative visitor" do
+    with_base_schema(fn prefix ->
+      assert :ok = migrate_up(prefix)
+
+      results =
+        1..8
+        |> Task.async_stream(
+          fn index ->
+            MigrationRepo.query!("""
+            INSERT INTO "#{prefix}"."commerce_click_sessions" (click_id, anonymous_id)
+            VALUES ('concurrent-legacy-#{index}', 'concurrent-first-legacy')
+            """)
+          end,
+          max_concurrency: 8,
+          ordered: false,
+          timeout: 5_000
+        )
+        |> Enum.to_list()
+
+      assert Enum.all?(results, &match?({:ok, %Postgrex.Result{}}, &1))
+
+      assert [[1, 8]] =
+               MigrationRepo.query!("""
+               SELECT count(DISTINCT anonymous_visitor_id), count(*)
+               FROM "#{prefix}"."commerce_click_sessions"
+               WHERE anonymous_id = 'concurrent-first-legacy'
+               """).rows
+
+      assert [[1]] =
+               MigrationRepo.query!("""
+               SELECT count(*)
+               FROM "#{prefix}"."anonymous_visitors"
+               WHERE legacy_anonymous_id = 'concurrent-first-legacy'
+               """).rows
     end)
   end
 
@@ -191,20 +325,20 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
     end
   end
 
-  defp migrate_up(prefix) do
+  defp migrate_up(prefix, version \\ @migration_version) do
     Ecto.Migrator.up(
       MigrationRepo,
-      @migration_version,
+      version,
       ProductCompare.Repo.Migrations.CreateAnonymousVisitors,
       prefix: prefix,
       log: false
     )
   end
 
-  defp migrate_down(prefix) do
+  defp migrate_down(prefix, version \\ @migration_version) do
     Ecto.Migrator.down(
       MigrationRepo,
-      @migration_version,
+      version,
       ProductCompare.Repo.Migrations.CreateAnonymousVisitors,
       prefix: prefix,
       log: false
@@ -259,5 +393,62 @@ defmodule ProductCompare.Repo.Migrations.CreateAnonymousVisitorsTest do
       """,
       [prefix, index]
     ).rows == [[true]]
+  end
+
+  defp index_valid?(prefix, index) do
+    MigrationRepo.query!(
+      """
+      SELECT index_record.indisvalid
+      FROM pg_index AS index_record
+      JOIN pg_class AS index_relation ON index_relation.oid = index_record.indexrelid
+      JOIN pg_namespace AS namespace ON namespace.oid = index_relation.relnamespace
+      WHERE namespace.nspname = $1 AND index_relation.relname = $2
+      """,
+      [prefix, index]
+    ).rows == [[true]]
+  end
+
+  defp index_oid(prefix, index) do
+    [[oid]] =
+      MigrationRepo.query!(
+        """
+        SELECT index_relation.oid
+        FROM pg_class AS index_relation
+        JOIN pg_namespace AS namespace ON namespace.oid = index_relation.relnamespace
+        WHERE namespace.nspname = $1 AND index_relation.relname = $2
+        """,
+        [prefix, index]
+      ).rows
+
+    oid
+  end
+
+  defp index_definition(prefix, index) do
+    [[definition]] =
+      MigrationRepo.query!(
+        """
+        SELECT pg_get_indexdef(index_relation.oid)
+        FROM pg_class AS index_relation
+        JOIN pg_namespace AS namespace ON namespace.oid = index_relation.relnamespace
+        WHERE namespace.nspname = $1 AND index_relation.relname = $2
+        """,
+        [prefix, index]
+      ).rows
+
+    definition
+  end
+
+  defp visitor_row_version(prefix, legacy_anonymous_id) do
+    [[ctid, xmin]] =
+      MigrationRepo.query!(
+        """
+        SELECT ctid::text, xmin::text
+        FROM "#{prefix}"."anonymous_visitors"
+        WHERE legacy_anonymous_id = $1
+        """,
+        [legacy_anonymous_id]
+      ).rows
+
+    {ctid, xmin}
   end
 end
