@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../src/relay/route-preload";
-import { offerDiscoveryLoader } from "../../../src/routes/offers/loader";
+import { offerDiscoveryLoader } from "../../../src/routes/offers/OfferDiscoveryRoute";
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(

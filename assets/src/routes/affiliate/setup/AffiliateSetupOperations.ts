@@ -6,7 +6,9 @@ export const affiliateSetupOperationsQuery = graphql`
       edges {
         cursor
         node {
-          ...MerchantListItemFragment @relay(mask: false)
+          id
+          name
+          ...MerchantDirectoryView_item
         }
       }
       pageInfo {

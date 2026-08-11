@@ -180,7 +180,7 @@ test("guest search and category entry preserve useful catalog navigation", async
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
   expect(new URL(page.url()).searchParams.get("q")).toBe("precision kettle");
   expect(requests).toContainEqual({
-    operationName: "BrowseProductsRouteQuery",
+    operationName: "BrowseRouteQuery",
     variables: {
       after: null,
       filters: { query: "precision kettle", sort: "RELEVANCE" },
@@ -202,7 +202,7 @@ test("guest search and category entry preserve useful catalog navigation", async
   expect(categoryUrl.searchParams.get("typeTaxonId")).toBe("category-grinders");
   expect(categoryUrl.searchParams.get("includeTypeDescendants")).toBe("1");
   expect(requests).toContainEqual({
-    operationName: "BrowseProductsRouteQuery",
+    operationName: "BrowseRouteQuery",
     variables: {
       after: null,
       filters: {
@@ -463,7 +463,7 @@ function homeResponders({
   viewer?: ReturnType<typeof memberViewer> | null;
 } = {}): Record<string, GraphQLResponder> {
   return {
-    BrowseProductsRouteQuery: { data: emptyBrowseData() },
+    BrowseRouteQuery: { data: emptyBrowseData() },
     CompareProductPickerQuery: { data: emptyProductPickerData() },
     CompareRouteQuery: ({ variables }) => ({
       data: {

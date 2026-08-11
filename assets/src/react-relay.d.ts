@@ -56,6 +56,11 @@ declare module "react-relay" {
     fragmentRef: TKey,
   ): NonNullable<TKey[" $data"]>;
 
+  export function useFragment<TKey extends { readonly " $data"?: unknown }>(
+    fragment: GraphQLTaggedNode,
+    fragmentRef: TKey | null | undefined,
+  ): NonNullable<TKey[" $data"]> | null;
+
   export function useQueryLoader<TQuery extends OperationType>(
     query: GraphQLTaggedNode,
   ): [

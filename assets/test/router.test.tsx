@@ -12,11 +12,12 @@ import { revenueSummaryLoader } from "../src/routes/commerce/revenue/loader";
 import { CJProgramsRoute } from "../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import { cjProgramsLoader } from "../src/routes/ingestion/cj-programs/loader";
 import { MerchantDirectoryRoute } from "../src/routes/merchants/MerchantDirectoryRoute";
-import { merchantDirectoryLoader } from "../src/routes/merchants/loader";
-import { OfferDiscoveryRoute } from "../src/routes/offers/OfferDiscoveryRoute";
-import { offerDiscoveryLoader } from "../src/routes/offers/loader";
-import { ProductDetailRoute } from "../src/routes/products/ProductDetailRoute";
-import { productDetailLoader } from "../src/routes/products/loader";
+import { merchantDirectoryLoader } from "../src/routes/merchants/MerchantDirectoryRoute";
+import {
+  OfferDiscoveryRoute,
+  offerDiscoveryLoader,
+} from "../src/routes/offers/OfferDiscoveryRoute";
+import { ProductDetailRoute, productDetailLoader } from "../src/routes/products/ProductDetailRoute";
 import { rootLoader, ROOT_ROUTE_ID } from "../src/routes/root/loader";
 import { notFoundLoader } from "../src/routes/NotFoundRoute";
 import type { RouteMetadataHandle } from "../src/routes/RouteMetadata";
@@ -26,27 +27,27 @@ test("root route preloads viewer state", () => {
     expect.objectContaining({
       id: ROOT_ROUTE_ID,
       loader: rootLoader,
-      shouldRevalidate: shouldRevalidateRootLoader
-    })
+      shouldRevalidate: shouldRevalidateRootLoader,
+    }),
   );
 });
 
 test("root route revalidates viewer state only around auth route navigations", () => {
   expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare"))).toBe(
-    false
+    false,
   );
   expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/auth/login", "/"))).toBe(true);
   expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/compare", "/auth/logout"))).toBe(
-    true
+    true,
   );
   expect(
-    shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare?slug=one"))
+    shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare?slug=one")),
   ).toBe(false);
 });
 
 test("client router requires Relay context for route loaders", () => {
   expect(() => createClientRouter(undefined as never)).toThrow(
-    "Relay environment is required to create the client router"
+    "Relay environment is required to create the client router",
   );
 });
 
@@ -57,11 +58,11 @@ test("API token navigation lazily resolves its screen and loader", async () => {
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       Component: ApiTokensRoute,
-      loader: apiTokensLoader
-    })
+      loader: apiTokensLoader,
+    }),
   );
   expect(apiTokensRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />
+    <RouteErrorBoundary resourceName="API tokens page" title="API tokens" />,
   );
 });
 
@@ -72,11 +73,11 @@ test("revenue summary navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: revenueSummaryLoader,
-      Component: RevenueSummaryRoute
-    })
+      Component: RevenueSummaryRoute,
+    }),
   );
   expect(revenueSummaryRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="revenue report" title="Revenue" />
+    <RouteErrorBoundary resourceName="revenue report" title="Revenue" />,
   );
 });
 
@@ -87,11 +88,11 @@ test("merchant directory navigation lazily resolves its screen and loader", asyn
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: merchantDirectoryLoader,
-      Component: MerchantDirectoryRoute
-    })
+      Component: MerchantDirectoryRoute,
+    }),
   );
   expect(merchantDirectoryRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />
+    <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />,
   );
 });
 
@@ -102,11 +103,11 @@ test("affiliate setup navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: affiliateSetupLoader,
-      Component: AffiliateSetupRoute
-    })
+      Component: AffiliateSetupRoute,
+    }),
   );
   expect(affiliateSetupRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />
+    <RouteErrorBoundary resourceName="affiliate setup" title="Affiliate setup" />,
   );
 });
 
@@ -117,11 +118,11 @@ test("CJ programs navigation lazily resolves its screen and loader", async () =>
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       Component: CJProgramsRoute,
-      loader: cjProgramsLoader
-    })
+      loader: cjProgramsLoader,
+    }),
   );
   expect(cjProgramsRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />
+    <RouteErrorBoundary resourceName="CJ programs" title="CJ programs" />,
   );
 });
 
@@ -149,11 +150,11 @@ test("offer discovery navigation lazily resolves its screen and loader", async (
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       loader: offerDiscoveryLoader,
-      Component: OfferDiscoveryRoute
-    })
+      Component: OfferDiscoveryRoute,
+    }),
   );
   expect(offerDiscoveryRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="offer discovery" title="Offers" />
+    <RouteErrorBoundary resourceName="offer discovery" title="Offers" />,
   );
 });
 
@@ -164,11 +165,11 @@ test("product detail navigation lazily resolves its screen and loader", async ()
   expect(resolvedRoute).toEqual(
     expect.objectContaining({
       Component: ProductDetailRoute,
-      loader: productDetailLoader
-    })
+      loader: productDetailLoader,
+    }),
   );
   expect(productDetailRoute.errorElement).toEqual(
-    <RouteErrorBoundary resourceName="product" title="Product details" />
+    <RouteErrorBoundary resourceName="product" title="Product details" />,
   );
 });
 
@@ -184,10 +185,10 @@ test("product detail lazy import errors render product-specific route feedback",
         path: "/",
         element: <Outlet />,
         errorElement: routes[0]?.errorElement,
-        children: [productDetailRoute]
-      }
+        children: [productDetailRoute],
+      },
     ],
-    { initialEntries: ["/products/missing-product"] }
+    { initialEntries: ["/products/missing-product"] },
   );
 
   try {
@@ -195,7 +196,7 @@ test("product detail lazy import errors render product-specific route feedback",
 
     expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "An unexpected error occurred while loading the product."
+      "An unexpected error occurred while loading the product.",
     );
     expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
   } finally {
@@ -214,17 +215,17 @@ test("product detail loader errors render product-specific route feedback", asyn
           throw new Error("Relay product read failed");
         },
         Component: resolvedRoute.Component,
-        errorElement: productDetailRoute.errorElement
-      }
+        errorElement: productDetailRoute.errorElement,
+      },
     ],
-    { initialEntries: ["/products/missing-product"] }
+    { initialEntries: ["/products/missing-product"] },
   );
 
   render(<RouterProvider router={router} />);
 
   expect(await screen.findByRole("heading", { name: "Product details" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "An unexpected error occurred while loading the product."
+    "An unexpected error occurred while loading the product.",
   );
   expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
 });
@@ -238,7 +239,7 @@ test("logout navigation lazily resolves its screen", async () => {
 
 test("every non-root screen is absent from the initial route graph", () => {
   const nonRootRoutes = (routes[0]?.children ?? []).filter(
-    (route) => !route.index && route.path !== "*"
+    (route) => !route.index && route.path !== "*",
   );
 
   for (const route of nonRootRoutes) {
@@ -263,19 +264,19 @@ test("root error boundary handles a rejected lazy route", async () => {
         children: [
           {
             path: "broken-chunk",
-            lazy: () => Promise.reject(new Error("chunk import failed"))
-          }
-        ]
-      }
+            lazy: () => Promise.reject(new Error("chunk import failed")),
+          },
+        ],
+      },
     ],
-    { initialEntries: ["/broken-chunk"] }
+    { initialEntries: ["/broken-chunk"] },
   );
 
   render(<RouterProvider router={router} />);
 
   expect(await screen.findByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
   expect(screen.getByRole("alert")).toHaveTextContent(
-    "An unexpected error occurred while loading the page."
+    "An unexpected error occurred while loading the page.",
   );
   expect(screen.queryByText("Unexpected Application Error!")).not.toBeInTheDocument();
 });
@@ -287,14 +288,14 @@ test("application router registers a wildcard 404 route", () => {
     expect.objectContaining({
       path: "*",
       loader: notFoundLoader,
-      errorElement: <RouteErrorBoundary resourceName="page" title="Page not found" />
-    })
+      errorElement: <RouteErrorBoundary resourceName="page" title="Page not found" />,
+    }),
   );
 });
 
 test("every registered application route declares document metadata", () => {
   const routeHandles = [routes[0], ...(routes[0]?.children ?? [])].map(
-    (route) => route?.handle as RouteMetadataHandle | undefined
+    (route) => route?.handle as RouteMetadataHandle | undefined,
   );
 
   expect(routeHandles).not.toContain(undefined);
@@ -312,15 +313,12 @@ test("router metadata uses customer language instead of internal data-model term
 
   for (const copy of metadataCopy) {
     expect(copy).not.toMatch(
-      /\b(evidence|taxon|merchant product|source artifact|current attributes|qualification|recommendation profile|persisted snapshot)\b/i
+      /\b(evidence|taxon|merchant product|source artifact|current attributes|qualification|recommendation profile|persisted snapshot)\b/i,
     );
   }
 });
 
-function buildShouldRevalidateArgs(
-  currentPath: string,
-  nextPath: string
-) {
+function buildShouldRevalidateArgs(currentPath: string, nextPath: string) {
   return {
     actionResult: undefined,
     currentParams: {},
@@ -331,7 +329,7 @@ function buildShouldRevalidateArgs(
     formEncType: undefined,
     formMethod: undefined,
     nextParams: {},
-    nextUrl: new URL(nextPath, "https://app.example.com")
+    nextUrl: new URL(nextPath, "https://app.example.com"),
   };
 }
 

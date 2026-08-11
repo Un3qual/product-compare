@@ -4,21 +4,21 @@ import {
   activeVisibleMerchant,
   visibleMerchants,
   type RenderableOffer,
-  type VisibleMerchant
+  type VisibleMerchant,
 } from "./offer-discovery-data";
-import type { OfferDiscoveryFilters } from "./loader";
+import type { OfferDiscoveryFilters } from "./offer-discovery-filter-data";
 import { offerDiscoveryPath } from "./paths";
 
 const styles = create({
   filterSection: {
     display: "grid",
-    gap: "0.75rem"
-  }
+    gap: "0.75rem",
+  },
 });
 
 export function VisibleMerchantFilters({
   filters,
-  offers
+  offers,
 }: {
   filters: OfferDiscoveryFilters;
   offers: ReadonlyArray<RenderableOffer>;
@@ -45,7 +45,7 @@ function ActiveMerchantFilterSummary({ merchant }: { merchant: VisibleMerchant |
 
 function VisibleMerchantFilterLinks({
   filters,
-  merchants
+  merchants,
 }: {
   filters: OfferDiscoveryFilters;
   merchants: ReadonlyArray<VisibleMerchant>;

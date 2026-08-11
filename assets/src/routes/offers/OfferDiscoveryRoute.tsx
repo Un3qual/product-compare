@@ -1,27 +1,62 @@
 import { Suspense } from "react";
-import { Link, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import offerDiscoveryRouteQuery, {
-  type OfferDiscoveryRouteQuery
-} from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
-import { PageShell } from "../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../ui/primitives/Button";
+import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { OfferDiscoveryRouteQuery } from "$generated/OfferDiscoveryRouteQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
-  offerDiscoveryLoader,
-  type OfferDiscoveryFilters,
-  type OfferDiscoveryLoaderData
-} from "./loader";
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Button } from "$ui/primitives/Button";
+import type { OfferDiscoveryFilters } from "./offer-discovery-filter-data";
 import {
-  OfferDiscoveryFilterForm,
-  OfferDiscoveryFilterSummary
-} from "./OfferDiscoveryFilterForm";
+  offerDiscoveryFiltersFromUrl,
+  offerDiscoveryInputFromFilters,
+} from "./offer-discovery-filters";
+import { OfferDiscoveryFilterForm, OfferDiscoveryFilterSummary } from "./OfferDiscoveryFilterForm";
 import { offerDiscoverySelectedProductContext } from "./offer-discovery-filter-data";
 import { OfferDiscoveryList } from "./OfferDiscoveryList";
+
+const offerDiscoveryRouteQuery = graphql`
+  query OfferDiscoveryRouteQuery(
+    $after: String
+    $first: Int!
+    $input: MerchantProductsInput!
+    $productId: ID!
+  ) {
+    selectedProduct: node(id: $productId) {
+      __typename
+      ... on Product {
+        id
+        name
+        slug
+        brand {
+          id
+          name
+        }
+      }
+    }
+    merchantProducts(after: $after, first: $first, input: $input) {
+      ...OfferDiscoveryList_connection
+    }
+  }
+`;
+
+export type OfferDiscoveryLoaderData =
+  | {
+      status: "ready";
+      filters: OfferDiscoveryFilters;
+      query: RelayRouteQueryDescriptor<OfferDiscoveryRouteQuery["variables"]>;
+    }
+  | { status: "missingProduct"; filters: OfferDiscoveryFilters }
+  | { status: "error"; filters: OfferDiscoveryFilters };
 
 export function OfferDiscoveryRoute() {
   const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
@@ -67,14 +102,14 @@ export function OfferDiscoveryRoute() {
 
 function OfferDiscoveryPanel({
   filters,
-  query
+  query,
 }: {
   filters: OfferDiscoveryFilters;
   query: Extract<OfferDiscoveryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<OfferDiscoveryRouteQuery>(
     offerDiscoveryRouteQuery,
-    query
+    query,
   );
   const data = usePreloadedQuery<OfferDiscoveryRouteQuery>(offerDiscoveryRouteQuery, queryRef);
   const selectedProduct = offerDiscoverySelectedProductContext(data.selectedProduct);
@@ -122,4 +157,38 @@ function OfferDiscoveryLoadingFallback({ filters }: { filters: OfferDiscoveryFil
       <FeedbackState kind="loading" title="Loading offers..." />
     </>
   );
+}
+
+export async function offerDiscoveryLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<OfferDiscoveryLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const filters = offerDiscoveryFiltersFromUrl(new URL(request.url));
+
+  if (!filters.productId) return { status: "missingProduct", filters };
+
+  try {
+    return {
+      status: "ready",
+      filters,
+      query: await preloadRouteQuery<OfferDiscoveryRouteQuery>(
+        environment,
+        offerDiscoveryRouteQuery,
+        {
+          after: filters.after,
+          first: filters.first,
+          input: offerDiscoveryInputFromFilters(filters),
+          productId: filters.productId,
+        },
+        { signal: request.signal },
+      ),
+    };
+  } catch (error) {
+    return recoverRouteLoaderError<OfferDiscoveryLoaderData>(
+      error,
+      "Failed to preload offer discovery route query.",
+      { status: "error", filters },
+    );
+  }
 }

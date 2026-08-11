@@ -2,21 +2,21 @@ import { Checkbox } from "../../ui/primitives/Checkbox";
 import { Radio } from "../../ui/primitives/Radio";
 import { Select } from "../../ui/primitives/Select";
 import { TextField } from "../../ui/primitives/TextField";
-import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
+import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import type { CatalogFilters } from "./filters";
 import {
   catalogAdvancedFilterViewData,
   type CatalogAdvancedBooleanRow,
   type CatalogAdvancedEnumRow,
   type CatalogAdvancedNumericRow,
-  type CatalogAdvancedUseCaseRow
+  type CatalogAdvancedUseCaseRow,
 } from "./catalog-advanced-filter-data";
 
-type ProductFilterMetadata = BrowseProductsRouteQuery["response"]["productFilterMetadata"];
+type ProductFilterMetadata = BrowseRouteQuery["response"]["productFilterMetadata"];
 
 export function CatalogAdvancedFilters({
   filters,
-  metadata
+  metadata,
 }: {
   filters: CatalogFilters;
   metadata: ProductFilterMetadata;
@@ -33,11 +33,7 @@ export function CatalogAdvancedFilters({
   );
 }
 
-function UseCaseFiltersFieldset({
-  rows
-}: {
-  rows: readonly CatalogAdvancedUseCaseRow[];
-}) {
+function UseCaseFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedUseCaseRow[] }) {
   if (rows.length === 0) {
     return null;
   }
@@ -61,11 +57,7 @@ function UseCaseFiltersFieldset({
   );
 }
 
-function NumericFiltersFieldset({
-  rows
-}: {
-  rows: readonly CatalogAdvancedNumericRow[];
-}) {
+function NumericFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedNumericRow[] }) {
   if (rows.length === 0) {
     return null;
   }
@@ -80,11 +72,7 @@ function NumericFiltersFieldset({
   );
 }
 
-function NumericFilterFields({
-  row
-}: {
-  row: CatalogAdvancedNumericRow;
-}) {
+function NumericFilterFields({ row }: { row: CatalogAdvancedNumericRow }) {
   const minInputId = `catalog-numeric-${row.attributeId}-min`;
   const maxInputId = `catalog-numeric-${row.attributeId}-max`;
 
@@ -112,11 +100,7 @@ function NumericFilterFields({
   );
 }
 
-function BooleanFiltersFieldset({
-  rows
-}: {
-  rows: readonly CatalogAdvancedBooleanRow[];
-}) {
+function BooleanFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedBooleanRow[] }) {
   if (rows.length === 0) {
     return null;
   }
@@ -131,11 +115,7 @@ function BooleanFiltersFieldset({
   );
 }
 
-function BooleanFilterField({
-  row
-}: {
-  row: CatalogAdvancedBooleanRow;
-}) {
+function BooleanFilterField({ row }: { row: CatalogAdvancedBooleanRow }) {
   return (
     <label>
       {row.displayName}
@@ -146,18 +126,14 @@ function BooleanFilterField({
         options={[
           { label: "Any", value: "" },
           { label: `Yes (${row.trueCount})`, value: "true" },
-          { label: `No (${row.falseCount})`, value: "false" }
+          { label: `No (${row.falseCount})`, value: "false" },
         ]}
       />
     </label>
   );
 }
 
-function EnumFiltersFieldset({
-  rows
-}: {
-  rows: readonly CatalogAdvancedEnumRow[];
-}) {
+function EnumFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedEnumRow[] }) {
   if (rows.length === 0) {
     return null;
   }
@@ -172,11 +148,7 @@ function EnumFiltersFieldset({
   );
 }
 
-function EnumFilterFieldset({
-  row
-}: {
-  row: CatalogAdvancedEnumRow;
-}) {
+function EnumFilterFieldset({ row }: { row: CatalogAdvancedEnumRow }) {
   const inputName = `enum.${row.attributeId}`;
 
   return (

@@ -1,31 +1,31 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { useFragment, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { MerchantDirectoryRoute } from "../../../src/routes/merchants/MerchantDirectoryRoute";
+import {
+  MerchantDirectoryRoute,
+  type MerchantDirectoryLoaderData,
+} from "../../../src/routes/merchants/MerchantDirectoryRoute";
 import {
   MerchantDirectoryControls,
-  MerchantDirectoryView
+  MerchantDirectoryView,
 } from "../../../src/routes/merchants/MerchantDirectoryView";
-import type { MerchantDirectoryLoaderData } from "../../../src/routes/merchants/loader";
 import { openSelect } from "../../helpers/radix-select";
 
-const {
-  useLoaderDataMock,
-  usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
-} = vi.hoisted(() => ({
-  useLoaderDataMock: vi.fn(),
-  usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
-}));
+const { useLoaderDataMock, useFragmentMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
+  vi.hoisted(() => ({
+    useLoaderDataMock: vi.fn(),
+    useFragmentMock: vi.fn(),
+    usePreloadedQueryMock: vi.fn(),
+    useRoutePreloadedQueryMock: vi.fn(),
+  }));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -34,22 +34,24 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    usePreloadedQuery: usePreloadedQueryMock
+    useFragment: useFragmentMock,
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
@@ -59,17 +61,19 @@ const MERCHANT_DIRECTORY_QUERY_DESCRIPTOR = {
     text: "query MerchantDirectoryRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
-      after: null
-    }
-  }
+      after: null,
+    },
+  },
 };
 
 const MERCHANT_DIRECTORY_QUERY_REF = {
   dispose: vi.fn(),
-  variables: MERCHANT_DIRECTORY_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: MERCHANT_DIRECTORY_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 beforeEach(() => {
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLoaderDataMock.mockReset();
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
@@ -92,21 +96,16 @@ test("merchant directory renders merchant names and domains", () => {
   expect(within(merchantList).getByText("globex.example")).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    MERCHANT_DIRECTORY_QUERY_DESCRIPTOR
+    MERCHANT_DIRECTORY_QUERY_DESCRIPTOR,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    MERCHANT_DIRECTORY_QUERY_REF
+    MERCHANT_DIRECTORY_QUERY_REF,
   );
 });
 
 test("merchant directory controls render the selected page size", () => {
-  render(
-    <MerchantDirectoryControls
-      formAction="/merchants"
-      pageSize={35}
-    />
-  );
+  render(<MerchantDirectoryControls formAction="/merchants" pageSize={35} />);
 
   const pageSizeSelect = screen.getByRole("combobox", { name: "Page size" });
   const pageSizeForm = pageSizeSelect.closest("form");
@@ -125,12 +124,12 @@ test("merchant directory view renders only supplied safe actions", () => {
 
   const safeMerchant = getMerchantListItem("Acme Market");
   expect(
-    within(safeMerchant).getByRole("link", { name: "Visit merchant website" })
+    within(safeMerchant).getByRole("link", { name: "Visit merchant website" }),
   ).toHaveAttribute("href", "https://acme.example");
   expect(
     within(getMerchantListItem("Unsafe Seller")).queryByRole("link", {
-      name: "Visit merchant website"
-    })
+      name: "Visit merchant website",
+    }),
   ).not.toBeInTheDocument();
 });
 
@@ -138,14 +137,14 @@ test("merchant directory view filters names case-insensitively and explains no m
   renderMerchantDirectoryView();
 
   fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
-    target: { value: "aCmE" }
+    target: { value: "aCmE" },
   });
 
   expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
   expect(screen.queryByRole("heading", { name: "Unsafe Seller" })).not.toBeInTheDocument();
 
   fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
-    target: { value: "missing" }
+    target: { value: "missing" },
   });
 
   expect(screen.getByText("No merchants on this page match this filter.")).toBeInTheDocument();
@@ -167,7 +166,7 @@ test("merchant directory normalizes domain-only website links to HTTPS", () => {
 
   expect(getMerchantListItem("Acme Market")).toHaveTextContent("acme.example");
   const websiteLink = within(getMerchantListItem("Acme Market")).getByRole("link", {
-    name: "Visit merchant website"
+    name: "Visit merchant website",
   });
 
   expect(websiteLink).toHaveAttribute("href", "https://acme.example");
@@ -182,16 +181,16 @@ test("merchant directory preserves already absolute HTTPS website links", () => 
         {
           id: "merchant-3",
           name: "Secure Seller",
-          domain: "https://secure.example/deals?source=directory"
-        }
-      ]
-    })
+          domain: "https://secure.example/deals?source=directory",
+        },
+      ],
+    }),
   );
 
   renderMerchantDirectoryRoute();
 
   const websiteLink = within(getMerchantListItem("Secure Seller")).getByRole("link", {
-    name: "Visit merchant website"
+    name: "Visit merchant website",
   });
 
   expect(websiteLink).toHaveAttribute("href", "https://secure.example/deals?source=directory");
@@ -206,16 +205,16 @@ test("merchant directory normalizes domain and port website links to HTTPS", () 
         {
           id: "merchant-port",
           name: "Port Seller",
-          domain: "portal.example:8443"
-        }
-      ]
-    })
+          domain: "portal.example:8443",
+        },
+      ],
+    }),
   );
 
   renderMerchantDirectoryRoute();
 
   const websiteLink = within(getMerchantListItem("Port Seller")).getByRole("link", {
-    name: "Visit merchant website"
+    name: "Visit merchant website",
   });
 
   expect(websiteLink).toHaveAttribute("href", "https://portal.example:8443");
@@ -231,14 +230,14 @@ test.each([
   [
     "IPv4-Mapped Loopback Seller",
     "merchant-ipv4-mapped-loopback",
-    "http://[::ffff:127.0.0.1]/deals"
+    "http://[::ffff:127.0.0.1]/deals",
   ],
   [
     "IPv4-Compatible Loopback Seller",
     "merchant-ipv4-compatible-loopback",
-    "http://[::127.0.0.1]/deals"
+    "http://[::127.0.0.1]/deals",
   ],
-  ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"]
+  ["Malformed Absolute Seller", "merchant-malformed-absolute", "https:////attacker.example"],
 ])("merchant directory leaves malformed bare domain %s as text only", (name, id, domain) => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({
@@ -246,10 +245,10 @@ test.each([
         {
           id,
           name,
-          domain
-        }
-      ]
-    })
+          domain,
+        },
+      ],
+    }),
   );
 
   renderMerchantDirectoryRoute();
@@ -259,8 +258,8 @@ test.each([
   expect(merchantItem).toHaveTextContent(domain);
   expect(
     within(merchantItem).queryByRole("link", {
-      name: "Visit merchant website"
-    })
+      name: "Visit merchant website",
+    }),
   ).not.toBeInTheDocument();
 });
 
@@ -271,10 +270,10 @@ test("merchant directory leaves non-HTTP merchant domains as text only", () => {
         {
           id: "merchant-4",
           name: "File Seller",
-          domain: "ftp://files.example"
-        }
-      ]
-    })
+          domain: "ftp://files.example",
+        },
+      ],
+    }),
   );
 
   renderMerchantDirectoryRoute();
@@ -284,8 +283,8 @@ test("merchant directory leaves non-HTTP merchant domains as text only", () => {
   expect(merchantItem).toHaveTextContent("ftp://files.example");
   expect(
     within(merchantItem).queryByRole("link", {
-      name: "Visit merchant website"
-    })
+      name: "Visit merchant website",
+    }),
   ).not.toBeInTheDocument();
 });
 
@@ -296,10 +295,10 @@ test("merchant directory rejects website links with URL userinfo", () => {
         {
           id: "merchant-userinfo",
           name: "Misleading Seller",
-          domain: "https://trusted.example@attacker.example/deals"
-        }
-      ]
-    })
+          domain: "https://trusted.example@attacker.example/deals",
+        },
+      ],
+    }),
   );
 
   renderMerchantDirectoryRoute();
@@ -309,8 +308,8 @@ test("merchant directory rejects website links with URL userinfo", () => {
   expect(merchantItem).toHaveTextContent("https://trusted.example@attacker.example/deals");
   expect(
     within(merchantItem).queryByRole("link", {
-      name: "Visit merchant website"
-    })
+      name: "Visit merchant website",
+    }),
   ).not.toBeInTheDocument();
 });
 
@@ -318,35 +317,35 @@ test("merchant directory renders next-page navigation when available", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 35,
-      after: "previous-cursor"
-    })
+      after: "previous-cursor",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({
       endCursor: "next-cursor",
-      hasNextPage: true
-    })
+      hasNextPage: true,
+    }),
   );
 
   renderMerchantDirectoryRoute();
 
   expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
     "href",
-    "/merchants?first=35&after=next-cursor"
+    "/merchants?first=35&after=next-cursor",
   );
 });
 
 test("merchant directory suppresses repeated and blank next cursors", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ first: 35, after: "same-cursor" }));
   mockedUsePreloadedQuery.mockReturnValue(
-    buildMerchantDirectoryData({ endCursor: "same-cursor", hasNextPage: true })
+    buildMerchantDirectoryData({ endCursor: "same-cursor", hasNextPage: true }),
   );
 
   renderMerchantDirectoryRoute();
   expect(screen.queryByRole("link", { name: "Next merchants" })).not.toBeInTheDocument();
 
   mockedUsePreloadedQuery.mockReturnValue(
-    buildMerchantDirectoryData({ endCursor: "  ", hasNextPage: true })
+    buildMerchantDirectoryData({ endCursor: "  ", hasNextPage: true }),
   );
   renderMerchantDirectoryRoute();
   expect(screen.queryAllByRole("link", { name: "Next merchants" })).toHaveLength(0);
@@ -359,10 +358,10 @@ test("merchant filtering is stable when the browser locale has special casing ru
         {
           id: "merchant-istanbul",
           name: "Istanbul",
-          domain: "istanbul.example"
-        }
-      ]
-    })
+          domain: "istanbul.example",
+        },
+      ],
+    }),
   );
   const localeLowerCase = vi
     .spyOn(String.prototype, "toLocaleLowerCase")
@@ -374,7 +373,7 @@ test("merchant filtering is stable when the browser locale has special casing ru
     renderMerchantDirectoryRoute();
 
     fireEvent.change(screen.getByRole("searchbox", { name: "Filter merchants on this page" }), {
-      target: { value: "i" }
+      target: { value: "i" },
     });
 
     expect(screen.getByRole("heading", { name: "Istanbul" })).toBeInTheDocument();
@@ -387,14 +386,14 @@ test("merchant directory renders first-page navigation when cursor-paged", () =>
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 35,
-      after: "cursor-1"
-    })
+      after: "cursor-1",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildMerchantDirectoryData({
       hasPreviousPage: true,
-      startCursor: "cursor-2"
-    })
+      startCursor: "cursor-2",
+    }),
   );
 
   expect(screen.queryByRole("link", { name: "First merchants" })).not.toBeInTheDocument();
@@ -403,7 +402,7 @@ test("merchant directory renders first-page navigation when cursor-paged", () =>
 
   expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
     "href",
-    "/merchants?first=35"
+    "/merchants?first=35",
   );
 });
 
@@ -415,14 +414,14 @@ test("merchant directory refreshes the page-size selector when pagination change
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 50,
-      after: null
-    })
+      after: null,
+    }),
   );
 
   rerender(
     <MemoryRouter>
       <MerchantDirectoryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("combobox", { name: "Page size" })).toHaveValue("50");
@@ -473,8 +472,8 @@ test("merchant directory renders the loader error state", () => {
     status: "error",
     pagination: {
       first: 20,
-      after: null
-    }
+      after: null,
+    },
   } satisfies MerchantDirectoryLoaderData);
 
   renderMerchantDirectoryRoute();
@@ -492,7 +491,7 @@ function renderMerchantDirectoryRoute() {
   return render(
     <MemoryRouter>
       <MerchantDirectoryRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -502,34 +501,31 @@ function renderMerchantDirectoryView({
       id: "merchant-1",
       name: "Acme Market",
       domain: "acme.example",
-      detailHref: "/merchants/acme-market",
-      websiteHref: "https://acme.example"
+      slug: "acme-market",
     },
     {
       id: "merchant-unsafe",
       name: "Unsafe Seller",
       domain: "http://localhost",
-      detailHref: "/merchants/unsafe-seller",
-      websiteHref: null
-    }
-  ]
+      slug: "unsafe-seller",
+    },
+  ],
 }: {
   merchants?: Array<{
     id: string;
     name: string;
     domain: string;
-    detailHref: string;
-    websiteHref: string | null;
+    slug: string;
   }>;
 } = {}) {
   return render(
     <MemoryRouter>
       <MerchantDirectoryView
         firstHref="/merchants?first=35"
-        merchants={merchants}
+        merchants={{ edges: merchants.map((node) => ({ node })) } as never}
         nextHref="/merchants?first=35&after=next-cursor"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -546,13 +542,13 @@ function getMerchantListItem(name: string) {
 function buildReadyLoaderData(
   pagination: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["pagination"] = {
     first: 20,
-    after: null
-  }
+    after: null,
+  },
 ) {
   return {
     status: "ready",
     pagination,
-    query: MERCHANT_DIRECTORY_QUERY_DESCRIPTOR
+    query: MERCHANT_DIRECTORY_QUERY_DESCRIPTOR,
   } satisfies MerchantDirectoryLoaderData;
 }
 
@@ -564,15 +560,15 @@ function buildMerchantDirectoryData({
     {
       id: "merchant-1",
       name: "Acme Market",
-      domain: "acme.example"
+      domain: "acme.example",
     },
     {
       id: "merchant-2",
       name: "Globex Supply",
-      domain: "globex.example"
-    }
+      domain: "globex.example",
+    },
   ],
-  startCursor = merchants.length === 0 ? null : "cursor-1"
+  startCursor = merchants.length === 0 ? null : "cursor-1",
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
@@ -584,14 +580,14 @@ function buildMerchantDirectoryData({
     merchants: {
       edges: merchants.map((merchant, index) => ({
         cursor: `cursor-${index + 1}`,
-        node: merchant
+        node: merchant,
       })),
       pageInfo: {
         hasNextPage,
         hasPreviousPage,
         startCursor,
-        endCursor
-      }
-    }
+        endCursor,
+      },
+    },
   };
 }

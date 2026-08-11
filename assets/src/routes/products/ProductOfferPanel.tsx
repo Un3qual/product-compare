@@ -1,37 +1,90 @@
 import { useId } from "react";
 import { Link } from "react-router-dom";
-import type { ProductDetailRouteQuery } from "../../__generated__/ProductDetailRouteQuery.graphql";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { graphql, useFragment } from "react-relay";
+import type { ProductOfferPanel_connection$key } from "$generated/ProductOfferPanel_connection.graphql";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ProductOfferList } from "./ProductOfferList";
 import {
   buildProductOfferPanelData,
   productOfferPaginationPaths,
-  type ProductOfferSnapshot
+  type ProductOfferSnapshot,
 } from "./product-offer-panel-data";
 
-type ProductOfferConnection = NonNullable<
-  NonNullable<ProductDetailRouteQuery["response"]["product"]>["merchantProducts"]
->;
+const productOfferPanelFragment = graphql`
+  fragment ProductOfferPanel_connection on MerchantProductConnection {
+    edges {
+      node {
+        id
+        url
+        currency
+        merchant {
+          id
+          name
+        }
+        latestPrice {
+          id
+          price
+          observedAt
+        }
+        activeCoupons(first: 2) {
+          edges {
+            cursor
+            node {
+              code
+              description
+              discountType
+              discountValue
+              currency
+              validTo
+              terms
+            }
+          }
+          pageInfo {
+            hasNextPage
+          }
+        }
+        priceHistory(first: 3) {
+          edges {
+            node {
+              id
+              price
+              observedAt
+            }
+          }
+          pageInfo {
+            hasNextPage
+          }
+        }
+      }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+    }
+  }
+`;
 
 export function ProductOfferPanel({
   connection,
   productSlug,
   offersAfter,
-  selectedCompareSlugs
+  selectedCompareSlugs,
 }: {
-  connection: ProductOfferConnection | null | undefined;
+  connection: ProductOfferPanel_connection$key | null | undefined;
   productSlug: string;
   offersAfter: string | null;
   selectedCompareSlugs: readonly string[];
 }) {
-  if (!connection) {
+  const data = useFragment(productOfferPanelFragment, connection);
+
+  if (!data) {
     return <FeedbackState kind="error" title="Offers unavailable." />;
   }
 
-  const { offers, snapshot } = buildProductOfferPanelData(connection);
+  const { offers, snapshot } = buildProductOfferPanelData(data);
   const pagination = (
     <ProductOfferPagination
-      connection={connection}
+      connection={data}
       offersAfter={offersAfter}
       productSlug={productSlug}
       selectedCompareSlugs={selectedCompareSlugs}
@@ -60,9 +113,9 @@ function ProductOfferPagination({
   connection,
   offersAfter,
   productSlug,
-  selectedCompareSlugs
+  selectedCompareSlugs,
 }: {
-  connection: ProductOfferConnection;
+  connection: Parameters<typeof productOfferPaginationPaths>[0]["connection"];
   offersAfter: string | null;
   productSlug: string;
   selectedCompareSlugs: readonly string[];
@@ -71,7 +124,7 @@ function ProductOfferPagination({
     connection,
     offersAfter,
     productSlug,
-    selectedCompareSlugs
+    selectedCompareSlugs,
   });
 
   if (!firstPath && !nextPath) {

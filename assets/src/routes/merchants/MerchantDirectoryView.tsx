@@ -1,54 +1,59 @@
 import { useId, useState } from "react";
-import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { SectionHeading } from "../../ui/components/layout/SectionHeading";
-import { Pagination } from "../../ui/components/navigation/Pagination";
-import { Button } from "../../ui/primitives/Button";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+import { Link } from "react-router-dom";
+import { graphql, useFragment } from "react-relay";
+import type { MerchantDirectoryView_item$key } from "$generated/MerchantDirectoryView_item.graphql";
+import type { MerchantDirectoryView_merchants$key } from "$generated/MerchantDirectoryView_merchants.graphql";
+import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { SectionHeading } from "$ui/components/layout/SectionHeading";
+import { Pagination } from "$ui/components/navigation/Pagination";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
-import { getMerchantDirectoryViewData } from "./merchant-directory-view-data";
+import {
+  buildMerchantDirectoryRows,
+  getMerchantDirectoryViewData,
+} from "./merchant-directory-view-data";
+
+const merchantDirectoryViewFragment = graphql`
+  fragment MerchantDirectoryView_merchants on MerchantConnection {
+    edges {
+      node {
+        id
+        name
+        ...MerchantDirectoryView_item
+      }
+    }
+  }
+`;
+
+const merchantDirectoryViewItemFragment = graphql`
+  fragment MerchantDirectoryView_item on Merchant {
+    id
+    name
+    domain
+    slug
+  }
+`;
 
 const styles = create({
   controls: {
     alignItems: "stretch",
     display: "grid",
     gap: "0.75rem",
-    gridTemplateColumns: "minmax(0, 1fr)"
+    gridTemplateColumns: "minmax(0, 1fr)",
   },
-  filter: {
-    display: "grid",
-    gap: "0.35rem",
-    maxWidth: "24rem"
-  },
-  merchant: {
-    display: "grid",
-    gap: "0.45rem"
-  },
-  name: {
-    fontSize: "1.25rem",
-    letterSpacing: "-0.02em",
-    margin: 0
-  },
-  domain: {
-    color: tokens.textSecondary,
-    margin: 0
-  }
+  filter: { display: "grid", gap: "0.35rem", maxWidth: "24rem" },
+  merchant: { display: "grid", gap: "0.45rem" },
+  name: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
+  domain: { color: tokens.textSecondary, margin: 0 },
 });
-
-type MerchantDirectoryViewMerchant = {
-  detailHref: string;
-  domain: string;
-  id: string;
-  name: string;
-  websiteHref: string | null;
-};
 
 type MerchantDirectoryViewProps = {
   firstHref: string | null;
-  merchants: MerchantDirectoryViewMerchant[];
+  merchants: MerchantDirectoryView_merchants$key;
   nextHref: string | null;
 };
 
@@ -60,14 +65,16 @@ type MerchantDirectoryControlsProps = {
 export function MerchantDirectoryView({
   firstHref,
   merchants,
-  nextHref
+  nextHref,
 }: MerchantDirectoryViewProps) {
+  const data = useFragment(merchantDirectoryViewFragment, merchants);
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();
   const filterLabelId = `${filterInputId}-label`;
-  const { heading, visibleMerchants } = getMerchantDirectoryViewData(merchants, filterText);
+  const merchantRefs = data.edges.map(({ node }) => node);
+  const { heading, visibleMerchants } = getMerchantDirectoryViewData(merchantRefs, filterText);
 
-  if (merchants.length === 0) {
+  if (merchantRefs.length === 0) {
     return <FeedbackState kind="empty" title="No merchants available yet." />;
   }
 
@@ -110,7 +117,7 @@ export function MerchantDirectoryView({
 
 export function MerchantDirectoryControls({
   formAction,
-  pageSize
+  pageSize,
 }: MerchantDirectoryControlsProps) {
   return (
     <form action={formAction} method="get" {...props(styles.controls)}>
@@ -120,10 +127,7 @@ export function MerchantDirectoryControls({
           key={pageSize}
           name="first"
           defaultValue={String(pageSize)}
-          options={[20, 35, 50].map((size) => ({
-            label: String(size),
-            value: String(size)
-          }))}
+          options={[20, 35, 50].map((size) => ({ label: String(size), value: String(size) }))}
         />
       </label>
       <Button type="submit">Apply</Button>
@@ -131,15 +135,21 @@ export function MerchantDirectoryControls({
   );
 }
 
-function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryViewMerchant }) {
+function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryView_item$key }) {
+  const data = useFragment(merchantDirectoryViewItemFragment, merchant);
+  const [row] = buildMerchantDirectoryRows([data]);
+  if (!row) return null;
+
   return (
     <DataListItem
       actions={
         <>
-          <Button asChild variant="soft"><Link to={merchant.detailHref}>View merchant details</Link></Button>
-          {merchant.websiteHref ? (
+          <Button asChild variant="soft">
+            <Link to={row.detailHref}>View merchant details</Link>
+          </Button>
+          {row.websiteHref ? (
             <Button asChild variant="soft">
-              <a href={merchant.websiteHref} target="_blank" rel="noopener noreferrer">
+              <a href={row.websiteHref} target="_blank" rel="noopener noreferrer">
                 Visit merchant website
               </a>
             </Button>
@@ -148,8 +158,10 @@ function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryVi
       }
     >
       <div {...props(styles.merchant)}>
-        <h2 {...props(styles.name)}><Link to={merchant.detailHref}>{merchant.name}</Link></h2>
-        <p {...props(styles.domain)}>{merchant.domain}</p>
+        <h2 {...props(styles.name)}>
+          <Link to={row.detailHref}>{row.name}</Link>
+        </h2>
+        <p {...props(styles.domain)}>{row.domain}</p>
       </div>
     </DataListItem>
   );

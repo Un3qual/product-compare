@@ -1,15 +1,17 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
+import {
+  OfferDiscoveryRoute,
+  type OfferDiscoveryLoaderData,
+} from "../../../src/routes/offers/OfferDiscoveryRoute";
 import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
 import type {
   ActiveCouponsConnection,
   OfferNode,
   PriceHistoryConnection,
 } from "../../../src/routes/offers/offer-discovery-data";
-import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 
@@ -17,6 +19,7 @@ const {
   commitCommerceClickMock,
   graphqlMock,
   useMutationMock,
+  useFragmentMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
@@ -24,6 +27,7 @@ const {
   commitCommerceClickMock: vi.fn(),
   graphqlMock: vi.fn(),
   useMutationMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
@@ -44,6 +48,7 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     graphql: graphqlMock,
+    useFragment: useFragmentMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
@@ -61,6 +66,7 @@ vi.mock("../../../src/relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -88,6 +94,8 @@ const OFFER_DISCOVERY_QUERY_REF = {
 };
 
 beforeEach(() => {
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   commitCommerceClickMock.mockReset();
   useMutationMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -109,7 +117,7 @@ test("offer card directly renders tracked action, observations, price history, a
 
   render(
     <MemoryRouter>
-      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer} />
+      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer as never} />
     </MemoryRouter>,
   );
 
@@ -939,7 +947,7 @@ test("offer discovery uses product merchant ordering rather than the environment
       latestPriceValue: null,
       offer,
       originalIndex,
-    }));
+    })) as never;
 
     expect(
       sortedWithContrastingDefault(offers, "merchant_name", false).map(

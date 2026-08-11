@@ -1,13 +1,15 @@
-import type { OfferDiscoveryRouteQuery } from "../../__generated__/OfferDiscoveryRouteQuery.graphql";
+import type { OfferDiscoveryCard_offer$data } from "$generated/OfferDiscoveryCard_offer.graphql";
+import type { OfferDiscoveryList_connection$data } from "$generated/OfferDiscoveryList_connection.graphql";
 import { canComparePriceCurrencies, decimalStringToNumber } from "../decimal-values";
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeLabel } from "../graphql-datetime";
 import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "../offer-snapshot";
 import { compareProductText } from "../product-formatting";
-import type { OfferDiscoverySort } from "./loader";
+import type { OfferDiscoverySort } from "./offer-discovery-filter-data";
 
-export type OfferConnection = NonNullable<OfferDiscoveryRouteQuery["response"]["merchantProducts"]>;
-export type OfferNode = OfferConnection["edges"][number]["node"];
+export type OfferConnection = OfferDiscoveryList_connection$data;
+export type OfferNode = Omit<OfferDiscoveryCard_offer$data, " $fragmentType">;
+type OfferListNode = OfferConnection["edges"][number]["node"];
 export type ActiveCouponsConnection = NonNullable<OfferNode["activeCoupons"]>;
 export type PriceHistoryConnection = NonNullable<OfferNode["priceHistory"]>;
 export type CouponNode = ActiveCouponsConnection["edges"][number]["node"];
@@ -15,7 +17,7 @@ export type PriceHistoryNode = PriceHistoryConnection["edges"][number]["node"];
 export type RenderableOffer = {
   latestPriceCurrency: string | null;
   latestPriceValue: number | null;
-  offer: OfferNode;
+  offer: OfferListNode;
   originalIndex: number;
 };
 export type VisibleMerchant = {
@@ -175,7 +177,7 @@ export function priceSortHighlightLabel(
   return null;
 }
 
-function numericLatestPrice(offer: OfferNode) {
+function numericLatestPrice(offer: OfferListNode) {
   return decimalStringToNumber(offer.latestPrice?.price);
 }
 
@@ -191,7 +193,7 @@ export function priceSortUsesSingleCurrency(offers: ReadonlyArray<RenderableOffe
   );
 }
 
-export function offerMerchantName(merchant: OfferNode["merchant"]) {
+export function offerMerchantName(merchant: { readonly name: string } | null | undefined) {
   return merchant?.name ?? "Visit offer";
 }
 
@@ -203,7 +205,7 @@ export function priceLabel(price: string | null | undefined, currency: string) {
   return `${price} ${currency}`;
 }
 
-function hasVisibleCoupons(offer: OfferNode) {
+function hasVisibleCoupons(offer: OfferListNode) {
   const activeCoupons = offer.activeCoupons;
 
   return Boolean(

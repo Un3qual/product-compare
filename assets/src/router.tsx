@@ -50,10 +50,7 @@ export const routes: RouteObject[] = [
           "Browse the product catalog and narrow the results by the attributes that matter.",
         ),
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ BrowseRoute }, { browseLoader }] = await Promise.all([
-            import("./routes/catalog/BrowseRoute"),
-            import("./routes/catalog/loader"),
-          ]);
+          const { BrowseRoute, browseLoader } = await import("./routes/catalog/BrowseRoute");
           return { Component: BrowseRoute, loader: browseLoader };
         }),
       },
@@ -65,10 +62,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="product" title="Product details" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ ProductDetailRoute }, { productDetailLoader }] = await Promise.all([
-            import("./routes/products/ProductDetailRoute"),
-            import("./routes/products/loader"),
-          ]);
+          const { ProductDetailRoute, productDetailLoader } =
+            await import("./routes/products/ProductDetailRoute");
           return {
             Component: ProductDetailRoute,
             loader: productDetailLoader,
@@ -83,10 +78,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="merchant directory" title="Merchants" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ MerchantDirectoryRoute }, { merchantDirectoryLoader }] = await Promise.all([
-            import("./routes/merchants/MerchantDirectoryRoute"),
-            import("./routes/merchants/loader"),
-          ]);
+          const { MerchantDirectoryRoute, merchantDirectoryLoader } =
+            await import("./routes/merchants/MerchantDirectoryRoute");
           return {
             Component: MerchantDirectoryRoute,
             loader: merchantDirectoryLoader,
@@ -101,10 +94,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="merchant" title="Merchant details" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ MerchantDetailRoute }, { merchantDetailLoader }] = await Promise.all([
-            import("./routes/merchants/detail/MerchantDetailRoute"),
-            import("./routes/merchants/detail/loader"),
-          ]);
+          const { MerchantDetailRoute, merchantDetailLoader } =
+            await import("./routes/merchants/detail/MerchantDetailRoute");
           return { Component: MerchantDetailRoute, loader: merchantDetailLoader };
         }),
       },
@@ -116,10 +107,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="category" title="Product category" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ CategoryRoute }, { categoryLoader }] = await Promise.all([
-            import("./routes/categories/CategoryRoute"),
-            import("./routes/categories/loader"),
-          ]);
+          const { CategoryRoute, categoryLoader } =
+            await import("./routes/categories/CategoryRoute");
           return { Component: CategoryRoute, loader: categoryLoader };
         }),
       },
@@ -149,10 +138,8 @@ export const routes: RouteObject[] = [
         ),
         errorElement: <RouteErrorBoundary resourceName="offer discovery" title="Offers" />,
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ OfferDiscoveryRoute }, { offerDiscoveryLoader }] = await Promise.all([
-            import("./routes/offers/OfferDiscoveryRoute"),
-            import("./routes/offers/loader"),
-          ]);
+          const { OfferDiscoveryRoute, offerDiscoveryLoader } =
+            await import("./routes/offers/OfferDiscoveryRoute");
           return {
             Component: OfferDiscoveryRoute,
             loader: offerDiscoveryLoader,

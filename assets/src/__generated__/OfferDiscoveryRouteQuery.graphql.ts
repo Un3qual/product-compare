@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<810119120fb4b6016b72baff33e3fa63>>
+ * @generated SignedSource<<05c95294361914caa6ec75a6d8bb8228>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -9,7 +9,7 @@
 // @ts-nocheck
 
 import { ConcreteRequest } from 'relay-runtime';
-export type CouponDiscountType = "AMOUNT" | "FREE_SHIPPING" | "OTHER" | "PERCENT" | "%future added value";
+import { FragmentRefs } from "relay-runtime";
 export type MerchantProductsInput = {
   activeOnly?: boolean | null | undefined;
   merchantId?: string | null | undefined;
@@ -23,65 +23,7 @@ export type OfferDiscoveryRouteQuery$variables = {
 };
 export type OfferDiscoveryRouteQuery$data = {
   readonly merchantProducts: {
-    readonly edges: ReadonlyArray<{
-      readonly cursor: string;
-      readonly node: {
-        readonly activeCoupons: {
-          readonly edges: ReadonlyArray<{
-            readonly cursor: string;
-            readonly node: {
-              readonly code: string;
-              readonly currency: string | null | undefined;
-              readonly description: string | null | undefined;
-              readonly discountType: CouponDiscountType;
-              readonly discountValue: any | null | undefined;
-              readonly terms: string | null | undefined;
-              readonly validTo: any | null | undefined;
-            };
-          }>;
-          readonly pageInfo: {
-            readonly hasNextPage: boolean;
-          };
-        } | null | undefined;
-        readonly currency: string;
-        readonly id: string;
-        readonly isActive: boolean;
-        readonly lastSeenAt: any | null | undefined;
-        readonly latestPrice: {
-          readonly id: string;
-          readonly observedAt: any;
-          readonly price: any;
-        } | null | undefined;
-        readonly merchant: {
-          readonly domain: string;
-          readonly id: string;
-          readonly name: string;
-        } | null | undefined;
-        readonly priceHistory: {
-          readonly edges: ReadonlyArray<{
-            readonly node: {
-              readonly id: string;
-              readonly observedAt: any;
-              readonly price: any;
-            };
-          }>;
-          readonly pageInfo: {
-            readonly hasNextPage: boolean;
-          };
-        } | null | undefined;
-        readonly product: {
-          readonly id: string;
-          readonly name: string;
-          readonly slug: string;
-        } | null | undefined;
-        readonly url: string;
-      };
-    }>;
-    readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
-      readonly hasNextPage: boolean;
-      readonly hasPreviousPage: boolean;
-    };
+    readonly " $fragmentSpreads": FragmentRefs<"OfferDiscoveryList_connection">;
   } | null | undefined;
   readonly selectedProduct: {
     readonly __typename: "Product";
@@ -174,13 +116,23 @@ v6 = {
   ],
   "storageKey": null
 },
-v7 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "cursor",
-  "storageKey": null
-},
+v7 = [
+  {
+    "kind": "Variable",
+    "name": "after",
+    "variableName": "after"
+  },
+  {
+    "kind": "Variable",
+    "name": "first",
+    "variableName": "first"
+  },
+  {
+    "kind": "Variable",
+    "name": "input",
+    "variableName": "input"
+  }
+],
 v8 = {
   "alias": null,
   "args": null,
@@ -188,31 +140,28 @@ v8 = {
   "name": "currency",
   "storageKey": null
 },
-v9 = [
-  (v3/*: any*/),
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "price",
-    "storageKey": null
-  },
-  {
-    "alias": null,
-    "args": null,
-    "kind": "ScalarField",
-    "name": "observedAt",
-    "storageKey": null
-  }
-],
+v9 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "price",
+  "storageKey": null
+},
 v10 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "observedAt",
+  "storageKey": null
+},
+v11 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "hasNextPage",
   "storageKey": null
 },
-v11 = {
+v12 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -220,273 +169,7 @@ v11 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v10/*: any*/)
-  ],
-  "storageKey": null
-},
-v12 = {
-  "alias": null,
-  "args": [
-    {
-      "kind": "Variable",
-      "name": "after",
-      "variableName": "after"
-    },
-    {
-      "kind": "Variable",
-      "name": "first",
-      "variableName": "first"
-    },
-    {
-      "kind": "Variable",
-      "name": "input",
-      "variableName": "input"
-    }
-  ],
-  "concreteType": "MerchantProductConnection",
-  "kind": "LinkedField",
-  "name": "merchantProducts",
-  "plural": false,
-  "selections": [
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "MerchantProductEdge",
-      "kind": "LinkedField",
-      "name": "edges",
-      "plural": true,
-      "selections": [
-        (v7/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "concreteType": "MerchantProduct",
-          "kind": "LinkedField",
-          "name": "node",
-          "plural": false,
-          "selections": [
-            (v3/*: any*/),
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "url",
-              "storageKey": null
-            },
-            (v8/*: any*/),
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "lastSeenAt",
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "kind": "ScalarField",
-              "name": "isActive",
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "concreteType": "Merchant",
-              "kind": "LinkedField",
-              "name": "merchant",
-              "plural": false,
-              "selections": [
-                (v3/*: any*/),
-                (v4/*: any*/),
-                {
-                  "alias": null,
-                  "args": null,
-                  "kind": "ScalarField",
-                  "name": "domain",
-                  "storageKey": null
-                }
-              ],
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "concreteType": "Product",
-              "kind": "LinkedField",
-              "name": "product",
-              "plural": false,
-              "selections": [
-                (v3/*: any*/),
-                (v4/*: any*/),
-                (v5/*: any*/)
-              ],
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": null,
-              "concreteType": "PricePoint",
-              "kind": "LinkedField",
-              "name": "latestPrice",
-              "plural": false,
-              "selections": (v9/*: any*/),
-              "storageKey": null
-            },
-            {
-              "alias": null,
-              "args": [
-                {
-                  "kind": "Literal",
-                  "name": "first",
-                  "value": 2
-                }
-              ],
-              "concreteType": "ActiveCouponConnection",
-              "kind": "LinkedField",
-              "name": "activeCoupons",
-              "plural": false,
-              "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "concreteType": "ActiveCouponEdge",
-                  "kind": "LinkedField",
-                  "name": "edges",
-                  "plural": true,
-                  "selections": [
-                    (v7/*: any*/),
-                    {
-                      "alias": null,
-                      "args": null,
-                      "concreteType": "ActiveCoupon",
-                      "kind": "LinkedField",
-                      "name": "node",
-                      "plural": false,
-                      "selections": [
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "code",
-                          "storageKey": null
-                        },
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "description",
-                          "storageKey": null
-                        },
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "discountType",
-                          "storageKey": null
-                        },
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "discountValue",
-                          "storageKey": null
-                        },
-                        (v8/*: any*/),
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "validTo",
-                          "storageKey": null
-                        },
-                        {
-                          "alias": null,
-                          "args": null,
-                          "kind": "ScalarField",
-                          "name": "terms",
-                          "storageKey": null
-                        }
-                      ],
-                      "storageKey": null
-                    }
-                  ],
-                  "storageKey": null
-                },
-                (v11/*: any*/)
-              ],
-              "storageKey": "activeCoupons(first:2)"
-            },
-            {
-              "alias": null,
-              "args": [
-                {
-                  "kind": "Literal",
-                  "name": "first",
-                  "value": 3
-                }
-              ],
-              "concreteType": "PricePointConnection",
-              "kind": "LinkedField",
-              "name": "priceHistory",
-              "plural": false,
-              "selections": [
-                {
-                  "alias": null,
-                  "args": null,
-                  "concreteType": "PricePointEdge",
-                  "kind": "LinkedField",
-                  "name": "edges",
-                  "plural": true,
-                  "selections": [
-                    {
-                      "alias": null,
-                      "args": null,
-                      "concreteType": "PricePoint",
-                      "kind": "LinkedField",
-                      "name": "node",
-                      "plural": false,
-                      "selections": (v9/*: any*/),
-                      "storageKey": null
-                    }
-                  ],
-                  "storageKey": null
-                },
-                (v11/*: any*/)
-              ],
-              "storageKey": "priceHistory(first:3)"
-            }
-          ],
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    },
-    {
-      "alias": null,
-      "args": null,
-      "concreteType": "PageInfo",
-      "kind": "LinkedField",
-      "name": "pageInfo",
-      "plural": false,
-      "selections": [
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "endCursor",
-          "storageKey": null
-        },
-        (v10/*: any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "hasPreviousPage",
-          "storageKey": null
-        }
-      ],
-      "storageKey": null
-    }
+    (v11/*: any*/)
   ],
   "storageKey": null
 };
@@ -520,7 +203,22 @@ return {
         ],
         "storageKey": null
       },
-      (v12/*: any*/)
+      {
+        "alias": null,
+        "args": (v7/*: any*/),
+        "concreteType": "MerchantProductConnection",
+        "kind": "LinkedField",
+        "name": "merchantProducts",
+        "plural": false,
+        "selections": [
+          {
+            "args": null,
+            "kind": "FragmentSpread",
+            "name": "OfferDiscoveryList_connection"
+          }
+        ],
+        "storageKey": null
+      }
     ],
     "type": "RootQueryType",
     "abstractKey": null
@@ -554,20 +252,282 @@ return {
         ],
         "storageKey": null
       },
-      (v12/*: any*/)
+      {
+        "alias": null,
+        "args": (v7/*: any*/),
+        "concreteType": "MerchantProductConnection",
+        "kind": "LinkedField",
+        "name": "merchantProducts",
+        "plural": false,
+        "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "MerchantProductEdge",
+            "kind": "LinkedField",
+            "name": "edges",
+            "plural": true,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "concreteType": "MerchantProduct",
+                "kind": "LinkedField",
+                "name": "node",
+                "plural": false,
+                "selections": [
+                  (v3/*: any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "url",
+                    "storageKey": null
+                  },
+                  (v8/*: any*/),
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Merchant",
+                    "kind": "LinkedField",
+                    "name": "merchant",
+                    "plural": false,
+                    "selections": [
+                      (v3/*: any*/),
+                      (v4/*: any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "domain",
+                        "storageKey": null
+                      }
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "PricePoint",
+                    "kind": "LinkedField",
+                    "name": "latestPrice",
+                    "plural": false,
+                    "selections": [
+                      (v9/*: any*/),
+                      (v3/*: any*/),
+                      (v10/*: any*/)
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": [
+                      {
+                        "kind": "Literal",
+                        "name": "first",
+                        "value": 2
+                      }
+                    ],
+                    "concreteType": "ActiveCouponConnection",
+                    "kind": "LinkedField",
+                    "name": "activeCoupons",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "ActiveCouponEdge",
+                        "kind": "LinkedField",
+                        "name": "edges",
+                        "plural": true,
+                        "selections": [
+                          {
+                            "alias": null,
+                            "args": null,
+                            "kind": "ScalarField",
+                            "name": "cursor",
+                            "storageKey": null
+                          },
+                          {
+                            "alias": null,
+                            "args": null,
+                            "concreteType": "ActiveCoupon",
+                            "kind": "LinkedField",
+                            "name": "node",
+                            "plural": false,
+                            "selections": [
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "code",
+                                "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "description",
+                                "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "discountType",
+                                "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "discountValue",
+                                "storageKey": null
+                              },
+                              (v8/*: any*/),
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "validTo",
+                                "storageKey": null
+                              },
+                              {
+                                "alias": null,
+                                "args": null,
+                                "kind": "ScalarField",
+                                "name": "terms",
+                                "storageKey": null
+                              }
+                            ],
+                            "storageKey": null
+                          }
+                        ],
+                        "storageKey": null
+                      },
+                      (v12/*: any*/)
+                    ],
+                    "storageKey": "activeCoupons(first:2)"
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "lastSeenAt",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "isActive",
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": null,
+                    "concreteType": "Product",
+                    "kind": "LinkedField",
+                    "name": "product",
+                    "plural": false,
+                    "selections": [
+                      (v3/*: any*/),
+                      (v4/*: any*/),
+                      (v5/*: any*/)
+                    ],
+                    "storageKey": null
+                  },
+                  {
+                    "alias": null,
+                    "args": [
+                      {
+                        "kind": "Literal",
+                        "name": "first",
+                        "value": 3
+                      }
+                    ],
+                    "concreteType": "PricePointConnection",
+                    "kind": "LinkedField",
+                    "name": "priceHistory",
+                    "plural": false,
+                    "selections": [
+                      {
+                        "alias": null,
+                        "args": null,
+                        "concreteType": "PricePointEdge",
+                        "kind": "LinkedField",
+                        "name": "edges",
+                        "plural": true,
+                        "selections": [
+                          {
+                            "alias": null,
+                            "args": null,
+                            "concreteType": "PricePoint",
+                            "kind": "LinkedField",
+                            "name": "node",
+                            "plural": false,
+                            "selections": [
+                              (v3/*: any*/),
+                              (v9/*: any*/),
+                              (v10/*: any*/)
+                            ],
+                            "storageKey": null
+                          }
+                        ],
+                        "storageKey": null
+                      },
+                      (v12/*: any*/)
+                    ],
+                    "storageKey": "priceHistory(first:3)"
+                  }
+                ],
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          },
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "PageInfo",
+            "kind": "LinkedField",
+            "name": "pageInfo",
+            "plural": false,
+            "selections": [
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "endCursor",
+                "storageKey": null
+              },
+              (v11/*: any*/),
+              {
+                "alias": null,
+                "args": null,
+                "kind": "ScalarField",
+                "name": "hasPreviousPage",
+                "storageKey": null
+              }
+            ],
+            "storageKey": null
+          }
+        ],
+        "storageKey": null
+      }
     ]
   },
   "params": {
-    "cacheID": "db5de44c225f8c4c70e90bcee04e9c7a",
+    "cacheID": "c7d081fb07b3bea94d6737667c3ca686",
     "id": null,
     "metadata": {},
     "name": "OfferDiscoveryRouteQuery",
     "operationKind": "query",
-    "text": "query OfferDiscoveryRouteQuery(\n  $after: String\n  $first: Int!\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(after: $after, first: $first, input: $input) {\n    edges {\n      cursor\n      node {\n        id\n        url\n        currency\n        lastSeenAt\n        isActive\n        merchant {\n          id\n          name\n          domain\n        }\n        product {\n          id\n          name\n          slug\n        }\n        latestPrice {\n          id\n          price\n          observedAt\n        }\n        activeCoupons(first: 2) {\n          edges {\n            cursor\n            node {\n              code\n              description\n              discountType\n              discountValue\n              currency\n              validTo\n              terms\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n        priceHistory(first: 3) {\n          edges {\n            node {\n              id\n              price\n              observedAt\n            }\n          }\n          pageInfo {\n            hasNextPage\n          }\n        }\n      }\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n      hasPreviousPage\n    }\n  }\n}\n"
+    "text": "query OfferDiscoveryRouteQuery(\n  $after: String\n  $first: Int!\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(after: $after, first: $first, input: $input) {\n    ...OfferDiscoveryList_connection\n  }\n}\n\nfragment OfferDiscoveryCard_offer on MerchantProduct {\n  id\n  url\n  currency\n  lastSeenAt\n  isActive\n  merchant {\n    id\n    name\n    domain\n  }\n  product {\n    id\n    name\n    slug\n  }\n  latestPrice {\n    id\n    price\n    observedAt\n  }\n  activeCoupons(first: 2) {\n    edges {\n      cursor\n      node {\n        code\n        description\n        discountType\n        discountValue\n        currency\n        validTo\n        terms\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  priceHistory(first: 3) {\n    edges {\n      node {\n        id\n        price\n        observedAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment OfferDiscoveryList_connection on MerchantProductConnection {\n  edges {\n    node {\n      id\n      url\n      currency\n      merchant {\n        id\n        name\n      }\n      latestPrice {\n        price\n        id\n      }\n      activeCoupons(first: 2) {\n        edges {\n          cursor\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n      ...OfferDiscoveryCard_offer\n    }\n  }\n  pageInfo {\n    endCursor\n    hasNextPage\n    hasPreviousPage\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "c4f2d78cc5d761f637f7fe8fc5e37505";
+(node as any).hash = "edb0161bfa93b79a7cc5658b0b90f609";
 
 export default node;

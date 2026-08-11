@@ -9,11 +9,11 @@ import {
   useState,
 } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
 import type { ProductCommunityOperationsAnswerProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAnswerProductQuestionMutation.graphql";
 import type { ProductCommunityOperationsAskProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAskProductQuestionMutation.graphql";
 import type { ProductCommunityOperationsQuery } from "../../__generated__/ProductCommunityOperationsQuery.graphql";
-import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
+import type { ProductCommunityPanelQuestionAnswersQuery } from "$generated/ProductCommunityPanelQuestionAnswersQuery.graphql";
 import type { ProductCommunityOperationsSubmitProductReviewMutation } from "../../__generated__/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { Button } from "../../ui/primitives/Button";
@@ -36,7 +36,6 @@ import {
   productCommunityOperationsQuery,
   submitProductReviewMutation,
 } from "./ProductCommunityOperations";
-import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
 import {
   appendUniqueCommunityItems,
   buildProductAnswerInput,
@@ -51,6 +50,30 @@ import {
 
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
+
+const productQuestionAnswersQuery = graphql`
+  query ProductCommunityPanelQuestionAnswersQuery($id: ID!, $first: Int!, $after: String) {
+    productQuestion(id: $id) {
+      id
+      answers(first: $first, after: $after) {
+        edges {
+          node {
+            id
+            body
+            authorLabel
+            moderationStatus
+            viewerCanEdit
+            viewerCanRemove
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+      }
+    }
+  }
+`;
 
 const disclosureStyles = create({
   content: {
@@ -467,7 +490,7 @@ function AdditionalAnswers({
 }) {
   const [after, setAfter] = useState(initialAfter);
   const [loadedAnswers, setLoadedAnswers] = useState<Answer[]>([]);
-  const data = useLazyLoadQuery<ProductQuestionAnswersQuery>(
+  const data = useLazyLoadQuery<ProductCommunityPanelQuestionAnswersQuery>(
     productQuestionAnswersQuery,
     { id: questionId, first: ANSWER_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" },
