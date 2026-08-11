@@ -97,6 +97,32 @@ test("home deal copy only maps typed reasons and does not invent ranking explana
   expect(deals.tabs[2]?.deals[0]).toMatchObject({ reason: "Matches your $450.00 price watch" });
 });
 
+test("home prices preserve exact decimal values beyond JavaScript's safe integer range", () => {
+  expect(
+    homeDealReasonCopy({ code: "WATCH_TARGET", watchTarget: "9007199254740993.01" }, "USD"),
+  ).toBe("Matches your $9,007,199,254,740,993.01 price watch");
+
+  const viewData = homeWorkspaceViewData({
+    categories: [],
+    products: [
+      {
+        product: { id: "large-price", name: "Large price", slug: "large-price" },
+        highlights: [],
+        offer: {
+          merchantName: "Exact Shop",
+          currency: "USD",
+          landedPrice: "9007199254740993.01",
+          priceSignal: "BELOW_30_DAY_MEDIAN",
+          observedAt: "2026-08-10T12:00:00Z",
+        },
+      },
+    ],
+    selectedProducts: [],
+  });
+
+  expect(viewData.ledgerRows[0]?.offer).toBe("$9,007,199,254,740,993.01 at Exact Shop");
+});
+
 test("home workspace treats a future price signal as unavailable history", () => {
   const viewData = homeWorkspaceViewData({
     categories: [],

@@ -140,6 +140,7 @@ test("home workspace recovery keeps search, category entry, and retry independen
   );
 
   expect(screen.getByRole("search", { name: "Search products" })).toBeInTheDocument();
+  expect(screen.getByText("Search products, brands, or model numbers")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Browse categories and products" })).toHaveAttribute(
     "href",
     "/products?first=12",

@@ -35,7 +35,14 @@ const styles = create({
     gap: "0.3rem",
     paddingBlockStart: "0.65rem",
   },
-  categoryLink: { color: tokens.actionAccent, fontWeight: 700, textDecoration: "none" },
+  categoryLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+  },
   categoryDescription: {
     color: tokens.textSecondary,
     fontSize: "0.88rem",

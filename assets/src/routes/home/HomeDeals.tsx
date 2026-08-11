@@ -30,8 +30,11 @@ const styles = create({
     paddingBlock: "0.8rem",
   },
   link: {
+    alignItems: "center",
     color: tokens.actionAccent,
+    display: "flex",
     fontWeight: 700,
+    minHeight: tokens.controlHeight,
     textDecoration: "none",
   },
   offer: {

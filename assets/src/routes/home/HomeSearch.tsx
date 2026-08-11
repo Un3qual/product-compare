@@ -39,7 +39,7 @@ export function HomeSearch({ selectedSlugs }: { selectedSlugs: readonly string[]
     >
       <div {...props(styles.field)}>
         <label htmlFor="home-product-search" {...props(styles.label)}>
-          Search products, categories, or model numbers
+          Search products, brands, or model numbers
         </label>
         <TextField
           id="home-product-search"

@@ -60,10 +60,13 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
       return "New offer";
     case "TRENDING_BELOW_MEDIAN":
       return "Below the 30-day price";
-    case "WATCH_TARGET":
-      return scalarText(reason.watchTarget)
-        ? `Matches your ${formatCurrency(scalarText(reason.watchTarget)!, currency)} price watch`
+    case "WATCH_TARGET": {
+      const watchTarget = scalarText(reason.watchTarget);
+
+      return watchTarget
+        ? `Matches your ${formatCurrency(watchTarget, currency)} price watch`
         : "Matches your price watch";
+    }
     case "SAVED_COMPARISON":
       return "In your saved comparison";
     case "CURRENT_COMPARISON":
@@ -127,20 +130,34 @@ function formatOffer(offer: HomeOffer) {
 }
 
 function formatCurrency(value: string, currency: string) {
-  const amount = Number(value);
+  const match = /^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
 
-  if (!Number.isFinite(amount)) {
+  if (!match) {
     return value;
   }
 
   try {
-    return new Intl.NumberFormat("en-US", {
+    const [, sign, whole = "0", rawFraction = ""] = match;
+    const fraction = rawFraction.padEnd(3, "0");
+    let minorUnits = BigInt(whole) * 100n + BigInt(fraction.slice(0, 2));
+
+    if (fraction[2] >= "5") minorUnits += 1n;
+
+    const formatter = new Intl.NumberFormat("en-US", {
       currency,
       currencyDisplay: "narrowSymbol",
       maximumFractionDigits: 2,
       minimumFractionDigits: 2,
       style: "currency",
-    }).format(amount);
+    });
+    const formatted = formatter
+      .formatToParts(minorUnits / 100n)
+      .map((part) =>
+        part.type === "fraction" ? (minorUnits % 100n).toString().padStart(2, "0") : part.value,
+      )
+      .join("");
+
+    return sign === "-" && minorUnits !== 0n ? `-${formatted}` : formatted;
   } catch {
     return `${value} ${currency}`;
   }
