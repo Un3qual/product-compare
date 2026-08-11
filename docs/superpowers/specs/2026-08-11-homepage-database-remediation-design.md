@@ -139,11 +139,10 @@ rather than textually expanded into each price scope.
 
 Watch candidates remain one row per real rule until the current offer predicate
 has been applied. Ranking then selects the tightest satisfied target, so an
-unmet lower target cannot hide a met higher target. A partial unique index on
-the target-price condition—user, product,
-`COALESCE(merchant_product_id, 0)`, currency, and target amount—prevents exact
-duplicates while preserving distinct targets. Foreign keys make zero an
-unreachable listing ID. The owning changeset maps that named constraint.
+unmet lower target cannot hide a met higher target. Multiple rules remain
+legal: adding uniqueness now would require an unapproved merge policy for
+existing rule state and alert-event history. Identical satisfied rows collapse
+only after offer matching, where they cannot suppress a valid target.
 
 Trending and signed-in viewer resolution wrap candidate selection, fallback
 classification, optional fact hydration, and Product hydration in one
