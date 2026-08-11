@@ -59,6 +59,9 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       method="get"
       {...props(styles.form)}
     >
+      {filters.compareSlugs.map((slug) => (
+        <input key={slug} name="slug" type="hidden" value={slug} />
+      ))}
       <label>
         Product ID
         <TextField

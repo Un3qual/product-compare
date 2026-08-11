@@ -122,13 +122,17 @@ function DecisionSummaryMetricRowView({ row }: { row: DecisionSummaryMetricRow }
 }
 
 function ReviewOffersRow({ products }: { products: CompareProductSummary[] }) {
+  const compareSlugs = products.map((product) => product.slug);
+
   return (
     <DecisionSummaryRow
       cellKey="review-offers"
       label="Review offers link"
       products={products}
       renderCell={(product) => (
-        <Link to={productOffersPath(product.id)}>Review {product.name} offers</Link>
+        <Link to={productOffersPath(product.id, compareSlugs)}>
+          Review {product.name} offers
+        </Link>
       )}
     />
   );

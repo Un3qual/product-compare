@@ -145,6 +145,7 @@ test("offer discovery asks users to start from browse products when productId is
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: ["alpha", "beta"],
       first: 6,
       merchantId: null,
       productId: null,
@@ -159,7 +160,7 @@ test("offer discovery asks users to start from browse products when productId is
   expect(screen.getByText("Choose a product to review its current merchant offers.")).toBeVisible();
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products",
+    "/products?slug=alpha&slug=beta",
   );
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
@@ -171,6 +172,7 @@ test("offer discovery summarizes missing product filters without reset actions",
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: null,
@@ -198,6 +200,7 @@ test("offer discovery summarizes missing product filters without reset actions",
 test("offer discovery renders filter controls with existing filter values", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
+      compareSlugs: ["alpha", "beta", "gamma"],
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
@@ -219,6 +222,11 @@ test("offer discovery renders filter controls with existing filter values", () =
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_desc");
+  expect(new FormData(filterForm as HTMLFormElement).getAll("slug")).toEqual([
+    "alpha",
+    "beta",
+    "gamma",
+  ]);
 });
 
 test("offer discovery summarizes active filters", () => {
@@ -278,6 +286,7 @@ test("offer discovery provides route-local filter reset links", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       after: "cursor-1",
+      compareSlugs: ["alpha", "beta"],
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
@@ -289,11 +298,11 @@ test("offer discovery provides route-local filter reset links", () => {
 
   expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc&slug=alpha&slug=beta",
   );
   expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc&slug=alpha&slug=beta",
   );
 });
 
@@ -303,6 +312,7 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       activeOnly: false,
+      compareSlugs: ["alpha", "beta"],
       first: 24,
       merchantId: "TWVyY2hhbnQ6NDU2",
       productId: "UHJvZHVjdDo5OTk=",
@@ -321,6 +331,11 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("merchant_name");
+  expect(
+    new FormData(
+      screen.getByRole("form", { name: "Offer discovery filters" }) as HTMLFormElement,
+    ).getAll("slug"),
+  ).toEqual(["alpha", "beta"]);
 });
 
 test("offer discovery renders ready offer rows", () => {
@@ -1265,6 +1280,7 @@ test("offer discovery renders the loader error state", () => {
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",
@@ -1342,6 +1358,7 @@ function buildReadyLoaderData(
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",

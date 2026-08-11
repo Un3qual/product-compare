@@ -2011,10 +2011,16 @@ test("ready compare page renders decision summary rows above the specification m
   expect(within(decisionSummary).getByText("2026-06-24")).toBeVisible();
   expect(
     within(decisionSummary).getByRole("link", { name: "Review Detail Product offers" }),
-  ).toHaveAttribute("href", `/offers?productId=${DETAIL_PRODUCT.id}`);
+  ).toHaveAttribute(
+    "href",
+    `/offers?productId=${DETAIL_PRODUCT.id}&slug=detail-product&slug=second-product`,
+  );
   expect(
     within(decisionSummary).getByRole("link", { name: "Review Second Product offers" }),
-  ).toHaveAttribute("href", `/offers?productId=${SECOND_PRODUCT.id}`);
+  ).toHaveAttribute(
+    "href",
+    `/offers?productId=${SECOND_PRODUCT.id}&slug=detail-product&slug=second-product`,
+  );
 });
 
 test("ready compare page marks the lowest relative loaded price", () => {

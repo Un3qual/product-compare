@@ -37,6 +37,7 @@ test("offerDiscoveryLoader asks for a product before preloading offers", async (
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: null,
@@ -70,6 +71,7 @@ test("offerDiscoveryLoader preloads active offers for a product by default", asy
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -120,6 +122,7 @@ test("offerDiscoveryLoader preserves supported filters and cursor params", async
     filters: {
       activeOnly: false,
       after: "cursor-1",
+      compareSlugs: [],
       first: 12,
       merchantId: MERCHANT_ID,
       productId: PRODUCT_ID,
@@ -170,6 +173,7 @@ test("offerDiscoveryLoader preserves inactive-only filter and page-size", async 
     filters: {
       activeOnly: false,
       after: null,
+      compareSlugs: [],
       first: 12,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -219,6 +223,7 @@ test("offerDiscoveryLoader normalizes blank cursor values", async () => {
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 12,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -268,6 +273,7 @@ test("offerDiscoveryLoader drops invalid page-size and active-only params", asyn
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -300,6 +306,7 @@ test("offerDiscoveryLoader normalizes sort without changing GraphQL input", asyn
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -347,6 +354,7 @@ test("offerDiscoveryLoader drops unsupported sort params", async () => {
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -379,6 +387,7 @@ test("offerDiscoveryLoader drops malformed page-size params", async () => {
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: PRODUCT_ID,
@@ -423,6 +432,7 @@ test("offerDiscoveryLoader returns error state when route preloading fails", asy
       filters: {
         activeOnly: true,
         after: "cursor-2",
+        compareSlugs: [],
         first: 3,
         merchantId: null,
         productId: PRODUCT_ID,
@@ -458,6 +468,54 @@ test("offerDiscoveryLoader rethrows aborted preloads", async () => {
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("offerDiscoveryLoader normalizes comparison slugs without changing GraphQL variables", async () => {
+  const environment = createRelayEnvironment();
+  const request = new Request(
+    `https://app.example.test/offers?productId=${encodeURIComponent(PRODUCT_ID)}&slug=%20alpha%20&slug=beta&slug=alpha&slug=%20&slug=gamma&slug=fourth`,
+  );
+  const descriptor = offerDiscoveryQueryDescriptor({
+    after: null,
+    first: 6,
+    input: {
+      activeOnly: true,
+      productId: PRODUCT_ID,
+    },
+  });
+
+  preloadRouteQueryMock.mockResolvedValue(descriptor);
+
+  await expect(
+    offerDiscoveryLoader(buildOfferDiscoveryLoaderArgs({ environment, request })),
+  ).resolves.toEqual({
+    status: "ready",
+    filters: {
+      activeOnly: true,
+      after: null,
+      compareSlugs: ["alpha", "beta", "gamma"],
+      first: 6,
+      merchantId: null,
+      productId: PRODUCT_ID,
+      sort: "default",
+    },
+    query: descriptor,
+  });
+
+  expect(preloadRouteQueryMock).toHaveBeenCalledWith(
+    environment,
+    expect.anything(),
+    {
+      after: null,
+      first: 6,
+      productId: PRODUCT_ID,
+      input: {
+        activeOnly: true,
+        productId: PRODUCT_ID,
+      },
+    },
+    { signal: request.signal },
+  );
 });
 
 function buildOfferDiscoveryLoaderArgs({
