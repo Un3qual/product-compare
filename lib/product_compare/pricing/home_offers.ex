@@ -77,30 +77,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
     end
   end
 
-  @spec price_signals([term()], keyword()) :: %{optional(pos_integer()) => map()}
-  def price_signals(merchant_product_ids, opts) do
-    now = Keyword.get(opts, :now, DateTime.utc_now())
-    merchant_product_ids = normalize_product_ids(merchant_product_ids)
-
-    candidate_product_ids =
-      MerchantProduct
-      |> where([offer], offer.id in ^merchant_product_ids)
-      |> distinct([offer], offer.product_id)
-      |> select([offer], %{product_id: offer.product_id})
-
-    candidate_product_ids
-    |> median_eligible_query(now)
-    |> subquery()
-    |> where([offer], offer.merchant_product_id in ^merchant_product_ids)
-    |> select([offer], %{
-      merchant_product_id: offer.merchant_product_id,
-      median_30d: offer.median_30d,
-      below_30_day_median?: offer.below_30_day_median?
-    })
-    |> Repo.all()
-    |> Map.new(&{&1.merchant_product_id, Map.delete(&1, :merchant_product_id)})
-  end
-
   @spec trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
   def trending_deal_candidates(activity_query, opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())

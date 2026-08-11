@@ -37,6 +37,12 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussions do
            )
 
     create index(:merchant_products, [:product_id], name: :merchant_products_product_idx)
+
+    create index(:merchant_products, [:currency_id, :inserted_at, :id],
+             name: :merchant_products_home_new_idx,
+             where: "is_active = true"
+           )
+
     create unique_index(:merchant_products, [:entropy_id])
 
     create table(:price_points) do

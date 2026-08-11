@@ -267,6 +267,8 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
   end
 
   test "page facts are page-scoped and honor requested fields" do
+    refute function_exported?(Pricing, :home_offer_price_signals, 2)
+
     products =
       Enum.map(1..8, fn index ->
         product = SpecsFixtures.product_fixture(%{slug: "page-facts-#{index}"})
