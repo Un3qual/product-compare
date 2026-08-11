@@ -26,29 +26,9 @@ const INITIAL_GZIP_BUDGET_BYTES = 300_000;
 
 const requiredDynamicRoutes = [
   ["affiliate setup screen", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
-  [
-    "affiliate setup loader",
-    "src/routes/affiliate/setup/loader.ts",
-    "src/routes/affiliate/setup/AffiliateSetupRoute.tsx",
-  ],
   ["CJ programs screen", "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"],
-  [
-    "CJ programs loader",
-    "src/routes/ingestion/cj-programs/loader.ts",
-    "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx",
-  ],
   ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
-  [
-    "revenue loader",
-    "src/routes/commerce/revenue/loader.ts",
-    "src/routes/commerce/revenue/RevenueSummaryRoute.tsx",
-  ],
   ["API tokens screen", "src/routes/account/api-tokens/ApiTokensRoute.tsx"],
-  [
-    "API tokens loader",
-    "src/routes/account/api-tokens/loader.ts",
-    "src/routes/account/api-tokens/ApiTokensRoute.tsx",
-  ],
 ] as const;
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Manifest;
@@ -95,8 +75,8 @@ if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
   );
 }
 
-for (const [label, expectedSource, relatedScreenSource] of requiredDynamicRoutes) {
-  const match = findManifestEntry(expectedSource, relatedScreenSource);
+for (const [label, expectedSource] of requiredDynamicRoutes) {
+  const match = findManifestEntry(expectedSource);
 
   if (!match) {
     failures.push(`${label} route has no manifest chunk for ${expectedSource}`);
@@ -118,7 +98,7 @@ if (failures.length > 0) {
       "Client bundle contract failed:",
       ...failures.map((failure) => `- ${failure}`),
       `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript and ${initialCssFiles.length} CSS file(s).`,
-      "Build the client after moving every non-root route and loader behind direct React Router lazy imports.",
+      "Build the client after moving every non-root route behind a direct React Router lazy import.",
     ].join("\n"),
   );
 }
@@ -152,29 +132,8 @@ function normalizeSource(source: string) {
   return source.replace(/\\/g, "/").replace(/^_+/, "");
 }
 
-function findManifestEntry(expectedSource: string, relatedScreenSource?: string) {
-  const directMatch = manifestEntries.find(
+function findManifestEntry(expectedSource: string) {
+  return manifestEntries.find(
     ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource,
   );
-  if (directMatch || !relatedScreenSource) return directMatch;
-
-  // Rolldown can omit `src` and `isDynamicEntry` when a directly imported
-  // loader is also shared with its screen. Associate that output chunk through
-  // both the screen's static imports and the client entry's dynamic-import
-  // graph instead of relying on output hashes.
-  const screenMatch = manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === relatedScreenSource,
-  );
-  if (!screenMatch) return undefined;
-
-  const loaderName = expectedSource
-    .split("/")
-    .at(-1)
-    ?.replace(/\.[^.]+$/, "");
-  const candidates = (screenMatch[1].imports ?? []).filter((key) => {
-    const chunk = manifest[key];
-    return chunk?.name === loaderName && entryDynamicImports.has(key);
-  });
-
-  return candidates.length === 1 ? ([candidates[0], manifest[candidates[0]]] as const) : undefined;
 }
