@@ -7,7 +7,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   alias ProductCompareWeb.GraphQL.Connection
 
   @homepage_traversal_limit 1_000
-  @page_fact_fields MapSet.new([:active_offer_count, :price_signal])
+  @page_fact_field_identifiers [:active_offer_count, :price_signal]
 
   @spec home_workspace(any(), map(), Absinthe.Resolution.t()) :: {:ok, map()}
   def home_workspace(_parent, args, %{context: context}) do
@@ -344,10 +344,14 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   defp requested_page_fact_fields(%Resolution{} = resolution) do
     resolution
     |> projected_field_identifiers()
-    |> MapSet.intersection(@page_fact_fields)
+    |> MapSet.intersection(page_fact_fields())
   end
 
-  defp requested_page_fact_fields(_direct_call), do: @page_fact_fields
+  defp requested_page_fact_fields(_direct_call), do: page_fact_fields()
+
+  defp page_fact_fields do
+    Enum.reduce(@page_fact_field_identifiers, MapSet.new(), &MapSet.put(&2, &1))
+  end
 
   defp projected_field_identifiers(%Resolution{} = resolution) do
     resolution
