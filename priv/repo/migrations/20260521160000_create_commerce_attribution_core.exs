@@ -34,6 +34,13 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
              check: "link_type != 'affiliate' OR affiliate_program_id IS NOT NULL"
            )
 
+    create table(:anonymous_visitors) do
+      add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
+      timestamps(type: :timestamptz, precision: 6, size: 6)
+    end
+
+    create unique_index(:anonymous_visitors, [:entropy_id])
+
     create table(:commerce_click_sessions) do
       add :entropy_id, :uuid, null: false, default: fragment("uuidv7()")
       add :click_id, :uuid, null: false
@@ -42,7 +49,10 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
         null: false
 
       add :user_id, references(:users, type: :bigint, on_delete: :nilify_all)
-      add :anonymous_id, :text
+
+      add :anonymous_visitor_id,
+          references(:anonymous_visitors, type: :bigint, on_delete: :nilify_all)
+
       add :source_surface, :commerce_source_surface, null: false, default: "web"
       add :referrer, :text
       add :user_agent, :text
@@ -59,6 +69,14 @@ defmodule ProductCompare.Repo.Migrations.CreateCommerceAttributionCore do
            )
 
     create index(:commerce_click_sessions, [:user_id], name: :commerce_click_sessions_user_idx)
+
+    create index(:commerce_click_sessions, [:anonymous_visitor_id],
+             name: :commerce_click_sessions_anonymous_visitor_idx
+           )
+
+    create constraint(:commerce_click_sessions, :commerce_click_sessions_single_actor,
+             check: "NOT (user_id IS NOT NULL AND anonymous_visitor_id IS NOT NULL)"
+           )
 
     create constraint(
              :commerce_click_sessions,
