@@ -197,10 +197,8 @@ export const routes: RouteObject[] = [
           <RouteErrorBoundary resourceName="shared comparison" title="Shared comparison" />
         ),
         lazy: withLazyRouteImportRecovery(async () => {
-          const [{ SharedComparisonRoute }, { sharedComparisonLoader }] = await Promise.all([
-            import("./routes/compare/shared/SharedComparisonRoute"),
-            import("./routes/compare/shared/loader"),
-          ]);
+          const { SharedComparisonRoute, sharedComparisonLoader } =
+            await import("./routes/compare/shared/SharedComparisonRoute");
           return { Component: SharedComparisonRoute, loader: sharedComparisonLoader };
         }),
       },

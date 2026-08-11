@@ -12,8 +12,10 @@ import {
   revokeComparisonSnapshotMutation,
 } from "../../../src/routes/compare/ComparisonSharingOperations";
 import { ShareComparisonControl } from "../../../src/routes/compare/ShareComparisonControl";
-import { SharedComparisonRoute } from "../../../src/routes/compare/shared/SharedComparisonRoute";
-import { sharedComparisonLoader } from "../../../src/routes/compare/shared/loader";
+import {
+  SharedComparisonRoute,
+  sharedComparisonLoader,
+} from "../../../src/routes/compare/shared/SharedComparisonRoute";
 
 const {
   fetchRouteQueryMock,

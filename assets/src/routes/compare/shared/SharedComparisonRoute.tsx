@@ -1,30 +1,155 @@
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { data, Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
 import type { SharedComparisonRouteQuery as SharedComparisonRouteQueryType } from "../../../__generated__/SharedComparisonRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../../relay/route-preload";
+import {
+  fetchRouteQuery,
+  getRelayEnvironmentFromRouterContext,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "../../../relay/route-preload";
 import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
 import { PageShell } from "../../../ui/components/layout/PageShell";
 import { tokens } from "../../../ui/theme/tokens.stylex";
+import { normalizeRouteLoaderThrownError } from "../../loader-errors";
 import { formatProductDateTimeLabel } from "../../product-formatting";
+import type { RouteDocumentMetadata } from "../../RouteMetadata";
+import { routeMetadataFromSeo } from "../../seo";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
-import type { SharedComparisonLoaderData } from "./loader";
-import sharedComparisonRouteQuery from "./queries/SharedComparisonRouteQuery";
+
+const sharedComparisonRouteQuery = graphql`
+  query SharedComparisonRouteQuery($token: String!) {
+    comparisonSnapshot(token: $token) {
+      id
+      title
+      searchIndexable
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
+      capturedAt
+      disclaimer
+      products {
+        id
+        name
+        slug
+        description
+        modelNumber
+        brandName
+        attributes {
+          claimId
+          displayName
+          valueText
+          sourceType
+          evidence {
+            artifactId
+            excerpt
+            sourceName
+            sourceDomain
+            url
+            fetchedAt
+          }
+        }
+        offers {
+          pricePointId
+          merchantProductId
+          merchantName
+          merchantDomain
+          currency
+          itemPrice
+          shipping
+          landedPrice
+          observedAt
+          freshness
+        }
+      }
+      recommendation {
+        profile
+        algorithmVersion
+        evaluatedAt
+        status
+        winnerProductId
+        currency
+        missingInputs
+        rankings {
+          rank
+          productId
+          productName
+          landedPrice
+          currency
+          pricePointId
+          claimIds
+          reasons
+        }
+      }
+    }
+  }
+`;
+
+export type SharedComparisonLoaderData =
+  | {
+      status: "ready";
+      metadata: RouteDocumentMetadata;
+      query: RelayRouteQueryDescriptor<SharedComparisonRouteQueryType["variables"]>;
+    }
+  | { status: "not_found" };
+
+export async function sharedComparisonLoader({ context, params, request }: LoaderFunctionArgs) {
+  const token = params.token?.trim() ?? "";
+  if (!/^[A-Za-z0-9_-]{43}$/.test(token)) return sharedComparisonNotFound();
+  const environment = getRelayEnvironmentFromRouterContext(context);
+
+  try {
+    const fetched = await fetchRouteQuery<SharedComparisonRouteQueryType>(
+      environment,
+      sharedComparisonRouteQuery,
+      { token },
+      { signal: request.signal },
+    );
+    if (!fetched.data.comparisonSnapshot) {
+      fetched.dispose();
+      return sharedComparisonNotFound();
+    }
+    return {
+      status: "ready" as const,
+      metadata: routeMetadataFromSeo(fetched.data.comparisonSnapshot.seo, request.url, {
+        allowIndexing: new URL(request.url).search === "",
+      }),
+      query: fetched.descriptor,
+    };
+  } catch (error) {
+    throw normalizeRouteLoaderThrownError(error, "Shared comparison fetch failed");
+  }
+}
+
+function sharedComparisonNotFound() {
+  return data<SharedComparisonLoaderData>({ status: "not_found" }, { status: 404 });
+}
 
 const styles = create({
   attributeList: { display: "grid", gap: "0.5rem", margin: 0, padding: 0 },
   capture: { color: tokens.textSecondary, margin: 0 },
-  disclaimer: { borderBlock: "1px solid var(--pc-border-emphasized)", margin: 0, paddingBlock: "1rem" },
+  disclaimer: {
+    borderBlock: "1px solid var(--pc-border-emphasized)",
+    margin: 0,
+    paddingBlock: "1rem",
+  },
   evidence: { color: tokens.textSecondary, fontSize: "0.9rem", margin: 0 },
-  grid: { display: "grid", gap: "1.5rem", gridTemplateColumns: "repeat(auto-fit, minmax(min(18rem, 100%), 1fr))" },
+  grid: {
+    display: "grid",
+    gap: "1.5rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(min(18rem, 100%), 1fr))",
+  },
   product: { display: "grid", gap: "0.85rem" },
   recommendation: { display: "grid", gap: "0.65rem" },
-  title: { fontSize: "1.35rem", margin: 0 }
+  title: { fontSize: "1.35rem", margin: 0 },
 });
 
-type SharedProductViewData = ReturnType<
-  typeof buildSharedComparisonViewData
->["products"][number];
+type SharedProductViewData = ReturnType<typeof buildSharedComparisonViewData>["products"][number];
 type SharedRecommendationViewData = ReturnType<
   typeof buildSharedComparisonViewData
 >["recommendation"];
@@ -35,10 +160,7 @@ export function SharedComparisonRoute() {
   if (loaderData.status !== "ready") {
     return (
       <PageShell eyebrow="Shared decision" title="Comparison not found">
-        <FeedbackState
-          kind="error"
-          title="This snapshot is unavailable or has been revoked."
-        />
+        <FeedbackState kind="error" title="This snapshot is unavailable or has been revoked." />
       </PageShell>
     );
   }
@@ -47,17 +169,17 @@ export function SharedComparisonRoute() {
 }
 
 function ReadySharedComparison({
-  query
+  query,
 }: {
   query: Extract<SharedComparisonLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<SharedComparisonRouteQueryType>(
     sharedComparisonRouteQuery,
-    query
+    query,
   );
   const data = usePreloadedQuery<SharedComparisonRouteQueryType>(
     sharedComparisonRouteQuery,
-    queryRef
+    queryRef,
   );
   const snapshot = data.comparisonSnapshot;
 
@@ -94,15 +216,12 @@ function ReadySharedComparison({
 }
 
 function SharedRecommendation({
-  recommendation
+  recommendation,
 }: {
   recommendation: SharedRecommendationViewData;
 }) {
   return (
-    <section
-      aria-labelledby="shared-recommendation"
-      {...props(styles.recommendation)}
-    >
+    <section aria-labelledby="shared-recommendation" {...props(styles.recommendation)}>
       <h2 id="shared-recommendation" {...props(styles.title)}>
         Captured recommendation
       </h2>
