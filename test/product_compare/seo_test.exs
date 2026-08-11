@@ -587,7 +587,7 @@ defmodule ProductCompare.SeoTest do
     {shortcuts, queries} =
       capture_select_queries(fn -> Seo.home_category_shortcuts(now: @now, limit: 100) end)
 
-    assert length(shortcuts) == 8
+    assert Enum.count_until(shortcuts, 9) == 8
     assert Enum.map(shortcuts, & &1.id) == Enum.map(categories, & &1.id)
 
     assert Enum.map(Seo.home_category_shortcuts(now: @now, offset: 6, limit: 2), & &1.id) ==

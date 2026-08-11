@@ -161,8 +161,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
         |> Enum.map(&{&1, :trending_below_median})
       )
       |> Enum.uniq_by(fn {offer, _reason} -> offer.product_id end)
-      |> Enum.drop(window.offset)
-      |> Enum.take(window.fetch_limit)
+      |> Enum.slice(window.offset, window.fetch_limit)
 
     products_by_id =
       offers_with_reasons

@@ -123,7 +123,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     {candidates, queries} =
       capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 100) end)
 
-    assert length(candidates) == 8
+    assert Enum.count_until(candidates, 9) == 8
     assert Enum.map(candidates, & &1.product_id) == Enum.map(products, & &1.id)
 
     assert Enum.map(

@@ -4,6 +4,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   import Ecto.Query
 
   alias ProductCompare.Catalog.Filtering
+  alias ProductCompare.Input
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
@@ -14,7 +15,7 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   @spec product_candidates(keyword()) :: [Product.t()]
   def product_candidates(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    offset = opts |> Keyword.get(:offset, 0) |> non_negative_offset()
+    offset = opts |> Keyword.get(:offset, 0) |> Input.clamp_non_negative(0)
     limit = required_positive_limit(opts)
 
     eligible_products(now, offset, limit)
@@ -80,8 +81,6 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   end
 
   defp normalized_slugs(_), do: []
-  defp non_negative_offset(offset) when is_integer(offset) and offset >= 0, do: offset
-  defp non_negative_offset(_offset), do: 0
 
   defp required_positive_limit(opts) do
     case Keyword.fetch(opts, :limit) do

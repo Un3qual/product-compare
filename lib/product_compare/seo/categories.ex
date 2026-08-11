@@ -3,7 +3,7 @@ defmodule ProductCompare.Seo.Categories do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
+  alias ProductCompare.{Input, Repo}
   alias ProductCompare.Seo.QualificationPolicy
   alias ProductCompareSchemas.Catalog.Product
   alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
@@ -50,7 +50,7 @@ defmodule ProductCompare.Seo.Categories do
   @spec home_shortcuts(keyword()) :: [map()]
   def home_shortcuts(opts) do
     now = Keyword.get(opts, :now, DateTime.utc_now())
-    offset = opts |> Keyword.get(:offset, 0) |> non_negative_offset()
+    offset = opts |> Keyword.get(:offset, 0) |> Input.clamp_non_negative(0)
     limit = required_positive_limit(opts)
     qualifying_products = homepage_qualified_products_query(now)
     minimum_description_length = QualificationPolicy.minimum_description_length()
@@ -267,9 +267,6 @@ defmodule ProductCompare.Seo.Categories do
       now: now
     }
   end
-
-  defp non_negative_offset(offset) when is_integer(offset) and offset >= 0, do: offset
-  defp non_negative_offset(_offset), do: 0
 
   defp required_positive_limit(opts) do
     case Keyword.fetch(opts, :limit) do
