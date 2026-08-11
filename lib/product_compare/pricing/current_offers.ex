@@ -166,10 +166,10 @@ defmodule ProductCompare.Pricing.CurrentOffers do
         product_id: offer.product_id,
         merchant_id: offer.merchant_id,
         merchant_product_id: offer.id,
-        merchant_name: type(fragment("NULL"), :string),
+        merchant_name: type(^nil, :string),
         currency: offer.currency,
-        landed_price: type(fragment("NULL"), :decimal),
-        observed_at: type(fragment("NULL"), :utc_datetime_usec),
+        landed_price: type(^nil, :decimal),
+        observed_at: type(^nil, :utc_datetime_usec),
         inserted_at: offer.inserted_at
       }
   end

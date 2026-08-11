@@ -333,8 +333,8 @@ defmodule ProductCompare.Pricing.HomeOffers do
     product_ids
     |> CurrentOffers.eligible_query(current_offer_options(now))
     |> select_merge([offer: _offer], %{
-      first_seen_at: type(fragment("NULL"), :utc_datetime_usec),
-      median_30d: type(fragment("NULL"), :decimal),
+      first_seen_at: type(^nil, :utc_datetime_usec),
+      median_30d: type(^nil, :decimal),
       new_offer?: false,
       below_30_day_median?: false
     })
@@ -499,11 +499,6 @@ defmodule ProductCompare.Pricing.HomeOffers do
               field(relevance, :merchant_product_id) == offer.merchant_product_id))
     )
   end
-
-  defp maybe_filter_product_ids(query, :all), do: query
-
-  defp maybe_filter_product_ids(query, %Ecto.Query{} = product_ids_query),
-    do: where(query, [offer], offer.product_id in subquery(product_ids_query))
 
   defp maybe_filter_product_ids(query, product_ids),
     do: where(query, [offer], offer.product_id in ^product_ids)
