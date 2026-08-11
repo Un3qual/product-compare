@@ -108,6 +108,8 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     assert product_query =~ ~s(FROM "merchant_products")
     assert product_query =~ ~s(FROM "product_attribute_current")
     refute product_query =~ "JOIN (SELECT DISTINCT ON"
+    refute product_query =~ "min("
+    refute product_query =~ "percentile_cont"
   end
 
   test "includes the 24-hour boundary but requires the latest observation to remain in stock" do

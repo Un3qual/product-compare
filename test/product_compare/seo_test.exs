@@ -258,6 +258,31 @@ defmodule ProductCompare.SeoTest do
     assert category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
   end
 
+  test "category qualification consumes current availability without history aggregates" do
+    operator = AccountsFixtures.operator_fixture()
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: TaxonomyFixtures.taxonomy_fixture("type", "Type").id,
+        code: "availability-query-category",
+        name: "Availability Query Category",
+        seo_slug: "availability-query-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    Enum.each(1..3, &qualified_product("availability-query-product-#{&1}", operator, category))
+
+    {%{qualified_product_count: 3}, queries} =
+      capture_select_queries(fn -> Seo.get_category(category.seo_slug, now: @now) end)
+
+    qualification_query = Enum.find(queries, &String.contains?(&1, ~s(FROM "taxon_closure")))
+
+    assert qualification_query =~ ~s(FROM "merchant_products")
+    refute qualification_query =~ "min("
+    refute qualification_query =~ "percentile_cont"
+  end
+
   test "batch category lookup preserves singular qualification with a fixed query budget" do
     operator = AccountsFixtures.operator_fixture()
     type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
@@ -640,7 +665,7 @@ defmodule ProductCompare.SeoTest do
         String.contains?(query, ~s(FROM "taxons")) and String.contains?(query, "LIMIT")
       end)
 
-    assert [_distinct_on] = Regex.scan(~r/SELECT DISTINCT ON/i, shortcut_query)
+    assert shortcut_query =~ "JOIN LATERAL"
     assert shortcut_query =~ ~s(FROM product_attribute_current)
     assert shortcut_query =~ "OFFSET"
     refute shortcut_query =~ "SELECT count(*) FROM product_attribute_current"

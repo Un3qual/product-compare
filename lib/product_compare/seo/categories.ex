@@ -4,9 +4,9 @@ defmodule ProductCompare.Seo.Categories do
   import Ecto.Query
 
   alias ProductCompare.{Input, Repo}
+  alias ProductCompare.Pricing.CurrentOffers
   alias ProductCompare.Seo.QualificationPolicy
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
   @spec get(String.t(), keyword()) :: map() | nil
@@ -171,15 +171,13 @@ defmodule ProductCompare.Seo.Categories do
   @doc false
   @spec eligible_offer_scope(DateTime.t()) :: Ecto.Query.t()
   def eligible_offer_scope(%DateTime{} = now) do
-    MerchantProduct
-    |> join(:inner, [offer], price in subquery(latest_prices_query(now)),
-      on: price.merchant_product_id == offer.id
+    CurrentOffers.eligible_query(:all,
+      now: now,
+      currency: :all,
+      fresh_after: stale_boundary(now)
     )
-    |> where(
-      [offer, price],
-      offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
-        price.observed_at >= ^stale_boundary(now)
-    )
+    |> subquery()
+    |> then(fn eligible -> from(offer in eligible) end)
   end
 
   defp homepage_qualified_products_query(now) do
@@ -197,9 +195,13 @@ defmodule ProductCompare.Seo.Categories do
   end
 
   defp homepage_eligible_offer_scope(now) do
-    now
-    |> eligible_offer_scope()
-    |> where([offer], offer.currency == ^"USD")
+    CurrentOffers.eligible_query(:all,
+      now: now,
+      currency: "USD",
+      fresh_after: stale_boundary(now)
+    )
+    |> subquery()
+    |> then(fn eligible -> from(offer in eligible) end)
   end
 
   defp qualified_product_counts([], _now), do: %{}
@@ -257,13 +259,6 @@ defmodule ProductCompare.Seo.Categories do
       ) or
         fragment("EXISTS (SELECT 1 FROM product_media pm WHERE pm.product_id = ?)", product.id)
     )
-  end
-
-  defp latest_prices_query(now) do
-    from price in PricePoint,
-      where: price.observed_at <= ^now,
-      distinct: price.merchant_product_id,
-      order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
   end
 
   defp category_summary(taxon, qualified_product_count, now) do

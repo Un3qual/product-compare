@@ -1,11 +1,14 @@
 defmodule ProductCompare.Pricing.HomeOffersTest do
   use ProductCompare.DataCase, async: true
 
+  import Ecto.Query
+
   import ProductCompare.DatabaseTestHelpers,
     only: [capture_queries: 1, capture_select_queries: 1, count_select_queries_targeting_table: 2]
 
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
   alias ProductCompare.{Alerts, Catalog, Pricing}
+  alias ProductCompareSchemas.Catalog.Product
 
   @now ~U[2026-08-10 12:00:00Z]
 
@@ -199,8 +202,31 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert {cutoff_position, _length} =
              :binary.match(query, ~s("inserted_at" >=))
 
-    assert {first_seen_position, _length} = :binary.match(query, "min(")
+    assert {first_seen_position, _length} = :binary.match(query, "JOIN LATERAL")
     assert cutoff_position < first_seen_position
+  end
+
+  test "trending selection does not read first-observation history" do
+    product = SpecsFixtures.product_fixture(%{slug: "trending-without-first-observation"})
+    merchant_product = offer(product, "trending-without-first-observation", "90", 0, true)
+    add_price(merchant_product, "110", -3_600)
+
+    activity_query =
+      from candidate in Product,
+        where: candidate.id == ^product.id,
+        select: %{
+          product_id: candidate.id,
+          identity_count: type(^5, :integer),
+          activity_at: type(^@now, :utc_datetime_usec)
+        }
+
+    {[_candidate], [query]} =
+      capture_select_queries(fn ->
+        Pricing.home_trending_deal_candidates(activity_query, now: @now, limit: 6)
+      end)
+
+    assert query =~ "percentile_cont"
+    refute query =~ "min("
   end
 
   test "page facts are page-scoped and honor requested fields" do
@@ -361,6 +387,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert query =~ ~s("home_relevance" AS MATERIALIZED), query
     assert query =~ ~s(FROM "home_relevance"), query
+    refute query =~ "min("
 
     refute Regex.match?(
              ~r/SELECT DISTINCT [a-z0-9]+\."product_id" FROM "home_relevance"/,

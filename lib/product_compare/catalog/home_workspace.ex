@@ -6,9 +6,9 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
   alias ProductCompare.Catalog
   alias ProductCompare.Catalog.Filtering
   alias ProductCompare.Input
+  alias ProductCompare.Pricing.CurrentOffers
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Specs.ProductAttributeCurrent
 
   @max_selection 3
@@ -31,29 +31,13 @@ defmodule ProductCompare.Catalog.HomeWorkspace do
     product_correlation =
       dynamic([candidate], candidate.product_id == parent_as(:product).id)
 
-    latest_price =
-      PricePoint
-      |> where([price], price.merchant_product_id == parent_as(:offer).id)
-      |> where([price], price.observed_at <= ^now)
-      |> order_by([price], desc: price.observed_at, desc: price.id)
-      |> limit(1)
-      |> select([price], %{
-        observed_at: price.observed_at,
-        shipping: price.shipping,
-        in_stock: price.in_stock
-      })
-
     eligible_offer =
-      MerchantProduct
-      |> from(as: :offer)
-      |> join(:inner_lateral, [offer: _offer], price in subquery(latest_price), on: true)
-      |> where(^product_correlation)
-      |> where(
-        [offer, price],
-        offer.is_active == true and offer.currency == ^"USD" and price.in_stock == true and
-          not is_nil(price.shipping) and
-          price.observed_at >= ^DateTime.add(now, -86_400, :second)
+      CurrentOffers.eligible_query(:all,
+        now: now,
+        currency: "USD",
+        fresh_after: DateTime.add(now, -86_400, :second)
       )
+      |> where(^product_correlation)
 
     current_specification =
       from current in ProductAttributeCurrent,

@@ -5,6 +5,7 @@ defmodule ProductCompare.Pricing.PriceHistory do
 
   alias ProductCompare.Alerts.Jobs.AlertEvaluationWorker
   alias ProductCompare.Repo
+  alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
 
   @max_bigint_id 9_223_372_036_854_775_807
@@ -49,6 +50,43 @@ defmodule ProductCompare.Pricing.PriceHistory do
       where: pp.merchant_product_id in ^merchant_product_ids,
       distinct: pp.merchant_product_id,
       order_by: [asc: pp.merchant_product_id, desc: pp.observed_at, desc: pp.id]
+  end
+
+  @spec latest_observation_for_offer_query(DateTime.t()) :: Ecto.Query.t()
+  def latest_observation_for_offer_query(%DateTime{} = at) do
+    from price in PricePoint,
+      where: price.merchant_product_id == parent_as(:offer).id and price.observed_at <= ^at,
+      order_by: [desc: price.observed_at, desc: price.id],
+      limit: 1
+  end
+
+  @spec first_observation_for_offer_query(DateTime.t()) :: Ecto.Query.t()
+  def first_observation_for_offer_query(%DateTime{} = at) do
+    from price in PricePoint,
+      where: price.merchant_product_id == parent_as(:offer).id and price.observed_at <= ^at,
+      order_by: [asc: price.observed_at, asc: price.id],
+      limit: 1
+  end
+
+  @spec landed_price_medians_query([pos_integer()] | Ecto.Query.t(), keyword()) ::
+          Ecto.Query.t()
+  def landed_price_medians_query(product_ids, opts) do
+    from = Keyword.fetch!(opts, :from)
+    to = Keyword.fetch!(opts, :to)
+    currency = Keyword.fetch!(opts, :currency)
+
+    validate_bounds!(from, to)
+
+    case product_ids do
+      [] ->
+        empty_landed_price_medians_query()
+
+      product_ids when is_list(product_ids) ->
+        landed_price_medians_query(product_ids, from, to, currency)
+
+      %Ecto.Query{} = product_ids_query ->
+        landed_price_medians_query(product_ids_query, from, to, currency)
+    end
   end
 
   @spec price_history_query(pos_integer(), map()) :: Ecto.Query.t()
@@ -144,6 +182,57 @@ defmodule ProductCompare.Pricing.PriceHistory do
     |> preload([price_point], artifact: [:source])
     |> Repo.all()
     |> Map.new(&{&1.merchant_product_id, &1})
+  end
+
+  defp landed_price_medians_query(product_ids, from, to, currency) do
+    PricePoint
+    |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
+    |> filter_median_product_ids(product_ids)
+    |> where(
+      [price, offer],
+      offer.currency == ^currency and not is_nil(price.shipping) and
+        price.observed_at >= ^from and price.observed_at <= ^to
+    )
+    |> group_by([_price, offer], [offer.product_id, offer.currency])
+    |> select([price, offer], %{
+      product_id: offer.product_id,
+      currency: offer.currency,
+      median:
+        type(
+          fragment(
+            "percentile_cont(0.5) WITHIN GROUP (ORDER BY (? + ?))",
+            price.price,
+            price.shipping
+          ),
+          :decimal
+        )
+    })
+  end
+
+  defp empty_landed_price_medians_query do
+    from offer in MerchantProduct,
+      where: false,
+      select: %{
+        product_id: offer.product_id,
+        currency: offer.currency,
+        median: type(fragment("NULL"), :decimal)
+      }
+  end
+
+  defp filter_median_product_ids(query, product_ids) when is_list(product_ids),
+    do: where(query, [_price, offer], offer.product_id in ^product_ids)
+
+  defp filter_median_product_ids(query, %Ecto.Query{} = product_ids_query),
+    do: where(query, [_price, offer], offer.product_id in subquery(product_ids_query))
+
+  defp validate_bounds!(%DateTime{} = from, %DateTime{} = to) do
+    if DateTime.compare(from, to) == :gt do
+      raise ArgumentError, "price history from must be before or equal to to"
+    end
+  end
+
+  defp validate_bounds!(_from, _to) do
+    raise ArgumentError, "price history bounds must be DateTimes"
   end
 
   defp normalize_merchant_product_ids(merchant_product_ids) do
