@@ -49,7 +49,48 @@ None.
 
 ## Ready Work
 
-### 1. Production UI Discover And Evaluate
+### 1. Homepage Query Scaling And Ownership
+
+Status: ready
+Lane: Homepage query scaling and ownership
+Plan: `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
+Batch outcome: Homepage workspace and deal reads retain exact results and all
+GraphQL contracts while current availability has one owner, unused and repeated
+history work is removed, normal For You ranking runs once, and exact arbitrary-
+range activity reads use a covering index without persisted summaries.
+Next action: Run Task 1's temporal/current-offer characterization RED suite
+before renaming `TruthReads` or changing a query relation.
+Owned paths:
+
+- Pricing history/current/home modules and facade named by the plan.
+- Homepage Catalog/SEO eligibility consumers, resolver, Trending activity, and focused tests named by the plan.
+- The new exact activity covering-index migration and isolated migration test.
+- `docs/work/homepage-query-scaling-and-ownership.md`.
+
+Internal slices:
+
+- Exact arbitrary-bound price history and centralized current availability.
+- Fact-selective homepage ranking and page-first viewer behavior.
+- Exact arbitrary-range activity covering-index migration.
+- Full backend, quality, migration, queue, and anti-slop verification.
+
+Prerequisites:
+
+- Homepage database remediation is complete and the approved design forbids new summaries, approximate statistics, and net-new pricing modules.
+- Four disjoint production UI rows remain ready after this row is claimed.
+- The pre-existing `config/dev.exs` worktree change remains user-owned and excluded.
+
+Verification:
+
+- Complete focused Pricing, Catalog, SEO, activity, migration, resolver, and concurrency suites named by the plan.
+- Complete `mix test`, `mix quality`, `mix typecheck`, and full format checks.
+- `mix work_queue.validate` and `git diff --check`.
+
+Exit condition: Every existing homepage behavior and contract remains green,
+query-scope and covering-index invariants pass, the lane records observed
+evidence, and no range-specific state or wrapper-only abstraction was added.
+
+### 2. Production UI Discover And Evaluate
 
 Status: ready
 Lane: Production UI discover and evaluate
@@ -94,7 +135,7 @@ Exit condition: Every discover/evaluate feature-parity row and production gate
 passes, the lane records observed evidence, and no shared-spine or backend
 contract was widened.
 
-### 2. Production UI Compare And Return
+### 3. Production UI Compare And Return
 
 Status: ready
 Lane: Production UI compare and return
@@ -140,7 +181,7 @@ Exit condition: Every compare/return feature-parity row and production gate
 passes without weakening Decimal, mixed-currency, ownership, captured-versus-
 live, or row-state behavior.
 
-### 3. Production UI Account And Setup
+### 4. Production UI Account And Setup
 
 Status: ready
 Lane: Production UI account and setup
@@ -185,7 +226,7 @@ Exit condition: Every account/setup feature-parity row and production gate
 passes without REST browser auth, one-time-secret leakage, or weaker viewer,
 session, and lifecycle behavior.
 
-### 4. Production UI Operations
+### 5. Production UI Operations
 
 Status: ready
 Lane: Production UI operations

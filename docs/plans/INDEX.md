@@ -18,10 +18,20 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
 - `docs/superpowers/specs/2026-08-09-database-constraint-application-parity-design.md`
+- `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved homepage query-scaling outcome is ready through:
+
+- `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
+
+It keeps raw history authoritative and exact while centralizing current-offer
+availability, removing unused history work and the normal signed-in viewer
+double ranking, and covering arbitrary activity windows without a new pricing
+module or range-specific table.
 
 The approved Production UI Redesign is planned as five independently
 reviewable outcomes:
