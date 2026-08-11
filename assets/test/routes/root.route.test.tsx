@@ -198,6 +198,61 @@ test("root destinations render guest shopper paths and auth actions", () => {
   expect(within(homeActions).queryByRole("link", { name: "Sign out" })).not.toBeInTheDocument();
 });
 
+test("primary navigation preserves the URL-backed comparison across public destinations", () => {
+  render(
+    <MemoryRouter initialEntries={["/?slug=model-1&slug=model-2"]}>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={null} />
+      </nav>
+    </MemoryRouter>,
+  );
+
+  const primary = screen.getByRole("navigation", { name: "Primary" });
+
+  expect(within(primary).getByRole("link", { name: "Product Compare" })).toHaveAttribute(
+    "href",
+    "/?slug=model-1&slug=model-2",
+  );
+  expect(within(primary).getByRole("link", { name: "Search products" })).toHaveAttribute(
+    "href",
+    "/products?slug=model-1&slug=model-2",
+  );
+  expect(within(primary).getByRole("link", { name: "Compare products" })).toHaveAttribute(
+    "href",
+    "/compare?slug=model-1&slug=model-2",
+  );
+
+  const explore = openNavigationMenu(primary, "Explore");
+  expect(within(explore).getByRole("link", { name: "Offers" })).toHaveAttribute(
+    "href",
+    "/offers?slug=model-1&slug=model-2",
+  );
+});
+
+test("primary navigation keeps one disclosure open and dismisses it after navigation", () => {
+  render(
+    <MemoryRouter>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={null} />
+      </nav>
+    </MemoryRouter>,
+  );
+
+  const primary = screen.getByRole("navigation", { name: "Primary" });
+  openNavigationMenu(primary, "Explore");
+  expect(within(primary).getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
+
+  const guest = openNavigationMenu(primary, "Guest");
+  expect(
+    within(primary).queryByRole("navigation", { name: "Explore navigation" }),
+  ).not.toBeInTheDocument();
+
+  fireEvent.click(within(guest).getByRole("link", { name: "Sign in" }));
+  expect(
+    within(primary).queryByRole("navigation", { name: "Guest navigation" }),
+  ).not.toBeInTheDocument();
+});
+
 test("guest auth links preserve inactive styles in their menu and home contexts", () => {
   render(
     <MemoryRouter initialEntries={["/auth/login"]}>

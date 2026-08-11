@@ -59,46 +59,44 @@ export function HomeRoute() {
       eyebrow="Product catalog"
       title="Find the right product"
     >
-      <HomeSearch selectedSlugs={loaderData.selectedSlugs} />
       {loaderData.workspace ? (
         <ResettableErrorBoundary
-          fallback={<HomeWorkspaceUnavailable selectedSlugs={loaderData.selectedSlugs} />}
+          fallback={
+            <HomeWorkspaceRecovery
+              hasViewer={viewer !== null}
+              selectedSlugs={loaderData.selectedSlugs}
+            />
+          }
           resetToken={loaderData.workspace}
         >
           <Suspense fallback={<FeedbackState kind="loading" title="Loading products..." />}>
-            <HomeWorkspace query={loaderData.workspace} selectedSlugs={loaderData.selectedSlugs} />
+            <HomeWorkspace hasViewer={viewer !== null} query={loaderData.workspace} />
           </Suspense>
         </ResettableErrorBoundary>
       ) : (
-        <HomeWorkspaceUnavailable selectedSlugs={loaderData.selectedSlugs} />
-      )}
-      <section aria-labelledby="home-deals-title" {...props(styles.section)}>
-        <h2 id="home-deals-title" {...props(styles.sectionTitle)}>
-          New and trending offers
-        </h2>
-        <HomeDeals
-          deals={loaderData.deals}
+        <HomeWorkspaceRecovery
           hasViewer={viewer !== null}
           selectedSlugs={loaderData.selectedSlugs}
         />
-      </section>
+      )}
     </PageShell>
   );
 }
 
 function HomeWorkspace({
+  hasViewer,
   query,
-  selectedSlugs,
 }: {
+  hasViewer: boolean;
   query: NonNullable<HomeLoaderData["workspace"]>;
-  selectedSlugs: readonly string[];
 }) {
   const queryRef = useRoutePreloadedQuery<HomeWorkspaceRouteQuery>(homeWorkspaceRouteQuery, query);
   const data = usePreloadedQuery<HomeWorkspaceRouteQuery>(homeWorkspaceRouteQuery, queryRef);
-  const viewData = homeWorkspaceViewData(data.homeWorkspace, selectedSlugs);
+  const viewData = homeWorkspaceViewData(data.homeWorkspace);
 
   return (
     <>
+      <HomeSearch selectedSlugs={viewData.selectedSlugs} />
       {viewData.comparisonProducts.length > 0 ? (
         <ComparisonContinuity
           destination={buildComparePathFromSlugs(
@@ -131,12 +129,14 @@ function HomeWorkspace({
           Products to compare
         </h2>
         {viewData.ledgerRows.length > 0 ? (
-          <HomeProductLedger rows={viewData.ledgerRows} selectedSlugs={selectedSlugs} />
+          <HomeProductLedger rows={viewData.ledgerRows} selectedSlugs={viewData.selectedSlugs} />
         ) : (
           <FeedbackState
             action={
               <Button asChild>
-                <Link to={homeCatalogSearchPath("", selectedSlugs)}>Browse all products</Link>
+                <Link to={homeCatalogSearchPath("", viewData.selectedSlugs)}>
+                  Browse all products
+                </Link>
               </Button>
             }
             kind="empty"
@@ -144,7 +144,41 @@ function HomeWorkspace({
           />
         )}
       </section>
+      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={viewData.selectedSlugs} />
     </>
+  );
+}
+
+function HomeWorkspaceRecovery({
+  hasViewer,
+  selectedSlugs,
+}: {
+  hasViewer: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <>
+      <HomeSearch selectedSlugs={selectedSlugs} />
+      <HomeWorkspaceUnavailable selectedSlugs={selectedSlugs} />
+      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={selectedSlugs} />
+    </>
+  );
+}
+
+function HomeDealsSection({
+  hasViewer,
+  selectedSlugs,
+}: {
+  hasViewer: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <section aria-labelledby="home-deals-title" {...props(styles.section)}>
+      <h2 id="home-deals-title" {...props(styles.sectionTitle)}>
+        New and trending offers
+      </h2>
+      <HomeDeals hasViewer={hasViewer} selectedSlugs={selectedSlugs} />
+    </section>
   );
 }
 

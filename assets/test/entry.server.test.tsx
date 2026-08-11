@@ -329,6 +329,7 @@ test("server render does not wait for optional home deals", async () => {
     expect(result).toBe("rendered");
     await expect(renderResult).resolves.toContain("Find the right product");
     await expect(renderResult).resolves.toContain("Loading new and trending offers...");
+    await expect(renderResult).resolves.not.toContain('"deals":{}');
   } finally {
     dealsResponse.resolve(
       jsonResponse({

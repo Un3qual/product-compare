@@ -14,16 +14,22 @@ import { homeLoader } from "../../../src/routes/home/loader";
 
 const {
   preloadRouteQueryMock,
+  disposeDealsQueryMock,
+  loadDealsQueryMock,
   revalidateMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
+  useQueryLoaderMock,
   useRoutePreloadedQueryMock,
   useRevalidatorMock,
 } = vi.hoisted(() => ({
   preloadRouteQueryMock: vi.fn(),
+  disposeDealsQueryMock: vi.fn(),
+  loadDealsQueryMock: vi.fn(),
   revalidateMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
+  useQueryLoaderMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
   useRevalidatorMock: vi.fn(),
 }));
@@ -48,7 +54,11 @@ vi.mock("react-router-dom", async () => {
 });
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, usePreloadedQuery: usePreloadedQueryMock };
+  return {
+    ...actual,
+    usePreloadedQuery: usePreloadedQueryMock,
+    useQueryLoader: useQueryLoaderMock,
+  };
 });
 
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
@@ -77,16 +87,18 @@ beforeEach(() => {
   revalidateMock.mockReset();
   mockedUseLoaderData.mockReset();
   mockedUsePreloadedQuery.mockReset();
+  useQueryLoaderMock.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReturnValue({} as never);
   mockedUseRevalidator.mockReturnValue({ revalidate: revalidateMock } as never);
+  useQueryLoaderMock.mockReturnValue([null, loadDealsQueryMock, disposeDealsQueryMock]);
+  loadDealsQueryMock.mockReset();
+  disposeDealsQueryMock.mockReset();
 });
 
-test("home loader keeps the essential SSR descriptor while deals fail independently", async () => {
+test("home loader returns only serializable essential workspace state", async () => {
   const environment = createRelayEnvironment();
-  mockedPreloadRouteQuery
-    .mockResolvedValueOnce(WORKSPACE_DESCRIPTOR)
-    .mockRejectedValueOnce(new Error("deals unavailable"));
+  mockedPreloadRouteQuery.mockResolvedValueOnce(WORKSPACE_DESCRIPTOR);
 
   const result = await homeLoader({
     context: createRelayRouterContext(environment),
@@ -95,16 +107,15 @@ test("home loader keeps the essential SSR descriptor while deals fail independen
 
   expect(result.workspace).toBe(WORKSPACE_DESCRIPTOR);
   expect(result.selectedSlugs).toEqual(["model-1", "model-2"]);
-  await expect(result.deals).resolves.toBeNull();
-  expect(mockedPreloadRouteQuery).toHaveBeenCalledTimes(2);
+  expect(result).not.toHaveProperty("deals");
+  expect(mockedPreloadRouteQuery).toHaveBeenCalledTimes(1);
   expect(mockedPreloadRouteQuery.mock.calls[0]?.[3]).toEqual({ signal: expect.any(AbortSignal) });
-  expect(mockedPreloadRouteQuery.mock.calls[1]?.[3]).toEqual({ signal: expect.any(AbortSignal) });
 });
 
 test("home loader preserves an aborted essential workspace request", async () => {
   const environment = createRelayEnvironment();
   const abort = new DOMException("aborted", "AbortError");
-  mockedPreloadRouteQuery.mockRejectedValueOnce(abort).mockResolvedValueOnce(DEALS_DESCRIPTOR);
+  mockedPreloadRouteQuery.mockRejectedValueOnce(abort);
   const controller = new AbortController();
   controller.abort(abort);
 
@@ -116,27 +127,9 @@ test("home loader preserves an aborted essential workspace request", async () =>
   ).rejects.toBe(abort);
 });
 
-test("home loader rethrows an aborted optional deals preload instead of returning null", async () => {
-  const environment = createRelayEnvironment();
-  const controller = new AbortController();
-  const cancellation = new Error("Route load cancelled");
-  controller.abort(cancellation);
-  mockedPreloadRouteQuery
-    .mockResolvedValueOnce(WORKSPACE_DESCRIPTOR)
-    .mockRejectedValueOnce(new Error("deals request stopped"));
-
-  const result = await homeLoader({
-    context: createRelayRouterContext(environment),
-    request: new Request("https://app.example/", { signal: controller.signal }),
-  } as never);
-
-  await expect(result.deals).rejects.toThrow("deals request stopped");
-});
-
 test("home workspace recovery keeps search, category entry, and retry independent", () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: null,
-    deals: Promise.resolve(null),
     selectedSlugs: [],
   });
 
@@ -156,15 +149,57 @@ test("home workspace recovery keeps search, category entry, and retry independen
   expect(screen.getByRole("alert")).toHaveTextContent("Products are unavailable right now.");
 });
 
-test("home maps a rejected deferred deals descriptor to the local retry state", async () => {
+test("home actions use the canonical resolved comparison instead of stale URL slugs", () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
-    deals: Promise.reject(new Error("deals unavailable")),
-    selectedSlugs: [],
+    selectedSlugs: ["missing-1", "missing-2", "missing-3"],
   });
   mockedUsePreloadedQuery.mockReturnValueOnce({
-    homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+    homeWorkspace: {
+      categories: [],
+      selectedProducts: [],
+      products: [
+        {
+          product: { id: "product-1", name: "Model 1", slug: "model-1" },
+          highlights: [],
+          offer: {
+            merchantName: "Camera Shop",
+            currency: "USD",
+            landedPrice: "499.00",
+            priceSignal: "BELOW_30_DAY_MEDIAN",
+            observedAt: "2026-08-10T12:00:00Z",
+          },
+        },
+      ],
+    },
   } as never);
+
+  render(
+    <MemoryRouter>
+      <HomeRoute />
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("link", { name: "Add to comparison" })).toHaveAttribute(
+    "href",
+    "/?slug=model-1",
+  );
+  expect(screen.queryByRole("link", { name: "Comparison is full" })).not.toBeInTheDocument();
+});
+
+test("home maps a rejected client deals query to the local retry state", async () => {
+  mockedUseLoaderData.mockReturnValue({
+    workspace: WORKSPACE_DESCRIPTOR,
+    selectedSlugs: [],
+  });
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce({
+      homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+    } as never)
+    .mockImplementationOnce(() => {
+      throw new Error("deals unavailable");
+    });
 
   render(
     <MemoryRouter>
@@ -176,20 +211,19 @@ test("home maps a rejected deferred deals descriptor to the local retry state", 
     "New and trending offers are unavailable right now.",
   );
   fireEvent.click(screen.getByRole("button", { name: "Try again" }));
-  expect(revalidateMock).toHaveBeenCalledTimes(1);
+  expect(loadDealsQueryMock).toHaveBeenCalledTimes(2);
 });
 
-test("home keeps the optional deals loading shell stable through hydration and deferred success", async () => {
-  const deals = deferredPromise<typeof DEALS_DESCRIPTOR | null>();
+test("home keeps the optional deals loading shell stable through hydration and client success", async () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
   const container = document.createElement("div");
   let root: ReturnType<typeof hydrateRoot> | null = null;
 
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
-    deals: deals.promise,
     selectedSlugs: [],
   });
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
   mockHomeQueryResults();
 
   try {
@@ -209,14 +243,14 @@ test("home keeps the optional deals loading shell stable through hydration and d
       await Promise.resolve();
     });
 
-    expect(container).toHaveTextContent("Loading new and trending offers...");
+    expect(within(container).getByRole("tab", { name: "New" })).toBeVisible();
     expect(consoleError.mock.calls.filter(([message]) => /hydrat/i.test(String(message)))).toEqual(
       [],
     );
-
-    await act(() => deals.resolve(DEALS_DESCRIPTOR));
-
-    expect(within(container).getByRole("tab", { name: "New" })).toBeVisible();
+    expect(loadDealsQueryMock).toHaveBeenCalledWith(
+      { selectedSlugs: [] },
+      { fetchPolicy: "network-only" },
+    );
   } finally {
     if (root) await act(() => root?.unmount());
     container.remove();
@@ -224,14 +258,20 @@ test("home keeps the optional deals loading shell stable through hydration and d
   }
 });
 
-test("home keeps the workspace available while deferred deals fail after hydration", async () => {
-  const deals = deferredPromise<typeof DEALS_DESCRIPTOR | null>();
+test("home keeps the workspace available while the client deals query fails", async () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
-    deals: deals.promise,
     selectedSlugs: [],
   });
-  mockHomeQueryResults();
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
+  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => descriptor as never);
+  mockedUsePreloadedQuery
+    .mockReturnValueOnce({
+      homeWorkspace: { categories: [], selectedProducts: [], products: [] },
+    } as never)
+    .mockImplementationOnce(() => {
+      throw new Error("deals unavailable");
+    });
 
   render(
     <MemoryRouter>
@@ -240,12 +280,8 @@ test("home keeps the workspace available while deferred deals fail after hydrati
   );
 
   expect(screen.getByRole("heading", { name: "Products to compare" })).toBeVisible();
-  expect(screen.getByText("Loading new and trending offers...")).toBeVisible();
-
-  await act(() => deals.reject(new Error("deferred deals unavailable")));
-
   expect(screen.getByRole("heading", { name: "Products to compare" })).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent(
+  expect(await screen.findByRole("alert")).toHaveTextContent(
     "New and trending offers are unavailable right now.",
   );
 });
@@ -253,9 +289,9 @@ test("home keeps the workspace available while deferred deals fail after hydrati
 test("home renders desktop ledger headings, one semantic list, and restrained deal rows", async () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
-    deals: Promise.resolve(DEALS_DESCRIPTOR),
     selectedSlugs: ["model-1"],
   });
+  useQueryLoaderMock.mockReturnValue([DEALS_DESCRIPTOR, loadDealsQueryMock, disposeDealsQueryMock]);
   mockedUsePreloadedQuery
     .mockReturnValueOnce({
       homeWorkspace: {
@@ -263,15 +299,12 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
         selectedProducts: [{ id: "product-1", name: "Model 1", slug: "model-1" }],
         products: [
           {
-            id: "product-1",
-            name: "Model 1",
-            slug: "model-1",
+            product: { id: "product-1", name: "Model 1", slug: "model-1" },
             highlights: [],
             offer: {
               merchantName: "Camera Shop",
               currency: "USD",
               landedPrice: "499.00",
-              activeOfferCount: 1,
               priceSignal: "BELOW_30_DAY_MEDIAN",
               observedAt: "2026-08-10T12:00:00Z",
             },
@@ -328,7 +361,6 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
     expect.anything(),
     WORKSPACE_DESCRIPTOR,
   );
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), DEALS_DESCRIPTOR);
   expect(screen.getByRole("tab", { name: "Trending" })).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { hidden: true, name: "More details" })).toHaveAttribute(
@@ -368,15 +400,4 @@ function mockHomeQueryResults() {
       homeDeals: { forYou: [], new: [], trending: [] },
     } as never;
   });
-}
-
-function deferredPromise<T>() {
-  let resolve!: (value: T) => void;
-  let reject!: (reason?: unknown) => void;
-  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
-    resolve = resolvePromise;
-    reject = rejectPromise;
-  });
-
-  return { promise, reject, resolve };
 }

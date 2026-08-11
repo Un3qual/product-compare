@@ -19,7 +19,9 @@ export type HomeDealReason = {
   watchTarget?: unknown;
 };
 
-export function homeWorkspaceViewData(workspace: HomeWorkspace, selectedSlugs: readonly string[]) {
+export function homeWorkspaceViewData(workspace: HomeWorkspace) {
+  const selectedSlugs = workspace.selectedProducts.map((product) => product.slug);
+
   return {
     categories: workspace.categories.map((category) => ({
       description: category.description,
@@ -31,6 +33,7 @@ export function homeWorkspaceViewData(workspace: HomeWorkspace, selectedSlugs: r
       slug: product.slug,
     })),
     ledgerRows: workspace.products.slice(0, 6).map((row) => homeLedgerRow(row, selectedSlugs)),
+    selectedSlugs,
   };
 }
 

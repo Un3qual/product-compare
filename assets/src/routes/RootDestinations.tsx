@@ -1,9 +1,15 @@
+import { useEffect, useState } from "react";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
-import { NavLink, useMatch } from "react-router-dom";
+import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "../ui/components/brand/CompareMark";
 import { Button, type ButtonProps } from "../ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/primitives/Collapsible";
 import { tokens } from "../ui/theme/tokens.stylex";
+import {
+  buildComparePathFromSlugs,
+  buildCurrentRoutePathWithCompareSlugs,
+  selectedCompareSlugsFromSearch,
+} from "./compare/paths";
 import {
   getRootDestinationData,
   type RootDestination,
@@ -155,7 +161,10 @@ type RootDestinationsProps = {
 };
 
 export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
+  const location = useLocation();
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
   const { primary } = getRootDestinationData(viewer);
+  const selectedSlugs = selectedCompareSlugsFromSearch(location.search);
   const publicDestinations = primary.destinations.filter(
     ({ to }) => !isMemberDestination(to) && !isOperatorDestination(to),
   );
@@ -170,29 +179,58 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
   const guestDestinations = viewer ? [] : primary.authDestinations;
   const accountDestinations = viewer ? [...memberDestinations, ...primary.authDestinations] : [];
 
+  useEffect(() => setOpenMenu(null), [location.pathname, location.search]);
+
   return (
     <div {...props(styles.navigation)}>
       <Button asChild {...props(styles.title)}>
-        <NavLink end to="/">
+        <NavLink end to={destinationWithComparison("/", selectedSlugs)}>
           <CompareMark label="Product Compare" />
         </NavLink>
       </Button>
       <div data-slot="root-navigation-controls" {...props(styles.navigationLinks)}>
         <DestinationLinks
           destinations={primaryDestinations}
+          preserveComparison
           searchLabel
+          selectedSlugs={selectedSlugs}
           style={styles.navigationControl}
           variant="soft"
         />
-        <NavigationMenu destinations={exploreDestinations} label="Explore" />
+        <NavigationMenu
+          destinations={exploreDestinations}
+          label="Explore"
+          onOpenChange={(open) => setOpenMenu(open ? "Explore" : null)}
+          open={openMenu === "Explore"}
+          preserveComparison
+          selectedSlugs={selectedSlugs}
+        />
         {guestDestinations.length > 0 ? (
-          <NavigationMenu destinations={guestDestinations} label="Guest" />
+          <NavigationMenu
+            destinations={guestDestinations}
+            label="Guest"
+            onOpenChange={(open) => setOpenMenu(open ? "Guest" : null)}
+            open={openMenu === "Guest"}
+            selectedSlugs={selectedSlugs}
+          />
         ) : null}
         {accountDestinations.length > 0 ? (
-          <NavigationMenu destinations={accountDestinations} label="Account" />
+          <NavigationMenu
+            destinations={accountDestinations}
+            label="Account"
+            onOpenChange={(open) => setOpenMenu(open ? "Account" : null)}
+            open={openMenu === "Account"}
+            selectedSlugs={selectedSlugs}
+          />
         ) : null}
         {operatorDestinations.length > 0 ? (
-          <NavigationMenu destinations={operatorDestinations} label="Operator" />
+          <NavigationMenu
+            destinations={operatorDestinations}
+            label="Operator"
+            onOpenChange={(open) => setOpenMenu(open ? "Operator" : null)}
+            open={openMenu === "Operator"}
+            selectedSlugs={selectedSlugs}
+          />
         ) : null}
       </div>
     </div>
@@ -233,12 +271,18 @@ function ShopperActions({ destinations }: { destinations: readonly RootShopperDe
 
 function DestinationLinks({
   destinations,
+  onNavigate,
+  preserveComparison = false,
   searchLabel = false,
+  selectedSlugs = [],
   style,
   variant = "ghost",
 }: {
   destinations: readonly RootDestination[];
+  onNavigate?: () => void;
+  preserveComparison?: boolean;
   searchLabel?: boolean;
+  selectedSlugs?: readonly string[];
   style?: StyleXStyles;
   variant?: ButtonProps["variant"];
 }) {
@@ -247,6 +291,9 @@ function DestinationLinks({
       end={end}
       key={to}
       label={searchLabel && to === "/products" ? "Search products" : label}
+      onNavigate={onNavigate}
+      preserveComparison={preserveComparison}
+      selectedSlugs={selectedSlugs}
       style={style}
       to={to}
       variant={variant}
@@ -258,6 +305,9 @@ function DestinationLink({
   end = false,
   label,
   matchDestination = true,
+  onNavigate,
+  preserveComparison = false,
+  selectedSlugs = [],
   style,
   to,
   variant = "ghost",
@@ -265,12 +315,16 @@ function DestinationLink({
   end?: boolean;
   label: string;
   matchDestination?: boolean;
+  onNavigate?: () => void;
+  preserveComparison?: boolean;
+  selectedSlugs?: readonly string[];
   style?: StyleXStyles;
   to: string;
   variant?: ButtonProps["variant"];
 }) {
   const routeMatch = useMatch({ end, path: to });
   const isActive = matchDestination ? Boolean(routeMatch) : false;
+  const destination = preserveComparison ? destinationWithComparison(to, selectedSlugs) : to;
 
   return (
     <Button
@@ -279,7 +333,7 @@ function DestinationLink({
       variant={isActive ? "soft" : variant}
       {...props(styles.link, style)}
     >
-      <NavLink end={end} to={to}>
+      <NavLink end={end} onClick={onNavigate} to={destination}>
         {label}
       </NavLink>
     </Button>
@@ -289,12 +343,25 @@ function DestinationLink({
 function NavigationMenu({
   destinations,
   label,
+  onOpenChange,
+  open,
+  preserveComparison = false,
+  selectedSlugs,
 }: {
   destinations: readonly RootDestination[];
   label: string;
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  preserveComparison?: boolean;
+  selectedSlugs: readonly string[];
 }) {
   return (
-    <Collapsible data-slot="navigation-menu" {...props(styles.navigationMenu)}>
+    <Collapsible
+      data-slot="navigation-menu"
+      onOpenChange={onOpenChange}
+      open={open}
+      {...props(styles.navigationMenu)}
+    >
       <CollapsibleTrigger asChild>
         <Button
           aria-label={`${label} menu`}
@@ -312,6 +379,9 @@ function NavigationMenu({
               key={to}
               label={destinationLabel}
               matchDestination={!isAuthDestination(to)}
+              onNavigate={() => onOpenChange(false)}
+              preserveComparison={preserveComparison}
+              selectedSlugs={selectedSlugs}
               style={styles.menuLink}
               to={to}
               variant={isAuthDestination(to) ? "solid" : "ghost"}
@@ -333,6 +403,12 @@ function AuthLinks({ destinations }: { destinations: readonly RootDestination[] 
 
 function isMemberDestination(to: string) {
   return to === "/account/alerts" || to === "/compare/saved" || to === "/account/api-tokens";
+}
+
+function destinationWithComparison(to: string, selectedSlugs: readonly string[]) {
+  if (to === "/compare") return buildComparePathFromSlugs(selectedSlugs);
+
+  return buildCurrentRoutePathWithCompareSlugs(to, "", selectedSlugs);
 }
 
 function isOperatorDestination(to: string) {

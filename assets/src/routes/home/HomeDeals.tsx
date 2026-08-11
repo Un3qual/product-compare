@@ -1,9 +1,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Await, Link, useRevalidator } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
+import { Link } from "react-router-dom";
+import { usePreloadedQuery, useQueryLoader, type PreloadedQuery } from "react-relay";
 import type { HomeDealsRouteQuery } from "../../__generated__/HomeDealsRouteQuery.graphql";
-import { useRoutePreloadedQuery, type RelayRouteQueryDescriptor } from "../../relay/route-preload";
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { DetailTabs } from "../../ui/components/layout/DetailTabs";
@@ -51,54 +50,40 @@ const styles = create({
 });
 
 export function HomeDeals({
-  deals,
   hasViewer,
   selectedSlugs,
 }: {
-  deals: Promise<RelayRouteQueryDescriptor<HomeDealsRouteQuery["variables"]> | null>;
   hasViewer: boolean;
   selectedSlugs: readonly string[];
 }) {
   const [isHydrated, setIsHydrated] = useState(false);
+  const [queryRef, loadQuery, disposeQuery] =
+    useQueryLoader<HomeDealsRouteQuery>(homeDealsRouteQuery);
+  const variablesKey = selectedSlugs.join("\u0000");
 
   useEffect(() => {
     setIsHydrated(true);
   }, []);
+  useEffect(() => disposeQuery, [disposeQuery]);
+  useEffect(() => {
+    if (!isHydrated) return;
 
-  // The deal rail is optional. Keep SSR and the first client render stable, then
-  // subscribe after hydration so an unresolved deal query cannot delay the page.
-  if (!isHydrated) {
+    loadQuery({ selectedSlugs }, { fetchPolicy: "network-only" });
+  }, [isHydrated, loadQuery, selectedSlugs, variablesKey]);
+
+  const retry = () => loadQuery({ selectedSlugs }, { fetchPolicy: "network-only" });
+
+  if (!isHydrated || !queryRef) {
     return <HomeDealsLoading />;
   }
 
   return (
-    <Suspense fallback={<HomeDealsLoading />}>
-      <Await resolve={deals} errorElement={<HomeDealsUnavailable />}>
-        {(query) =>
-          query ? (
-            <HomeDealsBoundary hasViewer={hasViewer} query={query} selectedSlugs={selectedSlugs} />
-          ) : (
-            <HomeDealsUnavailable />
-          )
-        }
-      </Await>
-    </Suspense>
-  );
-}
-
-function HomeDealsBoundary({
-  hasViewer,
-  query,
-  selectedSlugs,
-}: {
-  hasViewer: boolean;
-  query: RelayRouteQueryDescriptor<HomeDealsRouteQuery["variables"]>;
-  selectedSlugs: readonly string[];
-}) {
-  return (
-    <ResettableErrorBoundary fallback={<HomeDealsUnavailable />} resetToken={query}>
+    <ResettableErrorBoundary
+      fallback={<HomeDealsUnavailable onRetry={retry} />}
+      resetToken={queryRef}
+    >
       <Suspense fallback={<HomeDealsLoading />}>
-        <HomeDealsPanel hasViewer={hasViewer} query={query} selectedSlugs={selectedSlugs} />
+        <HomeDealsPanel hasViewer={hasViewer} queryRef={queryRef} selectedSlugs={selectedSlugs} />
       </Suspense>
     </ResettableErrorBoundary>
   );
@@ -110,14 +95,13 @@ function HomeDealsLoading() {
 
 function HomeDealsPanel({
   hasViewer,
-  query,
+  queryRef,
   selectedSlugs,
 }: {
   hasViewer: boolean;
-  query: RelayRouteQueryDescriptor<HomeDealsRouteQuery["variables"]>;
+  queryRef: PreloadedQuery<HomeDealsRouteQuery>;
   selectedSlugs: readonly string[];
 }) {
-  const queryRef = useRoutePreloadedQuery<HomeDealsRouteQuery>(homeDealsRouteQuery, query);
   const data = usePreloadedQuery<HomeDealsRouteQuery>(homeDealsRouteQuery, queryRef);
   const viewData = homeDealsViewData(data.homeDeals, hasViewer, selectedSlugs);
 
@@ -157,13 +141,11 @@ function HomeDealsPanel({
   );
 }
 
-function HomeDealsUnavailable() {
-  const revalidator = useRevalidator();
-
+function HomeDealsUnavailable({ onRetry }: { onRetry: () => void }) {
   return (
     <FeedbackState
       action={
-        <Button onClick={() => revalidator.revalidate()} type="button" variant="soft">
+        <Button onClick={onRetry} type="button" variant="soft">
           Try again
         </Button>
       }
