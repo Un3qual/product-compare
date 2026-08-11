@@ -2,7 +2,11 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
   use ProductCompare.DataCase, async: true
 
   import ProductCompare.DatabaseTestHelpers,
-    only: [capture_select_queries: 1, count_select_queries_targeting_table: 2]
+    only: [
+      capture_select_queries: 1,
+      capture_select_query_events: 1,
+      count_select_queries_targeting_table: 2
+    ]
 
   alias ProductCompare.CommerceAttribution
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures}
@@ -101,8 +105,16 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product
       end)
 
-    {candidates, queries} =
-      capture_select_queries(fn ->
+    irrelevant_products =
+      Enum.map(1..12, fn index ->
+        product = offer_product("trending-irrelevant-#{index}")
+        add_price(product.offer, "50", 0)
+        add_price(product.offer, "100", -3_600)
+        product
+      end)
+
+    {candidates, [query_event]} =
+      capture_select_query_events(fn ->
         [now: @now]
         |> CommerceAttribution.trending_product_candidates_query()
         |> Pricing.home_trending_deal_candidates(now: @now, limit: 100)
@@ -113,11 +125,11 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     assert Enum.map(candidates, & &1.product_id) ==
              products |> Enum.drop(2) |> Enum.map(& &1.product.id)
 
-    assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+    aggregate_group_counts = explain_aggregate_group_counts(query_event)
 
-    assert Enum.all?(queries, fn query ->
-             Regex.scan(~r/"product_id" IN \(SELECT/, query) |> Enum.count_until(5) == 5
-           end)
+    assert aggregate_group_counts != []
+    assert Enum.max(aggregate_group_counts) <= length(products)
+    assert length(irrelevant_products) > length(products)
   end
 
   defp offer_product(slug) do
@@ -192,5 +204,24 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     |> CommerceAttribution.trending_product_candidates_query()
     |> Repo.all()
     |> Enum.map(& &1.product_id)
+  end
+
+  defp explain_aggregate_group_counts(%{query: query, params: params}) do
+    [[explanation]] = Repo.query!("EXPLAIN (ANALYZE, FORMAT JSON) " <> query, params).rows
+    [%{"Plan" => plan}] = explanation
+    aggregate_group_counts(plan)
+  end
+
+  defp aggregate_group_counts(plan) do
+    child_counts =
+      plan
+      |> Map.get("Plans", [])
+      |> Enum.flat_map(&aggregate_group_counts/1)
+
+    if plan["Node Type"] in ["Aggregate", "Unique", "WindowAgg"] do
+      [plan["Actual Rows"] | child_counts]
+    else
+      child_counts
+    end
   end
 end

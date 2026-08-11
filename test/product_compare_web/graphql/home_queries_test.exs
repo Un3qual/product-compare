@@ -10,6 +10,8 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
   alias ProductCompare.{Alerts, Catalog, Pricing, Repo, Specs}
   alias ProductCompare.Fixtures.{AccountsFixtures, SpecsFixtures, TaxonomyFixtures}
+  alias ProductCompareWeb.Plugs.PutAbsintheContext
+  alias ProductCompareWeb.Schema
 
   @description String.duplicate("A reliable option with enough detail for comparison. ", 3)
 
@@ -586,24 +588,122 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
       end)
 
     query = """
-    query NewPriceSignal {
+    query NewPriceSignal($first: Int!) {
       homeDeals(selectedSlugs: []) {
-        new(first: 6) {
+        new(first: $first) {
           edges { node { id } offer { merchantProductId priceSignal } }
         }
       }
     }
     """
 
-    {response, queries} = capture_select_queries(fn -> raw_graphql(conn, query, %{}) end)
+    {one_response, one_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, query, %{"first" => 1}) end)
 
-    assert %{"data" => %{"homeDeals" => %{"new" => %{"edges" => edges}}}} = response
+    {page_response, page_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, query, %{"first" => 3}) end)
+
+    irrelevant_products =
+      Enum.map(1..8, fn index ->
+        candidate =
+          qualified_product(
+            "new-price-signal-irrelevant-#{index}",
+            category,
+            operator,
+            "#{20 + index}"
+          )
+
+        add_price(candidate.offer, "#{120 + index}", -3_600)
+
+        {1, _} =
+          Repo.update_all(
+            from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+              where: offer.id == ^candidate.offer.id
+            ),
+            set: [inserted_at: DateTime.add(DateTime.utc_now(), -259_201, :second)]
+          )
+
+        candidate
+      end)
+
+    {grown_response, grown_queries} =
+      capture_select_queries(fn -> raw_graphql(conn, query, %{"first" => 3}) end)
+
+    assert %{"data" => %{"homeDeals" => %{"new" => %{"edges" => [_one]}}}} = one_response
+
+    assert %{"data" => %{"homeDeals" => %{"new" => %{"edges" => edges}}}} = page_response
     assert length(edges) == length(candidates)
     assert Enum.all?(edges, &(get_in(&1, ["offer", "priceSignal"]) == "BELOW_30_DAY_MEDIAN"))
+    assert grown_response == page_response
 
-    median_queries = Enum.filter(queries, &String.contains?(&1, "percentile_cont"))
-    assert [median_query] = median_queries
-    assert String.contains?(median_query, ~s("product_id" IN (SELECT))
+    assert length(one_queries) == length(page_queries)
+    assert length(grown_queries) == length(page_queries)
+    assert length(irrelevant_products) > length(candidates)
+  end
+
+  test "New selection and its lazy priceSignal share the request observation boundary", %{
+    conn: conn
+  } do
+    category = category_fixture("new-price-signal-boundary-category")
+    operator = AccountsFixtures.operator_fixture()
+    candidate = qualified_product("new-price-signal-boundary", category, operator, "120")
+
+    context =
+      conn
+      |> init_test_session(%{})
+      |> PutAbsintheContext.call(%{})
+      |> then(& &1.private.absinthe.context)
+      |> Schema.context()
+
+    observed_at = context.graphql_observed_at
+
+    assert {:ok, _point} =
+             Pricing.add_price_point(%{
+               merchant_product_id: candidate.offer.id,
+               observed_at: observed_at,
+               price: "80",
+               shipping: "5",
+               in_stock: true
+             })
+
+    assert {:ok,
+            %{
+              data: %{
+                "homeDeals" => %{
+                  "new" => %{
+                    "edges" => [
+                      %{
+                        "node" => %{"id" => product_id},
+                        "offer" => %{
+                          "merchantProductId" => offer_id,
+                          "landedPrice" => "85",
+                          "priceSignal" => "BELOW_30_DAY_MEDIAN"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }} =
+             Absinthe.run(
+               """
+               query NewPriceSignalBoundary {
+                 homeDeals(selectedSlugs: []) {
+                   new(first: 1) {
+                     edges {
+                       node { id }
+                       offer { merchantProductId landedPrice priceSignal }
+                     }
+                   }
+                 }
+               }
+               """,
+               Schema,
+               context: context
+             )
+
+    assert product_id == relay_id(:product, candidate.product.id)
+    assert offer_id == relay_id(:merchant_product, candidate.offer.id)
   end
 
   test "home category shortcuts return canonical identity fields while keeping USD-only eligibility",
