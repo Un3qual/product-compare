@@ -3,6 +3,7 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
   alias Absinthe.Relay.Connection, as: RelayConnection
   alias Absinthe.Resolution
+  alias Absinthe.Type
   alias ProductCompare.{Alerts, Catalog, CommerceAttribution, Pricing, Repo, Seo, Specs}
   alias ProductCompareWeb.GraphQL.Connection
 
@@ -356,15 +357,20 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   defp projected_field_identifiers(%Resolution{} = resolution) do
     resolution
     |> Resolution.project()
-    |> collect_projected_field_identifiers(resolution, MapSet.new())
+    |> collect_projected_field_identifiers(resolution, MapSet.new(), false)
   end
 
-  defp collect_projected_field_identifiers(fields, resolution, identifiers) do
+  defp collect_projected_field_identifiers(
+         fields,
+         resolution,
+         identifiers,
+         within_home_offer_summary?
+       ) do
     Enum.reduce(fields, identifiers, fn field, acc ->
       acc =
-        case field.schema_node do
-          %{identifier: identifier} -> MapSet.put(acc, identifier)
-          _introspection_field -> acc
+        case {within_home_offer_summary?, field.schema_node} do
+          {true, %{identifier: identifier}} -> MapSet.put(acc, identifier)
+          _outside_home_offer_summary_or_introspection_field -> acc
         end
 
       case field.selections do
@@ -380,10 +386,23 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
 
           child_resolution
           |> Resolution.project()
-          |> collect_projected_field_identifiers(child_resolution, acc)
+          |> collect_projected_field_identifiers(
+            child_resolution,
+            acc,
+            within_home_offer_summary? or home_offer_summary_field?(field, resolution)
+          )
       end
     end)
   end
+
+  defp home_offer_summary_field?(%{schema_node: %{type: type}}, resolution) do
+    case Absinthe.Schema.lookup_type(resolution.schema, Type.unwrap(type)) do
+      %{identifier: :home_offer_summary} -> true
+      _other_type -> false
+    end
+  end
+
+  defp home_offer_summary_field?(_introspection_field, _resolution), do: false
 
   defp maybe_map_edges(connection, nil), do: connection
 

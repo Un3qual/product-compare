@@ -991,6 +991,76 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     assert Enum.count(fact_queries, &page_fact_median_query?/1) == 1
   end
 
+  test "unrelated activeOfferCount below a homepage product does not load homepage offer facts",
+       %{conn: conn} do
+    category = category_fixture("home-unrelated-active-offer-count")
+    operator = AccountsFixtures.operator_fixture()
+
+    _candidate =
+      qualified_product("home-unrelated-active-offer-count", category, operator, "80")
+
+    query = """
+    fragment MerchantCounts on MerchantDetailSummary {
+      unrelatedCount: activeOfferCount
+    }
+
+    fragment ProductMerchantCount on Product {
+      merchantProducts(first: 1, activeOnly: true) {
+        edges {
+          node {
+            merchant {
+              detailSummary { ...MerchantCounts }
+            }
+          }
+        }
+      }
+    }
+
+    query HomeWithUnrelatedActiveOfferCount {
+      homeWorkspace(selectedSlugs: []) {
+        products(first: 1) {
+          edges {
+            offer { merchantName }
+            node { ...ProductMerchantCount }
+          }
+        }
+      }
+    }
+    """
+
+    {response, queries} = capture_select_queries(fn -> raw_graphql(conn, query, %{}) end)
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{
+                 "products" => %{
+                   "edges" => [
+                     %{
+                       "node" => %{
+                         "merchantProducts" => %{
+                           "edges" => [
+                             %{
+                               "node" => %{
+                                 "merchant" => %{
+                                   "detailSummary" => %{"unrelatedCount" => 1}
+                                 }
+                               }
+                             }
+                           ]
+                         }
+                       },
+                       "offer" => %{"merchantName" => _merchant_name}
+                     }
+                   ]
+                 }
+               }
+             }
+           } = response
+
+    refute Enum.any?(queries, &active_offer_count_query?/1)
+    refute Enum.any?(queries, &page_fact_median_query?/1)
+  end
+
   test "fallback New price signals keep a fixed page-scoped query budget" do
     owner = AccountsFixtures.user_fixture()
     category = category_fixture("fallback-price-signal-budget-category")
