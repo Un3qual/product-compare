@@ -150,7 +150,11 @@ test("product ledger keeps all product facts in one semantic list with a disclos
   expect(within(ledger).getByRole("link", { name: "View Alpha Camera" })).toBeInTheDocument();
   expect(within(ledger).getByText("Cameras")).toHaveAttribute("data-tone", "secondary");
   expect(within(ledger).getByText("Price signal")).toHaveAttribute("data-tone", "secondary");
-  expect(within(ledger).getByText("Last checked today")).toHaveAttribute("data-tone", "freshness");
+  expect(within(ledger).getByText("Last checked today")).toHaveAttribute("data-tone", "positive");
+  expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
+    "data-component",
+    "status-badge",
+  );
   expect(within(ledger).getByText("24 MP · Weather sealed").closest("[data-slot]")).toHaveAttribute(
     "data-slot",
     "product-ledger-highlights",

@@ -376,6 +376,7 @@ for (const viewport of VIEWPORTS) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
     expect(await page.evaluate(() => window.innerWidth)).toBe(viewport.width);
     expect(await plainLanguageViolations(page)).toEqual([]);
+    await expectHomeVisualSystem(page, viewport.name);
 
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
@@ -669,6 +670,63 @@ async function waitForFonts(page: Page) {
   });
 }
 
+async function expectHomeVisualSystem(page: Page, viewport: (typeof VIEWPORTS)[number]["name"]) {
+  const visualSystem = await page.evaluate(() => {
+    const find = (selector: string) => document.querySelector<HTMLElement>(selector);
+    const shell = document.querySelector<HTMLElement>("section[aria-labelledby]");
+    const search = document.querySelector<HTMLElement>('form[role="search"]');
+    const categoryLink = document.querySelector<HTMLElement>(
+      'ul[aria-label="Product categories"] a',
+    );
+    const categoryRow = categoryLink?.closest("li");
+    const activeTab = document.querySelector<HTMLElement>(
+      '[data-slot="detail-tab"][data-state="active"]',
+    );
+    const inactiveTab = document.querySelector<HTMLElement>(
+      '[data-slot="detail-tab"][data-state="inactive"]',
+    );
+    const ledgerRow = document.querySelector<HTMLElement>('ol[aria-label="Product results"] > li');
+    const freshness = find('[data-slot="product-ledger-freshness"]');
+    const dealReason = find('[data-slot="home-deals-reason"]');
+    const shellBox = shell?.getBoundingClientRect();
+
+    return {
+      activeIndicator: activeTab ? getComputedStyle(activeTab, "::before").backgroundColor : "",
+      activeIndicatorHeight: activeTab ? getComputedStyle(activeTab, "::before").height : "",
+      activeTabColor: activeTab ? getComputedStyle(activeTab).color : "",
+      activeTabHeight: activeTab?.getBoundingClientRect().height ?? 0,
+      categoryBorder: categoryRow ? getComputedStyle(categoryRow).borderBlockStartWidth : "",
+      categoryLinkColor: categoryLink ? getComputedStyle(categoryLink).color : "",
+      dealReasonIsStatusBadge: dealReason?.dataset.component === "status-badge",
+      freshnessBackground: freshness ? getComputedStyle(freshness).backgroundColor : "",
+      freshnessIsStatusBadge: freshness?.dataset.component === "status-badge",
+      inactiveTabColor: inactiveTab ? getComputedStyle(inactiveTab).color : "",
+      ledgerBorder: ledgerRow ? getComputedStyle(ledgerRow).borderBlockEndWidth : "",
+      searchBackground: search ? getComputedStyle(search).backgroundColor : "",
+      shellLeft: shellBox?.left ?? 0,
+      shellRight: shellBox ? innerWidth - shellBox.right : 0,
+      shellWidth: shellBox?.width ?? 0,
+    };
+  });
+
+  expect(visualSystem.searchBackground).toBe("rgb(236, 231, 220)");
+  expect(visualSystem.categoryLinkColor).toBe("rgb(47, 98, 215)");
+  expect(visualSystem.categoryBorder).toBe("1px");
+  expect(visualSystem.ledgerBorder).toBe("1px");
+  expect(visualSystem.activeIndicator).not.toBe("rgba(0, 0, 0, 0)");
+  expect(visualSystem.activeIndicatorHeight).toBe("2px");
+  expect(visualSystem.activeTabColor).not.toBe(visualSystem.inactiveTabColor);
+  expect(visualSystem.activeTabHeight).toBeGreaterThanOrEqual(44);
+  expect(visualSystem.freshnessIsStatusBadge).toBe(true);
+  expect(visualSystem.freshnessBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(visualSystem.dealReasonIsStatusBadge).toBe(true);
+
+  if (viewport === "desktop") {
+    expect(visualSystem.shellWidth).toBeLessThanOrEqual(1_280);
+    expect(Math.abs(visualSystem.shellLeft - visualSystem.shellRight)).toBeLessThan(1);
+  }
+}
+
 async function plainLanguageViolations(page: Page) {
   return page.locator("body").evaluate((body) => {
     const forbidden = [
@@ -713,7 +771,19 @@ async function expectDesktopLedgerGeometry(page: Page) {
         )
       : [];
 
-    return { headingXs, rowXs };
+    const freshness = article
+      ?.querySelector('[data-slot="product-ledger-freshness"]')
+      ?.getBoundingClientRect();
+    const actions = article
+      ?.querySelector('[data-slot="product-ledger-actions"]')
+      ?.getBoundingClientRect();
+
+    return {
+      freshnessActionGap:
+        freshness && actions ? Math.round((actions.x - freshness.right) * 100) / 100 : -1,
+      headingXs,
+      rowXs,
+    };
   });
 
   expect(geometry.headingXs).toHaveLength(6);
@@ -721,6 +791,7 @@ async function expectDesktopLedgerGeometry(page: Page) {
   geometry.headingXs.forEach((headingX, index) => {
     expect(Math.abs(headingX - (geometry.rowXs[index] ?? -1))).toBeLessThan(1);
   });
+  expect(geometry.freshnessActionGap).toBeGreaterThanOrEqual(0);
 }
 
 async function expectTabletLedgerGeometry(page: Page) {
@@ -843,8 +914,19 @@ async function expectMobileNavigation(page: Page) {
   await focusByTab(page, explore);
   await expectVisibleFocus(explore);
   await page.keyboard.press("Space");
-  const exploreNavigation = primary.getByRole("navigation", { name: "Explore navigation" });
+  const exploreNavigation = page.getByRole("navigation", { name: "Explore navigation" });
+  await expect(exploreNavigation.locator("..")).toHaveAttribute("role", "dialog");
   await expect(exploreNavigation.getByRole("link", { name: "Offers" })).toBeVisible();
   await expect(exploreNavigation.getByRole("link", { name: "Merchants" })).toBeVisible();
-  await page.keyboard.press("Space");
+  const openMenuAccessibility = await new AxeBuilder({ page }).analyze();
+  expect(openMenuAccessibility.violations).toEqual([]);
+  const viewport = page.viewportSize();
+  await page.mouse.click((viewport?.width ?? 390) - 8, (viewport?.height ?? 844) - 8);
+  await expect(exploreNavigation).toBeHidden();
+
+  await explore.click();
+  await expect(exploreNavigation).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(exploreNavigation).toBeHidden();
+  await expect(explore).toBeFocused();
 }

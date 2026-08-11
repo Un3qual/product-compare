@@ -1,6 +1,6 @@
-import { defineVars } from "@stylexjs/stylex";
+import { defineConsts } from "@stylexjs/stylex";
 
-export const tokens = defineVars({
+export const tokens = defineConsts({
   surface: "var(--pc-surface-canvas)",
   surfaceRaised: "var(--pc-surface-raised)",
   surfaceMuted: "var(--pc-surface-muted)",

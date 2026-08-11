@@ -30,7 +30,9 @@ const styles = create({
     padding: 0,
   },
   category: {
-    borderBlockStart: `1px solid ${tokens.borderQuiet}`,
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
     display: "grid",
     gap: "0.3rem",
     paddingBlockStart: "0.65rem",

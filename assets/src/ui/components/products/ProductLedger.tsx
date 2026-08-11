@@ -2,11 +2,14 @@ import type { ReactNode } from "react";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../../primitives/Collapsible";
 import { Button } from "../../primitives/Button";
+import { StatusBadge } from "../status/StatusBadge";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
   list: {
-    borderBlockStart: `1px solid ${tokens.borderQuiet}`,
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
     listStyle: "none",
     margin: 0,
     maxWidth: "100%",
@@ -14,7 +17,9 @@ const styles = create({
     padding: 0,
   },
   row: {
-    borderBlockEnd: `1px solid ${tokens.borderQuiet}`,
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
     paddingBlock: "1.15rem",
   },
   article: {
@@ -22,7 +27,7 @@ const styles = create({
     gap: "1rem",
     gridTemplate: {
       default:
-        '"identity highlights offer signal freshness actions" / minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) 10rem',
+        '"identity highlights offer signal freshness actions" / minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(12rem, 0.7fr) 10rem',
       "@media (max-width: 62rem)":
         '"identity highlights" "offer signal" "freshness actions" / minmax(0, 1fr) minmax(0, 1fr)',
       "@media (max-width: 42rem)": '"identity" "offer" "actions" "disclosure" / minmax(0, 1fr)',
@@ -87,10 +92,8 @@ const styles = create({
     gridArea: "signal",
   },
   freshness: {
-    backgroundColor: tokens.freshnessSoft,
-    color: tokens.freshnessGreen,
     display: {
-      default: "inline",
+      default: "inline-flex",
       "@media (max-width: 42rem)": "none",
     },
     fontFamily: tokens.fontMono,
@@ -181,13 +184,13 @@ export function ProductLedger({
               </span>
               <span {...props(styles.priceSignal)}>{row.priceSignal}</span>
             </div>
-            <span
+            <StatusBadge
               data-slot="product-ledger-freshness"
-              data-tone="freshness"
+              tone="positive"
               {...props(styles.freshness)}
             >
               {row.freshness}
-            </span>
+            </StatusBadge>
             <div data-slot="product-ledger-actions" {...props(styles.actions)}>
               {row.actions}
             </div>

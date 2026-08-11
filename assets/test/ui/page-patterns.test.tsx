@@ -15,7 +15,7 @@ test("PageShell connects its title and keeps actions in the header", () => {
       title="Offers"
     >
       <p>Rows</p>
-    </PageShell>
+    </PageShell>,
   );
 
   const region = screen.getByRole("region", { name: "Offers" });
@@ -28,7 +28,9 @@ test("PageShell connects its title and keeps actions in the header", () => {
 test("FeedbackState preserves status and alert semantics", () => {
   const { rerender } = render(<FeedbackState kind="loading" title="Loading offers" />);
 
-  expect(screen.getByRole("status")).toHaveTextContent("Loading offers");
+  const loading = screen.getByRole("status");
+  expect(loading.querySelector('[data-slot="feedback-spinner"]')).not.toBeNull();
+  expect(loading).toHaveTextContent("Loading offers");
 
   rerender(<FeedbackState kind="error" title="Offers unavailable" />);
 
@@ -38,23 +40,19 @@ test("FeedbackState preserves status and alert semantics", () => {
 test("Pagination exposes one navigation landmark", () => {
   render(
     <MemoryRouter>
-      <Pagination
-        firstHref="/offers"
-        label="Offer pages"
-        nextHref="/offers?after=next"
-      />
-    </MemoryRouter>
+      <Pagination firstHref="/offers" label="Offer pages" nextHref="/offers?after=next" />
+    </MemoryRouter>,
   );
 
   const navigation = screen.getByRole("navigation", { name: "Offer pages" });
 
   expect(within(navigation).getByRole("link", { name: "First page" })).toHaveAttribute(
     "href",
-    "/offers"
+    "/offers",
   );
   expect(within(navigation).getByRole("link", { name: "Next page" })).toHaveAttribute(
     "href",
-    "/offers?after=next"
+    "/offers?after=next",
   );
 });
 
@@ -64,7 +62,7 @@ test("DataList preserves list semantics for dense rows", () => {
       <DataListItem actions={<button type="button">Compare</button>}>
         <span>Camera</span>
       </DataListItem>
-    </DataList>
+    </DataList>,
   );
 
   const list = screen.getByRole("list", { name: "Products" });
@@ -78,13 +76,12 @@ test("DataList preserves list semantics for dense rows", () => {
 test("StatusBadge renders its status text", () => {
   render(<StatusBadge tone="positive">Active</StatusBadge>);
 
-  expect(screen.getByText("Active")).toBeInTheDocument();
+  expect(screen.getByText("Active")).toHaveAttribute("data-component", "status-badge");
+  expect(screen.getByText("Active")).toHaveAttribute("data-tone", "positive");
 });
 
 test("SectionHeading groups a title with orientation copy", () => {
-  render(
-    <SectionHeading description="Prices on the visible page" title="Offer snapshot" />
-  );
+  render(<SectionHeading description="Prices on the visible page" title="Offer snapshot" />);
 
   expect(screen.getByRole("heading", { name: "Offer snapshot" })).toBeInTheDocument();
   expect(screen.getByText("Prices on the visible page")).toBeInTheDocument();

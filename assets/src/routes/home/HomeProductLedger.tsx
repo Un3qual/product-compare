@@ -21,7 +21,7 @@ const styles = create({
     fontSize: "0.7rem",
     gap: "1rem",
     gridTemplateColumns:
-      "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(8rem, 0.7fr) 10rem",
+      "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(12rem, 0.7fr) 10rem",
     letterSpacing: "0.04em",
     padding: "0.6rem 0",
     textTransform: "uppercase",

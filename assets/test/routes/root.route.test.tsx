@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { usePreloadedQuery } from "react-relay";
 import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
@@ -198,17 +198,36 @@ test("primary navigation keeps one disclosure open and dismisses it after naviga
 
   const primary = screen.getByRole("navigation", { name: "Primary" });
   openNavigationMenu(primary, "Explore");
-  expect(within(primary).getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
+  expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
 
   const guest = openNavigationMenu(primary, "Guest");
-  expect(
-    within(primary).queryByRole("navigation", { name: "Explore navigation" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "Explore navigation" })).not.toBeInTheDocument();
 
   fireEvent.click(within(guest).getByRole("link", { name: "Sign in" }));
-  expect(
-    within(primary).queryByRole("navigation", { name: "Guest navigation" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("navigation", { name: "Guest navigation" })).not.toBeInTheDocument();
+});
+
+test("primary navigation dismisses an open destination popover with Escape and restores focus", async () => {
+  render(
+    <MemoryRouter>
+      <nav aria-label="Primary">
+        <RootPrimaryNavigation viewer={null} />
+      </nav>
+    </MemoryRouter>,
+  );
+
+  const trigger = screen.getByRole("button", { name: "Explore menu" });
+  fireEvent.click(trigger);
+  expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
+
+  fireEvent.keyDown(document, { key: "Escape" });
+
+  await waitFor(() =>
+    expect(
+      screen.queryByRole("navigation", { name: "Explore navigation" }),
+    ).not.toBeInTheDocument(),
+  );
+  expect(trigger).toHaveFocus();
 });
 
 test("primary navigation renders authenticated account actions with the exact active link", () => {
@@ -300,7 +319,7 @@ test("root layout renders guest auth links in the primary navigation", async () 
     "href",
     "/merchants",
   );
-  expect(within(primaryNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
+  expect(within(exploreNavigation).getByRole("link", { name: "Offers" })).toHaveAttribute(
     "href",
     "/offers",
   );
@@ -497,5 +516,5 @@ function buildAbortableRequest(url: string, signal: AbortSignal): Request {
 
 function openNavigationMenu(primaryNavigation: HTMLElement, label: string) {
   fireEvent.click(within(primaryNavigation).getByRole("button", { name: `${label} menu` }));
-  return within(primaryNavigation).getByRole("navigation", { name: `${label} navigation` });
+  return screen.getByRole("navigation", { name: `${label} navigation` });
 }

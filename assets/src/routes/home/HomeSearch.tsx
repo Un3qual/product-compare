@@ -2,6 +2,7 @@ import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { useNavigate } from "react-router-dom";
 import { Button } from "../../ui/primitives/Button";
+import { Label } from "../../ui/primitives/Label";
 import { TextField } from "../../ui/primitives/TextField";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import { homeCatalogSearchPath } from "./home-paths";
@@ -10,7 +11,9 @@ const styles = create({
   form: {
     alignItems: "end",
     backgroundColor: tokens.surfaceMuted,
-    borderBlock: `1px solid ${tokens.borderQuiet}`,
+    borderBlockColor: tokens.borderQuiet,
+    borderBlockStyle: "solid",
+    borderBlockWidth: "1px",
     display: "grid",
     gap: "0.75rem",
     gridTemplateColumns: {
@@ -38,9 +41,9 @@ export function HomeSearch({ selectedSlugs }: { selectedSlugs: readonly string[]
       {...props(styles.form)}
     >
       <div {...props(styles.field)}>
-        <label htmlFor="home-product-search" {...props(styles.label)}>
+        <Label htmlFor="home-product-search" {...props(styles.label)}>
           Search products, brands, or model numbers
-        </label>
+        </Label>
         <TextField
           id="home-product-search"
           name="q"

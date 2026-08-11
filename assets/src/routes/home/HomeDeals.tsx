@@ -6,6 +6,7 @@ import type { HomeDealsRouteQuery } from "../../__generated__/HomeDealsRouteQuer
 import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
 import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
 import { DetailTabs } from "../../ui/components/layout/DetailTabs";
+import { StatusBadge } from "../../ui/components/status/StatusBadge";
 import { Button } from "../../ui/primitives/Button";
 import { tokens } from "../../ui/theme/tokens.stylex";
 import homeDealsRouteQuery from "./queries/HomeDealsRouteQuery";
@@ -13,14 +14,18 @@ import { homeDealsViewData } from "./home-view-data";
 
 const styles = create({
   list: {
-    borderBlockStart: `1px solid ${tokens.borderQuiet}`,
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
     listStyle: "none",
     margin: 0,
     padding: 0,
   },
   item: {
     alignItems: "baseline",
-    borderBlockEnd: `1px solid ${tokens.borderQuiet}`,
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
     display: "grid",
     gap: "0.35rem 1rem",
     gridTemplateColumns: {
@@ -37,6 +42,9 @@ const styles = create({
     minHeight: "var(--pc-control-height)",
     textDecoration: "none",
   },
+  linkArrow: {
+    marginInlineStart: "0.3rem",
+  },
   offer: {
     color: tokens.textSecondary,
     fontFamily: tokens.fontMono,
@@ -45,10 +53,10 @@ const styles = create({
     margin: 0,
   },
   reason: {
-    color: tokens.textSecondary,
-    fontSize: "0.88rem",
-    lineHeight: 1.5,
-    margin: 0,
+    justifySelf: {
+      default: "end",
+      "@media (max-width: 42rem)": "start",
+    },
   },
 });
 
@@ -123,13 +131,20 @@ function HomeDealsPanel({
                 <li data-slot="home-deals-item" key={deal.id} {...props(styles.item)}>
                   <Link data-slot="home-deals-link" to={deal.href} {...props(styles.link)}>
                     {deal.name}
+                    <span aria-hidden {...props(styles.linkArrow)}>
+                      →
+                    </span>
                   </Link>
                   <p data-slot="home-deals-offer" {...props(styles.offer)}>
                     {deal.offer}
                   </p>
-                  <p data-slot="home-deals-reason" {...props(styles.reason)}>
+                  <StatusBadge
+                    data-slot="home-deals-reason"
+                    tone={tab.value === "trending" ? "warning" : "accent"}
+                    {...props(styles.reason)}
+                  >
                     {deal.reason}
-                  </p>
+                  </StatusBadge>
                 </li>
               ))}
             </ul>

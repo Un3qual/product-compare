@@ -1,10 +1,9 @@
 import { useEffect, useState } from "react";
+import { Popover } from "@radix-ui/themes";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "../ui/components/brand/CompareMark";
 import { Button, type ButtonProps } from "../ui/primitives/Button";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "../ui/primitives/Collapsible";
-import { tokens } from "../ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -47,48 +46,21 @@ const styles = create({
     width: "100%",
   },
   navigationMenu: {
-    position: "relative",
     width: {
       default: "auto",
       "@media (max-width: 48rem)": "100%",
     },
   },
   navigationMenuTrigger: {
-    backgroundColor: "transparent",
-    border: `1px solid ${tokens.border}`,
-    color: tokens.textSecondary,
-    cursor: "pointer",
-    font: "inherit",
-    fontSize: "0.9rem",
-    fontWeight: 700,
-    minHeight: tokens.controlHeight,
-    paddingInline: "0.8rem",
+    justifyContent: "space-between",
     width: {
       default: "auto",
       "@media (max-width: 48rem)": "100%",
     },
   },
   navigationMenuContent: {
-    backgroundColor: tokens.surfaceRaised,
-    border: `1px solid ${tokens.border}`,
-    boxShadow: "0 0.7rem 1.6rem rgba(33, 31, 28, 0.12)",
     display: "grid",
     gap: "0.25rem",
-    insetInlineEnd: {
-      default: 0,
-      "@media (max-width: 48rem)": "auto",
-    },
-    marginBlockStart: "0.35rem",
-    minWidth: {
-      default: "12rem",
-      "@media (max-width: 48rem)": 0,
-    },
-    padding: "0.35rem",
-    position: {
-      default: "absolute",
-      "@media (max-width: 48rem)": "static",
-    },
-    zIndex: 10,
   },
   menuLink: {
     justifyContent: "start",
@@ -282,40 +254,42 @@ function NavigationMenu({
   selectedSlugs: readonly string[];
 }) {
   return (
-    <Collapsible
-      data-slot="navigation-menu"
-      onOpenChange={onOpenChange}
-      open={open}
-      {...props(styles.navigationMenu)}
-    >
-      <CollapsibleTrigger asChild>
-        <Button
-          aria-label={`${label} menu`}
-          variant="soft"
-          {...props(styles.navigationMenuTrigger)}
-        >
-          {label}
-        </Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent {...props(styles.navigationMenuContent)}>
-        <nav aria-label={`${label} navigation`}>
-          {destinations.map(({ end, label: destinationLabel, to }) => (
-            <DestinationLink
-              end={end}
-              key={to}
-              label={destinationLabel}
-              matchDestination={!isAuthDestination(to)}
-              onNavigate={() => onOpenChange(false)}
-              preserveComparison={preserveComparison}
-              selectedSlugs={selectedSlugs}
-              style={styles.menuLink}
-              to={to}
-              variant={isAuthDestination(to) ? "solid" : "ghost"}
-            />
-          ))}
-        </nav>
-      </CollapsibleContent>
-    </Collapsible>
+    <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
+      <Popover.Root onOpenChange={onOpenChange} open={open}>
+        <Popover.Trigger>
+          <Button
+            aria-label={`${label} menu`}
+            variant="soft"
+            {...props(styles.navigationMenuTrigger)}
+          >
+            <span>{label}</span>
+            <span aria-hidden>⌄</span>
+          </Button>
+        </Popover.Trigger>
+        <Popover.Content aria-label={`${label} menu`} align="end" minWidth="12rem" size="1">
+          <nav
+            aria-label={`${label} navigation`}
+            data-slot="navigation-menu-content"
+            {...props(styles.navigationMenuContent)}
+          >
+            {destinations.map(({ end, label: destinationLabel, to }) => (
+              <DestinationLink
+                end={end}
+                key={to}
+                label={destinationLabel}
+                matchDestination={!isAuthDestination(to)}
+                onNavigate={() => onOpenChange(false)}
+                preserveComparison={preserveComparison}
+                selectedSlugs={selectedSlugs}
+                style={styles.menuLink}
+                to={to}
+                variant={isAuthDestination(to) ? "solid" : "ghost"}
+              />
+            ))}
+          </nav>
+        </Popover.Content>
+      </Popover.Root>
+    </div>
   );
 }
 

@@ -1,6 +1,7 @@
 import { renderToReadableStream } from "react-dom/server";
 import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
+import "./ui/theme/tokens.stylex";
 import { createRelayEnvironment } from "./relay/environment";
 import type { SSRContext } from "./relay/fetch-graphql";
 import { createRelayRouterContext } from "./relay/route-preload";
@@ -14,7 +15,7 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   const relayEnvironment = createRelayEnvironment({ ssrContext });
   const handler = createStaticHandler(routes);
   const context = await handler.query(createServerRequest(url, ssrContext), {
-    requestContext: createRelayRouterContext(relayEnvironment)
+    requestContext: createRelayRouterContext(relayEnvironment),
   });
 
   if (context instanceof Response) {
@@ -30,8 +31,8 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
     {
       onError(error) {
         console.error(error);
-      }
-    }
+      },
+    },
   );
 
   await waitForAllReady(htmlStream);
@@ -45,13 +46,13 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   if (statusCode !== 200) {
     const responseHeaders = responseHeadersFromContext(
       context.loaderHeaders,
-      context.actionHeaders
+      context.actionHeaders,
     );
     responseHeaders.set("Content-Type", "text/html; charset=utf-8");
 
     return new Response(renderedHtml, {
       headers: responseHeaders,
-      status: statusCode
+      status: statusCode,
     });
   }
 
@@ -60,14 +61,11 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
 
 function responseHeadersFromContext(
   loaderHeaders: Record<string, Headers> = {},
-  actionHeaders: Record<string, Headers> = {}
+  actionHeaders: Record<string, Headers> = {},
 ) {
   const responseHeaders = new Headers();
 
-  for (const routeHeaders of [
-    ...Object.values(loaderHeaders),
-    ...Object.values(actionHeaders)
-  ]) {
+  for (const routeHeaders of [...Object.values(loaderHeaders), ...Object.values(actionHeaders)]) {
     routeHeaders.forEach((value, key) => {
       responseHeaders.append(key, value);
     });
@@ -106,13 +104,13 @@ function createServerRequest(url: string, ssrContext?: SSRContext) {
   const signal = ssrContext?.signal ?? request?.signal;
   const serverRequest = new Request(resolveServerUrl(url, request?.url), {
     method: request?.method ?? "GET",
-    headers
+    headers,
   });
 
   if (signal) {
     // Avoid RequestInit cross-realm AbortSignal checks while preserving loader cancellation.
     Object.defineProperty(serverRequest, "signal", {
-      value: bridgeAbortSignal(signal)
+      value: bridgeAbortSignal(signal),
     });
   }
 
@@ -144,7 +142,7 @@ function resolveServerUrl(url: string, fallback?: string) {
     console.error("Failed to resolve server URL", {
       url,
       baseUrl,
-      error
+      error,
     });
     return "http://localhost/";
   }
@@ -157,7 +155,5 @@ function insertRelayRecordsScript(appHtml: string, relayRecordsScript: string) {
     return `${appHtml}${relayRecordsScript}`;
   }
 
-  return `${appHtml.slice(0, bodyCloseIndex)}${relayRecordsScript}${appHtml.slice(
-    bodyCloseIndex
-  )}`;
+  return `${appHtml.slice(0, bodyCloseIndex)}${relayRecordsScript}${appHtml.slice(bodyCloseIndex)}`;
 }

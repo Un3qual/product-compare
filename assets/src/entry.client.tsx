@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
+import "./ui/theme/tokens.stylex";
 import { createRelayEnvironment } from "./relay/environment";
 import { readRelayRecordsFromDocument } from "./relay/ssr";
 import { createClientRouter } from "./router";
@@ -13,7 +14,7 @@ if (!root) {
 }
 
 const relayEnvironment = createRelayEnvironment({
-  records: readRelayRecordsFromDocument()
+  records: readRelayRecordsFromDocument(),
 });
 
 const app = (
