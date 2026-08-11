@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<453e5b18e1afc6faaefb0ef9c7921bac>>
+ * @generated SignedSource<<f7f34b7c8259684d000216e8e6c29091>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -85,7 +85,7 @@ v1 = [
   {
     "alias": null,
     "args": null,
-    "concreteType": "HomeProductSummary",
+    "concreteType": "Product",
     "kind": "LinkedField",
     "name": "product",
     "plural": false,

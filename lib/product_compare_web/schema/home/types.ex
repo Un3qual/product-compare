@@ -19,26 +19,18 @@ defmodule ProductCompareWeb.Schema.Home.Types do
 
   object :home_workspace do
     field :products, non_null(list_of(non_null(:home_workspace_product)))
-    field :selected_products, non_null(list_of(non_null(:home_product_summary)))
+    field :selected_products, non_null(list_of(non_null(:product)))
     field :categories, non_null(list_of(non_null(:home_category_shortcut)))
   end
 
   object :home_workspace_product do
-    field :id, non_null(:id), resolve: &product_id/3
-    field :name, non_null(:string), resolve: &product_name/3
-    field :slug, non_null(:string), resolve: &product_slug/3
+    field :product, non_null(:product)
     field :highlights, non_null(list_of(non_null(:home_specification_highlight)))
     field :offer, non_null(:home_offer_summary)
   end
 
-  object :home_product_summary do
-    field :id, non_null(:id), resolve: &product_id/3
-    field :name, non_null(:string), resolve: &product_name/3
-    field :slug, non_null(:string), resolve: &product_slug/3
-  end
-
   object :home_category_shortcut do
-    field :id, non_null(:id) do
+    field :taxon_id, non_null(:id) do
       resolve(fn category, _, _ -> GlobalId.encode_required(:taxon, category.id) end)
     end
 
@@ -82,7 +74,7 @@ defmodule ProductCompareWeb.Schema.Home.Types do
   end
 
   object :home_deal do
-    field :product, non_null(:home_product_summary)
+    field :product, non_null(:product)
     field :offer, non_null(:home_offer_summary)
     field :reasons, non_null(list_of(non_null(:home_deal_reason)))
   end
@@ -91,17 +83,6 @@ defmodule ProductCompareWeb.Schema.Home.Types do
     field :code, non_null(:home_deal_reason_code)
     field :watch_target, :decimal
   end
-
-  defp product_id(%{product: product}, _args, _resolution),
-    do: GlobalId.encode_required(:product, product.id)
-
-  defp product_id(product, _args, _resolution), do: GlobalId.encode_required(:product, product.id)
-
-  defp product_name(%{product: product}, _args, _resolution), do: {:ok, product.name}
-  defp product_name(product, _args, _resolution), do: {:ok, product.name}
-
-  defp product_slug(%{product: product}, _args, _resolution), do: {:ok, product.slug}
-  defp product_slug(product, _args, _resolution), do: {:ok, product.slug}
 
   defp price_signal(%{median_30d: nil}, _args, _resolution), do: {:ok, :no_30_day_baseline}
 

@@ -25,7 +25,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                  "selectedProducts" => selected_products,
                  "categories" => [
                    %{
-                     "id" => category_id,
+                     "taxonId" => category_id,
                      "name" => "Workspace Category",
                      "slug" => "workspace-category",
                      "qualifiedProductCount" => 3
@@ -53,9 +53,11 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            ]
 
     assert %{
-             "id" => first_id,
-             "name" => first_name,
-             "slug" => first_slug,
+             "product" => %{
+               "id" => first_id,
+               "name" => first_name,
+               "slug" => first_slug
+             },
              "highlights" => [
                %{"label" => "Display 1", "value" => "workspace-first value 1"},
                %{"label" => "Display 2", "value" => "workspace-first value 2"}
@@ -69,7 +71,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                "priceSignal" => "AT_OR_ABOVE_30_DAY_MEDIAN",
                "observedAt" => observed_at
              }
-           } = Enum.find(products, &(&1["slug"] == first.product.slug))
+           } = Enum.find(products, &(get_in(&1, ["product", "slug"]) == first.product.slug))
 
     assert first_id == relay_id(:product, first.product.id)
     assert first_name == first.product.name
@@ -123,18 +125,11 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
     assert [
              %{
-               "product" => %{"id" => watched_id},
-               "reasons" => [
-                 %{"code" => "WATCH_TARGET", "watchTarget" => "75"}
-               ]
-             },
-             %{
                "product" => %{"id" => global_id},
                "reasons" => [%{"code" => "CURRENT_COMPARISON", "watchTarget" => nil}]
              }
            ] = for_you
 
-    assert watched_id == relay_id(:product, watched.product.id)
     assert global_id == relay_id(:product, global.product.id)
 
     guest_response = graphql(conn, deals_query(), %{"selectedSlugs" => [global.product.slug]})
@@ -172,7 +167,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                merchant_product_id: watched.offer.id,
                rule_type: :target_price,
                currency: "USD",
-               target_amount: "90"
+               target_amount: "130"
              })
 
     assert {:ok, _} =
@@ -212,6 +207,101 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
              "AT_OR_ABOVE_30_DAY_MEDIAN",
              "AT_OR_ABOVE_30_DAY_MEDIAN"
            ]
+  end
+
+  test "home operations expose one canonical Product identity in every homepage position", %{
+    conn: conn
+  } do
+    category = category_fixture("canonical-home-product")
+    operator = AccountsFixtures.operator_fixture()
+    candidate = qualified_product("canonical-home-product", category, operator, "80")
+
+    query = """
+    query CanonicalHomeProduct($selectedSlugs: [String!]!) {
+      homeWorkspace(selectedSlugs: $selectedSlugs) {
+        products { product { id __typename name slug } }
+        selectedProducts { id __typename name slug }
+      }
+      homeDeals(selectedSlugs: $selectedSlugs) {
+        new { product { id __typename name slug } }
+      }
+    }
+    """
+
+    assert %{
+             "data" => %{
+               "homeWorkspace" => %{
+                 "products" => products,
+                 "selectedProducts" => [selected]
+               },
+               "homeDeals" => %{"new" => new_deals}
+             }
+           } = graphql(conn, query, %{"selectedSlugs" => [candidate.product.slug]})
+
+    workspace = Enum.find(products, &(&1["product"]["id"] == selected["id"]))["product"]
+    deal = Enum.find(new_deals, &(&1["product"]["id"] == selected["id"]))["product"]
+
+    assert workspace == selected
+    assert deal == selected
+    assert selected["__typename"] == "Product"
+  end
+
+  test "homeDeals matches the exact listing watch and falls back when a target is unmet", %{
+    conn: conn
+  } do
+    owner = AccountsFixtures.user_fixture()
+    category = category_fixture("exact-watch-category")
+    operator = AccountsFixtures.operator_fixture()
+    watched = non_deal_product("exact-watch", category, operator, "80", "100")
+    watched_listing = currency_offer(watched.product, "exact-watch-listing", "USD", "110")
+    unmet = non_deal_product("unmet-watch", category, operator, "100", "120")
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: watched.product.id,
+               merchant_product_id: watched_listing.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "120"
+             })
+
+    assert {:ok, _} =
+             Alerts.create_watch(owner.id, %{
+               product_id: unmet.product.id,
+               merchant_product_id: unmet.offer.id,
+               rule_type: :target_price,
+               currency: "USD",
+               target_amount: "90"
+             })
+
+    assert {:ok, _} =
+             Catalog.create_saved_comparison_set(owner.id, %{
+               name: "Unmet watch fallback",
+               product_ids: [unmet.product.id]
+             })
+
+    assert %{"data" => %{"homeDeals" => %{"forYou" => for_you}}} =
+             conn
+             |> log_in_user(owner)
+             |> put_req_header_same_origin()
+             |> graphql(deals_query(), %{"selectedSlugs" => []})
+
+    assert %{
+             "offer" => %{"merchantProductId" => watched_offer_id, "landedPrice" => "115"},
+             "reasons" => [%{"code" => "WATCH_TARGET", "watchTarget" => "120"}]
+           } =
+             Enum.find(
+               for_you,
+               &(&1["product"]["id"] == relay_id(:product, watched.product.id))
+             )
+
+    assert watched_offer_id == relay_id(:merchant_product, watched_listing.id)
+
+    assert %{"reasons" => [%{"code" => "SAVED_COMPARISON", "watchTarget" => nil}]} =
+             Enum.find(
+               for_you,
+               &(&1["product"]["id"] == relay_id(:product, unmet.product.id))
+             )
   end
 
   test "homeDeals ignores EUR watches and preserves saved/current USD relevance", %{conn: conn} do
@@ -439,7 +529,11 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
                "landedPrice" => "105",
                "activeOfferCount" => 1
              }
-           } = Enum.find(products, &(&1["id"] == relay_id(:product, usd.product.id)))
+           } =
+             Enum.find(
+               products,
+               &(get_in(&1, ["product", "id"]) == relay_id(:product, usd.product.id))
+             )
 
     assert usd_offer_id == relay_id(:merchant_product, usd.offer.id)
   end
@@ -656,8 +750,8 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query HomeWorkspace($selectedSlugs: [String!]!) {
       homeWorkspace(selectedSlugs: $selectedSlugs) {
-        categories { id name slug qualifiedProductCount }
-        products { id name slug highlights { label value } offer { merchantProductId merchantName currency landedPrice activeOfferCount priceSignal observedAt } }
+        categories { taxonId name slug qualifiedProductCount }
+        products { product { id name slug } highlights { label value } offer { merchantProductId merchantName currency landedPrice activeOfferCount priceSignal observedAt } }
         selectedProducts { id name slug }
       }
     }
@@ -680,9 +774,9 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
     """
     query Home($selectedSlugs: [String!]!) {
       homeWorkspace(selectedSlugs: $selectedSlugs) {
-        products { id highlights { label value } offer { merchantProductId merchantName landedPrice activeOfferCount priceSignal observedAt } }
+        products { product { id } highlights { label value } offer { merchantProductId merchantName landedPrice activeOfferCount priceSignal observedAt } }
         selectedProducts { id }
-        categories { id }
+        categories { taxonId }
       }
       homeDeals(selectedSlugs: $selectedSlugs) {
         new { product { id } reasons { code watchTarget } }

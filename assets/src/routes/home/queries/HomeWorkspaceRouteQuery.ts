@@ -4,11 +4,10 @@ const homeWorkspaceRouteQuery = graphql`
   query HomeWorkspaceRouteQuery($selectedSlugs: [String!]!) {
     homeWorkspace(selectedSlugs: $selectedSlugs) {
       categories {
-        id
+        taxonId
         name
         slug
         description
-        qualifiedProductCount
       }
       selectedProducts {
         id
@@ -16,19 +15,19 @@ const homeWorkspaceRouteQuery = graphql`
         slug
       }
       products {
-        id
-        name
-        slug
+        product {
+          id
+          name
+          slug
+        }
         highlights {
           label
           value
         }
         offer {
-          merchantProductId
           merchantName
           currency
           landedPrice
-          activeOfferCount
           priceSignal
           observedAt
         }

@@ -1,72 +1,41 @@
-import type { HomeDealReasonCode } from "../../__generated__/HomeDealsRouteQuery.graphql";
-import type { HomePriceSignalCode } from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
+import type {
+  HomeDealReasonCode,
+  HomeDealsRouteQuery$data,
+} from "../../__generated__/HomeDealsRouteQuery.graphql";
+import type {
+  HomePriceSignalCode,
+  HomeWorkspaceRouteQuery$data,
+} from "../../__generated__/HomeWorkspaceRouteQuery.graphql";
 import { homeCategoryCatalogPath, homeProductDetailPath } from "./home-paths";
 
-type HomeOffer = {
-  activeOfferCount?: number | null;
-  currency?: string | null;
-  landedPrice?: string | null;
-  merchantName?: string | null;
-  observedAt?: string | null;
-  priceSignal?: HomePriceSignalCode | null;
-};
-
-type HomeProduct = {
-  highlights: ReadonlyArray<{ label: string; value: string }>;
-  id: string;
-  name: string;
-  offer: HomeOffer;
-  slug: string;
-};
-
-type HomeDeal = {
-  offer: HomeOffer;
-  product: { id: string; name: string; slug: string };
-  reasons: ReadonlyArray<HomeDealReason>;
-};
+type HomeWorkspace = HomeWorkspaceRouteQuery$data["homeWorkspace"];
+type HomeWorkspaceProduct = HomeWorkspace["products"][number];
+type HomeDeals = HomeDealsRouteQuery$data["homeDeals"];
+type HomeDeal = HomeDeals["new"][number];
+type HomeOffer = HomeWorkspaceProduct["offer"] | HomeDeal["offer"];
 
 export type HomeDealReason = {
   code: HomeDealReasonCode;
-  watchTarget?: string | null;
+  watchTarget?: unknown;
 };
 
-export function homeWorkspaceViewData(
-  workspace: {
-    categories: ReadonlyArray<{
-      description: string;
-      id: string;
-      name: string;
-      qualifiedProductCount: number;
-      slug: string;
-    }>;
-    products: ReadonlyArray<HomeProduct>;
-    selectedProducts: ReadonlyArray<{ id: string; name: string; slug: string }>;
-  },
-  selectedSlugs: readonly string[],
-) {
+export function homeWorkspaceViewData(workspace: HomeWorkspace, selectedSlugs: readonly string[]) {
   return {
     categories: workspace.categories.map((category) => ({
       description: category.description,
-      href: homeCategoryCatalogPath(category.id, selectedSlugs),
+      href: homeCategoryCatalogPath(category.taxonId, selectedSlugs),
       label: category.name,
-      productCount: category.qualifiedProductCount,
     })),
     comparisonProducts: workspace.selectedProducts.map((product) => ({
       label: product.name,
       slug: product.slug,
     })),
-    ledgerRows: workspace.products
-      .slice(0, 6)
-      .map((product) => homeLedgerRow(product, selectedSlugs)),
+    ledgerRows: workspace.products.slice(0, 6).map((row) => homeLedgerRow(row, selectedSlugs)),
   };
 }
 
 export function homeDealsViewData(
-  deals: {
-    forYou: ReadonlyArray<HomeDeal>;
-    new: ReadonlyArray<HomeDeal>;
-    trending: ReadonlyArray<HomeDeal>;
-  },
+  deals: HomeDeals,
   hasViewer: boolean,
   selectedSlugs: readonly string[],
 ) {
@@ -82,15 +51,15 @@ export function homeDealsViewData(
   return { tabs };
 }
 
-export function homeDealReasonCopy(reason: HomeDealReason, currency: string | null | undefined) {
+export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
   switch (reason.code) {
     case "NEW_OFFER":
       return "New offer";
     case "TRENDING_BELOW_MEDIAN":
       return "Below the 30-day price";
     case "WATCH_TARGET":
-      return reason.watchTarget && currency
-        ? `Matches your ${formatCurrency(reason.watchTarget, currency)} price watch`
+      return scalarText(reason.watchTarget)
+        ? `Matches your ${formatCurrency(scalarText(reason.watchTarget)!, currency)} price watch`
         : "Matches your price watch";
     case "SAVED_COMPARISON":
       return "In your saved comparison";
@@ -103,16 +72,18 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string | nu
   }
 }
 
-function homeLedgerRow(product: HomeProduct, selectedSlugs: readonly string[]) {
+function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string[]) {
+  const { offer, product } = row;
+
   return {
     category: "Product",
-    freshness: formatObservedAt(product.offer.observedAt),
-    highlights: formatHighlights(product.highlights),
+    freshness: formatObservedAt(scalarText(offer.observedAt)),
+    highlights: formatHighlights(row.highlights),
     href: homeProductDetailPath(product.slug, selectedSlugs),
     id: product.id,
     name: product.name,
-    offer: formatOffer(product.offer),
-    priceSignal: priceSignalCopy(product.offer.priceSignal),
+    offer: formatOffer(offer),
+    priceSignal: priceSignalCopy(offer.priceSignal),
     slug: product.slug,
   };
 }
@@ -149,11 +120,7 @@ function formatHighlights(highlights: ReadonlyArray<{ label: string; value: stri
 }
 
 function formatOffer(offer: HomeOffer) {
-  if (!offer.landedPrice || !offer.currency || !offer.merchantName) {
-    return "Price unavailable";
-  }
-
-  return `${formatCurrency(offer.landedPrice, offer.currency)} at ${offer.merchantName}`;
+  return `${formatCurrency(scalarText(offer.landedPrice) ?? "0", offer.currency)} at ${offer.merchantName}`;
 }
 
 function formatCurrency(value: string, currency: string) {
@@ -176,7 +143,7 @@ function formatCurrency(value: string, currency: string) {
   }
 }
 
-function priceSignalCopy(code: HomePriceSignalCode | null | undefined) {
+function priceSignalCopy(code: HomePriceSignalCode) {
   switch (code) {
     case "BELOW_30_DAY_MEDIAN":
       return "Below the 30-day price";
@@ -189,7 +156,7 @@ function priceSignalCopy(code: HomePriceSignalCode | null | undefined) {
   }
 }
 
-function formatObservedAt(observedAt: string | null | undefined) {
+function formatObservedAt(observedAt: string | null) {
   if (!observedAt || Number.isNaN(Date.parse(observedAt))) {
     return "Last checked unavailable";
   }
@@ -200,4 +167,11 @@ function formatObservedAt(observedAt: string | null | undefined) {
     timeZone: "UTC",
     year: "numeric",
   }).format(new Date(observedAt))}`;
+}
+
+function scalarText(value: unknown) {
+  if (typeof value !== "string" && typeof value !== "number") return null;
+
+  const text = String(value).trim();
+  return text.length > 0 ? text : null;
 }

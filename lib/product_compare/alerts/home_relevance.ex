@@ -9,10 +9,11 @@ defmodule ProductCompare.Alerts.HomeRelevance do
 
   @limit 6
 
-  defmacrop relevance_candidate(product_id, reason_rank, watch_target) do
+  defmacrop relevance_candidate(product_id, merchant_product_id, reason_rank, watch_target) do
     quote do
       %{
         product_id: unquote(product_id),
+        merchant_product_id: unquote(merchant_product_id),
         reason_rank: unquote(reason_rank),
         watch_target: unquote(watch_target)
       }
@@ -22,6 +23,12 @@ defmodule ProductCompare.Alerts.HomeRelevance do
   defmacrop null_decimal do
     quote do
       type(fragment("NULL"), :decimal)
+    end
+  end
+
+  defmacrop null_bigint do
+    quote do
+      type(fragment("NULL"), :integer)
     end
   end
 
@@ -52,8 +59,16 @@ defmodule ProductCompare.Alerts.HomeRelevance do
           watch.rule_type == :target_price and watch.currency == ^"USD" and
           not is_nil(watch.target_amount)
       )
-      |> group_by([watch], watch.product_id)
-      |> select([watch], relevance_candidate(watch.product_id, 0, min(watch.target_amount)))
+      |> group_by([watch], [watch.product_id, watch.merchant_product_id])
+      |> select(
+        [watch],
+        relevance_candidate(
+          watch.product_id,
+          watch.merchant_product_id,
+          0,
+          min(watch.target_amount)
+        )
+      )
 
     saved_candidates =
       SavedComparisonSet
@@ -62,12 +77,18 @@ defmodule ProductCompare.Alerts.HomeRelevance do
       )
       |> where([set], set.user_id == ^user_id)
       |> group_by([_set, item], item.product_id)
-      |> select([_set, item], relevance_candidate(item.product_id, 1, null_decimal()))
+      |> select(
+        [_set, item],
+        relevance_candidate(item.product_id, null_bigint(), 1, null_decimal())
+      )
 
     current_candidates =
       Product
       |> where([product], product.id in ^current_product_ids)
-      |> select([product], relevance_candidate(product.id, 2, null_decimal()))
+      |> select(
+        [product],
+        relevance_candidate(product.id, null_bigint(), 2, null_decimal())
+      )
 
     candidates =
       watch_candidates
@@ -75,29 +96,15 @@ defmodule ProductCompare.Alerts.HomeRelevance do
       |> union_all(^current_candidates)
 
     candidates
-    |> subquery()
-    |> group_by([candidate], candidate.product_id)
-    |> select(
-      [candidate],
-      relevance_candidate(
-        candidate.product_id,
-        min(candidate.reason_rank),
-        type(
-          fragment(
-            "min(?) FILTER (WHERE ? = 0)",
-            candidate.watch_target,
-            candidate.reason_rank
-          ),
-          :decimal
-        )
-      )
-    )
   end
 
   def candidates_query(_user_id, _current_product_ids) do
     Product
     |> where([product], false)
-    |> select([product], relevance_candidate(product.id, 2, null_decimal()))
+    |> select(
+      [product],
+      relevance_candidate(product.id, null_bigint(), 2, null_decimal())
+    )
   end
 
   defp watch_targets(user_id) do

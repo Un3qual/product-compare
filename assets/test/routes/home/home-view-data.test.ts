@@ -9,17 +9,18 @@ test("home workspace keeps six ledger rows, plain price states, and category cat
     {
       categories: [
         {
-          id: "category-cameras",
+          taxonId: "category-cameras",
           name: "Cameras",
           slug: "cameras",
           description: "Mirrorless and compact cameras.",
-          qualifiedProductCount: 4,
         },
       ],
       products: Array.from({ length: 7 }, (_, index) => ({
-        id: `product-${index + 1}`,
-        name: `Model ${index + 1}`,
-        slug: `model-${index + 1}`,
+        product: {
+          id: `product-${index + 1}`,
+          name: `Model ${index + 1}`,
+          slug: `model-${index + 1}`,
+        },
         highlights: index === 0 ? [{ label: "Sensor", value: "24 MP" }] : [],
         offer:
           index === 0
@@ -27,17 +28,15 @@ test("home workspace keeps six ledger rows, plain price states, and category cat
                 merchantName: "Camera Shop",
                 currency: "USD",
                 landedPrice: "499.95",
-                activeOfferCount: 2,
                 priceSignal: "BELOW_30_DAY_MEDIAN",
                 observedAt: "2026-08-10T12:00:00Z",
               }
             : {
-                merchantName: "",
-                currency: "",
-                landedPrice: null,
-                activeOfferCount: 0,
+                merchantName: "Another Camera Shop",
+                currency: "USD",
+                landedPrice: "599.00",
                 priceSignal: "NO_30_DAY_BASELINE",
-                observedAt: null,
+                observedAt: "2026-08-10T12:00:00Z",
               },
       })),
       selectedProducts: [{ id: "product-1", name: "Model 1", slug: "model-1" }],
@@ -53,7 +52,7 @@ test("home workspace keeps six ledger rows, plain price states, and category cat
   });
   expect(viewData.ledgerRows[1]).toMatchObject({
     highlights: "Details available on the product page",
-    offer: "Price unavailable",
+    offer: "$599.00 at Another Camera Shop",
     priceSignal: "No 30-day price history",
   });
   expect(viewData.categories[0]).toMatchObject({
@@ -107,15 +106,16 @@ test("home workspace treats a future price signal as unavailable history", () =>
       categories: [],
       products: [
         {
-          id: "future-price-signal",
-          name: "Future signal product",
-          slug: "future-signal-product",
+          product: {
+            id: "future-price-signal",
+            name: "Future signal product",
+            slug: "future-signal-product",
+          },
           highlights: [],
           offer: {
             merchantName: "Camera Shop",
             currency: "USD",
             landedPrice: "399.00",
-            activeOfferCount: 1,
             priceSignal: "%future added value",
             observedAt: "2026-08-10T12:00:00Z",
           },

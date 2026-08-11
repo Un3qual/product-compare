@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<a29a24962068417a5536d90b55a5ffeb>>
+ * @generated SignedSource<<1fe0fb8ac69e940e56febd64a56538f4>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -17,28 +17,27 @@ export type HomeWorkspaceRouteQuery$data = {
   readonly homeWorkspace: {
     readonly categories: ReadonlyArray<{
       readonly description: string;
-      readonly id: string;
       readonly name: string;
-      readonly qualifiedProductCount: number;
       readonly slug: string;
+      readonly taxonId: string;
     }>;
     readonly products: ReadonlyArray<{
       readonly highlights: ReadonlyArray<{
         readonly label: string;
         readonly value: string;
       }>;
-      readonly id: string;
-      readonly name: string;
       readonly offer: {
-        readonly activeOfferCount: number;
         readonly currency: string;
         readonly landedPrice: any;
         readonly merchantName: string;
-        readonly merchantProductId: string;
         readonly observedAt: any;
         readonly priceSignal: HomePriceSignalCode;
       };
-      readonly slug: string;
+      readonly product: {
+        readonly id: string;
+        readonly name: string;
+        readonly slug: string;
+      };
     }>;
     readonly selectedProducts: ReadonlyArray<{
       readonly id: string;
@@ -64,23 +63,27 @@ v1 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "id",
+  "name": "name",
   "storageKey": null
 },
 v2 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "name",
-  "storageKey": null
-},
-v3 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
   "name": "slug",
   "storageKey": null
 },
+v3 = [
+  {
+    "alias": null,
+    "args": null,
+    "kind": "ScalarField",
+    "name": "id",
+    "storageKey": null
+  },
+  (v1/*: any*/),
+  (v2/*: any*/)
+],
 v4 = [
   {
     "alias": null,
@@ -104,21 +107,20 @@ v4 = [
         "name": "categories",
         "plural": true,
         "selections": [
+          {
+            "alias": null,
+            "args": null,
+            "kind": "ScalarField",
+            "name": "taxonId",
+            "storageKey": null
+          },
           (v1/*: any*/),
           (v2/*: any*/),
-          (v3/*: any*/),
           {
             "alias": null,
             "args": null,
             "kind": "ScalarField",
             "name": "description",
-            "storageKey": null
-          },
-          {
-            "alias": null,
-            "args": null,
-            "kind": "ScalarField",
-            "name": "qualifiedProductCount",
             "storageKey": null
           }
         ],
@@ -127,15 +129,11 @@ v4 = [
       {
         "alias": null,
         "args": null,
-        "concreteType": "HomeProductSummary",
+        "concreteType": "Product",
         "kind": "LinkedField",
         "name": "selectedProducts",
         "plural": true,
-        "selections": [
-          (v1/*: any*/),
-          (v2/*: any*/),
-          (v3/*: any*/)
-        ],
+        "selections": (v3/*: any*/),
         "storageKey": null
       },
       {
@@ -146,9 +144,16 @@ v4 = [
         "name": "products",
         "plural": true,
         "selections": [
-          (v1/*: any*/),
-          (v2/*: any*/),
-          (v3/*: any*/),
+          {
+            "alias": null,
+            "args": null,
+            "concreteType": "Product",
+            "kind": "LinkedField",
+            "name": "product",
+            "plural": false,
+            "selections": (v3/*: any*/),
+            "storageKey": null
+          },
           {
             "alias": null,
             "args": null,
@@ -186,13 +191,6 @@ v4 = [
                 "alias": null,
                 "args": null,
                 "kind": "ScalarField",
-                "name": "merchantProductId",
-                "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
                 "name": "merchantName",
                 "storageKey": null
               },
@@ -208,13 +206,6 @@ v4 = [
                 "args": null,
                 "kind": "ScalarField",
                 "name": "landedPrice",
-                "storageKey": null
-              },
-              {
-                "alias": null,
-                "args": null,
-                "kind": "ScalarField",
-                "name": "activeOfferCount",
                 "storageKey": null
               },
               {
@@ -259,16 +250,16 @@ return {
     "selections": (v4/*: any*/)
   },
   "params": {
-    "cacheID": "979e8234b0d6247fbcc2e6e0c3720b2c",
+    "cacheID": "9a3cced0e1794018a60dc0e6d2d628b4",
     "id": null,
     "metadata": {},
     "name": "HomeWorkspaceRouteQuery",
     "operationKind": "query",
-    "text": "query HomeWorkspaceRouteQuery(\n  $selectedSlugs: [String!]!\n) {\n  homeWorkspace(selectedSlugs: $selectedSlugs) {\n    categories {\n      id\n      name\n      slug\n      description\n      qualifiedProductCount\n    }\n    selectedProducts {\n      id\n      name\n      slug\n    }\n    products {\n      id\n      name\n      slug\n      highlights {\n        label\n        value\n      }\n      offer {\n        merchantProductId\n        merchantName\n        currency\n        landedPrice\n        activeOfferCount\n        priceSignal\n        observedAt\n      }\n    }\n  }\n}\n"
+    "text": "query HomeWorkspaceRouteQuery(\n  $selectedSlugs: [String!]!\n) {\n  homeWorkspace(selectedSlugs: $selectedSlugs) {\n    categories {\n      taxonId\n      name\n      slug\n      description\n    }\n    selectedProducts {\n      id\n      name\n      slug\n    }\n    products {\n      product {\n        id\n        name\n        slug\n      }\n      highlights {\n        label\n        value\n      }\n      offer {\n        merchantName\n        currency\n        landedPrice\n        priceSignal\n        observedAt\n      }\n    }\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "a00ed0d33f2f7557a33603bcbae43b6f";
+(node as any).hash = "8235d051447d1680fb6359e581fd42d0";
 
 export default node;

@@ -511,26 +511,18 @@ enum HomePriceSignalCode {
 
 type HomeWorkspace {
   products: [HomeWorkspaceProduct!]!
-  selectedProducts: [HomeProductSummary!]!
+  selectedProducts: [Product!]!
   categories: [HomeCategoryShortcut!]!
 }
 
 type HomeWorkspaceProduct {
-  id: ID!
-  name: String!
-  slug: String!
+  product: Product!
   highlights: [HomeSpecificationHighlight!]!
   offer: HomeOfferSummary!
 }
 
-type HomeProductSummary {
-  id: ID!
-  name: String!
-  slug: String!
-}
-
 type HomeCategoryShortcut {
-  id: ID!
+  taxonId: ID!
   name: String!
   slug: String!
   description: String!
@@ -559,7 +551,7 @@ type HomeDeals {
 }
 
 type HomeDeal {
-  product: HomeProductSummary!
+  product: Product!
   offer: HomeOfferSummary!
   reasons: [HomeDealReason!]!
 }
