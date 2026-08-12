@@ -70,8 +70,9 @@
 - Modify: `assets/src/entry.server.tsx`
 - Modify: `assets/src/routes/RootRoute.tsx`
 - Modify: `assets/src/router.tsx`
-- Delete: `assets/src/routes/RouteMetadata.tsx`
+- Modify: `assets/src/routes/RouteMetadata.tsx`
 - Delete: `assets/src/routes/route-metadata-data.ts`
+- Modify: `assets/src/routes/seo.ts`
 - Delete: `assets/test/routes/route-metadata-data.test.ts`
 
 **Interfaces:**
@@ -87,7 +88,7 @@
 
 - [ ] **Step 2: Implement the typed head boundary**
 
-  Define route metadata on route handles or typed loader results without accepting `unknown`. Map `indexable === true` to `index,follow`, otherwise `noindex,follow`; select `summary_large_image` only when an image exists. Serialize structured data through the library's safe script-content path and never pass prebuilt HTML.
+  Define route metadata on route handles or typed loader results without accepting `unknown`. Keep `routes/RouteMetadata.tsx` as the thin React Router match adapter so existing route modules retain one stable import boundary. Map `indexable === true` to `index,follow`, otherwise `noindex,follow`; select `summary_large_image` only when an image exists. Serialize structured data through the library's safe script-content path and never pass prebuilt HTML.
 
 - [ ] **Step 3: Wire one head instance per render**
 

@@ -1,4 +1,5 @@
 import { renderToReadableStream } from "react-dom/server";
+import { createHead, UnheadProvider } from "@unhead/react/server";
 import { createStaticHandler, createStaticRouter, StaticRouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
 import "./ui/theme/tokens.stylex";
@@ -13,6 +14,7 @@ type ReactReadableStream = ReadableStream & { allReady: Promise<void> };
 
 export async function render(url: string, ssrContext?: SSRContext): Promise<Response | string> {
   const relayEnvironment = createRelayEnvironment({ ssrContext });
+  const head = createHead({ disableDefaults: true });
   const handler = createStaticHandler(routes);
   const context = await handler.query(createServerRequest(url, ssrContext), {
     requestContext: createRelayRouterContext(relayEnvironment),
@@ -25,9 +27,11 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   const router = createStaticRouter(handler.dataRoutes, context);
 
   const htmlStream: ReactReadableStream = await renderToReadableStream(
-    <RelayEnvironmentProvider environment={relayEnvironment}>
-      <StaticRouterProvider router={router} context={context} />
-    </RelayEnvironmentProvider>,
+    <UnheadProvider value={head}>
+      <RelayEnvironmentProvider environment={relayEnvironment}>
+        <StaticRouterProvider router={router} context={context} />
+      </RelayEnvironmentProvider>
+    </UnheadProvider>,
     {
       onError(error) {
         console.error(error);
@@ -38,8 +42,9 @@ export async function render(url: string, ssrContext?: SSRContext): Promise<Resp
   await waitForAllReady(htmlStream);
 
   const appHtml = await new Response(htmlStream).text();
+  const htmlWithHead = insertHeadTags(appHtml, head.render().headTags);
   const relayRecordsScript = renderRelayRecordsScript(dehydrateRelayEnvironment(relayEnvironment));
-  const renderedHtml = insertRelayRecordsScript(appHtml, relayRecordsScript);
+  const renderedHtml = insertRelayRecordsScript(htmlWithHead, relayRecordsScript);
 
   const statusCode = context.statusCode ?? 200;
 
@@ -156,4 +161,16 @@ function insertRelayRecordsScript(appHtml: string, relayRecordsScript: string) {
   }
 
   return `${appHtml.slice(0, bodyCloseIndex)}${relayRecordsScript}${appHtml.slice(bodyCloseIndex)}`;
+}
+
+function insertHeadTags(appHtml: string, headTags: string) {
+  if (!headTags) return appHtml;
+
+  const headCloseIndex = appHtml.toLowerCase().lastIndexOf("</head>");
+
+  if (headCloseIndex === -1) {
+    return `${headTags}${appHtml}`;
+  }
+
+  return `${appHtml.slice(0, headCloseIndex)}${headTags}${appHtml.slice(headCloseIndex)}`;
 }

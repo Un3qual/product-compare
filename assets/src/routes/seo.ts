@@ -31,7 +31,7 @@ function absoluteStructuredData(value: string | null | undefined, requestUrl: st
 
   try {
     const parsed = JSON.parse(value) as unknown;
-    return JSON.stringify(absolutizeUrls(parsed, requestUrl)).replace(/</g, "\\u003c");
+    return absolutizeUrls(parsed, requestUrl) as RouteDocumentMetadata["structuredData"];
   } catch {
     return null;
   }

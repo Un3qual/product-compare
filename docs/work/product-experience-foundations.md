@@ -18,8 +18,8 @@ unchanged behavior.
 ## Owned Paths
 
 - Frontend entrypoints, router, new `frontend/head`, `frontend/ssr`, and
-  `routing` modules, root metadata/navigation consumers, date presentation and
-  focused tests named by the plan.
+  `routing` modules, root metadata/navigation consumers, `routes/seo.ts`, date
+  presentation, and focused tests named by the plan.
 - SEO controller/XML encoder, commerce redirect controller/router actions, and
   focused backend tests named by the plan.
 - Dependency manifests/locks required for Unhead and Saxy.
