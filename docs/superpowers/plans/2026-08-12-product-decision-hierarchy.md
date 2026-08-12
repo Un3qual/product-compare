@@ -57,7 +57,20 @@ Playwright.
 3. Preserve the region heading and all truthful fallback states.
 4. Run focused product-detail tests until green.
 
-## Task 4: Verify responsive presentation
+## Task 4: Refine API-token record hierarchy
+
+**Files:**
+
+- Modify: `assets/src/routes/account/api-tokens/ApiTokenItem.tsx`
+- Modify: `assets/test/routes/account/api-tokens/api-tokens.route.test.tsx`
+
+1. Group the token label and status as the record header.
+2. Present the token prefix as the primary technical identifier.
+3. Group created, expiry, and last-use dates as secondary lifecycle context.
+4. Preserve definition-list semantics, status tones, and all token actions.
+5. Run the focused API-token route tests until green.
+
+## Task 5: Verify responsive presentation
 
 **Files:**
 
@@ -71,7 +84,7 @@ Playwright.
 4. Update snapshots, rerun without update mode, and confirm accessibility and
    interaction assertions remain green.
 
-## Task 5: Complete production verification and commit
+## Task 6: Complete production verification and commit
 
 1. Run formatter on changed frontend files.
 2. Run `pnpm run check` from `assets/`.

@@ -207,8 +207,21 @@ test("API token item presents token lifecycle details and delegates actions", as
     </ul>,
   );
 
-  expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
-  expect(screen.getByText(ACTIVE_TOKEN_PREFIX)).toBeInTheDocument();
+  const tokenHeading = screen.getByRole("heading", { name: "CLI" });
+  const tokenHeader = tokenHeading.closest('[data-slot="api-token-header"]');
+  const tokenIdentity = screen
+    .getByText(ACTIVE_TOKEN_PREFIX)
+    .closest('[data-slot="api-token-identity"]');
+  const tokenLifecycle = screen
+    .getByText("2026-05-31 12:00 UTC")
+    .closest('[data-slot="api-token-lifecycle"]');
+
+  expect(tokenHeading).toBeInTheDocument();
+  expect(tokenHeader).toContainElement(screen.getByText("Active token"));
+  expect(tokenIdentity).toHaveTextContent(`Token prefix${ACTIVE_TOKEN_PREFIX}`);
+  expect(tokenLifecycle).toHaveTextContent(
+    "Created2026-05-31 12:00 UTCExpires2026-08-29 12:00 UTCLast usedNever used",
+  );
   expect(screen.getByText("2026-08-29 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Never used")).toBeInTheDocument();
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();

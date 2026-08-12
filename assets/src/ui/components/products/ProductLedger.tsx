@@ -27,23 +27,30 @@ const styles = create({
     display: "grid",
     gap: {
       default: "1.5rem",
-      "@media (max-width: 62rem)": "1rem 1.5rem",
       "@media (max-width: 42rem)": "1rem",
     },
-    gridTemplate: {
-      default:
-        '"summary market actions" / minmax(19rem, 1.45fr) minmax(17rem, 1fr) minmax(10rem, auto)',
-      "@media (max-width: 62rem)":
-        '"summary actions" "market actions" / minmax(0, 1fr) minmax(10rem, auto)',
-      "@media (max-width: 42rem)": '"summary" "market" "actions" "disclosure" / minmax(0, 1fr)',
+    gridTemplateColumns: {
+      default: "minmax(0, 1fr) minmax(10rem, auto)",
+      "@media (max-width: 42rem)": "minmax(0, 1fr)",
     },
     maxWidth: "100%",
+    minWidth: 0,
+  },
+  context: {
+    display: "grid",
+    gap: {
+      default: "1.5rem",
+      "@media (max-width: 62rem)": "1rem",
+    },
+    gridTemplateColumns: {
+      default: "minmax(19rem, 1.45fr) minmax(17rem, 1fr)",
+      "@media (max-width: 62rem)": "minmax(0, 1fr)",
+    },
     minWidth: 0,
   },
   summary: {
     display: "grid",
     gap: "0.45rem",
-    gridArea: "summary",
     minWidth: 0,
   },
   title: {
@@ -64,7 +71,6 @@ const styles = create({
     alignContent: "start",
     display: "grid",
     gap: "0.35rem",
-    gridArea: "market",
     minWidth: 0,
   },
   marketLabel: {
@@ -112,14 +118,12 @@ const styles = create({
     },
     flexWrap: "wrap",
     gap: "0.5rem",
-    gridArea: "actions",
   },
   disclosure: {
     display: {
       default: "none",
       "@media (max-width: 42rem)": "block",
     },
-    gridArea: "disclosure",
   },
   disclosureTrigger: {
     justifyContent: "start",
@@ -176,32 +180,34 @@ function ProductLedgerItem({
   return (
     <li {...props(styles.row)}>
       <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
-        <div data-slot="product-ledger-summary" {...props(styles.summary)}>
-          <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
-            {row.title}
-          </h3>
-          <p data-slot="product-ledger-highlights" {...props(styles.highlights)}>
-            {row.highlights}
-          </p>
-        </div>
-        <div data-slot="product-ledger-market" {...props(styles.market)}>
-          <span data-tone="secondary" {...props(styles.marketLabel)}>
-            Best available
-          </span>
-          <span data-slot="product-ledger-offer" {...props(styles.offer)}>
-            {row.offer}
-          </span>
-          <div {...props(styles.marketSupporting)}>
-            <span data-slot="product-ledger-price-signal" {...props(styles.priceSignal)}>
-              {row.priceSignal}
+        <div data-slot="product-ledger-context" {...props(styles.context)}>
+          <div data-slot="product-ledger-summary" {...props(styles.summary)}>
+            <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
+              {row.title}
+            </h3>
+            <p data-slot="product-ledger-highlights" {...props(styles.highlights)}>
+              {row.highlights}
+            </p>
+          </div>
+          <div data-slot="product-ledger-market" {...props(styles.market)}>
+            <span data-tone="secondary" {...props(styles.marketLabel)}>
+              Best available
             </span>
-            <StatusBadge
-              data-slot="product-ledger-freshness"
-              style={styles.freshness}
-              tone="positive"
-            >
-              {row.freshness}
-            </StatusBadge>
+            <span data-slot="product-ledger-offer" {...props(styles.offer)}>
+              {row.offer}
+            </span>
+            <div {...props(styles.marketSupporting)}>
+              <span data-slot="product-ledger-price-signal" {...props(styles.priceSignal)}>
+                {row.priceSignal}
+              </span>
+              <StatusBadge
+                data-slot="product-ledger-freshness"
+                style={styles.freshness}
+                tone="positive"
+              >
+                {row.freshness}
+              </StatusBadge>
+            </div>
           </div>
         </div>
         <div data-slot="product-ledger-actions" {...props(styles.actions)}>

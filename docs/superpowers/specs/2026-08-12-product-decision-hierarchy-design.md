@@ -12,9 +12,11 @@ still present every value with equal weight:
 
 - the homepage product ledger repeats a six-field schema above and inside every
   product row; and
-- the product-detail offer snapshot renders four same-weight definition rows.
+- the product-detail offer snapshot renders four same-weight definition rows;
+  and
+- API-token rows give identity, lifecycle, and status identical visual weight.
 
-Both surfaces expose correct data, but they read like serialized parameters
+These surfaces expose correct data, but they read like serialized parameters
 rather than a buying workspace. The user must first decode the schema and only
 then find the decision.
 
@@ -54,6 +56,12 @@ their truthful existing copy.
 Specifications remain grouped definition lists. A parameter-like structure is
 correct for technical specifications, so this pass does not turn them into
 cards, prose, or decorative badges.
+
+### API-token records
+
+The token label and status form one header. The prefix is the primary technical
+identifier, while created, expiry, and last-use dates form a quiet lifecycle
+strip. The definition-list semantics and every lifecycle fact remain intact.
 
 ## Interaction Thesis
 
