@@ -23,7 +23,6 @@
   "include": [
     "src",
     "test",
-    "plugins",
     "scripts",
     "vite.config.ts",
     "vitest.config.ts",

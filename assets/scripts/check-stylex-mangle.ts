@@ -1,13 +1,13 @@
 import { readFile, readdir } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { STYLEX_CLASS_NAME_PREFIX } from "../stylex-plugin.ts";
 import {
+  findGeneratedStylexClassNames,
   findMangledStylexClassNames,
-  findStylexClassNames,
   findStylexRules,
   shortStylexClassName,
-} from "../plugins/stylex-class-name.ts";
-import { STYLEX_CLASS_NAME_PREFIX } from "../stylex-plugin.ts";
+} from "./stylex-output.ts";
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const distDirectory = resolve(scriptDirectory, "../dist");
@@ -46,7 +46,7 @@ for (const entry of await readdir(distDirectory, {
     ? outputContracts.ssr
     : outputContracts.client;
 
-  if (findStylexClassNames(source, STYLEX_CLASS_NAME_PREFIX).size > 0) {
+  if (findGeneratedStylexClassNames(source, STYLEX_CLASS_NAME_PREFIX).size > 0) {
     failures.push(path.slice(distDirectory.length + 1));
   }
 
