@@ -1058,14 +1058,17 @@ test("renders an offer snapshot from the visible active offer page", () => {
   expect(
     offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(within(offerSnapshot).getByText("Visible active offers")).toBeVisible();
-  expect(within(offerSnapshot).getByText("4")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
-  expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Coupon availability")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Best visible offer")).toBeVisible();
+  expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toHaveAttribute(
+    "data-slot",
+    "offer-snapshot-primary",
+  );
+  expect(within(offerSnapshot).getByText("4 active offers on this page.")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers with coupons.")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers without a current price.")).toBeVisible();
+  expect(within(offerSnapshot).queryByText("Visible active offers")).not.toBeInTheDocument();
+  expect(within(offerSnapshot).queryByText("Coupon availability")).not.toBeInTheDocument();
+  expect(within(offerSnapshot).queryByText("Missing latest price")).not.toBeInTheDocument();
   expect(within(offersList).getByRole("link", { name: "Bad Price Shop" })).toBeVisible();
   expect(within(offersList).queryByText("not-a-price USD")).not.toBeInTheDocument();
 });
@@ -1119,7 +1122,8 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
   expect(within(offerSnapshot).getByText("No visible prices")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 active offers on this page.")).toBeVisible();
+  expect(within(offerSnapshot).getByText("2 offers without a current price.")).toBeVisible();
 });
 
 test("renders offer snapshot without lowest-price claim for mixed currencies", () => {
@@ -1173,7 +1177,7 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
 
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
-  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Best visible offer")).toBeVisible();
   expect(within(offerSnapshot).getByText("Multiple currencies")).toBeVisible();
   expect(within(offerSnapshot).queryByText("149.99 EUR at Euro Shop")).not.toBeInTheDocument();
 });

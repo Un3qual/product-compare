@@ -37,23 +37,21 @@ const homeProductLedgerFragment = graphql`
 `;
 
 const styles = create({
-  headings: {
+  actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
+  secondaryDetails: { display: "grid", gap: "0.5rem", margin: 0 },
+  secondaryDetail: {
+    display: "grid",
+    gap: "0.35rem",
+    gridTemplateColumns: "6.5rem minmax(0, 1fr)",
+  },
+  secondaryDetailLabel: {
     color: tokens.textSecondary,
-    display: {
-      default: "grid",
-      "@media (max-width: 62rem)": "none",
-    },
     fontFamily: tokens.fontMono,
     fontSize: "0.7rem",
-    gap: "1rem",
-    gridTemplateColumns:
-      "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(12rem, 0.7fr) 10rem",
     letterSpacing: "0.04em",
-    padding: "0.6rem 0",
     textTransform: "uppercase",
   },
-  actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
-  secondaryDetails: { display: "grid", gap: "0.25rem" },
+  secondaryDetailValue: { margin: 0 },
   workspace: { maxWidth: "100%", minWidth: 0 },
 });
 
@@ -69,19 +67,10 @@ export function HomeProductLedger({
 
   return (
     <section aria-label="Product workspace" {...props(styles.workspace)}>
-      <div aria-hidden="true" data-slot="home-ledger-headings" {...props(styles.headings)}>
-        <span>Product</span>
-        <span>Highlights</span>
-        <span>Best offer</span>
-        <span>Price signal</span>
-        <span>Last checked</span>
-        <span>Actions</span>
-      </div>
       <ProductLedger
         label="Product results"
         rows={rows.map((row) => ({
           actions: <HomeLedgerActions row={row} selectedSlugs={selectedSlugs} />,
-          category: row.category,
           freshness: row.freshness,
           highlights: row.highlights,
           id: row.id,
@@ -139,10 +128,15 @@ function HomeLedgerActions({
 
 function HomeLedgerDetails({ row }: { row: HomeLedgerRow }) {
   return (
-    <div {...props(styles.secondaryDetails)}>
-      <span>{row.highlights}</span>
-      <span>{row.priceSignal}</span>
-      <span>{row.freshness}</span>
-    </div>
+    <dl {...props(styles.secondaryDetails)}>
+      <div {...props(styles.secondaryDetail)}>
+        <dt {...props(styles.secondaryDetailLabel)}>Price context</dt>
+        <dd {...props(styles.secondaryDetailValue)}>{row.priceSignal}</dd>
+      </div>
+      <div {...props(styles.secondaryDetail)}>
+        <dt {...props(styles.secondaryDetailLabel)}>Checked</dt>
+        <dd {...props(styles.secondaryDetailValue)}>{row.freshness}</dd>
+      </div>
+    </dl>
   );
 }

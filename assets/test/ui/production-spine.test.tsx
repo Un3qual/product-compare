@@ -134,13 +134,12 @@ test("comparison continuity presents normalized selections as numbered labels an
   );
 });
 
-test("product ledger keeps all product facts in one semantic list with a disclosed secondary detail", () => {
+test("product ledger groups identity and market facts around the buying decision", () => {
   render(
     <ProductLedger
       rows={[
         {
           actions: <a href="/products/alpha">View Alpha Camera</a>,
-          category: "Cameras",
           freshness: "Last checked today",
           highlights: "24 MP · Weather sealed",
           id: "alpha",
@@ -163,25 +162,26 @@ test("product ledger keeps all product facts in one semantic list with a disclos
   expect(within(ledger).getByRole("heading", { name: "Alpha Camera" })).toBeInTheDocument();
   expect(mobileDisclosure).toHaveAttribute("aria-expanded", "false");
   expect(within(ledger).getByRole("link", { name: "View Alpha Camera" })).toBeInTheDocument();
-  expect(within(ledger).getByText("Cameras")).toHaveAttribute("data-tone", "secondary");
-  expect(within(ledger).getByText("Price signal")).toHaveAttribute("data-tone", "secondary");
+  expect(within(ledger).queryByText("Highlights")).not.toBeInTheDocument();
+  expect(within(ledger).queryByText("Price signal")).not.toBeInTheDocument();
   expect(within(ledger).getByText("Last checked today")).toHaveAttribute("data-tone", "positive");
   expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
     "data-component",
     "status-badge",
   );
-  expect(within(ledger).getByText("24 MP · Weather sealed").closest("[data-slot]")).toHaveAttribute(
-    "data-slot",
-    "product-ledger-highlights",
-  );
-  expect(within(ledger).getByText("$849 at Example Store").closest("[data-slot]")).toHaveAttribute(
-    "data-slot",
-    "product-ledger-offer",
-  );
-  expect(within(ledger).getByText("Lowest in 30 days").closest("[data-slot]")).toHaveAttribute(
-    "data-slot",
-    "product-ledger-price-signal",
-  );
+  expect(
+    within(ledger)
+      .getByText("24 MP · Weather sealed")
+      .closest('[data-slot="product-ledger-summary"]'),
+  ).toBeInTheDocument();
+  expect(
+    within(ledger)
+      .getByText("$849 at Example Store")
+      .closest('[data-slot="product-ledger-market"]'),
+  ).toBeInTheDocument();
+  expect(
+    within(ledger).getByText("Lowest in 30 days").closest('[data-slot="product-ledger-market"]'),
+  ).toBeInTheDocument();
   expect(within(ledger).getByText("Last checked today")).toHaveAttribute(
     "data-slot",
     "product-ledger-freshness",

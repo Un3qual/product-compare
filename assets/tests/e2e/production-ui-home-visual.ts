@@ -62,51 +62,27 @@ export async function expectHomeVisualSystem(page: Page, viewport: HomeViewportN
 }
 
 export async function expectDesktopLedgerGeometry(page: Page) {
-  const headings = page.locator('[data-slot="home-ledger-headings"]');
-  await expect(headings).toBeVisible();
-  const geometry = await headings.evaluate((headingStrip) => {
-    const headingXs = [...headingStrip.children].map(
-      (heading) => heading.getBoundingClientRect().x,
-    );
-    const article = headingStrip.nextElementSibling?.querySelector("article");
-    const rowXs = article
-      ? [
-          "product-ledger-identity",
-          "product-ledger-highlights",
-          "product-ledger-offer",
-          "product-ledger-price-signal",
-          "product-ledger-freshness",
-          "product-ledger-actions",
-        ].map(
-          (slot) => article.querySelector(`[data-slot="${slot}"]`)?.getBoundingClientRect().x ?? -1,
-        )
-      : [];
-
-    const freshness = article
-      ?.querySelector('[data-slot="product-ledger-freshness"]')
-      ?.getBoundingClientRect();
-    const actions = article
-      ?.querySelector('[data-slot="product-ledger-actions"]')
-      ?.getBoundingClientRect();
+  await expect(page.locator('[data-slot="home-ledger-headings"]')).toHaveCount(0);
+  const article = page.getByRole("article", { name: products[0].name });
+  const geometry = await article.evaluate((element) => {
+    const box = (slot: string) =>
+      element.querySelector(`[data-slot="${slot}"]`)?.getBoundingClientRect() ?? null;
 
     return {
-      freshnessActionGap:
-        freshness && actions ? Math.round((actions.x - freshness.right) * 100) / 100 : -1,
-      headingXs,
-      rowXs,
+      actions: box("product-ledger-actions"),
+      market: box("product-ledger-market"),
+      summary: box("product-ledger-summary"),
     };
   });
 
-  expect(geometry.headingXs).toHaveLength(6);
-  expect(geometry.rowXs).toHaveLength(6);
-  geometry.headingXs.forEach((headingX, index) => {
-    expect(Math.abs(headingX - (geometry.rowXs[index] ?? -1))).toBeLessThan(1);
-  });
-  expect(geometry.freshnessActionGap).toBeGreaterThanOrEqual(0);
+  expect(geometry.summary?.y).toBe(geometry.market?.y);
+  expect(geometry.market?.y).toBe(geometry.actions?.y);
+  expect((geometry.market?.x ?? 0) - (geometry.summary?.right ?? 0)).toBeGreaterThan(0);
+  expect((geometry.actions?.x ?? 0) - (geometry.market?.right ?? 0)).toBeGreaterThan(0);
 }
 
 export async function expectTabletLedgerGeometry(page: Page) {
-  await expect(page.locator('[data-slot="home-ledger-headings"]')).toBeHidden();
+  await expect(page.locator('[data-slot="home-ledger-headings"]')).toHaveCount(0);
   const article = page.getByRole("article", { name: products[0].name });
   const positions = await article.evaluate((element) => {
     const position = (slot: string) => {
@@ -116,36 +92,28 @@ export async function expectTabletLedgerGeometry(page: Page) {
 
     return {
       actions: position("product-ledger-actions"),
-      freshness: position("product-ledger-freshness"),
-      highlights: position("product-ledger-highlights"),
-      identity: position("product-ledger-identity"),
-      offer: position("product-ledger-offer"),
-      signal: position("product-ledger-price-signal"),
+      market: position("product-ledger-market"),
+      summary: position("product-ledger-summary"),
     };
   });
 
-  expect(positions.identity?.y).toBe(positions.highlights?.y);
-  expect(positions.offer?.y).toBe(positions.signal?.y);
-  expect(positions.freshness?.y).toBe(positions.actions?.y);
-  expect(positions.identity?.x).toBe(positions.offer?.x);
-  expect(positions.offer?.x).toBe(positions.freshness?.x);
-  expect(positions.highlights?.x).toBe(positions.signal?.x);
-  expect(positions.signal?.x).toBe(positions.actions?.x);
+  expect(positions.summary?.x).toBe(positions.market?.x);
+  expect(positions.summary?.y).toBeLessThan(positions.market?.y ?? 0);
+  expect(positions.actions?.x).toBeGreaterThan(positions.summary?.x ?? 0);
+  expect(positions.actions?.y).toBe(positions.summary?.y);
 
   const widths = await page.getByRole("list", { name: "Product results" }).evaluate((list) => {
     const workspace = list.closest('[aria-label="Product workspace"]');
     const articles = [...list.querySelectorAll("article")];
     const firstArticle = articles[0];
-    const identity = firstArticle?.querySelector('[data-slot="product-ledger-identity"]');
-    const highlights = firstArticle?.querySelector('[data-slot="product-ledger-highlights"]');
+    const summary = firstArticle?.querySelector('[data-slot="product-ledger-summary"]');
     const box = (element: Element | null | undefined) => element?.getBoundingClientRect();
 
     return {
       articleWidths: articles.map((element) => element.getBoundingClientRect().width),
       columns: firstArticle ? getComputedStyle(firstArticle).gridTemplateColumns : "",
-      highlights: box(highlights),
-      identity: box(identity),
       list: list.getBoundingClientRect(),
+      summary: box(summary),
       workspace: box(workspace),
     };
   });
@@ -156,22 +124,15 @@ export async function expectTabletLedgerGeometry(page: Page) {
   for (const articleWidth of widths.articleWidths) {
     expect(Math.abs(articleWidth - widths.list.width)).toBeLessThan(1);
   }
-  const identityWidth = widths.identity?.width ?? 0;
-  const highlightsWidth = widths.highlights?.width ?? 0;
-  expect(identityWidth / widths.list.width).toBeGreaterThan(0.4);
-  expect(highlightsWidth / widths.list.width).toBeGreaterThan(0.4);
-  expect(identityWidth / widths.list.width).toBeLessThan(0.6);
-  expect(highlightsWidth / widths.list.width).toBeLessThan(0.6);
-  const columnGap = (widths.highlights?.x ?? 0) - ((widths.identity?.x ?? 0) + identityWidth);
-  expect(columnGap).toBeGreaterThan(0);
-  expect(Math.abs(identityWidth + highlightsWidth + columnGap - widths.list.width)).toBeLessThan(1);
+  expect((widths.summary?.width ?? 0) / widths.list.width).toBeGreaterThan(0.55);
+  expect((widths.summary?.width ?? 0) / widths.list.width).toBeLessThan(0.8);
 }
 
 export async function expectMobileLedgerDisclosure(page: Page) {
-  await expect(page.locator('[data-slot="home-ledger-headings"]')).toBeHidden();
+  await expect(page.locator('[data-slot="home-ledger-headings"]')).toHaveCount(0);
   const article = page.getByRole("article", { name: products[0].name });
 
-  await expect(article.locator('[data-slot="product-ledger-highlights"]')).toBeHidden();
+  await expect(article.locator('[data-slot="product-ledger-highlights"]')).toBeVisible();
   await expect(article.locator('[data-slot="product-ledger-price-signal"]')).toBeHidden();
   await expect(article.locator('[data-slot="product-ledger-freshness"]')).toBeHidden();
   await expect(article.locator('[data-slot="product-ledger-offer"]')).toBeVisible();
@@ -183,7 +144,8 @@ export async function expectMobileLedgerDisclosure(page: Page) {
   await page.keyboard.press("Space");
   const disclosure = article.locator('[data-slot="collapsible-content"]');
   await expect(disclosure).toBeVisible();
-  await expect(disclosure).toContainText(
+  await expect(disclosure).not.toContainText("Capacity: 1.0 L");
+  await expect(article.locator('[data-slot="product-ledger-summary"]')).toContainText(
     "Capacity: 1.0 L · Temperature range: 40–100 °C · Warranty: 2 years",
   );
   await expect(disclosure).toContainText("Below the 30-day price");
