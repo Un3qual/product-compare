@@ -85,7 +85,6 @@ const styles = create({
     textTransform: "uppercase",
   },
   overviewValue: {
-    color: tokens.pricePositive,
     fontSize: {
       default: "2rem",
       "@media (max-width: 42rem)": "1.65rem",
@@ -93,6 +92,9 @@ const styles = create({
     fontWeight: 750,
     letterSpacing: "-0.035em",
     lineHeight: 1.1,
+  },
+  overviewValuePositive: {
+    color: tokens.pricePositive,
   },
   overviewContext: {
     color: tokens.textSecondary,
@@ -167,6 +169,8 @@ function OfferDataList({
 }
 
 function VisibleOfferOverview({ summary }: { summary: OfferSnapshotSummary<RenderableOffer> }) {
+  const hasComparablePrice =
+    summary.priceState === "comparable" && summary.lowestPricedOffer !== null;
   const visibleOfferLabel = `${summary.visibleOfferCount} visible ${
     summary.visibleOfferCount === 1 ? "offer" : "offers"
   }.`;
@@ -181,7 +185,11 @@ function VisibleOfferOverview({ summary }: { summary: OfferSnapshotSummary<Rende
       {...props(styles.overview)}
     >
       <h2 {...props(styles.overviewTitle)}>Best visible price</h2>
-      <strong data-slot="offer-overview-primary" {...props(styles.overviewValue)}>
+      <strong
+        data-slot="offer-overview-primary"
+        data-tone={hasComparablePrice ? "positive" : "neutral"}
+        {...props(styles.overviewValue, hasComparablePrice && styles.overviewValuePositive)}
+      >
         {visibleLowestPriceLabel(summary)}
       </strong>
       <p {...props(styles.overviewContext)}>

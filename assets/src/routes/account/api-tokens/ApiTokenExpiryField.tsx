@@ -50,7 +50,7 @@ export function ApiTokenExpiryField({
 
   useEffect(() => {
     const form = inputRef.current?.form;
-    if (!form) return;
+    if (!form) return undefined;
 
     const clearSelectedPreset = () => setSelectedPreset("");
     form.addEventListener("reset", clearSelectedPreset);

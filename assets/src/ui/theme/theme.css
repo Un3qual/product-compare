@@ -67,7 +67,7 @@
   --pc-danger: var(--pc-red-700);
   --pc-unavailable: var(--pc-neutral-500);
   --pc-font-sans:
-    "Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system, blinkmacsystemfont,
     "Segoe UI", sans-serif;
   --pc-font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   --pc-radius-small: 0.4rem;
@@ -136,7 +136,7 @@ a {
   :where(
     select,
     textarea,
-    input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]):not([data-slot])
+    input:not([type="checkbox"], [type="radio"], [type="hidden"], [data-slot])
   ) {
   background: var(--pc-surface-raised);
   border: 1px solid var(--pc-border-standard);

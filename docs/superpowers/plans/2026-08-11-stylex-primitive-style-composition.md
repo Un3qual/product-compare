@@ -11,6 +11,7 @@
 ## Task 1: Lock the primitive styling contract with tests
 
 **Files:**
+
 - Create: `assets/test/ui/primitive-style-types.test.tsx`
 - Modify: `assets/test/ui/primitives.test.tsx`
 
@@ -21,6 +22,7 @@
 ## Task 2: Introduce the typed StyleX primitive prop contract
 
 **Files:**
+
 - Create: `assets/src/ui/primitives/stylex-props.ts`
 
 1. Define a reusable type that omits native/Base UI `className` and DOM `style` props and replaces them with `style?: StyleXStyles`.
@@ -29,6 +31,7 @@
 ## Task 3: Migrate styled primitives to direct StyleX composition
 
 **Files:**
+
 - Modify: `assets/src/ui/primitives/*.tsx`
 - Delete: `assets/src/ui/primitives/utils.stylex.ts`
 
@@ -41,6 +44,7 @@
 ## Task 4: Migrate primitive consumers
 
 **Files:**
+
 - Modify: `assets/src/routes/**/*.tsx`
 - Modify: `assets/src/ui/components/**/*.tsx`
 

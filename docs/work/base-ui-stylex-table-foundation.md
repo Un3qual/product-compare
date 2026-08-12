@@ -100,3 +100,9 @@ behavior and do not retain a permanent Radix fallback or bundle-order mapping.
   outputs. Focused regressions and the full frontend/browser gates passed.
 - 2026-08-11: Repository closeout passed `mix work_queue.validate` with four
   ready rows, backend formatting, 1,482 backend tests, and `git diff --check`.
+- 2026-08-12: The user explicitly removed stored Playwright screenshot
+  baselines. Behavioral, accessibility, focus, responsive-geometry, and
+  overflow assertions remain; generated screenshot directories are ignored.
+- 2026-08-12: Review reconciliation archived the completed foundation row and
+  added it as an explicit prerequisite of all four live route cohorts. The live
+  index remains limited to executable work and does not retain completed rows.

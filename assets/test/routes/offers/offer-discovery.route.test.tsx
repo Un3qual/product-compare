@@ -1092,7 +1092,7 @@ test("offer discovery presents one primary price with concise page coverage", ()
   expect(
     snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(within(snapshot).getByText("129.00 USD")).toBeVisible();
+  expect(within(snapshot).getByText("129.00 USD")).toHaveAttribute("data-tone", "positive");
   expect(
     within(snapshot).getByText(
       "4 visible offers. 1 offer with coupons. 2 offers without a current price.",
@@ -1122,7 +1122,10 @@ test("offer discovery refuses a lowest-price claim for mixed currencies", () => 
 
   const snapshot = screen.getByRole("region", { name: "Offer price overview" });
 
-  expect(within(snapshot).getByText("Not comparable across currencies")).toBeVisible();
+  expect(within(snapshot).getByText("Not comparable across currencies")).toHaveAttribute(
+    "data-tone",
+    "neutral",
+  );
   expect(within(snapshot).queryByText("149.00 EUR")).not.toBeInTheDocument();
 });
 
@@ -1142,7 +1145,7 @@ test("offer discovery reports no visible prices when every renderable row lacks 
 
   const snapshot = screen.getByRole("region", { name: "Offer price overview" });
 
-  expect(within(snapshot).getByText("No visible prices")).toBeVisible();
+  expect(within(snapshot).getByText("No visible prices")).toHaveAttribute("data-tone", "neutral");
   expect(
     within(snapshot).getByText(
       "1 visible offer. 0 offers with coupons. 1 offer without a current price.",

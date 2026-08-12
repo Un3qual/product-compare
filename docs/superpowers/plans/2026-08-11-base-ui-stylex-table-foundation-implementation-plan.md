@@ -23,6 +23,7 @@
 ### Task 1: Deterministic StyleX production mangling
 
 **Files:**
+
 - Create: `assets/plugins/stylex-class-name.ts`
 - Move and rewrite: `assets/src/stylex-mangle.ts` -> `assets/plugins/stylex-mangle.ts`
 - Create: `assets/test/build/stylex-mangle.test.ts`
@@ -30,6 +31,7 @@
 - Modify: `assets/stylex-plugin.ts`, `assets/vite.config.ts`, `assets/package.json`, `assets/tsconfig.json`
 
 **Interfaces:**
+
 - `mangleStylexClassName(name, prefix): string | null` returns one stable short name for one atomic StyleX class and returns `null` for variables, keyframes, and non-StyleX identifiers.
 - `rewriteStylexClassNames(text, prefix): { code: string; changed: boolean }` rewrites exact atomic tokens only.
 - `stylexMangle({ classNamePrefix })` returns a production-only Vite plugin.
@@ -45,12 +47,14 @@
 ### Task 2: Base UI and shadcn-cssinjs primitive cutover
 
 **Files:**
+
 - Modify: `assets/package.json`, `assets/pnpm-lock.yaml`, `assets/stylex-plugin.ts`, `assets/src/ui/theme/tokens.stylex.ts`, `assets/src/ui/theme/theme.css`, `assets/src/ui/providers/AppProviders.tsx`
 - Replace: `assets/src/ui/primitives/**`
 - Modify: existing ProductCompare composites and all current Radix-importing route components under `assets/src/ui/**` and `assets/src/routes/**`
 - Modify: `assets/test/ui/primitives.test.tsx`, `assets/test/ui/app-providers.test.tsx`, focused overlay/layout tests, and Select test helpers
 
 **Interfaces:**
+
 - Local primitives follow the copied registry names and Base UI `render` composition contract.
 - Button variants are `default | destructive | outline | secondary | ghost | link`; sizes are `default | sm | lg | icon | icon-sm | icon-lg` and every interactive size retains a 44px target.
 - Select uses the registry compound API and Base UI form participation; ProductCompare forms compose `Select`, `SelectTrigger`, `SelectValue`, `SelectContent`, and `SelectItem` directly.
@@ -68,6 +72,7 @@
 ### Task 3: TanStack Table v9 conversion
 
 **Files:**
+
 - Add: `assets/src/ui/primitives/Table.tsx`
 - Modify: `assets/src/routes/commerce/revenue/AttributionLedger.tsx`
 - Modify: `assets/src/routes/compare/DecisionSummary.tsx`
@@ -75,6 +80,7 @@
 - Modify: `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`, `assets/test/routes/compare/compare.route.test.tsx`, `assets/package.json`, `assets/pnpm-lock.yaml`
 
 **Interfaces:**
+
 - Each table owns a `tableFeatures({})`, typed `ColumnDef`, stable data, and `useTable` instance.
 - Rendering uses `table.getHeaderGroups()`, `table.getRowModel().rows`, `row.getAllCells()`, and `table.FlexRender` through local `Table*` primitives.
 - Relay and URL state remain outside TanStack.
@@ -89,10 +95,12 @@
 ### Task 4: Complete verification and queue closeout
 
 **Files:**
+
 - Modify: `assets/tests/e2e/production-ui-home.spec.ts` and snapshots only when the verified Base UI rendering changes them intentionally
 - Modify: `docs/work/base-ui-stylex-table-foundation.md`, `docs/work/index.md`, `docs/plans/INDEX.md`
 
 **Interfaces:**
+
 - The lane document records observed commands, counts, bundle measurements, browser evidence, and any retained risks.
 - The live queue removes this active row only after all checks and the anti-slop review pass.
 

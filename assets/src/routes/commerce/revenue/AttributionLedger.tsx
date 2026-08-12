@@ -1,5 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import {
   createColumnHelper,
   tableFeatures,
@@ -282,18 +282,22 @@ function AttributionDiagnostics({ click }: { click: AttributionClick }) {
 }
 
 function AttributionCommerce({ click }: { click: AttributionClick }) {
+  const details = [
+    ["Merchant", click.merchantName],
+    ["Product", click.productName ?? "No product"],
+    ["Merchant product", click.merchantProductExternalSku ?? "No SKU"],
+    ["Program", click.affiliateProgramCode ?? "No affiliate program"],
+    ["Network", click.affiliateNetworkName ?? "No affiliate network"],
+  ] as const;
+
   return (
     <dl {...props(styles.details)}>
-      <dt>Merchant</dt>
-      <dd>{click.merchantName}</dd>
-      <dt>Product</dt>
-      <dd>{click.productName ?? "No product"}</dd>
-      <dt>Merchant product</dt>
-      <dd>{click.merchantProductExternalSku ?? "No SKU"}</dd>
-      <dt>Program</dt>
-      <dd>{click.affiliateProgramCode ?? "No affiliate program"}</dd>
-      <dt>Network</dt>
-      <dd>{click.affiliateNetworkName ?? "No affiliate network"}</dd>
+      {details.map(([label, value]) => (
+        <Fragment key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </Fragment>
+      ))}
     </dl>
   );
 }
