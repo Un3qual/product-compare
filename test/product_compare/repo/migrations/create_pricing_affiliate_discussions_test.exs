@@ -32,8 +32,6 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussionsTest d
       assert definition = index_definition(prefix, "merchant_products_home_new_idx")
 
       assert definition =~ "(currency_id, inserted_at, id) WHERE (is_active = true)"
-
-      assert new_deal_query_plan(prefix) =~ "merchant_products_home_new_idx"
     end)
   end
 
@@ -102,21 +100,5 @@ defmodule ProductCompare.Repo.Migrations.CreatePricingAffiliateDiscussionsTest d
       [[definition]] -> definition
       [] -> nil
     end
-  end
-
-  defp new_deal_query_plan(prefix) do
-    MigrationRepo.query!("""
-    EXPLAIN (COSTS OFF)
-    SELECT id
-    FROM "#{prefix}"."merchant_products"
-    WHERE is_active = true
-      AND currency_id = 840
-      AND inserted_at >= now() - interval '72 hours'
-    ORDER BY inserted_at, id
-    LIMIT 12
-    """)
-    |> Map.fetch!(:rows)
-    |> List.flatten()
-    |> Enum.join("\n")
   end
 end

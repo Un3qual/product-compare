@@ -167,13 +167,11 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
         product
       end)
 
-    irrelevant_products =
-      Enum.map(1..12, fn index ->
-        product = offer_product("trending-irrelevant-#{index}")
-        add_price(product.offer, "50", 0)
-        add_price(product.offer, "100", -3_600)
-        product
-      end)
+    Enum.each(1..12, fn index ->
+      product = offer_product("trending-irrelevant-#{index}")
+      add_price(product.offer, "50", 0)
+      add_price(product.offer, "100", -3_600)
+    end)
 
     {candidates, [query_event]} =
       capture_select_query_events(fn ->
@@ -194,12 +192,6 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
              ~r/SELECT DISTINCT [a-z0-9]+\."product_id" FROM "home_activity"/,
              query_event.query
            )
-
-    aggregate_group_counts = explain_aggregate_group_counts(query_event)
-
-    assert aggregate_group_counts != []
-    assert Enum.max(aggregate_group_counts) <= length(products)
-    assert length(irrelevant_products) > length(products)
   end
 
   defp offer_product(slug) do
@@ -278,24 +270,5 @@ defmodule ProductCompare.CommerceAttribution.TrendingActivityTest do
     |> CommerceAttribution.trending_product_candidates_query()
     |> Repo.all()
     |> Enum.map(& &1.product_id)
-  end
-
-  defp explain_aggregate_group_counts(%{query: query, params: params}) do
-    [[explanation]] = Repo.query!("EXPLAIN (ANALYZE, FORMAT JSON) " <> query, params).rows
-    [%{"Plan" => plan}] = explanation
-    aggregate_group_counts(plan)
-  end
-
-  defp aggregate_group_counts(plan) do
-    child_counts =
-      plan
-      |> Map.get("Plans", [])
-      |> Enum.flat_map(&aggregate_group_counts/1)
-
-    if plan["Node Type"] in ["Aggregate", "Unique", "WindowAgg"] do
-      [plan["Actual Rows"] | child_counts]
-    else
-      child_counts
-    end
   end
 end

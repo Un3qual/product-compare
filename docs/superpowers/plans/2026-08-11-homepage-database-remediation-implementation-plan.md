@@ -194,7 +194,7 @@
   (merchant_product_id, observed_at DESC, id DESC) INCLUDE (price, shipping, in_stock)
   ```
 
-  and that `price_points_merchant_product_observed_idx` no longer exists after `up/0` but is restored by `down/0`.
+  and that `price_points_mp_time_idx` no longer exists after `up/0` but is restored by `down/0`.
 
 - [ ] **Step 4: Run the index migration test and confirm RED**
 
@@ -390,7 +390,7 @@
   Capture SELECT SQL and assert:
 
   ```elixir
-  refute Enum.any?(deal_queries, &String.contains?(&1, "percentile_cont"))
+  refute Enum.any?(deal_queries, &any_page_fact_median_query?/1)
   refute Enum.any?(deal_queries, &String.contains?(&1, "active_offer_count"))
   refute Enum.any?(workspace_queries, &String.contains?(&1, "active_offer_count"))
   ```

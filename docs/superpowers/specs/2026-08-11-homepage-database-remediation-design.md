@@ -95,7 +95,7 @@ Latest-price reads are candidate-scoped and deterministic by
 `price_points_home_latest_idx` on
 `(merchant_product_id, observed_at DESC, id DESC) INCLUDE (price, shipping,
 in_stock)`. After that index is valid, the migration concurrently removes the
-superseded non-covering `price_points_merchant_product_observed_idx`.
+superseded non-covering `price_points_mp_time_idx`.
 
 New-offer selection first restricts active USD merchant products to
 `inserted_at >= now - 72 hours`. This pushdown is logically equivalent because

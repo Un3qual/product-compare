@@ -1071,7 +1071,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
     assert %{"data" => %{"homeDeals" => %{}}} = deals_response
     refute Enum.any?(deal_queries, &active_offer_count_query?/1)
-    refute Enum.any?(deal_queries, &page_fact_median_query?/1)
+    refute Enum.any?(deal_queries, &any_page_fact_median_query?/1)
 
     production_workspace_query = """
     fragment ProductionWorkspaceOffer on HomeOfferSummary {
@@ -1215,7 +1215,7 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
            } = response
 
     refute Enum.any?(queries, &active_offer_count_query?/1)
-    refute Enum.any?(queries, &page_fact_median_query?/1)
+    refute Enum.any?(queries, &any_page_fact_median_query?/1)
   end
 
   test "fallback New price signals keep a fixed page-scoped query budget" do
@@ -1548,9 +1548,20 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
 
   defp page_fact_median_query?(query) do
     Regex.match?(
-      ~r/^SELECT\s+\w+\."product_id",\s*\w+\."currency_id",\s*percentile_cont/s,
+      ~r/^SELECT\s+\w+\."product_id",\s*\w+\."currency",\s*avg\(\w+\."landed_price"\)::decimal\s+FROM/s,
       query
-    )
+    ) and
+      String.contains?(query, ~s(WINDOW "median_rank" AS)) and
+      String.contains?(query, ~s("median_count" AS)) and
+      String.contains?(query, "BETWEEN")
+  end
+
+  defp any_page_fact_median_query?(query) do
+    page_fact_median_query?(query) or
+      Regex.match?(
+        ~r/^SELECT\s+\w+\."product_id",\s*\w+\."currency_id",\s*percentile_cont/s,
+        query
+      )
   end
 
   defp viewer_ranking_query?(query) do

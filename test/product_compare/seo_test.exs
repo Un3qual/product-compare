@@ -281,6 +281,7 @@ defmodule ProductCompare.SeoTest do
     assert qualification_query =~ ~s(FROM "merchant_products")
     refute qualification_query =~ "min("
     refute qualification_query =~ "percentile_cont"
+    refute qualification_query =~ ~s(WINDOW "median_rank" AS)
   end
 
   test "batch category lookup preserves singular qualification with a fixed query budget" do

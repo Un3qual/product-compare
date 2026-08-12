@@ -164,7 +164,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     {[_candidate], [query]} =
       capture_select_queries(fn -> Pricing.home_new_deal_candidates(now: @now, limit: 6) end)
 
-    refute String.contains?(query, "percentile_cont")
+    refute any_landed_price_median_query?(query)
     assert first_observation_relation?(query)
   end
 
@@ -226,7 +226,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
         Pricing.home_trending_deal_candidates(activity_query, now: @now, limit: 6)
       end)
 
-    assert query =~ "percentile_cont"
+    assert exact_landed_price_median_query?(query)
     refute first_observation_relation?(query)
   end
 
@@ -261,9 +261,9 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
       end)
 
     refute first_observation_relation?(workspace_query)
-    refute workspace_query =~ "percentile_cont"
+    refute any_landed_price_median_query?(workspace_query)
     assert first_observation_relation?(fallback_query)
-    assert fallback_query =~ "percentile_cont"
+    assert exact_landed_price_median_query?(fallback_query)
   end
 
   test "page facts are page-scoped and honor requested fields" do
@@ -305,8 +305,8 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
     assert MapSet.new(Map.keys(active_facts)) == page_offer_ids
     assert Enum.all?(active_facts, fn {_id, facts} -> facts.active_offer_count == 1 end)
     assert [active_query] = active_queries
-    assert active_query =~ "count("
-    refute active_query =~ "percentile_cont"
+    assert active_offer_count_query?(active_query)
+    refute any_landed_price_median_query?(active_query)
 
     {signal_facts, signal_queries} =
       capture_select_queries(fn ->
@@ -315,8 +315,8 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert MapSet.new(Map.keys(signal_facts)) == page_offer_ids
     assert [signal_query] = signal_queries
-    assert signal_query =~ "percentile_cont"
-    refute signal_query =~ "count("
+    assert exact_landed_price_median_query?(signal_query)
+    refute active_offer_count_query?(signal_query)
 
     {all_facts, all_queries} =
       capture_select_queries(fn ->
@@ -329,8 +329,8 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert MapSet.new(Map.keys(all_facts)) == page_offer_ids
     assert Enum.count_until(all_queries, 3) <= 2
-    assert Enum.count(all_queries, &String.contains?(&1, "count(")) == 1
-    assert Enum.count(all_queries, &String.contains?(&1, "percentile_cont")) == 1
+    assert Enum.count(all_queries, &active_offer_count_query?/1) == 1
+    assert Enum.count(all_queries, &exact_landed_price_median_query?/1) == 1
 
     {_single_facts, single_queries} =
       capture_select_queries(fn ->
@@ -426,7 +426,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert query =~ ~s("home_relevance" AS MATERIALIZED), query
     assert query =~ ~s(FROM "home_relevance"), query
-    assert query =~ "percentile_cont"
+    assert exact_landed_price_median_query?(query)
     refute first_observation_relation?(query)
 
     refute Regex.match?(
@@ -456,7 +456,7 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
 
     assert exists?
     assert query =~ ~s("home_relevance" AS MATERIALIZED), query
-    refute query =~ "percentile_cont", query
+    refute any_landed_price_median_query?(query), query
     refute query =~ ~s(AS "viewer_rank"), query
     refute query =~ ~s(JOIN "products"), query
 
@@ -548,6 +548,23 @@ defmodule ProductCompare.Pricing.HomeOffersTest do
   defp first_observation_relation?(query) do
     Regex.match?(
       ~r/ORDER BY [a-z0-9]+\."observed_at"(?: ASC)?, [a-z0-9]+\."id"(?: ASC)? LIMIT 1/,
+      query
+    )
+  end
+
+  defp exact_landed_price_median_query?(query) do
+    String.contains?(query, ~s(WINDOW "median_rank" AS)) and
+      String.contains?(query, ~s("median_count" AS)) and
+      String.contains?(query, "avg(")
+  end
+
+  defp any_landed_price_median_query?(query) do
+    exact_landed_price_median_query?(query) or String.contains?(query, "percentile_cont")
+  end
+
+  defp active_offer_count_query?(query) do
+    Regex.match?(
+      ~r/SELECT\s+\w+\."product_id",\s*count\(\w+\."id"\).*FROM "merchant_products"/s,
       query
     )
   end

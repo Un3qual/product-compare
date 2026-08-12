@@ -110,6 +110,7 @@ defmodule ProductCompare.Catalog.HomeWorkspaceTest do
     refute product_query =~ "JOIN (SELECT DISTINCT ON"
     refute product_query =~ "min("
     refute product_query =~ "percentile_cont"
+    refute product_query =~ ~s(WINDOW "median_rank" AS)
   end
 
   test "includes the 24-hour boundary but requires the latest observation to remain in stock" do

@@ -185,27 +185,54 @@ defmodule ProductCompare.Pricing.PriceHistory do
   end
 
   defp landed_price_medians_query(product_ids, from, to, currency) do
-    PricePoint
-    |> join(:inner, [price], offer in MerchantProduct, on: offer.id == price.merchant_product_id)
-    |> filter_median_product_ids(product_ids)
+    ranked_landed_prices =
+      PricePoint
+      |> join(:inner, [price], offer in MerchantProduct,
+        on: offer.id == price.merchant_product_id
+      )
+      |> filter_median_product_ids(product_ids)
+      |> where(
+        [price, offer],
+        offer.currency == ^currency and not is_nil(price.shipping) and
+          price.observed_at >= ^from and price.observed_at <= ^to
+      )
+      |> select([price, offer], %{
+        product_id: offer.product_id,
+        currency: offer.currency,
+        landed_price: price.price + price.shipping
+      })
+      |> subquery()
+      |> windows([landed_price],
+        median_rank: [
+          partition_by: [:product_id, :currency],
+          order_by: [asc: :landed_price]
+        ],
+        median_count: [partition_by: [:product_id, :currency]]
+      )
+      |> select([landed_price], %{
+        product_id: landed_price.product_id,
+        currency: landed_price.currency,
+        landed_price: landed_price.landed_price,
+        row_number: over(row_number(), :median_rank),
+        row_count: over(count(landed_price.product_id), :median_count)
+      })
+
+    ranked_landed_prices
+    |> subquery()
     |> where(
-      [price, offer],
-      offer.currency == ^currency and not is_nil(price.shipping) and
-        price.observed_at >= ^from and price.observed_at <= ^to
+      [landed_price],
+      fragment(
+        "? BETWEEN ((? + 1) / 2) AND ((? + 2) / 2)",
+        landed_price.row_number,
+        landed_price.row_count,
+        landed_price.row_count
+      )
     )
-    |> group_by([_price, offer], [offer.product_id, offer.currency])
-    |> select([price, offer], %{
-      product_id: offer.product_id,
-      currency: offer.currency,
-      median:
-        type(
-          fragment(
-            "percentile_cont(0.5) WITHIN GROUP (ORDER BY (? + ?))",
-            price.price,
-            price.shipping
-          ),
-          :decimal
-        )
+    |> group_by([landed_price], [landed_price.product_id, landed_price.currency])
+    |> select([landed_price], %{
+      product_id: landed_price.product_id,
+      currency: landed_price.currency,
+      median: type(avg(landed_price.landed_price), :decimal)
     })
   end
 
