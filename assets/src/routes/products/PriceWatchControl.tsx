@@ -4,13 +4,15 @@ import { Link } from "react-router-dom";
 import { useMutation } from "react-relay";
 import type { AlertOperationsCreatePriceWatchMutation } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
 import { Button } from "$ui/primitives/Button";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "$ui/primitives/Collapsible";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
@@ -26,7 +28,7 @@ const styles = create({
   content: {
     display: {
       default: "block",
-      ":where([data-state='closed'])": "none",
+      ":where([data-closed])": "none",
     },
   },
   details: {
@@ -82,39 +84,49 @@ function PriceWatchForm({ productId }: { productId: string }) {
   }
 
   const amountField = getPriceWatchAmountFieldData(ruleType);
+  const ruleOptions = [
+    { label: "Landed price reaches a target", value: "TARGET_PRICE" },
+    {
+      label: "Landed price drops by a percentage",
+      value: "PERCENTAGE_DROP",
+    },
+    { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
+    {
+      label: "A qualifying offer becomes available",
+      value: "NEWLY_AVAILABLE",
+    },
+  ];
 
   return (
     <Collapsible {...props(styles.details)}>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost">Watch price or availability</Button>
+      <CollapsibleTrigger render={<Button variant="ghost" />}>
+        Watch price or availability
       </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(styles.content)}>
+      <CollapsibleContent keepMounted {...props(styles.content)}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>
           <label htmlFor={ruleId} {...props(styles.field)}>
             Alert when
             <Select
-              id={ruleId}
+              items={ruleOptions}
               name="ruleType"
-              onValueChange={(value) => setRuleType(priceWatchRuleTypeFromValue(value))}
-              options={[
-                { label: "Landed price reaches a target", value: "TARGET_PRICE" },
-                {
-                  label: "Landed price drops by a percentage",
-                  value: "PERCENTAGE_DROP",
-                },
-                { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
-                {
-                  label: "A qualifying offer becomes available",
-                  value: "NEWLY_AVAILABLE",
-                },
-              ]}
+              onValueChange={(value) => setRuleType(priceWatchRuleTypeFromValue(value ?? ""))}
               value={ruleType}
-              {...props(styles.input)}
-            />
+            >
+              <SelectTrigger id={ruleId} {...props(styles.input)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ruleOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </label>
           <label htmlFor={currencyId} {...props(styles.field)}>
             Currency
-            <TextField
+            <Input
               id={currencyId}
               name="currency"
               defaultValue="USD"
@@ -126,7 +138,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
           {amountField.visible ? (
             <label htmlFor={amountId} {...props(styles.field)}>
               {amountField.label}
-              <TextField
+              <Input
                 id={amountId}
                 name="amount"
                 inputMode="decimal"

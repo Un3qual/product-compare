@@ -3,34 +3,34 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 
 const styles = create({
   picker: {
     display: "grid",
-    gap: "1rem"
+    gap: "1rem",
   },
   title: {
     fontSize: "1.25rem",
-    margin: 0
+    margin: 0,
   },
   filter: {
     display: "grid",
     gap: "0.35rem",
-    maxWidth: "24rem"
+    maxWidth: "24rem",
   },
   option: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   optionTitle: {
-    margin: 0
+    margin: 0,
   },
   metadata: {
     color: tokens.textSecondary,
-    margin: 0
-  }
+    margin: 0,
+  },
 });
 
 export type CompareProductPickerOption = {
@@ -43,7 +43,7 @@ export type CompareProductPickerOption = {
 export function CompareProductPickerView({
   heading,
   onShowMore,
-  options
+  options,
 }: {
   heading: string;
   onShowMore: (() => void) | null;
@@ -62,7 +62,7 @@ export function CompareProductPickerView({
       <h2 {...props(styles.title)}>{heading}</h2>
       <div {...props(styles.filter)}>
         <span id={filterLabelId}>Filter loaded products</span>
-        <TextField
+        <Input
           aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
@@ -82,8 +82,8 @@ export function CompareProductPickerView({
           {visibleOptions.map((option) => (
             <DataListItem
               actions={
-                <Button asChild variant="soft">
-                  <Link to={option.href}>Compare {option.name}</Link>
+                <Button render={<Link to={option.href} />} variant="secondary">
+                  Compare {option.name}
                 </Button>
               }
               key={option.id}

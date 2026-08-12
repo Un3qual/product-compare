@@ -5,7 +5,7 @@ import type { ApiTokenItem_token$key } from "$generated/ApiTokenItem_token.graph
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
@@ -197,7 +197,7 @@ function ApiTokenActions({
         >
           <div>
             <span id={rotateLabelId}>{`Replacement label for ${displayLabel}`}</span>
-            <TextField
+            <Input
               aria-labelledby={rotateLabelId}
               autoComplete="off"
               id={rotateLabelInputId}
@@ -207,7 +207,7 @@ function ApiTokenActions({
           </div>
           <label>
             {`Replacement expiry for ${displayLabel}`}
-            <TextField
+            <Input
               name="expiresAt"
               onChange={() => {
                 if (rotateExpiresAtPresetInputRef.current) {
@@ -222,8 +222,8 @@ function ApiTokenActions({
           <div>
             {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
               <Button
-                size="1"
-                variant="soft"
+                size="sm"
+                variant="secondary"
                 key={`${token.id}-${preset.label}`}
                 onClick={() => {
                   if (rotateExpiresAtInputRef.current) {
@@ -255,7 +255,7 @@ function ApiTokenActions({
           onConfirm={() => onRevoke(token.id)}
           title="Revoke this API token?"
           trigger={
-            <Button disabled={actionPolicy.revoke.disabled} tone="danger" type="button">
+            <Button disabled={actionPolicy.revoke.disabled} variant="destructive" type="button">
               {actionPolicy.revoke.copy}
             </Button>
           }

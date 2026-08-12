@@ -9,7 +9,7 @@ const styles = create({
     borderBlockStartWidth: "1px",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   item: {
     alignItems: "start",
@@ -20,12 +20,12 @@ const styles = create({
     gap: "1rem",
     gridTemplateColumns: {
       default: "minmax(0, 1fr) auto",
-      "@media (max-width: 40rem)": "minmax(0, 1fr)"
+      "@media (max-width: 40rem)": "minmax(0, 1fr)",
     },
-    paddingBlock: "1.25rem"
+    paddingBlock: "1.25rem",
   },
   body: {
-    minWidth: 0
+    minWidth: 0,
   },
   actions: {
     alignItems: "center",
@@ -34,15 +34,12 @@ const styles = create({
     gap: "0.6rem",
     justifyContent: {
       default: "end",
-      "@media (max-width: 40rem)": "start"
-    }
-  }
+      "@media (max-width: 40rem)": "start",
+    },
+  },
 });
 
-export function DataList({
-  children,
-  label
-}: PropsWithChildren<{ label: string }>) {
+export function DataList({ children, label }: PropsWithChildren<{ label: string }>) {
   return (
     <ul aria-label={label} {...props(styles.list)}>
       {children}
@@ -50,10 +47,7 @@ export function DataList({
   );
 }
 
-export function DataListItem({
-  actions,
-  children
-}: PropsWithChildren<{ actions?: ReactNode }>) {
+export function DataListItem({ actions, children }: PropsWithChildren<{ actions?: ReactNode }>) {
   return (
     <li data-slot="data-list-item" {...props(styles.item)}>
       <div {...props(styles.body)}>{children}</div>

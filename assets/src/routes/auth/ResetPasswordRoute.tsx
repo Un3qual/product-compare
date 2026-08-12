@@ -10,12 +10,12 @@ import {
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
-  transportMutationErrors
+  transportMutationErrors,
 } from "./errors";
 import {
   CREDENTIAL_RESET_COMPLETION_MESSAGE,
   normalizeResetPasswordToken,
-  resetPasswordErrorsForToken
+  resetPasswordErrorsForToken,
 } from "./reset-password-data";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
@@ -35,9 +35,7 @@ const resetPasswordMutation = graphql`
 export function ResetPasswordRoute() {
   const [searchParams] = useSearchParams();
   const token = normalizeResetPasswordToken(searchParams.get("token"));
-  const [errors, setErrors] = useState<MutationError[]>(
-    resetPasswordErrorsForToken(token)
-  );
+  const [errors, setErrors] = useState<MutationError[]>(resetPasswordErrorsForToken(token));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const activeRequestVersion = useRef(0);
@@ -95,7 +93,7 @@ export function ResetPasswordRoute() {
 
           setErrors(transportMutationErrors(error));
           setIsSubmitting(false);
-        }
+        },
       },
       (error) => {
         if (requestVersion !== activeRequestVersion.current) {
@@ -104,7 +102,7 @@ export function ResetPasswordRoute() {
 
         setErrors(transportMutationErrors(error));
         setIsSubmitting(false);
-      }
+      },
     );
   }
 

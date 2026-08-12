@@ -153,8 +153,8 @@ function CompareProductCard({
         emptyMessage="No product attributes available yet."
       />
       <nav aria-label={`Actions for ${product.name}`}>
-        <Button asChild variant="soft">
-          <Link to={removePath}>Remove {product.name}</Link>
+        <Button render={<Link to={removePath} />} variant="secondary">
+          Remove {product.name}
         </Button>
       </nav>
     </article>

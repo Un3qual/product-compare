@@ -1,26 +1,18 @@
 import {
-  Action,
-  Cancel,
-  Content,
-  Description,
-  Overlay,
-  Portal,
-  Root,
-  Title,
-  Trigger,
-} from "@radix-ui/react-alert-dialog";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "../../primitives/AlertDialog";
 import { create, props } from "@stylexjs/stylex";
 import type { ReactElement, ReactNode } from "react";
 import { Button } from "../../primitives/Button";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
-  overlay: {
-    backgroundColor: "rgba(18, 24, 38, 0.45)",
-    inset: 0,
-    position: "fixed",
-    zIndex: 20,
-  },
   content: {
     backgroundColor: tokens.surfaceRaised,
     borderColor: tokens.border,
@@ -76,19 +68,16 @@ export function DestructiveActionDialog({
   trigger,
 }: DestructiveActionDialogProps) {
   return (
-    <Root>
-      <Trigger asChild>{trigger}</Trigger>
-      <Portal>
-        <Overlay {...props(styles.overlay)} />
-        <DestructiveActionDialogContent
-          confirmLabel={confirmLabel}
-          description={description}
-          disabled={disabled}
-          onConfirm={onConfirm}
-          title={title}
-        />
-      </Portal>
-    </Root>
+    <AlertDialog>
+      <AlertDialogTrigger render={trigger} />
+      <DestructiveActionDialogContent
+        confirmLabel={confirmLabel}
+        description={description}
+        disabled={disabled}
+        onConfirm={onConfirm}
+        title={title}
+      />
+    </AlertDialog>
   );
 }
 
@@ -100,19 +89,17 @@ function DestructiveActionDialogContent({
   title,
 }: Omit<DestructiveActionDialogProps, "trigger">) {
   return (
-    <Content {...props(styles.content)}>
-      <Title {...props(styles.title)}>{title}</Title>
-      <Description {...props(styles.description)}>{description}</Description>
+    <AlertDialogContent {...props(styles.content)}>
+      <AlertDialogTitle {...props(styles.title)}>{title}</AlertDialogTitle>
+      <AlertDialogDescription {...props(styles.description)}>{description}</AlertDialogDescription>
       <div {...props(styles.actions)}>
-        <Cancel asChild>
-          <Button variant="soft">Cancel</Button>
-        </Cancel>
-        <Action asChild>
-          <Button disabled={disabled} onClick={onConfirm} tone="danger">
-            {confirmLabel}
-          </Button>
-        </Action>
+        <AlertDialogCancel render={<Button variant="secondary" />}>Cancel</AlertDialogCancel>
+        <AlertDialogAction
+          render={<Button disabled={disabled} onClick={onConfirm} variant="destructive" />}
+        >
+          {confirmLabel}
+        </AlertDialogAction>
       </div>
-    </Content>
+    </AlertDialogContent>
   );
 }

@@ -2,13 +2,13 @@ import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction
 import type {
   ProductOfferCouponRow,
   ProductOfferListItem,
-  ProductOfferPriceHistoryRow
+  ProductOfferPriceHistoryRow,
 } from "./product-offer-panel-data";
 
 export type {
   ProductOfferCouponRow,
   ProductOfferListItem,
-  ProductOfferPriceHistoryRow
+  ProductOfferPriceHistoryRow,
 } from "./product-offer-panel-data";
 
 export function ProductOfferList({ offers }: { offers: ReadonlyArray<ProductOfferListItem> }) {
@@ -16,17 +16,12 @@ export function ProductOfferList({ offers }: { offers: ReadonlyArray<ProductOffe
     <ul aria-label="Active offer list">
       {offers.map((offer) => (
         <li key={offer.id}>
-          <TrackedCommerceClickAction
-            label={offer.merchantName}
-            merchantProductId={offer.id}
-          />
+          <TrackedCommerceClickAction label={offer.merchantName} merchantProductId={offer.id} />
           {offer.priceText ? <p>{offer.priceText}</p> : null}
           {offer.priceObservation ? (
             <p>
               Price observed{" "}
-              <time dateTime={offer.priceObservation.dateTime}>
-                {offer.priceObservation.label}
-              </time>
+              <time dateTime={offer.priceObservation.dateTime}>{offer.priceObservation.label}</time>
             </p>
           ) : null}
           <OfferPriceHistory
@@ -48,7 +43,7 @@ export function ProductOfferList({ offers }: { offers: ReadonlyArray<ProductOffe
 function OfferPriceHistory({
   merchantName,
   historyRows,
-  hasMore
+  hasMore,
 }: {
   merchantName: string;
   historyRows: ReadonlyArray<ProductOfferPriceHistoryRow>;
@@ -77,7 +72,7 @@ function OfferPriceHistory({
 function OfferCoupons({
   merchantName,
   coupons,
-  hasMore
+  hasMore,
 }: {
   merchantName: string;
   coupons: ReadonlyArray<ProductOfferCouponRow>;

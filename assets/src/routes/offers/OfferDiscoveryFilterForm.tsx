@@ -3,14 +3,20 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   getOfferDiscoveryFilterData,
   OFFER_DISCOVERY_SORT_OPTIONS,
   type OfferDiscoveryFilters,
-  type OfferDiscoveryProductContext
+  type OfferDiscoveryProductContext,
 } from "./offer-discovery-filter-data";
 import { offerDiscoveryResetPath } from "./paths";
 
@@ -20,7 +26,7 @@ const styles = create({
   form: {
     display: "grid",
     gap: "0.85rem",
-    gridTemplateColumns: "minmax(0, 1fr)"
+    gridTemplateColumns: "minmax(0, 1fr)",
   },
   summary: {
     borderBlockEndColor: tokens.borderQuiet,
@@ -28,24 +34,24 @@ const styles = create({
     borderBlockEndWidth: "1px",
     display: "grid",
     gap: "0.75rem",
-    paddingBlockEnd: "1rem"
+    paddingBlockEnd: "1rem",
   },
   summaryList: {
     display: "grid",
     gap: "0.5rem 1.5rem",
     gridTemplateColumns: "max-content minmax(0, 1fr)",
-    margin: 0
+    margin: 0,
   },
   summaryValue: {
     color: tokens.textSecondary,
-    margin: 0
+    margin: 0,
   },
   actions: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "1rem"
-  }
+    gap: "1rem",
+  },
 });
 
 export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
@@ -61,7 +67,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
     >
       <label>
         Product ID
-        <TextField
+        <Input
           autoComplete="off"
           defaultValue={filters.productId ?? ""}
           name="productId"
@@ -70,7 +76,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       </label>
       <label>
         Merchant ID
-        <TextField
+        <Input
           autoComplete="off"
           defaultValue={filters.merchantId ?? ""}
           name="merchantId"
@@ -78,16 +84,12 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
         />
       </label>
       <label>
-        <Checkbox
-          defaultChecked={!filters.activeOnly}
-          name="activeOnly"
-          value="false"
-        />
+        <Checkbox defaultChecked={!filters.activeOnly} name="activeOnly" value="false" />
         Include inactive offers
       </label>
       <label>
         Page size
-        <TextField
+        <Input
           autoComplete="off"
           defaultValue={String(filters.first)}
           min={1}
@@ -97,11 +99,18 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       </label>
       <label>
         Sort
-        <Select
-          defaultValue={filters.sort}
-          name="sort"
-          options={OFFER_DISCOVERY_SORT_OPTIONS}
-        />
+        <Select defaultValue={filters.sort} items={OFFER_DISCOVERY_SORT_OPTIONS} name="sort">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {OFFER_DISCOVERY_SORT_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </label>
       <Button type="submit">Apply filters</Button>
     </form>
@@ -110,7 +119,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
 
 export function OfferDiscoveryFilterSummary({
   filters,
-  selectedProduct = null
+  selectedProduct = null,
 }: {
   filters: OfferDiscoveryFilters;
   selectedProduct?: OfferDiscoveryProductContext | null;
@@ -129,9 +138,7 @@ export function OfferDiscoveryFilterSummary({
       </dl>
       <div {...props(styles.actions)}>
         {filterData.productDetailsPath ? (
-          <Link to={filterData.productDetailsPath}>
-            View product details
-          </Link>
+          <Link to={filterData.productDetailsPath}>View product details</Link>
         ) : null}
         {filterData.showReset ? (
           <Link to={offerDiscoveryResetPath(filters)}>Reset filters</Link>

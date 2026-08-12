@@ -5,7 +5,7 @@ import type { GraphQLResponse } from "relay-runtime";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
-import { chooseSelectOption } from "../../helpers/radix-select";
+import { chooseSelectOption } from "../../helpers/base-select";
 
 vi.mock("../../../src/relay/fetch-graphql", () => ({
   fetchGraphQL: vi.fn(),

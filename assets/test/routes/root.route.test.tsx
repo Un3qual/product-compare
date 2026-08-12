@@ -187,7 +187,7 @@ test("primary navigation preserves the URL-backed comparison across public desti
   );
 });
 
-test("primary navigation keeps one disclosure open and dismisses it after navigation", () => {
+test("primary navigation keeps one disclosure open and dismisses it after navigation", async () => {
   render(
     <MemoryRouter>
       <nav aria-label="Primary">
@@ -198,7 +198,9 @@ test("primary navigation keeps one disclosure open and dismisses it after naviga
 
   const primary = screen.getByRole("navigation", { name: "Primary" });
   openNavigationMenu(primary, "Explore");
-  expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible(),
+  );
 
   const guest = openNavigationMenu(primary, "Guest");
   expect(screen.queryByRole("navigation", { name: "Explore navigation" })).not.toBeInTheDocument();
@@ -218,7 +220,9 @@ test("primary navigation dismisses an open destination popover with Escape and r
 
   const trigger = screen.getByRole("button", { name: "Explore menu" });
   fireEvent.click(trigger);
-  expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible();
+  await waitFor(() =>
+    expect(screen.getByRole("navigation", { name: "Explore navigation" })).toBeVisible(),
+  );
 
   fireEvent.keyDown(document, { key: "Escape" });
 

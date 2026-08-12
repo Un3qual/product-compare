@@ -10,21 +10,17 @@ type RouteErrorBoundaryProps = {
 
 export function RouteErrorBoundary({
   resourceName = "comparison",
-  title = "Compare products"
+  title = "Compare products",
 }: RouteErrorBoundaryProps = {}) {
   const error = useRouteError();
   const { errorMessage, retryGuidance } = getRouteErrorViewData({
     error: normalizeRouteError(error),
-    resourceName
+    resourceName,
   });
 
   return (
     <PageShell eyebrow="Page unavailable" title={title}>
-      <FeedbackState
-        description={retryGuidance}
-        kind="error"
-        title={errorMessage}
-      />
+      <FeedbackState description={retryGuidance} kind="error" title={errorMessage} />
     </PageShell>
   );
 }

@@ -9,34 +9,34 @@ const styles = create({
     borderBlockWidth: "1px",
     display: "grid",
     gap: "0.75rem",
-    paddingBlock: "1rem"
+    paddingBlock: "1rem",
   },
   title: {
     fontSize: "0.82rem",
     letterSpacing: "0.05em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   metrics: {
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(9rem, 1fr))",
-    margin: 0
+    margin: 0,
   },
   metric: {
     display: "grid",
-    gap: "0.25rem"
+    gap: "0.25rem",
   },
   label: {
     color: tokens.textSecondary,
     fontSize: "0.8rem",
-    fontWeight: 600
+    fontWeight: 600,
   },
   value: {
     fontSize: "1.15rem",
     fontWeight: 750,
-    margin: 0
-  }
+    margin: 0,
+  },
 });
 
 export type SummaryStripItem = {
@@ -46,7 +46,7 @@ export type SummaryStripItem = {
 
 export function SummaryStrip({
   items,
-  label
+  label,
 }: {
   items: readonly SummaryStripItem[];
   label: string;

@@ -19,13 +19,13 @@ export class ResettableErrorBoundary extends Component<
     super(props);
     this.state = {
       hasError: false,
-      resetToken: props.resetToken
+      resetToken: props.resetToken,
     };
   }
 
   static getDerivedStateFromProps(
     props: ResettableErrorBoundaryProps,
-    state: ResettableErrorBoundaryState
+    state: ResettableErrorBoundaryState,
   ): Partial<ResettableErrorBoundaryState> | null {
     if (props.resetToken === state.resetToken) {
       return null;
@@ -33,7 +33,7 @@ export class ResettableErrorBoundary extends Component<
 
     return {
       hasError: false,
-      resetToken: props.resetToken
+      resetToken: props.resetToken,
     };
   }
 

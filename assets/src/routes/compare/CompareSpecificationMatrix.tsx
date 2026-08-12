@@ -1,11 +1,14 @@
-import {
-  Root as ScrollAreaRoot,
-  Scrollbar as ScrollAreaScrollbar,
-  Thumb as ScrollAreaThumb,
-  Viewport as ScrollAreaViewport,
-} from "@radix-ui/react-scroll-area";
+import { useMemo } from "react";
+import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { create, props } from "@stylexjs/stylex";
-import { tokens } from "$ui/theme/tokens.stylex";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "$ui/primitives/Table";
 import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
 import {
   buildSpecificationMatrixRows,
@@ -23,31 +26,11 @@ const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
   shared: "No shared specifications across these products yet.",
 };
 
+const tableModel = tableFeatures({});
+const columnHelper = createColumnHelper<typeof tableModel, SpecificationMatrixRow>();
+
 const styles = create({
-  tableWorkspace: {
-    overflow: "hidden",
-    paddingBlockEnd: "0.35rem",
-  },
-  tableViewport: {
-    width: "100%",
-  },
-  tableScrollbar: {
-    backgroundColor: tokens.surfaceMuted,
-    display: "flex",
-    height: "0.65rem",
-    padding: "0.15rem",
-    userSelect: "none",
-  },
-  tableThumb: {
-    backgroundColor: tokens.borderEmphasized,
-    borderRadius: "999px",
-    flex: 1,
-  },
-  table: {
-    borderCollapse: "collapse",
-    minWidth: "48rem",
-    width: "100%",
-  },
+  table: { minWidth: "48rem" },
 });
 
 export function CompareSpecificationMatrix({
@@ -57,64 +40,78 @@ export function CompareSpecificationMatrix({
   products: CompareProductSummary[];
   specMode: CompareSpecMode;
 }) {
+  const rows = useMemo(
+    () => buildSpecificationMatrixRows(products, specMode),
+    [products, specMode],
+  );
+  const columns = useMemo(
+    () =>
+      columnHelper.columns([
+        columnHelper.display({
+          id: "specification",
+          header: "Specification",
+          cell: ({ row }) => row.original.displayName,
+        }),
+        ...products.map((product, index) =>
+          columnHelper.accessor((row) => row.values[index] ?? "—", {
+            id: product.id,
+            header: product.name,
+          }),
+        ),
+      ]),
+    [products],
+  );
+  const table = useTable({
+    columns,
+    data: rows,
+    features: tableModel,
+    getRowId: (row) => row.code,
+  });
+
   if (products.length < 2) {
     return null;
   }
 
-  const rows = buildSpecificationMatrixRows(products, specMode);
   const title = specificationMatrixTitle(specMode);
 
   return (
     <section aria-label="Specification comparison">
       <h2>{title}</h2>
-      <ScrollAreaRoot type="auto" {...props(styles.tableWorkspace)}>
-        <ScrollAreaViewport {...props(styles.tableViewport)}>
-          {rows.length === 0 ? (
-            <p>{emptySpecificationMatrixMessage(specMode)}</p>
-          ) : (
-            <SpecificationTable products={products} rows={rows} title={title} />
-          )}
-        </ScrollAreaViewport>
-        <ScrollAreaScrollbar orientation="horizontal" {...props(styles.tableScrollbar)}>
-          <ScrollAreaThumb {...props(styles.tableThumb)} />
-        </ScrollAreaScrollbar>
-      </ScrollAreaRoot>
-    </section>
-  );
-}
-
-function SpecificationTable({
-  products,
-  rows,
-  title,
-}: {
-  products: CompareProductSummary[];
-  rows: SpecificationMatrixRow[];
-  title: string;
-}) {
-  return (
-    <table aria-label={title} {...props(styles.table)}>
-      <thead>
-        <tr>
-          <th scope="col">Specification</th>
-          {products.map((product) => (
-            <th key={product.id} scope="col">
-              {product.name}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.code}>
-            <th scope="row">{row.displayName}</th>
-            {row.values.map((value, index) => (
-              <td key={`${row.code}-${products[index]?.id ?? index}`}>{value}</td>
+      {rows.length === 0 ? (
+        <p>{emptySpecificationMatrixMessage(specMode)}</p>
+      ) : (
+        <Table aria-label={title} {...props(styles.table)}>
+          <TableHeader>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} scope="col">
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </TableHead>
+                ))}
+              </TableRow>
             ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
+          </TableHeader>
+          <TableBody>
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id}>
+                {row.getAllCells().map((cell, index) =>
+                  index === 0 ? (
+                    <TableHead key={cell.id} scope="row">
+                      <table.FlexRender cell={cell} />
+                    </TableHead>
+                  ) : (
+                    <TableCell key={cell.id}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ),
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </section>
   );
 }
 

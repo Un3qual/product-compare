@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Popover } from "@radix-ui/themes";
+import { Popover, PopoverContent, PopoverTrigger } from "$ui/primitives/Popover";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "$ui/components/brand/CompareMark";
@@ -113,10 +113,11 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
 
   return (
     <div {...props(styles.navigation)}>
-      <Button asChild {...props(styles.title)}>
-        <NavLink end to={destinationWithComparison("/", selectedSlugs)}>
-          <CompareMark label="Product Compare" />
-        </NavLink>
+      <Button
+        render={<NavLink end to={destinationWithComparison("/", selectedSlugs)} />}
+        {...props(styles.title)}
+      >
+        <CompareMark label="Product Compare" />
       </Button>
       <div data-slot="root-navigation-controls" {...props(styles.navigationLinks)}>
         <DestinationLinks
@@ -125,7 +126,7 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
           searchLabel
           selectedSlugs={selectedSlugs}
           style={styles.navigationControl}
-          variant="soft"
+          variant="secondary"
         />
         <NavigationMenu
           destinations={exploreDestinations}
@@ -226,14 +227,12 @@ function DestinationLink({
 
   return (
     <Button
-      asChild
       data-active={matchDestination ? String(isActive) : undefined}
-      variant={isActive ? "soft" : variant}
+      render={<NavLink end={end} onClick={onNavigate} to={destination} />}
+      variant={isActive ? "secondary" : variant}
       {...props(styles.link, style)}
     >
-      <NavLink end={end} onClick={onNavigate} to={destination}>
-        {label}
-      </NavLink>
+      {label}
     </Button>
   );
 }
@@ -264,27 +263,29 @@ function NavigationMenu({
       selectedSlugs={selectedSlugs}
       style={styles.menuLink}
       to={to}
-      variant={isAuthDestination(to) ? "solid" : "ghost"}
+      variant={isAuthDestination(to) ? "default" : "ghost"}
     />
   ));
   const menuTrigger = (
-    <Popover.Trigger>
-      <Button
-        aria-label={`${label} menu`}
-        variant="soft"
-        {...props(styles.navigationMenuTrigger)}
-      >
-        <span>{label}</span>
-        <span aria-hidden>⌄</span>
-      </Button>
-    </Popover.Trigger>
+    <PopoverTrigger
+      render={
+        <Button
+          aria-label={`${label} menu`}
+          variant="secondary"
+          {...props(styles.navigationMenuTrigger)}
+        />
+      }
+    >
+      <span>{label}</span>
+      <span aria-hidden>⌄</span>
+    </PopoverTrigger>
   );
 
   return (
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
-      <Popover.Root onOpenChange={onOpenChange} open={open}>
+      <Popover onOpenChange={onOpenChange} open={open}>
         {menuTrigger}
-        <Popover.Content aria-label={`${label} menu`} align="end" minWidth="12rem" size="1">
+        <PopoverContent aria-label={`${label} menu`} align="end" style={{ minWidth: "12rem" }}>
           <nav
             aria-label={`${label} navigation`}
             data-slot="navigation-menu-content"
@@ -292,8 +293,8 @@ function NavigationMenu({
           >
             {destinationLinks}
           </nav>
-        </Popover.Content>
-      </Popover.Root>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

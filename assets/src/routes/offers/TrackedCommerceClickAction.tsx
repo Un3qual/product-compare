@@ -8,7 +8,7 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
   resolveTrackedCommerceClickMutationOutcome,
   shouldTrackCommerceClick,
-  trackedMerchantProductHref
+  trackedMerchantProductHref,
 } from "./tracked-commerce-click-data";
 
 export const trackCommerceClickMutation = graphql`
@@ -26,13 +26,14 @@ export const trackCommerceClickMutation = graphql`
 
 export function TrackedCommerceClickAction({
   label,
-  merchantProductId
+  merchantProductId,
 }: {
   label: string;
   merchantProductId: string;
 }) {
-  const [commitTrackCommerceClick, isPending] =
-    useMutation<TrackedCommerceClickActionMutation>(trackCommerceClickMutation);
+  const [commitTrackCommerceClick, isPending] = useMutation<TrackedCommerceClickActionMutation>(
+    trackCommerceClickMutation,
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const graphQLEndpoint = resolveGraphQLEndpoint();
 
@@ -49,14 +50,14 @@ export function TrackedCommerceClickAction({
       {
         variables: {
           input: {
-            merchantProductId
-          }
+            merchantProductId,
+          },
         },
         onCompleted: (response, graphQLErrors) => {
           const outcome = resolveTrackedCommerceClickMutationOutcome(
             response.trackCommerceClick,
             graphQLEndpoint,
-            graphQLErrors
+            graphQLErrors,
           );
 
           if (outcome.redirectUrl) {
@@ -72,24 +73,26 @@ export function TrackedCommerceClickAction({
         },
         onError: () => {
           setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-        }
+        },
       },
       () => {
         setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
-      }
+      },
     );
   }
 
   return (
     <>
-      <Button asChild variant="solid">
-        <a
-          aria-disabled={isPending || undefined}
-          href={trackedMerchantProductHref(merchantProductId, graphQLEndpoint)}
-          onClick={isPending ? preventPendingNavigation : handleClick}
-        >
-          {label}
-        </a>
+      <Button
+        render={
+          <a
+            aria-disabled={isPending || undefined}
+            href={trackedMerchantProductHref(merchantProductId, graphQLEndpoint)}
+            onClick={isPending ? preventPendingNavigation : handleClick}
+          />
+        }
+      >
+        {label}
       </Button>
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
     </>

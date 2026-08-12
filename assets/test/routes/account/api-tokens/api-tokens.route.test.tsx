@@ -457,8 +457,8 @@ test("API token route hides rotation controls for expired tokens", () => {
   ).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Rotate token" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Revoke token" })).toHaveAttribute(
-    "data-tone",
-    "danger",
+    "data-variant",
+    "destructive",
   );
 });
 

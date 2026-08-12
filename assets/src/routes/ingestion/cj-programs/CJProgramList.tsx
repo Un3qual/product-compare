@@ -6,26 +6,23 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { CJFeedRow } from "./CJFeedRow";
 import { CJProgramRow } from "./CJProgramRow";
 import { CJ_PROGRAM_STAGES } from "./cj-program-data";
-import {
-  buildCJProgramPaginationData,
-  type CJProgramsPagination
-} from "./pagination";
+import { buildCJProgramPaginationData, type CJProgramsPagination } from "./pagination";
 
 type CJProgramsData = CJProgramsRouteQuery["response"];
 
 const styles = create({
   content: {
     display: "grid",
-    gap: "1rem"
+    gap: "1rem",
   },
   list: {
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   empty: {
     color: tokens.textSecondary,
-    margin: 0
+    margin: 0,
   },
   unmatched: {
     borderBlockStartColor: tokens.borderQuiet,
@@ -33,16 +30,16 @@ const styles = create({
     borderBlockStartWidth: "1px",
     display: "grid",
     gap: "0.85rem",
-    paddingBlockStart: "1.25rem"
+    paddingBlockStart: "1.25rem",
   },
   sectionTitle: {
-    margin: 0
+    margin: 0,
   },
 });
 
 export function CJProgramList({
   data,
-  pagination
+  pagination,
 }: {
   data: CJProgramsData;
   pagination: CJProgramsPagination;
@@ -50,12 +47,12 @@ export function CJProgramList({
   const paginationData = buildCJProgramPaginationData(pagination, {
     program: {
       ...data.cjPrograms.pageInfo,
-      endCursor: data.cjPrograms.pageInfo.endCursor ?? null
+      endCursor: data.cjPrograms.pageInfo.endCursor ?? null,
     },
     unmatched: {
       ...data.unmatchedCjFeeds.pageInfo,
-      endCursor: data.unmatchedCjFeeds.pageInfo.endCursor ?? null
-    }
+      endCursor: data.unmatchedCjFeeds.pageInfo.endCursor ?? null,
+    },
   });
 
   return (
@@ -63,7 +60,7 @@ export function CJProgramList({
       <SummaryStrip
         items={CJ_PROGRAM_STAGES.map(({ countKey, label }) => ({
           label,
-          value: data.cjProgramStageCounts[countKey]
+          value: data.cjProgramStageCounts[countKey],
         }))}
         label="CJ program lifecycle summary"
       />

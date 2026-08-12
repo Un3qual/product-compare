@@ -4,8 +4,13 @@ import {
   rewriteStylexClassNames,
 } from "../../plugins/stylex-class-name";
 import stylexMangle from "../../plugins/stylex-mangle";
+import { STYLEX_CLASS_NAME_PREFIX } from "../../stylex-plugin";
 
-const PREFIX = "__pcx_";
+const PREFIX = STYLEX_CLASS_NAME_PREFIX;
+
+test("the project prefix is compatible with StyleX runtime constants", () => {
+  expect(PREFIX).toMatch(/^[A-Za-z][A-Za-z0-9]*$/);
+});
 
 test("the same StyleX class receives the same short name independently of graph order", () => {
   const className = `${PREFIX}1dmbf1k`;
@@ -30,11 +35,13 @@ test("mangling is injective for canonical StyleX base-36 hashes", () => {
   expect(new Set(mangled).size).toBe(originals.length);
 });
 
-test("rewriting changes only atomic classes and leaves variables and keyframes intact", () => {
+test("rewriting changes only atomic classes and leaves constants, variables, and keyframes intact", () => {
   const atomic = `${PREFIX}1dmbf1k`;
   const mangled = mangleStylexClassName(atomic, PREFIX);
   const source = [
     `const className = "${atomic}";`,
+    `register({ constKey: "${atomic}", constVal: "red" });`,
+    `register({constKey:\`${atomic}\`,constVal:"blue"});`,
     `const variable = "--${atomic}";`,
     `const keyframes = "${atomic}-B";`,
     `const embedded = "before${atomic}";`,
@@ -44,6 +51,8 @@ test("rewriting changes only atomic classes and leaves variables and keyframes i
     changed: true,
     code: [
       `const className = "${mangled}";`,
+      `register({ constKey: "${atomic}", constVal: "red" });`,
+      `register({constKey:\`${atomic}\`,constVal:"blue"});`,
       `const variable = "--${atomic}";`,
       `const keyframes = "${atomic}-B";`,
       `const embedded = "before${atomic}";`,

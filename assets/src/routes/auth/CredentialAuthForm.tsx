@@ -26,7 +26,7 @@ export function CredentialAuthForm({
   onSubmit,
   credentialAutoComplete,
   submitLabel,
-  title
+  title,
 }: CredentialAuthFormProps) {
   return (
     <AuthFormShell

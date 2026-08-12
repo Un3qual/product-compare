@@ -9,8 +9,14 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { SectionHeading } from "$ui/components/layout/SectionHeading";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildMerchantDirectoryRows,
@@ -86,7 +92,7 @@ export function MerchantDirectoryView({
       />
       <div {...props(styles.filter)}>
         <span id={filterLabelId}>Filter merchants on this page</span>
-        <TextField
+        <Input
           aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
@@ -119,16 +125,27 @@ export function MerchantDirectoryControls({
   formAction,
   pageSize,
 }: MerchantDirectoryControlsProps) {
+  const options = [20, 35, 50].map((size) => ({
+    label: String(size),
+    value: String(size),
+  }));
+
   return (
     <form action={formAction} method="get" {...props(styles.controls)}>
       <label>
         Page size
-        <Select
-          key={pageSize}
-          name="first"
-          defaultValue={String(pageSize)}
-          options={[20, 35, 50].map((size) => ({ label: String(size), value: String(size) }))}
-        />
+        <Select items={options} key={pageSize} name="first" defaultValue={String(pageSize)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </label>
       <Button type="submit">Apply</Button>
     </form>
@@ -144,14 +161,15 @@ function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryVi
     <DataListItem
       actions={
         <>
-          <Button asChild variant="soft">
-            <Link to={row.detailHref}>View merchant details</Link>
+          <Button render={<Link to={row.detailHref} />} variant="secondary">
+            View merchant details
           </Button>
           {row.websiteHref ? (
-            <Button asChild variant="soft">
-              <a href={row.websiteHref} target="_blank" rel="noopener noreferrer">
-                Visit merchant website
-              </a>
+            <Button
+              render={<a href={row.websiteHref} target="_blank" rel="noopener noreferrer" />}
+              variant="secondary"
+            >
+              Visit merchant website
             </Button>
           ) : null}
         </>

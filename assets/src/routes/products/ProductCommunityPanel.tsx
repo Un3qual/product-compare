@@ -17,15 +17,17 @@ import type { ProductCommunityPanelQuestionAnswersQuery } from "$generated/Produ
 import type { ProductCommunityOperationsSubmitProductReviewMutation } from "$generated/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { Button } from "$ui/primitives/Button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "$ui/primitives/Collapsible";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { Label } from "$ui/primitives/Label";
-import { Select } from "$ui/primitives/Select";
-import { TextArea } from "$ui/primitives/TextArea";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Textarea } from "$ui/primitives/Textarea";
+import { Input } from "$ui/primitives/Input";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
@@ -50,6 +52,10 @@ import {
 
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
+const REVIEW_RATING_OPTIONS = [5, 4, 3, 2, 1].map((rating) => ({
+  label: String(rating),
+  value: String(rating),
+}));
 
 const productQuestionAnswersQuery = graphql`
   query ProductCommunityPanelQuestionAnswersQuery($id: ID!, $first: Int!, $after: String) {
@@ -75,7 +81,7 @@ const disclosureStyles = create({
   content: {
     display: {
       default: "block",
-      ":where([data-state='closed'])": "none",
+      ":where([data-closed])": "none",
     },
   },
 });
@@ -287,36 +293,31 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost">Write a review</Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
+      <CollapsibleTrigger render={<Button variant="ghost" />}>Write a review</CollapsibleTrigger>
+      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
             Rating
-            <Select
-              id={`${fieldId}-rating`}
-              name="rating"
-              defaultValue="5"
-              options={[5, 4, 3, 2, 1].map((rating) => ({
-                label: String(rating),
-                value: String(rating),
-              }))}
-              {...props(styles.input)}
-            />
+            <Select defaultValue="5" items={REVIEW_RATING_OPTIONS} name="rating">
+              <SelectTrigger id={`${fieldId}-rating`} {...props(styles.input)}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {REVIEW_RATING_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </Label>
           <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
             Title
-            <TextField
-              id={`${fieldId}-title`}
-              name="title"
-              maxLength={120}
-              {...props(styles.input)}
-            />
+            <Input id={`${fieldId}-title`} name="title" maxLength={120} {...props(styles.input)} />
           </Label>
           <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
             Review
-            <TextArea
+            <Textarea
               id={`${fieldId}-body`}
               name="body"
               maxLength={5000}
@@ -399,14 +400,12 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost">Ask a question</Button>
-      </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
+      <CollapsibleTrigger render={<Button variant="ghost" />}>Ask a question</CollapsibleTrigger>
+      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
             Question
-            <TextField
+            <Input
               id={`${fieldId}-title`}
               name="title"
               required
@@ -416,7 +415,7 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
           </Label>
           <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
             Details
-            <TextArea
+            <Textarea
               id={`${fieldId}-body`}
               name="body"
               maxLength={5000}
@@ -538,14 +537,14 @@ function AnswerForm({ questionId }: { questionId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost">Answer this question</Button>
+      <CollapsibleTrigger render={<Button variant="ghost" />}>
+        Answer this question
       </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
+      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
             Answer
-            <TextArea
+            <Textarea
               id={`${fieldId}-body`}
               name="body"
               required

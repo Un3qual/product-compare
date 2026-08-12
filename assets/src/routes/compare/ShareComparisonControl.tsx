@@ -9,12 +9,8 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "$ui/primitives/Collapsible";
-import { TextField } from "$ui/primitives/TextField";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
+import { Input } from "$ui/primitives/Input";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./compare-route-data";
@@ -50,7 +46,7 @@ const styles = create({
   content: {
     display: {
       default: "block",
-      ":where([data-state='closed'])": "none",
+      ":where([data-closed])": "none",
     },
   },
   control: { borderBlockStart: "1px solid var(--pc-border-quiet)", paddingBlockStart: "0.85rem" },
@@ -150,10 +146,10 @@ function SnapshotControlView({
 }: SnapshotControlViewProps) {
   return (
     <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
-      <CollapsibleTrigger asChild>
-        <Button variant="ghost">Share this comparison</Button>
+      <CollapsibleTrigger render={<Button variant="ghost" />}>
+        Share this comparison
       </CollapsibleTrigger>
-      <CollapsibleContent forceMount {...props(styles.content)}>
+      <CollapsibleContent keepMounted {...props(styles.content)}>
         <SnapshotPublishForm open={open} {...publishFormProps} />
       </CollapsibleContent>
     </Collapsible>
@@ -179,7 +175,7 @@ function SnapshotPublishForm({
     <form onSubmit={handlePublish} {...props(styles.form)}>
       <label htmlFor={titleId} {...props(styles.field)}>
         Optional title
-        <TextField id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+        <Input id={titleId} name="title" maxLength={120} {...props(styles.input)} />
       </label>
       <label htmlFor={searchIndexableId} {...props(styles.field)}>
         <span>
@@ -408,9 +404,8 @@ function PublishedSnapshots({
                     <Button
                       aria-label={`Revoke public link: ${comparisonSnapshotLabel(snapshot)}`}
                       disabled={revocation.disabled}
-                      tone="danger"
+                      variant="destructive"
                       type="button"
-                      variant="soft"
                     >
                       {revocation.buttonCopy}
                     </Button>

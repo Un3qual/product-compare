@@ -12,7 +12,7 @@ import {
   AffiliateSetupRoute,
   type AffiliateSetupLoaderData,
 } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
-import { chooseSelectOption, openSelect } from "../../../helpers/radix-select";
+import { chooseSelectOption, openSelect } from "../../../helpers/base-select";
 
 const {
   commitCouponMutationMock,
@@ -283,9 +283,9 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
 test("affiliate setup datetime controls use the shared text-field presentation", () => {
   renderAffiliateSetupRoute();
 
-  expect(screen.getByLabelText("Last verified at")).toHaveAttribute("data-slot", "text-field");
-  expect(screen.getByLabelText("Valid from")).toHaveAttribute("data-slot", "text-field");
-  expect(screen.getByLabelText("Valid to")).toHaveAttribute("data-slot", "text-field");
+  expect(screen.getByLabelText("Last verified at")).toHaveAttribute("data-slot", "input");
+  expect(screen.getByLabelText("Valid from")).toHaveAttribute("data-slot", "input");
+  expect(screen.getByLabelText("Valid to")).toHaveAttribute("data-slot", "input");
 });
 
 test("affiliate setup route renders selected merchant summaries for program, link, and coupon forms", () => {

@@ -61,9 +61,7 @@ function UnauthorizedSavedComparisons() {
       <p aria-label="Saved comparisons status" aria-live="polite" role="status">
         Sign in to view saved comparisons.
       </p>
-      <Button asChild variant="solid">
-        <Link to="/auth/login">Sign in to view saved comparisons</Link>
-      </Button>
+      <Button render={<Link to="/auth/login" />}>Sign in to view saved comparisons</Button>
     </>
   );
 }
@@ -79,10 +77,7 @@ function SavedComparisonsPage({
     savedComparisonsRouteQuery,
     query,
   );
-  const data = usePreloadedQuery<SavedComparisonsRouteQuery>(
-    savedComparisonsRouteQuery,
-    queryRef,
-  );
+  const data = usePreloadedQuery<SavedComparisonsRouteQuery>(savedComparisonsRouteQuery, queryRef);
   const connection = data.mySavedComparisonSets;
 
   if (!connection) {
@@ -108,9 +103,8 @@ export async function savedComparisonsLoader({
 }: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
   const environment = getRelayEnvironmentFromRouterContext(context);
   const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
-  let fetchedPage: Awaited<
-    ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>
-  > | null = null;
+  let fetchedPage: Awaited<ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>> | null =
+    null;
 
   try {
     throwIfAborted(request.signal);
@@ -176,8 +170,6 @@ export function isUnauthorizedSavedComparisonsResponse(response: unknown) {
     if (!relevantPath || !isRouteRecord(error.extensions)) return false;
 
     const code = error.extensions.code;
-    return (
-      typeof code === "string" && SAVED_COMPARISONS_AUTH_ERROR_CODES.has(code.toUpperCase())
-    );
+    return typeof code === "string" && SAVED_COMPARISONS_AUTH_ERROR_CODES.has(code.toUpperCase());
   });
 }

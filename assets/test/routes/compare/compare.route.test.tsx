@@ -2038,9 +2038,7 @@ test("ready compare page scopes relative loaded price to already-loaded offers",
   renderCompareRoute();
 
   expect(
-    screen.getByText(
-      "Price comparisons use the offers currently shown for these products.",
-    ),
+    screen.getByText("Price comparisons use the offers currently shown for these products."),
   ).toBeVisible();
 });
 
@@ -3657,7 +3655,6 @@ test("isUnauthorizedSavedComparisonsResponse returns false when the response has
     }),
   ).toBe(false);
 });
-
 
 function getSaveFeedbackStatus() {
   return screen.getAllByRole("status")[0];

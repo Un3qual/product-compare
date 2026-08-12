@@ -7,7 +7,7 @@ import savedComparisonsRouteQueryArtifact, {
 } from "../../../src/__generated__/SavedComparisonsRouteQuery.graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
-import { chooseSelectOption } from "../../helpers/radix-select";
+import { chooseSelectOption } from "../../helpers/base-select";
 
 const { fetchGraphQLMock, useLoaderDataMock } = vi.hoisted(() => ({
   fetchGraphQLMock: vi.fn(),
@@ -29,10 +29,9 @@ beforeEach(() => {
 test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets", () => {
   renderReadySavedComparisons();
 
-  expect(within(actionsFor("Desk setup")).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
-    "href",
-    "/compare?slug=chair&slug=desk",
-  );
+  expect(
+    within(actionsFor("Desk setup")).getByRole("link", { name: "Open comparison" }),
+  ).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
   expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
     "href",
     "/compare/saved?after=cursor-2",
@@ -51,15 +50,17 @@ test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets
 test("saved comparisons deletes a Relay-backed set after confirmation", async () => {
   fetchGraphQLMock.mockResolvedValueOnce({
     data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: { id: "saved-set-1" },
-          errors: [],
-        },
+      deleteSavedComparisonSet: {
+        savedComparisonSet: { id: "saved-set-1" },
+        errors: [],
       },
+    },
   });
   renderReadySavedComparisons();
 
-  fireEvent.click(within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }));
+  fireEvent.click(
+    within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }),
+  );
   fireEvent.click(
     within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
       "button",
@@ -83,15 +84,19 @@ test("saved comparisons deletes a Relay-backed set after confirmation", async ()
 test("saved comparisons preserves a set and reports typed deletion failure", async () => {
   fetchGraphQLMock.mockResolvedValueOnce({
     data: {
-        deleteSavedComparisonSet: {
-          savedComparisonSet: null,
-          errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Unable to delete this comparison." }],
-        },
+      deleteSavedComparisonSet: {
+        savedComparisonSet: null,
+        errors: [
+          { code: "INVALID_ARGUMENT", field: null, message: "Unable to delete this comparison." },
+        ],
       },
+    },
   });
   renderReadySavedComparisons();
 
-  fireEvent.click(within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }));
+  fireEvent.click(
+    within(actionsFor("Desk setup")).getByRole("button", { name: "Delete comparison" }),
+  );
   fireEvent.click(
     within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
       "button",
@@ -153,7 +158,10 @@ function savedComparisonsResponse(): PayloadData {
             name: "Desk setup",
             items: [
               { position: 2, product: { id: "product-desk", name: "Standing Desk", slug: "desk" } },
-              { position: 1, product: { id: "product-chair", name: "Ergonomic Chair", slug: "chair" } },
+              {
+                position: 1,
+                product: { id: "product-chair", name: "Ergonomic Chair", slug: "chair" },
+              },
             ],
           },
         },

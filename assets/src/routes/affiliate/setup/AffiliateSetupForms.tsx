@@ -5,8 +5,14 @@ import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$gener
 import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
 import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { couponDiscountText } from "./affiliate-setup-data";
 
@@ -29,7 +35,9 @@ export type ProgramResult = NonNullable<
 >;
 
 export type LinkResult = NonNullable<
-  NonNullable<AffiliateSetupOperationsUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]>["link"]
+  NonNullable<
+    AffiliateSetupOperationsUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"]
+  >["link"]
 >;
 
 export type CouponResult = NonNullable<
@@ -46,15 +54,15 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(14rem, 1fr))",
-    padding: "1.15rem"
-  }
+    padding: "1.15rem",
+  },
 });
 
 export function AffiliateNetworkForm({
   error,
   onSubmit,
   pending,
-  result
+  result,
 }: {
   error: string | null;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -62,11 +70,16 @@ export function AffiliateNetworkForm({
   result: NetworkResult | null;
 }): ReactElement {
   return (
-    <form aria-label="Save affiliate network" method="post" onSubmit={onSubmit} {...props(styles.form)}>
+    <form
+      aria-label="Save affiliate network"
+      method="post"
+      onSubmit={onSubmit}
+      {...props(styles.form)}
+    >
       <h2>Network</h2>
       <label>
         Network name
-        <TextField autoComplete="off" name="networkName" type="text" />
+        <Input autoComplete="off" name="networkName" type="text" />
       </label>
       <Button disabled={pending} type="submit">
         Save network
@@ -92,7 +105,7 @@ export function AffiliateProgramForm({
   pending,
   result,
   selectedMerchantCopy,
-  selectedMerchantValue
+  selectedMerchantValue,
 }: {
   affiliateNetworkId: string;
   error: string | null;
@@ -106,12 +119,17 @@ export function AffiliateProgramForm({
   selectedMerchantValue: string;
 }): ReactElement {
   return (
-    <form aria-label="Save affiliate program" method="post" onSubmit={onSubmit} {...props(styles.form)}>
+    <form
+      aria-label="Save affiliate program"
+      method="post"
+      onSubmit={onSubmit}
+      {...props(styles.form)}
+    >
       <h2>Program</h2>
       {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <label>
         Affiliate network ID
-        <TextField
+        <Input
           autoComplete="off"
           name="affiliateNetworkId"
           onChange={(event) => onAffiliateNetworkIdChange(event.currentTarget.value)}
@@ -126,11 +144,11 @@ export function AffiliateProgramForm({
       />
       <label>
         Program code
-        <TextField autoComplete="off" name="programCode" type="text" />
+        <Input autoComplete="off" name="programCode" type="text" />
       </label>
       <label>
         Program status
-        <TextField autoComplete="off" name="programStatus" type="text" />
+        <Input autoComplete="off" name="programStatus" type="text" />
       </label>
       <Button disabled={pending} type="submit">
         Save program
@@ -152,7 +170,7 @@ export function AffiliateLinkForm({
   onSubmit,
   pending,
   result,
-  selectedMerchantCopy
+  selectedMerchantCopy,
 }: {
   error: string | null;
   onSubmit: FormEventHandler<HTMLFormElement>;
@@ -161,28 +179,33 @@ export function AffiliateLinkForm({
   selectedMerchantCopy: string | null;
 }): ReactElement {
   return (
-    <form aria-label="Save affiliate link" method="post" onSubmit={onSubmit} {...props(styles.form)}>
+    <form
+      aria-label="Save affiliate link"
+      method="post"
+      onSubmit={onSubmit}
+      {...props(styles.form)}
+    >
       <h2>Link</h2>
       {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <label>
         Merchant product ID
-        <TextField autoComplete="off" name="merchantProductId" type="text" />
+        <Input autoComplete="off" name="merchantProductId" type="text" />
       </label>
       <label>
         Link affiliate network ID
-        <TextField autoComplete="off" name="linkAffiliateNetworkId" type="text" />
+        <Input autoComplete="off" name="linkAffiliateNetworkId" type="text" />
       </label>
       <label>
         Original URL
-        <TextField autoComplete="off" name="originalUrl" type="url" />
+        <Input autoComplete="off" name="originalUrl" type="url" />
       </label>
       <label>
         Affiliate URL
-        <TextField autoComplete="off" name="affiliateUrl" type="url" />
+        <Input autoComplete="off" name="affiliateUrl" type="url" />
       </label>
       <label>
         Last verified at
-        <TextField name="lastVerifiedAt" type="datetime-local" />
+        <Input name="lastVerifiedAt" type="datetime-local" />
       </label>
       <Button disabled={pending} type="submit">
         Save link
@@ -206,7 +229,7 @@ export function AffiliateCouponForm({
   pending,
   result,
   selectedMerchantCopy,
-  selectedMerchantValue
+  selectedMerchantValue,
 }: {
   error: string | null;
   merchantChoices: MerchantChoice[];
@@ -218,7 +241,12 @@ export function AffiliateCouponForm({
   selectedMerchantValue: string;
 }): ReactElement {
   return (
-    <form aria-label="Create affiliate coupon" method="post" onSubmit={onSubmit} {...props(styles.form)}>
+    <form
+      aria-label="Create affiliate coupon"
+      method="post"
+      onSubmit={onSubmit}
+      {...props(styles.form)}
+    >
       <h2>Coupon</h2>
       {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
       <MerchantSelect
@@ -230,36 +258,36 @@ export function AffiliateCouponForm({
       />
       <label>
         Coupon affiliate network ID
-        <TextField autoComplete="off" name="couponAffiliateNetworkId" type="text" />
+        <Input autoComplete="off" name="couponAffiliateNetworkId" type="text" />
       </label>
       <label>
         Coupon code
-        <TextField autoComplete="off" name="couponCode" type="text" />
+        <Input autoComplete="off" name="couponCode" type="text" />
       </label>
       <label>
         Description
-        <TextField autoComplete="off" name="couponDescription" type="text" />
+        <Input autoComplete="off" name="couponDescription" type="text" />
       </label>
       <DiscountTypeSelect />
       <label>
         Discount value
-        <TextField autoComplete="off" name="discountValue" type="text" />
+        <Input autoComplete="off" name="discountValue" type="text" />
       </label>
       <label>
         Currency
-        <TextField autoComplete="off" maxLength={3} name="currency" type="text" />
+        <Input autoComplete="off" maxLength={3} name="currency" type="text" />
       </label>
       <label>
         Valid from
-        <TextField name="validFrom" type="datetime-local" />
+        <Input name="validFrom" type="datetime-local" />
       </label>
       <label>
         Valid to
-        <TextField name="validTo" type="datetime-local" />
+        <Input name="validTo" type="datetime-local" />
       </label>
       <label>
         Terms
-        <TextField autoComplete="off" name="terms" type="text" />
+        <Input autoComplete="off" name="terms" type="text" />
       </label>
       <Button disabled={pending} type="submit">
         Create coupon
@@ -275,7 +303,7 @@ function MerchantSelect({
   merchantChoices,
   name = "merchantId",
   onSelectedMerchantIdChange,
-  selectedMerchantValue
+  selectedMerchantValue,
 }: {
   label?: string;
   merchantChoices: MerchantChoice[];
@@ -283,34 +311,56 @@ function MerchantSelect({
   onSelectedMerchantIdChange: (merchantId: string) => void;
   selectedMerchantValue: string;
 }) {
+  const options = merchantChoices.map((merchant) => ({
+    label: merchant.name,
+    value: merchant.id,
+  }));
+
   return (
     <label>
       {label}
       <Select
+        items={options}
         name={name}
-        onValueChange={onSelectedMerchantIdChange}
-        options={merchantChoices.map((merchant) => ({
-          label: merchant.name,
-          value: merchant.id
-        }))}
+        onValueChange={(value) => onSelectedMerchantIdChange(value ?? "")}
         value={selectedMerchantValue}
-      />
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }
 
 function DiscountTypeSelect() {
+  const options = ["OTHER", "PERCENT", "AMOUNT", "FREE_SHIPPING"].map((value) => ({
+    label: value,
+    value,
+  }));
+
   return (
     <label>
       Discount type
-      <Select
-        defaultValue="OTHER"
-        name="discountType"
-        options={["OTHER", "PERCENT", "AMOUNT", "FREE_SHIPPING"].map((value) => ({
-          label: value,
-          value
-        }))}
-      />
+      <Select defaultValue="OTHER" items={options} name="discountType">
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

@@ -1,184 +1,259 @@
-import * as RadixSelect from "@radix-ui/react-select";
-import { create, props } from "@stylexjs/stylex";
-import { useEffect, useRef, useState, type ComponentPropsWithoutRef, type ReactNode } from "react";
-
-const EMPTY_VALUE = "__product_compare_empty_select_value__";
-
-export type SelectOption = {
-  disabled?: boolean;
-  label: ReactNode;
-  value: string;
-};
-
+import { Select as SelectPrimitive } from "@base-ui/react/select";
+import type { SelectRootProps } from "@base-ui/react/select";
+import * as stylex from "@stylexjs/stylex";
+import type { StyleXStyles } from "@stylexjs/stylex";
+import { CheckIcon, ChevronDownIcon } from "lucide-react";
+import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
+import { customClassName } from "./utils.stylex";
 
-type SelectTriggerProps = Pick<
-  ComponentPropsWithoutRef<typeof RadixSelect.Trigger>,
-  "aria-label" | "aria-labelledby" | "className" | "id"
-> & {
-  placeholder?: ReactNode;
-};
-
-export type SelectProps = Omit<
-  ComponentPropsWithoutRef<typeof RadixSelect.Root>,
-  "children" | "defaultValue" | "name" | "onValueChange" | "value"
-> &
-  SelectTriggerProps & {
-    defaultValue?: string;
-    name?: string;
-    onValueChange?: (value: string) => void;
-    options: readonly SelectOption[];
-    value?: string;
-  };
-
-const styles = create({
-  content: {
-    backgroundColor: tokens.surface,
+const styles = stylex.create({
+  groupLabel: {
+    color: tokens.textSubtle,
+    fontSize: "0.75rem",
+    paddingBlock: "0.375rem",
+    paddingInline: "0.5rem",
+  },
+  icon: {
+    color: tokens.textSubtle,
+    flexShrink: 0,
+    height: "1rem",
+    pointerEvents: "none",
+    width: "1rem",
+  },
+  item: {
+    alignItems: "center",
+    backgroundColor: {
+      ":hover": tokens.surfaceInteractive,
+      ":where([data-highlighted])": tokens.surfaceInteractive,
+      default: "transparent",
+    },
+    borderRadius: "var(--pc-radius-small)",
+    color: tokens.text,
+    cursor: "default",
+    display: "flex",
+    fontSize: "0.875rem",
+    gap: "0.5rem",
+    minHeight: "2.25rem",
+    paddingBlock: "0.375rem",
+    paddingInlineEnd: "2rem",
+    paddingInlineStart: "0.5rem",
+    position: "relative",
+    userSelect: "none",
+  },
+  itemIndicator: {
+    alignItems: "center",
+    display: "flex",
+    insetInlineEnd: "0.5rem",
+    justifyContent: "center",
+    position: "absolute",
+  },
+  popup: {
+    backgroundColor: tokens.surfaceRaised,
     borderColor: tokens.borderEmphasized,
     borderRadius: "var(--pc-radius-medium)",
     borderStyle: "solid",
     borderWidth: "1px",
     boxShadow: "var(--pc-shadow-overlay)",
     color: tokens.text,
-    maxHeight: "var(--radix-select-content-available-height)",
-    minWidth: "var(--radix-select-trigger-width)",
-    overflow: "hidden",
+    maxHeight: "var(--available-height)",
+    minWidth: "var(--anchor-width)",
+    opacity: 1,
+    outline: "none",
+    overflowY: "auto",
+    padding: "0.25rem",
+    transformOrigin: "var(--transform-origin)",
+    transition: "opacity 0.15s ease-in-out, transform 0.15s ease-in-out",
     zIndex: 50,
   },
-  item: {
-    backgroundColor: {
-      ":where([data-highlighted])": tokens.surfaceInteractive,
-    },
-    color: {
-      ":where([data-highlighted])": tokens.text,
-    },
-    cursor: "pointer",
-    outline: "none",
-    paddingBlock: "0.45rem",
-    paddingInline: "0.7rem",
+  popupHidden: { opacity: 0, transform: "scale(0.98)" },
+  separator: {
+    backgroundColor: tokens.borderQuiet,
+    height: "1px",
+    marginBlock: "0.25rem",
+    marginInline: "-0.25rem",
   },
   trigger: {
     alignItems: "center",
-    backgroundColor: tokens.surface,
-    borderColor: tokens.borderEmphasized,
+    backgroundColor: tokens.surfaceRaised,
+    borderColor: {
+      ":focus-visible": tokens.actionAccent,
+      ":hover": tokens.borderEmphasized,
+      default: tokens.border,
+    },
     borderRadius: "var(--pc-radius-medium)",
     borderStyle: "solid",
     borderWidth: "1px",
+    boxShadow: {
+      ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 25%, transparent)",
+      default: "0 1px 2px rgb(33 31 28 / 0.05)",
+    },
     color: tokens.text,
-    display: "inline-flex",
+    cursor: { ":disabled": "not-allowed", default: "pointer" },
+    display: "flex",
+    fontFamily: tokens.fontSans,
+    fontSize: "0.9rem",
+    gap: "0.5rem",
     justifyContent: "space-between",
-    minHeight: "2.6rem",
+    minHeight: tokens.controlHeight,
     minWidth: "8rem",
+    opacity: { ":disabled": 0.55, default: 1 },
     paddingInline: "0.7rem",
+    transition: "box-shadow 0.15s, border-color 0.15s",
+    width: "fit-content",
   },
-  viewport: {
-    paddingBlock: "0.25rem",
+  value: {
+    overflow: "hidden",
+    textAlign: "start",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
   },
 });
 
-export function Select(selectProps: SelectProps) {
-  const {
-    "aria-label": ariaLabel,
-    "aria-labelledby": ariaLabelledBy,
-    className,
-    defaultValue = "",
-    disabled,
-    form,
-    id,
-    name,
-    onValueChange,
-    options,
-    placeholder,
-    required,
-    value,
-    ...rootProps
-  } = selectProps;
-  const controlled = value !== undefined;
-  const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
-  const selectedValue = controlled ? value : uncontrolledValue;
-  const hiddenInputRef = useRef<HTMLInputElement>(null);
-  const optionSetKey = options.map((option) => encodeValue(option.value)).join("\u0000");
+const hidden = (status: string | undefined) => status === "starting" || status === "ending";
 
-  useEffect(() => {
-    const formElement = hiddenInputRef.current?.form;
+export function Select<Value, Multiple extends boolean | undefined = false>(
+  props: SelectRootProps<Value, Multiple>,
+) {
+  return <SelectPrimitive.Root data-slot="select" {...props} />;
+}
 
-    if (!formElement || controlled) {
-      return;
-    }
+export function SelectGroup(props: ComponentProps<typeof SelectPrimitive.Group>) {
+  return <SelectPrimitive.Group data-slot="select-group" {...props} />;
+}
 
-    const reset = () => setUncontrolledValue(defaultValue);
-    formElement.addEventListener("reset", reset);
-
-    return () => formElement.removeEventListener("reset", reset);
-  }, [controlled, defaultValue]);
-
-  function changeValue(nextValue: string) {
-    const decodedValue = decodeValue(nextValue);
-
-    if (!controlled) {
-      setUncontrolledValue(decodedValue);
-    }
-
-    onValueChange?.(decodedValue);
-  }
-
+export function SelectValue({
+  className,
+  style,
+  ...valueProps
+}: Omit<ComponentProps<typeof SelectPrimitive.Value>, "className"> & {
+  className?: string;
+}) {
   return (
-    <>
-      <RadixSelect.Root
-        {...rootProps}
-        disabled={disabled}
-        form={form}
-        key={optionSetKey}
-        onValueChange={changeValue}
-        required={required}
-        value={encodeValue(selectedValue)}
-      >
-        <RadixSelect.Trigger
-          aria-label={ariaLabel}
-          aria-labelledby={ariaLabelledBy}
-          className={[props(styles.trigger).className, className].filter(Boolean).join(" ")}
-          data-slot="select"
-          id={id}
-          value={selectedValue}
-        >
-          <RadixSelect.Value placeholder={placeholder} />
-          <RadixSelect.Icon aria-hidden="true">▾</RadixSelect.Icon>
-        </RadixSelect.Trigger>
-        <RadixSelect.Portal>
-          <RadixSelect.Content position="popper" {...props(styles.content)}>
-            <RadixSelect.Viewport {...props(styles.viewport)}>
-              {options.map((option) => (
-                <RadixSelect.Item
-                  disabled={option.disabled}
-                  key={option.value}
-                  value={encodeValue(option.value)}
-                  {...props(styles.item)}
-                >
-                  <RadixSelect.ItemText>{option.label}</RadixSelect.ItemText>
-                </RadixSelect.Item>
-              ))}
-            </RadixSelect.Viewport>
-          </RadixSelect.Content>
-        </RadixSelect.Portal>
-      </RadixSelect.Root>
-      {name ? (
-        <input
-          disabled={disabled}
-          form={form}
-          name={name}
-          ref={hiddenInputRef}
-          type="hidden"
-          value={selectedValue}
-        />
-      ) : null}
-    </>
+    <SelectPrimitive.Value
+      {...stylex.props(styles.value, customClassName(className), style as StyleXStyles)}
+      data-slot="select-value"
+      {...valueProps}
+    />
   );
 }
 
-function encodeValue(value: string) {
-  return value === "" ? EMPTY_VALUE : value;
+export function SelectTrigger({
+  children,
+  className,
+  style,
+  ...triggerProps
+}: Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "className" | "render"> & {
+  className?: string;
+}) {
+  return (
+    <SelectPrimitive.Trigger
+      {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+      data-slot="select-trigger"
+      render={(triggerRenderProps, state) => (
+        <button
+          {...triggerRenderProps}
+          value={Array.isArray(state.value) ? state.value.join(",") : String(state.value ?? "")}
+        />
+      )}
+      {...triggerProps}
+    >
+      {children}
+      <SelectPrimitive.Icon {...stylex.props(styles.icon)}>
+        <ChevronDownIcon aria-hidden="true" size={16} />
+      </SelectPrimitive.Icon>
+    </SelectPrimitive.Trigger>
+  );
 }
 
-function decodeValue(value: string) {
-  return value === EMPTY_VALUE ? "" : value;
+export function SelectContent({
+  alignItemWithTrigger = false,
+  children,
+  className,
+  sideOffset = 4,
+  style,
+  ...popupProps
+}: Omit<ComponentProps<typeof SelectPrimitive.Popup>, "className"> & {
+  alignItemWithTrigger?: boolean;
+  className?: string;
+  sideOffset?: number;
+}) {
+  return (
+    <SelectPrimitive.Portal>
+      <SelectPrimitive.Positioner
+        alignItemWithTrigger={alignItemWithTrigger}
+        side="bottom"
+        sideOffset={sideOffset}
+      >
+        <SelectPrimitive.Popup
+          className={(state) =>
+            stylex.props(
+              styles.popup,
+              hidden(state.transitionStatus) && styles.popupHidden,
+              customClassName(className),
+            ).className
+          }
+          data-slot="select-content"
+          style={style}
+          {...popupProps}
+        >
+          {children}
+        </SelectPrimitive.Popup>
+      </SelectPrimitive.Positioner>
+    </SelectPrimitive.Portal>
+  );
+}
+
+export function SelectLabel({
+  className,
+  style,
+  ...labelProps
+}: Omit<ComponentProps<typeof SelectPrimitive.GroupLabel>, "className"> & {
+  className?: string;
+}) {
+  return (
+    <SelectPrimitive.GroupLabel
+      {...stylex.props(styles.groupLabel, customClassName(className), style as StyleXStyles)}
+      data-slot="select-label"
+      {...labelProps}
+    />
+  );
+}
+
+export function SelectItem({
+  children,
+  className,
+  style,
+  ...itemProps
+}: Omit<ComponentProps<typeof SelectPrimitive.Item>, "className"> & {
+  className?: string;
+}) {
+  return (
+    <SelectPrimitive.Item
+      {...stylex.props(styles.item, customClassName(className), style as StyleXStyles)}
+      data-slot="select-item"
+      {...itemProps}
+    >
+      <SelectPrimitive.ItemText>{children}</SelectPrimitive.ItemText>
+      <SelectPrimitive.ItemIndicator {...stylex.props(styles.itemIndicator)}>
+        <CheckIcon aria-hidden="true" size={16} />
+      </SelectPrimitive.ItemIndicator>
+    </SelectPrimitive.Item>
+  );
+}
+
+export function SelectSeparator({
+  className,
+  style,
+  ...separatorProps
+}: Omit<ComponentProps<typeof SelectPrimitive.Separator>, "className"> & {
+  className?: string;
+}) {
+  return (
+    <SelectPrimitive.Separator
+      {...stylex.props(styles.separator, customClassName(className), style as StyleXStyles)}
+      data-slot="select-separator"
+      {...separatorProps}
+    />
+  );
 }

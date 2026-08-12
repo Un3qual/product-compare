@@ -12,11 +12,10 @@ export async function expectHomeVisualSystem(page: Page, viewport: HomeViewportN
       'ul[aria-label="Product categories"] a',
     );
     const categoryRow = categoryLink?.closest("li");
-    const activeTab = document.querySelector<HTMLElement>(
-      '[data-slot="detail-tab"][data-state="active"]',
-    );
+    const activeTab = document.querySelector<HTMLElement>('[data-slot="detail-tab"][data-active]');
+    const activeIndicator = find('[data-slot="tabs-indicator"]');
     const inactiveTab = document.querySelector<HTMLElement>(
-      '[data-slot="detail-tab"][data-state="inactive"]',
+      '[data-slot="detail-tab"]:not([data-active])',
     );
     const ledgerRow = document.querySelector<HTMLElement>('ol[aria-label="Product results"] > li');
     const freshness = find('[data-slot="product-ledger-freshness"]');
@@ -24,14 +23,15 @@ export async function expectHomeVisualSystem(page: Page, viewport: HomeViewportN
     const shellBox = shell?.getBoundingClientRect();
 
     return {
-      activeIndicator: activeTab ? getComputedStyle(activeTab, "::before").backgroundColor : "",
-      activeIndicatorHeight: activeTab ? getComputedStyle(activeTab, "::before").height : "",
+      activeIndicator: activeIndicator ? getComputedStyle(activeIndicator).backgroundColor : "",
+      activeIndicatorHeight: activeIndicator ? getComputedStyle(activeIndicator).height : "",
       activeTabColor: activeTab ? getComputedStyle(activeTab).color : "",
       activeTabHeight: activeTab?.getBoundingClientRect().height ?? 0,
       categoryBorder: categoryRow ? getComputedStyle(categoryRow).borderBlockStartWidth : "",
       categoryLinkColor: categoryLink ? getComputedStyle(categoryLink).color : "",
       dealReasonIsStatusBadge: dealReason?.dataset.component === "status-badge",
       freshnessBackground: freshness ? getComputedStyle(freshness).backgroundColor : "",
+      freshnessHeight: freshness?.getBoundingClientRect().height ?? 0,
       freshnessIsStatusBadge: freshness?.dataset.component === "status-badge",
       inactiveTabColor: inactiveTab ? getComputedStyle(inactiveTab).color : "",
       ledgerBorder: ledgerRow ? getComputedStyle(ledgerRow).borderBlockEndWidth : "",
@@ -52,6 +52,7 @@ export async function expectHomeVisualSystem(page: Page, viewport: HomeViewportN
   expect(visualSystem.activeTabHeight).toBeGreaterThanOrEqual(44);
   expect(visualSystem.freshnessIsStatusBadge).toBe(true);
   expect(visualSystem.freshnessBackground).not.toBe("rgba(0, 0, 0, 0)");
+  expect(visualSystem.freshnessHeight).toBeLessThanOrEqual(32);
   expect(visualSystem.dealReasonIsStatusBadge).toBe(true);
 
   if (viewport === "desktop") {

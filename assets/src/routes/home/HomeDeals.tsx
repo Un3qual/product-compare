@@ -242,7 +242,7 @@ function HomeDealsUnavailable({ onRetry }: { onRetry: () => void }) {
   return (
     <FeedbackState
       action={
-        <Button onClick={onRetry} type="button" variant="soft">
+        <Button onClick={onRetry} type="button" variant="secondary">
           Try again
         </Button>
       }

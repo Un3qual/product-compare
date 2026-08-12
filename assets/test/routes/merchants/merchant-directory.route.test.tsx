@@ -10,7 +10,7 @@ import {
   MerchantDirectoryControls,
   MerchantDirectoryView,
 } from "../../../src/routes/merchants/MerchantDirectoryView";
-import { openSelect } from "../../helpers/radix-select";
+import { openSelect } from "../../helpers/base-select";
 
 const { useLoaderDataMock, useFragmentMock, usePreloadedQueryMock, useRoutePreloadedQueryMock } =
   vi.hoisted(() => ({

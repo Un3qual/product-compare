@@ -210,10 +210,17 @@ function ProductLedgerItem({
         </div>
         {row.secondaryDetails ? (
           <Collapsible {...props(styles.disclosure)}>
-            <CollapsibleTrigger asChild>
-              <Button size="1" type="button" variant="soft" {...props(styles.disclosureTrigger)}>
-                {secondaryDisclosureLabel}
-              </Button>
+            <CollapsibleTrigger
+              render={
+                <Button
+                  size="sm"
+                  type="button"
+                  variant="secondary"
+                  {...props(styles.disclosureTrigger)}
+                />
+              }
+            >
+              {secondaryDisclosureLabel}
             </CollapsibleTrigger>
             <CollapsibleContent {...props(styles.disclosureContent)}>
               {row.secondaryDetails}

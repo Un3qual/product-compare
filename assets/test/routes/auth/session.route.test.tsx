@@ -13,13 +13,13 @@ const {
   commitMutationMock,
   relayEnvironment,
   useMutationMock,
-  useRelayEnvironmentMock
+  useRelayEnvironmentMock,
 } = vi.hoisted(() => ({
   commitLocalUpdateMock: vi.fn(),
   commitMutationMock: vi.fn(),
   relayEnvironment: {},
   useMutationMock: vi.fn(),
-  useRelayEnvironmentMock: vi.fn()
+  useRelayEnvironmentMock: vi.fn(),
 }));
 
 vi.mock("relay-runtime", async () => {
@@ -27,7 +27,7 @@ vi.mock("relay-runtime", async () => {
 
   return {
     ...actual,
-    commitLocalUpdate: commitLocalUpdateMock
+    commitLocalUpdate: commitLocalUpdateMock,
   };
 });
 
@@ -37,7 +37,7 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     useMutation: useMutationMock,
-    useRelayEnvironment: useRelayEnvironmentMock
+    useRelayEnvironment: useRelayEnvironmentMock,
   };
 });
 
@@ -46,7 +46,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useNavigate: () => navigateMock
+    useNavigate: () => navigateMock,
   };
 });
 
@@ -63,7 +63,7 @@ function renderRoute(initialEntry: string) {
         <Route path="/auth/logout" element={<LogoutRoute />} />
         <Route path="/auth/register" element={<RegisterRoute />} />
       </Routes>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -98,7 +98,7 @@ function expectNextLocalUpdateSetsRootViewer(viewer: {
     create: vi.fn(() => viewerRecord),
     delete: vi.fn(),
     get: vi.fn((dataId: string) => (dataId === viewer.id ? viewerRecord : null)),
-    getRoot: vi.fn(() => rootRecord)
+    getRoot: vi.fn(() => rootRecord),
   };
 
   mockedCommitLocalUpdate.mockImplementationOnce((environment, updater) => {
@@ -124,7 +124,7 @@ function expectNextLocalUpdateClearsRootViewer() {
     create: vi.fn(),
     delete: vi.fn(),
     get: vi.fn(),
-    getRoot: vi.fn(() => rootRecord)
+    getRoot: vi.fn(() => rootRecord),
   };
 
   mockedCommitLocalUpdate.mockImplementationOnce((environment, updater) => {
@@ -159,27 +159,27 @@ const credentialFormVariants = [
     description: "Use your email and password to continue through the GraphQL auth flow.",
     footerLinks: [
       { label: "Create account", to: "/auth/register" },
-      { label: "Forgot password?", to: "/auth/forgot-password" }
+      { label: "Forgot password?", to: "/auth/forgot-password" },
     ],
     credentialAutoComplete: "current-password" as const,
     submitLabel: "Sign in",
-    title: "Sign in"
+    title: "Sign in",
   },
   {
     description: "Create an email/password account and let Phoenix establish the browser session.",
     footerLinks: [
       { label: "Sign in instead", to: "/auth/login" },
-      { label: "Forgot password?", to: "/auth/forgot-password" }
+      { label: "Forgot password?", to: "/auth/forgot-password" },
     ],
     credentialAutoComplete: "new-password" as const,
     submitLabel: "Create account",
-    title: "Create your account"
-  }
+    title: "Create your account",
+  },
 ];
 
 function renderCredentialAuthForm(
   variant: (typeof credentialFormVariants)[number],
-  isSubmitting = false
+  isSubmitting = false,
 ) {
   const onSubmit = vi.fn();
 
@@ -192,13 +192,13 @@ function renderCredentialAuthForm(
           {
             code: "INVALID_ARGUMENT",
             field: "email",
-            message: "Enter a valid email address"
+            message: "Enter a valid email address",
           },
           {
             code: "INVALID_ARGUMENT",
             field: "password",
-            message: "Password does not meet the requirements"
-          }
+            message: "Password does not meet the requirements",
+          },
         ]}
         footerLinks={variant.footerLinks}
         isSubmitting={isSubmitting}
@@ -206,7 +206,7 @@ function renderCredentialAuthForm(
         submitLabel={variant.submitLabel}
         title={variant.title}
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   return onSubmit;
@@ -231,7 +231,7 @@ test.each(credentialFormVariants)(
     for (const footerLink of variant.footerLinks) {
       expect(screen.getByRole("link", { name: footerLink.label })).toHaveAttribute(
         "href",
-        footerLink.to
+        footerLink.to,
       );
     }
 
@@ -246,7 +246,7 @@ test.each(credentialFormVariants)(
     fireEvent.submit(form);
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
-  }
+  },
 );
 
 test.each(credentialFormVariants)(
@@ -255,7 +255,7 @@ test.each(credentialFormVariants)(
     renderCredentialAuthForm(variant, true);
 
     expect(screen.getByRole("button", { name: variant.submitLabel })).toBeDisabled();
-  }
+  },
 );
 
 test("login route preserves its credential presentation configuration", () => {
@@ -263,16 +263,16 @@ test("login route preserves its credential presentation configuration", () => {
 
   expect(screen.getByRole("heading", { name: "Sign in" })).toBeInTheDocument();
   expect(
-    screen.getByText("Use your email and password to continue through the GraphQL auth flow.")
+    screen.getByText("Use your email and password to continue through the GraphQL auth flow."),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "current-password");
   expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute(
     "href",
-    "/auth/register"
+    "/auth/register",
   );
   expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
     "href",
-    "/auth/forgot-password"
+    "/auth/forgot-password",
   );
 });
 
@@ -282,17 +282,17 @@ test("register route preserves its credential presentation configuration", () =>
   expect(screen.getByRole("heading", { name: "Create your account" })).toBeInTheDocument();
   expect(
     screen.getByText(
-      "Create an email/password account and let Phoenix establish the browser session."
-    )
+      "Create an email/password account and let Phoenix establish the browser session.",
+    ),
   ).toBeInTheDocument();
   expect(screen.getByLabelText("Password")).toHaveAttribute("autocomplete", "new-password");
   expect(screen.getByRole("link", { name: "Sign in instead" })).toHaveAttribute(
     "href",
-    "/auth/login"
+    "/auth/login",
   );
   expect(screen.getByRole("link", { name: "Forgot password?" })).toHaveAttribute(
     "href",
-    "/auth/forgot-password"
+    "/auth/forgot-password",
   );
 });
 
@@ -300,10 +300,10 @@ test("login route commits credentials through Relay and redirects after a succes
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -312,9 +312,9 @@ test("login route commits credentials through Relay and redirects after a succes
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: TEST_PASSWORD
-        }
-      })
+          password: TEST_PASSWORD,
+        },
+      }),
     );
   });
 
@@ -322,14 +322,14 @@ test("login route commits credentials through Relay and redirects after a succes
   const expectRootViewerUpdated = expectNextLocalUpdateSetsRootViewer({
     id: "1",
     email: "person@example.com",
-    isOperator: false
+    isOperator: false,
   });
 
   completeMutation({
     login: {
       viewer: { id: "1", email: "person@example.com", isOperator: false },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectRootViewerUpdated();
@@ -346,7 +346,7 @@ test("logout route commits the Relay logout mutation and redirects after Phoenix
   expect(screen.getByText("Sign out of your account.")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: /back to sign in/i })).toHaveAttribute(
     "href",
-    "/auth/login"
+    "/auth/login",
   );
 
   fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
@@ -354,8 +354,8 @@ test("logout route commits the Relay logout mutation and redirects after Phoenix
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        variables: {}
-      })
+        variables: {},
+      }),
     );
   });
 
@@ -365,8 +365,8 @@ test("logout route commits the Relay logout mutation and redirects after Phoenix
   completeMutation({
     logout: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectRootViewerCleared();
@@ -388,14 +388,12 @@ test("logout route hides failed action payload details behind a generic alert", 
   completeMutation({
     logout: {
       ok: false,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectNoLocalRootViewerUpdate();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Request failed. Please try again."
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
   expect(navigateMock).not.toHaveBeenCalled();
 });
 
@@ -415,16 +413,14 @@ test("logout route leaves root viewer unchanged when ok is true with typed error
         {
           code: "INVALID_ORIGIN",
           field: null,
-          message: "cross-origin request rejected"
-        }
-      ]
-    }
+          message: "cross-origin request rejected",
+        },
+      ],
+    },
   });
 
   expectNoLocalRootViewerUpdate();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "cross-origin request rejected"
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("cross-origin request rejected");
   expect(navigateMock).not.toHaveBeenCalled();
 });
 
@@ -441,10 +437,10 @@ test("logout route leaves root viewer unchanged on top-level GraphQL errors", as
     {
       logout: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   expectNoLocalRootViewerUpdate();
@@ -461,10 +457,10 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
   const emailInput = screen.getByLabelText(/email/i);
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -473,9 +469,9 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: TEST_PASSWORD
-        }
-      })
+          password: TEST_PASSWORD,
+        },
+      }),
     );
   });
 
@@ -486,10 +482,10 @@ test("register route renders typed GraphQL validation errors from a Relay payloa
         {
           code: "INVALID_ARGUMENT",
           field: "email",
-          message: "has already been taken"
-        }
-      ]
-    }
+          message: "has already been taken",
+        },
+      ],
+    },
   });
 
   expectNoLocalRootViewerUpdate();
@@ -503,10 +499,10 @@ test("register route updates root viewer after a successful session response", a
   renderRoute("/auth/register");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -515,9 +511,9 @@ test("register route updates root viewer after a successful session response", a
       expect.objectContaining({
         variables: {
           email: "person@example.com",
-          password: TEST_PASSWORD
-        }
-      })
+          password: TEST_PASSWORD,
+        },
+      }),
     );
   });
 
@@ -525,14 +521,14 @@ test("register route updates root viewer after a successful session response", a
   const expectRootViewerUpdated = expectNextLocalUpdateSetsRootViewer({
     id: "1",
     email: "person@example.com",
-    isOperator: false
+    isOperator: false,
   });
 
   completeMutation({
     register: {
       viewer: { id: "1", email: "person@example.com", isOperator: false },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectRootViewerUpdated();
@@ -553,14 +549,12 @@ test("logout route leaves root viewer unchanged when the action payload is missi
 
   completeMutation({
     logout: {
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectNoLocalRootViewerUpdate();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Request failed. Please try again."
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
   expect(navigateMock).not.toHaveBeenCalled();
 });
 
@@ -568,10 +562,10 @@ test("login route hides transport details behind a generic alert", async () => {
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -595,10 +589,10 @@ test("login route hides synchronous Relay commit errors behind a generic alert",
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -612,10 +606,10 @@ test("login route hides top-level GraphQL error details behind a generic alert",
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -627,10 +621,10 @@ test("login route hides top-level GraphQL error details behind a generic alert",
     {
       login: {
         viewer: { id: "1", email: "person@example.com" },
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   expectNoLocalRootViewerUpdate();
@@ -645,10 +639,10 @@ test("register route hides top-level GraphQL error details behind a generic aler
   renderRoute("/auth/register");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -660,10 +654,10 @@ test("register route hides top-level GraphQL error details behind a generic aler
     {
       register: {
         viewer: { id: "1", email: "person@example.com" },
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   expectNoLocalRootViewerUpdate();
@@ -682,10 +676,10 @@ test("register route hides synchronous Relay commit errors behind a generic aler
   renderRoute("/auth/register");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/^password$/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /create account/i }));
 
@@ -699,10 +693,10 @@ test("login route shows a generic alert when the session payload fails without e
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -713,24 +707,22 @@ test("login route shows a generic alert when the session payload fails without e
   completeMutation({
     login: {
       viewer: null,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expectNoLocalRootViewerUpdate();
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Request failed. Please try again."
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
 });
 
 test("login route ignores malformed payload error fields and falls back to a generic alert", async () => {
   renderRoute("/auth/login");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD }
+    target: { value: TEST_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
 
@@ -745,10 +737,10 @@ test("login route ignores malformed payload error fields and falls back to a gen
         {
           code: "INVALID_ARGUMENT",
           field: 123,
-          message: "bad field shape"
-        }
-      ]
-    }
+          message: "bad field shape",
+        },
+      ],
+    },
   });
 
   const alert = await screen.findByRole("alert");

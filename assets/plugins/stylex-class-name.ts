@@ -20,6 +20,12 @@ function atomicClassPattern(classNamePrefix: string): RegExp {
   );
 }
 
+function isStylexConstKey(source: string, classNameOffset: number): boolean {
+  return /\bconstKey\s*:\s*["'`]$/.test(
+    source.slice(Math.max(0, classNameOffset - 32), classNameOffset),
+  );
+}
+
 function parseBase36(value: string): bigint {
   let result = 0n;
 
@@ -68,7 +74,11 @@ export function findStylexClassNames(source: string, classNamePrefix: string): S
   }
 
   for (const match of source.matchAll(atomicClassPattern(classNamePrefix))) {
-    classNames.add(match[2]!);
+    const classNameOffset = match.index + match[1]!.length;
+
+    if (!isStylexConstKey(source, classNameOffset)) {
+      classNames.add(match[2]!);
+    }
   }
 
   return classNames;
@@ -85,7 +95,13 @@ export function rewriteStylexClassNames(
   let changed = false;
   const code = source.replace(
     atomicClassPattern(classNamePrefix),
-    (match, boundary: string, className: string) => {
+    (match, boundary: string, className: string, offset: number) => {
+      const classNameOffset = offset + boundary.length;
+
+      if (isStylexConstKey(source, classNameOffset)) {
+        return match;
+      }
+
       const mangled = mangleStylexClassName(className, classNamePrefix);
 
       if (mangled === null) {

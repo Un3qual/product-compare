@@ -8,7 +8,7 @@ import {
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
-  transportMutationErrors
+  transportMutationErrors,
 } from "./errors";
 import { AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 import { clearRootViewer } from "./viewer-store";
@@ -53,11 +53,11 @@ export function LogoutRoute() {
         },
         onError(error) {
           setErrors(transportMutationErrors(error));
-        }
+        },
       },
       (error) => {
         setErrors(transportMutationErrors(error));
-      }
+      },
     );
   }
 
@@ -67,7 +67,7 @@ export function LogoutRoute() {
       errors={errors}
       footerLinks={[
         { label: "Back to sign in", to: "/auth/login" },
-        { label: "Browse products", to: "/products" }
+        { label: "Browse products", to: "/products" },
       ]}
       title="Sign out"
     >

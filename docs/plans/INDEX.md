@@ -25,15 +25,6 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-The approved Base UI, StyleX, and table foundation is active through:
-
-- `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
-
-It performs one complete Radix-to-Base UI cutover using locally owned
-shadcn-cssinjs source, keeps ProductCompare's existing visual identity,
-converts every current table to TanStack Table v9, and makes the user-supplied
-StyleX mangler deterministic across independent client and SSR builds.
-
 The approved homepage query-scaling outcome is ready through:
 
 - `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
@@ -60,7 +51,16 @@ test, browser, and lane paths are disjoint. The durable product and
 feature-parity contract is
 `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
 
-The most recently completed consolidated implementation plan is:
+The most recently completed foundation plan is:
+
+- `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
+
+It completed the Radix-to-Base UI cutover with locally adapted
+shadcn-cssinjs components, preserved ProductCompare's visual identity, moved
+all current semantic tables to TanStack Table v9, and made the user-supplied
+StyleX mangler deterministic and constant-safe across client and SSR builds.
+
+The preceding completed consolidated implementation plan is:
 
 - `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
 

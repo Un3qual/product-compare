@@ -7,7 +7,10 @@ import react from "@vitejs/plugin-react";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
-export const STYLEX_CLASS_NAME_PREFIX = "__pcx_";
+// StyleX's runtime constant resolver accepts alphanumeric generated keys.
+// Production classes are shortened by the Vite plugin, so this prefix is only
+// visible in development and during compilation.
+export const STYLEX_CLASS_NAME_PREFIX = "pcx";
 
 export const frontendAliases = {
   $generated: path.join(projectRoot, "src/__generated__"),

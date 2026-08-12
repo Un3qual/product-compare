@@ -2,7 +2,7 @@ import { create, props } from "@stylexjs/stylex";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildProductAttributeListData,
-  type ProductAttributeListItem
+  type ProductAttributeListItem,
 } from "./product-attribute-list-data";
 
 export type { ProductAttributeListItem } from "./product-attribute-list-data";
@@ -10,24 +10,24 @@ export type { ProductAttributeListItem } from "./product-attribute-list-data";
 const styles = create({
   groups: {
     display: "grid",
-    gap: "1.5rem"
+    gap: "1.5rem",
   },
   group: {
     display: "grid",
-    gap: "0.75rem"
+    gap: "0.75rem",
   },
   groupTitle: {
     color: tokens.textSecondary,
     fontSize: "0.85rem",
     letterSpacing: "0.06em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   list: {
     borderBlockStartColor: tokens.borderQuiet,
     borderBlockStartStyle: "solid",
     borderBlockStartWidth: "1px",
-    margin: 0
+    margin: 0,
   },
   row: {
     borderBlockEndColor: tokens.borderQuiet,
@@ -36,20 +36,20 @@ const styles = create({
     display: "grid",
     gap: "0.75rem",
     gridTemplateColumns: "minmax(10rem, 0.8fr) minmax(0, 1.2fr)",
-    paddingBlock: "0.75rem"
+    paddingBlock: "0.75rem",
   },
   term: {
     color: tokens.textSecondary,
-    fontWeight: 600
+    fontWeight: 600,
   },
   value: {
-    margin: 0
-  }
+    margin: 0,
+  },
 });
 
 export function ProductAttributeList({
   attributes,
-  emptyMessage
+  emptyMessage,
 }: {
   attributes: ReadonlyArray<ProductAttributeListItem>;
   emptyMessage: string;
@@ -80,7 +80,7 @@ export function ProductAttributeList({
 }
 
 function AttributeDefinitionList({
-  attributes
+  attributes,
 }: {
   attributes: ReadonlyArray<ProductAttributeListItem>;
 }) {

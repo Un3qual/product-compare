@@ -3,7 +3,7 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { ActionDialog } from "$ui/components/overlays/ActionDialog";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
@@ -90,11 +90,11 @@ function CreateApiTokenForm({
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
       <div>
         <span id="api-token-label">Label</span>
-        <TextField aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
+        <Input aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
       </div>
       <label>
         Expires at
-        <TextField
+        <Input
           name="expiresAt"
           onChange={() => {
             if (expiresAtPresetInputRef.current) {
@@ -121,9 +121,9 @@ function CreateApiTokenForm({
                 expiresAtPresetInputRef.current.value = preset.label;
               }
             }}
-            size="1"
+            size="sm"
             type="button"
-            variant="soft"
+            variant="secondary"
           >
             {preset.label}
           </Button>

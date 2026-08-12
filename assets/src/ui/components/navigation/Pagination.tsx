@@ -7,8 +7,8 @@ const styles = create({
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.75rem"
-  }
+    gap: "0.75rem",
+  },
 });
 
 export type PaginationProps = {
@@ -24,7 +24,7 @@ export function Pagination({
   firstLabel = "First page",
   label,
   nextHref,
-  nextLabel = "Next page"
+  nextLabel = "Next page",
 }: PaginationProps) {
   if (!firstHref && !nextHref) {
     return null;
@@ -33,15 +33,11 @@ export function Pagination({
   return (
     <nav aria-label={label} {...props(styles.root)}>
       {firstHref ? (
-        <Button asChild variant="soft">
-          <Link to={firstHref}>{firstLabel}</Link>
+        <Button render={<Link to={firstHref} />} variant="secondary">
+          {firstLabel}
         </Button>
       ) : null}
-      {nextHref ? (
-        <Button asChild variant="solid">
-          <Link to={nextHref}>{nextLabel}</Link>
-        </Button>
-      ) : null}
+      {nextHref ? <Button render={<Link to={nextHref} />}>{nextLabel}</Button> : null}
     </nav>
   );
 }

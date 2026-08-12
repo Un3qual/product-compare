@@ -17,6 +17,7 @@ class TestResizeObserver implements ResizeObserver {
 }
 
 globalThis.ResizeObserver ??= TestResizeObserver;
+globalThis.PointerEvent ??= MouseEvent as unknown as typeof PointerEvent;
 
 Element.prototype.hasPointerCapture ??= () => false;
 Element.prototype.setPointerCapture ??= () => {};

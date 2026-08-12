@@ -16,8 +16,14 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextArea } from "$ui/primitives/TextArea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Textarea } from "$ui/primitives/Textarea";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
@@ -163,6 +169,10 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
     .map(cjProgramWarningCopy)
     .filter((warning) => warning !== null);
   const lastChanged = formatCJDateTime(program.lastChanged);
+  const stageOptions = [
+    ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
+    ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({ label, value })),
+  ];
 
   useEffect(() => {
     setStage(isCJProgramStage(program.stage) ? program.stage : null);
@@ -235,24 +245,30 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
           <span {...props(styles.label)}>Stage for {programName}</span>
           <Select
             disabled={isUpdateInFlight || !stage}
+            items={stageOptions}
             onValueChange={(nextStage) => {
-              if (isCJProgramStage(nextStage)) {
-                setStage(nextStage);
+              const value = nextStage ?? "";
+              if (isCJProgramStage(value)) {
+                setStage(value);
               }
             }}
-            options={[
-              ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
-              ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({
-                label,
-                value,
-              })),
-            ]}
             value={stage ?? ""}
-          />
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {stageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </label>
         <label {...props(styles.field)}>
           <span {...props(styles.label)}>Note for {programName}</span>
-          <TextArea
+          <Textarea
             disabled={isUpdateInFlight || !stage}
             onChange={(event) => setNote(event.currentTarget.value)}
             value={note}
@@ -311,14 +327,16 @@ function CJProgramFeedDisclosure({
       }}
       open={isOpen}
     >
-      <CollapsibleTrigger asChild>
-        <Button
-          aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
-          type="button"
-          variant="soft"
-        >
-          {isOpen ? "Hide feeds" : "Show feeds"}
-        </Button>
+      <CollapsibleTrigger
+        render={
+          <Button
+            aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
+            type="button"
+            variant="secondary"
+          />
+        }
+      >
+        {isOpen ? "Hide feeds" : "Show feeds"}
       </CollapsibleTrigger>
       <CollapsibleContent {...props(styles.feedDetails)}>
         {queryRef ? (
@@ -350,7 +368,7 @@ function CJProgramFeedUnavailable({
         aria-label={`Retry feeds for ${programName}`}
         onClick={onRetry}
         type="button"
-        variant="soft"
+        variant="secondary"
       >
         Retry feeds
       </Button>
@@ -394,7 +412,7 @@ function CJProgramFeeds({
               aria-label={`First feeds for ${programName}`}
               onClick={() => onPage(null)}
               type="button"
-              variant="soft"
+              variant="secondary"
             >
               First feeds
             </Button>

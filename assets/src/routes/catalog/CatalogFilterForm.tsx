@@ -4,13 +4,15 @@ import { Link } from "react-router-dom";
 import { ActiveFilterChips } from "$ui/components/filters/ActiveFilterChips";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "$ui/primitives/Collapsible";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import {
   CATALOG_PRODUCT_SORTS,
@@ -124,10 +126,10 @@ export function CatalogFilterForm({
         />
       </div>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-        <CollapsibleTrigger asChild>
-          <Button variant="soft">Advanced filters</Button>
+        <CollapsibleTrigger render={<Button variant="secondary" />}>
+          Advanced filters
         </CollapsibleTrigger>
-        <CollapsibleContent forceMount hidden={!advancedOpen} {...props(styles.advanced)}>
+        <CollapsibleContent keepMounted hidden={!advancedOpen} {...props(styles.advanced)}>
           <CatalogAdvancedFilters filters={filters} metadata={metadata} />
         </CollapsibleContent>
       </Collapsible>
@@ -148,7 +150,7 @@ function SearchField({
   return (
     <label>
       Search products
-      <TextField
+      <Input
         type="search"
         name="q"
         value={query}
@@ -176,19 +178,31 @@ function SortField({
     query: hasQuery ? query : undefined,
     sort,
   });
+  const options = availableSorts.map((value) => ({
+    label: catalogProductSortLabel(value),
+    value,
+  }));
 
   return (
     <label>
       Sort products
       <Select
+        items={options}
         name={sortParam ? "sort" : undefined}
-        onValueChange={(value) => onSortChange(catalogProductSortFromValue(value))}
-        options={availableSorts.map((value) => ({
-          label: catalogProductSortLabel(value),
-          value,
-        }))}
+        onValueChange={(value) => onSortChange(catalogProductSortFromValue(value ?? ""))}
         value={sort}
-      />
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }
@@ -208,18 +222,26 @@ function CompareSlugFields({ compareSlugs }: { compareSlugs: readonly string[] }
 }
 
 function PageSizeField({ pageSize }: { pageSize: number }) {
+  const options = BROWSE_PRODUCTS_PAGE_SIZES.map((size) => ({
+    label: String(size),
+    value: String(size),
+  }));
+
   return (
     <label>
       Products per page
-      <Select
-        key={pageSize}
-        name="first"
-        defaultValue={String(pageSize)}
-        options={BROWSE_PRODUCTS_PAGE_SIZES.map((size) => ({
-          label: String(size),
-          value: String(size),
-        }))}
-      />
+      <Select items={options} key={pageSize} name="first" defaultValue={String(pageSize)}>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }
@@ -233,22 +255,35 @@ function ProductTypeField({
   selectedTypeTaxonId: string;
   onTypeTaxonIdChange: (typeTaxonId: string) => void;
 }) {
+  const options = [
+    { disabled: false, label: "All product types", value: "" },
+    ...metadata.typeOptions.map((option) => ({
+      disabled: option.disabled && !option.selected,
+      label: `${option.label} (${option.count})`,
+      value: option.id,
+    })),
+  ];
+
   return (
     <label>
       Product type
       <Select
+        items={options}
         name="typeTaxonId"
-        onValueChange={onTypeTaxonIdChange}
-        options={[
-          { label: "All product types", value: "" },
-          ...metadata.typeOptions.map((option) => ({
-            disabled: option.disabled && !option.selected,
-            label: `${option.label} (${option.count})`,
-            value: option.id,
-          })),
-        ]}
+        onValueChange={(value) => onTypeTaxonIdChange(value ?? "")}
         value={selectedTypeTaxonId}
-      />
+      >
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem disabled={option.disabled} key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </label>
   );
 }

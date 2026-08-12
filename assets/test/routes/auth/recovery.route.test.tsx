@@ -7,18 +7,18 @@ import {
   createRoutesFromElements,
   Route,
   RouterProvider,
-  Routes
+  Routes,
 } from "react-router-dom";
 import { ForgotPasswordRoute } from "../../../src/routes/auth/ForgotPasswordRoute";
 import { ResetPasswordRoute } from "../../../src/routes/auth/ResetPasswordRoute";
 import {
   resetVerifyEmailRequestCache,
-  VerifyEmailRoute
+  VerifyEmailRoute,
 } from "../../../src/routes/auth/VerifyEmailRoute";
 
 const { commitMutationMock, useMutationMock } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
-  useMutationMock: vi.fn()
+  useMutationMock: vi.fn(),
 }));
 
 vi.mock("react-relay", async () => {
@@ -26,7 +26,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
-    useMutation: useMutationMock
+    useMutation: useMutationMock,
   };
 });
 
@@ -47,16 +47,14 @@ function renderRoute(initialEntry: string, options?: { strictMode?: boolean }) {
         <Route path="/auth/forgot-password" element={<ForgotPasswordRoute />} />
         <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
         <Route path="/auth/verify-email" element={<VerifyEmailRoute />} />
-      </>
+      </>,
     ),
-    { initialEntries: [initialEntry] }
+    { initialEntries: [initialEntry] },
   );
 
   const content = <RouterProvider router={router} />;
 
-  const view = render(
-    options?.strictMode ? <StrictMode>{content}</StrictMode> : content
-  );
+  const view = render(options?.strictMode ? <StrictMode>{content}</StrictMode> : content);
 
   return { router, unmount: view.unmount };
 }
@@ -92,43 +90,43 @@ test("forgot password route commits the email through Relay and shows the privac
   renderRoute("/auth/forgot-password");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        variables: { email: "person@example.com" }
-      })
+        variables: { email: "person@example.com" },
+      }),
     );
   });
 
   completeLatestMutation({
     forgotPassword: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
-  expect(
-    await screen.findByRole("status")
-  ).toHaveTextContent("If an account exists for that email, reset instructions are on the way.");
+  expect(await screen.findByRole("status")).toHaveTextContent(
+    "If an account exists for that email, reset instructions are on the way.",
+  );
 });
 
 test("forgot password route hides top-level GraphQL error details behind a generic alert", async () => {
   renderRoute("/auth/forgot-password");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
 
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        variables: { email: "person@example.com" }
-      })
+        variables: { email: "person@example.com" },
+      }),
     );
   });
 
@@ -136,10 +134,10 @@ test("forgot password route hides top-level GraphQL error details behind a gener
     {
       forgotPassword: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   const alert = await screen.findByRole("alert");
@@ -157,7 +155,7 @@ test("forgot password route hides synchronous Relay commit errors behind a gener
   renderRoute("/auth/forgot-password");
 
   fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" }
+    target: { value: "person@example.com" },
   });
   fireEvent.click(screen.getByRole("button", { name: /send reset link/i }));
 
@@ -172,7 +170,7 @@ test("reset password route reads the token from the URL and commits the new pass
   renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD }
+    target: { value: TEST_RESET_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -181,17 +179,17 @@ test("reset password route reads the token from the URL and commits the new pass
       expect.objectContaining({
         variables: {
           token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD
-        }
-      })
+          password: TEST_RESET_PASSWORD,
+        },
+      }),
     );
   });
 
   completeLatestMutation({
     resetPassword: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
@@ -201,7 +199,7 @@ test("reset password route shows a generic alert when the action payload fails w
   renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD }
+    target: { value: TEST_RESET_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -210,29 +208,27 @@ test("reset password route shows a generic alert when the action payload fails w
       expect.objectContaining({
         variables: {
           token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD
-        }
-      })
+          password: TEST_RESET_PASSWORD,
+        },
+      }),
     );
   });
 
   completeLatestMutation({
     resetPassword: {
       ok: false,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "Request failed. Please try again."
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
 });
 
 test("reset password route hides top-level GraphQL error details behind a generic alert", async () => {
   renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD }
+    target: { value: TEST_RESET_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -241,9 +237,9 @@ test("reset password route hides top-level GraphQL error details behind a generi
       expect.objectContaining({
         variables: {
           token: RESET_ROUTE_TOKEN,
-          password: TEST_RESET_PASSWORD
-        }
-      })
+          password: TEST_RESET_PASSWORD,
+        },
+      }),
     );
   });
 
@@ -251,10 +247,10 @@ test("reset password route hides top-level GraphQL error details behind a generi
     {
       resetPassword: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   const alert = await screen.findByRole("alert");
@@ -271,7 +267,7 @@ test("reset password route hides synchronous Relay commit errors and unlocks the
   renderRoute(authTokenRoute(RESET_PASSWORD_PATH, RESET_ROUTE_TOKEN));
 
   fireEvent.change(screen.getByLabelText(/^new password$/i), {
-    target: { value: TEST_RESET_PASSWORD }
+    target: { value: TEST_RESET_PASSWORD },
   });
   fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -294,11 +290,11 @@ test("reset password route clears stale success state when the token changes", a
         <Routes>
           <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
         </Routes>
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: TEST_RESET_PASSWORD }
+      target: { value: TEST_RESET_PASSWORD },
     });
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -307,17 +303,17 @@ test("reset password route clears stale success state when the token changes", a
         expect.objectContaining({
           variables: {
             token: FIRST_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD
-          }
-        })
+            password: TEST_RESET_PASSWORD,
+          },
+        }),
       );
     });
 
     completeLatestMutation({
       resetPassword: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     });
 
     expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
@@ -336,7 +332,7 @@ test("reset password route clears stale success state when the token changes", a
   }
 
   expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
-    originalPath
+    originalPath,
   );
 });
 
@@ -352,11 +348,11 @@ test("reset password route ignores stale responses after the token changes", asy
         <Routes>
           <Route path="/auth/reset-password" element={<ResetPasswordRoute />} />
         </Routes>
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     fireEvent.change(screen.getByLabelText(/^new password$/i), {
-      target: { value: TEST_RESET_PASSWORD }
+      target: { value: TEST_RESET_PASSWORD },
     });
     fireEvent.click(screen.getByRole("button", { name: /update password/i }));
 
@@ -365,9 +361,9 @@ test("reset password route ignores stale responses after the token changes", asy
         expect.objectContaining({
           variables: {
             token: FIRST_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD
-          }
-        })
+            password: TEST_RESET_PASSWORD,
+          },
+        }),
       );
     });
 
@@ -382,8 +378,8 @@ test("reset password route ignores stale responses after the token changes", asy
       firstRequest?.onCompleted({
         resetPassword: {
           ok: true,
-          errors: []
-        }
+          errors: [],
+        },
       });
     });
 
@@ -398,17 +394,17 @@ test("reset password route ignores stale responses after the token changes", asy
         expect.objectContaining({
           variables: {
             token: SECOND_ROUTE_TOKEN,
-            password: TEST_RESET_PASSWORD
-          }
-        })
+            password: TEST_RESET_PASSWORD,
+          },
+        }),
       );
     });
 
     completeLatestMutation({
       resetPassword: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     });
 
     expect(await screen.findByText("Your password has been updated.")).toBeInTheDocument();
@@ -418,7 +414,7 @@ test("reset password route ignores stale responses after the token changes", asy
   }
 
   expect(`${window.location.pathname}${window.location.search}${window.location.hash}`).toBe(
-    originalPath
+    originalPath,
   );
 });
 
@@ -428,16 +424,16 @@ test("verify email route consumes the URL token through Relay and reports succes
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        variables: { token: VERIFY_EMAIL_ROUTE_TOKEN }
-      })
+        variables: { token: VERIFY_EMAIL_ROUTE_TOKEN },
+      }),
     );
   });
 
   completeLatestMutation({
     verifyEmail: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
@@ -465,8 +461,8 @@ test("verify email route retries after a transient failure on remount", async ()
   completeLatestMutation({
     verifyEmail: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
@@ -483,10 +479,10 @@ test("verify email route retries after a top-level GraphQL error on remount", as
     {
       verifyEmail: {
         ok: true,
-        errors: []
-      }
+        errors: [],
+      },
     },
-    [{ message: "GraphQL request failed (500): database stacktrace" }]
+    [{ message: "GraphQL request failed (500): database stacktrace" }],
   );
 
   const alert = await screen.findByRole("alert");
@@ -505,8 +501,8 @@ test("verify email route retries after a top-level GraphQL error on remount", as
   completeLatestMutation({
     verifyEmail: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();
@@ -522,8 +518,8 @@ test("verify email route retries after a resolved failed payload on remount", as
   completeLatestMutation({
     verifyEmail: {
       ok: false,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
@@ -539,8 +535,8 @@ test("verify email route retries after a resolved failed payload on remount", as
   completeLatestMutation({
     verifyEmail: {
       ok: true,
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   expect(await screen.findByText("Your email address is verified.")).toBeInTheDocument();

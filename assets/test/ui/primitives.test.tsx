@@ -1,20 +1,29 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import {
   Button,
   Checkbox,
+  Input,
   Label,
   Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
   Separator,
-  TextArea,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  Textarea,
 } from "../../src/ui/primitives/index";
-import { TextField } from "../../src/ui/primitives/TextField";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "../../src/ui/primitives/Collapsible";
 import { AppProviders } from "../../src/ui/providers/AppProviders";
-import { chooseSelectOption, openSelect } from "../helpers/radix-select";
+import { chooseSelectOption, openSelect } from "../helpers/base-select";
 
 test("Label associates auth fields with their inputs", () => {
   render(
@@ -27,12 +36,8 @@ test("Label associates auth fields with their inputs", () => {
   expect(screen.getByLabelText("Email")).toHaveAttribute("id", "email");
 });
 
-test("Button preserves link semantics when composed through the slot wrapper", () => {
-  render(
-    <Button asChild>
-      <a href="/products">Browse products</a>
-    </Button>,
-  );
+test("Button preserves link semantics through the Base UI render API", () => {
+  render(<Button render={<a href="/products" />}>Browse products</Button>);
 
   const link = screen.getByRole("link", { name: "Browse products" });
 
@@ -48,17 +53,23 @@ test("Button defaults to native button semantics", () => {
   expect(button).toHaveAttribute("type", "button");
 });
 
-test("Button exposes destructive intent through its semantic tone", () => {
-  render(<Button tone="danger">Delete</Button>);
+test("Button preserves explicit submit semantics", () => {
+  render(<Button type="submit">Save</Button>);
+
+  expect(screen.getByRole("button", { name: "Save" })).toHaveAttribute("type", "submit");
+});
+
+test("Button exposes the shadcn destructive variant", () => {
+  render(<Button variant="destructive">Delete</Button>);
 
   const button = screen.getByRole("button", { name: "Delete" });
 
-  expect(button).toHaveAttribute("data-tone", "danger");
+  expect(button).toHaveAttribute("data-variant", "destructive");
   expect(button).not.toHaveAttribute("color");
 });
 
-test("TextField renders a named search input", () => {
-  render(<TextField aria-label="Search products" name="q" type="search" />);
+test("Input renders a named search input", () => {
+  render(<Input aria-label="Search products" name="q" type="search" />);
 
   const input = screen.getByRole("searchbox", { name: "Search products" });
 
@@ -69,13 +80,13 @@ test("form wrappers preserve names, values, and browser-native input types", () 
   render(
     <AppProviders>
       <form aria-label="Control contract">
-        <TextField
+        <Input
           aria-label="Expires at"
           defaultValue="2026-08-01T09:30"
           name="expiresAt"
           type="datetime-local"
         />
-        <Select
+        <ExampleSelect
           aria-label="Sort"
           defaultValue="price_asc"
           name="sort"
@@ -84,7 +95,7 @@ test("form wrappers preserve names, values, and browser-native input types", () 
             { label: "Name", value: "name_asc" },
           ]}
         />
-        <TextArea aria-label="Notes" defaultValue="Keep this" name="notes" />
+        <Textarea aria-label="Notes" defaultValue="Keep this" name="notes" />
         <Checkbox aria-label="Searchable" defaultChecked name="searchable" />
       </form>
     </AppProviders>,
@@ -97,6 +108,7 @@ test("form wrappers preserve names, values, and browser-native input types", () 
 
   expect(screen.getByLabelText("Expires at")).toHaveAttribute("type", "datetime-local");
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveTextContent("Price");
+  expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_asc");
   expect(screen.getByRole("textbox", { name: "Notes" })).toHaveValue("Keep this");
   expect(screen.getByRole("checkbox", { name: "Searchable" })).toBeChecked();
   expect(Object.fromEntries(formData)).toMatchObject({
@@ -111,7 +123,7 @@ test("Select exposes its value and updates its form value through accessible opt
   render(
     <AppProviders>
       <form aria-label="Select contract">
-        <Select
+        <ExampleSelect
           aria-label="Sort"
           defaultValue="price_asc"
           name="sort"
@@ -126,18 +138,18 @@ test("Select exposes its value and updates its form value through accessible opt
 
   const select = screen.getByRole("combobox", { name: "Sort" });
 
-  expect(select).toHaveValue("price_asc");
+  expect(select).toHaveTextContent("Price");
   chooseSelectOption(select, "Name");
 
   const form = screen.getByRole("form", { name: "Select contract" }) as HTMLFormElement;
-  expect(select).toHaveValue("name_asc");
+  expect(select).toHaveTextContent("Name");
   expect(new FormData(form).get("sort")).toBe("name_asc");
 });
 
 test("Select gives keyboard-moved options a visible highlighted background", async () => {
   render(
     <AppProviders>
-      <Select
+      <ExampleSelect
         aria-label="Rating"
         defaultValue="5"
         options={[
@@ -167,7 +179,7 @@ test("controlled Select follows option and value updates without emitting a chan
   const onValueChange = vi.fn();
   const { rerender } = render(
     <form>
-      <Select
+      <ExampleSelect
         aria-label="Catalog sort"
         onValueChange={onValueChange}
         options={[{ label: "Catalog order", value: "ID_ASC" }]}
@@ -178,7 +190,7 @@ test("controlled Select follows option and value updates without emitting a chan
 
   rerender(
     <form>
-      <Select
+      <ExampleSelect
         aria-label="Catalog sort"
         onValueChange={onValueChange}
         options={[
@@ -205,7 +217,7 @@ test("Separator renders the expected accessibility role and orientation", () => 
   expect(separator).toHaveAttribute("aria-orientation", "vertical");
 });
 
-test("Collapsible exposes Radix state and accessibility semantics", () => {
+test("Collapsible exposes Base UI state and accessibility semantics", () => {
   render(
     <Collapsible>
       <CollapsibleTrigger>Advanced filters</CollapsibleTrigger>
@@ -217,3 +229,65 @@ test("Collapsible exposes Radix state and accessibility semantics", () => {
 
   expect(trigger).toHaveAttribute("aria-expanded", "false");
 });
+
+test("Tabs register a stable Base UI composite list", () => {
+  render(
+    <MemoryRouter>
+      <Tabs defaultValue="one">
+        <TabsList aria-label="Views">
+          <TabsTrigger
+            nativeButton={false}
+            render={<a href="?view=one" />}
+            value="one"
+          >
+            One
+          </TabsTrigger>
+          <TabsTrigger
+            nativeButton={false}
+            render={<a href="?view=two" />}
+            value="two"
+          >
+            Two
+          </TabsTrigger>
+        </TabsList>
+        <TabsContent value="one">First view</TabsContent>
+        <TabsContent value="two">Second view</TabsContent>
+      </Tabs>
+    </MemoryRouter>,
+  );
+
+  expect(screen.getByRole("tab", { name: "One" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+});
+
+function ExampleSelect({
+  "aria-label": ariaLabel,
+  options,
+  placeholder,
+  ...selectProps
+}: {
+  "aria-label": string;
+  defaultValue?: string;
+  name?: string;
+  onValueChange?: (value: string | null) => void;
+  options: readonly { label: string; value: string }[];
+  placeholder?: string;
+  value?: string;
+}) {
+  return (
+    <Select items={options} {...selectProps}>
+      <SelectTrigger aria-label={ariaLabel}>
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((option) => (
+          <SelectItem key={option.value} value={option.value}>
+            {option.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}

@@ -76,10 +76,7 @@ test("saved comparisons renders the Relay page instead of an unmasked loader pro
   expect(screen.queryByText("Loader projection leak")).not.toBeInTheDocument();
 });
 
-function savedComparisonsResponse(
-  name: string,
-  slug: string,
-): PayloadData {
+function savedComparisonsResponse(name: string, slug: string): PayloadData {
   return {
     mySavedComparisonSets: {
       edges: [

@@ -113,20 +113,24 @@ function HomeLedgerActions({
 
   return (
     <div {...props(styles.actions)}>
-      <Button asChild size="1" variant="soft">
-        <Link to={row.href}>View details</Link>
+      <Button render={<Link to={row.href} />} size="sm" variant="secondary">
+        View details
       </Button>
       {isSelected ? (
-        <Button asChild size="1">
-          <Link to={buildComparePathFromSlugs(selectedSlugs)}>Open comparison</Link>
+        <Button render={<Link to={buildComparePathFromSlugs(selectedSlugs)} />} size="sm">
+          Open comparison
         </Button>
       ) : isFull ? (
-        <Button asChild size="1" variant="ghost">
-          <Link to={buildComparePathFromSlugs(selectedSlugs)}>Comparison is full</Link>
+        <Button
+          render={<Link to={buildComparePathFromSlugs(selectedSlugs)} />}
+          size="sm"
+          variant="ghost"
+        >
+          Comparison is full
         </Button>
       ) : (
-        <Button asChild size="1" variant="ghost">
-          <Link to={compareHref}>Add to comparison</Link>
+        <Button render={<Link to={compareHref} />} size="sm" variant="ghost">
+          Add to comparison
         </Button>
       )}
     </div>

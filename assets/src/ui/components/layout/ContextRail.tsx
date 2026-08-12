@@ -12,39 +12,39 @@ const styles = create({
     paddingBlockStart: "1rem",
     position: {
       default: "sticky",
-      "@media (max-width: 62rem)": "static"
+      "@media (max-width: 62rem)": "static",
     },
     top: {
       default: tokens.stickyOffset,
-      "@media (max-width: 62rem)": "auto"
-    }
+      "@media (max-width: 62rem)": "auto",
+    },
   },
   header: {
     display: "grid",
-    gap: "0.25rem"
+    gap: "0.25rem",
   },
   title: {
     fontSize: "0.82rem",
     letterSpacing: "0.05em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   description: {
     color: tokens.textSecondary,
     fontSize: "0.9rem",
     lineHeight: 1.5,
-    margin: 0
+    margin: 0,
   },
   content: {
     display: "grid",
-    gap: "1rem"
-  }
+    gap: "1rem",
+  },
 });
 
 export function ContextRail({
   children,
   description,
-  label
+  label,
 }: PropsWithChildren<{
   description?: ReactNode;
   label: string;

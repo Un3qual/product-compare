@@ -23,7 +23,7 @@ import {
   buildCatalogBrowsePaginationData,
   catalogBrowseNextPagePath,
 } from "../../../src/routes/catalog/paths";
-import { chooseSelectOption, openSelect } from "../../helpers/radix-select";
+import { chooseSelectOption, openSelect } from "../../helpers/base-select";
 
 const {
   fetchRouteQueryMock,
@@ -484,7 +484,10 @@ test("route-selected disabled use cases remain enabled and submitted", () => {
 
   expect(gamingFilter).toBeChecked();
   expect(gamingFilter).toBeEnabled();
-  expect(gamingFilter).toHaveAttribute("id", "catalog-use-case-use-gaming");
+  expect(form.querySelector("#catalog-use-case-use-gaming")).toHaveAttribute(
+    "name",
+    "useCaseTaxonId",
+  );
   expect(new FormData(form).getAll("useCaseTaxonId")).toEqual(["use-gaming"]);
 });
 
@@ -1395,7 +1398,7 @@ test("renders metadata-backed catalog filter controls", () => {
   ).not.toBeChecked();
   expect(
     within(filterForm).getByRole("checkbox", { name: "Include subcategories" }),
-  ).toBeDisabled();
+  ).toHaveAttribute("aria-disabled", "true");
   expect(within(filterForm).getByRole("checkbox", { name: "Gaming (4)" })).not.toBeChecked();
   expect(within(filterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
   expect(within(filterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");
@@ -1956,7 +1959,7 @@ test("clears the descendant filter from submitted data when the product type is 
 
   expect(productTypeSelect).toHaveValue("");
   expect(includeDescendantsCheckbox).not.toBeChecked();
-  expect(includeDescendantsCheckbox).toBeDisabled();
+  expect(includeDescendantsCheckbox).toHaveAttribute("aria-disabled", "true");
   expect(new FormData(filterForm).get("includeTypeDescendants")).toBeNull();
 });
 
@@ -1991,7 +1994,7 @@ test("selects descendants by default when choosing a product type", () => {
 
   expect(productTypeSelect).toHaveValue("");
   expect(includeDescendantsCheckbox).not.toBeChecked();
-  expect(includeDescendantsCheckbox).toBeDisabled();
+  expect(includeDescendantsCheckbox).toHaveAttribute("aria-disabled", "true");
 
   chooseSelectOption(productTypeSelect, "Laptops (6)");
 
@@ -2137,7 +2140,7 @@ test("refreshes filter controls when loader filters clear on the same browse rou
   ).not.toBeChecked();
   expect(
     within(clearedFilterForm).getByRole("checkbox", { name: "Include subcategories" }),
-  ).toBeDisabled();
+  ).toHaveAttribute("aria-disabled", "true");
   expect(within(clearedFilterForm).getByRole("checkbox", { name: "Gaming (4)" })).not.toBeChecked();
   expect(within(clearedFilterForm).getByLabelText("Refresh Rate minimum")).toHaveValue("");
   expect(within(clearedFilterForm).getByLabelText("Refresh Rate maximum")).toHaveValue("");

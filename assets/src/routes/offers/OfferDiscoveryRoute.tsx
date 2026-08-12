@@ -129,11 +129,7 @@ function OfferDiscoveryPanel({
 function MissingProductState() {
   return (
     <FeedbackState
-      action={
-        <Button asChild variant="solid">
-          <Link to="/products">Browse products</Link>
-        </Button>
-      }
+      action={<Button render={<Link to="/products" />}>Browse products</Button>}
       description="Choose a product to review its current merchant offers."
       kind="empty"
       title="Start from browse products to choose a product."

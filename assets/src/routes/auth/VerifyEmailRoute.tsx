@@ -8,13 +8,13 @@ import {
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
-  transportMutationErrors
+  transportMutationErrors,
 } from "./errors";
 import { AuthFormShell } from "./AuthFormShell";
 import {
   buildVerifyEmailRequestData,
   VERIFY_EMAIL_MISSING_TOKEN_ERROR,
-  VERIFY_EMAIL_SUCCESS_MESSAGE
+  VERIFY_EMAIL_SUCCESS_MESSAGE,
 } from "./verify-email-data";
 
 const verifyEmailMutation = graphql`
@@ -62,7 +62,7 @@ export function VerifyEmailRoute() {
         setErrors([]);
 
         const result = await verifyEmailOnce(token, (config) =>
-          commitVerifyEmailRef.current(config)
+          commitVerifyEmailRef.current(config),
         );
 
         if (cancelled) {
@@ -99,16 +99,12 @@ export function VerifyEmailRoute() {
       errors={errors}
       footerLinks={[
         { label: "Sign in", to: "/auth/login" },
-        { label: "Create account", to: "/auth/register" }
+        { label: "Create account", to: "/auth/register" },
       ]}
       successMessage={message}
       title="Verify your email"
     >
-      <p>
-        {isLoading
-          ? "Checking your verification link…"
-          : "Verification status is ready."}
-      </p>
+      <p>{isLoading ? "Checking your verification link…" : "Verification status is ready."}</p>
     </AuthFormShell>
   );
 }
@@ -128,10 +124,10 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
   // requests keeps StrictMode re-mounts from burning the token twice in dev,
   // but any failed outcome must be evicted so later mounts can retry.
   const request = commitRouteMutationPromise(commitVerifyEmail, {
-    variables: { token }
+    variables: { token },
   })
     .then(({ response, graphQLErrors }) =>
-      resolveActionMutationResult(response?.verifyEmail, graphQLErrors)
+      resolveActionMutationResult(response?.verifyEmail, graphQLErrors),
     )
     .then((result) => {
       if (!isSuccessfulActionResult(result)) {

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Owner: current Codex managed worktree `d6fa`
 - Priority: P0 user-directed foundation replacement
 - Plan: `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
@@ -77,3 +77,22 @@ behavior and do not retain a permanent Radix fallback or bundle-order mapping.
   the prototype. The approved design replaces bundle-local ordinal mapping
   with direct deterministic encoding and performs one complete component
   cutover.
+- 2026-08-11: Replaced the prototype with a production-only Vite plugin under
+  `assets/plugins/`, direct base-36 to base-62 encoding, collision checks, and
+  client/SSR verification. The project prefix is alphanumeric so StyleX
+  runtime constants resolve correctly; constant registrations remain intact
+  while atomic classes are shortened.
+- 2026-08-11: Replaced Radix with Base UI 1.7.0 and locally adapted
+  shadcn-cssinjs primitives, removed the compatibility wrappers and Radix
+  dependencies, preserved the ProductCompare palette and responsive
+  information architecture, and accepted reviewed desktop, tablet, and mobile
+  visual baselines.
+- 2026-08-11: Converted Attribution Ledger, Decision Summary, and Specification
+  Matrix to TanStack Table 9.1.2 without introducing a generic table wrapper.
+- 2026-08-11: Final frontend verification passed 115 Vitest files and 1,532
+  tests, Relay validation, typecheck, lint, formatting, client/SSR builds,
+  StyleX constant/mangling checks, and the 215,004-byte gzip initial bundle
+  contract. All 19 Playwright tests passed, including accessibility, focus,
+  reduced-motion, responsive geometry, and reviewed visual coverage.
+- 2026-08-11: Repository closeout passed `mix work_queue.validate` with four
+  ready rows, backend formatting, 1,482 backend tests, and `git diff --check`.

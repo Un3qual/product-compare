@@ -683,17 +683,11 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
 
-  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Specifications" }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Specifications" }));
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
 
-  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Offers" }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Offers" }));
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
@@ -2254,10 +2248,7 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
 
 function openProductDetailTab(name: "Offers" | "Reviews & Q&A" | "Specifications") {
   const tabList = screen.getByRole("tablist", { name: "Product details" });
-  fireEvent.mouseDown(within(tabList).getByRole("tab", { name }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(tabList).getByRole("tab", { name }));
 }
 
 function LocationProbe() {

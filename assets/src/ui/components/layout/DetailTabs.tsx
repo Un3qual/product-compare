@@ -1,6 +1,6 @@
-import { Tabs } from "@radix-ui/themes";
 import type { ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../primitives/Tabs";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
@@ -18,7 +18,7 @@ const styles = create({
     color: {
       default: tokens.textSecondary,
       ":hover": tokens.actionAccentHover,
-      ":where([data-state='active'])": tokens.actionAccent,
+      ":where([data-active])": tokens.actionAccent,
     },
     fontWeight: 700,
     minHeight: tokens.controlHeight,
@@ -50,21 +50,20 @@ export function DetailTabs({
   value?: string;
 }) {
   return (
-    <Tabs.Root
+    <Tabs
       defaultValue={defaultValue ?? items[0]?.value}
       onValueChange={onValueChange}
       value={value}
       {...props(styles.root)}
     >
-      <Tabs.List
+      <TabsList
         aria-label={label}
-        color="indigo"
         data-slot="detail-tabs-list"
-        highContrast
+        variant="line"
         {...props(styles.list)}
       >
         {items.map((item) => (
-          <Tabs.Trigger
+          <TabsTrigger
             aria-label={item.label}
             data-slot="detail-tab"
             key={item.value}
@@ -72,14 +71,14 @@ export function DetailTabs({
             {...props(styles.trigger)}
           >
             {item.label}
-          </Tabs.Trigger>
+          </TabsTrigger>
         ))}
-      </Tabs.List>
+      </TabsList>
       {items.map((item) => (
-        <Tabs.Content key={item.value} value={item.value} {...props(styles.content)}>
+        <TabsContent key={item.value} value={item.value} {...props(styles.content)}>
           {item.content}
-        </Tabs.Content>
+        </TabsContent>
       ))}
-    </Tabs.Root>
+    </Tabs>
   );
 }

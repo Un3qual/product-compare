@@ -8,7 +8,7 @@ import { ProductLedger } from "../../src/ui/components/products/ProductLedger";
 import { RootPrimaryNavigation } from "../../src/routes/RootDestinations";
 import { AppShell } from "../../src/ui/components/layout/AppShell";
 import { Button } from "../../src/ui/primitives/Button";
-import { TextField } from "../../src/ui/primitives/TextField";
+import { Input } from "../../src/ui/primitives/Input";
 
 const themeCss = readFileSync("src/ui/theme/theme.css", "utf8");
 
@@ -26,24 +26,41 @@ function expectVisibleFocusRule(style: HTMLStyleElement, element: HTMLElement) {
   const selector = `[data-slot="${slot}"]:focus-visible`;
   const rule = Array.from(style.sheet?.cssRules ?? []).find(
     (candidate): candidate is CSSStyleRule =>
-      candidate instanceof CSSStyleRule && candidate.selectorText.includes(selector),
+      candidate instanceof CSSStyleRule &&
+      (candidate.selectorText.includes(selector) || candidate.selectorText === ":focus-visible"),
   );
 
   expect(rule).toBeDefined();
   expect(rule?.style.outline).toBe("2px solid var(--pc-brand-500)");
 }
 
+function expectTouchTargetRule(style: HTMLStyleElement, element: HTMLElement) {
+  const slot = element.dataset.slot;
+  expect(slot).toBeDefined();
+
+  const selector = `[data-slot="${slot}"]`;
+  const rule = Array.from(style.sheet?.cssRules ?? []).find(
+    (candidate): candidate is CSSStyleRule =>
+      candidate instanceof CSSStyleRule && candidate.selectorText.includes(selector),
+  );
+
+  expect(rule?.style.getPropertyValue("min-height")).toBe("var(--pc-control-height)");
+  expect(
+    getComputedStyle(document.documentElement).getPropertyValue("--pc-control-height").trim(),
+  ).toBe("2.75rem");
+}
+
 test("production theme exposes the approved palette and typography to rendered pages", () => {
   const style = installProductionTheme();
   const theme = getComputedStyle(document.documentElement);
 
-  expect(theme.getPropertyValue("--pc-surface-canvas").trim()).toBe("#F4F1E9");
-  expect(theme.getPropertyValue("--pc-surface-raised").trim()).toBe("#FFFCF7");
-  expect(theme.getPropertyValue("--pc-surface-muted").trim()).toBe("#ECE7DC");
-  expect(theme.getPropertyValue("--pc-action-accent").trim()).toBe("#2F62D7");
-  expect(theme.getPropertyValue("--pc-text-secondary").trim()).toBe("#625D54");
-  expect(theme.getPropertyValue("--pc-freshness-soft").trim()).toBe("#E8F4ED");
-  expect(theme.getPropertyValue("--pc-freshness-green").trim()).toBe("#1F6B49");
+  expect(theme.getPropertyValue("--pc-surface-canvas").trim()).toBe("#f4f1e9");
+  expect(theme.getPropertyValue("--pc-surface-raised").trim()).toBe("#fffcf7");
+  expect(theme.getPropertyValue("--pc-surface-muted").trim()).toBe("#ece7dc");
+  expect(theme.getPropertyValue("--pc-action-accent").trim()).toBe("#2f62d7");
+  expect(theme.getPropertyValue("--pc-text-secondary").trim()).toBe("#625d54");
+  expect(theme.getPropertyValue("--pc-freshness-soft").trim()).toBe("#e8f4ed");
+  expect(theme.getPropertyValue("--pc-freshness-green").trim()).toBe("#1f6b49");
   expect(theme.getPropertyValue("--pc-price-positive").trim()).toBe("var(--pc-freshness-green)");
   expect(theme.getPropertyValue("--pc-font-sans")).toContain("Instrument Sans Variable");
   expect(theme.getPropertyValue("--pc-font-mono")).toContain("IBM Plex Mono");
@@ -73,7 +90,7 @@ test("representative controls receive the production visible-focus and 44px touc
   render(
     <>
       <Button>Open comparison</Button>
-      <TextField aria-label="Search products" />
+      <Input aria-label="Search products" />
     </>,
   );
 
@@ -88,10 +105,8 @@ test("representative controls receive the production visible-focus and 44px touc
   expect(search).toHaveFocus();
   expectVisibleFocusRule(style, search);
 
-  expect(button).toHaveStyle({ minHeight: "44px" });
-  const searchTouchTarget = search.closest(".rt-TextFieldRoot");
-  expect(searchTouchTarget).not.toBeNull();
-  expect(searchTouchTarget).toHaveStyle({ minHeight: "44px" });
+  expectTouchTargetRule(style, button);
+  expectTouchTargetRule(style, search);
 
   style.remove();
 });
@@ -171,11 +186,11 @@ test("product ledger keeps all product facts in one semantic list with a disclos
     "data-slot",
     "product-ledger-freshness",
   );
-  expect(mobileDisclosure).toHaveAttribute("data-slot", "button");
-  expect(mobileDisclosure).toHaveAttribute("data-variant", "soft");
-  expect(mobileDisclosure).toHaveStyle({
-    minHeight: "44px",
-  });
+  expect(mobileDisclosure).toHaveAttribute("data-slot", "collapsible-trigger");
+  expect(mobileDisclosure).toHaveAttribute("data-variant", "secondary");
+  const style = installProductionTheme();
+  expectTouchTargetRule(style, mobileDisclosure);
+  style.remove();
 });
 
 test("compare mark preserves the product identity without ornamental imagery", () => {

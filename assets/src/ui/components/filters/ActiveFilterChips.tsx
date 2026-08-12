@@ -9,7 +9,7 @@ const styles = create({
     gap: "0.5rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   item: {
     alignItems: "center",
@@ -19,12 +19,12 @@ const styles = create({
     fontSize: "0.82rem",
     gap: "0.4rem",
     paddingBlock: "0.25rem",
-    paddingInline: "0.65rem"
+    paddingInline: "0.65rem",
   },
   label: {
     color: tokens.textSecondary,
-    fontWeight: 650
-  }
+    fontWeight: 650,
+  },
 });
 
 export type ActiveFilterChip = {

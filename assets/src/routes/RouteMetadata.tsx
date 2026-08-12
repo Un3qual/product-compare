@@ -1,13 +1,7 @@
 import { useMatches } from "react-router-dom";
-import {
-  projectRouteMetadataTagPolicy,
-  resolveRouteDocumentMetadata
-} from "./route-metadata-data";
+import { projectRouteMetadataTagPolicy, resolveRouteDocumentMetadata } from "./route-metadata-data";
 
-export type {
-  RouteDocumentMetadata,
-  RouteMetadataHandle
-} from "./route-metadata-data";
+export type { RouteDocumentMetadata, RouteMetadataHandle } from "./route-metadata-data";
 
 export function RouteMetadata() {
   const matches = useMatches();
