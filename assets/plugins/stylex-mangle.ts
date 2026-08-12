@@ -1,6 +1,6 @@
 import type { Plugin, ResolvedConfig, Rollup } from "vite";
 import {
-  findStylexClassNames,
+  findStylexClassNamesInRules,
   mangleStylexClassName,
   rewriteStylexClassNames,
 } from "./stylex-class-name.ts";
@@ -45,13 +45,12 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
   }
 
   function remember(source: string): void {
-    for (const original of findStylexClassNames(source, classNamePrefix)) {
+    for (const original of findStylexClassNamesInRules(source, classNamePrefix)) {
       rememberClassName(original);
     }
   }
 
   function rewrite(source: string): string {
-    remember(source);
     return rewriteStylexClassNames(source, classNamePrefix, classNames).code;
   }
 
@@ -59,17 +58,12 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
     const originals = new Set<string>();
 
     for (const output of Object.values(bundle)) {
-      const source =
-        output.type === "chunk"
-          ? output.code
-          : isTextAsset(output.fileName)
-            ? assetSourceToString(output.source)
-            : null;
+      if (output.type !== "chunk") {
+        continue;
+      }
 
-      if (source !== null) {
-        for (const original of findStylexClassNames(source, classNamePrefix)) {
-          originals.add(original);
-        }
+      for (const original of findStylexClassNamesInRules(output.code, classNamePrefix)) {
+        originals.add(original);
       }
     }
 
@@ -83,12 +77,11 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
       }
 
       const source = assetSourceToString(output.source);
-      const originalNames = findStylexClassNames(source, classNamePrefix);
 
       for (const className of authoredCssClasses(source)) {
         const original = generatedNames.get(className);
 
-        if (original !== undefined && !originalNames.has(className)) {
+        if (original !== undefined) {
           this.error(collisionMessage(className, original));
         }
       }

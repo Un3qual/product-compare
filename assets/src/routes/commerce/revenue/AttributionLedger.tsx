@@ -1,6 +1,11 @@
 import { create, props } from "@stylexjs/stylex";
 import { useMemo, useState } from "react";
-import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import {
+  createColumnHelper,
+  tableFeatures,
+  useTable,
+  type Row as TanStackRow,
+} from "@tanstack/react-table";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
 import type {
   AttributionLedger_connection$data,
@@ -104,27 +109,22 @@ const columns = columnHelper.columns([
   columnHelper.display({
     id: "click",
     header: "Click",
-    cell: ({ row }) => <AttributionLedgerCell click={row.original} column="click" />,
   }),
   columnHelper.display({
     id: "identity",
     header: "Identity",
-    cell: ({ row }) => <AttributionLedgerCell click={row.original} column="identity" />,
   }),
   columnHelper.display({
     id: "diagnostics",
     header: "Request diagnostics",
-    cell: ({ row }) => <AttributionLedgerCell click={row.original} column="diagnostics" />,
   }),
   columnHelper.display({
     id: "commerce",
     header: "Commerce",
-    cell: ({ row }) => <AttributionLedgerCell click={row.original} column="commerce" />,
   }),
   columnHelper.display({
     id: "conversions",
     header: "Matched conversions",
-    cell: ({ row }) => <AttributionLedgerCell click={row.original} column="conversions" />,
   }),
 ]);
 
@@ -180,13 +180,7 @@ export function AttributionLedger({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} style={styles.row}>
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id} style={styles.cell}>
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </TableRow>
+              <AttributionLedgerRow key={row.id} row={row} />
             ))}
           </TableBody>
         </Table>
@@ -232,15 +226,32 @@ function AttributionPaginationControl({
 
 type AttributionClick = AttributionLedger_row$data;
 
-function AttributionLedgerCell({
-  click: fragmentRef,
-  column,
+function AttributionLedgerRow({
+  row,
 }: {
-  click: AttributionLedger_row$key;
-  column: AttributionColumn;
+  row: TanStackRow<typeof tableModel, AttributionClickRef>;
 }) {
+  const fragmentRef: AttributionLedger_row$key = row.original;
   const click = useFragment(attributionLedgerRowFragment, fragmentRef);
 
+  return (
+    <TableRow style={styles.row}>
+      {row.getAllCells().map((cell) => (
+        <TableCell key={cell.id} style={styles.cell}>
+          <AttributionLedgerCell click={click} column={cell.column.id as AttributionColumn} />
+        </TableCell>
+      ))}
+    </TableRow>
+  );
+}
+
+function AttributionLedgerCell({
+  click,
+  column,
+}: {
+  click: AttributionClick;
+  column: AttributionColumn;
+}) {
   switch (column) {
     case "click":
       return <AttributionClickDetails click={click} />;

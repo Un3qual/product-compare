@@ -294,6 +294,7 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();
+  expect(mockedUseFragment).toHaveBeenCalledTimes(1);
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 

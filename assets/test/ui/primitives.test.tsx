@@ -98,8 +98,9 @@ test("Button exposes the shadcn destructive variant", () => {
 test("Button composes caller StyleX rules after its variant styles", () => {
   render(<Button style={callerStyles.button}>Styled by caller</Button>);
 
-  expect(getComputedStyle(screen.getByRole("button", { name: "Styled by caller" })).backgroundColor)
-    .toBe("rgb(12, 34, 56)");
+  expect(
+    getComputedStyle(screen.getByRole("button", { name: "Styled by caller" })).backgroundColor,
+  ).toBe("rgb(12, 34, 56)");
 });
 
 test("Input renders a named search input", () => {
@@ -178,6 +179,45 @@ test("Select exposes its value and updates its form value through accessible opt
   const form = screen.getByRole("form", { name: "Select contract" }) as HTMLFormElement;
   expect(select).toHaveTextContent("Name");
   expect(new FormData(form).get("sort")).toBe("name_asc");
+});
+
+test("uncontrolled Select preserves its visible and form value when a change is canceled", () => {
+  const options = [
+    { label: "Price", value: "price_asc" },
+    { label: "Name", value: "name_asc" },
+  ];
+
+  render(
+    <AppProviders>
+      <form aria-label="Cancelable select">
+        <Select
+          defaultValue="price_asc"
+          items={options}
+          name="sort"
+          onValueChange={(_value, eventDetails) => eventDetails.cancel()}
+        >
+          <SelectTrigger aria-label="Sort">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </form>
+    </AppProviders>,
+  );
+
+  const form = screen.getByRole("form", { name: "Cancelable select" }) as HTMLFormElement;
+  const select = screen.getByRole("combobox", { name: "Sort" });
+
+  chooseSelectOption(select, "Name");
+
+  expect(select).toHaveTextContent("Price");
+  expect(new FormData(form).get("sort")).toBe("price_asc");
 });
 
 test("uncontrolled Select restores its default label and form value on native form reset", () => {

@@ -39,19 +39,35 @@ function rewriteBundle(source: string): string {
 }
 
 test("generated classes follow the a-to-z then aa sequence", () => {
-  const originals = "123456789abcdefghijklmnopqrs"
-    .split("")
-    .map((hash) => `${PREFIX}${hash}`)
-    .join(" ");
+  const originals = "123456789abcdefghijklmnopqrs".split("").map((hash) => `${PREFIX}${hash}`);
+  const source = [
+    ...originals.map((className) => `inject({ ltr: ".${className}{color:red}" });`),
+    `const classes = "${originals.join(" ")}";`,
+  ].join("\n");
+  const lastLine = rewriteBundle(source).split("\n").at(-1);
 
-  expect(rewriteBundle(`const classes = "${originals}";`)).toBe(
+  expect(lastLine).toBe(
     'const classes = "a b c d e f g h i j k l m n o p q r s t u v w x y z aa ab";',
   );
 });
 
 test("build mappings stay stable when bundle encounter order differs", () => {
-  expect(rewriteBundle(`const classes = "${PREFIX}z ${PREFIX}1";`)).toBe('const classes = "b a";');
-  expect(rewriteBundle(`const classes = "${PREFIX}1 ${PREFIX}z";`)).toBe('const classes = "a b";');
+  const source = (classNames: string[]) =>
+    [
+      ...classNames.map((className) => `inject({ ltr: ".${className}{color:red}" });`),
+      `const classes = "${classNames.join(" ")}";`,
+    ].join("\n");
+
+  expect(
+    rewriteBundle(source([`${PREFIX}z`, `${PREFIX}1`]))
+      .split("\n")
+      .at(-1),
+  ).toBe('const classes = "b a";');
+  expect(
+    rewriteBundle(source([`${PREFIX}1`, `${PREFIX}z`]))
+      .split("\n")
+      .at(-1),
+  ).toBe('const classes = "a b";');
 });
 
 test("the project prefix is compatible with StyleX runtime constants", () => {
@@ -67,6 +83,54 @@ test("the same StyleX class keeps its first assigned short name", () => {
   expect(mangleStylexClassName(className, PREFIX, classNames)).toBe("a");
 });
 
+test("bundle rewriting leaves prefix-shaped application data unchanged", () => {
+  const atomic = `${PREFIX}1`;
+  const productId = `${PREFIX}123`;
+  const source = [
+    `inject({ ltr: ".${atomic}{color:red}" });`,
+    `const className = "${atomic}";`,
+    `const productId = "${productId}";`,
+  ].join("\n");
+
+  expect(rewriteBundle(source)).toBe(
+    [
+      'inject({ ltr: ".a{color:red}" });',
+      'const className = "a";',
+      `const productId = "${productId}";`,
+    ].join("\n"),
+  );
+});
+
+test("bundle rewriting leaves prefix-shaped authored CSS unchanged", () => {
+  const authoredClass = `${PREFIX}123`;
+  const plugin = stylexMangle({ classNamePrefix: PREFIX });
+  const bundle = {
+    "index.css": {
+      fileName: "index.css",
+      name: "index.css",
+      source: `.${authoredClass}{color:red}`,
+      type: "asset" as const,
+    },
+  };
+  const handler =
+    typeof plugin.generateBundle === "object"
+      ? plugin.generateBundle.handler
+      : plugin.generateBundle;
+
+  handler!.call(
+    {
+      error(message: string | { message: string }) {
+        throw new Error(typeof message === "string" ? message : message.message);
+      },
+    } as never,
+    {} as never,
+    bundle as never,
+    false,
+  );
+
+  expect(bundle["index.css"].source).toBe(`.${authoredClass}{color:red}`);
+});
+
 test("mangling is injective for canonical StyleX base-36 hashes", () => {
   const classNames = new Map<string, string>();
   const originals = ["0", "1", "z", "10", "zz", "100", "1dmbf1k"].map((hash) => `${PREFIX}${hash}`);
@@ -78,6 +142,7 @@ test("mangling is injective for canonical StyleX base-36 hashes", () => {
 test("rewriting changes only atomic classes and leaves constants, variables, and keyframes intact", () => {
   const atomic = `${PREFIX}1dmbf1k`;
   const source = [
+    `inject({ ltr: ".${atomic}{color:red}" });`,
     `const className = "${atomic}";`,
     `register({ constKey: "${atomic}", constVal: "red" });`,
     `register({constKey:\`${atomic}\`,constVal:"blue"});`,
@@ -85,10 +150,13 @@ test("rewriting changes only atomic classes and leaves constants, variables, and
     `const keyframes = "${atomic}-B";`,
     `const embedded = "before${atomic}";`,
   ].join("\n");
+  const classNames = new Map<string, string>();
+  mangleStylexClassName(atomic, PREFIX, classNames);
 
-  expect(rewriteStylexClassNames(source, PREFIX, new Map())).toEqual({
+  expect(rewriteStylexClassNames(source, PREFIX, classNames)).toEqual({
     changed: true,
     code: [
+      'inject({ ltr: ".a{color:red}" });',
       `const className = "a";`,
       `register({ constKey: "${atomic}", constVal: "red" });`,
       `register({constKey:\`${atomic}\`,constVal:"blue"});`,
@@ -120,6 +188,11 @@ test("the Vite plugin fails closed when its output namespace collides with autho
   const original = `${PREFIX}1`;
   const plugin = stylexMangle({ classNamePrefix: PREFIX });
   const bundle = {
+    "entry.js": {
+      code: `inject({ ltr: ".${original}{color:red}" });`,
+      fileName: "entry.js",
+      type: "chunk" as const,
+    },
     "index.css": {
       fileName: "index.css",
       name: "index.css",

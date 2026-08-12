@@ -147,11 +147,11 @@ export function Select<Value, Multiple extends boolean | undefined = false>(
     [inputRef],
   );
   const handleValueChange: ChangeHandler = (nextValue, eventDetails) => {
-    if (!controlled) {
+    onValueChange?.(nextValue, eventDetails);
+
+    if (!controlled && !eventDetails.isCanceled) {
       setUncontrolledValue(nextValue as RootValue);
     }
-
-    onValueChange?.(nextValue, eventDetails);
   };
 
   useEffect(() => {
@@ -208,9 +208,7 @@ export function SelectTrigger({
   children,
   style,
   ...triggerProps
-}: StyleXPrimitiveProps<
-  Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "render">
->) {
+}: StyleXPrimitiveProps<Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "render">>) {
   return (
     <SelectPrimitive.Trigger
       {...stylex.props(styles.trigger, style)}

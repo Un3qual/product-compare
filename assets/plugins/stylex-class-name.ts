@@ -19,6 +19,12 @@ function atomicClassPattern(classNamePrefix: string): RegExp {
   );
 }
 
+function atomicClassSelectorPattern(classNamePrefix: string): RegExp {
+  const prefix = escapeRegularExpression(classNamePrefix);
+
+  return new RegExp(`\\.(${prefix}(?:0|[1-9a-z][0-9a-z]*))(?![${CSS_IDENTIFIER_CHARACTER}])`, "g");
+}
+
 const mangledClassSelectorPattern = /\.([a-z]+)(?=[{:[.#])/g;
 const stylexRulePattern = /\b(?:ltr|rtl)\s*:\s*(?:`([^`]*)`|"((?:\\.|[^"\\])*)")/g;
 
@@ -84,6 +90,22 @@ export function findStylexClassNames(source: string, classNamePrefix: string): S
   return classNames;
 }
 
+export function findStylexClassNamesInRules(source: string, classNamePrefix: string): Set<string> {
+  const classNames = new Set<string>();
+
+  if (!classNamePrefix) {
+    return classNames;
+  }
+
+  for (const rule of findStylexRules(source)) {
+    for (const match of rule.matchAll(atomicClassSelectorPattern(classNamePrefix))) {
+      classNames.add(match[1]!);
+    }
+  }
+
+  return classNames;
+}
+
 export function findStylexRules(source: string): Set<string> {
   const rules = new Set<string>();
 
@@ -115,6 +137,10 @@ export function rewriteStylexClassNames(
     return { changed: false, code: source };
   }
 
+  if (classNames.size === 0) {
+    return { changed: false, code: source };
+  }
+
   let changed = false;
   const code = source.replace(
     atomicClassPattern(classNamePrefix),
@@ -125,9 +151,9 @@ export function rewriteStylexClassNames(
         return match;
       }
 
-      const mangled = mangleStylexClassName(className, classNamePrefix, classNames);
+      const mangled = classNames.get(className);
 
-      if (mangled === null) {
+      if (mangled === undefined) {
         return match;
       }
 
