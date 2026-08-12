@@ -146,15 +146,14 @@
   ```
 
   Use set-based joins/window aggregates and deterministic id tie-breakers. Keep orchestration out of the facades and do not create a `Dashboard` module.
-  Derive activity identity exactly as a tagged value so numeric user and
-  anonymous ids cannot collide:
+  Derive activity identity from the typed actor foreign keys. The same-row
+  constraint makes every identified click either `(user_id, NULL)` or
+  `(NULL, anonymous_visitor_id)`, so the composite row preserves actor kind
+  without string tags or casts:
 
   ```sql
-  CASE
-    WHEN user_id IS NOT NULL THEN 'u:' || user_id::text
-    WHEN anonymous_id IS NOT NULL THEN 'a:' || anonymous_id::text
-    ELSE NULL
-  END
+  count(DISTINCT ROW(user_id, anonymous_visitor_id))
+    FILTER (WHERE user_id IS NOT NULL OR anonymous_visitor_id IS NOT NULL)
   ```
 
   Define a new offer's start as `least(merchant_products.inserted_at,
