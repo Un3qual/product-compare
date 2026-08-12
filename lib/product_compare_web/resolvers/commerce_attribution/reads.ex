@@ -165,7 +165,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Reads do
       affiliate_network_name: network && network.name,
       affiliate_program_code: program && program.program_code,
       affiliate_program_id: global_id(:affiliate_program, program),
-      anonymous_id: click.anonymous_id,
+      anonymous_visitor: not is_nil(click.anonymous_visitor_id),
       click_id: click.click_id,
       inserted_at: click.inserted_at,
       ip_address: format_ip(click.ip_address),

@@ -26,6 +26,8 @@ defmodule ProductCompareWeb.Plugs.PutAbsintheContext do
 
     base_context =
       Map.merge(auth_context, %{
+        anonymous_visitor_entropy_id: conn.assigns[:anonymous_visitor_entropy_id],
+        graphql_observed_at: DateTime.utc_now(),
         session_user_token: get_session(conn, :user_token),
         trusted_request_origin?: RequireSameOrigin.trusted_request_origin?(conn),
         request_diagnostics: RequestDiagnostics.from_conn(conn)

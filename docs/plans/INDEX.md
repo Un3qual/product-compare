@@ -18,10 +18,37 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-04-credential-artifact-storage-constraints-design.md`
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
 - `docs/superpowers/specs/2026-08-09-database-constraint-application-parity-design.md`
+- `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved homepage query-scaling outcome is complete through:
+
+- `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
+
+It keeps raw history authoritative and exact while centralizing current-offer
+availability, removing unused history work and the normal signed-in viewer
+double ranking, and covering arbitrary activity windows without a new pricing
+module or range-specific table.
+
+The approved Production UI Redesign is planned as five independently
+reviewable outcomes:
+
+- `docs/superpowers/plans/2026-08-10-production-ui-system-home-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-compare-return-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-account-setup-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-10-production-ui-operations-implementation-plan.md`
+
+The shared System Spine And Home outcome is complete. Its tokens, layout,
+navigation, primitives, homepage contracts, and production verification harness
+are stable. Discover And Evaluate, Compare And Return, Account And Setup, and
+Operations are now the four `ready` rows in the live dispatch queue; their route,
+test, browser, and lane paths are disjoint. The durable product and
+feature-parity contract is
+`docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
 
 The most recently completed consolidated implementation plan is:
 

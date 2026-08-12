@@ -1,8 +1,8 @@
 import { useId } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "../../ui/primitives/Button";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildCompareSelectionTrayViewData,
   type CompareSelectionTrayItem,

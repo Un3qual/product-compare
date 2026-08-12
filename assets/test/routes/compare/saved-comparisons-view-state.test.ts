@@ -1,13 +1,11 @@
 import { describe, expect, test, vi } from "vitest";
 import {
   buildSavedComparisonsViewState,
+  type SavedComparisonSetSummary,
+  type SavedComparisonsViewInput,
   savedComparisonSortModeFromValue,
   type SavedComparisonSortMode,
 } from "../../../src/routes/compare/saved-view-state";
-import type {
-  SavedComparisonSetSummary,
-  SavedComparisonsRouteLoaderData,
-} from "../../../src/routes/compare/saved-data";
 
 const savedSets: SavedComparisonSetSummary[] = [
   {
@@ -34,12 +32,9 @@ const savedSets: SavedComparisonSetSummary[] = [
   },
 ];
 
-function readyLoaderData(
-  sets: SavedComparisonSetSummary[] = savedSets,
-): SavedComparisonsRouteLoaderData {
+function readyLoaderData(sets: SavedComparisonSetSummary[] = savedSets): SavedComparisonsViewInput {
   return {
     status: sets.length === 0 ? "empty" : "ready",
-    savedSetQueries: [],
     savedSets: sets,
   };
 }
@@ -50,7 +45,7 @@ function savedSetIds(viewState: ReturnType<typeof buildSavedComparisonsViewState
 
 test("returns the sign-in status before local deletion or filter state", () => {
   const viewState = buildSavedComparisonsViewState(
-    { status: "unauthorized", savedSetQueries: [], savedSets: [] },
+    { status: "unauthorized", savedSets: [] },
     new Set(["saved-set-1"]),
     "desk",
     "name-asc",

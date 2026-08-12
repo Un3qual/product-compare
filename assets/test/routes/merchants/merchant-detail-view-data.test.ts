@@ -22,13 +22,13 @@ test("derives merchant coverage rows and observed freshness copy in the rendered
   expect(data.summaryItems).toEqual([
     { label: "Active offers", value: 8 },
     { label: "Products", value: 5 },
-    { label: "Eligible landed prices", value: 3 },
-    { label: "Fresh observations", value: 2 },
+    { label: "Offers with complete prices", value: 3 },
+    { label: "Recently checked offers", value: 2 },
   ]);
   expect(data.observation).toEqual({
-    freshnessCopy: "1 aging, 2 stale, and 3 unobserved active offers.",
+    freshnessCopy: "1 need a refresh, 2 are out of date, and 3 have not been checked.",
     lastObservedAt: "2026-07-14T01:00:00Z",
-    leadCopy: "Latest captured observation",
+    leadCopy: "Prices last checked",
   });
 });
 
@@ -45,9 +45,9 @@ test("keeps the missing-observation fallback while retaining freshness counts", 
   );
 
   expect(data.observation).toEqual({
-    freshnessCopy: "0 aging, 4 stale, and 2 unobserved active offers.",
+    freshnessCopy: "0 need a refresh, 4 are out of date, and 2 have not been checked.",
     lastObservedAt: null,
-    leadCopy: "No offer observations are available yet.",
+    leadCopy: "No offer prices have been checked yet.",
   });
 });
 
@@ -70,10 +70,10 @@ test("treats undefined Relay nullable fields like their null fallbacks", () => {
 
   expect(data.observation).toMatchObject({
     lastObservedAt: null,
-    leadCopy: "No offer observations are available yet.",
+    leadCopy: "No offer prices have been checked yet.",
   });
   expect(data.offerRows).toEqual([
-    { id: "no-product-or-price", product: null, priceCopy: "No price observation yet." },
+    { id: "no-product-or-price", product: null, priceCopy: "No current price available." },
     {
       id: "unknown-shipping",
       product: { name: "Field Camera", path: "/products/field-camera" },
@@ -116,7 +116,7 @@ test("projects available and unavailable offers in source order with exact price
   expect(data.offerRows).toEqual([
     {
       id: "first",
-      priceCopy: "No price observation yet.",
+      priceCopy: "No current price available.",
       product: { name: "Unavailable source product", path: "/products/ignored" },
     },
     {

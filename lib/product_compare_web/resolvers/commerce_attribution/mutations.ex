@@ -17,6 +17,7 @@ defmodule ProductCompareWeb.Resolvers.CommerceAttribution.Mutations do
              |> request_diagnostics()
              |> Map.merge(%{
                merchant_product_id: merchant_product_id,
+               anonymous_visitor_entropy_id: resolution.context[:anonymous_visitor_entropy_id],
                source_surface: :web,
                user_id: current_user_id(resolution)
              })

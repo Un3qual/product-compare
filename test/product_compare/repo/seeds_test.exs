@@ -958,7 +958,9 @@ defmodule ProductCompare.Repo.SeedsTest do
 
     assert Repo.aggregate(
              from(click in CommerceClickSession,
-               where: like(click.anonymous_id, "development-shopper-%")
+               where:
+                 click.user_agent == "synthetic-development-agent" and
+                   not is_nil(click.user_id) and is_nil(click.anonymous_visitor_id)
              ),
              :count,
              :id

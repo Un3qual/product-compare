@@ -8,7 +8,6 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
   schema "commerce_click_sessions" do
     field :entropy_id, Ecto.UUID
     field :click_id, Ecto.UUID
-    field :anonymous_id, :string
     field :source_surface, Ecto.Enum, values: @source_surfaces, default: :web
     field :referrer, :string
     field :user_agent, :string
@@ -17,6 +16,9 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     belongs_to :commerce_link, ProductCompareSchemas.CommerceAttribution.CommerceLink
     belongs_to :merchant_product, ProductCompareSchemas.Pricing.MerchantProduct
     belongs_to :user, ProductCompareSchemas.Accounts.User
+
+    belongs_to :anonymous_visitor,
+               ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
 
     has_many :conversions, ProductCompareSchemas.CommerceAttribution.CommerceConversion,
       foreign_key: :click_session_id
@@ -32,7 +34,7 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
       :commerce_link_id,
       :merchant_product_id,
       :user_id,
-      :anonymous_id,
+      :anonymous_visitor_id,
       :source_surface,
       :referrer,
       :user_agent,
@@ -40,15 +42,29 @@ defmodule ProductCompareSchemas.CommerceAttribution.CommerceClickSession do
     ])
     |> put_generated_click_id()
     |> validate_required([:click_id, :commerce_link_id, :source_surface])
+    |> validate_single_actor()
     |> validate_host_address()
     |> unique_constraint(:click_id)
     |> foreign_key_constraint(:commerce_link_id)
     |> foreign_key_constraint(:merchant_product_id)
     |> foreign_key_constraint(:user_id)
+    |> foreign_key_constraint(:anonymous_visitor_id)
+    |> check_constraint(:anonymous_visitor_id,
+      name: :commerce_click_sessions_single_actor,
+      message: "cannot be set with user_id"
+    )
     |> check_constraint(:ip_address,
       name: :commerce_click_sessions_ip_address_host_check,
       message: "must be a host address"
     )
+  end
+
+  defp validate_single_actor(changeset) do
+    if get_field(changeset, :user_id) && get_field(changeset, :anonymous_visitor_id) do
+      add_error(changeset, :anonymous_visitor_id, "cannot be set with user_id")
+    else
+      changeset
+    end
   end
 
   defp put_generated_click_id(changeset) do

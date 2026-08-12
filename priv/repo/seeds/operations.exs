@@ -260,7 +260,6 @@ defmodule ProductCompare.DevSeeds.Operations do
           commerce_link_id: link.id,
           merchant_product_id: offer.id,
           user_id: accounts.shopper.id,
-          anonymous_id: "development-shopper-#{status}",
           source_surface: :web,
           referrer: "http://localhost:4000/offers",
           user_agent: "synthetic-development-agent",

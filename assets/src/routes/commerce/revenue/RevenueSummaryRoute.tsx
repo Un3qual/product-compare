@@ -1,26 +1,122 @@
 import { Suspense, useEffect, useState } from "react";
-import { Await, useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import attributionLedgerRouteQuery, {
-  type AttributionLedgerRouteQuery,
-} from "../../../__generated__/AttributionLedgerRouteQuery.graphql";
-import revenueSummaryRouteQuery, {
-  type RevenueSummaryRouteQuery,
-} from "../../../__generated__/RevenueSummaryRouteQuery.graphql";
+import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { Environment } from "relay-runtime";
+import type { AttributionLedgerRouteQuery } from "$generated/AttributionLedgerRouteQuery.graphql";
+import type { RevenueSummaryRouteQuery } from "$generated/RevenueSummaryRouteQuery.graphql";
 import {
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
   relayRouteQueryDescriptorIdentity,
   useRoutePreloadedQuery,
-} from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { revenueSummaryLoader, type RevenueSummaryLoaderData } from "./loader";
-import { AttributionLedger } from "./AttributionLedger";
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { recoverRouteLoaderError } from "../../loader-errors";
+import { AttributionLedger, attributionLedgerRouteQuery } from "./AttributionLedger";
 import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";
 import {
   buildRevenueSummaryControls,
   buildRevenueSummaryMetrics,
+  hasInvertedRevenueDateRange,
+  revenueSummaryFiltersFromUrl,
+  ATTRIBUTION_LEDGER_PAGE_SIZE,
+  type RevenueSummaryFilters,
 } from "./revenue-summary-view-data";
+
+const revenueSummaryRouteQuery = graphql`
+  query RevenueSummaryRouteQuery($input: RevenueSummaryInput) {
+    revenueSummary(input: $input) {
+      filters {
+        currency
+        from
+        merchantId
+        network
+        productId
+        to
+      }
+      metrics {
+        averagePaidPrice
+        clicks
+        commissionRevenue
+        conversions
+        currency
+        grossOrderValue
+      }
+    }
+  }
+`;
+
+export type RevenueSummaryLoaderData =
+  | {
+      status: "ready";
+      filters: RevenueSummaryFilters;
+      ledgerQuery:
+        | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
+        | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
+        | null;
+      query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
+    }
+  | { status: "needsCurrency"; filters: RevenueSummaryFilters }
+  | { status: "invalidDateRange"; filters: RevenueSummaryFilters }
+  | { status: "error"; filters: RevenueSummaryFilters };
+
+export async function revenueSummaryLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<RevenueSummaryLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const filters = revenueSummaryFiltersFromUrl(new URL(request.url));
+
+  if (!filters.currency) {
+    return { status: "needsCurrency", filters };
+  }
+
+  if (hasInvertedRevenueDateRange(filters)) {
+    return { status: "invalidDateRange", filters };
+  }
+
+  const summaryQuery = preloadRouteQuery<RevenueSummaryRouteQuery>(
+    environment,
+    revenueSummaryRouteQuery,
+    { input: filters },
+    { signal: request.signal },
+  );
+  const ledgerQuery = preloadAttributionLedger(environment, filters, request.signal).catch(
+    (reason: unknown) =>
+      recoverRouteLoaderError(reason, "Failed to preload attribution ledger route query.", null),
+  );
+
+  try {
+    return {
+      status: "ready",
+      filters,
+      ledgerQuery,
+      query: await summaryQuery,
+    };
+  } catch (reason) {
+    return recoverRouteLoaderError<RevenueSummaryLoaderData>(
+      reason,
+      "Failed to preload revenue summary route query.",
+      { status: "error", filters },
+    );
+  }
+}
+
+function preloadAttributionLedger(
+  environment: Environment,
+  filters: RevenueSummaryFilters,
+  signal: AbortSignal,
+) {
+  return preloadRouteQuery<AttributionLedgerRouteQuery>(
+    environment,
+    attributionLedgerRouteQuery,
+    { input: filters, after: null, first: ATTRIBUTION_LEDGER_PAGE_SIZE },
+    { signal },
+  );
+}
 
 export function RevenueSummaryRoute() {
   const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;

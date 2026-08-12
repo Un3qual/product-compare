@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
 type GraphQLMockResponse = {
@@ -5,7 +6,14 @@ type GraphQLMockResponse = {
 };
 type GraphQLMockResponses = Record<string, GraphQLMockResponse | GraphQLMockResponse[]>;
 
+const unhandledOperationsByPage = new WeakMap<Page, string[]>();
+
+test.afterEach(({ page }) => {
+  expect(unhandledOperationsByPage.get(page) ?? []).toEqual([]);
+});
+
 async function mockGraphQL(page: Page, responses: GraphQLMockResponses) {
+  const unhandledOperations: string[] = [];
   const requests: Array<{
     operationName: string;
     variables: Record<string, unknown>;
@@ -32,6 +40,7 @@ async function mockGraphQL(page: Page, responses: GraphQLMockResponses) {
     const response = nextGraphQLMockResponse(responses, operationName);
 
     if (!response) {
+      unhandledOperations.push(operationName);
       await route.fulfill({
         status: 500,
         body: `Unhandled GraphQL operation: ${operationName}`,
@@ -46,6 +55,7 @@ async function mockGraphQL(page: Page, responses: GraphQLMockResponses) {
     });
   });
 
+  unhandledOperationsByPage.set(page, unhandledOperations);
   return requests;
 }
 
@@ -67,21 +77,52 @@ function extractOperationName(query: string) {
 function rootViewerResponse(viewer: { id: string; email: string } | null = null) {
   return {
     data: {
-      viewer,
+      viewer: viewer ? { ...viewer, isOperator: false } : null,
+    },
+  };
+}
+
+function emptyConnection() {
+  return { edges: [], pageInfo: { endCursor: null, hasNextPage: false } };
+}
+
+function homeRouteResponse() {
+  return {
+    data: {
+      homeWorkspace: {
+        categories: emptyConnection(),
+        products: emptyConnection(),
+        selectedProducts: [],
+      },
+    },
+  };
+}
+
+function homeDealsResponse() {
+  return {
+    data: {
+      homeDeals: {
+        forYou: emptyConnection(),
+        new: emptyConnection(),
+        trending: emptyConnection(),
+      },
     },
   };
 }
 
 test("login redirects to the home route after a successful session mutation", async ({ page }) => {
+  const password = randomUUID();
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    HomeDealsQuery: homeDealsResponse(),
+    HomeRouteQuery: homeRouteResponse(),
+    RootRouteQuery: [
       rootViewerResponse(),
       rootViewerResponse({ id: "1", email: "person@example.com" }),
     ],
-    LoginMutation: {
+    LoginRouteMutation: {
       data: {
         login: {
-          viewer: { id: "1", email: "person@example.com" },
+          viewer: { id: "1", email: "person@example.com", isOperator: false },
           errors: [],
         },
       },
@@ -90,29 +131,27 @@ test("login redirects to the home route after a successful session mutation", as
 
   await page.goto("/auth/login");
   await page.getByLabel("Email").fill("person@example.com");
-  await page.getByLabel("Password").fill("supersecretpass123");
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page).toHaveURL("/");
-  await expect(page.getByRole("heading", { name: "Product Compare" })).toBeVisible();
-  await expect(
-    page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
-      name: "Sign out",
-    }),
-  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Find the right product" })).toBeVisible();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await expect(page.getByRole("link", { name: "Sign out" })).toBeVisible();
   expect(requests).toContainEqual({
-    operationName: "LoginMutation",
+    operationName: "LoginRouteMutation",
     variables: {
       email: "person@example.com",
-      password: "supersecretpass123",
+      password,
     },
   });
 });
 
 test("login renders typed credential errors from the GraphQL payload", async ({ page }) => {
+  const password = randomUUID();
   await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
-    LoginMutation: {
+    RootRouteQuery: rootViewerResponse(),
+    LoginRouteMutation: {
       data: {
         login: {
           viewer: null,
@@ -130,7 +169,7 @@ test("login renders typed credential errors from the GraphQL payload", async ({ 
 
   await page.goto("/auth/login");
   await page.getByLabel("Email").fill("person@example.com");
-  await page.getByLabel("Password").fill("wrong-password");
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();
 
   await expect(page.getByRole("alert")).toContainText("invalid email or password");
@@ -140,15 +179,18 @@ test("login renders typed credential errors from the GraphQL payload", async ({ 
 test("register redirects to the home route after a successful session mutation", async ({
   page,
 }) => {
+  const password = randomUUID();
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    HomeDealsQuery: homeDealsResponse(),
+    HomeRouteQuery: homeRouteResponse(),
+    RootRouteQuery: [
       rootViewerResponse(),
       rootViewerResponse({ id: "2", email: "new@example.com" }),
     ],
-    RegisterMutation: {
+    RegisterRouteMutation: {
       data: {
         register: {
-          viewer: { id: "2", email: "new@example.com" },
+          viewer: { id: "2", email: "new@example.com", isOperator: false },
           errors: [],
         },
       },
@@ -157,28 +199,25 @@ test("register redirects to the home route after a successful session mutation",
 
   await page.goto("/auth/register");
   await page.getByLabel("Email").fill("new@example.com");
-  await page.getByLabel("Password").fill("supersecretpass123");
+  await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Create account" }).click();
 
   await expect(page).toHaveURL("/");
-  await expect(
-    page.getByRole("navigation", { name: "Primary" }).getByRole("link", {
-      name: "Sign out",
-    }),
-  ).toBeVisible();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await expect(page.getByRole("link", { name: "Sign out" })).toBeVisible();
   expect(requests).toContainEqual({
-    operationName: "RegisterMutation",
+    operationName: "RegisterRouteMutation",
     variables: {
       email: "new@example.com",
-      password: "supersecretpass123",
+      password,
     },
   });
 });
 
 test("forgot password shows the privacy-safe success state", async ({ page }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
-    ForgotPasswordMutation: {
+    RootRouteQuery: rootViewerResponse(),
+    ForgotPasswordRouteMutation: {
       data: {
         forgotPassword: {
           ok: true,
@@ -196,7 +235,7 @@ test("forgot password shows the privacy-safe success state", async ({ page }) =>
     "If an account exists for that email, reset instructions are on the way.",
   );
   expect(requests).toContainEqual({
-    operationName: "ForgotPasswordMutation",
+    operationName: "ForgotPasswordRouteMutation",
     variables: { email: "person@example.com" },
   });
 });
@@ -204,9 +243,11 @@ test("forgot password shows the privacy-safe success state", async ({ page }) =>
 test("reset password consumes the token from the URL and shows the success state", async ({
   page,
 }) => {
+  const password = randomUUID();
+  const token = randomUUID();
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
-    ResetPasswordMutation: {
+    RootRouteQuery: rootViewerResponse(),
+    ResetPasswordRouteMutation: {
       data: {
         resetPassword: {
           ok: true,
@@ -216,16 +257,16 @@ test("reset password consumes the token from the URL and shows the success state
     },
   });
 
-  await page.goto("/auth/reset-password?token=reset-token");
-  await page.getByLabel("New password").fill("supersecretpass456");
+  await page.goto(`/auth/reset-password?token=${token}`);
+  await page.getByRole("textbox", { name: "New password" }).fill(password);
   await page.getByRole("button", { name: "Update password" }).click();
 
   await expect(page.getByRole("status")).toContainText("Your password has been updated.");
   expect(requests).toContainEqual({
-    operationName: "ResetPasswordMutation",
+    operationName: "ResetPasswordRouteMutation",
     variables: {
-      token: "reset-token",
-      password: "supersecretpass456",
+      token,
+      password,
     },
   });
 });
@@ -234,20 +275,21 @@ test("reset password shows an invalid-token alert when the URL token is missing"
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
   });
 
   await page.goto("/auth/reset-password");
 
   await expect(page.getByRole("alert")).toContainText("This reset link is missing or invalid.");
   await expect(page.getByRole("button", { name: "Update password" })).toBeDisabled();
-  expect(requests).toEqual([{ operationName: "RootViewerRouteQuery", variables: {} }]);
+  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
 });
 
 test("verify email consumes the token from the URL and reports success", async ({ page }) => {
+  const token = randomUUID();
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
-    VerifyEmailMutation: {
+    RootRouteQuery: rootViewerResponse(),
+    VerifyEmailRouteMutation: {
       data: {
         verifyEmail: {
           ok: true,
@@ -257,12 +299,12 @@ test("verify email consumes the token from the URL and reports success", async (
     },
   });
 
-  await page.goto("/auth/verify-email?token=confirm-token");
+  await page.goto(`/auth/verify-email?token=${token}`);
 
   await expect(page.getByRole("status")).toContainText("Your email address is verified.");
   expect(requests).toContainEqual({
-    operationName: "VerifyEmailMutation",
-    variables: { token: "confirm-token" },
+    operationName: "VerifyEmailRouteMutation",
+    variables: { token },
   });
 });
 
@@ -270,7 +312,7 @@ test("verify email shows an invalid-token alert when the URL token is missing", 
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: rootViewerResponse(),
+    RootRouteQuery: rootViewerResponse(),
   });
 
   await page.goto("/auth/verify-email");
@@ -278,18 +320,18 @@ test("verify email shows an invalid-token alert when the URL token is missing", 
   await expect(page.getByRole("alert")).toContainText(
     "This verification link is missing or invalid.",
   );
-  expect(requests).toEqual([{ operationName: "RootViewerRouteQuery", variables: {} }]);
+  expect(requests).toEqual([{ operationName: "RootRouteQuery", variables: {} }]);
 });
 
 test("logout clears the browser session through GraphQL and returns to sign in", async ({
   page,
 }) => {
   const requests = await mockGraphQL(page, {
-    RootViewerRouteQuery: [
+    RootRouteQuery: [
       rootViewerResponse({ id: "viewer-1", email: "person@example.com" }),
       rootViewerResponse(),
     ],
-    LogoutMutation: {
+    LogoutRouteMutation: {
       data: {
         logout: {
           ok: true,
@@ -305,11 +347,13 @@ test("logout clears the browser session through GraphQL and returns to sign in",
   await expect(page).toHaveURL("/auth/login");
   const primaryNavigation = page.getByRole("navigation", { name: "Primary" });
 
-  await expect(primaryNavigation.getByRole("link", { name: "Sign in" })).toBeVisible();
-  await expect(primaryNavigation.getByRole("link", { name: "Create account" })).toBeVisible();
-  await expect(primaryNavigation.getByRole("link", { name: "Sign out" })).toHaveCount(0);
+  await primaryNavigation.getByRole("button", { name: "Guest menu" }).click();
+  const guestNavigation = page.getByLabel("Guest navigation");
+  await expect(guestNavigation.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(guestNavigation.getByRole("link", { name: "Create account" })).toBeVisible();
+  await expect(primaryNavigation.getByRole("button", { name: "Account menu" })).toHaveCount(0);
   expect(requests).toContainEqual({
-    operationName: "LogoutMutation",
+    operationName: "LogoutRouteMutation",
     variables: {},
   });
 });

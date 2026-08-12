@@ -5,14 +5,14 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
 
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Specs.ProductAttributeCurrent
-  alias ProductCompareSchemas.Specs.TaxonAttribute
+  alias ProductCompareSchemas.Specs.{Attribute, ProductAttributeCurrent, TaxonAttribute}
 
   @max_bigint_id 9_223_372_036_854_775_807
 
-  @spec for_products([pos_integer()]) :: %{optional(pos_integer()) => [map()]}
-  def for_products(product_ids) do
+  @spec for_products([pos_integer()], keyword()) :: %{optional(pos_integer()) => [map()]}
+  def for_products(product_ids, opts \\ []) do
     product_ids = normalize_ids(product_ids)
+    limit = Keyword.get(opts, :limit)
 
     if product_ids == [] do
       %{}
@@ -26,7 +26,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
 
       current_attributes_by_product =
         product_ids
-        |> current_attributes_query()
+        |> current_attributes_query(limit)
         |> Repo.all()
         |> Enum.group_by(& &1.product_id)
 
@@ -93,7 +93,7 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
     |> Enum.sort_by(&current_attribute_sort_key/1)
   end
 
-  defp current_attributes_query(product_ids) do
+  defp current_attributes_query(product_ids, nil) do
     ProductAttributeCurrent
     |> where([current], current.product_id in ^product_ids)
     |> join(:inner, [current], attribute in assoc(current, :attribute))
@@ -105,6 +105,46 @@ defmodule ProductCompare.Specs.Reads.CurrentAttributes do
     |> preload([_current, attribute],
       attribute: attribute,
       claim: [:unit, :enum_option, evidence_links: [artifact: :source]]
+    )
+  end
+
+  defp current_attributes_query(product_ids, limit) when is_integer(limit) and limit > 0 do
+    ranked_current =
+      ProductAttributeCurrent
+      |> where([current], current.product_id in ^product_ids)
+      |> join(:inner, [current], product in Product, on: product.id == current.product_id)
+      |> join(:inner, [current], attribute in Attribute, on: attribute.id == current.attribute_id)
+      |> join(:left, [_current, product, attribute], taxon_attribute in TaxonAttribute,
+        on:
+          taxon_attribute.taxon_id == product.primary_type_taxon_id and
+            taxon_attribute.attribute_id == attribute.id
+      )
+      |> windows([current, _product, attribute, taxon_attribute],
+        home_highlight: [
+          partition_by: current.product_id,
+          order_by: [
+            asc: fragment("CASE WHEN ? IS NULL THEN 1 ELSE 0 END", taxon_attribute.sort_order),
+            asc: taxon_attribute.sort_order,
+            asc: fragment("lower(?)", attribute.display_name),
+            asc: attribute.code
+          ]
+        ]
+      )
+      |> select([current], %{
+        current_id: current.id,
+        product_id: current.product_id,
+        rank: over(row_number(), :home_highlight)
+      })
+
+    ProductAttributeCurrent
+    |> join(:inner, [current], ranked in subquery(ranked_current),
+      on: ranked.current_id == current.id and ranked.rank <= ^limit
+    )
+    |> join(:inner, [current], attribute in assoc(current, :attribute))
+    |> order_by([current, ranked], asc: current.product_id, asc: ranked.rank)
+    |> preload([_current, _ranked, attribute],
+      attribute: attribute,
+      claim: [:unit, :enum_option]
     )
   end
 

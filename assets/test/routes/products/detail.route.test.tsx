@@ -1,27 +1,26 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
-import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
-import {
-  createRelayEnvironment,
-  RouteLoaderGraphQLError
-} from "../../../src/relay/environment";
+import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
   fetchRouteQuery,
   preloadRouteQuery,
-  useRoutePreloadedQuery
+  useRoutePreloadedQuery,
 } from "../../../src/relay/route-preload";
-import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/loader";
-import { productDetailLoader } from "../../../src/routes/products/loader";
+import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import {
   ProductDecisionActions,
-  type ProductDecisionCompareAction
+  type ProductDecisionCompareAction,
 } from "../../../src/routes/products/ProductDecisionActions";
-import { ProductDetailRoute } from "../../../src/routes/products/ProductDetailRoute";
+import {
+  ProductDetailRoute,
+  productDetailLoader,
+} from "../../../src/routes/products/ProductDetailRoute";
 import {
   ProductOfferList,
-  type ProductOfferListItem
+  type ProductOfferListItem,
 } from "../../../src/routes/products/ProductOfferList";
 
 const {
@@ -31,10 +30,11 @@ const {
   loadQueryMock,
   preloadRouteQueryMock,
   useLoaderDataMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useMutationMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   fetchRouteQueryMock: vi.fn(),
   commitCommerceClickMock: vi.fn(),
@@ -42,22 +42,23 @@ const {
   loadQueryMock: vi.fn(),
   preloadRouteQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
     fetchRouteQuery: fetchRouteQueryMock,
     preloadRouteQuery: preloadRouteQueryMock,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -68,9 +69,10 @@ vi.mock("react-relay", async () => {
     ...actual,
     graphql: graphqlMock,
     loadQuery: loadQueryMock,
+    useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
@@ -79,13 +81,14 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedPreloadRouteQuery = vi.mocked(preloadRouteQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
@@ -96,8 +99,8 @@ const PRODUCT_QUERY_DESCRIPTOR = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: "detail-product" }
-  }
+    variables: { slug: "detail-product" },
+  },
 };
 
 const OFFERS_QUERY_TEXT =
@@ -110,9 +113,9 @@ function makeOffersQueryDescriptor(offersAfter?: string | null) {
       variables: {
         productId: "UHJvZHVjdDox",
         first: 6,
-        ...(offersAfter ? { after: offersAfter } : {})
-      }
-    }
+        ...(offersAfter ? { after: offersAfter } : {}),
+      },
+    },
   };
 }
 
@@ -162,22 +165,29 @@ const DETAIL_PRODUCT: DetailProduct = {
     canonicalPath: "/products/detail-product",
     indexable: true,
     imageUrl: null,
-    structuredData: '{"@context":"https://schema.org","@type":"Product","url":"/products/detail-product"}'
+    structuredData:
+      '{"@context":"https://schema.org","@type":"Product","url":"/products/detail-product"}',
   },
   brand: {
     id: "brand-1",
-    name: "Acme"
+    name: "Acme",
   },
-  currentAttributes: []
+  currentAttributes: [],
 };
 
-const productQueryRef = { dispose: vi.fn(), variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables };
-const offersQueryRef = { dispose: vi.fn(), variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables };
+const productQueryRef = {
+  dispose: vi.fn(),
+  variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+};
+const offersQueryRef = {
+  dispose: vi.fn(),
+  variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables,
+};
 
 const buildProductDetailLoaderArgs = ({
   environment = createRelayEnvironment(),
   request = new Request("https://app.example.com/products/detail-product"),
-  slug = "detail-product"
+  slug = "detail-product",
 }: {
   environment?: ReturnType<typeof createRelayEnvironment>;
   request?: Request;
@@ -187,7 +197,7 @@ const buildProductDetailLoaderArgs = ({
   params: { slug },
   context: createRelayRouterContext(environment),
   pattern: "/products/:slug",
-  url: new URL(request.url)
+  url: new URL(request.url),
 });
 
 beforeEach(() => {
@@ -196,6 +206,8 @@ beforeEach(() => {
   loadQueryMock.mockReset();
   preloadRouteQueryMock.mockReset();
   useLoaderDataMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   usePreloadedQueryMock.mockReset();
@@ -213,26 +225,25 @@ test("ProductDecisionActions renders the add-to-compare destination", () => {
         browseHref="/products?slug=selected-product"
         compareAction={{
           kind: "add",
-          href: "/products/detail-product?slug=selected-product&slug=detail-product"
+          href: "/products/detail-product?slug=selected-product&slug=detail-product",
         }}
         offerHref="/offers?productId=product-id"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const actions = screen.getByRole("region", { name: "Next steps" });
 
-  expect(within(actions).getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
-    "href",
-    "/products/detail-product?slug=selected-product&slug=detail-product"
-  );
+  expect(
+    within(actions).getByRole("link", { name: "Add this product to compare" }),
+  ).toHaveAttribute("href", "/products/detail-product?slug=selected-product&slug=detail-product");
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=product-id"
+    "/offers?productId=product-id",
   );
   expect(within(actions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products?slug=selected-product"
+    "/products?slug=selected-product",
   );
 });
 
@@ -244,14 +255,14 @@ test("ProductDecisionActions renders the selected compare state", () => {
         compareAction={{ kind: "selected" }}
         offerHref="/offers?productId=product-id"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const actions = screen.getByRole("region", { name: "Next steps" });
 
   expect(within(actions).getByText("This product is selected for comparison")).toBeVisible();
   expect(
-    within(actions).queryByRole("link", { name: "Add this product to compare" })
+    within(actions).queryByRole("link", { name: "Add this product to compare" }),
   ).not.toBeInTheDocument();
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toBeVisible();
   expect(within(actions).getByRole("link", { name: "Browse products" })).toBeVisible();
@@ -265,14 +276,14 @@ test("ProductDecisionActions renders the full compare state", () => {
         compareAction={{ kind: "full" }}
         offerHref="/offers?productId=product-id"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const actions = screen.getByRole("region", { name: "Next steps" });
 
   expect(within(actions).getByText("Compare selection full")).toBeVisible();
   expect(
-    within(actions).queryByRole("link", { name: "Add this product to compare" })
+    within(actions).queryByRole("link", { name: "Add this product to compare" }),
   ).not.toBeInTheDocument();
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toBeVisible();
   expect(within(actions).getByRole("link", { name: "Browse products" })).toBeVisible();
@@ -280,7 +291,7 @@ test("ProductDecisionActions renders the full compare state", () => {
 
 test("ProductDecisionActions fails closed for an unsupported compare state", () => {
   const unsupportedAction = {
-    kind: "unsupported"
+    kind: "unsupported",
   } as unknown as ProductDecisionCompareAction;
 
   expect(() =>
@@ -291,8 +302,8 @@ test("ProductDecisionActions fails closed for an unsupported compare state", () 
           compareAction={unsupportedAction}
           offerHref="/offers?productId=product-id"
         />
-      </MemoryRouter>
-    )
+      </MemoryRouter>,
+    ),
   ).toThrow("Unexpected product decision compare action");
 });
 
@@ -304,15 +315,15 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
       priceText: "199.99 USD",
       priceObservation: {
         dateTime: "2026-06-01T00:00:00Z",
-        label: "2026-06-01"
+        label: "2026-06-01",
       },
       priceHistory: [
         {
           id: "price-1",
           observedAt: "2026-05-01T00:00:00Z",
           observedDate: "2026-05-01",
-          priceText: "249.99 USD"
-        }
+          priceText: "249.99 USD",
+        },
       ],
       priceHistoryHasMore: true,
       coupons: [
@@ -322,11 +333,11 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
           description: "Save on the detail product.",
           discountText: "20.00 USD",
           validToText: "Valid through 2026-07-01",
-          terms: "Online orders only."
-        }
+          terms: "Online orders only.",
+        },
       ],
-      couponsHasMore: true
-    }
+      couponsHasMore: true,
+    },
   ];
 
   render(<ProductOfferList offers={offers} />);
@@ -339,16 +350,13 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
   const offerItem = within(offer as HTMLElement);
   expect(merchantAction).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
   expect(offerItem.getByText("199.99 USD")).toBeVisible();
   const priceObservedAt = offerItem.getByText("2026-06-01", { selector: "time" });
 
   expect(offerItem.getByText("Price observed", { selector: "p" })).toBeVisible();
-  expect(priceObservedAt).toHaveAttribute(
-    "datetime",
-    "2026-06-01T00:00:00Z"
-  );
+  expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(offerItem.getByRole("list", { name: "Acme price history" })).toBeVisible();
   expect(offerItem.getByText("249.99 USD")).toBeVisible();
   expect(offerItem.getByText("More price history available.")).toBeVisible();
@@ -369,26 +377,26 @@ test("product detail loader preloads product detail and active offers through Re
         ...DETAIL_PRODUCT,
         merchantProducts: {
           edges: [],
-          pageInfo: { endCursor: null, hasNextPage: false }
-        }
-      }
+          pageInfo: { endCursor: null, hasNextPage: false },
+        },
+      },
     },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   });
 
   await expect(
-    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { slug: "detail-product", offerFirst: 6, offersAfter: null },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
@@ -397,27 +405,27 @@ test("product detail loader preloads product detail and active offers through Re
 test("product detail loader forwards offersAfter to offers query pagination", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/products/detail-product?offersAfter=cursor%2Bnext%2Ftoken"
+    "https://app.example.com/products/detail-product?offersAfter=cursor%2Bnext%2Ftoken",
   );
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
-      product: DETAIL_PRODUCT
+      product: DETAIL_PRODUCT,
     },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   });
   await expect(
-    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { slug: DETAIL_PRODUCT.slug, offerFirst: 6, offersAfter: "cursor+next/token" },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
@@ -430,11 +438,11 @@ test("product detail loader permanently redirects legacy aliases to the canonica
   mockedFetchRouteQuery.mockResolvedValue({
     data: { product: DETAIL_PRODUCT },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   });
 
   const result = await productDetailLoader(
-    buildProductDetailLoaderArgs({ environment, request, slug: "legacy-product" })
+    buildProductDetailLoaderArgs({ environment, request, slug: "legacy-product" }),
   );
 
   expect(result).toBeInstanceOf(Response);
@@ -445,28 +453,28 @@ test("product detail loader permanently redirects legacy aliases to the canonica
 test("product detail loader preserves opaque offersAfter cursor characters", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/products/detail-product?offersAfter=%2Babc%2Ftoken%20"
+    "https://app.example.com/products/detail-product?offersAfter=%2Babc%2Ftoken%20",
   );
   const opaqueCursor = "+abc/token ";
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
-      product: DETAIL_PRODUCT
+      product: DETAIL_PRODUCT,
     },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   });
   await expect(
-    productDetailLoader(buildProductDetailLoaderArgs({ environment, request }))
+    productDetailLoader(buildProductDetailLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
     environment,
     expect.anything(),
     { slug: DETAIL_PRODUCT.slug, offerFirst: 6, offersAfter: opaqueCursor },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
@@ -478,27 +486,27 @@ test("product detail loader marks null products as not found", async () => {
 
   mockedFetchRouteQuery.mockResolvedValue({
     data: {
-      product: null
+      product: null,
     },
     descriptor: PRODUCT_QUERY_DESCRIPTOR,
-    dispose: disposeProductRouteQuery
+    dispose: disposeProductRouteQuery,
   });
 
   const result = await productDetailLoader(
     buildProductDetailLoaderArgs({
       environment,
       request: new Request("https://app.example.com/products/missing-product"),
-      slug: "missing-product"
-    })
+      slug: "missing-product",
+    }),
   );
 
   expect(result).toMatchObject({
     data: {
-      status: "not_found"
+      status: "not_found",
     },
     init: {
-      status: 404
-    }
+      status: 404,
+    },
   });
 
   expect(mockedPreloadRouteQuery).not.toHaveBeenCalled();
@@ -510,16 +518,16 @@ test("product detail loader treats blank slugs as not found", async () => {
     productDetailLoader(
       buildProductDetailLoaderArgs({
         request: new Request("https://app.example.com/products/%20"),
-        slug: "   "
-      })
-    )
+        slug: "   ",
+      }),
+    ),
   ).resolves.toMatchObject({
     data: {
-      status: "not_found"
+      status: "not_found",
     },
     init: {
-      status: 404
-    }
+      status: 404,
+    },
   });
 
   expect(mockedFetchRouteQuery).not.toHaveBeenCalled();
@@ -535,13 +543,13 @@ test("product detail loader marks failed product preloads as unavailable", async
 
   try {
     await expect(
-      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
+      productDetailLoader(buildProductDetailLoaderArgs({ environment })),
     ).resolves.toEqual({
-      status: "error"
+      status: "error",
     });
 
     expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload product detail route query.", {
-      error: preloadError
+      error: preloadError,
     });
   } finally {
     consoleErrorSpy.mockRestore();
@@ -557,15 +565,14 @@ test("product detail loader marks a failed combined product-and-offers request u
 
   try {
     await expect(
-      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
+      productDetailLoader(buildProductDetailLoaderArgs({ environment })),
     ).resolves.toEqual({
-      status: "error"
+      status: "error",
     });
 
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      "Failed to preload product detail route query.",
-      { error: offersError }
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith("Failed to preload product detail route query.", {
+      error: offersError,
+    });
   } finally {
     consoleErrorSpy.mockRestore();
   }
@@ -578,21 +585,21 @@ test("product detail loader preserves product data when only nested offers fail"
     data: {
       product: {
         ...DETAIL_PRODUCT,
-        merchantProducts: null
-      }
+        merchantProducts: null,
+      },
     },
     errors: [
       {
         message: "Offers unavailable",
-        path: ["product", "merchantProducts"]
-      }
-    ]
+        path: ["product", "merchantProducts"],
+      },
+    ],
   };
 
   mockedFetchRouteQuery.mockRejectedValue(new RouteLoaderGraphQLError(partialResponse));
 
   await expect(
-    productDetailLoader(buildProductDetailLoaderArgs({ environment }))
+    productDetailLoader(buildProductDetailLoaderArgs({ environment })),
   ).resolves.toMatchObject({
     status: "ready",
     productQuery: {
@@ -601,10 +608,10 @@ test("product detail loader preserves product data when only nested offers fail"
         variables: {
           slug: DETAIL_PRODUCT.slug,
           offerFirst: 6,
-          offersAfter: null
-        }
-      }
-    }
+          offersAfter: null,
+        },
+      },
+    },
   });
 
   expect(commitPayloadSpy).toHaveBeenCalledWith(expect.anything(), partialResponse.data);
@@ -618,9 +625,9 @@ test("product detail loader rethrows aborted product preloads", async () => {
   mockedFetchRouteQuery.mockRejectedValue(abortError);
 
   try {
-    await expect(
-      productDetailLoader(buildProductDetailLoaderArgs({ environment }))
-    ).rejects.toBe(abortError);
+    await expect(productDetailLoader(buildProductDetailLoaderArgs({ environment }))).rejects.toBe(
+      abortError,
+    );
 
     expect(consoleErrorSpy).not.toHaveBeenCalled();
   } finally {
@@ -634,8 +641,8 @@ test("renders product detail and active offers from Relay route queries", () => 
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -646,22 +653,22 @@ test("renders product detail and active offers from Relay route queries", () => 
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
           price: "199.99",
-          observedAt: "2026-06-01T00:00:00Z"
-        }
-      }
-    ])
+          observedAt: "2026-06-01T00:00:00Z",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
       <LocationProbe />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
@@ -669,7 +676,7 @@ test("renders product detail and active offers from Relay route queries", () => 
   const detailTabs = screen.getByRole("tablist", { name: "Product details" });
   expect(within(detailTabs).getByRole("tab", { name: "Overview" })).toHaveAttribute(
     "aria-selected",
-    "true"
+    "true",
   );
   expect(screen.getByRole("region", { name: "Product overview" })).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
@@ -678,34 +685,37 @@ test("renders product detail and active offers from Relay route queries", () => 
 
   fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Specifications" }), {
     button: 0,
-    ctrlKey: false
+    ctrlKey: false,
   });
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
 
   fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Offers" }), {
     button: 0,
-    ctrlKey: false
+    ctrlKey: false,
   });
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
   expect(screen.getByText("199.99 USD")).toBeInTheDocument();
   const priceObservedAt = screen.getByText("2026-06-01", { selector: "time" });
 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(expect.anything(), PRODUCT_QUERY_DESCRIPTOR);
+  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
+    expect.anything(),
+    PRODUCT_QUERY_DESCRIPTOR,
+  );
 });
 
 test("loads bounded community data only when the Reviews & Q&A tab is opened", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
-    productQuery: PRODUCT_QUERY_DESCRIPTOR
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -715,14 +725,14 @@ test("loads bounded community data only when the Reviews & Q&A tab is opened", (
       reviewSummary: { count: 0, averageRating: null },
       reviews: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
       questions: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
-      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] }
-    }
+      viewerCommunitySubmissions: { answers: [], questions: [], reviews: [] },
+    },
   } as never);
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(mockedUseLazyLoadQuery).not.toHaveBeenCalled();
@@ -737,20 +747,14 @@ test("loads bounded community data only when the Reviews & Q&A tab is opened", (
       reviewsAfter: null,
       questionFirst: 10,
       questionsAfter: null,
-      answerFirst: 5
+      answerFirst: 5,
     },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
   expect(screen.getByRole("region", { name: "Reviews and product questions" })).toBeVisible();
 });
 
-test.each([
-  null,
-  "not-a-date",
-  "2026-02-30T00:00:00Z",
-  "June 1 2026",
-  1_717_326_000_000
-])(
+test.each([null, "not-a-date", "2026-02-30T00:00:00Z", "June 1 2026", 1_717_326_000_000])(
   "keeps product-detail prices visible without an unsupported observation claim for %s",
   (observedAt) => {
     mockedUseLoaderData.mockReturnValue({
@@ -758,8 +762,8 @@ test.each([
       productQuery: PRODUCT_QUERY_DESCRIPTOR,
       offers: {
         status: "ready",
-        query: OFFERS_QUERY_DESCRIPTOR
-      }
+        query: OFFERS_QUERY_DESCRIPTOR,
+      },
     });
     mockRouteQueryRefs();
     mockProductAndOffersQueries(
@@ -770,28 +774,28 @@ test.each([
           currency: "USD",
           merchant: {
             id: "merchant-1",
-            name: "Acme"
+            name: "Acme",
           },
           latestPrice: {
             id: "price-unsupported-observation",
             price: "199.99",
-            observedAt
-          }
-        }
-      ])
+            observedAt,
+          },
+        },
+      ]),
     );
 
     render(
       <MemoryRouter>
         <ProductDetailRoute />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     openProductDetailTab("Offers");
 
     expect(screen.getByText("199.99 USD")).toBeVisible();
     expect(screen.queryByText(/^Price observed/)).not.toBeInTheDocument();
-  }
+  },
 );
 
 test("product detail tracks merchant clicks with only the merchant product ID", () => {
@@ -800,8 +804,8 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -812,20 +816,20 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
-        }
-      }
-    ])
+          price: "199.99",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -836,13 +840,13 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
     expect.objectContaining({
       variables: {
         input: {
-          merchantProductId: "merchant-product-1"
-        }
-      }
-    })
+          merchantProductId: "merchant-product-1",
+        },
+      },
+    }),
   );
   expect(JSON.stringify(commitCommerceClickMock.mock.calls[0]?.[0]?.variables)).not.toContain(
-    "https://merchant.example.com/detail-product"
+    "https://merchant.example.com/detail-product",
   );
 });
 
@@ -853,8 +857,8 @@ test("product detail blocks pending tracked merchant action re-clicks", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -865,20 +869,20 @@ test("product detail blocks pending tracked merchant action re-clicks", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
-        }
-      }
-    ])
+          price: "199.99",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -900,8 +904,8 @@ test("renders offers with valid urls and null merchants using a fallback label",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -913,16 +917,16 @@ test("renders offers with valid urls and null merchants using a fallback label",
         merchant: null,
         latestPrice: {
           id: "price-null-merchant",
-          price: "179.00"
-        }
-      }
-    ])
+          price: "179.00",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -930,12 +934,14 @@ test("renders offers with valid urls and null merchants using a fallback label",
   expect(screen.queryByText("No active offers yet.")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Visit offer" })).toHaveAttribute(
     "href",
-    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-null-merchant`
+    `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-null-merchant`,
   );
   expect(screen.getByText("179.00 USD")).toBeInTheDocument();
-  expect(within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(
-    "179.00 USD at Visit offer"
-  )).toBeVisible();
+  expect(
+    within(screen.getByRole("region", { name: "Offer snapshot" })).getByText(
+      "179.00 USD at Visit offer",
+    ),
+  ).toBeVisible();
 });
 
 test("renders an offer snapshot from the visible active offer page", () => {
@@ -944,8 +950,8 @@ test("renders an offer snapshot from the visible active offer page", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -956,11 +962,11 @@ test("renders an offer snapshot from the visible active offer page", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [
@@ -973,14 +979,14 @@ test("renders an offer snapshot from the visible active offer page", () => {
                 discountValue: "20.00",
                 currency: "USD",
                 validTo: null,
-                terms: null
-              }
-            }
+                terms: null,
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
+            hasNextPage: false,
+          },
+        },
       },
       {
         id: "merchant-product-2",
@@ -988,11 +994,11 @@ test("renders an offer snapshot from the visible active offer page", () => {
         currency: "USD",
         merchant: {
           id: "merchant-2",
-          name: "Value Mart"
+          name: "Value Mart",
         },
         latestPrice: {
           id: "price-2",
-          price: "149.50"
+          price: "149.50",
         },
         activeCoupons: {
           edges: [
@@ -1005,14 +1011,14 @@ test("renders an offer snapshot from the visible active offer page", () => {
                 discountValue: "10",
                 currency: null,
                 validTo: null,
-                terms: null
-              }
-            }
+                terms: null,
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
+            hasNextPage: false,
+          },
+        },
       },
       {
         id: "merchant-product-3",
@@ -1020,9 +1026,9 @@ test("renders an offer snapshot from the visible active offer page", () => {
         currency: "USD",
         merchant: {
           id: "merchant-3",
-          name: "No Price Shop"
+          name: "No Price Shop",
         },
-        latestPrice: null
+        latestPrice: null,
       },
       {
         id: "merchant-product-4",
@@ -1030,20 +1036,20 @@ test("renders an offer snapshot from the visible active offer page", () => {
         currency: "USD",
         merchant: {
           id: "merchant-4",
-          name: "Bad Price Shop"
+          name: "Bad Price Shop",
         },
         latestPrice: {
           id: "price-bad",
-          price: "not-a-price"
-        }
-      }
-    ])
+          price: "not-a-price",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1053,10 +1059,10 @@ test("renders an offer snapshot from the visible active offer page", () => {
   const offersList = screen.getByRole("list", { name: "Active offer list" });
 
   expect(
-    activeOffersHeading.compareDocumentPosition(offerSnapshot) & Node.DOCUMENT_POSITION_FOLLOWING
+    activeOffersHeading.compareDocumentPosition(offerSnapshot) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(
-    offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING
+    offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(within(offerSnapshot).getByText("Visible active offers")).toBeVisible();
   expect(within(offerSnapshot).getByText("4")).toBeVisible();
@@ -1076,8 +1082,8 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1088,12 +1094,12 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
         currency: "USD",
         merchant: {
           id: "merchant-bad-price",
-          name: "Bad Price Shop"
+          name: "Bad Price Shop",
         },
         latestPrice: {
           id: "price-bad",
-          price: "not-a-price"
-        }
+          price: "not-a-price",
+        },
       },
       {
         id: "merchant-product-missing-price",
@@ -1101,17 +1107,17 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
         currency: "USD",
         merchant: {
           id: "merchant-missing-price",
-          name: "Missing Price Shop"
+          name: "Missing Price Shop",
         },
-        latestPrice: null
-      }
-    ])
+        latestPrice: null,
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1128,8 +1134,8 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1140,12 +1146,12 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
         currency: "USD",
         merchant: {
           id: "merchant-usd",
-          name: "USD Shop"
+          name: "USD Shop",
         },
         latestPrice: {
           id: "price-usd",
-          price: "199.99"
-        }
+          price: "199.99",
+        },
       },
       {
         id: "merchant-product-eur",
@@ -1153,20 +1159,20 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
         currency: "EUR",
         merchant: {
           id: "merchant-eur",
-          name: "Euro Shop"
+          name: "Euro Shop",
         },
         latestPrice: {
           id: "price-eur",
-          price: "149.99"
-        }
-      }
-    ])
+          price: "149.99",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1184,35 +1190,41 @@ test("renders product decision actions with compare, offer review, and browse de
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]), {
     ...DETAIL_PRODUCT,
     id: "product/id+value=",
-    slug: "detail/product slug"
+    slug: "detail/product slug",
   });
 
   render(
-    <MemoryRouter initialEntries={["/products/detail%2Fproduct%20slug"]}>
+    <MemoryRouter
+      initialEntries={[
+        "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta",
+      ]}
+    >
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const actions = screen.getByRole("region", { name: "Next steps" });
 
-  expect(within(actions).getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
+  expect(
+    within(actions).getByRole("link", { name: "Add this product to compare" }),
+  ).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%20slug?slug=detail%2Fproduct+slug"
+    "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta&slug=detail%2Fproduct+slug",
   );
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=product%2Fid%2Bvalue%3D"
+    "/offers?productId=product%2Fid%2Bvalue%3D&slug=alpha&slug=beta",
   );
   expect(within(actions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products"
+    "/products?slug=alpha&slug=beta",
   );
 });
 
@@ -1224,8 +1236,8 @@ test("renders next and first offer page links from URL-driven offersAfter state"
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: offersDescriptorWithAfter
-    }
+      query: offersDescriptorWithAfter,
+    },
   });
   mockRouteQueryRefs(offersDescriptorWithAfter);
   mockProductAndOffersQueries(
@@ -1237,38 +1249,38 @@ test("renders next and first offer page links from URL-driven offersAfter state"
           currency: "USD",
           merchant: {
             id: "merchant-1",
-            name: "Acme"
+            name: "Acme",
           },
           latestPrice: {
             id: "price-1",
-            price: "199.99"
-          }
-        }
+            price: "199.99",
+          },
+        },
       ],
       {
         hasNextPage: true,
-        endCursor: "next cursor&value"
-      }
+        endCursor: "next cursor&value",
+      },
     ),
     {
       ...DETAIL_PRODUCT,
-      slug: "detail/product?value"
-    }
+      slug: "detail/product?value",
+    },
   );
 
   render(
     <MemoryRouter initialEntries={["/products/detail-product?offersAfter=cursor%2Fnext%2Bvalue"]}>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "First offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue#offers"
+    "/products/detail%2Fproduct%3Fvalue#offers",
   );
   expect(screen.getByRole("link", { name: "Next offers" })).toHaveAttribute(
     "href",
-    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value#offers"
+    "/products/detail%2Fproduct%3Fvalue?offersAfter=next+cursor%26value#offers",
   );
 });
 
@@ -1278,8 +1290,8 @@ test("does not render offer pagination links when no additional offers page exis
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -1287,7 +1299,7 @@ test("does not render offer pagination links when no additional offers page exis
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.queryByRole("link", { name: "First offers" })).not.toBeInTheDocument();
@@ -1299,17 +1311,15 @@ test("does not render a repeated next-offers cursor as a self-link", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
-    offers: { status: "ready", query: offersDescriptorWithAfter }
+    offers: { status: "ready", query: offersDescriptorWithAfter },
   });
   mockRouteQueryRefs(offersDescriptorWithAfter);
-  mockProductAndOffersQueries(
-    buildOffersData([], { hasNextPage: true, endCursor: "same-cursor" })
-  );
+  mockProductAndOffersQueries(buildOffersData([], { hasNextPage: true, endCursor: "same-cursor" }));
 
   render(
     <MemoryRouter initialEntries={["/products/detail-product?offersAfter=same-cursor"]}>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "First offers" })).toBeVisible();
@@ -1322,8 +1332,8 @@ test("renders active coupon details for product offers", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1334,11 +1344,11 @@ test("renders active coupon details for product offers", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [
@@ -1351,8 +1361,8 @@ test("renders active coupon details for product offers", () => {
                 discountValue: "20.00",
                 currency: "USD",
                 validTo: null,
-                terms: "Online orders only."
-              }
+                terms: "Online orders only.",
+              },
             },
             {
               cursor: "coupon-cursor-2",
@@ -1363,8 +1373,8 @@ test("renders active coupon details for product offers", () => {
                 discountValue: "15",
                 currency: null,
                 validTo: "not-a-date",
-                terms: null
-              }
+                terms: null,
+              },
             },
             {
               cursor: "coupon-cursor-3",
@@ -1375,16 +1385,16 @@ test("renders active coupon details for product offers", () => {
                 discountValue: null,
                 currency: null,
                 validTo: "2026-07-01T00:00:00Z",
-                terms: null
-              }
-            }
+                terms: null,
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: true
-          }
-        }
-      }
-    ])
+            hasNextPage: true,
+          },
+        },
+      },
+    ]),
   );
 
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -1393,7 +1403,7 @@ test("renders active coupon details for product offers", () => {
     render(
       <MemoryRouter>
         <ProductDetailRoute />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     openProductDetailTab("Offers");
@@ -1428,8 +1438,8 @@ test("renders duplicate active coupon codes without React key warnings", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1440,11 +1450,11 @@ test("renders duplicate active coupon codes without React key warnings", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [
@@ -1457,8 +1467,8 @@ test("renders duplicate active coupon codes without React key warnings", () => {
                 discountValue: "20.00",
                 currency: "USD",
                 validTo: null,
-                terms: null
-              }
+                terms: null,
+              },
             },
             {
               cursor: "coupon-cursor-2",
@@ -1469,16 +1479,16 @@ test("renders duplicate active coupon codes without React key warnings", () => {
                 discountValue: "15",
                 currency: null,
                 validTo: null,
-                terms: null
-              }
-            }
+                terms: null,
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ])
+            hasNextPage: false,
+          },
+        },
+      },
+    ]),
   );
 
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -1487,7 +1497,7 @@ test("renders duplicate active coupon codes without React key warnings", () => {
     render(
       <MemoryRouter>
         <ProductDetailRoute />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     openProductDetailTab("Offers");
@@ -1506,8 +1516,8 @@ test("renders offers when a merchant has no active coupons", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1518,26 +1528,26 @@ test("renders offers when a merchant has no active coupons", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ])
+            hasNextPage: false,
+          },
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1546,7 +1556,9 @@ test("renders offers when a merchant has no active coupons", () => {
 
   expect(offerItem).not.toBeNull();
   expect(within(offerItem as HTMLElement).getByText("199.99 USD")).toBeVisible();
-  expect(within(offerItem as HTMLElement).getByText("No active coupons for this offer.")).toBeVisible();
+  expect(
+    within(offerItem as HTMLElement).getByText("No active coupons for this offer."),
+  ).toBeVisible();
 });
 
 test("renders active offer price history rows", () => {
@@ -1555,8 +1567,8 @@ test("renders active offer price history rows", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1567,11 +1579,11 @@ test("renders active offer price history rows", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-3",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [
@@ -1584,13 +1596,13 @@ test("renders active offer price history rows", () => {
                 discountValue: "20.00",
                 currency: "USD",
                 validTo: "2026-07-01T00:00:00Z",
-                terms: "Online orders only."
-              }
-            }
+                terms: "Online orders only.",
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: false
-          }
+            hasNextPage: false,
+          },
         },
         priceHistory: {
           edges: [
@@ -1598,43 +1610,43 @@ test("renders active offer price history rows", () => {
               node: {
                 id: "price-1",
                 price: "249.99",
-                observedAt: "2026-05-30T10:00:00Z"
-              }
+                observedAt: "2026-05-30T10:00:00Z",
+              },
             },
             {
               node: {
                 id: "price-2",
                 price: "229.99",
-                observedAt: "2026-06-01T00:30:00+02:00"
-              }
+                observedAt: "2026-06-01T00:30:00+02:00",
+              },
             },
             {
               node: {
                 id: "price-invalid-date",
                 price: "219.99",
-                observedAt: "not-a-date"
-              }
+                observedAt: "not-a-date",
+              },
             },
             {
               node: {
                 id: "price-invalid-price",
                 price: "",
-                observedAt: "2026-06-02T10:00:00Z"
-              }
-            }
+                observedAt: "2026-06-02T10:00:00Z",
+              },
+            },
           ],
           pageInfo: {
-            hasNextPage: true
-          }
-        }
-      }
-    ])
+            hasNextPage: true,
+          },
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1670,8 +1682,8 @@ test("renders empty price history state for active offers", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -1682,32 +1694,32 @@ test("renders empty price history state for active offers", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
+          price: "199.99",
         },
         activeCoupons: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
+            hasNextPage: false,
+          },
         },
         priceHistory: {
           edges: [],
           pageInfo: {
-            hasNextPage: false
-          }
-        }
-      }
-    ])
+            hasNextPage: false,
+          },
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -1729,8 +1741,8 @@ test("renders product specifications from current attributes", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]), {
@@ -1740,21 +1752,21 @@ test("renders product specifications from current attributes", () => {
         code: "refresh-rate",
         displayName: "Refresh rate",
         dataType: "numeric",
-        valueText: "144 Hz"
+        valueText: "144 Hz",
       },
       {
         code: "panel-type",
         displayName: "Panel type",
         dataType: "text",
-        valueText: "OLED"
-      }
-    ]
+        valueText: "OLED",
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Specifications");
@@ -1772,8 +1784,8 @@ test("renders product specifications grouped by compare group label", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]), {
@@ -1791,7 +1803,7 @@ test("renders product specifications grouped by compare group label", () => {
         numericValue: "144",
         booleanValue: null,
         enumOptionId: null,
-        unitSymbol: "Hz"
+        unitSymbol: "Hz",
       },
       {
         attributeId: "QXR0cmlidXRlOjI=",
@@ -1805,7 +1817,7 @@ test("renders product specifications grouped by compare group label", () => {
         numericValue: null,
         booleanValue: true,
         enumOptionId: null,
-        unitSymbol: null
+        unitSymbol: null,
       },
       {
         attributeId: "QXR0cmlidXRlOjM=",
@@ -1819,22 +1831,20 @@ test("renders product specifications grouped by compare group label", () => {
         numericValue: null,
         booleanValue: null,
         enumOptionId: null,
-        unitSymbol: null
-      }
-    ]
+        unitSymbol: null,
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Specifications");
 
-  const specifications = screen
-    .getByRole("heading", { name: "Specifications" })
-    .closest("section");
+  const specifications = screen.getByRole("heading", { name: "Specifications" }).closest("section");
 
   expect(specifications).not.toBeNull();
   const specSection = within(specifications as HTMLElement);
@@ -1855,8 +1865,8 @@ test("renders product specification group labels case-insensitively", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]), {
@@ -1867,36 +1877,34 @@ test("renders product specification group labels case-insensitively", () => {
         displayName: "Refresh rate",
         dataType: "numeric",
         valueText: "144 Hz",
-        groupLabel: "Performance"
+        groupLabel: "Performance",
       },
       {
         code: "response-time",
         displayName: "Response time",
         dataType: "numeric",
         valueText: "1 ms",
-        groupLabel: "performance"
+        groupLabel: "performance",
       },
       {
         code: "release-year",
         displayName: "Release year",
         dataType: "int",
         valueText: "2026",
-        groupLabel: " "
-      }
-    ]
+        groupLabel: " ",
+      },
+    ],
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Specifications");
 
-  const specifications = screen
-    .getByRole("heading", { name: "Specifications" })
-    .closest("section");
+  const specifications = screen.getByRole("heading", { name: "Specifications" }).closest("section");
 
   expect(specifications).not.toBeNull();
   const specSection = within(specifications as HTMLElement);
@@ -1918,8 +1926,8 @@ test("adds the current detail product to compare from product detail", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -1927,12 +1935,12 @@ test("adds the current detail product to compare from product detail", () => {
   render(
     <MemoryRouter initialEntries={["/products/detail-product"]}>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/products/detail-product?slug=detail-product"
+    "/products/detail-product?slug=detail-product",
   );
 });
 
@@ -1942,8 +1950,8 @@ test("renders a persistent compare tray on product detail and preserves compare 
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -1951,7 +1959,7 @@ test("renders a persistent compare tray on product detail and preserves compare 
   render(
     <MemoryRouter initialEntries={["/products/detail-product?slug=second-product"]}>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
@@ -1961,16 +1969,16 @@ test("renders a persistent compare tray on product detail and preserves compare 
   expect(selectionCount).toHaveAttribute("aria-live", "polite");
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
-    "/compare?slug=second-product"
+    "/compare?slug=second-product",
   );
   expect(
     within(selectionTray).getByRole("link", {
-      name: "Remove second-product from selection"
-    })
+      name: "Remove second-product from selection",
+    }),
   ).toHaveAttribute("href", "/products/detail-product");
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products?slug=second-product"
+    "/products?slug=second-product",
   );
 });
 
@@ -1980,8 +1988,8 @@ test("clamps URL-driven compare selections before rendering product detail contr
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -1989,29 +1997,29 @@ test("clamps URL-driven compare selections before rendering product detail contr
   render(
     <MemoryRouter
       initialEntries={[
-        "/products/detail-product?slug=first-product&slug=second-product&slug=third-product&slug=detail-product"
+        "/products/detail-product?slug=first-product&slug=second-product&slug=third-product&slug=detail-product",
       ]}
     >
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
   const selectionCount = within(selectionTray).getByRole("status");
 
   expect(selectionCount).toHaveTextContent(
-    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`
+    `${MAX_COMPARE_PRODUCTS} of ${MAX_COMPARE_PRODUCTS} products selected.`,
   );
   expect(within(selectionTray).getAllByRole("listitem")).toHaveLength(MAX_COMPARE_PRODUCTS);
   expect(within(selectionTray).getByRole("link", { name: "Open comparison" })).toHaveAttribute(
     "href",
-    "/compare?slug=first-product&slug=second-product&slug=third-product"
+    "/compare?slug=first-product&slug=second-product&slug=third-product",
   );
   expect(screen.getByText("Compare selection full")).toBeInTheDocument();
   expect(screen.queryByText("This product is selected for comparison")).not.toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products?slug=first-product&slug=second-product&slug=third-product"
+    "/products?slug=first-product&slug=second-product&slug=third-product",
   );
 });
 
@@ -2023,8 +2031,8 @@ test("adds the current detail product while preserving offersAfter and the activ
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: offersDescriptorWithAfter
-    }
+      query: offersDescriptorWithAfter,
+    },
   });
   mockRouteQueryRefs(offersDescriptorWithAfter);
   mockProductAndOffersQueries(buildOffersData([]));
@@ -2032,16 +2040,16 @@ test("adds the current detail product while preserving offersAfter and the activ
   render(
     <MemoryRouter
       initialEntries={[
-        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product#specifications"
+        "/products/detail-product?offersAfter=cursor-next-page&slug=second-product#specifications",
       ]}
     >
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "Add this product to compare" })).toHaveAttribute(
     "href",
-    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product#specifications"
+    "/products/detail-product?offersAfter=cursor-next-page&slug=second-product&slug=detail-product#specifications",
   );
 });
 
@@ -2051,8 +2059,8 @@ test("renders an offer without a latest price", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -2063,17 +2071,17 @@ test("renders an offer without a latest price", () => {
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
-        latestPrice: null
-      }
-    ])
+        latestPrice: null,
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -2089,8 +2097,8 @@ test("renders an empty-offers message when no active offers exist", () => {
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(buildOffersData([]));
@@ -2098,7 +2106,7 @@ test("renders an empty-offers message when no active offers exist", () => {
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -2114,15 +2122,15 @@ test.each([
   ["private network URL", "http://192.168.1.1/offer"],
   ["IPv4-mapped private IPv6 URL", "http://[::ffff:192.168.1.1]/offer"],
   ["IPv4-compatible loopback IPv6 URL", "http://[::127.0.0.1]/offer"],
-  ["single-slash HTTP URL", "https:/merchant.example/offer"]
+  ["single-slash HTTP URL", "https:/merchant.example/offer"],
 ])("drops offers with unsafe urls: %s", (_caseName, url) => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(
@@ -2133,20 +2141,20 @@ test.each([
         currency: "USD",
         merchant: {
           id: "merchant-1",
-          name: "Acme"
+          name: "Acme",
         },
         latestPrice: {
           id: "price-1",
-          price: "199.99"
-        }
-      }
-    ])
+          price: "199.99",
+        },
+      },
+    ]),
   );
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -2160,18 +2168,18 @@ test("renders an unavailable-offers message without collapsing the product detai
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
-      status: "error"
-    }
+      status: "error",
+    },
   });
   mockedUseRoutePreloadedQuery.mockReturnValue(productQueryRef);
   mockedUsePreloadedQuery.mockReturnValue({
-    product: DETAIL_PRODUCT
+    product: DETAIL_PRODUCT,
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -2187,8 +2195,8 @@ test("renders a local unavailable-offers message when combined offer data is mis
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
     offers: {
       status: "ready",
-      query: OFFERS_QUERY_DESCRIPTOR
-    }
+      query: OFFERS_QUERY_DESCRIPTOR,
+    },
   });
   mockRouteQueryRefs();
   mockProductAndOffersQueries(new Error("Relay offers read failed"));
@@ -2196,7 +2204,7 @@ test("renders a local unavailable-offers message when combined offer data is mis
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   openProductDetailTab("Offers");
@@ -2207,13 +2215,13 @@ test("renders a local unavailable-offers message when combined offer data is mis
 
 test("renders a not-found message when the product detail loader misses", () => {
   mockedUseLoaderData.mockReturnValue({
-    status: "not_found"
+    status: "not_found",
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByText("Product not found.")).toBeInTheDocument();
@@ -2223,13 +2231,13 @@ test("renders a not-found message when the product detail loader misses", () => 
 
 test("renders an unavailable message when the product detail request fails", () => {
   mockedUseLoaderData.mockReturnValue({
-    status: "error"
+    status: "error",
   });
 
   render(
     <MemoryRouter>
       <ProductDetailRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("alert")).toHaveTextContent("Product unavailable.");
@@ -2255,7 +2263,7 @@ function openProductDetailTab(name: "Offers" | "Reviews & Q&A" | "Specifications
   const tabList = screen.getByRole("tablist", { name: "Product details" });
   fireEvent.mouseDown(within(tabList).getByRole("tab", { name }), {
     button: 0,
-    ctrlKey: false
+    ctrlKey: false,
   });
 }
 
@@ -2272,16 +2280,17 @@ function mockProductAndOffersQueries(offersResult: unknown, product = DETAIL_PRO
         return {
           product: {
             ...product,
-            merchantProducts: null
-          }
+            merchantProducts: null,
+          },
         };
       }
 
       return {
         product: {
           ...product,
-          merchantProducts: (offersResult as { merchantProducts?: unknown }).merchantProducts ?? null
-        }
+          merchantProducts:
+            (offersResult as { merchantProducts?: unknown }).merchantProducts ?? null,
+        },
       };
     }
 
@@ -2302,7 +2311,7 @@ function keyWarningCalls(consoleErrorSpy: ReturnType<typeof vi.spyOn>) {
     ([message]: unknown[]) =>
       typeof message === "string" &&
       (message.includes("Encountered two children with the same key") ||
-        message.includes('Each child in a list should have a unique "key" prop'))
+        message.includes('Each child in a list should have a unique "key" prop')),
   );
 }
 
@@ -2353,13 +2362,13 @@ function buildOffersData(
   connection: {
     hasNextPage?: boolean;
     endCursor?: string | null;
-  } = {}
+  } = {},
 ) {
   return {
     merchantProducts: {
       pageInfo: {
         hasNextPage: connection.hasNextPage ?? false,
-        endCursor: connection.endCursor ?? null
+        endCursor: connection.endCursor ?? null,
       },
       edges: nodes.map((node) => ({
         node: {
@@ -2367,17 +2376,17 @@ function buildOffersData(
           activeCoupons: {
             edges: node.activeCoupons?.edges ?? [],
             pageInfo: {
-              hasNextPage: node.activeCoupons?.pageInfo?.hasNextPage ?? false
-            }
+              hasNextPage: node.activeCoupons?.pageInfo?.hasNextPage ?? false,
+            },
           },
           priceHistory: node.priceHistory ?? {
             edges: [],
             pageInfo: {
-              hasNextPage: false
-            }
-          }
-        }
-      }))
-    }
+              hasNextPage: false,
+            },
+          },
+        },
+      })),
+    },
   };
 }

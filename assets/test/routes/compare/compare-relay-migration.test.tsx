@@ -1,52 +1,45 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
-import {
-  fetchRouteQuery,
-  useRoutePreloadedQuery
-} from "../../../src/relay/route-preload";
-import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
-import { compareLoader } from "../../../src/routes/compare/loader";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
-import { savedComparisonsLoader } from "../../../src/routes/compare/saved-data";
-import {
-  buildCompareLoaderArgs,
-  buildSavedComparisonsLoaderArgs
-} from "./saved-comparisons-test-helpers";
+import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
+import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
+import { buildCompareLoaderArgs } from "./saved-comparisons-test-helpers";
 
 const {
   commitMutationMock,
   fetchRouteQueryMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitMutationMock: vi.fn(),
   fetchRouteQueryMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("../../../src/relay/fetch-graphql", () => ({
-  fetchGraphQL: vi.fn()
+  fetchGraphQL: vi.fn(),
 }));
 
 vi.mock("../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../src/relay/route-preload")>(
-    "../../../src/relay/route-preload"
+    "../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
     fetchRouteQuery: fetchRouteQueryMock,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -55,9 +48,10 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
@@ -66,7 +60,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -74,6 +68,7 @@ const mockedFetchGraphQL = vi.mocked(fetchGraphQL);
 const mockedFetchRouteQuery = vi.mocked(fetchRouteQuery);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -85,9 +80,9 @@ const DETAIL_PRODUCT = {
   description: "A narrow product detail baseline.",
   brand: {
     id: "brand-1",
-    name: "Acme"
+    name: "Acme",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } as const;
 
 const SECOND_PRODUCT = {
@@ -97,35 +92,35 @@ const SECOND_PRODUCT = {
   description: "Another product for comparison.",
   brand: {
     id: "brand-2",
-    name: "Bravo"
+    name: "Bravo",
   },
-  currentAttributes: []
+  currentAttributes: [],
 } as const;
 
 const detailProductQueryDescriptor = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: DETAIL_PRODUCT.slug }
-  }
+    variables: { slug: DETAIL_PRODUCT.slug },
+  },
 };
 
 const secondProductQueryDescriptor = {
   __relayQuery: {
     operationName: "ProductDetailRouteQuery",
     text: "query ProductDetailRouteQuery($slug: String!) { product(slug: $slug) { id } }",
-    variables: { slug: SECOND_PRODUCT.slug }
-  }
+    variables: { slug: SECOND_PRODUCT.slug },
+  },
 };
 
 const detailProductQueryRef = {
   dispose: vi.fn(),
-  variables: detailProductQueryDescriptor.__relayQuery.variables
+  variables: detailProductQueryDescriptor.__relayQuery.variables,
 };
 
 const secondProductQueryRef = {
   dispose: vi.fn(),
-  variables: secondProductQueryDescriptor.__relayQuery.variables
+  variables: secondProductQueryDescriptor.__relayQuery.variables,
 };
 
 const compareRouteQueryDescriptor = {
@@ -134,14 +129,14 @@ const compareRouteQueryDescriptor = {
     text: "query CompareRouteQuery($slugs: [String!]!, $offerFirst: Int!) { comparisonProducts(slugs: $slugs) { id } }",
     variables: {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3
-    }
-  }
+      offerFirst: 3,
+    },
+  },
 };
 
 const compareRouteQueryRef = {
   dispose: vi.fn(),
-  variables: compareRouteQueryDescriptor.__relayQuery.variables
+  variables: compareRouteQueryDescriptor.__relayQuery.variables,
 };
 
 function buildCombinedCompareQuery() {
@@ -153,13 +148,13 @@ function buildCombinedCompareQuery() {
           edges: [],
           pageInfo: {
             hasNextPage: false,
-            endCursor: null
-          }
-        }
-      }))
+            endCursor: null,
+          },
+        },
+      })),
     },
     descriptor: compareRouteQueryDescriptor,
-    dispose: vi.fn()
+    dispose: vi.fn(),
   };
 }
 
@@ -172,26 +167,15 @@ function buildEmptyOfferContextSummary(productId: string) {
     hasLoadedCoupons: false,
     hasMoreActiveOffers: false,
     hasMoreCoupons: false,
-    latestPriceObservedAt: null
+    latestPriceObservedAt: null,
   };
 }
-
-const savedComparisonsRouteQueryDescriptor = {
-  __relayQuery: {
-    operationName: "SavedComparisonOperationsQuery",
-    text: "query SavedComparisonOperationsQuery($first: Int!, $after: String) { mySavedComparisonSets(first: $first, after: $after) { edges { node { id } } } }",
-    variables: { first: 20 }
-  }
-};
-
-const savedComparisonsQueryRef = {
-  dispose: vi.fn(),
-  variables: savedComparisonsRouteQueryDescriptor.__relayQuery.variables
-};
 
 beforeEach(() => {
   commitMutationMock.mockReset();
   fetchRouteQueryMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   mockedFetchGraphQL.mockReset();
   useLazyLoadQueryMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -200,7 +184,6 @@ beforeEach(() => {
   useRoutePreloadedQueryMock.mockReset();
   detailProductQueryRef.dispose.mockReset();
   secondProductQueryRef.dispose.mockReset();
-  savedComparisonsQueryRef.dispose.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
     comparisonRecommendation: {
       algorithmVersion: "test-v1",
@@ -209,12 +192,12 @@ beforeEach(() => {
       profile: "LOWEST_CURRENT_COST",
       rankings: [],
       status: "INSUFFICIENT_EVIDENCE",
-      winnerProductId: null
+      winnerProductId: null,
     },
     products: {
       edges: [],
-      pageInfo: { endCursor: null, hasNextPage: false }
-    }
+      pageInfo: { endCursor: null, hasNextPage: false },
+    },
   } as never);
   mockedUseMutation.mockReturnValue([commitMutationMock, false]);
 });
@@ -222,13 +205,13 @@ beforeEach(() => {
 test("compare loader preloads the batched comparison query through Relay", async () => {
   const environment = createRelayEnvironment();
   const request = new Request(
-    "https://app.example.com/compare?slug=detail-product&slug=second-product"
+    "https://app.example.com/compare?slug=detail-product&slug=second-product",
   );
 
   mockedFetchRouteQuery.mockResolvedValueOnce(buildCombinedCompareQuery());
 
   await expect(
-    compareLoader(buildCompareLoaderArgs({ environment, request }))
+    compareLoader(buildCompareLoaderArgs({ environment, request })),
   ).resolves.toMatchObject({
     status: "ready",
     specMode: "shared",
@@ -236,7 +219,7 @@ test("compare loader preloads the batched comparison query through Relay", async
     query: compareRouteQueryDescriptor,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
-      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
+      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id),
     },
     products: [
       {
@@ -245,7 +228,7 @@ test("compare loader preloads the batched comparison query through Relay", async
         slug: DETAIL_PRODUCT.slug,
         description: DETAIL_PRODUCT.description,
         brandName: DETAIL_PRODUCT.brand.name,
-        currentAttributes: []
+        currentAttributes: [],
       },
       {
         id: SECOND_PRODUCT.id,
@@ -253,9 +236,9 @@ test("compare loader preloads the batched comparison query through Relay", async
         slug: SECOND_PRODUCT.slug,
         description: SECOND_PRODUCT.description,
         brandName: SECOND_PRODUCT.brand.name,
-        currentAttributes: []
-      }
-    ]
+        currentAttributes: [],
+      },
+    ],
   });
 
   expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
@@ -263,9 +246,9 @@ test("compare loader preloads the batched comparison query through Relay", async
     expect.anything(),
     {
       slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-      offerFirst: 3
+      offerFirst: 3,
     },
-    { signal: request.signal }
+    { signal: request.signal },
   );
   expect(mockedFetchRouteQuery).toHaveBeenCalledTimes(1);
 });
@@ -278,7 +261,7 @@ test("compare route renders compared product cards from batched loader summaries
   render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
@@ -286,29 +269,35 @@ test("compare route renders compared product cards from batched loader summaries
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    compareRouteQueryDescriptor
+    compareRouteQueryDescriptor,
   );
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), compareRouteQueryRef);
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare route does not require per-product Relay detail reads", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
   mockRouteQueryRefs();
-  mockedUsePreloadedQuery.mockImplementation(() => {
-    throw new Error("Per-product Relay detail reads are not allowed");
+  mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === compareRouteQueryRef) {
+      return { comparisonProducts: [DETAIL_PRODUCT, SECOND_PRODUCT] };
+    }
+
+    throw new Error(`Per-product Relay detail read is not allowed: ${String(queryRef)}`);
   });
 
   render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), compareRouteQueryRef);
+  expect(mockedUsePreloadedQuery).toHaveBeenCalledTimes(1);
 });
 
 test("compare route saves the current selection through a Relay mutation", async () => {
@@ -319,17 +308,17 @@ test("compare route saves the current selection through a Relay mutation", async
     onCompleted({
       createSavedComparisonSet: {
         savedComparisonSet: {
-          id: "saved-set-1"
+          id: "saved-set-1",
         },
-        errors: []
-      }
+        errors: [],
+      },
     });
   });
 
   render(
     <MemoryRouter>
       <CompareRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
@@ -340,175 +329,15 @@ test("compare route saves the current selection through a Relay mutation", async
         variables: {
           input: {
             name: "Detail Product vs Second Product",
-            productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id]
-          }
-        }
-      })
-    );
-  });
-  expect(
-    await screen.findByRole("status", { name: "Save comparison status" })
-  ).toHaveTextContent("Comparison saved.");
-});
-
-test("saved comparisons loader preloads saved-set pages through Relay", async () => {
-  const environment = createRelayEnvironment();
-  const request = new Request("https://app.example.com/compare/saved");
-
-  mockedFetchRouteQuery.mockResolvedValueOnce({
-    data: {
-      mySavedComparisonSets: {
-        edges: [
-          {
-            node: {
-              id: "saved-set-1",
-              name: "Relay saved set",
-              items: [
-                {
-                  position: 1,
-                  product: {
-                    name: DETAIL_PRODUCT.name,
-                    slug: DETAIL_PRODUCT.slug
-                  }
-                }
-              ]
-            }
-          }
-        ],
-        pageInfo: {
-          hasNextPage: false,
-          endCursor: null
-        }
-      }
-    },
-    descriptor: savedComparisonsRouteQueryDescriptor,
-    dispose: vi.fn()
-  });
-
-  await expect(
-    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ environment, request }))
-  ).resolves.toEqual({
-    status: "ready",
-    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Relay saved set",
-        products: [
-          {
-            name: DETAIL_PRODUCT.name,
-            slug: DETAIL_PRODUCT.slug
-          }
-        ]
-      }
-    ],
-    after: null,
-    hasNextPage: false,
-    endCursor: null
-  });
-
-  expect(mockedFetchRouteQuery).toHaveBeenCalledWith(
-    environment,
-    expect.anything(),
-    { first: 20 },
-    { signal: request.signal }
-  );
-  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
-});
-
-test("saved comparisons route renders loader summaries while retaining Relay route queries", () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [savedComparisonsRouteQueryDescriptor],
-    savedSets: [
-      {
-        id: "fallback-saved-set",
-        name: "Fallback saved set",
-        products: [
-          {
-            name: "Fallback product",
-            slug: "fallback-product"
-          }
-        ]
-      }
-    ]
-  });
-  mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
-    if (descriptor === savedComparisonsRouteQueryDescriptor) {
-      return savedComparisonsQueryRef;
-    }
-
-    throw new Error(`Unexpected query descriptor: ${JSON.stringify(descriptor)}`);
-  });
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  expect(screen.getByText("Fallback saved set")).toBeInTheDocument();
-  expect(screen.getByText("Fallback product")).toBeInTheDocument();
-  expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
-    expect.anything(),
-    savedComparisonsRouteQueryDescriptor
-  );
-  expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
-});
-
-test("saved comparisons route deletes saved sets through a Relay mutation", async () => {
-  mockedUseLoaderData.mockReturnValue({
-    status: "ready",
-    savedSetQueries: [],
-    savedSets: [
-      {
-        id: "saved-set-1",
-        name: "Relay saved set",
-        products: [
-          {
-            name: DETAIL_PRODUCT.name,
-            slug: DETAIL_PRODUCT.slug
-          }
-        ]
-      }
-    ]
-  });
-  commitMutationMock.mockImplementation(({ onCompleted }) => {
-    onCompleted({
-      deleteSavedComparisonSet: {
-        savedComparisonSet: {
-          id: "saved-set-1"
+            productIds: [DETAIL_PRODUCT.id, SECOND_PRODUCT.id],
+          },
         },
-        errors: []
-      }
-    });
-  });
-
-  render(
-    <MemoryRouter>
-      <SavedComparisonsRoute />
-    </MemoryRouter>
-  );
-
-  fireEvent.click(screen.getByRole("button", { name: "Delete comparison" }));
-  fireEvent.click(
-    within(screen.getByRole("alertdialog", { name: "Delete this saved comparison?" })).getByRole(
-      "button",
-      { name: "Delete comparison" }
-    )
-  );
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        variables: {
-          savedComparisonSetId: "saved-set-1"
-        }
-      })
+      }),
     );
   });
-  expect(mockedFetchGraphQL).not.toHaveBeenCalled();
-  expect(screen.queryByText("Relay saved set")).not.toBeInTheDocument();
-  expect(screen.getByRole("status")).toHaveTextContent("Comparison deleted.");
+  expect(await screen.findByRole("status", { name: "Save comparison status" })).toHaveTextContent(
+    "Comparison saved.",
+  );
 });
 
 function buildReadyLoaderData() {
@@ -519,7 +348,7 @@ function buildReadyLoaderData() {
     query: compareRouteQueryDescriptor,
     offerContexts: {
       [DETAIL_PRODUCT.id]: buildEmptyOfferContextSummary(DETAIL_PRODUCT.id),
-      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id)
+      [SECOND_PRODUCT.id]: buildEmptyOfferContextSummary(SECOND_PRODUCT.id),
     },
     products: [
       {
@@ -528,7 +357,7 @@ function buildReadyLoaderData() {
         slug: DETAIL_PRODUCT.slug,
         description: DETAIL_PRODUCT.description,
         brandName: DETAIL_PRODUCT.brand.name,
-        currentAttributes: []
+        currentAttributes: [],
       },
       {
         id: SECOND_PRODUCT.id,
@@ -536,9 +365,9 @@ function buildReadyLoaderData() {
         slug: SECOND_PRODUCT.slug,
         description: SECOND_PRODUCT.description,
         brandName: SECOND_PRODUCT.brand.name,
-        currentAttributes: []
-      }
-    ]
+        currentAttributes: [],
+      },
+    ],
   };
 }
 
@@ -554,15 +383,21 @@ function mockRouteQueryRefs() {
 
 function mockProductQueries() {
   mockedUsePreloadedQuery.mockImplementation((_query, queryRef) => {
+    if (queryRef === compareRouteQueryRef) {
+      return {
+        comparisonProducts: [DETAIL_PRODUCT, SECOND_PRODUCT],
+      };
+    }
+
     if (queryRef === detailProductQueryRef) {
       return {
-        product: DETAIL_PRODUCT
+        product: DETAIL_PRODUCT,
       };
     }
 
     if (queryRef === secondProductQueryRef) {
       return {
-        product: SECOND_PRODUCT
+        product: SECOND_PRODUCT,
       };
     }
 

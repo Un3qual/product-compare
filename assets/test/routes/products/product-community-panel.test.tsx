@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { useLazyLoadQuery, useMutation } from "react-relay";
+import userEvent from "@testing-library/user-event";
+import { useFragment, useLazyLoadQuery, useMutation } from "react-relay";
 import {
   answerProductQuestionMutation,
   askProductQuestionMutation,
@@ -20,6 +21,7 @@ const {
   updateAnswerMock,
   updateQuestionMock,
   updateReviewMock,
+  useFragmentMock,
   useLazyLoadQueryMock,
   useMutationMock,
   uuidMock,
@@ -31,6 +33,7 @@ const {
   updateAnswerMock: vi.fn(),
   updateQuestionMock: vi.fn(),
   updateReviewMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLazyLoadQueryMock: vi.fn(),
   useMutationMock: vi.fn(),
   uuidMock: vi.fn(),
@@ -38,9 +41,15 @@ const {
 
 vi.mock("react-relay", async () => {
   const actual = await vi.importActual<typeof import("react-relay")>("react-relay");
-  return { ...actual, useLazyLoadQuery: useLazyLoadQueryMock, useMutation: useMutationMock };
+  return {
+    ...actual,
+    useFragment: useFragmentMock,
+    useLazyLoadQuery: useLazyLoadQueryMock,
+    useMutation: useMutationMock
+  };
 });
 
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 const mockedUseMutation = vi.mocked(useMutation);
 
@@ -93,6 +102,8 @@ beforeEach(() => {
     .mockReturnValueOnce("018f0f45-31f3-7af0-8bb9-2e606355f102")
     .mockReturnValue("018f0f45-31f3-7af0-8bb9-2e606355f103");
   vi.spyOn(globalThis.crypto, "randomUUID").mockImplementation(uuidMock);
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   useLazyLoadQueryMock.mockReset();
   useMutationMock.mockReset();
   mockedUseLazyLoadQuery.mockReturnValue({
@@ -162,7 +173,8 @@ test("ProductCommunityPanel explicitly associates every community form label wit
   }
 });
 
-test("ProductCommunityPanel exposes independent accessible creation disclosures", () => {
+test("ProductCommunityPanel exposes independent keyboard-accessible creation disclosures", async () => {
+  const user = userEvent.setup();
   render(<ProductCommunityPanel productId="product-1" productSlug="field-camera" />);
 
   for (const [triggerName, fieldName, value] of [
@@ -173,16 +185,19 @@ test("ProductCommunityPanel exposes independent accessible creation disclosures"
     const trigger = screen.getByRole("button", { name: triggerName });
     const field = screen.getByLabelText(fieldName);
 
+    expect(trigger).toHaveStyle({ minHeight: "44px" });
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(field).not.toBeVisible();
 
-    fireEvent.click(trigger);
+    trigger.focus();
+    await user.keyboard("{Enter}");
 
     expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveFocus();
     expect(field).toBeVisible();
 
     fireEvent.change(field, { target: { value } });
-    fireEvent.click(trigger);
+    await user.keyboard(" ");
 
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(field).not.toBeVisible();
@@ -234,7 +249,7 @@ test("ProductCommunityPanel reuses a create key after transport failure and repl
       [],
     ),
   );
-  expect(await screen.findByRole("status")).toHaveTextContent("submitted for moderation");
+  expect(await screen.findByRole("status")).toHaveTextContent("submitted for review");
   fireEvent.click(screen.getByRole("button", { name: "Submit review" }));
   await waitFor(() =>
     expect(reviewMock).toHaveBeenNthCalledWith(
@@ -285,7 +300,7 @@ test("ProductCommunityPanel exposes owner-only edit and confirmed removal contro
       [],
     ),
   );
-  expect(await screen.findByText("Review updated and submitted for moderation.")).toBeVisible();
+  expect(await screen.findByText("Review updated and submitted for review.")).toBeVisible();
   expect(screen.queryByText("<img src=x onerror=alert(1)> held up in rain.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Edit review" })).toBeNull();
 
@@ -369,8 +384,9 @@ test("ProductCommunityPanel gives owners a path to edit hidden and rejected subm
   expect(within(ownerSection).getByRole("button", { name: "Edit review" })).toBeVisible();
   expect(within(ownerSection).getByRole("button", { name: "Edit question" })).toBeVisible();
   expect(within(ownerSection).getByRole("button", { name: "Edit answer" })).toBeVisible();
-  expect(within(ownerSection).getByText("Hidden")).toBeVisible();
-  expect(within(ownerSection).getAllByText("Rejected")).toHaveLength(2);
+  expect(within(ownerSection).getByText("Hidden from shoppers")).toBeVisible();
+  expect(within(ownerSection).getAllByText("Changes requested")).toHaveLength(2);
+  expect(within(ownerSection).queryByText(/HIDDEN|REJECTED|PENDING_REVIEW/)).not.toBeInTheDocument();
 });
 
 test("ProductCommunityPanel keeps lifecycle failures scoped to their content row", async () => {

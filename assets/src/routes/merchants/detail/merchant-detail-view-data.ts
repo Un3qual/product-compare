@@ -42,15 +42,15 @@ export function getMerchantDetailViewData(
     summaryItems: [
       { label: "Active offers", value: detailSummary.activeOfferCount },
       { label: "Products", value: detailSummary.distinctProductCount },
-      { label: "Eligible landed prices", value: detailSummary.eligibleOfferCount },
-      { label: "Fresh observations", value: detailSummary.freshOfferCount },
+      { label: "Offers with complete prices", value: detailSummary.eligibleOfferCount },
+      { label: "Recently checked offers", value: detailSummary.freshOfferCount },
     ],
     observation: {
       lastObservedAt: detailSummary.lastObservedAt ?? null,
       leadCopy: detailSummary.lastObservedAt
-        ? "Latest captured observation"
-        : "No offer observations are available yet.",
-      freshnessCopy: `${detailSummary.agingOfferCount} aging, ${detailSummary.staleOfferCount} stale, and ${detailSummary.unobservedOfferCount} unobserved active offers.`,
+        ? "Prices last checked"
+        : "No offer prices have been checked yet.",
+      freshnessCopy: `${detailSummary.agingOfferCount} need a refresh, ${detailSummary.staleOfferCount} are out of date, and ${detailSummary.unobservedOfferCount} have not been checked.`,
     },
     offerRows: merchant.merchantProducts.edges.map(({ node }) => ({
       id: node.id,
@@ -67,7 +67,7 @@ function offerPriceCopy(
   currency: string,
   latestPrice: MerchantDetailViewDataInput["merchantProducts"]["edges"][number]["node"]["latestPrice"],
 ) {
-  if (!latestPrice) return "No price observation yet.";
+  if (!latestPrice) return "No current price available.";
 
   const shippingCopy =
     latestPrice.shipping == null ? " plus unknown shipping" : ` + ${latestPrice.shipping} shipping`;

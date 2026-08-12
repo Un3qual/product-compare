@@ -1,6 +1,6 @@
-import { defineVars } from "@stylexjs/stylex";
+import { defineConsts } from "@stylexjs/stylex";
 
-export const tokens = defineVars({
+export const tokens = defineConsts({
   surface: "var(--pc-surface-canvas)",
   surfaceRaised: "var(--pc-surface-raised)",
   surfaceMuted: "var(--pc-surface-muted)",
@@ -14,7 +14,11 @@ export const tokens = defineVars({
   borderEmphasized: "var(--pc-border-emphasized)",
   actionAccent: "var(--pc-action-accent)",
   actionAccentHover: "var(--pc-action-accent-hover)",
+  freshnessSoft: "var(--pc-freshness-soft)",
+  freshnessGreen: "var(--pc-freshness-green)",
   pricePositive: "var(--pc-price-positive)",
+  fontSans: "var(--pc-font-sans)",
+  fontMono: "var(--pc-font-mono)",
   coupon: "var(--pc-coupon)",
   warning: "var(--pc-warning)",
   unavailable: "var(--pc-unavailable)",

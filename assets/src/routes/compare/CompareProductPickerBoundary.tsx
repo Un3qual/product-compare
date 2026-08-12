@@ -1,10 +1,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
-import { useLazyLoadQuery } from "react-relay";
-import compareProductPickerQuery, {
-  type CompareProductPickerQuery
-} from "../../__generated__/CompareProductPickerQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
+import { graphql, useLazyLoadQuery } from "react-relay";
+import type { CompareProductPickerBoundaryQuery } from "$generated/CompareProductPickerBoundaryQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import {
   appendUniqueComparePickerProducts,
   availableComparePickerProducts,
@@ -12,23 +10,45 @@ import {
   comparePickerEmptyMessage,
   comparePickerResetToken,
   isComparePickerEmpty,
-  nextComparePickerPageCursor
+  nextComparePickerPageCursor,
 } from "./compare-picker-data";
 import type { CompareSpecMode } from "./paths";
 import {
   CompareProductPickerView,
-  type CompareProductPickerOption
+  type CompareProductPickerOption,
 } from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
+const compareProductPickerQuery = graphql`
+  query CompareProductPickerBoundaryQuery($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      edges {
+        node {
+          id
+          name
+          slug
+          brand {
+            id
+            name
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
 
-type ComparePickerProduct =
-  NonNullable<CompareProductPickerQuery["response"]["products"]>["edges"][number]["node"];
+type ComparePickerProduct = NonNullable<
+  CompareProductPickerBoundaryQuery["response"]["products"]
+>["edges"][number]["node"];
 
 export function CompareProductPickerBoundary({
   heading = "Choose products",
   specMode,
-  selectedSlugs
+  selectedSlugs,
 }: {
   heading?: string;
   specMode: CompareSpecMode;
@@ -56,7 +76,7 @@ export function CompareProductPickerBoundary({
 function CompareProductPicker({
   heading,
   specMode,
-  selectedSlugs
+  selectedSlugs,
 }: {
   heading: string;
   specMode: CompareSpecMode;
@@ -65,15 +85,15 @@ function CompareProductPicker({
   const [after, setAfter] = useState<string | null>(null);
   const [loadedProducts, setLoadedProducts] = useState<ComparePickerProduct[]>([]);
 
-  const data = useLazyLoadQuery<CompareProductPickerQuery>(
+  const data = useLazyLoadQuery<CompareProductPickerBoundaryQuery>(
     compareProductPickerQuery,
     { first: COMPARE_PRODUCT_PICKER_PAGE_SIZE, after },
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
   const productConnection = data.products;
   const pageProducts = useMemo(
     () => productConnection?.edges.map(({ node }) => node) ?? [],
-    [productConnection]
+    [productConnection],
   );
   const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
@@ -81,7 +101,7 @@ function CompareProductPicker({
   const options = buildComparePickerOptions(
     availableProducts,
     selectedSlugs,
-    specMode
+    specMode,
   ) satisfies CompareProductPickerOption[];
 
   useEffect(() => {

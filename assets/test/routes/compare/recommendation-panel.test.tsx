@@ -4,11 +4,11 @@ import { useLazyLoadQuery } from "react-relay";
 import { RecommendationPanel } from "../../../src/routes/compare/RecommendationPanel";
 import {
   recommendationProfileFromUrl,
-  shouldRevalidateCompareLoader
-} from "../../../src/routes/compare/loader";
+  shouldRevalidateCompareLoader,
+} from "../../../src/routes/compare/recommendation-route-data";
 
 const { useLazyLoadQueryMock } = vi.hoisted(() => ({
-  useLazyLoadQueryMock: vi.fn()
+  useLazyLoadQueryMock: vi.fn(),
 }));
 
 vi.mock("react-relay", async () => {
@@ -20,7 +20,6 @@ const mockedUseLazyLoadQuery = vi.mocked(useLazyLoadQuery);
 
 const WINNER = {
   profile: "BEST_VALUE",
-  algorithmVersion: "best-supported-current-cost-v1",
   status: "WINNER",
   winnerProductId: "product-1",
   currency: "USD",
@@ -34,9 +33,9 @@ const WINNER = {
       currency: "USD",
       pricePointId: "price-point-4",
       claimIds: ["claim-2", "claim-3"],
-      reasons: ["Lowest eligible landed price: USD 119.00"]
-    }
-  ]
+      reasons: ["Lowest eligible landed price: USD 119.00"],
+    },
+  ],
 } as const;
 
 beforeEach(() => {
@@ -45,34 +44,34 @@ beforeEach(() => {
 });
 
 describe("RecommendationPanel", () => {
-  it("loads the selected profile and shows exact source evidence", () => {
+  it("loads the selected profile and explains its buying recommendation without internal IDs", () => {
     render(
       <MemoryRouter initialEntries={["/compare?recommend=best_value"]}>
-        <RecommendationPanel
-          slugs={["evidence-camera", "other-camera"]}
-          specMode="differences"
-        />
-      </MemoryRouter>
+        <RecommendationPanel slugs={["evidence-camera", "other-camera"]} specMode="differences" />
+      </MemoryRouter>,
     );
 
     expect(mockedUseLazyLoadQuery).toHaveBeenCalledWith(
       expect.anything(),
       {
         slugs: ["evidence-camera", "other-camera"],
-        profile: "BEST_VALUE"
+        profile: "BEST_VALUE",
       },
-      { fetchPolicy: "store-or-network" }
+      { fetchPolicy: "store-or-network" },
     );
     expect(screen.getByText("Evidence Camera")).toBeVisible();
-    expect(screen.getByText(/price observation price-point-4/)).toBeVisible();
-    expect(screen.getByText(/2 accepted claim references/)).toBeVisible();
+    expect(screen.getByText("Lowest current total price: USD 119.00")).toBeVisible();
+    expect(
+      screen.getByText("Based on the current price and 2 verified product details."),
+    ).toBeVisible();
+    expect(screen.queryByText(/price-point-4|claim-2|algorithm/i)).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Lowest current cost" })).toHaveAttribute(
       "href",
-      "/compare?slug=evidence-camera&slug=other-camera&specs=differences"
+      "/compare?slug=evidence-camera&slug=other-camera&specs=differences",
     );
     expect(screen.getByRole("link", { name: "Best supported value" })).toHaveAttribute(
       "aria-current",
-      "page"
+      "page",
     );
   });
 
@@ -83,61 +82,60 @@ describe("RecommendationPanel", () => {
         status: "INSUFFICIENT_EVIDENCE",
         winnerProductId: null,
         rankings: [],
-        missingInputs: ["Products do not share one eligible offer currency."]
-      }
+        missingInputs: ["Products do not share one eligible offer currency."],
+      },
     } as never);
 
     render(
       <MemoryRouter>
         <RecommendationPanel slugs={["one", "two"]} specMode="shared" />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     expect(screen.getByText("No supported winner")).toBeVisible();
     expect(
-      screen.getByText("Products do not share one eligible offer currency.")
+      screen.getByText("These products do not have current prices in the same currency."),
     ).toBeVisible();
+    expect(screen.queryByText(/eligible offer currency/i)).not.toBeInTheDocument();
   });
 });
 
 describe("recommendation profile navigation", () => {
   it("defaults unknown profiles to lowest current cost", () => {
     expect(recommendationProfileFromUrl("https://example.test/compare?recommend=unknown")).toBe(
-      "lowest_current_cost"
+      "lowest_current_cost",
     );
   });
 
   it("accepts the best value profile", () => {
-    expect(
-      recommendationProfileFromUrl("https://example.test/compare?recommend=best_value")
-    ).toBe("best_value");
+    expect(recommendationProfileFromUrl("https://example.test/compare?recommend=best_value")).toBe(
+      "best_value",
+    );
   });
 
   it("does not refetch the core comparison when only the profile changes", () => {
     expect(
       shouldRevalidateCompareLoader({
         currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
-        nextUrl: new URL(
-          "https://example.test/compare?slug=one&slug=two&recommend=best_value"
-        ),
-        defaultShouldRevalidate: true
-      } as never)
+        nextUrl: new URL("https://example.test/compare?slug=one&slug=two&recommend=best_value"),
+        defaultShouldRevalidate: true,
+      } as never),
     ).toBe(false);
 
     expect(
       shouldRevalidateCompareLoader({
         currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
         nextUrl: new URL("https://example.test/compare?slug=one&slug=three"),
-        defaultShouldRevalidate: true
-      } as never)
+        defaultShouldRevalidate: true,
+      } as never),
     ).toBe(true);
 
     expect(
       shouldRevalidateCompareLoader({
         currentUrl: new URL("https://example.test/compare?slug=one&slug=two"),
         nextUrl: new URL("https://example.test/compare?slug=one&slug=two"),
-        defaultShouldRevalidate: true
-      } as never)
+        defaultShouldRevalidate: true,
+      } as never),
     ).toBe(true);
   });
 });

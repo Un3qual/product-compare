@@ -4,10 +4,6 @@ export type RootDestination = {
   to: string;
 };
 
-export type RootShopperDestination = RootDestination & {
-  description: string;
-};
-
 export type RootDestinationViewer = {
   readonly isOperator: boolean;
 };
@@ -19,10 +15,6 @@ export type RootDestinationSection = {
 
 export type RootDestinationData = {
   primary: RootDestinationSection;
-  home: {
-    shopperDestinations: readonly RootShopperDestination[];
-    secondary: RootDestinationSection;
-  };
 };
 
 const PUBLIC_DESTINATIONS = [
@@ -44,28 +36,6 @@ const OPERATOR_DESTINATIONS = [
   { label: "CJ programs", to: "/ingestion/cj-programs" },
 ] as const satisfies readonly RootDestination[];
 
-const SHOPPER_DESTINATIONS = [
-  {
-    description: "Explore the catalog and narrow by what matters.",
-    label: "Browse products",
-    to: "/products",
-  },
-  {
-    description: "Line up the meaningful differences side by side.",
-    label: "Compare products",
-    to: "/compare",
-  },
-  {
-    description: "Check current prices, availability, and coupons.",
-    label: "Review offers",
-    to: "/offers",
-  },
-] as const satisfies readonly RootShopperDestination[];
-
-const SECONDARY_PUBLIC_DESTINATIONS = PUBLIC_DESTINATIONS.filter(
-  ({ to }) => !SHOPPER_DESTINATIONS.some((destination) => destination.to === to),
-);
-
 const GUEST_AUTH_DESTINATIONS = [
   { label: "Sign in", to: "/auth/login" },
   { label: "Create account", to: "/auth/register" },
@@ -83,17 +53,6 @@ export function getRootDestinationData(viewer: RootDestinationViewer | null): Ro
     primary: {
       destinations: [...PUBLIC_DESTINATIONS, ...authenticatedDestinations, ...operatorDestinations],
       authDestinations,
-    },
-    home: {
-      shopperDestinations: SHOPPER_DESTINATIONS,
-      secondary: {
-        destinations: [
-          ...SECONDARY_PUBLIC_DESTINATIONS,
-          ...authenticatedDestinations,
-          ...operatorDestinations,
-        ],
-        authDestinations,
-      },
     },
   };
 }

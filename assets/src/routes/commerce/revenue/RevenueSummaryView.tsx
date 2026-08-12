@@ -1,12 +1,12 @@
 import type { ReactElement, ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../../ui/primitives/Button";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import { SummaryStrip } from "$ui/components/data/SummaryStrip";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Button } from "$ui/primitives/Button";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildRevenueSummaryFilterFormData,
   type RevenueActiveFilter,

@@ -1,24 +1,5 @@
 import { graphql } from "react-relay";
 
-export const affiliateSetupOperationsQuery = graphql`
-  query AffiliateSetupOperationsQuery($first: Int!, $after: String) {
-    merchants(first: $first, after: $after) {
-      edges {
-        cursor
-        node {
-          ...MerchantListItemFragment @relay(mask: false)
-        }
-      }
-      pageInfo {
-        hasNextPage
-        hasPreviousPage
-        startCursor
-        endCursor
-      }
-    }
-  }
-`;
-
 export const createCouponMutation = graphql`
   mutation AffiliateSetupOperationsCreateCouponMutation($input: CreateCouponInput!) {
     createCoupon(input: $input) {

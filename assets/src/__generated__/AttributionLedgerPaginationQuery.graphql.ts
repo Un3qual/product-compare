@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<1bf16405dae251f282c34b2a3bc268d4>>
+ * @generated SignedSource<<a22193265bbba1292f12933ccd2da127>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -77,38 +77,17 @@ v3 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "affiliateNetworkId",
+  "name": "affiliateNetworkName",
   "storageKey": null
 },
 v4 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
-  "name": "affiliateNetworkName",
-  "storageKey": null
-},
-v5 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "merchantId",
-  "storageKey": null
-},
-v6 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
   "name": "merchantName",
   "storageKey": null
 },
-v7 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "productId",
-  "storageKey": null
-},
-v8 = {
+v5 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
@@ -161,9 +140,15 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
+                  {
+                    "alias": null,
+                    "args": null,
+                    "kind": "ScalarField",
+                    "name": "clickId",
+                    "storageKey": null
+                  },
                   (v2/*: any*/),
                   (v3/*: any*/),
-                  (v4/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -175,21 +160,7 @@ return {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "affiliateProgramId",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "anonymousId",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "clickId",
+                    "name": "anonymousVisitor",
                     "storageKey": null
                   },
                   {
@@ -223,7 +194,6 @@ return {
                     "selections": [
                       (v2/*: any*/),
                       (v3/*: any*/),
-                      (v4/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -245,8 +215,7 @@ return {
                         "name": "currency",
                         "storageKey": null
                       },
-                      (v5/*: any*/),
-                      (v6/*: any*/),
+                      (v4/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -261,8 +230,7 @@ return {
                         "name": "orderAmount",
                         "storageKey": null
                       },
-                      (v7/*: any*/),
-                      (v8/*: any*/),
+                      (v5/*: any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -287,8 +255,7 @@ return {
                     ],
                     "storageKey": null
                   },
-                  (v5/*: any*/),
-                  (v6/*: any*/),
+                  (v4/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -296,15 +263,7 @@ return {
                     "name": "merchantProductExternalSku",
                     "storageKey": null
                   },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "merchantProductId",
-                    "storageKey": null
-                  },
-                  (v7/*: any*/),
-                  (v8/*: any*/),
+                  (v5/*: any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -331,13 +290,6 @@ return {
                     "args": null,
                     "kind": "ScalarField",
                     "name": "userEmail",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "userId",
                     "storageKey": null
                   },
                   {
@@ -402,16 +354,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "2dc6ea61c426ac6e3726fb06db9980a1",
+    "cacheID": "e3654e464866c794909534f8c90aa19b",
     "id": null,
     "metadata": {},
     "name": "AttributionLedgerPaginationQuery",
     "operationKind": "query",
-    "text": "query AttributionLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n  $input: RevenueSummaryInput\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        affiliateNetworkCode\n        affiliateNetworkId\n        affiliateNetworkName\n        affiliateProgramCode\n        affiliateProgramId\n        anonymousId\n        clickId\n        insertedAt\n        ipAddress\n        linkType\n        matchedConversions {\n          affiliateNetworkCode\n          affiliateNetworkId\n          affiliateNetworkName\n          attributionConfidence\n          commissionAmount\n          currency\n          merchantId\n          merchantName\n          networkConversionRef\n          orderAmount\n          productId\n          productName\n          purchasedAt\n          reportedAt\n          status\n        }\n        merchantId\n        merchantName\n        merchantProductExternalSku\n        merchantProductId\n        productId\n        productName\n        referrer\n        sourceSurface\n        userAgent\n        userEmail\n        userId\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n"
+    "text": "query AttributionLedgerPaginationQuery(\n  $after: String\n  $first: Int!\n  $input: RevenueSummaryInput\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        clickId\n        ...AttributionLedger_row\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment AttributionLedger_row on CommerceAttributionClick {\n  affiliateNetworkCode\n  affiliateNetworkName\n  affiliateProgramCode\n  anonymousVisitor\n  clickId\n  insertedAt\n  ipAddress\n  linkType\n  matchedConversions {\n    affiliateNetworkCode\n    affiliateNetworkName\n    attributionConfidence\n    commissionAmount\n    currency\n    merchantName\n    networkConversionRef\n    orderAmount\n    productName\n    purchasedAt\n    reportedAt\n    status\n  }\n  merchantName\n  merchantProductExternalSku\n  productName\n  referrer\n  sourceSurface\n  userAgent\n  userEmail\n}\n"
   }
 };
 })();
 
-(node as any).hash = "230eb3f1208eba32add731030729955f";
+(node as any).hash = "0c0b37b5ba210723492a12c1a516c313";
 
 export default node;

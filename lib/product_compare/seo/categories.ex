@@ -3,10 +3,10 @@ defmodule ProductCompare.Seo.Categories do
 
   import Ecto.Query
 
-  alias ProductCompare.Repo
+  alias ProductCompare.{Input, Repo}
+  alias ProductCompare.Pricing.CurrentOffers
   alias ProductCompare.Seo.QualificationPolicy
   alias ProductCompareSchemas.Catalog.Product
-  alias ProductCompareSchemas.Pricing.{MerchantProduct, PricePoint}
   alias ProductCompareSchemas.Taxonomy.{Taxon, TaxonClosure}
 
   @spec get(String.t(), keyword()) :: map() | nil
@@ -41,22 +41,56 @@ defmodule ProductCompare.Seo.Categories do
       Map.new(taxons, fn taxon ->
         qualified_product_count = Map.fetch!(counts, taxon.id)
 
-        {taxon.seo_slug,
-         %{
-           id: taxon.id,
-           entropy_id: taxon.entropy_id,
-           name: taxon.name,
-           slug: taxon.seo_slug,
-           description: taxon.seo_description,
-           qualified_product_count: qualified_product_count,
-           indexable:
-             QualificationPolicy.adequate_text?(taxon.seo_description) and
-               qualified_product_count >= QualificationPolicy.minimum_category_products(),
-           now: now
-         }}
+        {taxon.seo_slug, category_summary(taxon, qualified_product_count, now)}
       end)
 
     Map.new(requested_slugs, &{&1, Map.get(categories_by_slug, &1)})
+  end
+
+  @spec home_shortcuts(keyword()) :: [map()]
+  def home_shortcuts(opts) do
+    now = Keyword.get(opts, :now, DateTime.utc_now())
+    offset = opts |> Keyword.get(:offset, 0) |> Input.clamp_non_negative(0)
+    limit = required_positive_limit(opts)
+    qualifying_products = homepage_qualified_products_query(now)
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    minimum_products = QualificationPolicy.minimum_category_products()
+
+    Taxon
+    |> join(:inner, [taxon], closure in TaxonClosure, on: closure.ancestor_id == taxon.id)
+    |> join(:inner, [_taxon, closure], product in subquery(qualifying_products),
+      on: product.primary_type_taxon_id == closure.descendant_id
+    )
+    |> where(
+      [taxon],
+      taxon.seo_indexable == true and not is_nil(taxon.seo_slug) and
+        fragment(
+          "char_length(trim(coalesce(?, ''))) >= ?",
+          taxon.seo_description,
+          ^minimum_description_length
+        )
+    )
+    |> group_by([taxon], taxon.id)
+    |> having([_taxon, _closure, product], count(product.id) >= ^minimum_products)
+    |> order_by([taxon, _closure, product],
+      desc: count(product.id),
+      asc: fragment("lower(coalesce(?, ''))", taxon.name),
+      asc: taxon.id
+    )
+    |> offset(^offset)
+    |> limit(^limit)
+    |> select([taxon, _closure, product], {taxon, count(product.id)})
+    |> Repo.all()
+    |> then(fn shortcut_rows ->
+      canonical_counts =
+        shortcut_rows
+        |> Enum.map(fn {taxon, _homepage_count} -> taxon.id end)
+        |> qualified_product_counts(now)
+
+      Enum.map(shortcut_rows, fn {taxon, _homepage_count} ->
+        category_summary(taxon, Map.fetch!(canonical_counts, taxon.id), now)
+      end)
+    end)
   end
 
   @spec qualified_products_for_taxon_query(pos_integer(), DateTime.t()) :: Ecto.Query.t()
@@ -137,15 +171,37 @@ defmodule ProductCompare.Seo.Categories do
   @doc false
   @spec eligible_offer_scope(DateTime.t()) :: Ecto.Query.t()
   def eligible_offer_scope(%DateTime{} = now) do
-    MerchantProduct
-    |> join(:inner, [offer], price in subquery(latest_prices_query()),
-      on: price.merchant_product_id == offer.id
+    CurrentOffers.eligible_query(:all,
+      now: now,
+      currency: :all,
+      fresh_after: stale_boundary(now)
     )
-    |> where(
-      [offer, price],
-      offer.is_active == true and price.in_stock == true and not is_nil(price.shipping) and
-        price.observed_at >= ^stale_boundary(now)
+    |> subquery()
+    |> then(fn eligible -> from(offer in eligible) end)
+  end
+
+  defp homepage_qualified_products_query(now) do
+    homepage_eligible_products =
+      now
+      |> homepage_eligible_offer_scope()
+      |> select([offer], %{product_id: offer.product_id})
+      |> distinct(true)
+
+    Product
+    |> content_qualified_products_query()
+    |> join(:inner, [product], eligible in subquery(homepage_eligible_products),
+      on: eligible.product_id == product.id
     )
+  end
+
+  defp homepage_eligible_offer_scope(now) do
+    CurrentOffers.eligible_query(:all,
+      now: now,
+      currency: "USD",
+      fresh_after: stale_boundary(now)
+    )
+    |> subquery()
+    |> then(fn eligible -> from(offer in eligible) end)
   end
 
   defp qualified_product_counts([], _now), do: %{}
@@ -160,7 +216,7 @@ defmodule ProductCompare.Seo.Categories do
       )
       |> where([closure], closure.ancestor_id in ^taxon_ids)
       |> group_by([closure], closure.ancestor_id)
-      |> select([closure, product], {closure.ancestor_id, count(product.id, :distinct)})
+      |> select([closure, product], {closure.ancestor_id, count(product.id)})
       |> Repo.all()
       |> Map.new()
 
@@ -168,9 +224,6 @@ defmodule ProductCompare.Seo.Categories do
   end
 
   defp qualified_products_query(queryable, %DateTime{} = now) do
-    minimum_description_length = QualificationPolicy.minimum_description_length()
-    minimum_specification_count = QualificationPolicy.minimum_specification_count()
-
     eligible_products =
       now
       |> eligible_offer_scope()
@@ -178,15 +231,23 @@ defmodule ProductCompare.Seo.Categories do
       |> distinct(true)
 
     queryable
+    |> content_qualified_products_query()
     |> join(:inner, [product], eligible in subquery(eligible_products),
       on: eligible.product_id == product.id
     )
+  end
+
+  defp content_qualified_products_query(queryable) do
+    minimum_description_length = QualificationPolicy.minimum_description_length()
+    specification_offset = QualificationPolicy.minimum_specification_count() - 1
+
+    queryable
     |> where(
       [product],
       fragment(
-        "(SELECT count(*) FROM product_attribute_current pac WHERE pac.product_id = ?) >= ?",
+        "EXISTS (SELECT 1 FROM product_attribute_current pac WHERE pac.product_id = ? OFFSET ? LIMIT 1)",
         product.id,
-        ^minimum_specification_count
+        ^specification_offset
       )
     )
     |> where(
@@ -200,10 +261,26 @@ defmodule ProductCompare.Seo.Categories do
     )
   end
 
-  defp latest_prices_query do
-    from price in PricePoint,
-      distinct: price.merchant_product_id,
-      order_by: [asc: price.merchant_product_id, desc: price.observed_at, desc: price.id]
+  defp category_summary(taxon, qualified_product_count, now) do
+    %{
+      id: taxon.id,
+      entropy_id: taxon.entropy_id,
+      name: taxon.name,
+      slug: taxon.seo_slug,
+      description: taxon.seo_description,
+      qualified_product_count: qualified_product_count,
+      indexable:
+        QualificationPolicy.adequate_text?(taxon.seo_description) and
+          qualified_product_count >= QualificationPolicy.minimum_category_products(),
+      now: now
+    }
+  end
+
+  defp required_positive_limit(opts) do
+    case Keyword.fetch(opts, :limit) do
+      {:ok, limit} when is_integer(limit) and limit > 0 -> limit
+      _missing_or_invalid -> raise ArgumentError, "home category limit must be a positive integer"
+    end
   end
 
   defp stale_boundary(now) do

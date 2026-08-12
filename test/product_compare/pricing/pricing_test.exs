@@ -1,11 +1,14 @@
 defmodule ProductCompare.PricingTest do
   use ProductCompare.DataCase, async: true
 
+  import Ecto.Query
   import ProductCompare.DatabaseTestHelpers, only: [capture_select_queries: 1]
 
   alias ProductCompare.Fixtures.SpecsFixtures
   alias ProductCompare.Pricing
+  alias ProductCompare.Pricing.CurrentOffers
   alias ProductCompare.Pricing.OfferTruth
+  alias ProductCompare.Pricing.PriceHistory
   alias ProductCompare.Repo
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
@@ -367,6 +370,235 @@ defmodule ProductCompare.PricingTest do
       assert Enum.map(history, & &1.id) == [tie_a.id, tie_b.id, latest.id]
       assert oldest.id < tie_a.id
       assert tie_a.id < tie_b.id
+    end
+
+    test "temporal offer probes exclude future rows and break timestamp ties by id", %{
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-temporal-probes"})
+      now = ~U[2026-08-11 12:00:00Z]
+
+      offer = offer_fixture(product, "USD", "#{test_name}-temporal-probes", true, nil)
+
+      {:ok, first_a} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(now, -7_200, :second),
+          price: "120",
+          shipping: "5",
+          in_stock: true
+        })
+
+      {:ok, _first_b} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(now, -7_200, :second),
+          price: "119",
+          shipping: "5",
+          in_stock: true
+        })
+
+      {:ok, _latest_a} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(now, -3_600, :second),
+          price: "110",
+          shipping: "5",
+          in_stock: true
+        })
+
+      {:ok, latest_b} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(now, -3_600, :second),
+          price: "109",
+          shipping: "5",
+          in_stock: true
+        })
+
+      {:ok, _future} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(now, 1, :second),
+          price: "1",
+          shipping: "0",
+          in_stock: false
+        })
+
+      assert observation_id(offer.id, PriceHistory.latest_observation_for_offer_query(now)) ==
+               latest_b.id
+
+      assert observation_id(offer.id, PriceHistory.first_observation_for_offer_query(now)) ==
+               first_a.id
+    end
+
+    test "landed price medians preserve numeric precision for even cardinalities", %{
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-precise-median"})
+      from = ~U[2026-08-01 12:00:00Z]
+      to = ~U[2026-08-11 12:00:00Z]
+      offer = offer_fixture(product, "USD", "#{test_name}-precise-median", true, nil)
+
+      Enum.each(["9007199254740992", "9007199254740993"], fn price ->
+        assert {:ok, _point} =
+                 Pricing.add_price_point(%{
+                   merchant_product_id: offer.id,
+                   observed_at: from,
+                   price: price,
+                   shipping: "0",
+                   in_stock: true
+                 })
+      end)
+
+      assert %{median: median} =
+               product.id
+               |> List.wrap()
+               |> PriceHistory.landed_price_medians_query(
+                 from: from,
+                 to: to,
+                 currency: "USD"
+               )
+               |> Repo.one!()
+
+      assert Decimal.eq?(median, Decimal.new("9007199254740992.5"))
+    end
+
+    test "landed price medians accept numerics larger than float8", %{test: test_name} do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-large-median"})
+      from = ~U[2026-08-01 12:00:00Z]
+      to = ~U[2026-08-11 12:00:00Z]
+      offer = offer_fixture(product, "USD", "#{test_name}-large-median", true, nil)
+
+      assert {:ok, _point} =
+               Pricing.add_price_point(%{
+                 merchant_product_id: offer.id,
+                 observed_at: from,
+                 price: "1" <> String.duplicate("0", 400),
+                 shipping: "0",
+                 in_stock: true
+               })
+
+      assert %{median: median} =
+               product.id
+               |> List.wrap()
+               |> PriceHistory.landed_price_medians_query(
+                 from: from,
+                 to: to,
+                 currency: "USD"
+               )
+               |> Repo.one!()
+
+      assert Decimal.eq?(median, Decimal.new("1E+400"))
+    end
+
+    test "landed price medians use inclusive arbitrary bounds and reject reversed ranges", %{
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-bounded-median"})
+      from = ~U[2026-08-01 12:00:00Z]
+      to = ~U[2026-08-11 12:00:00Z]
+      offer = offer_fixture(product, "USD", "#{test_name}-bounded-median", true, nil)
+
+      Enum.each([{from, "10"}, {DateTime.add(from, 1, :day), "20"}, {to, "30"}], fn
+        {observed_at, price} ->
+          assert {:ok, _point} =
+                   Pricing.add_price_point(%{
+                     merchant_product_id: offer.id,
+                     observed_at: observed_at,
+                     price: price,
+                     shipping: "5",
+                     in_stock: true
+                   })
+      end)
+
+      Enum.each(
+        [
+          {DateTime.add(from, -1, :microsecond), "1"},
+          {DateTime.add(to, 1, :microsecond), "1000"}
+        ],
+        fn {observed_at, price} ->
+          assert {:ok, _point} =
+                   Pricing.add_price_point(%{
+                     merchant_product_id: offer.id,
+                     observed_at: observed_at,
+                     price: price,
+                     shipping: "5",
+                     in_stock: true
+                   })
+        end
+      )
+
+      assert %{product_id: product_id, currency: "USD", median: median} =
+               product.id
+               |> List.wrap()
+               |> PriceHistory.landed_price_medians_query(
+                 from: from,
+                 to: to,
+                 currency: "USD"
+               )
+               |> Repo.one!()
+
+      assert product_id == product.id
+      assert Decimal.eq?(median, Decimal.new("25"))
+
+      assert_raise ArgumentError, ~r/from must be before or equal to to/, fn ->
+        PriceHistory.landed_price_medians_query([product.id],
+          from: to,
+          to: from,
+          currency: "USD"
+        )
+      end
+    end
+
+    test "empty current-offer and median scopes do not select price history" do
+      opts = [
+        now: ~U[2026-08-11 12:00:00Z],
+        currency: "USD",
+        fresh_after: ~U[2026-08-10 12:00:00Z]
+      ]
+
+      {eligible, current_queries} =
+        capture_select_queries(fn -> [] |> CurrentOffers.eligible_query(opts) |> Repo.all() end)
+
+      {medians, median_queries} =
+        capture_select_queries(fn ->
+          []
+          |> PriceHistory.landed_price_medians_query(
+            from: ~U[2026-07-12 12:00:00Z],
+            to: ~U[2026-08-11 12:00:00Z],
+            currency: "USD"
+          )
+          |> Repo.all()
+        end)
+
+      assert eligible == []
+      assert medians == []
+
+      refute Enum.any?(current_queries ++ median_queries, fn query ->
+               String.contains?(query, ~s(FROM "price_points"))
+             end)
+    end
+
+    test "adding medians to an empty eligible scope returns no rows without selecting history" do
+      {offers, queries} =
+        capture_select_queries(fn ->
+          []
+          |> CurrentOffers.eligible_query(
+            now: ~U[2026-08-11 12:00:00Z],
+            currency: "USD",
+            fresh_after: ~U[2026-08-10 12:00:00Z]
+          )
+          |> CurrentOffers.with_median([],
+            from: ~U[2026-07-12 12:00:00Z],
+            to: ~U[2026-08-11 12:00:00Z],
+            currency: "USD"
+          )
+          |> Repo.all()
+        end)
+
+      assert offers == []
+      refute Enum.any?(queries, &String.contains?(&1, ~s(FROM "price_points")))
     end
   end
 
@@ -888,6 +1120,15 @@ defmodule ProductCompare.PricingTest do
     end
 
     merchant_product
+  end
+
+  defp observation_id(merchant_product_id, observation_query) do
+    MerchantProduct
+    |> from(as: :offer)
+    |> where([offer: offer], offer.id == ^merchant_product_id)
+    |> join(:inner_lateral, [offer: _offer], observation in subquery(observation_query), on: true)
+    |> select([_offer, observation], observation.id)
+    |> Repo.one!()
   end
 
   defp expected_product_offer_pages(product_ids, filters, window) do

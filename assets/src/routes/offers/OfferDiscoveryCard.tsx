@@ -1,6 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
-import { StatusBadge } from "../../ui/components/status/StatusBadge";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { graphql, useFragment } from "react-relay";
+import type { OfferDiscoveryCard_offer$key } from "$generated/OfferDiscoveryCard_offer.graphql";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { externalHttpUrlHref } from "../external-links";
 import { graphQLDateTimeContext } from "../graphql-datetime";
 import {
@@ -9,39 +11,93 @@ import {
   type ActiveCouponsConnection,
   type CouponNode,
   type OfferNode,
-  type PriceHistoryRow
+  type PriceHistoryRow,
 } from "./offer-discovery-data";
 import { getOfferDiscoveryCardData } from "./offer-discovery-card-data";
 import { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";
+
+const offerDiscoveryCardFragment = graphql`
+  fragment OfferDiscoveryCard_offer on MerchantProduct {
+    id
+    url
+    currency
+    lastSeenAt
+    isActive
+    merchant {
+      id
+      name
+      domain
+    }
+    product {
+      id
+      name
+      slug
+    }
+    latestPrice {
+      id
+      price
+      observedAt
+    }
+    activeCoupons(first: 2) {
+      edges {
+        cursor
+        node {
+          code
+          description
+          discountType
+          discountValue
+          currency
+          validTo
+          terms
+        }
+      }
+      pageInfo {
+        hasNextPage
+      }
+    }
+    priceHistory(first: 3) {
+      edges {
+        node {
+          id
+          price
+          observedAt
+        }
+      }
+      pageInfo {
+        hasNextPage
+      }
+    }
+  }
+`;
 
 type CouponEdge = ActiveCouponsConnection["edges"][number];
 
 const styles = create({
   offer: {
     display: "grid",
-    gap: "1rem"
+    gap: "1rem",
   },
   offerHeader: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
     gap: "0.75rem",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   offerTitle: {
     fontSize: "1.2rem",
     letterSpacing: "-0.02em",
-    margin: 0
+    margin: 0,
   },
   price: {
     color: tokens.text,
     fontSize: "1.35rem",
     fontWeight: 750,
-    margin: 0
+    margin: 0,
   },
   muted: {
     color: tokens.textSecondary,
-    margin: 0
+    margin: 0,
   },
   offerDecision: {
     alignItems: "start",
@@ -49,20 +105,20 @@ const styles = create({
     gap: "1rem 2rem",
     gridTemplateColumns: {
       default: "minmax(0, 1fr) minmax(9rem, auto)",
-      "@media (max-width: 42rem)": "minmax(0, 1fr)"
-    }
+      "@media (max-width: 42rem)": "minmax(0, 1fr)",
+    },
   },
   merchantContext: {
     display: "grid",
-    gap: "0.55rem"
+    gap: "0.55rem",
   },
   priceContext: {
     display: "grid",
     gap: "0.55rem",
     justifyItems: {
       default: "end",
-      "@media (max-width: 42rem)": "start"
-    }
+      "@media (max-width: 42rem)": "start",
+    },
   },
   supportingDetail: {
     borderBlockStartColor: tokens.borderQuiet,
@@ -72,34 +128,32 @@ const styles = create({
     gap: "1rem",
     gridTemplateColumns: {
       default: "repeat(2, minmax(0, 1fr))",
-      "@media (max-width: 42rem)": "minmax(0, 1fr)"
+      "@media (max-width: 42rem)": "minmax(0, 1fr)",
     },
-    paddingBlockStart: "1rem"
-  }
+    paddingBlockStart: "1rem",
+  },
 });
 
 export function OfferDiscoveryCard({
   offer,
-  highlightLabel
+  highlightLabel,
 }: {
-  offer: OfferNode;
+  offer: OfferDiscoveryCard_offer$key;
   highlightLabel: string | null;
 }) {
-  const cardData = getOfferDiscoveryCardData(offer);
-  const merchantName = offerMerchantName(offer.merchant);
+  const data = useFragment(offerDiscoveryCardFragment, offer);
+  const cardData = getOfferDiscoveryCardData(data);
+  const merchantName = offerMerchantName(data.merchant);
 
   return (
     <article {...props(styles.offer)}>
-      <OfferCardHeader
-        productName={cardData.productName}
-        status={cardData.status}
-      />
+      <OfferCardHeader productName={cardData.productName} status={cardData.status} />
       <OfferDecisionContext
         highlightLabel={highlightLabel}
         latestPriceLabel={cardData.latestPriceLabel}
         merchantDomain={cardData.merchantDomain}
         merchantName={merchantName}
-        offer={offer}
+        offer={data}
       />
       <OfferSupportingDetail
         activeCoupons={cardData.activeCoupons}
@@ -116,7 +170,7 @@ function OfferDecisionContext({
   latestPriceLabel,
   merchantDomain,
   merchantName,
-  offer
+  offer,
 }: {
   highlightLabel: string | null;
   latestPriceLabel: string;
@@ -148,7 +202,7 @@ function OfferSupportingDetail({
   activeCoupons,
   merchantName,
   priceHistoryHasMore,
-  priceHistoryRows
+  priceHistoryRows,
 }: {
   activeCoupons: ActiveCouponsConnection;
   merchantName: string;
@@ -173,7 +227,7 @@ function OfferSupportingDetail({
 
 function OfferCardHeader({
   productName,
-  status
+  status,
 }: {
   productName: string;
   status: ReturnType<typeof getOfferDiscoveryCardData>["status"];
@@ -190,7 +244,7 @@ function OfferMerchantAction({
   isActive,
   merchantProductId,
   merchantUrl,
-  merchantName
+  merchantName,
 }: {
   isActive: boolean;
   merchantProductId: string;
@@ -200,10 +254,7 @@ function OfferMerchantAction({
   if (isActive && merchantProductId) {
     return (
       <div>
-        <TrackedCommerceClickAction
-          label={merchantName}
-          merchantProductId={merchantProductId}
-        />
+        <TrackedCommerceClickAction label={merchantName} merchantProductId={merchantProductId} />
       </div>
     );
   }
@@ -256,7 +307,7 @@ function OfferObservationContext({ offer }: { offer: OfferNode }) {
 function PriceHistorySummary({
   hasMore,
   merchantName,
-  rows
+  rows,
 }: {
   hasMore: boolean;
   merchantName: string;
@@ -284,7 +335,7 @@ function PriceHistorySummary({
 function CouponSummary({
   couponEdges,
   hasMore,
-  merchantName
+  merchantName,
 }: {
   couponEdges: readonly CouponEdge[];
   hasMore: boolean;

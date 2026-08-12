@@ -3,38 +3,64 @@ import { create, props } from "@stylexjs/stylex";
 import { useRevalidator } from "react-router-dom";
 import {
   graphql,
+  useFragment,
   useMutation,
   usePreloadedQuery,
   useQueryLoader,
-  type PreloadedQuery
+  type PreloadedQuery,
 } from "react-relay";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import cjProgramFeedsQuery, {
-  type CJProgramFeedsQuery
-} from "../../../__generated__/CJProgramFeedsQuery.graphql";
-import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
-import type { CJProgramRowUpdateCJProgramMutation } from "../../../__generated__/CJProgramRowUpdateCJProgramMutation.graphql";
-import { StatusBadge } from "../../../ui/components/status/StatusBadge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger
-} from "../../../ui/primitives/Collapsible";
-import { Button } from "../../../ui/primitives/Button";
-import { Select } from "../../../ui/primitives/Select";
-import { TextArea } from "../../../ui/primitives/TextArea";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import type { CJProgramRowFeedsQuery } from "$generated/CJProgramRowFeedsQuery.graphql";
+import type { CJProgramRow_program$key } from "$generated/CJProgramRow_program.graphql";
+import type { CJProgramRowUpdateCJProgramMutation } from "$generated/CJProgramRowUpdateCJProgramMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { TextArea } from "$ui/primitives/TextArea";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
   cjProgramStageLabel,
   cjProgramWarningCopy,
   formatCJDateTime,
   isCJProgramStage,
-  type CJProgramStage
+  type CJProgramStage,
 } from "./cj-program-data";
 import { CJFeedRow } from "./CJFeedRow";
 
-type CJProgram = CJProgramsRouteQuery["response"]["cjPrograms"]["edges"][number]["node"];
+const cjProgramFragment = graphql`
+  fragment CJProgramRow_program on CJProgram {
+    id
+    advertiserId
+    advertiserName
+    stage
+    note
+    lastChanged
+    feedCount
+    warningCodes
+  }
+`;
+
+const cjProgramFeedsQuery = graphql`
+  query CJProgramRowFeedsQuery($id: ID!, $first: Int!, $after: String) {
+    cjProgram(id: $id) {
+      feeds(first: $first, after: $after) {
+        edges {
+          node {
+            id
+            ...CJFeedRow_feed
+          }
+        }
+        pageInfo {
+          hasNextPage
+          hasPreviousPage
+          endCursor
+        }
+      }
+    }
+  }
+`;
 
 const updateCJProgramMutation = graphql`
   mutation CJProgramRowUpdateCJProgramMutation($input: UpdateCjProgramInput!) {
@@ -55,24 +81,24 @@ const styles = create({
     borderBlockEndWidth: "1px",
     display: "grid",
     gap: "0.8rem",
-    paddingBlock: "1.15rem"
+    paddingBlock: "1.15rem",
   },
   header: {
     alignItems: "start",
     display: "flex",
     flexWrap: "wrap",
     gap: "0.6rem 1rem",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   title: {
-    margin: 0
+    margin: 0,
   },
   facts: {
     color: tokens.textSecondary,
     display: "flex",
     flexWrap: "wrap",
     gap: "0.5rem 1rem",
-    margin: 0
+    margin: 0,
   },
   controls: {
     alignItems: "end",
@@ -80,24 +106,24 @@ const styles = create({
     gap: "0.65rem",
     gridTemplateColumns: {
       default: "minmax(10rem, 0.6fr) minmax(14rem, 1fr) auto",
-      "@media (max-width: 42rem)": "1fr"
-    }
+      "@media (max-width: 42rem)": "1fr",
+    },
   },
   field: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   label: {
     color: tokens.textSecondary,
     fontSize: "0.82rem",
-    fontWeight: 600
+    fontWeight: 600,
   },
   warnings: {
     color: tokens.textSecondary,
     display: "grid",
     gap: "0.25rem",
     margin: 0,
-    paddingInlineStart: "1rem"
+    paddingInlineStart: "1rem",
   },
   feedDetails: {
     borderBlockStartColor: tokens.borderQuiet,
@@ -105,64 +131,43 @@ const styles = create({
     borderBlockStartWidth: "1px",
     display: "grid",
     gap: "0.75rem",
-    paddingBlockStart: "0.85rem"
+    paddingBlockStart: "0.85rem",
   },
   feedList: {
     display: "grid",
     gap: "0.65rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   feedActions: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.65rem"
-  }
+    gap: "0.65rem",
+  },
 });
 
-export function CJProgramRow({ program }: { program: CJProgram }) {
+export function CJProgramRow({ program: programRef }: { program: CJProgramRow_program$key }) {
+  const program = useFragment(cjProgramFragment, programRef);
   const programName = program.advertiserName ?? program.advertiserId;
   const [stage, setStage] = useState<CJProgramStage | null>(
-    isCJProgramStage(program.stage) ? program.stage : null
+    isCJProgramStage(program.stage) ? program.stage : null,
   );
   const [note, setNote] = useState(program.note ?? "");
   const [feedback, setFeedback] = useState("");
-  const [isFeedsOpen, setIsFeedsOpen] = useState(false);
-  const [feedAfter, setFeedAfter] = useState<string | null>(null);
-  const [feedRetryToken, setFeedRetryToken] = useState(0);
-  const hasLoadedFeeds = useRef(false);
   const revalidator = useRevalidator();
-  const [commitUpdate, isUpdateInFlight] = useMutation<CJProgramRowUpdateCJProgramMutation>(
-    updateCJProgramMutation
-  );
-  const [feedQueryRef, loadFeedQuery, disposeFeedQuery] = useQueryLoader<CJProgramFeedsQuery>(
-    cjProgramFeedsQuery
-  );
+  const [commitUpdate, isUpdateInFlight] =
+    useMutation<CJProgramRowUpdateCJProgramMutation>(updateCJProgramMutation);
   const stageLabel = cjProgramStageLabel(program.stage) ?? program.stage ?? null;
   const warnings = program.warningCodes
     .map(cjProgramWarningCopy)
     .filter((warning) => warning !== null);
   const lastChanged = formatCJDateTime(program.lastChanged);
 
-  useEffect(() => disposeFeedQuery, [disposeFeedQuery]);
   useEffect(() => {
     setStage(isCJProgramStage(program.stage) ? program.stage : null);
     setNote(program.note ?? "");
   }, [program.lastChanged, program.note, program.stage]);
-
-  const loadFeedPage = (after: string | null) => {
-    setFeedAfter(after);
-    loadFeedQuery(
-      { id: program.id, first: 10, after },
-      { fetchPolicy: "store-or-network" }
-    );
-  };
-
-  const retryFeedPage = () => {
-    setFeedRetryToken((token) => token + 1);
-    loadFeedPage(feedAfter);
-  };
 
   const handleSave = () => {
     if (!stage) {
@@ -176,8 +181,8 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
           id: program.id,
           stage,
           note: note.trim() || null,
-          expectedChangedAt: program.lastChanged
-        }
+          expectedChangedAt: program.lastChanged,
+        },
       },
       onCompleted(response) {
         const payload = response.updateCjProgram;
@@ -197,23 +202,27 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
       },
       onError() {
         setFeedback("CJ program could not be updated.");
-      }
+      },
     });
   };
 
+  const programSummary = (
+    <header {...props(styles.header)}>
+      <div>
+        <h2 {...props(styles.title)}>{programName}</h2>
+        <p {...props(styles.facts)}>
+          <span>Advertiser ID {program.advertiserId}</span>
+          <span>{formatFeedCount(program.feedCount)}</span>
+          {lastChanged ? <span>Last changed {lastChanged}</span> : null}
+        </p>
+      </div>
+      {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
+    </header>
+  );
+
   return (
     <li aria-busy={isUpdateInFlight} {...props(styles.item)}>
-      <header {...props(styles.header)}>
-        <div>
-          <h2 {...props(styles.title)}>{programName}</h2>
-          <p {...props(styles.facts)}>
-            <span>Advertiser ID {program.advertiserId}</span>
-            <span>{formatFeedCount(program.feedCount)}</span>
-            {lastChanged ? <span>Last changed {lastChanged}</span> : null}
-          </p>
-        </div>
-        {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
-      </header>
+      {programSummary}
       {warnings.length > 0 ? (
         <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
           {warnings.map((warning) => (
@@ -235,8 +244,8 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
               ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
               ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({
                 label,
-                value
-              }))
+                value,
+              })),
             ]}
             value={stage ?? ""}
           />
@@ -259,46 +268,77 @@ export function CJProgramRow({ program }: { program: CJProgram }) {
         </Button>
       </div>
       {feedback ? <p role="status">{feedback}</p> : null}
-      <Collapsible
-        onOpenChange={(open) => {
-          setIsFeedsOpen(open);
-
-          if (open && !hasLoadedFeeds.current) {
-            hasLoadedFeeds.current = true;
-            loadFeedPage(null);
-          }
-        }}
-        open={isFeedsOpen}
-      >
-        <CollapsibleTrigger asChild>
-          <Button aria-label={`${isFeedsOpen ? "Hide" : "Show"} feeds for ${programName}`} type="button" variant="soft">
-            {isFeedsOpen ? "Hide feeds" : "Show feeds"}
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent {...props(styles.feedDetails)}>
-          {feedQueryRef ? (
-            <ResettableErrorBoundary
-              fallback={<CJProgramFeedUnavailable onRetry={retryFeedPage} programName={programName} />}
-              resetToken={feedRetryToken}
-            >
-              <Suspense fallback={<p>Loading feed details...</p>}>
-                <CJProgramFeeds
-                  onPage={loadFeedPage}
-                  programName={programName}
-                  queryRef={feedQueryRef}
-                />
-              </Suspense>
-            </ResettableErrorBoundary>
-          ) : null}
-        </CollapsibleContent>
-      </Collapsible>
+      <CJProgramFeedDisclosure programId={program.id} programName={programName} />
     </li>
+  );
+}
+
+function CJProgramFeedDisclosure({
+  programId,
+  programName,
+}: {
+  programId: string;
+  programName: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [after, setAfter] = useState<string | null>(null);
+  const [retryToken, setRetryToken] = useState(0);
+  const hasLoaded = useRef(false);
+  const [queryRef, loadQuery, disposeQuery] =
+    useQueryLoader<CJProgramRowFeedsQuery>(cjProgramFeedsQuery);
+
+  useEffect(() => disposeQuery, [disposeQuery]);
+
+  const loadPage = (nextAfter: string | null) => {
+    setAfter(nextAfter);
+    loadQuery({ id: programId, first: 10, after: nextAfter }, { fetchPolicy: "store-or-network" });
+  };
+
+  const retryPage = () => {
+    setRetryToken((token) => token + 1);
+    loadPage(after);
+  };
+
+  return (
+    <Collapsible
+      onOpenChange={(open) => {
+        setIsOpen(open);
+
+        if (open && !hasLoaded.current) {
+          hasLoaded.current = true;
+          loadPage(null);
+        }
+      }}
+      open={isOpen}
+    >
+      <CollapsibleTrigger asChild>
+        <Button
+          aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
+          type="button"
+          variant="soft"
+        >
+          {isOpen ? "Hide feeds" : "Show feeds"}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent {...props(styles.feedDetails)}>
+        {queryRef ? (
+          <ResettableErrorBoundary
+            fallback={<CJProgramFeedUnavailable onRetry={retryPage} programName={programName} />}
+            resetToken={retryToken}
+          >
+            <Suspense fallback={<p>Loading feed details...</p>}>
+              <CJProgramFeeds onPage={loadPage} programName={programName} queryRef={queryRef} />
+            </Suspense>
+          </ResettableErrorBoundary>
+        ) : null}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
 function CJProgramFeedUnavailable({
   onRetry,
-  programName
+  programName,
 }: {
   onRetry: () => void;
   programName: string;
@@ -306,7 +346,12 @@ function CJProgramFeedUnavailable({
   return (
     <div role="alert">
       <p>Feeds unavailable.</p>
-      <Button aria-label={`Retry feeds for ${programName}`} onClick={onRetry} type="button" variant="soft">
+      <Button
+        aria-label={`Retry feeds for ${programName}`}
+        onClick={onRetry}
+        type="button"
+        variant="soft"
+      >
         Retry feeds
       </Button>
     </div>
@@ -316,13 +361,13 @@ function CJProgramFeedUnavailable({
 function CJProgramFeeds({
   onPage,
   programName,
-  queryRef
+  queryRef,
 }: {
   onPage: (after: string | null) => void;
   programName: string;
-  queryRef: PreloadedQuery<CJProgramFeedsQuery>;
+  queryRef: PreloadedQuery<CJProgramRowFeedsQuery>;
 }) {
-  const data = usePreloadedQuery<CJProgramFeedsQuery>(cjProgramFeedsQuery, queryRef);
+  const data = usePreloadedQuery<CJProgramRowFeedsQuery>(cjProgramFeedsQuery, queryRef);
   const program = data.cjProgram;
 
   if (!program) {

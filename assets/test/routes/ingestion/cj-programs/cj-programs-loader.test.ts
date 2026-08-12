@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/relay/route-preload";
-import { cjProgramsLoader } from "../../../../src/routes/ingestion/cj-programs/loader";
+import { cjProgramsLoader } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
 
 vi.mock("../../../../src/relay/route-preload", async () => {

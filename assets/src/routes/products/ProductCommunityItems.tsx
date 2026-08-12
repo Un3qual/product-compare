@@ -1,16 +1,27 @@
 import { type FormEvent, type ReactNode, useId, useState } from "react";
 import { props } from "@stylexjs/stylex";
-import { useMutation } from "react-relay";
-import type { ProductCommunityOperationsQuery } from "../../__generated__/ProductCommunityOperationsQuery.graphql";
-import type { ProductCommunityOperationsRemoveCommunityContentMutation } from "../../__generated__/ProductCommunityOperationsRemoveCommunityContentMutation.graphql";
-import type { ProductCommunityOperationsUpdateProductAnswerMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductAnswerMutation.graphql";
-import type { ProductCommunityOperationsUpdateProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductQuestionMutation.graphql";
-import type { ProductCommunityOperationsUpdateProductReviewMutation } from "../../__generated__/ProductCommunityOperationsUpdateProductReviewMutation.graphql";
-import { Button } from "../../ui/primitives/Button";
-import { Label } from "../../ui/primitives/Label";
-import { Select } from "../../ui/primitives/Select";
-import { TextArea } from "../../ui/primitives/TextArea";
-import { TextField } from "../../ui/primitives/TextField";
+import { graphql, useFragment, useMutation } from "react-relay";
+import type {
+  ProductCommunityItems_answer$data,
+  ProductCommunityItems_answer$key
+} from "$generated/ProductCommunityItems_answer.graphql";
+import type {
+  ProductCommunityItems_question$data,
+  ProductCommunityItems_question$key
+} from "$generated/ProductCommunityItems_question.graphql";
+import type {
+  ProductCommunityItems_review$data,
+  ProductCommunityItems_review$key
+} from "$generated/ProductCommunityItems_review.graphql";
+import type { ProductCommunityOperationsRemoveCommunityContentMutation } from "$generated/ProductCommunityOperationsRemoveCommunityContentMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductAnswerMutation } from "$generated/ProductCommunityOperationsUpdateProductAnswerMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductQuestionMutation } from "$generated/ProductCommunityOperationsUpdateProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsUpdateProductReviewMutation } from "$generated/ProductCommunityOperationsUpdateProductReviewMutation.graphql";
+import { Button } from "$ui/primitives/Button";
+import { Label } from "$ui/primitives/Label";
+import { Select } from "$ui/primitives/Select";
+import { TextArea } from "$ui/primitives/TextArea";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../route-errors";
 import {
@@ -29,18 +40,57 @@ import {
   updateProductReviewMutation
 } from "./ProductCommunityOperations";
 
-type CommunityProduct = NonNullable<ProductCommunityOperationsQuery["response"]["product"]>;
-type Review = CommunityProduct["reviews"]["edges"][number]["node"];
-type Question = CommunityProduct["questions"]["edges"][number]["node"];
-type Answer = Question["answers"]["edges"][number]["node"];
-type QuestionRow = Pick<
-  Question,
-  "id" | "title" | "body" | "authorLabel" | "moderationStatus" | "viewerCanEdit" | "viewerCanRemove"
->;
+const reviewFragment = graphql`
+  fragment ProductCommunityItems_review on ProductReview {
+    id
+    rating
+    title
+    body
+    verifiedPurchase
+    authorLabel
+    moderationStatus
+    viewerCanEdit
+    viewerCanRemove
+  }
+`;
+
+const questionFragment = graphql`
+  fragment ProductCommunityItems_question on ProductQuestion {
+    id
+    title
+    body
+    authorLabel
+    moderationStatus
+    viewerCanEdit
+    viewerCanRemove
+  }
+`;
+
+const answerFragment = graphql`
+  fragment ProductCommunityItems_answer on ProductAnswer {
+    id
+    body
+    authorLabel
+    moderationStatus
+    viewerCanEdit
+    viewerCanRemove
+  }
+`;
+
+type Review = ProductCommunityItems_review$data;
+type QuestionRow = ProductCommunityItems_question$data;
+type Answer = ProductCommunityItems_answer$data;
 type CommunityContentType = "REVIEW" | "QUESTION" | "ANSWER";
 type CommunityContentLabel = "review" | "question" | "answer";
 
-export function ReviewItem({ ownerView = false, review }: { ownerView?: boolean; review: Review }) {
+export function ReviewItem({
+  ownerView = false,
+  review: reviewRef
+}: {
+  ownerView?: boolean;
+  review: ProductCommunityItems_review$key;
+}) {
+  const review = useFragment(reviewFragment, reviewRef);
   const state = useCommunityItemState();
   const { pending, submit } = useReviewUpdate(review, ownerView, state);
   const display = publishedReviewRowDisplayData(review);
@@ -72,12 +122,13 @@ export function ReviewItem({ ownerView = false, review }: { ownerView?: boolean;
 export function QuestionItem({
   children,
   ownerView = false,
-  question
+  question: questionRef
 }: {
   children?: ReactNode;
   ownerView?: boolean;
-  question: QuestionRow;
+  question: ProductCommunityItems_question$key;
 }) {
+  const question = useFragment(questionFragment, questionRef);
   const state = useCommunityItemState();
   const { pending, submit } = useQuestionUpdate(question, ownerView, state);
 
@@ -108,13 +159,14 @@ export function QuestionItem({
 
 export function AnswerView({
   acceptedAnswerId,
-  answer,
+  answer: answerRef,
   ownerView = false
 }: {
   acceptedAnswerId?: string | null;
-  answer: Answer;
+  answer: ProductCommunityItems_answer$key;
   ownerView?: boolean;
 }) {
+  const answer = useFragment(answerFragment, answerRef);
   const state = useCommunityItemState();
   const { pending, submit } = useAnswerUpdate(answer, ownerView, state);
 
@@ -405,7 +457,23 @@ function RemoveCommunityControl({
 
 function ModerationStatus({ ownerView, status }: { ownerView: boolean; status: string }) {
   if (!ownerView) return null;
-  return <p {...props(styles.metadata)}>{status.charAt(0) + status.slice(1).toLowerCase()}</p>;
+  return <p {...props(styles.metadata)}>{moderationStatusCopy(status)}</p>;
+}
+
+function moderationStatusCopy(status: string) {
+  switch (status) {
+    case "PUBLISHED":
+      return "Published";
+    case "PENDING":
+    case "PENDING_REVIEW":
+      return "Awaiting review";
+    case "HIDDEN":
+      return "Hidden from shoppers";
+    case "REJECTED":
+      return "Changes requested";
+    default:
+      return "Review status unavailable";
+  }
 }
 
 function OptionalParagraph({ value }: { value: string | null | undefined }) {

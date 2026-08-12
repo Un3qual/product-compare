@@ -68,7 +68,7 @@ defmodule ProductCompareWeb.Schema.CommerceAttribution.Types do
     field :source_surface, non_null(:commerce_click_source_surface)
     field :user_id, :id
     field :user_email, :string
-    field :anonymous_id, :string
+    field :anonymous_visitor, non_null(:boolean)
     field :referrer, :string
     field :user_agent, :string
     field :ip_address, :string

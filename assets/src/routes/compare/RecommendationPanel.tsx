@@ -1,31 +1,50 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
-import { useLazyLoadQuery } from "react-relay";
-import type { CompareRecommendationQuery } from "../../__generated__/CompareRecommendationQuery.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import type { CompareSpecMode } from "./loader";
+import { graphql, useLazyLoadQuery } from "react-relay";
+import type { RecommendationPanelQuery } from "$generated/RecommendationPanelQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import type { CompareSpecMode } from "./compare-route-data";
 import {
   buildRecommendationQueryInput,
   buildRecommendationProfilePath,
   recommendationProfileFromUrl,
-  type RecommendationProfile
+  type RecommendationProfile,
 } from "./recommendation-route-data";
 import { getRecommendationViewData } from "./recommendation-view-data";
-import compareRecommendationQuery from "./queries/CompareRecommendationQuery";
+
+const compareRecommendationQuery = graphql`
+  query RecommendationPanelQuery($slugs: [String!]!, $profile: RecommendationProfile!) {
+    comparisonRecommendation(slugs: $slugs, profile: $profile) {
+      winnerProductId
+      missingInputs
+      rankings {
+        productId
+        productName
+        claimIds
+        reasons
+      }
+    }
+  }
+`;
 
 const styles = create({
   controls: { display: "flex", flexWrap: "wrap", gap: "0.75rem" },
-  evidence: { color: "var(--pc-text-secondary)", margin: 0 },
-  panel: { borderBlockStart: "2px solid var(--pc-border-emphasized)", display: "grid", gap: "0.8rem", paddingBlock: "1rem" },
+  details: { color: "var(--pc-text-secondary)", margin: 0 },
+  panel: {
+    borderBlockStart: "2px solid var(--pc-border-emphasized)",
+    display: "grid",
+    gap: "0.8rem",
+    paddingBlock: "1rem",
+  },
   reasons: { display: "grid", gap: "0.35rem", margin: 0, paddingInlineStart: "1.25rem" },
-  title: { fontSize: "1.3rem", margin: 0 }
+  title: { fontSize: "1.3rem", margin: 0 },
 });
 
 export function RecommendationPanel({
   slugs,
-  specMode
+  specMode,
 }: {
   slugs: readonly string[];
   specMode: CompareSpecMode;
@@ -60,17 +79,17 @@ function RecommendationContent({
   profile,
   queryVariables,
   slugs,
-  specMode
+  specMode,
 }: {
   profile: RecommendationProfile;
   queryVariables: ReturnType<typeof buildRecommendationQueryInput>["queryVariables"];
   slugs: readonly string[];
   specMode: CompareSpecMode;
 }) {
-  const data = useLazyLoadQuery<CompareRecommendationQuery>(
+  const data = useLazyLoadQuery<RecommendationPanelQuery>(
     compareRecommendationQuery,
     queryVariables,
-    { fetchPolicy: "store-or-network" }
+    { fetchPolicy: "store-or-network" },
   );
   const recommendation = data.comparisonRecommendation;
 
@@ -82,21 +101,41 @@ function RecommendationContent({
 
   return (
     <section aria-labelledby="recommendation-title" {...props(styles.panel)}>
-      <h2 id="recommendation-title" {...props(styles.title)}>Decision recommendation</h2>
+      <h2 id="recommendation-title" {...props(styles.title)}>
+        Decision recommendation
+      </h2>
       <nav aria-label="Recommendation profiles" {...props(styles.controls)}>
-        <Link aria-current={profile === "lowest_current_cost" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "lowest_current_cost")}>Lowest current cost</Link>
-        <Link aria-current={profile === "best_value" ? "page" : undefined} to={buildRecommendationProfilePath(slugs, specMode, "best_value")}>Best supported value</Link>
+        <Link
+          aria-current={profile === "lowest_current_cost" ? "page" : undefined}
+          to={buildRecommendationProfilePath(slugs, specMode, "lowest_current_cost")}
+        >
+          Lowest current cost
+        </Link>
+        <Link
+          aria-current={profile === "best_value" ? "page" : undefined}
+          to={buildRecommendationProfilePath(slugs, specMode, "best_value")}
+        >
+          Best supported value
+        </Link>
       </nav>
       {viewData.kind === "supported" ? (
         <>
           <strong>{viewData.productName}</strong>
-          <ul {...props(styles.reasons)}>{viewData.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
-          <p {...props(styles.evidence)}>{viewData.evidence}</p>
+          <ul {...props(styles.reasons)}>
+            {viewData.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
+          <p {...props(styles.details)}>{viewData.details}</p>
         </>
       ) : (
         <>
           <strong>No supported winner</strong>
-          <ul {...props(styles.reasons)}>{viewData.reasons.map((reason) => <li key={reason}>{reason}</li>)}</ul>
+          <ul {...props(styles.reasons)}>
+            {viewData.reasons.map((reason) => (
+              <li key={reason}>{reason}</li>
+            ))}
+          </ul>
         </>
       )}
     </section>

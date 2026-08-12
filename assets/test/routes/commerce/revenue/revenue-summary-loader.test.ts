@@ -4,7 +4,7 @@ import { createRelayRouterContext, preloadRouteQuery } from "../../../../src/rel
 import {
   revenueSummaryLoader,
   type RevenueSummaryLoaderData,
-} from "../../../../src/routes/commerce/revenue/loader";
+} from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
 
 vi.mock("../../../../src/relay/route-preload", async () => {

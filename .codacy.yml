@@ -10,4 +10,5 @@ exclude_paths:
   - ".codex/skills/**"
   - "assets/src/__generated__/**"
   - "assets/test/**"
+  - "assets/tests/**"
   - "docs/plans/**"

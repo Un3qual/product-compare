@@ -1,13 +1,13 @@
 import { type FormEventHandler, type ReactElement } from "react";
 import { create, props } from "@stylexjs/stylex";
-import type { AffiliateSetupOperationsCreateCouponMutation } from "../../../__generated__/AffiliateSetupOperationsCreateCouponMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
-import { Button } from "../../../ui/primitives/Button";
-import { Select } from "../../../ui/primitives/Select";
-import { TextField } from "../../../ui/primitives/TextField";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import type { AffiliateSetupOperationsCreateCouponMutation } from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { couponDiscountText } from "./affiliate-setup-data";
 
 export type MerchantChoice = {

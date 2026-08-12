@@ -1,19 +1,23 @@
 import { create, props } from "@stylexjs/stylex";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import { graphql, useFragment } from "react-relay";
+import type { CJFeedRow_feed$key } from "$generated/CJFeedRow_feed.graphql";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { formatCJDateTime, formatFeedProductCount } from "./cj-program-data";
 
-type CJFeed = Readonly<{
-  advertiserCountry?: string | null;
-  advertiserName?: string | null;
-  currency?: string | null;
-  feedName?: string | null;
-  id: string;
-  language?: string | null;
-  lastSeenAt?: string | null;
-  productCount?: number | null;
-  providerFeedId: string;
-  sourceFeedType?: string | null;
-}>;
+const cjFeedFragment = graphql`
+  fragment CJFeedRow_feed on MerchantFeedCandidate {
+    id
+    providerFeedId
+    advertiserName
+    advertiserCountry
+    sourceFeedType
+    currency
+    language
+    feedName
+    productCount
+    lastSeenAt
+  }
+`;
 
 const styles = create({
   feed: {
@@ -22,27 +26,29 @@ const styles = create({
     borderBlockEndWidth: "1px",
     display: "grid",
     gap: "0.25rem",
-    paddingBlockEnd: "0.65rem"
+    paddingBlockEnd: "0.65rem",
   },
   title: {
-    margin: 0
+    margin: 0,
   },
   facts: {
     color: tokens.textSecondary,
     display: "flex",
     flexWrap: "wrap",
     gap: "0.35rem 0.75rem",
-    margin: 0
-  }
+    margin: 0,
+  },
 });
 
 export function CJFeedRow({
-  feed,
-  showAdvertiserName = false
+  feed: feedRef,
+  showAdvertiserName = false,
 }: {
-  feed: CJFeed;
+  feed: CJFeedRow_feed$key;
   showAdvertiserName?: boolean;
 }) {
+  const feed = useFragment(cjFeedFragment, feedRef);
+
   return (
     <li {...props(styles.feed)}>
       <h3 {...props(styles.title)}>{feed.feedName ?? "Unnamed feed"}</h3>

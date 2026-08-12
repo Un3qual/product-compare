@@ -9,23 +9,23 @@ import {
   useState,
 } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { ProductCommunityOperationsAnswerProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAnswerProductQuestionMutation.graphql";
-import type { ProductCommunityOperationsAskProductQuestionMutation } from "../../__generated__/ProductCommunityOperationsAskProductQuestionMutation.graphql";
-import type { ProductCommunityOperationsQuery } from "../../__generated__/ProductCommunityOperationsQuery.graphql";
-import type { ProductQuestionAnswersQuery } from "../../__generated__/ProductQuestionAnswersQuery.graphql";
-import type { ProductCommunityOperationsSubmitProductReviewMutation } from "../../__generated__/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { Button } from "../../ui/primitives/Button";
+import { graphql, useLazyLoadQuery, useMutation } from "react-relay";
+import type { ProductCommunityOperationsAnswerProductQuestionMutation } from "$generated/ProductCommunityOperationsAnswerProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsAskProductQuestionMutation } from "$generated/ProductCommunityOperationsAskProductQuestionMutation.graphql";
+import type { ProductCommunityOperationsQuery } from "$generated/ProductCommunityOperationsQuery.graphql";
+import type { ProductCommunityPanelQuestionAnswersQuery } from "$generated/ProductCommunityPanelQuestionAnswersQuery.graphql";
+import type { ProductCommunityOperationsSubmitProductReviewMutation } from "$generated/ProductCommunityOperationsSubmitProductReviewMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { Button } from "$ui/primitives/Button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { Label } from "../../ui/primitives/Label";
-import { Select } from "../../ui/primitives/Select";
-import { TextArea } from "../../ui/primitives/TextArea";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { Label } from "$ui/primitives/Label";
+import { Select } from "$ui/primitives/Select";
+import { TextArea } from "$ui/primitives/TextArea";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import { AnswerView, QuestionItem, ReviewItem } from "./ProductCommunityItems";
@@ -36,7 +36,6 @@ import {
   productCommunityOperationsQuery,
   submitProductReviewMutation,
 } from "./ProductCommunityOperations";
-import productQuestionAnswersQuery from "./queries/ProductQuestionAnswersQuery";
 import {
   appendUniqueCommunityItems,
   buildProductAnswerInput,
@@ -52,25 +51,32 @@ import {
 const COMMUNITY_PAGE_SIZE = 10;
 const ANSWER_PAGE_SIZE = 5;
 
+const productQuestionAnswersQuery = graphql`
+  query ProductCommunityPanelQuestionAnswersQuery($id: ID!, $first: Int!, $after: String) {
+    productQuestion(id: $id) {
+      id
+      answers(first: $first, after: $after) {
+        edges {
+          node {
+            id
+            ...ProductCommunityItems_answer
+          }
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+      }
+    }
+  }
+`;
+
 const disclosureStyles = create({
   content: {
     display: {
       default: "block",
       ":where([data-state='closed'])": "none",
     },
-  },
-  trigger: {
-    appearance: "none",
-    backgroundColor: "transparent",
-    border: 0,
-    color: "inherit",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    fontWeight: "inherit",
-    lineHeight: "inherit",
-    padding: 0,
-    textAlign: "start",
   },
 });
 
@@ -174,7 +180,7 @@ function OwnerSubmissionsSection({ submissions }: { submissions: ViewerCommunity
     <section aria-label="Your non-public community submissions" {...props(styles.content)}>
       <h2 {...props(styles.title)}>Your submissions</h2>
       <p {...props(styles.metadata)}>
-        Pending, hidden, and rejected content remains available to edit or remove.
+        Submissions awaiting review or needing changes remain available to edit or remove.
       </p>
       <OwnerReviewSubmissions reviews={submissions.reviews} />
       <OwnerQuestionSubmissions questions={submissions.questions} />
@@ -281,7 +287,9 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Write a review</CollapsibleTrigger>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Write a review</Button>
+      </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
@@ -391,7 +399,9 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>Ask a question</CollapsibleTrigger>
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Ask a question</Button>
+      </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
@@ -467,7 +477,7 @@ function AdditionalAnswers({
 }) {
   const [after, setAfter] = useState(initialAfter);
   const [loadedAnswers, setLoadedAnswers] = useState<Answer[]>([]);
-  const data = useLazyLoadQuery<ProductQuestionAnswersQuery>(
+  const data = useLazyLoadQuery<ProductCommunityPanelQuestionAnswersQuery>(
     productQuestionAnswersQuery,
     { id: questionId, first: ANSWER_PAGE_SIZE, after },
     { fetchPolicy: "store-or-network" },
@@ -528,8 +538,8 @@ function AnswerForm({ questionId }: { questionId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger {...props(disclosureStyles.trigger)}>
-        Answer this question
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Answer this question</Button>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(disclosureStyles.content)}>
         <form onSubmit={submit} {...props(styles.form)}>

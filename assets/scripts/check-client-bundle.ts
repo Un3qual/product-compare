@@ -1,6 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { gzipSync } from "node:zlib";
-import { resolve } from "node:path";
+import { dirname, join, normalize, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 interface ManifestChunk {
@@ -23,32 +23,13 @@ const distPath = resolve(scriptDirectory, "../dist");
 // The measured initial JS/CSS closure is 270,072 gzip bytes. The 300 KB
 // ceiling leaves room for ordinary Vite and dependency patch drift.
 const INITIAL_GZIP_BUDGET_BYTES = 300_000;
+const INITIAL_FONT_BUDGET_BYTES = 44_800;
 
 const requiredDynamicRoutes = [
   ["affiliate setup screen", "src/routes/affiliate/setup/AffiliateSetupRoute.tsx"],
-  [
-    "affiliate setup loader",
-    "src/routes/affiliate/setup/loader.ts",
-    "src/routes/affiliate/setup/AffiliateSetupRoute.tsx",
-  ],
   ["CJ programs screen", "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx"],
-  [
-    "CJ programs loader",
-    "src/routes/ingestion/cj-programs/loader.ts",
-    "src/routes/ingestion/cj-programs/CJProgramsRoute.tsx",
-  ],
   ["revenue screen", "src/routes/commerce/revenue/RevenueSummaryRoute.tsx"],
-  [
-    "revenue loader",
-    "src/routes/commerce/revenue/loader.ts",
-    "src/routes/commerce/revenue/RevenueSummaryRoute.tsx",
-  ],
   ["API tokens screen", "src/routes/account/api-tokens/ApiTokensRoute.tsx"],
-  [
-    "API tokens loader",
-    "src/routes/account/api-tokens/loader.ts",
-    "src/routes/account/api-tokens/ApiTokensRoute.tsx",
-  ],
 ] as const;
 
 const manifest = JSON.parse(await readFile(manifestPath, "utf8")) as Manifest;
@@ -86,6 +67,33 @@ for (const file of initialBundleFiles) {
   initialGzipBytes += gzipSync(contents).byteLength;
 }
 
+const initialFontFiles = new Set<string>();
+
+for (const cssFile of initialCssFiles) {
+  const css = await readFile(resolve(distPath, cssFile), "utf8");
+
+  for (const fontReference of css.matchAll(
+    /url\(\s*["']?([^"')]+\.woff2(?:[?#][^"')]*)?)["']?\s*\)/gi,
+  )) {
+    const reference = fontReference[1]?.split(/[?#]/, 1)[0];
+    if (!reference || /^(?:data:|https?:|\/\/)/i.test(reference)) continue;
+
+    const relativeFontPath = normalize(
+      reference.startsWith("/") ? reference.slice(1) : join(dirname(cssFile), reference),
+    );
+    if (relativeFontPath.startsWith("..")) {
+      throw new Error(`Initial CSS ${cssFile} references a font outside dist: ${reference}`);
+    }
+    initialFontFiles.add(relativeFontPath);
+  }
+}
+
+let initialFontBytes = 0;
+
+for (const file of initialFontFiles) {
+  initialFontBytes += (await readFile(resolve(distPath, file))).byteLength;
+}
+
 const failures: string[] = [];
 
 if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
@@ -95,8 +103,15 @@ if (initialGzipBytes > INITIAL_GZIP_BUDGET_BYTES) {
   );
 }
 
-for (const [label, expectedSource, relatedScreenSource] of requiredDynamicRoutes) {
-  const match = findManifestEntry(expectedSource, relatedScreenSource);
+if (initialFontBytes > INITIAL_FONT_BUDGET_BYTES) {
+  failures.push(
+    `referenced initial WOFF2 transfer is ${initialFontBytes.toLocaleString()} raw bytes, ` +
+      `above the ${INITIAL_FONT_BUDGET_BYTES.toLocaleString()}-byte font budget`,
+  );
+}
+
+for (const [label, expectedSource] of requiredDynamicRoutes) {
+  const match = findManifestEntry(expectedSource);
 
   if (!match) {
     failures.push(`${label} route has no manifest chunk for ${expectedSource}`);
@@ -118,7 +133,8 @@ if (failures.length > 0) {
       "Client bundle contract failed:",
       ...failures.map((failure) => `- ${failure}`),
       `Initial closure: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes across ${initialJavaScriptFiles.length} JavaScript and ${initialCssFiles.length} CSS file(s).`,
-      "Build the client after moving every non-root route and loader behind direct React Router lazy imports.",
+      `Initial fonts: ${initialFontBytes.toLocaleString()} raw bytes across ${initialFontFiles.size} WOFF2 font file(s); font budget ${INITIAL_FONT_BUDGET_BYTES.toLocaleString()} bytes.`,
+      "Build the client after moving every non-root route behind a direct React Router lazy import.",
     ].join("\n"),
   );
 }
@@ -126,6 +142,10 @@ if (failures.length > 0) {
 process.stdout.write(
   `Client bundle contract passed: ${initialRawBytes.toLocaleString()} raw / ${initialGzipBytes.toLocaleString()} gzip bytes ` +
     `across ${initialJavaScriptFiles.length} initial JavaScript and ${initialCssFiles.length} CSS file(s); budget ${INITIAL_GZIP_BUDGET_BYTES.toLocaleString()} gzip bytes.\n`,
+);
+process.stdout.write(
+  `Initial fonts: ${initialFontBytes.toLocaleString()} raw bytes across ${initialFontFiles.size} initial WOFF2 font file(s); ` +
+    `font budget ${INITIAL_FONT_BUDGET_BYTES.toLocaleString()} bytes.\n`,
 );
 
 function collectStaticImportClosure(manifest: Manifest, entryKey: string) {
@@ -152,29 +172,8 @@ function normalizeSource(source: string) {
   return source.replace(/\\/g, "/").replace(/^_+/, "");
 }
 
-function findManifestEntry(expectedSource: string, relatedScreenSource?: string) {
-  const directMatch = manifestEntries.find(
+function findManifestEntry(expectedSource: string) {
+  return manifestEntries.find(
     ([key, chunk]) => normalizeSource(chunk.src ?? key) === expectedSource,
   );
-  if (directMatch || !relatedScreenSource) return directMatch;
-
-  // Rolldown can omit `src` and `isDynamicEntry` when a directly imported
-  // loader is also shared with its screen. Associate that output chunk through
-  // both the screen's static imports and the client entry's dynamic-import
-  // graph instead of relying on output hashes.
-  const screenMatch = manifestEntries.find(
-    ([key, chunk]) => normalizeSource(chunk.src ?? key) === relatedScreenSource,
-  );
-  if (!screenMatch) return undefined;
-
-  const loaderName = expectedSource
-    .split("/")
-    .at(-1)
-    ?.replace(/\.[^.]+$/, "");
-  const candidates = (screenMatch[1].imports ?? []).filter((key) => {
-    const chunk = manifest[key];
-    return chunk?.name === loaderName && entryDynamicImports.has(key);
-  });
-
-  return candidates.length === 1 ? ([candidates[0], manifest[candidates[0]]] as const) : undefined;
 }

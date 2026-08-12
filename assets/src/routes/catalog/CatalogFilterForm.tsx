@@ -1,17 +1,17 @@
 import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { ActiveFilterChips } from "../../ui/components/filters/ActiveFilterChips";
-import { Button } from "../../ui/primitives/Button";
-import { Checkbox } from "../../ui/primitives/Checkbox";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+import { ActiveFilterChips } from "$ui/components/filters/ActiveFilterChips";
+import { Button } from "$ui/primitives/Button";
+import { Checkbox } from "$ui/primitives/Checkbox";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import {
   Collapsible,
   CollapsibleContent,
-  CollapsibleTrigger
-} from "../../ui/primitives/Collapsible";
-import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
+  CollapsibleTrigger,
+} from "$ui/primitives/Collapsible";
+import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import {
   CATALOG_PRODUCT_SORTS,
   MAX_CATALOG_SEARCH_QUERY_LENGTH,
@@ -20,57 +20,54 @@ import {
   catalogProductSortParam,
   type CatalogFilterMetadata,
   type CatalogFilters,
-  type CatalogProductSort
+  type CatalogProductSort,
 } from "./filters";
-import {
-  catalogFiltersWithout,
-  catalogFilterSummaryItems
-} from "./filter-summary";
+import { catalogFiltersWithout, catalogFilterSummaryItems } from "./filter-summary";
 import {
   catalogFilterFormInitialTypeState,
   catalogFilterFormTypeSelection,
-  hasInitiallyOpenCatalogAdvancedFilters
+  hasInitiallyOpenCatalogAdvancedFilters,
 } from "./catalog-filter-form-state";
 import { catalogBrowseFirstPagePath } from "./paths";
 import { CatalogAdvancedFilters } from "./CatalogAdvancedFilters";
 
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
-type ProductFilterMetadata = BrowseProductsRouteQuery["response"]["productFilterMetadata"];
+type ProductFilterMetadata = BrowseRouteQuery["response"]["productFilterMetadata"];
 
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
-  enums: []
+  enums: [],
 };
 
 const styles = create({
   form: {
     display: "grid",
     gap: "1rem",
-    minWidth: 0
+    minWidth: 0,
   },
   primary: {
     display: "grid",
     gap: "0.8rem",
-    gridTemplateColumns: "minmax(0, 1fr)"
+    gridTemplateColumns: "minmax(0, 1fr)",
   },
   advanced: {
     display: "grid",
     gap: "1rem",
-    paddingBlockStart: "0.5rem"
+    paddingBlockStart: "0.5rem",
   },
   actions: {
     display: "flex",
-    justifyContent: "end"
-  }
+    justifyContent: "end",
+  },
 });
 
 export function CatalogFilterForm({
   compareSlugs = [],
   filters,
   metadata,
-  pageSize
+  pageSize,
 }: {
   compareSlugs?: readonly string[];
   filters: CatalogFilters;
@@ -78,14 +75,14 @@ export function CatalogFilterForm({
   pageSize: number;
 }) {
   const [typeFilterState, setTypeFilterState] = useState(() =>
-    catalogFilterFormInitialTypeState(filters)
+    catalogFilterFormInitialTypeState(filters),
   );
   const [advancedOpen, setAdvancedOpen] = useState(() =>
-    hasInitiallyOpenCatalogAdvancedFilters(filters)
+    hasInitiallyOpenCatalogAdvancedFilters(filters),
   );
   const [query, setQuery] = useState(filters.query ?? "");
   const [explicitSort, setExplicitSort] = useState<CatalogProductSort | undefined>(() =>
-    catalogProductSortParam(filters)
+    catalogProductSortParam(filters),
   );
   const sort: CatalogProductSort =
     explicitSort ?? (hasCatalogSearchQuery(query) ? "RELEVANCE" : "ID_ASC");
@@ -109,19 +106,10 @@ export function CatalogFilterForm({
   }
 
   return (
-    <form
-      method="get"
-      action="/products"
-      aria-label="Filter products"
-      {...props(styles.form)}
-    >
+    <form method="get" action="/products" aria-label="Filter products" {...props(styles.form)}>
       <div {...props(styles.primary)}>
         <SearchField query={query} onQueryChange={handleQueryChange} />
-        <SortField
-          query={query}
-          sort={sort}
-          onSortChange={setExplicitSort}
-        />
+        <SortField query={query} sort={sort} onSortChange={setExplicitSort} />
         <PageSizeField pageSize={pageSize} />
         <CompareSlugFields compareSlugs={compareSlugs} />
         <ProductTypeField
@@ -139,11 +127,7 @@ export function CatalogFilterForm({
         <CollapsibleTrigger asChild>
           <Button variant="soft">Advanced filters</Button>
         </CollapsibleTrigger>
-        <CollapsibleContent
-          forceMount
-          hidden={!advancedOpen}
-          {...props(styles.advanced)}
-        >
+        <CollapsibleContent forceMount hidden={!advancedOpen} {...props(styles.advanced)}>
           <CatalogAdvancedFilters filters={filters} metadata={metadata} />
         </CollapsibleContent>
       </Collapsible>
@@ -156,7 +140,7 @@ export function CatalogFilterForm({
 
 function SearchField({
   query,
-  onQueryChange
+  onQueryChange,
 }: {
   query: string;
   onQueryChange: (query: string) => void;
@@ -178,7 +162,7 @@ function SearchField({
 function SortField({
   query,
   sort,
-  onSortChange
+  onSortChange,
 }: {
   query: string;
   sort: CatalogProductSort;
@@ -190,7 +174,7 @@ function SortField({
     : CATALOG_PRODUCT_SORTS.filter((value) => value !== "RELEVANCE");
   const sortParam = catalogProductSortParam({
     query: hasQuery ? query : undefined,
-    sort
+    sort,
   });
 
   return (
@@ -198,12 +182,10 @@ function SortField({
       Sort products
       <Select
         name={sortParam ? "sort" : undefined}
-        onValueChange={(value) =>
-          onSortChange(catalogProductSortFromValue(value))
-        }
+        onValueChange={(value) => onSortChange(catalogProductSortFromValue(value))}
         options={availableSorts.map((value) => ({
           label: catalogProductSortLabel(value),
-          value
+          value,
         }))}
         value={sort}
       />
@@ -235,7 +217,7 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
         defaultValue={String(pageSize)}
         options={BROWSE_PRODUCTS_PAGE_SIZES.map((size) => ({
           label: String(size),
-          value: String(size)
+          value: String(size),
         }))}
       />
     </label>
@@ -245,7 +227,7 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
 function ProductTypeField({
   metadata,
   selectedTypeTaxonId,
-  onTypeTaxonIdChange
+  onTypeTaxonIdChange,
 }: {
   metadata: ProductFilterMetadata;
   selectedTypeTaxonId: string;
@@ -262,8 +244,8 @@ function ProductTypeField({
           ...metadata.typeOptions.map((option) => ({
             disabled: option.disabled && !option.selected,
             label: `${option.label} (${option.count})`,
-            value: option.id
-          }))
+            value: option.id,
+          })),
         ]}
         value={selectedTypeTaxonId}
       />
@@ -274,7 +256,7 @@ function ProductTypeField({
 function IncludeDescendantsCheckbox({
   includeTypeDescendants,
   selectedTypeTaxonId,
-  onIncludeTypeDescendantsChange
+  onIncludeTypeDescendantsChange,
 }: {
   includeTypeDescendants: boolean;
   selectedTypeTaxonId: string;
@@ -300,7 +282,7 @@ export function CatalogActiveFilterSummary({
   compareSlugs = [],
   filters,
   metadata,
-  pageSize
+  pageSize,
 }: {
   compareSlugs?: readonly string[];
   filters: CatalogFilters;
@@ -325,12 +307,12 @@ export function CatalogActiveFilterSummary({
               to={catalogBrowseFirstPagePath(
                 catalogFiltersWithout(filters, item.removal),
                 pageSize,
-                compareSlugs
+                compareSlugs,
               )}
             >
               Remove
             </Link>
-          )
+          ),
         }))}
       />
       <Link to={catalogBrowseFirstPagePath(EMPTY_CATALOG_FILTERS, pageSize, compareSlugs)}>

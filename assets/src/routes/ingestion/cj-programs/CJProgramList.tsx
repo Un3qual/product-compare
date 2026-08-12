@@ -1,8 +1,8 @@
-import { SummaryStrip } from "../../../ui/components/data/SummaryStrip";
-import { Pagination } from "../../../ui/components/navigation/Pagination";
+import { SummaryStrip } from "$ui/components/data/SummaryStrip";
+import { Pagination } from "$ui/components/navigation/Pagination";
 import { create, props } from "@stylexjs/stylex";
-import type { CJProgramsRouteQuery } from "../../../__generated__/CJProgramsRouteQuery.graphql";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { CJFeedRow } from "./CJFeedRow";
 import { CJProgramRow } from "./CJProgramRow";
 import { CJ_PROGRAM_STAGES } from "./cj-program-data";

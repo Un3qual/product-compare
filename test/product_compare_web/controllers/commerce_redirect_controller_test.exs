@@ -10,6 +10,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   alias ProductCompare.Pricing
   alias ProductCompare.Repo
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
+  alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
 
   describe "GET /r/:click_id" do
     test "does not load the signed-in user on an existing click redirect", %{conn: conn} do
@@ -92,11 +93,15 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
              ) == 1
 
       assert %CommerceClickSession{
+               anonymous_visitor_id: anonymous_visitor_id,
                user_id: nil,
                referrer: "http://www.example.com/offers",
                user_agent: "ProductCompareRedirectTest/1.0",
                ip_address: %Postgrex.INET{address: {198, 51, 100, 8}, netmask: 32}
              } = Repo.one(CommerceClickSession)
+
+      assert is_integer(anonymous_visitor_id)
+      assert Repo.aggregate(AnonymousVisitor, :count, :id) == 1
     end
 
     test "preserves the signed-in user for direct fallback navigation", %{conn: conn} do
@@ -114,6 +119,7 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       assert redirected_to(conn, 302) == "https://merchant.example.com/direct"
 
       assert %CommerceClickSession{
+               anonymous_visitor_id: nil,
                user_id: user_id,
                referrer: "http://www.example.com/offers",
                user_agent: "ProductCompareRedirectTest/1.0",
@@ -288,7 +294,6 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
       CommerceAttribution.create_click_session(%{
         commerce_link_id: commerce_link.id,
         click_id: Ecto.UUID.generate(),
-        anonymous_id: "anon-#{System.unique_integer([:positive])}",
         source_surface: :web
       })
 

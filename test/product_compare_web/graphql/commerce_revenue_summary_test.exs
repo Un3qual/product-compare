@@ -379,7 +379,6 @@ defmodule ProductCompareWeb.GraphQL.CommerceRevenueSummaryTest do
       CommerceAttribution.create_click_session(%{
         commerce_link_id: commerce_link.id,
         click_id: Ecto.UUID.generate(),
-        anonymous_id: "anon-#{System.unique_integer([:positive])}",
         source_surface: :web
       })
 

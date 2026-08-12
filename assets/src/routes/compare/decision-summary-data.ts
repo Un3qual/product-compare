@@ -64,22 +64,22 @@ interface ComparablePrice {
 const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
   {
     key: "best-price",
-    label: "Best current price",
+    label: "Lowest current price",
     value: bestCurrentPriceLabel,
   },
   {
     key: "offer-count",
-    label: "Active offer count",
+    label: "Offers found",
     value: activeOfferCountLabel,
   },
   {
     key: "coupon-signal",
-    label: "Coupon signal",
+    label: "Coupon availability",
     value: couponSignalLabel,
   },
   {
     key: "price-recency",
-    label: "Price recency",
+    label: "Price last checked",
     value: priceRecencyLabel,
   },
 ];
@@ -93,7 +93,7 @@ export function buildDecisionSummaryMetricRows(
   return [
     {
       key: "relative-loaded-price",
-      label: "Relative loaded price",
+      label: "Compared price",
       cells: products.map(({ id }) => ({
         productId: id,
         value: relativePriceLabels.get(id) ?? "Not comparable",
@@ -162,9 +162,9 @@ function relativeLoadedPriceLabels(
         id,
         compareDecimalStrings(price.value, minimum.value) === 0
           ? minimumCount > 1
-            ? "Tied for lowest loaded price"
-            : "Lowest loaded price"
-          : "Above lowest loaded price",
+            ? "Tied for lowest shown price"
+            : "Lowest shown price"
+          : "Above lowest shown price",
       ] as const;
     }),
   );
@@ -179,11 +179,11 @@ function offerContextForProduct(
 
 function bestCurrentPriceLabel(context: DecisionSummaryOfferContext) {
   if (context.status === "unavailable") {
-    return "Offer context unavailable";
+    return "Offer details unavailable";
   }
 
   if (!context.bestCurrentPrice) {
-    return "No current price loaded";
+    return "No current price available";
   }
 
   return `${context.bestCurrentPrice.price} ${context.bestCurrentPrice.currency} at ${
@@ -197,8 +197,8 @@ function activeOfferCountLabel(context: DecisionSummaryOfferContext) {
   }
 
   return context.hasMoreActiveOffers
-    ? `${context.activeOfferCount} loaded; More available`
-    : `${context.activeOfferCount} loaded`;
+    ? `${context.activeOfferCount} shown; More available`
+    : `${context.activeOfferCount} shown`;
 }
 
 function couponSignalLabel(context: DecisionSummaryOfferContext) {
@@ -210,7 +210,7 @@ function couponSignalLabel(context: DecisionSummaryOfferContext) {
     return "More coupons available";
   }
 
-  return context.hasLoadedCoupons ? "Coupons available" : "No coupons loaded";
+  return context.hasLoadedCoupons ? "Coupons available" : "No coupons found";
 }
 
 function priceRecencyLabel(context: DecisionSummaryOfferContext) {
@@ -218,7 +218,7 @@ function priceRecencyLabel(context: DecisionSummaryOfferContext) {
     return "Unavailable";
   }
 
-  return dateLabel(context.latestPriceObservedAt) ?? "No price observations loaded";
+  return dateLabel(context.latestPriceObservedAt) ?? "No price check available";
 }
 
 function dateLabel(value: string | null | undefined) {

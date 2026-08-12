@@ -2,7 +2,7 @@ import { fetchRouteQuery } from "../../../src/relay/route-preload";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader,
-} from "../../../src/routes/compare/saved-data";
+} from "../../../src/routes/compare/SavedComparisonsRoute";
 import {
   buildGraphQLResponseWithErrors,
   buildRouteLoaderGraphQLError,
@@ -55,8 +55,6 @@ test("savedComparisonsLoader returns unauthorized for a pathless structured auth
 
   await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs())).resolves.toEqual({
     status: "unauthorized",
-    savedSetQueries: [],
-    savedSets: [],
   });
 });
 
@@ -84,4 +82,76 @@ test("isUnauthorizedSavedComparisonsResponse ignores legacy unauthorized extensi
       ]),
     ),
   ).toBe(false);
+});
+
+test("savedComparisonsLoader preserves the URL cursor in its Relay descriptor", async () => {
+  const request = new Request("https://app.example.test/compare/saved?after=cursor-1");
+  const descriptor = {
+    __relayQuery: {
+      operationName: "SavedComparisonsRouteQuery",
+      text: "query SavedComparisonsRouteQuery { mySavedComparisonSets { pageInfo { hasNextPage } } }",
+      variables: { first: 20, after: "cursor-1" },
+    },
+  };
+  fetchRouteQueryMock.mockResolvedValueOnce({
+    data: {
+      mySavedComparisonSets: { pageInfo: { endCursor: "cursor-2", hasNextPage: true } },
+    },
+    descriptor,
+    dispose: vi.fn(),
+  });
+
+  await expect(
+    savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ request })),
+  ).resolves.toEqual({ status: "ready", after: "cursor-1", query: descriptor });
+  expect(fetchRouteQueryMock).toHaveBeenCalledWith(
+    expect.anything(),
+    expect.anything(),
+    { first: 20, after: "cursor-1" },
+    { signal: request.signal },
+  );
+});
+
+test("savedComparisonsLoader does not fetch an already-aborted request", async () => {
+  const controller = new AbortController();
+  const abortError = new Error("navigation aborted");
+  controller.abort(abortError);
+  const request = new Request("https://app.example.test/compare/saved", {
+    signal: controller.signal,
+  });
+
+  await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ request }))).rejects.toBe(
+    abortError,
+  );
+  expect(fetchRouteQueryMock).not.toHaveBeenCalled();
+});
+
+test("savedComparisonsLoader disposes a page when navigation aborts after the fetch", async () => {
+  const controller = new AbortController();
+  const abortError = new Error("navigation aborted");
+  const dispose = vi.fn();
+  const request = new Request("https://app.example.test/compare/saved", {
+    signal: controller.signal,
+  });
+  fetchRouteQueryMock.mockImplementationOnce(() => {
+    controller.abort(abortError);
+    return Promise.resolve({
+      data: {
+        mySavedComparisonSets: { pageInfo: { endCursor: null, hasNextPage: false } },
+      },
+      descriptor: {
+        __relayQuery: {
+          operationName: "SavedComparisonsRouteQuery",
+          text: null,
+          variables: { first: 20 },
+        },
+      },
+      dispose,
+    });
+  });
+
+  await expect(savedComparisonsLoader(buildSavedComparisonsLoaderArgs({ request }))).rejects.toBe(
+    abortError,
+  );
+  expect(dispose).toHaveBeenCalledTimes(1);
 });

@@ -16,6 +16,8 @@ export type RevenueSummaryFilterFormValues = {
 };
 
 export const ATTRIBUTION_LEDGER_PAGE_SIZE = 20;
+const DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const SUPPORTED_NETWORKS = new Set(["impact", "awin", "rakuten", "cj", "amazon_associates"]);
 
 type RevenueSummaryMetricSource = {
   metrics: {
@@ -211,4 +213,50 @@ export function formatCurrencyAmount(value: string | null | undefined, currency:
   }
 
   return currency ? `${value} ${currency}` : value;
+}
+
+export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
+  const filters = {
+    currency: normalizeCurrencyFilter(url.searchParams.get("currency")),
+    from: normalizeDateFilter(url.searchParams.get("from")),
+    network: normalizeNetworkFilter(url.searchParams.get("network")),
+    to: normalizeDateFilter(url.searchParams.get("to")),
+  };
+
+  return Object.fromEntries(
+    Object.entries(filters).filter(([, value]) => value !== undefined),
+  ) as RevenueSummaryFilters;
+}
+
+export function hasInvertedRevenueDateRange(filters: RevenueSummaryFilters) {
+  return Boolean(filters.from && filters.to && filters.from > filters.to);
+}
+
+function normalizeCurrencyFilter(value: string | null) {
+  const normalized = value?.trim().toUpperCase();
+
+  return normalized && /^[A-Z]{3}$/.test(normalized) ? normalized : undefined;
+}
+
+function normalizeDateFilter(value: string | null) {
+  const normalized = value?.trim();
+
+  if (!normalized || !DATE_FILTER_PATTERN.test(normalized)) {
+    return undefined;
+  }
+
+  const [year, month, day] = normalized.split("-").map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+
+  return parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+    ? normalized
+    : undefined;
+}
+
+function normalizeNetworkFilter(value: string | null) {
+  const normalized = value?.trim().toLowerCase();
+
+  return normalized && SUPPORTED_NETWORKS.has(normalized) ? normalized : undefined;
 }

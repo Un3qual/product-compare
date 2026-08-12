@@ -1,8 +1,10 @@
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
-import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { Pagination } from "../../ui/components/navigation/Pagination";
-import { StatusBadge } from "../../ui/components/status/StatusBadge";
+import { graphql, useFragment } from "react-relay";
+import type { OfferDiscoveryList_connection$key } from "$generated/OfferDiscoveryList_connection.graphql";
+import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { SummaryStrip } from "$ui/components/data/SummaryStrip";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { Pagination } from "$ui/components/navigation/Pagination";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
 import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "../offer-snapshot";
 import {
@@ -13,24 +15,58 @@ import {
   sortedRenderableOffers,
   visibleLowestPriceLabel,
   type OfferConnection,
-  type RenderableOffer
+  type RenderableOffer,
 } from "./offer-discovery-data";
 import {
   buildOfferDiscoveryPaginationData,
-  getOfferDiscoveryFilterData
+  getOfferDiscoveryFilterData,
 } from "./offer-discovery-filter-data";
-import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./loader";
+import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./offer-discovery-filter-data";
 import { VisibleMerchantFilters } from "./VisibleMerchantFilters";
 import { OfferDiscoveryCard } from "./OfferDiscoveryCard";
 
+const offerDiscoveryListFragment = graphql`
+  fragment OfferDiscoveryList_connection on MerchantProductConnection {
+    edges {
+      node {
+        id
+        url
+        currency
+        merchant {
+          id
+          name
+        }
+        latestPrice {
+          price
+        }
+        activeCoupons(first: 2) {
+          edges {
+            cursor
+          }
+          pageInfo {
+            hasNextPage
+          }
+        }
+        ...OfferDiscoveryCard_offer
+      }
+    }
+    pageInfo {
+      endCursor
+      hasNextPage
+      hasPreviousPage
+    }
+  }
+`;
+
 export function OfferDiscoveryList({
   connection,
-  filters
+  filters,
 }: {
-  connection: OfferConnection;
+  connection: OfferDiscoveryList_connection$key;
   filters: OfferDiscoveryFilters;
 }) {
-  const renderableOfferRows = renderableOffers(connection);
+  const data = useFragment(offerDiscoveryListFragment, connection);
+  const renderableOfferRows = renderableOffers(data);
   const canComparePrices = priceSortUsesSingleCurrency(renderableOfferRows);
   const offers = sortedRenderableOffers(renderableOfferRows, filters.sort, canComparePrices);
   const { scopeBadge } = getOfferDiscoveryFilterData(filters);
@@ -45,15 +81,11 @@ export function OfferDiscoveryList({
           <VisibleOfferSnapshot
             summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
           />
-          <OfferDataList
-            canComparePrices={canComparePrices}
-            offers={offers}
-            sort={filters.sort}
-          />
+          <OfferDataList canComparePrices={canComparePrices} offers={offers} sort={filters.sort} />
         </>
       )}
       <VisibleMerchantFilters filters={filters} offers={offers} />
-      <OfferPagination connection={connection} filters={filters} />
+      <OfferPagination connection={data} filters={filters} />
     </>
   );
 }
@@ -61,7 +93,7 @@ export function OfferDiscoveryList({
 function OfferDataList({
   canComparePrices,
   offers,
-  sort
+  sort,
 }: {
   canComparePrices: boolean;
   offers: RenderableOffer[];
@@ -73,12 +105,7 @@ function OfferDataList({
         <DataListItem key={renderableOffer.offer.id}>
           <OfferDiscoveryCard
             offer={renderableOffer.offer}
-            highlightLabel={priceSortHighlightLabel(
-              sort,
-              index,
-              renderableOffer,
-              canComparePrices
-            )}
+            highlightLabel={priceSortHighlightLabel(sort, index, renderableOffer, canComparePrices)}
           />
         </DataListItem>
       ))}
@@ -86,11 +113,7 @@ function OfferDataList({
   );
 }
 
-function VisibleOfferSnapshot({
-  summary
-}: {
-  summary: OfferSnapshotSummary<RenderableOffer>;
-}) {
+function VisibleOfferSnapshot({ summary }: { summary: OfferSnapshotSummary<RenderableOffer> }) {
   return (
     <SummaryStrip
       items={[
@@ -98,9 +121,9 @@ function VisibleOfferSnapshot({
         { label: "Lowest visible price", value: visibleLowestPriceLabel(summary) },
         {
           label: "Visible coupon availability",
-          value: formatCouponAvailabilityCount(summary.couponAvailabilityCount)
+          value: formatCouponAvailabilityCount(summary.couponAvailabilityCount),
         },
-        { label: "Missing latest price", value: formatOfferCount(summary.missingPriceCount) }
+        { label: "Missing latest price", value: formatOfferCount(summary.missingPriceCount) },
       ]}
       label="Visible offer snapshot"
     />
@@ -109,7 +132,7 @@ function VisibleOfferSnapshot({
 
 function OfferPagination({
   connection,
-  filters
+  filters,
 }: {
   connection: OfferConnection;
   filters: OfferDiscoveryFilters;
@@ -118,7 +141,7 @@ function OfferPagination({
     endCursor: connection.pageInfo.endCursor ?? null,
     filters,
     hasNextPage: connection.pageInfo.hasNextPage,
-    hasPreviousPage: connection.pageInfo.hasPreviousPage
+    hasPreviousPage: connection.pageInfo.hasPreviousPage,
   });
 
   return (

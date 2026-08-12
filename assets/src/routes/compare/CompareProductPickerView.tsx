@@ -1,10 +1,10 @@
 import { useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
-import { Button } from "../../ui/primitives/Button";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { Button } from "$ui/primitives/Button";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 
 const styles = create({
   picker: {

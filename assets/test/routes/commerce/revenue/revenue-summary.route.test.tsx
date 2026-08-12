@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { usePaginationFragment, usePreloadedQuery } from "react-relay";
+import { useFragment, usePaginationFragment, usePreloadedQuery } from "react-relay";
 import type { AttributionLedgerRouteQuery$variables } from "../../../../src/__generated__/AttributionLedgerRouteQuery.graphql";
 import type { RevenueSummaryRouteQuery$variables } from "../../../../src/__generated__/RevenueSummaryRouteQuery.graphql";
 import {
@@ -14,7 +14,7 @@ import {
   RevenueSummaryMetrics,
   RevenueSummaryView,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
-import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/loader";
+import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
@@ -22,11 +22,13 @@ import {
 
 const {
   useLoaderDataMock,
+  useFragmentMock,
   usePaginationFragmentMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   usePaginationFragmentMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
@@ -46,6 +48,7 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     usePaginationFragment: usePaginationFragmentMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
@@ -63,6 +66,7 @@ vi.mock("../../../../src/relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUsePaginationFragment = vi.mocked(usePaginationFragment);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -132,7 +136,7 @@ const ATTRIBUTION_LEDGER_PAGE = {
           affiliateNetworkName: "Impact",
           affiliateProgramCode: "impact-program",
           affiliateProgramId: "program-1",
-          anonymousId: null,
+          anonymousVisitor: false,
           clickId: "db8e90c9-c6f2-4f36-a67f-3324033ac114",
           insertedAt: "2026-05-31T12:30:00Z",
           ipAddress: "203.0.113.44",
@@ -179,6 +183,8 @@ const ATTRIBUTION_LEDGER_PAGE = {
 
 beforeEach(() => {
   useLoaderDataMock.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   usePreloadedQueryMock.mockReset();
   useRoutePreloadedQueryMock.mockReset();
   REVENUE_QUERY_REF.dispose.mockReset();
@@ -251,7 +257,7 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
 
-test("revenue route renders individual click, user, request, network, and conversion evidence", () => {
+test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
   const loadNext = vi.fn();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD", network: "impact" }));
   mockedUsePaginationFragment.mockReturnValue({
@@ -270,23 +276,22 @@ test("revenue route renders individual click, user, request, network, and conver
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
   expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
-  expect(screen.getByText("db8e90c9-c6f2-4f36-a67f-3324033ac114")).toBeInTheDocument();
   expect(screen.getByText("operator@example.test")).toBeInTheDocument();
-  expect(screen.getByText("User ID: user-1")).toBeInTheDocument();
+  expect(screen.getByText("Product Compare website")).toBeInTheDocument();
+  expect(screen.getByText("Partner link")).toBeInTheDocument();
   expect(screen.getByText("https://example.test/compare")).toBeInTheDocument();
   expect(screen.getByText("ExampleBrowser/1.0")).toBeInTheDocument();
   expect(screen.getByText("203.0.113.44")).toBeInTheDocument();
-  expect(screen.getByText("Impact (impact) [network-1]")).toBeInTheDocument();
+  expect(screen.getByText("Impact")).toBeInTheDocument();
   expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
   expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
   expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Status: paid")).toBeInTheDocument();
-  expect(screen.getByText("Attribution: high")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Merchant (conversion-merchant-1)")).toBeInTheDocument();
-  expect(screen.getByText("Conversion Product (conversion-product-1)")).toBeInTheDocument();
-  expect(
-    screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
-  ).toBeInTheDocument();
+  expect(screen.getByText("Paid")).toBeInTheDocument();
+  expect(screen.getByText("Strong match")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Product")).toBeInTheDocument();
+  expect(screen.getByText("Conversion Network")).toBeInTheDocument();
+  expect(screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/)).not.toBeInTheDocument();
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
@@ -381,7 +386,7 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
             cursor: "ledger-cursor-anonymous",
             node: {
               ...ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node,
-              anonymousId: "anonymous-42",
+              anonymousVisitor: true,
               matchedConversions: [],
               userEmail: null,
               userId: null,
@@ -402,7 +407,7 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
     </MemoryRouter>,
   );
 
-  expect(screen.getByText("Anonymous click: anonymous-42")).toBeInTheDocument();
+  expect(screen.getByText("Anonymous visitor")).toBeInTheDocument();
   expect(screen.getByText("No matched conversions.")).toBeInTheDocument();
 
   mockedUsePaginationFragment.mockReturnValue({
@@ -496,10 +501,10 @@ test("revenue route renders equal conversion references from different networks 
     renderRevenueSummaryRoute();
 
     expect(
-      screen.getByText("Conversion Network (partnerize) [conversion-network-1]"),
+      screen.getByText("Conversion Network"),
     ).toBeVisible();
     expect(
-      screen.getByText("Second Conversion Network (awin) [conversion-network-2]"),
+      screen.getByText("Second Conversion Network"),
     ).toBeVisible();
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
   } finally {

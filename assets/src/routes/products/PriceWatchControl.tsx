@@ -2,15 +2,15 @@ import { type FormEvent, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { useMutation } from "react-relay";
-import type { AlertOperationsCreatePriceWatchMutation } from "../../__generated__/AlertOperationsCreatePriceWatchMutation.graphql";
-import { Button } from "../../ui/primitives/Button";
+import type { AlertOperationsCreatePriceWatchMutation } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
+import { Button } from "$ui/primitives/Button";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { Select } from "../../ui/primitives/Select";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { Select } from "$ui/primitives/Select";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
@@ -44,19 +44,6 @@ const styles = create({
     paddingInline: "0.7rem",
   },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
-  summary: {
-    appearance: "none",
-    backgroundColor: "transparent",
-    border: 0,
-    color: "inherit",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    fontWeight: 650,
-    lineHeight: "inherit",
-    padding: 0,
-    textAlign: "start",
-  },
 });
 
 export function PriceWatchControl({ productId }: { productId: string }) {
@@ -98,8 +85,8 @@ function PriceWatchForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible {...props(styles.details)}>
-      <CollapsibleTrigger {...props(styles.summary)}>
-        Watch price or availability
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Watch price or availability</Button>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(styles.content)}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>

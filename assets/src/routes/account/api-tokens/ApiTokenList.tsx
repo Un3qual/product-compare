@@ -1,27 +1,22 @@
-import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { usePreloadedQuery } from "react-relay";
-import type { ApiTokenOperationsQuery } from "../../../__generated__/ApiTokenOperationsQuery.graphql";
+import type { ApiTokenItem_token$key } from "$generated/ApiTokenItem_token.graphql";
+import { ApiTokenItem, ApiTokenSummaryItem } from "./ApiTokenItem";
 import {
-  relayRouteQueryDescriptorIdentity,
-  useRoutePreloadedQuery
-} from "../../../relay/route-preload";
-import { ApiTokenItem } from "./ApiTokenItem";
-import { apiTokenOperationsQuery } from "./ApiTokenOperations";
-import { applyApiTokenUpdates } from "./api-token-route-data";
-import type { ApiTokenQueryDescriptor, ApiTokenSummary, ApiTokensRouteLoaderData } from "./loader";
-import { summarizeApiTokensPage } from "./loader";
+  applyApiTokenUpdates,
+  type ApiTokenRecord,
+  type ApiTokenStatus,
+} from "./api-token-route-data";
 
 const styles = create({
   list: {
     listStyle: "none",
     margin: 0,
-    padding: 0
-  }
+    padding: 0,
+  },
 });
 
 type ApiTokenListLifecycleProps = {
-  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
+  onRotate: (token: ApiTokenRecord, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;
@@ -30,21 +25,56 @@ type ApiTokenListLifecycleProps = {
 };
 
 type RelayApiTokenListProps = ApiTokenListLifecycleProps & {
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
-  localTokens: ApiTokenSummary[];
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
-  tokenQueries: ApiTokenQueryDescriptor[];
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord>;
+  localTokens: ApiTokenRecord[];
+  serverTokens: readonly (ApiTokenItem_token$key & { readonly id: string })[];
+  tokenStatus: ApiTokenStatus;
 };
 
-export function RelayApiTokenList(props: RelayApiTokenListProps) {
+type RelayApiTokenRowProps = {
+  fragmentRef: ApiTokenItem_token$key & { readonly id: string };
+  lifecycle: ApiTokenListLifecycleProps;
+  tokenStatus: ApiTokenStatus;
+  tokenUpdate: ApiTokenRecord | undefined;
+};
+
+function RelayApiTokenRow({
+  fragmentRef,
+  lifecycle,
+  tokenStatus,
+  tokenUpdate,
+}: RelayApiTokenRowProps) {
+  const tokenId = fragmentRef.id;
+  const {
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+  } = lifecycle;
+
+  if (tokenUpdate) {
+    const [visibleUpdate] = applyApiTokenUpdates([tokenUpdate], new Map(), tokenStatus);
+
+    if (!visibleUpdate) return null;
+  }
+
   return (
-    <Suspense fallback={<p role="status">Loading API tokens...</p>}>
-      <RelayApiTokenListContent {...props} />
-    </Suspense>
+    <ApiTokenItem
+      onRotate={onRotate}
+      onRevoke={onRevoke}
+      revokePending={pendingRevokeIds.has(tokenId)}
+      rotatePending={pendingRotateIds.has(tokenId)}
+      revokeError={revokeErrorsByTokenId.get(tokenId) ?? null}
+      rotateError={rotateErrorsByTokenId.get(tokenId) ?? null}
+      token={fragmentRef}
+      tokenUpdate={tokenUpdate}
+    />
   );
 }
 
-function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
+export function RelayApiTokenList(relayProps: RelayApiTokenListProps) {
   const {
     apiTokenUpdates,
     localTokens,
@@ -54,14 +84,22 @@ function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
     pendingRotateIds,
     revokeErrorsByTokenId,
     rotateErrorsByTokenId,
+    serverTokens,
     tokenStatus,
-    tokenQueries
   } = relayProps;
+  const lifecycle = {
+    onRotate,
+    onRevoke,
+    pendingRevokeIds,
+    pendingRotateIds,
+    revokeErrorsByTokenId,
+    rotateErrorsByTokenId,
+  };
 
   return (
     <ul aria-label="API tokens" {...props(styles.list)}>
       {localTokens.map((token) => (
-        <ApiTokenItem
+        <ApiTokenSummaryItem
           key={token.id}
           onRotate={onRotate}
           onRevoke={onRevoke}
@@ -72,60 +110,17 @@ function RelayApiTokenListContent(relayProps: RelayApiTokenListProps) {
           token={token}
         />
       ))}
-      {tokenQueries.map((tokenQuery) => (
-        <RelayApiTokenPage
-          apiTokenUpdates={apiTokenUpdates}
-          key={relayRouteQueryDescriptorIdentity(tokenQuery)}
-          onRotate={onRotate}
-          onRevoke={onRevoke}
-          pendingRevokeIds={pendingRevokeIds}
-          pendingRotateIds={pendingRotateIds}
-          revokeErrorsByTokenId={revokeErrorsByTokenId}
-          rotateErrorsByTokenId={rotateErrorsByTokenId}
-          tokenQuery={tokenQuery}
+      {serverTokens.map((fragmentRef) => (
+        <RelayApiTokenRow
+          fragmentRef={fragmentRef}
+          key={fragmentRef.id}
+          lifecycle={lifecycle}
           tokenStatus={tokenStatus}
+          tokenUpdate={apiTokenUpdates.get(fragmentRef.id)}
         />
       ))}
     </ul>
   );
-}
-
-function RelayApiTokenPage(props: ApiTokenListLifecycleProps & {
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
-  tokenQuery: ApiTokenQueryDescriptor;
-  tokenStatus: ApiTokensRouteLoaderData["tokenStatus"];
-}) {
-  const {
-    apiTokenUpdates,
-    onRotate,
-    onRevoke,
-    pendingRevokeIds,
-    pendingRotateIds,
-    revokeErrorsByTokenId,
-    rotateErrorsByTokenId,
-    tokenQuery,
-    tokenStatus
-  } = props;
-  const queryRef = useRoutePreloadedQuery<ApiTokenOperationsQuery>(
-    apiTokenOperationsQuery,
-    tokenQuery
-  );
-  const data = usePreloadedQuery<ApiTokenOperationsQuery>(apiTokenOperationsQuery, queryRef);
-  const page = summarizeApiTokensPage(data);
-  const tokens = applyApiTokenUpdates(page.tokens, apiTokenUpdates, tokenStatus);
-
-  return tokens.map((token) => (
-    <ApiTokenItem
-      key={token.id}
-      onRotate={onRotate}
-      onRevoke={onRevoke}
-      revokePending={pendingRevokeIds.has(token.id)}
-      rotatePending={pendingRotateIds.has(token.id)}
-      revokeError={revokeErrorsByTokenId.get(token.id) ?? null}
-      rotateError={rotateErrorsByTokenId.get(token.id) ?? null}
-      token={token}
-    />
-  ));
 }
 
 export function ApiTokenList({
@@ -135,12 +130,12 @@ export function ApiTokenList({
   pendingRotateIds,
   revokeErrorsByTokenId,
   rotateErrorsByTokenId,
-  tokens
-}: ApiTokenListLifecycleProps & { tokens: ApiTokenSummary[] }) {
+  tokens,
+}: ApiTokenListLifecycleProps & { tokens: ApiTokenRecord[] }) {
   return (
     <ul aria-label="API tokens" {...props(styles.list)}>
       {tokens.map((token) => (
-        <ApiTokenItem
+        <ApiTokenSummaryItem
           key={token.id}
           onRotate={onRotate}
           onRevoke={onRevoke}

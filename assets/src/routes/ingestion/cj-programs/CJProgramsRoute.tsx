@@ -1,48 +1,140 @@
 import { Suspense } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLoaderData } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import cjProgramsRouteQuery, {
-  type CJProgramsRouteQuery
-} from "../../../__generated__/CJProgramsRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Button } from "../../../ui/primitives/Button";
-import { Select } from "../../../ui/primitives/Select";
-import { tokens } from "../../../ui/theme/tokens.stylex";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
+import {
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Button } from "$ui/primitives/Button";
+import { Select } from "$ui/primitives/Select";
+import { tokens } from "$ui/theme/tokens.stylex";
+import { recoverRouteLoaderError } from "../../loader-errors";
 import { CJProgramList } from "./CJProgramList";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
 import {
+  cjProgramsPaginationFromUrl,
   cjProgramSortToUrlParam,
   cjProgramStageToUrlParam,
-  type CJProgramsPagination
+  type CJProgramsPagination,
 } from "./pagination";
-import type { CJProgramsLoaderData } from "./loader";
+
+const cjProgramsRouteQuery = graphql`
+  query CJProgramsRouteQuery(
+    $first: Int!
+    $after: String
+    $stage: CJProgramStage
+    $sort: CJProgramSort!
+    $unmatchedFirst: Int!
+    $unmatchedAfter: String
+  ) {
+    cjProgramStageCounts {
+      new
+      considering
+      selected
+      applied
+      accepted
+      notPursuing
+      declined
+    }
+    cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) {
+      edges {
+        node {
+          id
+          ...CJProgramRow_program
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        endCursor
+      }
+    }
+    unmatchedCjFeeds(first: $unmatchedFirst, after: $unmatchedAfter) {
+      edges {
+        node {
+          id
+          ...CJFeedRow_feed
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        endCursor
+      }
+    }
+  }
+`;
+
+export type CJProgramsLoaderData =
+  | {
+      status: "ready";
+      pagination: CJProgramsPagination;
+      query: RelayRouteQueryDescriptor<CJProgramsRouteQuery["variables"]>;
+    }
+  | {
+      status: "error";
+      pagination: CJProgramsPagination;
+    };
+
+export async function cjProgramsLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<CJProgramsLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const pagination = cjProgramsPaginationFromUrl(new URL(request.url));
+
+  try {
+    return {
+      status: "ready",
+      pagination,
+      query: await preloadRouteQuery<CJProgramsRouteQuery>(
+        environment,
+        cjProgramsRouteQuery,
+        pagination,
+        { signal: request.signal },
+      ),
+    };
+  } catch (error) {
+    return recoverRouteLoaderError<CJProgramsLoaderData>(
+      error,
+      "Failed to preload CJ programs route query.",
+      {
+        status: "error",
+        pagination,
+      },
+    );
+  }
+}
 
 const styles = create({
   controls: {
     alignItems: "end",
     display: "grid",
     gap: "0.85rem",
-    paddingBlock: "0.25rem"
+    paddingBlock: "0.25rem",
   },
   field: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   label: {
     color: tokens.textSecondary,
     fontSize: "0.82rem",
-    fontWeight: 600
-  }
+    fontWeight: 600,
+  },
 });
 
 export function CJProgramsRoute() {
-  const loaderData = useLoaderData<typeof import("./loader").cjProgramsLoader>() as CJProgramsLoaderData;
+  const loaderData = useLoaderData<typeof cjProgramsLoader>() as CJProgramsLoaderData;
 
   return (
     <PageShell
@@ -80,15 +172,12 @@ export function CJProgramsRoute() {
 
 function CJProgramsPanel({
   pagination,
-  query
+  query,
 }: {
   pagination: CJProgramsPagination;
   query: Extract<CJProgramsLoaderData, { status: "ready" }>["query"];
 }) {
-  const queryRef = useRoutePreloadedQuery<CJProgramsRouteQuery>(
-    cjProgramsRouteQuery,
-    query
-  );
+  const queryRef = useRoutePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, query);
   const data = usePreloadedQuery<CJProgramsRouteQuery>(cjProgramsRouteQuery, queryRef);
 
   return <CJProgramList data={data} pagination={pagination} />;
@@ -115,8 +204,8 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
             { label: "All stages", value: "" },
             ...CJ_PROGRAM_STAGES.map(({ label, urlValue }) => ({
               label,
-              value: urlValue
-            }))
+              value: urlValue,
+            })),
           ]}
         />
       </label>
@@ -128,7 +217,7 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
           name="sort"
           options={CJ_PROGRAM_SORTS.map(({ label, urlValue }) => ({
             label,
-            value: urlValue
+            value: urlValue,
           }))}
         />
       </label>

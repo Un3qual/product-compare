@@ -160,6 +160,130 @@ defmodule ProductCompare.SeoTest do
            ]
   end
 
+  test "EUR-only facts remain qualified on shared SEO surfaces but not homepage shortcuts" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "eur-only-category",
+        name: "EUR Only Category",
+        seo_slug: "eur-only-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    {:ok, merchant} =
+      Pricing.upsert_merchant(%{name: "EUR Only Merchant", domain: "eur-only.example"})
+
+    products =
+      Enum.map(1..3, fn index ->
+        product = specified_product("eur-only-product-#{index}", operator, category)
+
+        {:ok, offer} =
+          Pricing.upsert_merchant_product(%{
+            merchant_id: merchant.id,
+            product_id: product.id,
+            url: "https://eur-only.example/product-#{index}",
+            currency: "EUR",
+            is_active: true
+          })
+
+        {:ok, _point} =
+          Pricing.add_price_point(%{
+            merchant_product_id: offer.id,
+            observed_at: @now,
+            price: "100",
+            shipping: "5",
+            in_stock: true
+          })
+
+        product
+      end)
+
+    assert %{indexable: true, qualified_product_count: 3} =
+             Seo.get_category(category.seo_slug, now: @now)
+
+    assert Enum.map(Repo.all(Seo.qualified_products_for_taxon_query(category.id, @now)), & &1.id) ==
+             Enum.map(products, & &1.id)
+
+    product_paths = MapSet.new(Seo.sitemap_entries(:products, now: @now), & &1.path)
+    merchant_paths = MapSet.new(Seo.sitemap_entries(:merchants, now: @now), & &1.path)
+    category_paths = MapSet.new(Seo.sitemap_entries(:categories, now: @now), & &1.path)
+
+    assert Enum.all?(products, &MapSet.member?(product_paths, "/products/#{&1.slug}"))
+    assert MapSet.member?(merchant_paths, "/merchants/#{merchant.slug}")
+    assert MapSet.member?(category_paths, "/categories/#{category.seo_slug}")
+    refute category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
+  end
+
+  test "future observations do not replace current category qualification facts" do
+    operator = AccountsFixtures.operator_fixture()
+    type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: type_taxonomy.id,
+        code: "future-category",
+        name: "Future Category",
+        seo_slug: "future-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    products = Enum.map(1..3, &qualified_product("future-category-#{&1}", operator, category))
+
+    offers =
+      Repo.all(
+        Ecto.Query.from(offer in ProductCompareSchemas.Pricing.MerchantProduct,
+          where: offer.product_id in ^Enum.map(products, & &1.id)
+        )
+      )
+
+    Enum.each(offers, fn offer ->
+      {:ok, _future} =
+        Pricing.add_price_point(%{
+          merchant_product_id: offer.id,
+          observed_at: DateTime.add(@now, 3_600, :second),
+          price: "1",
+          shipping: "0",
+          in_stock: false
+        })
+    end)
+
+    assert %{indexable: true, qualified_product_count: 3} =
+             Seo.get_category(category.seo_slug, now: @now)
+
+    assert category.id in Enum.map(Seo.home_category_shortcuts(now: @now, limit: 100), & &1.id)
+  end
+
+  test "category qualification consumes current availability without history aggregates" do
+    operator = AccountsFixtures.operator_fixture()
+
+    category =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: TaxonomyFixtures.taxonomy_fixture("type", "Type").id,
+        code: "availability-query-category",
+        name: "Availability Query Category",
+        seo_slug: "availability-query-category",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    Enum.each(1..3, &qualified_product("availability-query-product-#{&1}", operator, category))
+
+    {%{qualified_product_count: 3}, queries} =
+      capture_select_queries(fn -> Seo.get_category(category.seo_slug, now: @now) end)
+
+    qualification_query = Enum.find(queries, &String.contains?(&1, ~s(FROM "taxon_closure")))
+
+    assert qualification_query =~ ~s(FROM "merchant_products")
+    refute qualification_query =~ "min("
+    refute qualification_query =~ "percentile_cont"
+    refute qualification_query =~ ~s(WINDOW "median_rank" AS)
+  end
+
   test "batch category lookup preserves singular qualification with a fixed query budget" do
     operator = AccountsFixtures.operator_fixture()
     type_taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
@@ -469,6 +593,84 @@ defmodule ProductCompare.SeoTest do
 
     assert {:error, :slug_reserved} =
              Catalog.update_product(updated, %{slug: "legacy-search-slug"})
+  end
+
+  test "home category shortcuts keep only qualified indexable categories in deterministic count order" do
+    operator = AccountsFixtures.operator_fixture()
+    taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    larger =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: taxonomy.id,
+        code: "home-larger",
+        name: "Alpha Home",
+        seo_slug: "alpha-home",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    smaller =
+      TaxonomyFixtures.taxon_fixture(%{
+        taxonomy_id: taxonomy.id,
+        code: "home-smaller",
+        name: "Beta Home",
+        seo_slug: "beta-home",
+        seo_description: @description,
+        seo_indexable: true
+      })
+
+    Enum.each(1..4, &qualified_product("home-larger-#{&1}", operator, larger))
+    Enum.each(1..3, &qualified_product("home-smaller-#{&1}", operator, smaller))
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, limit: 1), & &1.id) == [larger.id]
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, limit: 6), & &1.id) == [
+             larger.id,
+             smaller.id
+           ]
+  end
+
+  test "home category shortcuts support stable windows in database order" do
+    operator = AccountsFixtures.operator_fixture()
+    taxonomy = TaxonomyFixtures.taxonomy_fixture("type", "Type")
+
+    categories =
+      Enum.map(1..8, fn index ->
+        category =
+          TaxonomyFixtures.taxon_fixture(%{
+            taxonomy_id: taxonomy.id,
+            code: "home-boundary-#{index}",
+            name: "Home Boundary #{index}",
+            seo_slug: "home-boundary-#{index}",
+            seo_description: @description,
+            seo_indexable: true
+          })
+
+        Enum.each(1..3, &qualified_product("home-boundary-#{index}-#{&1}", operator, category))
+        category
+      end)
+
+    {shortcuts, queries} =
+      capture_select_queries(fn -> Seo.home_category_shortcuts(now: @now, limit: 100) end)
+
+    assert Enum.count_until(shortcuts, 9) == 8
+    assert Enum.map(shortcuts, & &1.id) == Enum.map(categories, & &1.id)
+
+    assert Enum.map(Seo.home_category_shortcuts(now: @now, offset: 6, limit: 2), & &1.id) ==
+             Enum.map(Enum.drop(categories, 6), & &1.id)
+
+    assert Enum.any?(queries, &String.contains?(&1, "LIMIT"))
+
+    shortcut_query =
+      Enum.find(queries, fn query ->
+        String.contains?(query, ~s(FROM "taxons")) and String.contains?(query, "LIMIT")
+      end)
+
+    assert shortcut_query =~ "JOIN LATERAL"
+    assert shortcut_query =~ ~s(FROM product_attribute_current)
+    assert shortcut_query =~ "OFFSET"
+    refute shortcut_query =~ "SELECT count(*) FROM product_attribute_current"
+    refute shortcut_query =~ "count(DISTINCT"
   end
 
   defp qualified_product(slug, operator, primary_type_taxon \\ nil) do

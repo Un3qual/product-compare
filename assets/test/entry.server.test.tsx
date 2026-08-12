@@ -17,7 +17,7 @@ test("server render emits route document metadata", async () => {
   expect(typeof html).toBe("string");
   expect(html).toContain("<title>Sign in | Product Compare</title>");
   expect(html).toContain(
-    '<meta name="description" content="Sign in to manage saved comparisons and account tools."/>'
+    '<meta name="description" content="Sign in to manage saved comparisons and account tools."/>',
   );
 });
 
@@ -40,35 +40,42 @@ test("server render emits qualified product canonical, robots, social, and safe 
                 canonicalPath: "/products/field-camera",
                 indexable: true,
                 imageUrl: null,
-                structuredData: '{"@context":"https://schema.org","@type":"Product","name":"Field Camera","url":"/products/field-camera"}'
+                structuredData:
+                  '{"@context":"https://schema.org","@type":"Product","name":"Field Camera","url":"/products/field-camera"}',
               },
               brand: { id: "brand-1", name: "Acme" },
               currentAttributes: [],
               reviewSummary: { count: 0, averageRating: null },
               reviews: [],
               questions: [],
-              merchantProducts: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } }
-            }
-          }
+              merchantProducts: { edges: [], pageInfo: { endCursor: null, hasNextPage: false } },
+            },
+          },
         }
       : { data: { viewer: null } };
 
-    return Promise.resolve(new Response(JSON.stringify(payload), {
-      headers: { "content-type": "application/json" },
-      status: 200
-    }));
+    return Promise.resolve(
+      new Response(JSON.stringify(payload), {
+        headers: { "content-type": "application/json" },
+        status: 200,
+      }),
+    );
   }) as typeof fetch;
 
   try {
     const html = await render("/products/field-camera", {
-      request: new Request("https://app.example/products/field-camera")
+      request: new Request("https://app.example/products/field-camera"),
     });
 
     expect(typeof html).toBe("string");
-    expect(html).toContain("<title>Field Camera specifications and prices | Product Compare</title>");
-    expect(html).toContain('<link rel="canonical" href="https://app.example/products/field-camera"/>');
+    expect(html).toContain(
+      "<title>Field Camera specifications and prices | Product Compare</title>",
+    );
+    expect(html).toContain(
+      '<link rel="canonical" href="https://app.example/products/field-camera"/>',
+    );
     expect(html).toContain('<meta name="robots" content="index,follow"/>');
-    expect(html).toContain('https://app.example/products/field-camera');
+    expect(html).toContain("https://app.example/products/field-camera");
     expect(html).toContain('type="application/ld+json"');
   } finally {
     globalThis.fetch = originalFetch;
@@ -87,10 +94,10 @@ test("server render returns a 404 response for unknown application paths", async
 
   expect(body).toContain("<title>Page not found | Product Compare</title>");
   expect(body).toContain(
-    '<meta name="description" content="The requested Product Compare page could not be found."/>'
+    '<meta name="description" content="The requested Product Compare page could not be found."/>',
   );
   expect(body).toContain("The requested page could not be found.");
-  expect(body).toContain('__relayRecords');
+  expect(body).toContain("__relayRecords");
 });
 
 test("server render handles product chunk failures with product-specific feedback", async () => {
@@ -127,17 +134,17 @@ test("server render returns product not-found markup and Relay bootstrap with HT
         JSON.stringify({
           data: {
             product: null,
-            viewer: null
-          }
+            viewer: null,
+          },
         }),
         {
           headers: {
-            "content-type": "application/json"
+            "content-type": "application/json",
           },
-          status: 200
-        }
-      )
-    )
+          status: 200,
+        },
+      ),
+    ),
   ) as typeof fetch;
 
   try {
@@ -151,7 +158,7 @@ test("server render returns product not-found markup and Relay bootstrap with HT
     const body = await response.text();
 
     expect(body).toContain("Product not found.");
-    expect(body).toContain('__relayRecords');
+    expect(body).toContain("__relayRecords");
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -172,7 +179,7 @@ test("server render includes serialized Relay records for matched route queries"
             products: {
               pageInfo: {
                 hasNextPage: false,
-                endCursor: "cursor-1"
+                endCursor: "cursor-1",
               },
               edges: [
                 {
@@ -184,22 +191,22 @@ test("server render includes serialized Relay records for matched route queries"
                     slug: "catalog-first",
                     brand: {
                       id: "brand-1",
-                      name: "Acme"
-                    }
-                  }
-                }
-              ]
-            }
-          }
+                      name: "Acme",
+                    },
+                  },
+                },
+              ],
+            },
+          },
         }),
         {
           headers: {
-            "content-type": "application/json"
+            "content-type": "application/json",
           },
-          status: 200
-        }
-      )
-    )
+          status: 200,
+        },
+      ),
+    ),
   ) as typeof fetch;
 
   try {
@@ -212,9 +219,9 @@ test("server render includes serialized Relay records for matched route queries"
       expect.arrayContaining([
         expect.objectContaining({
           name: "Catalog First",
-          slug: "catalog-first"
-        })
-      ])
+          slug: "catalog-first",
+        }),
+      ]),
     );
   } finally {
     globalThis.fetch = originalFetch;
@@ -276,6 +283,61 @@ test("server render does not wait for the optional attribution ledger", async ()
           commerceAttributionClicks: {
             edges: [],
             pageInfo: { endCursor: null, hasNextPage: false },
+          },
+        },
+      }),
+    );
+    await renderResult;
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test("server render does not wait for optional home deals", async () => {
+  const originalFetch = globalThis.fetch;
+  const dealsResponse = deferredPromise<Response>();
+
+  globalThis.fetch = vi.fn((_input, init) => {
+    const body = JSON.parse(String(init?.body)) as { query: string };
+
+    if (body.query.includes("HomeDealsQuery")) {
+      return dealsResponse.promise;
+    }
+
+    const payload = body.query.includes("HomeRouteQuery")
+      ? {
+          data: {
+            homeWorkspace: {
+              categories: { edges: [] },
+              products: { edges: [] },
+              selectedProducts: [],
+            },
+          },
+        }
+      : { data: { viewer: null } };
+
+    return Promise.resolve(jsonResponse(payload));
+  }) as typeof fetch;
+
+  const renderResult = render("/");
+
+  try {
+    const result = await Promise.race([
+      renderResult.then(() => "rendered" as const),
+      new Promise<"blocked">((resolve) => setTimeout(() => resolve("blocked"), 2_000)),
+    ]);
+
+    expect(result).toBe("rendered");
+    await expect(renderResult).resolves.toContain("Find the right product");
+    await expect(renderResult).resolves.toContain("Loading new and trending offers...");
+    await expect(renderResult).resolves.not.toContain('"deals":{}');
+  } finally {
+    dealsResponse.resolve(
+      jsonResponse({
+        data: {
+          homeDeals: {
+            forYou: { edges: [] },
+            new: { edges: [] },
+            trending: { edges: [] },
           },
         },
       }),

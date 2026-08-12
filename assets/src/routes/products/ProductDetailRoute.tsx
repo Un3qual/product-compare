@@ -1,27 +1,38 @@
 import { Suspense, useId } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLoaderData, useLocation, useNavigate } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import productDetailRouteQuery, {
-  type ProductDetailRouteQuery
-} from "../../__generated__/ProductDetailRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { SummaryStrip } from "../../ui/components/data/SummaryStrip";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
-import { DetailTabs } from "../../ui/components/layout/DetailTabs";
-import { PageShell } from "../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import {
+  data,
+  redirect,
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  type LoaderFunctionArgs,
+} from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
+import { RouteLoaderGraphQLError } from "$relay/environment";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import {
+  cacheRouteQueryData,
+  fetchRouteQuery,
+  getRelayEnvironmentFromRouterContext,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { routeMetadataFromSeo } from "$routes/seo";
+import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
+import { SummaryStrip } from "$ui/components/data/SummaryStrip";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { DetailTabs } from "$ui/components/layout/DetailTabs";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
-import { productDetailLoader, type ProductDetailLoaderData } from "./loader";
-import {
-  ProductAttributeList,
-  type ProductAttributeListItem
-} from "./ProductAttributeList";
+import { ProductAttributeList, type ProductAttributeListItem } from "./ProductAttributeList";
 import { ProductDecisionActions } from "./ProductDecisionActions";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
@@ -29,36 +40,102 @@ import { ProductCommunityPanel } from "./ProductCommunityPanel";
 import {
   createProductDetailRouteData,
   overviewSummaryItems,
-  type ProductOverviewSummaryItem
+  type ProductOverviewSummaryItem,
 } from "./product-detail-route-data";
+
+const productDetailRouteQuery = graphql`
+  query ProductDetailRouteQuery($slug: String!, $offerFirst: Int!, $offersAfter: String) {
+    product(slug: $slug) {
+      id
+      name
+      slug
+      description
+      seo {
+        title
+        description
+        canonicalPath
+        indexable
+        imageUrl
+        structuredData
+      }
+      brand {
+        id
+        name
+      }
+      currentAttributes {
+        attributeId
+        code
+        displayName
+        dataType
+        valueText
+        sortOrder
+        groupLabel
+        isRequired
+        numericValue
+        booleanValue
+        enumOptionId
+        unitSymbol
+      }
+      merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {
+        edges {
+          cursor
+        }
+        pageInfo {
+          endCursor
+          hasNextPage
+        }
+        ...ProductOfferPanel_connection
+      }
+    }
+  }
+`;
+
+const PRODUCT_OFFERS_PAGE_SIZE = 6;
+
+export type ProductDetailLoaderData =
+  | {
+      status: "ready";
+      metadata: RouteDocumentMetadata;
+      productQuery: RelayRouteQueryDescriptor<ProductDetailRouteQuery["variables"]>;
+    }
+  | { status: "not_found" | "error" };
+
+export type ProductDetailLoaderResult =
+  | ProductDetailLoaderData
+  | ReturnType<typeof data<ProductDetailLoaderData>>
+  | Response;
+
+type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
+  product: NonNullable<ProductDetailRouteQuery["response"]["product"]>;
+};
 
 const styles = create({
   description: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   descriptionText: {
-    margin: 0
+    margin: 0,
   },
   section: {
     display: "grid",
-    gap: "1rem"
+    gap: "1rem",
   },
   sectionTitle: {
     fontSize: "1.4rem",
     letterSpacing: "-0.025em",
-    margin: 0
+    margin: 0,
   },
   overview: {
     display: "grid",
-    gap: "1.25rem"
+    gap: "1.25rem",
   },
   overviewCopy: {
     color: tokens.textSecondary,
     lineHeight: 1.65,
     margin: 0,
-    maxWidth: "42rem"
-  }
+    maxWidth: "42rem",
+  },
 });
 
 export function ProductDetailRoute() {
@@ -85,13 +162,13 @@ export function ProductDetailRoute() {
 }
 
 function ProductDetail({
-  productQuery
+  productQuery,
 }: {
   productQuery: Extract<ProductDetailLoaderData, { status: "ready" }>["productQuery"];
 }) {
   const queryRef = useRoutePreloadedQuery<ProductDetailRouteQuery>(
     productDetailRouteQuery,
-    productQuery
+    productQuery,
   );
   const data = usePreloadedQuery<ProductDetailRouteQuery>(productDetailRouteQuery, queryRef);
   const location = useLocation();
@@ -105,7 +182,7 @@ function ProductDetail({
   const routeData = createProductDetailRouteData({
     hash: location.hash,
     productSlug: product.slug,
-    search: location.search
+    search: location.search,
   });
   const selectionTray =
     routeData.selectedCompareSlugs.length > 0 ? (
@@ -113,8 +190,8 @@ function ProductDetail({
         items={[
           {
             label: product.name,
-            slug: product.slug
-          }
+            slug: product.slug,
+          },
         ]}
         maxProducts={MAX_COMPARE_PRODUCTS}
         openComparePath={routeData.comparePath}
@@ -140,9 +217,7 @@ function ProductDetail({
     <PageShell
       description={
         <div {...props(styles.description)}>
-          <p {...props(styles.descriptionText)}>
-            {product.brand?.name ?? "Unknown brand"}
-          </p>
+          <p {...props(styles.descriptionText)}>{product.brand?.name ?? "Unknown brand"}</p>
           {product.description ? (
             <p {...props(styles.descriptionText)}>{product.description}</p>
           ) : null}
@@ -161,7 +236,7 @@ function ProductDetail({
             <ProductDecisionActions
               browseHref={routeData.browsePath}
               compareAction={routeData.compareAction}
-              offerHref={productOffersPath(product.id)}
+              offerHref={productOffersPath(product.id, routeData.selectedCompareSlugs)}
             />
             <PriceWatchControl productId={product.id} />
           </ContextRail>
@@ -176,17 +251,17 @@ function ProductDetail({
                   summaryItems={overviewSummaryItems({
                     attributeCount: product.currentAttributes.length,
                     loadedOfferCount: product.merchantProducts?.edges.length ?? 0,
-                    hasMoreOffers: product.merchantProducts?.pageInfo.hasNextPage ?? false
+                    hasMoreOffers: product.merchantProducts?.pageInfo.hasNextPage ?? false,
                   })}
                 />
               ),
               label: "Overview",
-              value: "overview"
+              value: "overview",
             },
             {
               content: <ProductSpecifications attributes={product.currentAttributes} />,
               label: "Specifications",
-              value: "specifications"
+              value: "specifications",
             },
             { content: offers, label: "Offers", value: "offers" },
             {
@@ -207,8 +282,8 @@ function ProductDetail({
                 </ResettableErrorBoundary>
               ),
               label: "Reviews & Q&A",
-              value: "community"
-            }
+              value: "community",
+            },
           ]}
           label="Product details"
           onValueChange={(value) =>
@@ -216,9 +291,9 @@ function ProductDetail({
               {
                 hash: `#${value}`,
                 pathname: location.pathname,
-                search: location.search
+                search: location.search,
               },
-              { replace: true }
+              { replace: true },
             )
           }
           value={routeData.detailView}
@@ -229,26 +304,23 @@ function ProductDetail({
 }
 
 function ProductOverview({
-  summaryItems
+  summaryItems,
 }: {
   summaryItems: readonly ProductOverviewSummaryItem[];
 }) {
   return (
     <section aria-label="Product overview" {...props(styles.overview)}>
-      <SummaryStrip
-        items={summaryItems}
-        label="At a glance"
-      />
+      <SummaryStrip items={summaryItems} label="At a glance" />
       <p {...props(styles.overviewCopy)}>
-        Start with the available decision signals, then move into specifications or
-        merchant offers when you need the supporting detail.
+        Start with the available decision signals, then move into specifications or merchant offers
+        when you need the supporting detail.
       </p>
     </section>
   );
 }
 
 function ProductSpecifications({
-  attributes
+  attributes,
 }: {
   attributes: ReadonlyArray<ProductAttributeListItem>;
 }) {
@@ -281,4 +353,93 @@ function ProductNotFoundFallback() {
       <FeedbackState kind="empty" title="Product not found." />
     </PageShell>
   );
+}
+
+export async function productDetailLoader({
+  context,
+  params,
+  request,
+}: LoaderFunctionArgs): Promise<ProductDetailLoaderResult> {
+  const slug = params.slug?.trim() ?? "";
+  const offersAfter = new URL(request.url).searchParams.get("offersAfter");
+
+  if (slug === "") return productNotFoundResult();
+
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const variables: ProductDetailRouteQuery["variables"] = {
+    slug,
+    offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
+    offersAfter,
+  };
+
+  try {
+    const productRouteQuery = await fetchRouteQuery<ProductDetailRouteQuery>(
+      environment,
+      productDetailRouteQuery,
+      variables,
+      { signal: request.signal },
+    );
+
+    if (!productRouteQuery.data.product) {
+      productRouteQuery.dispose();
+      return productNotFoundResult();
+    }
+
+    if (productRouteQuery.data.product.slug !== slug) {
+      productRouteQuery.dispose();
+      const canonicalUrl = new URL(request.url);
+      canonicalUrl.pathname = `/products/${encodeURIComponent(productRouteQuery.data.product.slug)}`;
+      return redirect(`${canonicalUrl.pathname}${canonicalUrl.search}`, 301);
+    }
+
+    return {
+      status: "ready",
+      metadata: routeMetadataFromSeo(productRouteQuery.data.product.seo, request.url, {
+        allowIndexing: new URL(request.url).search === "",
+      }),
+      productQuery: productRouteQuery.descriptor,
+    };
+  } catch (error) {
+    const partialData = partialProductData(error);
+
+    if (partialData) {
+      return {
+        status: "ready",
+        metadata: routeMetadataFromSeo(partialData.product.seo, request.url, {
+          allowIndexing: new URL(request.url).search === "",
+        }),
+        productQuery: cacheRouteQueryData<ProductDetailRouteQuery>(
+          environment,
+          productDetailRouteQuery,
+          variables,
+          partialData,
+        ),
+      };
+    }
+
+    return recoverRouteLoaderError<ProductDetailLoaderData>(
+      error,
+      "Failed to preload product detail route query.",
+      { status: "error" },
+    );
+  }
+}
+
+function productNotFoundResult() {
+  return data<ProductDetailLoaderData>({ status: "not_found" }, { status: 404 });
+}
+
+function partialProductData(error: unknown): ProductDetailResponseWithProduct | null {
+  if (!(error instanceof RouteLoaderGraphQLError)) return null;
+  const response = error.response;
+  if (Array.isArray(response) || !("data" in response)) return null;
+
+  const responseData = response.data as ProductDetailRouteQuery["response"] | null | undefined;
+  return hasProduct(responseData) ? responseData : null;
+}
+
+function hasProduct(
+  productData: ProductDetailRouteQuery["response"] | null | undefined,
+): productData is ProductDetailResponseWithProduct {
+  return productData?.product !== null && productData?.product !== undefined;
 }

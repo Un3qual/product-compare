@@ -8,6 +8,13 @@
     "strict": true,
     "noEmit": true,
     "allowImportingTsExtensions": true,
+    "baseUrl": ".",
+    "paths": {
+      "$generated/*": ["src/__generated__/*"],
+      "$relay/*": ["src/relay/*"],
+      "$routes/*": ["src/routes/*"],
+      "$ui/*": ["src/ui/*"]
+    },
     "types": ["vitest/globals"],
     "resolveJsonModule": true,
     "isolatedModules": true,

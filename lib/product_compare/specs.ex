@@ -153,6 +153,19 @@ defmodule ProductCompare.Specs do
     Reads.list_current_attributes_for_products(product_ids)
   end
 
+  @spec home_specification_highlights([term()], keyword()) :: %{
+          optional(pos_integer()) => [map()]
+        }
+  def home_specification_highlights(product_ids, opts \\ []) when is_list(product_ids) do
+    limit =
+      case Keyword.get(opts, :limit, 3) do
+        value when is_integer(value) and value > 0 -> min(value, 3)
+        _ -> 3
+      end
+
+    Reads.list_current_attributes_for_products(product_ids, limit: limit)
+  end
+
   @spec list_current_attributes_for_product(term()) :: [map()]
   def list_current_attributes_for_product(product_id) when valid_id_guard(product_id) do
     Reads.list_current_attributes_for_product(product_id)

@@ -6,14 +6,13 @@ import {
   AffiliateCouponForm,
   AffiliateLinkForm,
   AffiliateNetworkForm,
-  AffiliateProgramForm
+  AffiliateProgramForm,
 } from "../../../../src/routes/affiliate/setup/AffiliateSetupForms";
-import { AffiliateSetupRoute } from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
-import type { AffiliateSetupLoaderData } from "../../../../src/routes/affiliate/setup/loader";
 import {
-  chooseSelectOption,
-  openSelect
-} from "../../../helpers/radix-select";
+  AffiliateSetupRoute,
+  type AffiliateSetupLoaderData,
+} from "../../../../src/routes/affiliate/setup/AffiliateSetupRoute";
+import { chooseSelectOption, openSelect } from "../../../helpers/radix-select";
 
 const {
   commitCouponMutationMock,
@@ -23,7 +22,7 @@ const {
   useLoaderDataMock,
   useMutationMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitCouponMutationMock: vi.fn(),
   commitLinkMutationMock: vi.fn(),
@@ -32,7 +31,7 @@ const {
   useLoaderDataMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -40,7 +39,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -50,18 +49,18 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
@@ -80,18 +79,18 @@ const COUPON_ID = "Q291cG9uOjE=";
 
 const AFFILIATE_SETUP_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "AffiliateSetupOperationsQuery",
-    text: "query AffiliateSetupOperationsQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
+    operationName: "AffiliateSetupRouteQuery",
+    text: "query AffiliateSetupRouteQuery($first: Int, $after: String) { merchants(first: $first, after: $after) { edges { node { id } } } }",
     variables: {
       first: 20,
-      after: null
-    }
-  }
+      after: null,
+    },
+  },
 };
 
 const AFFILIATE_SETUP_QUERY_REF = {
   dispose: vi.fn(),
-  variables: AFFILIATE_SETUP_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: AFFILIATE_SETUP_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 beforeEach(() => {
@@ -131,7 +130,9 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
 
   expect(screen.getByRole("heading", { name: "Affiliate setup" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Affiliate setup" })).toBeInTheDocument();
-  expect(screen.getByRole("region", { name: "Affiliate configuration workflow" })).toBeInTheDocument();
+  expect(
+    screen.getByRole("region", { name: "Affiliate configuration workflow" }),
+  ).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Setup sequence" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate network" })).toBeInTheDocument();
   expect(screen.getByRole("form", { name: "Save affiliate program" })).toBeInTheDocument();
@@ -142,11 +143,11 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   expect(screen.getByRole("option", { name: "Globex Supply" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    AFFILIATE_SETUP_QUERY_DESCRIPTOR
+    AFFILIATE_SETUP_QUERY_DESCRIPTOR,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    AFFILIATE_SETUP_QUERY_REF
+    AFFILIATE_SETUP_QUERY_REF,
   );
 });
 
@@ -154,26 +155,26 @@ test("affiliate setup route renders merchant-choice pagination from loaded curso
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData(AFFILIATE_SETUP_QUERY_DESCRIPTOR, {
       first: 35,
-      after: "previous merchant cursor"
-    })
+      after: "previous merchant cursor",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildAffiliateSetupData({
       hasNextPage: true,
       hasPreviousPage: true,
-      endCursor: "next merchant cursor/+"
-    }) as never
+      endCursor: "next merchant cursor/+",
+    }) as never,
   );
 
   renderAffiliateSetupRoute();
 
   expect(screen.getByRole("link", { name: "First merchants" })).toHaveAttribute(
     "href",
-    "/affiliate/setup?first=35"
+    "/affiliate/setup?first=35",
   );
   expect(screen.getByRole("link", { name: "Next merchants" })).toHaveAttribute(
     "href",
-    "/affiliate/setup?first=35&after=next+merchant+cursor%2F%2B"
+    "/affiliate/setup?first=35&after=next+merchant+cursor%2F%2B",
   );
 });
 
@@ -182,28 +183,30 @@ test("affiliate setup route hides merchant-choice pagination without valid desti
     buildAffiliateSetupData({
       hasNextPage: true,
       hasPreviousPage: true,
-      endCursor: null
-    }) as never
+      endCursor: null,
+    }) as never,
   );
 
   renderAffiliateSetupRoute();
 
-  expect(screen.queryByRole("navigation", { name: "Merchant choice pages" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("navigation", { name: "Merchant choice pages" }),
+  ).not.toBeInTheDocument();
 });
 
 test("affiliate setup route suppresses repeated and blank merchant cursors", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData(AFFILIATE_SETUP_QUERY_DESCRIPTOR, {
       first: 35,
-      after: "same-cursor"
-    })
+      after: "same-cursor",
+    }),
   );
   mockedUsePreloadedQuery.mockReturnValue(
     buildAffiliateSetupData({
       hasNextPage: true,
       hasPreviousPage: true,
-      endCursor: "same-cursor"
-    }) as never
+      endCursor: "same-cursor",
+    }) as never,
   );
 
   renderAffiliateSetupRoute();
@@ -220,17 +223,12 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
   const onSelectedMerchantIdChange = vi.fn();
   const merchantChoices = [
     { id: MERCHANT_ID, name: "Acme Market", domain: "acme.example" },
-    { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" }
+    { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" },
   ];
 
   render(
     <>
-      <AffiliateNetworkForm
-        error={null}
-        onSubmit={onNetworkSubmit}
-        pending={false}
-        result={null}
-      />
+      <AffiliateNetworkForm error={null} onSubmit={onNetworkSubmit} pending={false} result={null} />
       <AffiliateProgramForm
         affiliateNetworkId={NETWORK_ID}
         error={null}
@@ -260,11 +258,11 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
-    </>
+    </>,
   );
 
   fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
-    target: { value: "new-network-id" }
+    target: { value: "new-network-id" },
   });
   chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
   chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
@@ -285,10 +283,7 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
 test("affiliate setup datetime controls use the shared text-field presentation", () => {
   renderAffiliateSetupRoute();
 
-  expect(screen.getByLabelText("Last verified at")).toHaveAttribute(
-    "data-slot",
-    "text-field"
-  );
+  expect(screen.getByLabelText("Last verified at")).toHaveAttribute("data-slot", "text-field");
   expect(screen.getByLabelText("Valid from")).toHaveAttribute("data-slot", "text-field");
   expect(screen.getByLabelText("Valid to")).toHaveAttribute("data-slot", "text-field");
 });
@@ -300,9 +295,15 @@ test("affiliate setup route renders selected merchant summaries for program, lin
   const linkForm = screen.getByRole("form", { name: "Save affiliate link" });
   const couponForm = screen.getByRole("form", { name: "Create affiliate coupon" });
 
-  expect(within(programForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
-  expect(within(linkForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
-  expect(within(couponForm).getByText("Selected merchant: Acme Market (acme.example)")).toBeInTheDocument();
+  expect(
+    within(programForm).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(linkForm).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(couponForm).getByText("Selected merchant: Acme Market (acme.example)"),
+  ).toBeInTheDocument();
 });
 
 test("affiliate setup route updates selected merchant context when the program merchant changes", () => {
@@ -314,9 +315,15 @@ test("affiliate setup route updates selected merchant context when the program m
 
   chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
 
-  expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
-  expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
-  expect(within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(
+    within(programForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
 });
 
 test("affiliate setup route updates selected merchant context when the coupon merchant changes", () => {
@@ -328,9 +335,15 @@ test("affiliate setup route updates selected merchant context when the coupon me
 
   chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
 
-  expect(within(programForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
-  expect(within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
-  expect(within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)")).toBeInTheDocument();
+  expect(
+    within(programForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(linkForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
+  expect(
+    within(couponForm).getByText("Selected merchant: Globex Supply (globex.example)"),
+  ).toBeInTheDocument();
 });
 
 test("affiliate setup route renders loader error fallback", () => {
@@ -338,8 +351,8 @@ test("affiliate setup route renders loader error fallback", () => {
     status: "error",
     merchantPagination: {
       first: 20,
-      after: null
-    }
+      after: null,
+    },
   } satisfies AffiliateSetupLoaderData);
 
   renderAffiliateSetupRoute();
@@ -369,7 +382,7 @@ test("affiliate setup route preserves hook order when merchants payload recovers
   rerender(
     <MemoryRouter>
       <AffiliateSetupRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("form", { name: "Save affiliate network" })).toBeInTheDocument();
@@ -379,7 +392,7 @@ test("affiliate setup route commits network upsert and displays the saved networ
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Network name"), {
-    target: { value: "Impact" }
+    target: { value: "Impact" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save network" }));
 
@@ -388,10 +401,10 @@ test("affiliate setup route commits network upsert and displays the saved networ
       expect.objectContaining({
         variables: {
           input: {
-            name: "Impact"
-          }
-        }
-      })
+            name: "Impact",
+          },
+        },
+      }),
     );
   });
 
@@ -399,14 +412,14 @@ test("affiliate setup route commits network upsert and displays the saved networ
     upsertAffiliateNetwork: {
       network: {
         id: NETWORK_ID,
-        name: "Impact"
+        name: "Impact",
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Affiliate network result"
+    name: "Affiliate network result",
   });
 
   expect(resultRegion).toHaveTextContent("Impact");
@@ -418,7 +431,7 @@ test("affiliate setup route renders network payload errors", async () => {
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Network name"), {
-    target: { value: "" }
+    target: { value: "" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save network" }));
 
@@ -432,10 +445,10 @@ test("affiliate setup route renders network payload errors", async () => {
         {
           code: "INVALID_ARGUMENT",
           field: "name",
-          message: "Name can't be blank."
-        }
-      ]
-    }
+          message: "Name can't be blank.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Name can't be blank.");
@@ -445,14 +458,14 @@ test("affiliate setup route commits program upsert and displays the saved progra
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
-    target: { value: NETWORK_ID }
+    target: { value: NETWORK_ID },
   });
   chooseSelectOption(screen.getByLabelText("Merchant"), "Globex Supply");
   fireEvent.change(screen.getByLabelText("Program code"), {
-    target: { value: "CJ-123" }
+    target: { value: "CJ-123" },
   });
   fireEvent.change(screen.getByLabelText("Program status"), {
-    target: { value: "active" }
+    target: { value: "active" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save program" }));
 
@@ -464,10 +477,10 @@ test("affiliate setup route commits program upsert and displays the saved progra
             affiliateNetworkId: NETWORK_ID,
             merchantId: SECOND_MERCHANT_ID,
             programCode: "CJ-123",
-            status: "active"
-          }
-        }
-      })
+            status: "active",
+          },
+        },
+      }),
     );
   });
 
@@ -478,14 +491,14 @@ test("affiliate setup route commits program upsert and displays the saved progra
         affiliateNetworkId: NETWORK_ID,
         merchantId: SECOND_MERCHANT_ID,
         programCode: "CJ-123",
-        status: "active"
+        status: "active",
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Affiliate program result"
+    name: "Affiliate program result",
   });
 
   expect(resultRegion).toHaveTextContent(PROGRAM_ID);
@@ -497,7 +510,7 @@ test("affiliate setup route renders program payload errors", async () => {
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Affiliate network ID"), {
-    target: { value: "not-a-global-id" }
+    target: { value: "not-a-global-id" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save program" }));
 
@@ -511,10 +524,10 @@ test("affiliate setup route renders program payload errors", async () => {
         {
           code: "INVALID_ID",
           field: "affiliateNetworkId",
-          message: "invalid affiliate network id"
-        }
-      ]
-    }
+          message: "invalid affiliate network id",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("invalid affiliate network id");
@@ -524,19 +537,19 @@ test("affiliate setup route commits link upsert and displays the saved link", as
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Merchant product ID"), {
-    target: { value: MERCHANT_PRODUCT_ID }
+    target: { value: MERCHANT_PRODUCT_ID },
   });
   fireEvent.change(screen.getByLabelText("Link affiliate network ID"), {
-    target: { value: NETWORK_ID }
+    target: { value: NETWORK_ID },
   });
   fireEvent.change(screen.getByLabelText("Original URL"), {
-    target: { value: "https://merchant.example/products/1" }
+    target: { value: "https://merchant.example/products/1" },
   });
   fireEvent.change(screen.getByLabelText("Affiliate URL"), {
-    target: { value: "https://network.example/track/1" }
+    target: { value: "https://network.example/track/1" },
   });
   fireEvent.change(screen.getByLabelText("Last verified at"), {
-    target: { value: "2026-06-01T12:30" }
+    target: { value: "2026-06-01T12:30" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save link" }));
 
@@ -549,10 +562,10 @@ test("affiliate setup route commits link upsert and displays the saved link", as
             affiliateNetworkId: NETWORK_ID,
             originalUrl: "https://merchant.example/products/1",
             affiliateUrl: "https://network.example/track/1",
-            lastVerifiedAt: new Date("2026-06-01T12:30").toISOString()
-          }
-        }
-      })
+            lastVerifiedAt: new Date("2026-06-01T12:30").toISOString(),
+          },
+        },
+      }),
     );
   });
 
@@ -564,14 +577,14 @@ test("affiliate setup route commits link upsert and displays the saved link", as
         affiliateNetworkId: NETWORK_ID,
         originalUrl: "https://merchant.example/products/1",
         affiliateUrl: "https://network.example/track/1",
-        lastVerifiedAt: new Date("2026-06-01T12:30").toISOString()
+        lastVerifiedAt: new Date("2026-06-01T12:30").toISOString(),
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Affiliate link result"
+    name: "Affiliate link result",
   });
 
   expect(resultRegion).toHaveTextContent(LINK_ID);
@@ -582,7 +595,7 @@ test("affiliate setup route renders link payload errors", async () => {
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Merchant product ID"), {
-    target: { value: "not-a-global-id" }
+    target: { value: "not-a-global-id" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save link" }));
 
@@ -596,10 +609,10 @@ test("affiliate setup route renders link payload errors", async () => {
         {
           code: "INVALID_ID",
           field: "merchantProductId",
-          message: "invalid merchant product id"
-        }
-      ]
-    }
+          message: "invalid merchant product id",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("invalid merchant product id");
@@ -610,23 +623,23 @@ test("affiliate setup route commits coupon creation and displays the created cou
 
   chooseSelectOption(screen.getByLabelText("Coupon merchant"), "Globex Supply");
   fireEvent.change(screen.getByLabelText("Coupon affiliate network ID"), {
-    target: { value: NETWORK_ID }
+    target: { value: NETWORK_ID },
   });
   fireEvent.change(screen.getByLabelText("Coupon code"), {
-    target: { value: "SAVE-20" }
+    target: { value: "SAVE-20" },
   });
   chooseSelectOption(screen.getByLabelText("Discount type"), "AMOUNT");
   fireEvent.change(screen.getByLabelText("Discount value"), {
-    target: { value: "20.00" }
+    target: { value: "20.00" },
   });
   fireEvent.change(screen.getByLabelText("Currency"), {
-    target: { value: "usd" }
+    target: { value: "usd" },
   });
   fireEvent.change(screen.getByLabelText("Valid from"), {
-    target: { value: "2026-06-01T00:00" }
+    target: { value: "2026-06-01T00:00" },
   });
   fireEvent.change(screen.getByLabelText("Valid to"), {
-    target: { value: "2026-06-30T23:59" }
+    target: { value: "2026-06-30T23:59" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -642,10 +655,10 @@ test("affiliate setup route commits coupon creation and displays the created cou
             discountValue: "20.00",
             currency: "USD",
             validFrom: new Date("2026-06-01T00:00").toISOString(),
-            validTo: new Date("2026-06-30T23:59").toISOString()
-          })
-        }
-      })
+            validTo: new Date("2026-06-30T23:59").toISOString(),
+          }),
+        },
+      }),
     );
   });
 
@@ -660,14 +673,14 @@ test("affiliate setup route commits coupon creation and displays the created cou
         discountValue: "20.00",
         currency: "USD",
         validFrom: new Date("2026-06-01T00:00").toISOString(),
-        validTo: new Date("2026-06-30T23:59").toISOString()
+        validTo: new Date("2026-06-30T23:59").toISOString(),
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Coupon result"
+    name: "Coupon result",
   });
 
   expect(resultRegion).toHaveTextContent(COUPON_ID);
@@ -679,11 +692,11 @@ test("affiliate setup route displays percent coupon discount details without cur
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
-    target: { value: "SAVE-20PCT" }
+    target: { value: "SAVE-20PCT" },
   });
   chooseSelectOption(screen.getByLabelText("Discount type"), "PERCENT");
   fireEvent.change(screen.getByLabelText("Discount value"), {
-    target: { value: "20.00" }
+    target: { value: "20.00" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -701,14 +714,14 @@ test("affiliate setup route displays percent coupon discount details without cur
         discountValue: "20.00",
         currency: null,
         validFrom: null,
-        validTo: null
+        validTo: null,
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Coupon result"
+    name: "Coupon result",
   });
 
   expect(resultRegion).toHaveTextContent("SAVE-20PCT");
@@ -719,7 +732,7 @@ test("affiliate setup route displays other coupon discount details without an am
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
-    target: { value: "MEMBER-PERK" }
+    target: { value: "MEMBER-PERK" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -737,14 +750,14 @@ test("affiliate setup route displays other coupon discount details without an am
         discountValue: null,
         currency: null,
         validFrom: null,
-        validTo: null
+        validTo: null,
       },
-      errors: []
-    }
+      errors: [],
+    },
   });
 
   const resultRegion = await screen.findByRole("region", {
-    name: "Coupon result"
+    name: "Coupon result",
   });
 
   expect(resultRegion).toHaveTextContent("MEMBER-PERK");
@@ -755,13 +768,13 @@ test("affiliate setup route normalizes optional link and coupon inputs", async (
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Merchant product ID"), {
-    target: { value: MERCHANT_PRODUCT_ID }
+    target: { value: MERCHANT_PRODUCT_ID },
   });
   fireEvent.change(screen.getByLabelText("Original URL"), {
-    target: { value: "https://merchant.example/products/optional" }
+    target: { value: "https://merchant.example/products/optional" },
   });
   fireEvent.change(screen.getByLabelText("Affiliate URL"), {
-    target: { value: "https://network.example/optional" }
+    target: { value: "https://network.example/optional" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save link" }));
 
@@ -771,15 +784,15 @@ test("affiliate setup route normalizes optional link and coupon inputs", async (
         variables: {
           input: expect.objectContaining({
             affiliateNetworkId: null,
-            lastVerifiedAt: null
-          })
-        }
-      })
+            lastVerifiedAt: null,
+          }),
+        },
+      }),
     );
   });
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
-    target: { value: "INFO-ONLY" }
+    target: { value: "INFO-ONLY" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -792,10 +805,10 @@ test("affiliate setup route normalizes optional link and coupon inputs", async (
             currency: null,
             discountValue: null,
             validFrom: null,
-            validTo: null
-          })
-        }
-      })
+            validTo: null,
+          }),
+        },
+      }),
     );
   });
 });
@@ -804,10 +817,10 @@ test("affiliate setup route renders coupon payload errors", async () => {
   renderAffiliateSetupRoute();
 
   fireEvent.change(screen.getByLabelText("Coupon code"), {
-    target: { value: "INVALID-SHAPE" }
+    target: { value: "INVALID-SHAPE" },
   });
   fireEvent.change(screen.getByLabelText("Discount value"), {
-    target: { value: "10.00" }
+    target: { value: "10.00" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create coupon" }));
 
@@ -821,15 +834,13 @@ test("affiliate setup route renders coupon payload errors", async () => {
         {
           code: "INVALID_ARGUMENT",
           field: "discountValue",
-          message: "must be empty for other discounts"
-        }
-      ]
-    }
+          message: "must be empty for other discounts",
+        },
+      ],
+    },
   });
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(
-    "must be empty for other discounts"
-  );
+  expect(await screen.findByRole("alert")).toHaveTextContent("must be empty for other discounts");
 });
 
 function completeLatestNetworkMutation(response: unknown) {
@@ -860,7 +871,7 @@ function renderAffiliateSetupRoute() {
   return render(
     <MemoryRouter>
       <AffiliateSetupRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -869,23 +880,23 @@ function buildReadyLoaderData(
   merchantPagination: Extract<
     AffiliateSetupLoaderData,
     { status: "ready" }
-  >["merchantPagination"] = { first: 20, after: null }
+  >["merchantPagination"] = { first: 20, after: null },
 ): AffiliateSetupLoaderData {
   return {
     status: "ready",
     merchantPagination,
-    merchantQuery
+    merchantQuery,
   };
 }
 
 function buildAffiliateSetupData({
   merchants = [
     { id: MERCHANT_ID, name: "Acme Market", domain: "acme.example" },
-    { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" }
+    { id: SECOND_MERCHANT_ID, name: "Globex Supply", domain: "globex.example" },
   ],
   hasNextPage = false,
   hasPreviousPage = false,
-  endCursor = merchants.length > 0 ? `merchant-cursor-${merchants.length - 1}` : null
+  endCursor = merchants.length > 0 ? `merchant-cursor-${merchants.length - 1}` : null,
 }: {
   endCursor?: string | null;
   hasNextPage?: boolean;
@@ -896,14 +907,14 @@ function buildAffiliateSetupData({
     merchants: {
       edges: merchants.map((merchant, index) => ({
         cursor: `merchant-cursor-${index}`,
-        node: merchant
+        node: merchant,
       })),
       pageInfo: {
         hasNextPage,
         hasPreviousPage,
         startCursor: merchants.length > 0 ? "merchant-cursor-0" : null,
-        endCursor
-      }
-    }
+        endCursor,
+      },
+    },
   };
 }

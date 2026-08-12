@@ -4,9 +4,10 @@ defmodule ProductCompare.Pricing do
   """
 
   alias ProductCompare.Pricing.Merchants
+  alias ProductCompare.Pricing.CurrentOffers
+  alias ProductCompare.Pricing.HomeOffers
   alias ProductCompare.Pricing.Offers
   alias ProductCompare.Pricing.PriceHistory
-  alias ProductCompare.Pricing.TruthReads
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -147,15 +148,46 @@ defmodule ProductCompare.Pricing do
 
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}
   def current_offer_truths(product_ids, opts \\ []) when is_list(product_ids),
-    do: TruthReads.current_offer_truths(product_ids, opts)
+    do: CurrentOffers.current_offer_truths(product_ids, opts)
+
+  @spec home_offer_summaries([term()], keyword()) :: %{optional(pos_integer()) => map()}
+  def home_offer_summaries(product_ids, opts \\ []) when is_list(product_ids),
+    do: HomeOffers.summaries(product_ids, opts)
+
+  @spec home_new_deal_candidates(keyword()) :: [map()]
+  def home_new_deal_candidates(opts), do: HomeOffers.new_deal_candidates(opts)
+
+  @spec home_offer_page_facts([map()], MapSet.t(atom()), keyword()) :: %{
+          optional(pos_integer()) => map()
+        }
+  def home_offer_page_facts(offers, requested_fields, opts \\ [])
+      when is_list(offers) and is_struct(requested_fields, MapSet),
+      do: HomeOffers.page_facts(offers, requested_fields, opts)
+
+  @spec home_trending_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def home_trending_deal_candidates(activity_query, opts),
+    do: HomeOffers.trending_deal_candidates(activity_query, opts)
+
+  @spec home_fallback_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def home_fallback_deal_candidates(activity_query, opts),
+    do: HomeOffers.fallback_deal_candidates(activity_query, opts)
+
+  @spec home_viewer_deal_candidates(Ecto.Query.t(), keyword()) :: [map()]
+  def home_viewer_deal_candidates(relevance_query, opts),
+    do: HomeOffers.viewer_deal_candidates(relevance_query, opts)
+
+  @spec home_viewer_deal_exists?(Ecto.Query.t(), keyword()) :: boolean()
+  def home_viewer_deal_exists?(relevance_query, opts),
+    do: HomeOffers.viewer_deal_exists?(relevance_query, opts)
 
   @spec current_offer_truth(term(), keyword()) :: map()
   def current_offer_truth(product_id, opts \\ [])
 
   def current_offer_truth(product_id, opts)
       when is_integer(product_id) and product_id > 0 and product_id <= @max_bigint_id do
-    TruthReads.current_offer_truth(product_id, opts)
+    CurrentOffers.current_offer_truth(product_id, opts)
   end
 
-  def current_offer_truth(product_id, opts), do: TruthReads.current_offer_truth(product_id, opts)
+  def current_offer_truth(product_id, opts),
+    do: CurrentOffers.current_offer_truth(product_id, opts)
 end

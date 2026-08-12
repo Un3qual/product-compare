@@ -2,57 +2,57 @@ import {
   Root as ScrollAreaRoot,
   Scrollbar as ScrollAreaScrollbar,
   Thumb as ScrollAreaThumb,
-  Viewport as ScrollAreaViewport
+  Viewport as ScrollAreaViewport,
 } from "@radix-ui/react-scroll-area";
 import { create, props } from "@stylexjs/stylex";
-import { tokens } from "../../ui/theme/tokens.stylex";
-import type { CompareProductSummary, CompareSpecMode } from "./loader";
+import { tokens } from "$ui/theme/tokens.stylex";
+import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
 import {
   buildSpecificationMatrixRows,
-  type SpecificationMatrixRow
+  type SpecificationMatrixRow,
 } from "./specification-matrix-data";
 
 const SPECIFICATION_MATRIX_TITLES: Record<CompareSpecMode, string> = {
   all: "All specifications",
   differences: "Different specifications",
-  shared: "Shared specifications"
+  shared: "Shared specifications",
 };
 const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
   all: "No specifications are available for these products yet.",
   differences: "No specification differences across these products yet.",
-  shared: "No shared specifications across these products yet."
+  shared: "No shared specifications across these products yet.",
 };
 
 const styles = create({
   tableWorkspace: {
     overflow: "hidden",
-    paddingBlockEnd: "0.35rem"
+    paddingBlockEnd: "0.35rem",
   },
   tableViewport: {
-    width: "100%"
+    width: "100%",
   },
   tableScrollbar: {
     backgroundColor: tokens.surfaceMuted,
     display: "flex",
     height: "0.65rem",
     padding: "0.15rem",
-    userSelect: "none"
+    userSelect: "none",
   },
   tableThumb: {
     backgroundColor: tokens.borderEmphasized,
     borderRadius: "999px",
-    flex: 1
+    flex: 1,
   },
   table: {
     borderCollapse: "collapse",
     minWidth: "48rem",
-    width: "100%"
-  }
+    width: "100%",
+  },
 });
 
 export function CompareSpecificationMatrix({
   products,
-  specMode
+  specMode,
 }: {
   products: CompareProductSummary[];
   specMode: CompareSpecMode;
@@ -86,7 +86,7 @@ export function CompareSpecificationMatrix({
 function SpecificationTable({
   products,
   rows,
-  title
+  title,
 }: {
   products: CompareProductSummary[];
   rows: SpecificationMatrixRow[];

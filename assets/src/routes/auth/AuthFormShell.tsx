@@ -2,11 +2,11 @@ import { useId, type ComponentProps, type PropsWithChildren } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { selectGlobalMutationErrors, type MutationError } from "./errors";
-import { Button } from "../../ui/primitives/Button";
-import { Label } from "../../ui/primitives/Label";
-import { Slot } from "../../ui/primitives/Slot";
-import { TextField } from "../../ui/primitives/TextField";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { Button } from "$ui/primitives/Button";
+import { Label } from "$ui/primitives/Label";
+import { Slot } from "$ui/primitives/Slot";
+import { TextField } from "$ui/primitives/TextField";
+import { tokens } from "$ui/theme/tokens.stylex";
 
 const styles = create({
   section: {

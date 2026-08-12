@@ -1,13 +1,49 @@
 import type { ReactElement } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import type { BrowseProductsRouteQuery } from "../../__generated__/BrowseProductsRouteQuery.graphql";
-import { DataList, DataListItem } from "../../ui/components/data/DataList";
-import { tokens } from "../../ui/theme/tokens.stylex";
+import { graphql, useFragment } from "react-relay";
+import type { BrowseProductList_item$key } from "$generated/BrowseProductList_item.graphql";
+import type { BrowseProductList_products$key } from "$generated/BrowseProductList_products.graphql";
+import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { selectBrowseProductSpecificationHighlights } from "./browse-product-list-data";
 
-export type BrowseProductNode =
-  NonNullable<BrowseProductsRouteQuery["response"]["products"]>["edges"][number]["node"];
+const browseProductListFragment = graphql`
+  fragment BrowseProductList_products on ProductConnection {
+    edges {
+      node {
+        id
+        name
+        slug
+        ...BrowseProductList_item
+      }
+    }
+  }
+`;
+
+const browseProductListItemFragment = graphql`
+  fragment BrowseProductList_item on Product {
+    id
+    name
+    slug
+    brand {
+      id
+      name
+    }
+    currentAttributes {
+      code
+      displayName
+      valueText
+      sortOrder
+    }
+  }
+`;
+
+export type BrowseProductNode = {
+  readonly id: string;
+  readonly name: string;
+  readonly slug: string;
+};
 
 export type BrowseCompareAction =
   | { kind: "selected" }
@@ -21,11 +57,11 @@ const styles = create({
     gap: "0.6rem 1rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   highlights: {
     display: "grid",
-    gap: "0.45rem"
+    gap: "0.45rem",
   },
   highlightsList: {
     display: "flex",
@@ -33,49 +69,51 @@ const styles = create({
     gap: "0.45rem 1.25rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   highlightsTitle: {
     color: tokens.textSecondary,
     fontSize: "0.8rem",
     letterSpacing: "0.06em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   metadata: {
     color: tokens.textSecondary,
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.45rem 1rem"
+    gap: "0.45rem 1rem",
   },
   metadataItem: {
-    margin: 0
+    margin: 0,
   },
   product: {
     display: "grid",
-    gap: "0.8rem"
+    gap: "0.8rem",
   },
   productHeading: {
     fontSize: "1.35rem",
     letterSpacing: "-0.02em",
-    margin: 0
-  }
+    margin: 0,
+  },
 });
 
 export function BrowseProductList({
   compareActionFor,
   detailHrefFor,
   offerHrefFor,
-  products
+  products,
 }: {
   compareActionFor: (product: BrowseProductNode) => BrowseCompareAction;
   detailHrefFor: (product: BrowseProductNode) => string;
   offerHrefFor: (product: BrowseProductNode) => string;
-  products: readonly BrowseProductNode[];
+  products: BrowseProductList_products$key;
 }): ReactElement {
+  const data = useFragment(browseProductListFragment, products);
+
   return (
     <DataList label="Products">
-      {products.map((product) => (
+      {data.edges.map(({ node: product }) => (
         <BrowseProductListItem
           compareAction={compareActionFor(product)}
           detailHref={detailHrefFor(product)}
@@ -92,27 +130,29 @@ function BrowseProductListItem({
   compareAction,
   detailHref,
   offerHref,
-  product
+  product,
 }: {
   compareAction: BrowseCompareAction;
   detailHref: string;
   offerHref: string;
-  product: BrowseProductNode;
+  product: BrowseProductList_item$key;
 }): ReactElement {
+  const data = useFragment(browseProductListItemFragment, product);
+
   return (
     <DataListItem>
-      <article aria-label={product.name} {...props(styles.product)}>
-        <h2 {...props(styles.productHeading)}>{product.name}</h2>
+      <article aria-label={data.name} {...props(styles.product)}>
+        <h2 {...props(styles.productHeading)}>{data.name}</h2>
         <div {...props(styles.metadata)}>
-          <p {...props(styles.metadataItem)}>{product.brand?.name ?? "Unknown brand"}</p>
-          <p {...props(styles.metadataItem)}>{product.slug}</p>
+          <p {...props(styles.metadataItem)}>{data.brand?.name ?? "Unknown brand"}</p>
+          <p {...props(styles.metadataItem)}>{data.slug}</p>
         </div>
-        <SpecificationHighlights attributes={product.currentAttributes} />
+        <SpecificationHighlights attributes={data.currentAttributes} />
         <BrowseProductActions
           compareAction={compareAction}
           detailHref={detailHref}
           offerHref={offerHref}
-          product={product}
+          product={data}
         />
       </article>
     </DataListItem>
@@ -123,7 +163,7 @@ function BrowseProductActions({
   compareAction,
   detailHref,
   offerHref,
-  product
+  product,
 }: {
   compareAction: BrowseCompareAction;
   detailHref: string;
@@ -144,9 +184,14 @@ function BrowseProductActions({
 }
 
 function SpecificationHighlights({
-  attributes
+  attributes,
 }: {
-  attributes: BrowseProductNode["currentAttributes"];
+  attributes: ReadonlyArray<{
+    readonly code: string;
+    readonly displayName: string;
+    readonly sortOrder?: number | null;
+    readonly valueText: string;
+  }>;
 }) {
   const highlights = selectBrowseProductSpecificationHighlights(attributes);
 
@@ -170,7 +215,7 @@ function SpecificationHighlights({
 
 function BrowseCompareActionItem({
   action,
-  product
+  product,
 }: {
   action: BrowseCompareAction;
   product: BrowseProductNode;

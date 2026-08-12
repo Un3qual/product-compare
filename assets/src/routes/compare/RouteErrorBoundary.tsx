@@ -1,6 +1,6 @@
 import { isRouteErrorResponse, useRouteError } from "react-router-dom";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { PageShell } from "../../ui/components/layout/PageShell";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
 import { getRouteErrorViewData, type RouteErrorContext } from "./route-error-view-data";
 
 type RouteErrorBoundaryProps = {

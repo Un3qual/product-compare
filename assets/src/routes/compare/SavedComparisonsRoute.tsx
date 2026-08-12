@@ -1,189 +1,183 @@
-import { useRef, useState } from "react";
-import { Link, useLoaderData } from "react-router-dom";
-import { useMutation } from "react-relay";
-import type { SavedComparisonOperationsDeleteSavedComparisonSetMutation } from "../../__generated__/SavedComparisonOperationsDeleteSavedComparisonSetMutation.graphql";
-import type { SavedComparisonOperationsQuery } from "../../__generated__/SavedComparisonOperationsQuery.graphql";
+import { Suspense } from "react";
+import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { SavedComparisonsRouteQuery } from "$generated/SavedComparisonsRouteQuery.graphql";
+import { RouteLoaderGraphQLError } from "$relay/environment";
 import {
-  relayRouteQueryDescriptorIdentity,
-  useRoutePreloadedQuery
-} from "../../relay/route-preload";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { Button } from "../../ui/primitives/Button";
-import { commitRouteMutation } from "../relay-mutations";
-import { addSetValue, removeSetValue } from "../immutable-collection-state";
-import {
-  DEFAULT_ROUTE_ERROR_MESSAGE
-} from "../route-errors";
-import type {
-  savedComparisonsLoader,
-  SavedComparisonSetQueryDescriptor,
-  SavedComparisonSetSummary
-} from "./saved-data";
+  fetchRouteQuery,
+  getRelayEnvironmentFromRouterContext,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { Button } from "$ui/primitives/Button";
+import { isRouteRecord } from "../route-errors";
 import { CompareShell } from "./CompareShell";
-import {
-  deleteSavedComparisonSetMutation,
-  savedComparisonOperationsQuery
-} from "./SavedComparisonOperations";
-import {
-  SavedComparisonSetList
-} from "./SavedComparisonSetList";
-import {
-  buildSavedComparisonReopenPath,
-  buildSavedComparisonsPagination
-} from "./saved-comparisons-route-data";
-import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
-import {
-  buildSavedComparisonsViewState,
-  type SavedComparisonSortMode
-} from "./saved-view-state";
+import { SavedComparisonSetList } from "./SavedComparisonSetList";
+import { buildSavedComparisonsPagination } from "./saved-comparisons-route-data";
+
+const SAVED_COMPARISON_SETS_PAGE_SIZE = 20;
+const SAVED_COMPARISONS_AUTH_ERROR_CODES = new Set(["UNAUTHENTICATED"]);
+
+const savedComparisonsRouteQuery = graphql`
+  query SavedComparisonsRouteQuery($first: Int!, $after: String) {
+    mySavedComparisonSets(first: $first, after: $after) {
+      ...SavedComparisonSetList_savedSets
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+`;
+
+export type SavedComparisonsRouteLoaderData =
+  | {
+      status: "ready";
+      after: string | null;
+      query: RelayRouteQueryDescriptor<SavedComparisonsRouteQuery["variables"]>;
+    }
+  | { status: "unauthorized" };
 
 export function SavedComparisonsRoute() {
   const loaderData = useLoaderData<typeof savedComparisonsLoader>();
-  const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
-  const [pendingDeleteIds, setPendingDeleteIds] = useState<ReadonlySet<string>>(new Set());
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [filterText, setFilterText] = useState("");
-  const [sortMode, setSortMode] = useState<SavedComparisonSortMode>("current");
-  const inFlightDeleteIdsRef = useRef<Set<string>>(new Set());
-  const [commitDeleteSavedComparisonSet] = useMutation<SavedComparisonOperationsDeleteSavedComparisonSetMutation>(
-    deleteSavedComparisonSetMutation
-  );
 
-  function finishDelete(savedComparisonSetId: string) {
-    inFlightDeleteIdsRef.current.delete(savedComparisonSetId);
-    setPendingDeleteIds((currentPendingDeleteIds) =>
-      removeSetValue(currentPendingDeleteIds, savedComparisonSetId)
-    );
-  }
-
-  function handleDelete(savedComparisonSetId: string) {
-    if (inFlightDeleteIdsRef.current.has(savedComparisonSetId)) {
-      return;
-    }
-
-    inFlightDeleteIdsRef.current.add(savedComparisonSetId);
-    setPendingDeleteIds((currentPendingDeleteIds) =>
-      addSetValue(currentPendingDeleteIds, savedComparisonSetId)
-    );
-    setDeleteError(null);
-
-    commitRouteMutation(
-      commitDeleteSavedComparisonSet,
-      {
-        variables: { savedComparisonSetId },
-        onCompleted: (response, graphQLErrors) => {
-          const payload = response.deleteSavedComparisonSet;
-          const outcome = resolveDeleteSavedComparisonSetMutationOutcome(payload, graphQLErrors);
-
-          if (outcome.deletedSavedComparisonSetId) {
-            setDeleteError(null);
-            setDeletedSavedSetIds((currentDeletedSavedSetIds) =>
-              addSetValue(currentDeletedSavedSetIds, outcome.deletedSavedComparisonSetId)
-            );
-          } else {
-            setDeleteError(outcome.error);
-          }
-
-          finishDelete(savedComparisonSetId);
-        },
-        onError: () => {
-          setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
-          finishDelete(savedComparisonSetId);
-        }
-      },
-      () => {
-        setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
-        finishDelete(savedComparisonSetId);
-      }
-    );
-  }
-
-  const viewState = buildSavedComparisonsViewState(
-    loaderData,
-    deletedSavedSetIds,
-    filterText,
-    sortMode
-  );
-  const savedSetQueries =
-    loaderData.status === "unauthorized" ? [] : (loaderData.savedSetQueries ?? []);
-  const shouldShowReturnActions =
-    loaderData.status !== "unauthorized" && viewState.savedSets.length === 0;
-  const pagination = buildSavedComparisonsPagination(loaderData);
   return (
     <CompareShell title="Saved comparisons">
-      <p aria-label="Saved comparisons status" aria-live="polite" role="status">
-        {viewState.statusMessage}
-      </p>
       {loaderData.status === "unauthorized" ? (
-        <Button asChild variant="solid">
-          <Link to="/auth/login">Sign in to view saved comparisons</Link>
-        </Button>
+        <UnauthorizedSavedComparisons />
       ) : (
-        <SavedComparisonSetList
-          actions={{
-            onDelete: handleDelete,
-            onOpenComparison: savedComparisonHref,
-            pendingDeleteIds
-          }}
-          controls={{
-            filterText,
-            onFilterTextChange: setFilterText,
-            onSortModeChange: setSortMode,
-            sortMode
-          }}
-          pagination={pagination}
-          savedSets={viewState.savedSets}
-        >
-          {deleteError ? <FeedbackState kind="error" title={deleteError} /> : null}
-          {shouldShowReturnActions ? <SavedComparisonReturnActions /> : null}
-          {savedSetQueries.length > 0 ? (
-            <SavedComparisonSetQueryRetainers savedSetQueries={savedSetQueries} />
-          ) : null}
-        </SavedComparisonSetList>
+        <Suspense fallback={<FeedbackState kind="loading" title="Loading saved comparisons..." />}>
+          <SavedComparisonsPage after={loaderData.after} query={loaderData.query} />
+        </Suspense>
       )}
     </CompareShell>
   );
 }
 
-function savedComparisonHref(savedSet: SavedComparisonSetSummary) {
-  return buildSavedComparisonReopenPath(savedSet.products.map(({ slug }) => slug));
-}
-
-function SavedComparisonSetQueryRetainers({
-  savedSetQueries
-}: {
-  savedSetQueries: SavedComparisonSetQueryDescriptor[];
-}) {
+function UnauthorizedSavedComparisons() {
   return (
     <>
-      {savedSetQueries.map((savedSetQuery) => (
-        <SavedComparisonSetQueryRetainer
-          key={relayRouteQueryDescriptorIdentity(savedSetQuery)}
-          savedSetQuery={savedSetQuery}
-        />
-      ))}
+      <p aria-label="Saved comparisons status" aria-live="polite" role="status">
+        Sign in to view saved comparisons.
+      </p>
+      <Button asChild variant="solid">
+        <Link to="/auth/login">Sign in to view saved comparisons</Link>
+      </Button>
     </>
   );
 }
 
-function SavedComparisonSetQueryRetainer({
-  savedSetQuery
+function SavedComparisonsPage({
+  after,
+  query,
 }: {
-  savedSetQuery: SavedComparisonSetQueryDescriptor;
+  after: string | null;
+  query: Extract<SavedComparisonsRouteLoaderData, { status: "ready" }>["query"];
 }) {
-  useRoutePreloadedQuery<SavedComparisonOperationsQuery>(
-    savedComparisonOperationsQuery,
-    savedSetQuery
+  const queryRef = useRoutePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    query,
   );
+  const data = usePreloadedQuery<SavedComparisonsRouteQuery>(
+    savedComparisonsRouteQuery,
+    queryRef,
+  );
+  const connection = data.mySavedComparisonSets;
 
-  return null;
+  if (!connection) {
+    return <FeedbackState kind="error" title="Saved comparisons are unavailable." />;
+  }
+
+  return (
+    <SavedComparisonSetList
+      fragmentRef={connection}
+      pagination={buildSavedComparisonsPagination({
+        after,
+        endCursor: connection.pageInfo.endCursor,
+        hasNextPage: connection.pageInfo.hasNextPage,
+        status: "ready",
+      })}
+    />
+  );
 }
 
-function SavedComparisonReturnActions() {
+export async function savedComparisonsLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<SavedComparisonsRouteLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const after = nonBlankSearchParam(new URL(request.url).searchParams.get("after"));
+  let fetchedPage: Awaited<
+    ReturnType<typeof fetchRouteQuery<SavedComparisonsRouteQuery>>
+  > | null = null;
+
+  try {
+    throwIfAborted(request.signal);
+    fetchedPage = await fetchRouteQuery<SavedComparisonsRouteQuery>(
+      environment,
+      savedComparisonsRouteQuery,
+      after === null
+        ? { first: SAVED_COMPARISON_SETS_PAGE_SIZE }
+        : { first: SAVED_COMPARISON_SETS_PAGE_SIZE, after },
+      { signal: request.signal },
+    );
+    throwIfAborted(request.signal);
+
+    const pageInfo = fetchedPage.data.mySavedComparisonSets?.pageInfo;
+    if (!pageInfo) {
+      throw new Error("Failed to read saved comparison pagination");
+    }
+    if (pageInfo.hasNextPage && (!pageInfo.endCursor || pageInfo.endCursor === after)) {
+      throw new Error("Invalid pagination cursor");
+    }
+
+    return { status: "ready", after, query: fetchedPage.descriptor };
+  } catch (error) {
+    fetchedPage?.dispose();
+
+    if (isUnauthorizedSavedComparisonsError(error)) {
+      return { status: "unauthorized" };
+    }
+
+    throw error;
+  }
+}
+
+function nonBlankSearchParam(value: string | null) {
+  const normalized = value?.trim();
+  return normalized ? normalized : null;
+}
+
+function throwIfAborted(signal?: AbortSignal) {
+  if (!signal?.aborted) return;
+  if (signal.reason instanceof Error) throw signal.reason;
+  throw new Error("Request aborted");
+}
+
+export function isUnauthorizedSavedComparisonsError(error: unknown) {
   return (
-    <nav aria-label="Saved comparison return paths">
-      <Link to="/products">Browse products</Link>{" "}
-      <Link to="/compare">Start a new comparison</Link>
-    </nav>
+    error instanceof RouteLoaderGraphQLError &&
+    isUnauthorizedSavedComparisonsResponse(error.response)
   );
+}
+
+export function isUnauthorizedSavedComparisonsResponse(response: unknown) {
+  if (!isRouteRecord(response) || !Array.isArray(response.errors)) return false;
+
+  return response.errors.some((error) => {
+    if (!isRouteRecord(error)) return false;
+
+    const relevantPath =
+      error.path == null ||
+      (Array.isArray(error.path) &&
+        (error.path.length === 0 ||
+          error.path.some((segment) => segment === "mySavedComparisonSets")));
+    if (!relevantPath || !isRouteRecord(error.extensions)) return false;
+
+    const code = error.extensions.code;
+    return (
+      typeof code === "string" && SAVED_COMPARISONS_AUTH_ERROR_CODES.has(code.toUpperCase())
+    );
+  });
 }

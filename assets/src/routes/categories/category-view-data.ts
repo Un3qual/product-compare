@@ -34,7 +34,7 @@ export function getCategoryViewData(
 ) {
   return {
     title: `Compare ${category.name}`,
-    qualificationCopy: `${category.qualifiedProductCount} products currently meet this category’s specification, content, and offer-quality threshold.`,
+    qualificationCopy: `${category.qualifiedProductCount} products currently have the specifications, product details, and current offers needed for comparison.`,
     browsePath: `/products?typeTaxonId=${encodeURIComponent(category.id)}&includeTypeDescendants=1`,
     productRows: category.products.edges.map(({ node }) => ({
       id: node.id,

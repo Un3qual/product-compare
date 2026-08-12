@@ -17,7 +17,7 @@ test("WorkspaceLayout separates the primary task from supporting context", () =>
       label="Product results"
     >
       <h2>12 products</h2>
-    </WorkspaceLayout>
+    </WorkspaceLayout>,
   );
 
   const workspace = screen.getByRole("region", { name: "Product results" });
@@ -34,14 +34,16 @@ test("DetailTabs switches between peer views with Radix tab semantics", () => {
       label="Product details"
       items={[
         { content: <p>Decision highlights</p>, label: "Overview", value: "overview" },
-        { content: <p>Technical attributes</p>, label: "Specifications", value: "specs" }
+        { content: <p>Technical attributes</p>, label: "Specifications", value: "specs" },
       ]}
-    />
+    />,
   );
 
   const tablist = screen.getByRole("tablist", { name: "Product details" });
   const specifications = within(tablist).getByRole("tab", { name: "Specifications" });
 
+  expect(tablist).toHaveAttribute("data-slot", "detail-tabs-list");
+  expect(specifications).toHaveAttribute("data-slot", "detail-tab");
   expect(screen.getByRole("tabpanel")).toHaveTextContent("Decision highlights");
 
   fireEvent.mouseDown(specifications, { button: 0, ctrlKey: false });
@@ -55,10 +57,10 @@ test("DisclosureGroup progressively reveals supporting detail", () => {
     <DisclosureGroup
       items={[
         { content: <p>24 megapixels</p>, label: "Imaging", value: "imaging" },
-        { content: <p>520 grams</p>, label: "Body", value: "body" }
+        { content: <p>520 grams</p>, label: "Body", value: "body" },
       ]}
       label="Specification groups"
-    />
+    />,
   );
 
   const imaging = screen.getByRole("button", { name: "Imaging" });
@@ -73,10 +75,10 @@ test("SummaryStrip preserves metric label and value relationships", () => {
     <SummaryStrip
       items={[
         { label: "Visible offers", value: "8" },
-        { label: "Lowest price", value: "$849" }
+        { label: "Lowest price", value: "$849" },
       ]}
       label="Offer snapshot"
-    />
+    />,
   );
 
   const summary = screen.getByRole("region", { name: "Offer snapshot" });
@@ -98,7 +100,7 @@ test("ActionDialog labels focused creation content and restores trigger focus", 
         Token label
         <input />
       </label>
-    </ActionDialog>
+    </ActionDialog>,
   );
 
   const trigger = screen.getByRole("button", { name: "New token" });

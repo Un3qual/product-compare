@@ -1,42 +1,124 @@
 import { Suspense } from "react";
-import { useLoaderData, useLocation } from "react-router-dom";
-import { usePreloadedQuery } from "react-relay";
-import browseProductsRouteQuery, {
-  type BrowseProductsRouteQuery
-} from "../../__generated__/BrowseProductsRouteQuery.graphql";
-import { useRoutePreloadedQuery } from "../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../ui/components/layout/ContextRail";
-import { PageShell } from "../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../ui/components/layout/WorkspaceLayout";
-import { Pagination } from "../../ui/components/navigation/Pagination";
+import { useLoaderData, useLocation, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import {
-  MAX_COMPARE_PRODUCTS,
-  buildComparePathFromSlugs
-} from "../compare/paths";
+  fetchRouteQuery,
+  getRelayEnvironmentFromRouterContext,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Pagination } from "$ui/components/navigation/Pagination";
+import { MAX_COMPARE_PRODUCTS, buildComparePathFromSlugs } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
 import { createBrowseRouteData } from "./browse-route-data";
 import {
+  catalogFiltersFromUrl,
+  catalogFiltersToProductFiltersInput,
   hasActiveCatalogFilters,
-  type CatalogFilters
+  type CatalogFilters,
 } from "./filters";
 import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterForm";
 import { BrowseProductList } from "./BrowseProductList";
-import { browseLoader, type BrowseProductsLoaderData } from "./loader";
 import {
   buildCatalogBrowsePaginationData,
   catalogBrowseFirstPagePath,
-  catalogBrowseSearchWithNormalizedSort
+  catalogBrowseSearchWithNormalizedSort,
 } from "./paths";
 import { catalogResultStatus } from "./result-status";
+
+const browseRouteQuery = graphql`
+  query BrowseRouteQuery($first: Int!, $after: String, $filters: ProductFiltersInput) {
+    products(first: $first, after: $after, filters: $filters) {
+      edges {
+        cursor
+        node {
+          id
+          name
+          slug
+        }
+      }
+      ...BrowseProductList_products
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+    productFilterMetadata(filters: $filters) {
+      resultCount
+      typeOptions {
+        id
+        label
+        count
+        selected
+        disabled
+      }
+      useCaseOptions {
+        id
+        label
+        count
+        selected
+        disabled
+      }
+      numericFilters {
+        attributeId
+        code
+        displayName
+        unitSymbol
+        min
+        max
+        selectedMin
+        selectedMax
+      }
+      booleanFilters {
+        attributeId
+        code
+        displayName
+        trueCount
+        falseCount
+        selectedValue
+      }
+      enumFilters {
+        attributeId
+        code
+        displayName
+        options {
+          id
+          label
+          count
+          selected
+          disabled
+        }
+      }
+    }
+  }
+`;
+
+const BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE = 12;
+const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
+type BrowseProductsPageSize = (typeof BROWSE_PRODUCTS_PAGE_SIZES)[number];
+
+export type BrowseProductsLoaderData =
+  | {
+      status: "ready";
+      filters: CatalogFilters;
+      pageSize: BrowseProductsPageSize;
+      query: RelayRouteQueryDescriptor<BrowseRouteQuery["variables"]>;
+    }
+  | { status: "error" };
 
 const EMPTY_CATALOG_FILTERS: CatalogFilters = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
-  enums: []
+  enums: [],
 };
 
 export function BrowseRoute() {
@@ -81,17 +163,14 @@ function BrowseProductsErrorFallback() {
 function BrowseProducts({
   filters,
   pageSize,
-  query
+  query,
 }: {
   filters: Extract<BrowseProductsLoaderData, { status: "ready" }>["filters"];
   pageSize: Extract<BrowseProductsLoaderData, { status: "ready" }>["pageSize"];
   query: Extract<BrowseProductsLoaderData, { status: "ready" }>["query"];
 }) {
-  const queryRef = useRoutePreloadedQuery<BrowseProductsRouteQuery>(
-    browseProductsRouteQuery,
-    query
-  );
-  const data = usePreloadedQuery<BrowseProductsRouteQuery>(browseProductsRouteQuery, queryRef);
+  const queryRef = useRoutePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, query);
+  const data = usePreloadedQuery<BrowseRouteQuery>(browseRouteQuery, queryRef);
   const productConnection = data.products;
   const location = useLocation();
 
@@ -104,12 +183,12 @@ function BrowseProducts({
   const products = productConnection.edges.map(({ node }) => node);
   const currentCompareSearch = catalogBrowseSearchWithNormalizedSort(
     location.search,
-    activeFilters
+    activeFilters,
   );
   const browseRouteData = createBrowseRouteData({
     pathname: location.pathname,
     search: currentCompareSearch,
-    selectedCompareSlugs: new URLSearchParams(location.search).getAll("slug")
+    selectedCompareSlugs: new URLSearchParams(location.search).getAll("slug"),
   });
   const selectedCompareSlugs = browseRouteData.selectedCompareSlugs;
   const currentAfter = query.__relayQuery.variables.after;
@@ -118,7 +197,7 @@ function BrowseProducts({
   const resultStatus = catalogResultStatus({
     hasActiveFilters,
     hasVisibleProducts: products.length > 0,
-    resultCount: filterMetadata.resultCount
+    resultCount: filterMetadata.resultCount,
   });
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const paginationData = buildCatalogBrowsePaginationData({
@@ -127,7 +206,7 @@ function BrowseProducts({
     filters: activeFilters,
     first: currentPageSize,
     hasNextPage: productConnection.pageInfo.hasNextPage,
-    selectedCompareSlugs
+    selectedCompareSlugs,
   });
   const paginationLinks = (
     <Pagination
@@ -143,7 +222,7 @@ function BrowseProducts({
       <CompareSelectionTray
         items={products.map((product) => ({
           label: product.name,
-          slug: product.slug
+          slug: product.slug,
         }))}
         maxProducts={MAX_COMPARE_PRODUCTS}
         openComparePath={buildComparePathFromSlugs(selectedCompareSlugs)}
@@ -185,14 +264,71 @@ function BrowseProducts({
     <WorkspaceLayout context={catalogControls} label="Catalog results">
       {selectionTray}
       <BrowseProductList
-        compareActionFor={(product) =>
-          browseRouteData.compareActionFor(product.slug)
-        }
+        compareActionFor={(product) => browseRouteData.compareActionFor(product.slug)}
         detailHrefFor={(product) => browseRouteData.productDetailPathFor(product.slug)}
-        offerHrefFor={(product) => productOffersPath(product.id)}
-        products={products}
+        offerHrefFor={(product) => productOffersPath(product.id, selectedCompareSlugs)}
+        products={productConnection}
       />
       {paginationLinks}
     </WorkspaceLayout>
   );
+}
+
+export async function browseLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<BrowseProductsLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const requestUrl = new URL(request.url);
+  const filters = catalogFiltersFromUrl(requestUrl);
+  const productFiltersInput = catalogFiltersToProductFiltersInput(filters);
+  const pageSize = browseProductsPageSizeFromUrl(requestUrl);
+  const variables: BrowseRouteQuery["variables"] = { first: pageSize };
+  const after = nonBlankParam(requestUrl, "after");
+
+  if (after) variables.after = after;
+  if (productFiltersInput) variables.filters = productFiltersInput;
+
+  try {
+    const queryResult = await fetchRouteQuery<BrowseRouteQuery>(
+      environment,
+      browseRouteQuery,
+      variables,
+      { signal: request.signal },
+    );
+
+    return {
+      status: "ready",
+      filters,
+      pageSize,
+      query: queryResult.descriptor,
+    };
+  } catch (error) {
+    return recoverRouteLoaderError<BrowseProductsLoaderData>(
+      error,
+      "Failed to preload browse products route query.",
+      { status: "error" },
+    );
+  }
+}
+
+function browseProductsPageSizeFromUrl(url: URL) {
+  const value = nonBlankParam(url, "first");
+
+  if (value === null || !/^\d+$/.test(value)) return BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+
+  const parsedValue = Number.parseInt(value, 10);
+  return isBrowseProductsPageSize(parsedValue) ? parsedValue : BROWSE_PRODUCTS_DEFAULT_PAGE_SIZE;
+}
+
+function isBrowseProductsPageSize(value: number): value is BrowseProductsPageSize {
+  return BROWSE_PRODUCTS_PAGE_SIZES.includes(value as BrowseProductsPageSize);
+}
+
+function nonBlankParam(url: URL, name: string) {
+  const rawValue = url.searchParams.get(name);
+  if (rawValue === null) return null;
+
+  const value = rawValue.trim();
+  return value === "" ? null : value;
 }

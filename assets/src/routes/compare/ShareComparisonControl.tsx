@@ -2,22 +2,22 @@ import { Suspense, type FormEvent, useEffect, useId, useMemo, useRef, useState }
 import { create, props } from "@stylexjs/stylex";
 import { Link, useLocation } from "react-router-dom";
 import { useLazyLoadQuery, useMutation } from "react-relay";
-import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
-import type { ComparisonSharingOperationsQuery } from "../../__generated__/ComparisonSharingOperationsQuery.graphql";
-import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "../../__generated__/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
-import { ResettableErrorBoundary } from "../../relay/ResettableErrorBoundary";
-import { DestructiveActionDialog } from "../../ui/components/overlays/DestructiveActionDialog";
-import { Button } from "../../ui/primitives/Button";
-import { Checkbox } from "../../ui/primitives/Checkbox";
+import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";
+import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
+import { Button } from "$ui/primitives/Button";
+import { Checkbox } from "$ui/primitives/Checkbox";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "../../ui/primitives/Collapsible";
-import { TextField } from "../../ui/primitives/TextField";
+} from "$ui/primitives/Collapsible";
+import { TextField } from "$ui/primitives/TextField";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
-import type { CompareProductSummary } from "./loader";
+import type { CompareProductSummary } from "./compare-route-data";
 import {
   comparisonSharingOperationsQuery,
   publishComparisonSnapshotMutation,
@@ -73,19 +73,6 @@ const styles = create({
     justifyContent: "space-between",
   },
   message: { color: "var(--pc-text-secondary)", margin: 0 },
-  summary: {
-    appearance: "none",
-    backgroundColor: "transparent",
-    border: 0,
-    color: "inherit",
-    cursor: "pointer",
-    fontFamily: "inherit",
-    fontSize: "inherit",
-    fontWeight: 650,
-    lineHeight: "inherit",
-    padding: 0,
-    textAlign: "start",
-  },
 });
 
 export function ShareComparisonControl({
@@ -163,8 +150,8 @@ function SnapshotControlView({
 }: SnapshotControlViewProps) {
   return (
     <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
-      <CollapsibleTrigger {...props(styles.summary)}>
-        Share a fixed comparison snapshot
+      <CollapsibleTrigger asChild>
+        <Button variant="ghost">Share this comparison</Button>
       </CollapsibleTrigger>
       <CollapsibleContent forceMount {...props(styles.content)}>
         <SnapshotPublishForm open={open} {...publishFormProps} />
@@ -197,15 +184,15 @@ function SnapshotPublishForm({
       <label htmlFor={searchIndexableId} {...props(styles.field)}>
         <span>
           <Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to
-          discover this immutable snapshot
+          discover this shared comparison
         </span>
         <small>
-          Off by default. Only snapshots with sufficient captured specifications and current offer
-          evidence can be indexed.
+          Off by default. Only shared comparisons with enough product details and current offers can
+          be indexed.
         </small>
       </label>
       <Button disabled={publishing || products.length < 2} type="submit">
-        {publishing ? "Publishing…" : "Publish snapshot"}
+        {publishing ? "Publishing…" : "Publish comparison link"}
       </Button>
       <SnapshotHistory
         localSnapshots={published}
@@ -247,9 +234,9 @@ function SnapshotHistory({
   return (
     <ResettableErrorBoundary
       resetToken={resetToken}
-      fallback={<p role="alert">Published snapshots unavailable.</p>}
+      fallback={<p role="alert">Published comparison links unavailable.</p>}
     >
-      <Suspense fallback={<p role="status">Loading published snapshots...</p>}>
+      <Suspense fallback={<p role="status">Loading published comparison links...</p>}>
         <PublishedSnapshots
           localSnapshots={localSnapshots}
           onRevoke={onRevoke}
@@ -400,7 +387,7 @@ function PublishedSnapshots({
   return (
     <>
       {snapshots.length > 0 ? (
-        <ul aria-label="Published comparison snapshots" {...props(styles.list)}>
+        <ul aria-label="Published comparison links" {...props(styles.list)}>
           {snapshots.map((snapshot) => {
             const revocation = snapshotRevocationRowState(
               snapshot.id,
@@ -413,7 +400,7 @@ function PublishedSnapshots({
                 <Link to={snapshot.path}>{comparisonSnapshotLabel(snapshot)}</Link>
                 <DestructiveActionDialog
                   confirmLabel="Revoke public link"
-                  description={`Revoking the public link for ${comparisonSnapshotLabel(snapshot)} will make the shared snapshot unavailable.`}
+                  description={`Revoking the public link for ${comparisonSnapshotLabel(snapshot)} will make the shared comparison unavailable.`}
                   disabled={revocation.disabled}
                   onConfirm={() => onRevoke(snapshot)}
                   title="Revoke this public link?"
@@ -437,7 +424,7 @@ function PublishedSnapshots({
       ) : null}
       {next ? (
         <Button onClick={() => setAfter(next)} type="button">
-          Show more snapshots
+          Show more links
         </Button>
       ) : null}
     </>

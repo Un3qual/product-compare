@@ -1,18 +1,25 @@
 import { Suspense, type FormEvent, useMemo, useRef, useState } from "react";
-import { useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
-import type { AffiliateSetupOperationsCreateCouponMutation } from "../../../__generated__/AffiliateSetupOperationsCreateCouponMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
-import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "../../../__generated__/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
-import type { AffiliateSetupOperationsQuery } from "../../../__generated__/AffiliateSetupOperationsQuery.graphql";
-import { useRoutePreloadedQuery } from "../../../relay/route-preload";
-import { ResettableErrorBoundary } from "../../../relay/ResettableErrorBoundary";
-import { FeedbackState } from "../../../ui/components/feedback/FeedbackState";
-import { ContextRail } from "../../../ui/components/layout/ContextRail";
-import { PageShell } from "../../../ui/components/layout/PageShell";
-import { WorkspaceLayout } from "../../../ui/components/layout/WorkspaceLayout";
-import { Pagination } from "../../../ui/components/navigation/Pagination";
+import { useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { graphql, useMutation, usePreloadedQuery } from "react-relay";
+import type { AffiliateSetupOperationsCreateCouponMutation } from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
+import type { AffiliateSetupRouteQuery } from "$generated/AffiliateSetupRouteQuery.graphql";
+import {
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { ContextRail } from "$ui/components/layout/ContextRail";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
+import { Pagination } from "$ui/components/navigation/Pagination";
+import { recoverRouteLoaderError } from "../../loader-errors";
+import { merchantPaginationFromUrl } from "../../merchants/pagination";
 import { commitRouteMutationPromise } from "../../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
 import {
@@ -23,16 +30,14 @@ import {
   type CouponResult,
   type LinkResult,
   type NetworkResult,
-  type ProgramResult
+  type ProgramResult,
 } from "./AffiliateSetupForms";
 import {
-  affiliateSetupOperationsQuery,
   createCouponMutation,
   upsertAffiliateLinkMutation,
   upsertAffiliateNetworkMutation,
-  upsertAffiliateProgramMutation
+  upsertAffiliateProgramMutation,
 } from "./AffiliateSetupOperations";
-import { affiliateSetupLoader, type AffiliateSetupLoaderData } from "./loader";
 import {
   buildCouponVariables,
   buildLinkVariables,
@@ -43,9 +48,74 @@ import {
   resolveAffiliateCouponMutationOutcome,
   resolveAffiliateLinkMutationOutcome,
   resolveAffiliateNetworkMutationOutcome,
-  resolveAffiliateProgramMutationOutcome
+  resolveAffiliateProgramMutationOutcome,
 } from "./affiliate-setup-data";
-import { buildAffiliateSetupPaginationData } from "./pagination";
+import {
+  buildAffiliateSetupPaginationData,
+  type AffiliateSetupMerchantPagination,
+} from "./pagination";
+
+const affiliateSetupRouteQuery = graphql`
+  query AffiliateSetupRouteQuery($first: Int!, $after: String) {
+    merchants(first: $first, after: $after) {
+      edges {
+        cursor
+        node {
+          id
+          name
+          ...MerchantDirectoryView_item
+        }
+      }
+      pageInfo {
+        hasNextPage
+        hasPreviousPage
+        startCursor
+        endCursor
+      }
+    }
+  }
+`;
+
+export type AffiliateSetupLoaderData =
+  | {
+      status: "ready";
+      merchantPagination: AffiliateSetupMerchantPagination;
+      merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
+    }
+  | {
+      status: "error";
+      merchantPagination: AffiliateSetupMerchantPagination;
+    };
+
+export async function affiliateSetupLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<AffiliateSetupLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const merchantPagination = merchantPaginationFromUrl(new URL(request.url));
+
+  try {
+    return {
+      status: "ready",
+      merchantPagination,
+      merchantQuery: await preloadRouteQuery<AffiliateSetupRouteQuery>(
+        environment,
+        affiliateSetupRouteQuery,
+        merchantPagination,
+        { signal: request.signal },
+      ),
+    };
+  } catch (error) {
+    return recoverRouteLoaderError<AffiliateSetupLoaderData>(
+      error,
+      "Failed to preload affiliate setup merchant choices.",
+      {
+        status: "error",
+        merchantPagination,
+      },
+    );
+  }
+}
 
 export function AffiliateSetupRoute() {
   const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
@@ -77,16 +147,16 @@ export function AffiliateSetupRoute() {
 
 function AffiliateSetupPanel({
   merchantPagination,
-  merchantQuery
+  merchantQuery,
 }: {
   merchantPagination: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantPagination"];
   merchantQuery: Extract<AffiliateSetupLoaderData, { status: "ready" }>["merchantQuery"];
 }) {
-  const queryRef = useRoutePreloadedQuery<AffiliateSetupOperationsQuery>(
-    affiliateSetupOperationsQuery,
-    merchantQuery
+  const queryRef = useRoutePreloadedQuery<AffiliateSetupRouteQuery>(
+    affiliateSetupRouteQuery,
+    merchantQuery,
   );
-  const data = usePreloadedQuery<AffiliateSetupOperationsQuery>(affiliateSetupOperationsQuery, queryRef);
+  const data = usePreloadedQuery<AffiliateSetupRouteQuery>(affiliateSetupRouteQuery, queryRef);
   const [networkResult, setNetworkResult] = useState<NetworkResult | null>(null);
   const [networkError, setNetworkError] = useState<string | null>(null);
   const [networkPending, setNetworkPending] = useState(false);
@@ -105,24 +175,23 @@ function AffiliateSetupPanel({
   const couponInFlightRef = useRef(false);
   const [affiliateNetworkId, setAffiliateNetworkId] = useState("");
   const [selectedMerchantId, setSelectedMerchantId] = useState("");
-  const [commitUpsertAffiliateNetwork] = useMutation<AffiliateSetupOperationsUpsertAffiliateNetworkMutation>(
-    upsertAffiliateNetworkMutation
-  );
-  const [commitUpsertAffiliateProgram] = useMutation<AffiliateSetupOperationsUpsertAffiliateProgramMutation>(
-    upsertAffiliateProgramMutation
-  );
-  const [commitUpsertAffiliateLink] = useMutation<AffiliateSetupOperationsUpsertAffiliateLinkMutation>(
-    upsertAffiliateLinkMutation
-  );
-  const [commitCreateCoupon] = useMutation<AffiliateSetupOperationsCreateCouponMutation>(createCouponMutation);
+  const [commitUpsertAffiliateNetwork] =
+    useMutation<AffiliateSetupOperationsUpsertAffiliateNetworkMutation>(
+      upsertAffiliateNetworkMutation,
+    );
+  const [commitUpsertAffiliateProgram] =
+    useMutation<AffiliateSetupOperationsUpsertAffiliateProgramMutation>(
+      upsertAffiliateProgramMutation,
+    );
+  const [commitUpsertAffiliateLink] =
+    useMutation<AffiliateSetupOperationsUpsertAffiliateLinkMutation>(upsertAffiliateLinkMutation);
+  const [commitCreateCoupon] =
+    useMutation<AffiliateSetupOperationsCreateCouponMutation>(createCouponMutation);
 
-  const merchantChoices = useMemo(
-    () => buildMerchantChoices(data.merchants),
-    [data.merchants]
-  );
+  const merchantChoices = useMemo(() => buildMerchantChoices(data.merchants), [data.merchants]);
   const merchantContext = useMemo(
     () => getAffiliateMerchantContext(merchantChoices, selectedMerchantId),
-    [merchantChoices, selectedMerchantId]
+    [merchantChoices, selectedMerchantId],
   );
 
   if (!data.merchants) {
@@ -145,8 +214,10 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateNetwork,
         {
-          variables: buildNetworkVariables(formDataToScalarValues(new FormData(event.currentTarget)))
-        }
+          variables: buildNetworkVariables(
+            formDataToScalarValues(new FormData(event.currentTarget)),
+          ),
+        },
       );
       const payload = response.upsertAffiliateNetwork;
       const outcome = resolveAffiliateNetworkMutationOutcome(payload, graphQLErrors);
@@ -181,8 +252,10 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateProgram,
         {
-          variables: buildProgramVariables(formDataToScalarValues(new FormData(event.currentTarget)))
-        }
+          variables: buildProgramVariables(
+            formDataToScalarValues(new FormData(event.currentTarget)),
+          ),
+        },
       );
       const payload = response.upsertAffiliateProgram;
       const outcome = resolveAffiliateProgramMutationOutcome(payload, graphQLErrors);
@@ -216,8 +289,8 @@ function AffiliateSetupPanel({
       const { response, graphQLErrors } = await commitRouteMutationPromise(
         commitUpsertAffiliateLink,
         {
-          variables: buildLinkVariables(formDataToScalarValues(new FormData(event.currentTarget)))
-        }
+          variables: buildLinkVariables(formDataToScalarValues(new FormData(event.currentTarget))),
+        },
       );
       const payload = response.upsertAffiliateLink;
       const outcome = resolveAffiliateLinkMutationOutcome(payload, graphQLErrors);
@@ -248,12 +321,9 @@ function AffiliateSetupPanel({
     setCouponResult(null);
 
     try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(
-        commitCreateCoupon,
-        {
-          variables: buildCouponVariables(formDataToScalarValues(new FormData(event.currentTarget)))
-        }
-      );
+      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreateCoupon, {
+        variables: buildCouponVariables(formDataToScalarValues(new FormData(event.currentTarget))),
+      });
       const payload = response.createCoupon;
       const outcome = resolveAffiliateCouponMutationOutcome(payload, graphQLErrors);
 
@@ -274,7 +344,7 @@ function AffiliateSetupPanel({
     endCursor: data.merchants.pageInfo.endCursor ?? null,
     hasNextPage: data.merchants.pageInfo.hasNextPage,
     hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
-    pagination: merchantPagination
+    pagination: merchantPagination,
   });
 
   return (

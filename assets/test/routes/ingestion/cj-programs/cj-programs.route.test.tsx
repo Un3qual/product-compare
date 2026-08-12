@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
-import { useMutation, usePreloadedQuery, useQueryLoader } from "react-relay";
+import { useFragment, useMutation, usePreloadedQuery, useQueryLoader } from "react-relay";
 import {
   useRoutePreloadedQuery,
-  type RelayRouteQueryDescriptor
+  type RelayRouteQueryDescriptor,
 } from "../../../../src/relay/route-preload";
 import type { CJProgramsRouteQuery } from "../../../../src/__generated__/CJProgramsRouteQuery.graphql";
-import { CJProgramsRoute } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
-import type { CJProgramsLoaderData } from "../../../../src/routes/ingestion/cj-programs/loader";
 import {
-  chooseSelectOption,
-  openSelect
-} from "../../../helpers/radix-select";
+  CJProgramsRoute,
+  type CJProgramsLoaderData,
+} from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
+import { chooseSelectOption, openSelect } from "../../../helpers/radix-select";
 
 const {
   commitUpdateMutationMock,
@@ -20,25 +19,25 @@ const {
   loadFeedQueryMock,
   revalidateMock,
   useLoaderDataMock,
+  useFragmentMock,
   useMutationMock,
   useQueryLoaderMock,
   usePreloadedQueryMock,
   useRevalidatorMock,
-  useRoutePreloadedQueryMock
-} = vi.hoisted(
-  () => ({
-    commitUpdateMutationMock: vi.fn(),
-    disposeFeedQueryMock: vi.fn(),
-    loadFeedQueryMock: vi.fn(),
-    revalidateMock: vi.fn(),
-    useLoaderDataMock: vi.fn(),
-    useMutationMock: vi.fn(),
-    useQueryLoaderMock: vi.fn(),
-    usePreloadedQueryMock: vi.fn(),
-    useRevalidatorMock: vi.fn(),
-    useRoutePreloadedQueryMock: vi.fn()
-  })
-);
+  useRoutePreloadedQueryMock,
+} = vi.hoisted(() => ({
+  commitUpdateMutationMock: vi.fn(),
+  disposeFeedQueryMock: vi.fn(),
+  loadFeedQueryMock: vi.fn(),
+  revalidateMock: vi.fn(),
+  useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
+  useMutationMock: vi.fn(),
+  useQueryLoaderMock: vi.fn(),
+  usePreloadedQueryMock: vi.fn(),
+  useRevalidatorMock: vi.fn(),
+  useRoutePreloadedQueryMock: vi.fn(),
+}));
 
 vi.mock("react-router-dom", async () => {
   const actual = await vi.importActual<typeof import("react-router-dom")>("react-router-dom");
@@ -46,7 +45,7 @@ vi.mock("react-router-dom", async () => {
   return {
     ...actual,
     useLoaderData: useLoaderDataMock,
-    useRevalidator: useRevalidatorMock
+    useRevalidator: useRevalidatorMock,
   };
 });
 
@@ -55,33 +54,33 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     useMutation: useMutationMock,
     useQueryLoader: useQueryLoaderMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUseQueryLoader = vi.mocked(useQueryLoader);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRevalidator = vi.mocked(useRevalidator);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
-const CJ_PROGRAMS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
-  CJProgramsRouteQuery["variables"]
-> = {
+const CJ_PROGRAMS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<CJProgramsRouteQuery["variables"]> = {
   __relayQuery: {
     operationName: "CJProgramsRouteQuery",
     text: null,
@@ -91,9 +90,9 @@ const CJ_PROGRAMS_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<
       stage: null,
       sort: "NAME_ASC",
       unmatchedFirst: 10,
-      unmatchedAfter: null
-    }
-  }
+      unmatchedAfter: null,
+    },
+  },
 };
 
 const FEED_QUERY_REF = { dispose: vi.fn() };
@@ -104,6 +103,8 @@ beforeEach(() => {
   loadFeedQueryMock.mockReset();
   revalidateMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   mockedUseMutation.mockReset();
   mockedUseQueryLoader.mockReset();
   mockedUsePreloadedQuery.mockReset();
@@ -123,8 +124,8 @@ test("CJ programs route gives operators its lifecycle workspace", () => {
   expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
   expect(
     screen.getByText(
-      "Track each advertiser program from discovery through its application outcome."
-    )
+      "Track each advertiser program from discovery through its application outcome.",
+    ),
   ).toBeInTheDocument();
 });
 
@@ -171,12 +172,12 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
     "Applied",
     "Accepted",
     "Not pursuing",
-    "Declined"
+    "Declined",
   ]);
 
   chooseSelectOption(stage, "Declined");
   fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
-    target: { value: "  Not a fit now  " }
+    target: { value: "  Not a fit now  " },
   });
   fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
 
@@ -188,10 +189,10 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
             id: "program-1",
             stage: "DECLINED",
             note: "Not a fit now",
-            expectedChangedAt: "2026-07-20T10:00:00.000000Z"
-          }
-        }
-      })
+            expectedChangedAt: "2026-07-20T10:00:00.000000Z",
+          },
+        },
+      }),
     );
   });
 });
@@ -203,10 +204,10 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
     onCompleted(
       {
         updateCjProgram: {
-          errors: []
-        }
+          errors: [],
+        },
       },
-      null
+      null,
     );
   });
 
@@ -214,15 +215,13 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
 
   chooseSelectOption(screen.getByLabelText("Stage for New Merchant"), "Declined");
   fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
-    target: { value: "Local draft" }
+    target: { value: "Local draft" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
   fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
-      "New Merchant saved."
-    );
+    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("New Merchant saved.");
   });
 
   const refreshedData = buildCJProgramsData();
@@ -235,24 +234,20 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
   Object.assign(refreshedProgram, {
     stage: "APPLIED",
     note: "Server note",
-    lastChanged: "2026-07-20T11:00:00.000000Z"
+    lastChanged: "2026-07-20T11:00:00.000000Z",
   });
   mockedUsePreloadedQuery.mockReturnValue(refreshedData);
 
   view.rerender(
     <MemoryRouter>
       <CJProgramsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByLabelText("Stage for New Merchant")).toHaveValue("APPLIED");
   expect(screen.getByLabelText("Note for New Merchant")).toHaveValue("Server note");
-  expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
-    "New Merchant saved."
-  );
-  expect(
-    screen.getByRole("button", { name: "Hide feeds for New Merchant" })
-  ).toBeInTheDocument();
+  expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("New Merchant saved.");
+  expect(screen.getByRole("button", { name: "Hide feeds for New Merchant" })).toBeInTheDocument();
 });
 
 test("an in-flight CJ program update shows row-local saving state and leaves another row interactive", async () => {
@@ -282,10 +277,10 @@ test("CJ program mutation feedback remains with the row that saved", async () =>
     onCompleted(
       {
         updateCjProgram: {
-          errors: []
-        }
+          errors: [],
+        },
       },
-      null
+      null,
     );
   });
 
@@ -304,10 +299,10 @@ test("CJ program payload errors remain with the row that failed", async () => {
     onCompleted(
       {
         updateCjProgram: {
-          errors: [{ code: "INVALID_STAGE", field: "stage", message: "stage is unavailable" }]
-        }
+          errors: [{ code: "INVALID_STAGE", field: "stage", message: "stage is unavailable" }],
+        },
       },
-      null
+      null,
     );
   });
 
@@ -315,9 +310,7 @@ test("CJ program payload errors remain with the row that failed", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
-      "stage is unavailable"
-    );
+    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("stage is unavailable");
     expect(rowFor("Considering Merchant").queryByRole("status")).not.toBeInTheDocument();
   });
 });
@@ -331,12 +324,12 @@ test("a stale CJ program response reloads server state", async () => {
             {
               code: "CONFLICT",
               field: null,
-              message: "program changed since it was loaded"
-            }
-          ]
-        }
+              message: "program changed since it was loaded",
+            },
+          ],
+        },
       },
-      null
+      null,
     );
   });
 
@@ -345,7 +338,7 @@ test("a stale CJ program response reloads server state", async () => {
 
   await waitFor(() => {
     expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
-      "program changed since it was loaded"
+      "program changed since it was loaded",
     );
     expect(revalidateMock).toHaveBeenCalledTimes(1);
   });
@@ -362,27 +355,19 @@ test("CJ program rows show factual advertiser details and plain warning copy", (
   const warnings = row.getByRole("list", { name: "Warnings for New Merchant" });
 
   expect(
-    within(warnings).getByText(
-      "At least one observed feed is missing an advertiser name."
-    )
+    within(warnings).getByText("At least one observed feed is missing an advertiser name."),
   ).toBeInTheDocument();
   expect(
-    within(warnings).getByText(
-      "At least one observed feed has no positive product count."
-    )
+    within(warnings).getByText("At least one observed feed has no positive product count."),
   ).toBeInTheDocument();
   expect(
-    within(warnings).getByText(
-      "At least one observed feed is not marked for the US market."
-    )
+    within(warnings).getByText("At least one observed feed is not marked for the US market."),
   ).toBeInTheDocument();
   expect(
-    within(warnings).getByText(
-      "At least one observed feed is not marked with USD currency."
-    )
+    within(warnings).getByText("At least one observed feed is not marked with USD currency."),
   ).toBeInTheDocument();
   expect(
-    within(warnings).getByText("At least one observed feed is not marked as English.")
+    within(warnings).getByText("At least one observed feed is not marked as English."),
   ).toBeInTheDocument();
   expect(screen.queryByText(/Fit score/i)).not.toBeInTheDocument();
 });
@@ -413,46 +398,43 @@ test("CJ program feed details wait for the first expansion before loading", () =
 
   expect(loadFeedQueryMock).toHaveBeenCalledWith(
     { id: "program-1", first: 10, after: null },
-    expect.anything()
+    expect.anything(),
   );
 });
 
 test("a failed CJ program feed query stays in its row and retries only that row", () => {
   const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
-  mockedUseQueryLoader.mockReturnValue([FEED_QUERY_REF, loadFeedQueryMock, disposeFeedQueryMock] as never);
-  mockedUsePreloadedQuery
-    .mockReturnValueOnce(buildCJProgramsData())
-    .mockImplementation(() => {
-      throw new Error("CJ program feed query failed");
-    });
+  mockedUseQueryLoader.mockReturnValue([
+    FEED_QUERY_REF,
+    loadFeedQueryMock,
+    disposeFeedQueryMock,
+  ] as never);
+  mockedUsePreloadedQuery.mockReturnValueOnce(buildCJProgramsData()).mockImplementation(() => {
+    throw new Error("CJ program feed query failed");
+  });
 
   try {
     renderCJProgramsRoute();
     fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
 
-    expect(rowFor("New Merchant").getByRole("alert")).toHaveTextContent(
-      "Feeds unavailable."
-    );
+    expect(rowFor("New Merchant").getByRole("alert")).toHaveTextContent("Feeds unavailable.");
     expect(
-      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" })
+      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
     expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
-    chooseSelectOption(
-      screen.getByLabelText("Stage for Considering Merchant"),
-      "Accepted"
-    );
+    chooseSelectOption(screen.getByLabelText("Stage for Considering Merchant"), "Accepted");
     expect(screen.getByLabelText("Stage for Considering Merchant")).toHaveValue("ACCEPTED");
 
     fireEvent.click(
-      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" })
+      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" }),
     );
 
     expect(loadFeedQueryMock).toHaveBeenNthCalledWith(
       2,
       { id: "program-1", first: 10, after: null },
-      expect.anything()
+      expect.anything(),
     );
   } finally {
     consoleError.mockRestore();
@@ -460,7 +442,11 @@ test("a failed CJ program feed query stays in its row and retries only that row"
 });
 
 test("expanded CJ program rows render bounded feed facts and replace only their feed page", () => {
-  mockedUseQueryLoader.mockReturnValue([FEED_QUERY_REF, loadFeedQueryMock, disposeFeedQueryMock] as never);
+  mockedUseQueryLoader.mockReturnValue([
+    FEED_QUERY_REF,
+    loadFeedQueryMock,
+    disposeFeedQueryMock,
+  ] as never);
   mockedUsePreloadedQuery
     .mockReturnValueOnce(buildCJProgramsData())
     .mockReturnValueOnce(buildCJProgramFeedsData());
@@ -472,9 +458,7 @@ test("expanded CJ program rows render bounded feed facts and replace only their 
 
   expect(within(feedList).getByText("Trail Shopping")).toBeInTheDocument();
   expect(within(feedList).getByText("Provider feed ID trail-shopping")).toBeInTheDocument();
-  expect(
-    within(feedList).getByText("Last seen Jul 20, 2026, 10:00 AM")
-  ).toBeInTheDocument();
+  expect(within(feedList).getByText("Last seen Jul 20, 2026, 10:00 AM")).toBeInTheDocument();
   expect(within(feedList).getByText("5000 products")).toBeInTheDocument();
   expect(within(feedList).getByText("US")).toBeInTheDocument();
   expect(within(feedList).getByText("USD")).toBeInTheDocument();
@@ -487,12 +471,12 @@ test("expanded CJ program rows render bounded feed facts and replace only their 
   expect(loadFeedQueryMock).toHaveBeenNthCalledWith(
     2,
     { id: "program-1", first: 10, after: null },
-    expect.anything()
+    expect.anything(),
   );
   expect(loadFeedQueryMock).toHaveBeenNthCalledWith(
     3,
     { id: "program-1", first: 10, after: "feed-cursor-next" },
-    expect.anything()
+    expect.anything(),
   );
 });
 
@@ -504,35 +488,33 @@ test("program and unmatched feed pagination keep their independent cursors", () 
       stage: "APPLIED",
       sort: "FEED_COUNT_DESC",
       unmatchedFirst: 13,
-      unmatchedAfter: "unmatched-current"
-    })
+      unmatchedAfter: "unmatched-current",
+    }),
   );
 
   renderCJProgramsRoute();
 
   expect(screen.getByRole("link", { name: "First programs" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs?first=25&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current"
+    "/ingestion/cj-programs?first=25&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current",
   );
   expect(screen.getByRole("link", { name: "Next programs" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs?first=25&after=program-cursor-7&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current"
+    "/ingestion/cj-programs?first=25&after=program-cursor-7&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current",
   );
   expect(screen.getByRole("heading", { name: "Unmatched feeds" })).toBeInTheDocument();
   const unmatchedFeed = rowElementFor("Unmatched Outlet Feed");
 
   expect(within(unmatchedFeed).getByText("Provider feed ID unmatched-outlet")).toBeInTheDocument();
-  expect(
-    within(unmatchedFeed).getByText("Last seen Jul 20, 2026, 10:00 AM")
-  ).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("Last seen Jul 20, 2026, 10:00 AM")).toBeInTheDocument();
   expect(within(unmatchedFeed).getByText("250 products")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "First unmatched feeds" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13"
+    "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13",
   );
   expect(screen.getByRole("link", { name: "Next unmatched feeds" })).toHaveAttribute(
     "href",
-    "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-cursor-next"
+    "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-cursor-next",
   );
 });
 
@@ -544,16 +526,14 @@ test("CJ program lifecycle controls follow refreshed pagination after history na
       stage: "SELECTED",
       sort: "FEED_COUNT_DESC",
       unmatchedFirst: 10,
-      unmatchedAfter: null
-    })
+      unmatchedAfter: null,
+    }),
   );
 
   const view = renderCJProgramsRoute();
 
   expect(screen.getByRole("combobox", { name: "Stage" })).toHaveValue("selected");
-  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue(
-    "feed_count_desc"
-  );
+  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue("feed_count_desc");
 
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -562,20 +542,18 @@ test("CJ program lifecycle controls follow refreshed pagination after history na
       stage: "APPLIED",
       sort: "LAST_CHANGED_DESC",
       unmatchedFirst: 10,
-      unmatchedAfter: null
-    })
+      unmatchedAfter: null,
+    }),
   );
 
   view.rerender(
     <MemoryRouter>
       <CJProgramsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("combobox", { name: "Stage" })).toHaveValue("applied");
-  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue(
-    "last_changed_desc"
-  );
+  expect(screen.getByRole("combobox", { name: "Sort programs" })).toHaveValue("last_changed_desc");
 });
 
 test("CJ programs route renders its unavailable state when the loader cannot authorize data", () => {
@@ -587,8 +565,8 @@ test("CJ programs route renders its unavailable state when the loader cannot aut
       stage: null,
       sort: "NAME_ASC",
       unmatchedFirst: 10,
-      unmatchedAfter: null
-    }
+      unmatchedAfter: null,
+    },
   } satisfies CJProgramsLoaderData);
 
   renderCJProgramsRoute();
@@ -604,12 +582,12 @@ test("CJ programs route keeps an empty program and unmatched feed state factual"
     ...buildCJProgramsData(),
     cjPrograms: {
       edges: [],
-      pageInfo: { endCursor: null, hasNextPage: false, hasPreviousPage: false }
+      pageInfo: { endCursor: null, hasNextPage: false, hasPreviousPage: false },
     },
     unmatchedCjFeeds: {
       edges: [],
-      pageInfo: { endCursor: null, hasNextPage: false, hasPreviousPage: false }
-    }
+      pageInfo: { endCursor: null, hasNextPage: false, hasPreviousPage: false },
+    },
   });
 
   renderCJProgramsRoute();
@@ -637,7 +615,7 @@ function renderCJProgramsRoute() {
   return render(
     <MemoryRouter>
       <CJProgramsRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
@@ -663,7 +641,7 @@ function useInFlightMutationMock() {
       setIsInFlight(true);
       commitUpdateMutationMock(config);
     },
-    isInFlight
+    isInFlight,
   ] as const;
 }
 
@@ -674,13 +652,13 @@ function buildReadyLoaderData(
     stage: null,
     sort: "NAME_ASC",
     unmatchedFirst: 10,
-    unmatchedAfter: null
-  }
+    unmatchedAfter: null,
+  },
 ) {
   return {
     status: "ready",
     pagination,
-    query: CJ_PROGRAMS_QUERY_DESCRIPTOR
+    query: CJ_PROGRAMS_QUERY_DESCRIPTOR,
   } satisfies CJProgramsLoaderData;
 }
 
@@ -692,7 +670,7 @@ function buildCJProgramsData() {
     ["APPLIED", "Applied"],
     ["ACCEPTED", "Accepted"],
     ["NOT_PURSUING", "Not pursuing"],
-    ["DECLINED", "Declined"]
+    ["DECLINED", "Declined"],
   ] as const;
 
   return {
@@ -703,7 +681,7 @@ function buildCJProgramsData() {
       applied: 1,
       accepted: 1,
       notPursuing: 1,
-      declined: 1
+      declined: 1,
     },
     cjPrograms: {
       edges: stages.map(([stage, label], index) => ({
@@ -723,16 +701,16 @@ function buildCJProgramsData() {
                   "MISSING_PRODUCT_COUNT",
                   "NON_US_MARKET",
                   "NON_USD_CURRENCY",
-                  "NON_ENGLISH_LANGUAGE"
+                  "NON_ENGLISH_LANGUAGE",
                 ]
-              : []
-        }
+              : [],
+        },
       })),
       pageInfo: {
         endCursor: "program-cursor-7",
         hasNextPage: true,
-        hasPreviousPage: true
-      }
+        hasPreviousPage: true,
+      },
     },
     unmatchedCjFeeds: {
       edges: [
@@ -751,16 +729,16 @@ function buildCJProgramsData() {
             feedName: "Unmatched Outlet Feed",
             productCount: 250,
             providerLastUpdatedAt: "2026-07-20T09:00:00.000000Z",
-            lastSeenAt: "2026-07-20T10:00:00.000000Z"
-          }
-        }
+            lastSeenAt: "2026-07-20T10:00:00.000000Z",
+          },
+        },
       ],
       pageInfo: {
         endCursor: "unmatched-cursor-next",
         hasNextPage: true,
-        hasPreviousPage: true
-      }
-    }
+        hasPreviousPage: true,
+      },
+    },
   };
 }
 
@@ -792,16 +770,16 @@ function buildCJProgramFeedsData() {
               feedName: "Trail Shopping",
               productCount: 5000,
               providerLastUpdatedAt: "2026-07-20T09:00:00.000000Z",
-              lastSeenAt: "2026-07-20T10:00:00.000000Z"
-            }
-          }
+              lastSeenAt: "2026-07-20T10:00:00.000000Z",
+            },
+          },
         ],
         pageInfo: {
           endCursor: "feed-cursor-next",
           hasNextPage: true,
-          hasPreviousPage: true
-        }
-      }
-    }
+          hasPreviousPage: true,
+        },
+      },
+    },
   };
 }

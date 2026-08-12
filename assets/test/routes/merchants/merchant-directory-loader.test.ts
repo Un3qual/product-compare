@@ -1,7 +1,7 @@
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { createRelayRouterContext, preloadRouteQuery } from "../../../src/relay/route-preload";
-import { merchantDirectoryLoader } from "../../../src/routes/merchants/loader";
+import { merchantDirectoryLoader } from "../../../src/routes/merchants/MerchantDirectoryRoute";
 import { buildMerchantDirectoryPaginationData } from "../../../src/routes/merchants/pagination";
 
 vi.mock("../../../src/relay/route-preload", async () => {

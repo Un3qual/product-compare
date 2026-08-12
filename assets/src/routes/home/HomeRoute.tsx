@@ -1,0 +1,288 @@
+import { Suspense } from "react";
+import { create, props } from "@stylexjs/stylex";
+import {
+  Link,
+  useLoaderData,
+  useOutletContext,
+  useRevalidator,
+  type LoaderFunctionArgs,
+} from "react-router-dom";
+import { graphql, usePreloadedQuery } from "react-relay";
+import type { HomeRouteQuery } from "$generated/HomeRouteQuery.graphql";
+import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
+import {
+  getRelayEnvironmentFromRouterContext,
+  preloadRouteQuery,
+  useRoutePreloadedQuery,
+  type RelayRouteQueryDescriptor,
+} from "$relay/route-preload";
+import { buildComparePathFromSlugs } from "$routes/compare/paths";
+import { isAbortError } from "$routes/loader-errors";
+import type { RootViewer } from "$routes/root/viewer-data";
+import { ComparisonContinuity } from "$ui/components/compare/ComparisonContinuity";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
+import { HomeDeals } from "./HomeDeals";
+import { HomeProductLedger } from "./HomeProductLedger";
+import { HomeSearch } from "./HomeSearch";
+import { homeCatalogSearchPath, selectedHomeCompareSlugs } from "./home-paths";
+import { HOME_PAGE_SIZE, homeWorkspaceViewData } from "./home-view-data";
+
+const homeWorkspaceRouteQuery = graphql`
+  query HomeRouteQuery($selectedSlugs: [String!]!, $first: Int!) {
+    homeWorkspace(selectedSlugs: $selectedSlugs) {
+      categories(first: $first) {
+        edges {
+          node {
+            id
+            name
+            slug
+            description
+          }
+        }
+      }
+      selectedProducts {
+        id
+        name
+        slug
+      }
+      products(first: $first) {
+        edges {
+          cursor
+        }
+        ...HomeProductLedger_products
+      }
+    }
+  }
+`;
+
+export type HomeLoaderData = {
+  selectedSlugs: string[];
+  workspace: RelayRouteQueryDescriptor<HomeRouteQuery["variables"]> | null;
+};
+
+export async function homeLoader({
+  context,
+  request,
+}: LoaderFunctionArgs): Promise<HomeLoaderData> {
+  const environment = getRelayEnvironmentFromRouterContext(context);
+  const selectedSlugs = selectedHomeCompareSlugs(new URL(request.url).search);
+  const variables = { first: HOME_PAGE_SIZE, selectedSlugs };
+  const workspace = preloadRouteQuery<HomeRouteQuery>(
+    environment,
+    homeWorkspaceRouteQuery,
+    variables,
+    { signal: request.signal },
+  );
+
+  try {
+    return { selectedSlugs, workspace: await workspace };
+  } catch (error) {
+    if (request.signal.aborted || isAbortError(error)) throw error;
+
+    console.error("Failed to preload home workspace route query.", { error });
+    return { selectedSlugs, workspace: null };
+  }
+}
+
+const styles = create({
+  categories: {
+    display: "grid",
+    gap: "0.65rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(12rem, 1fr))",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
+  },
+  category: {
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
+    display: "grid",
+    gap: "0.3rem",
+    paddingBlockStart: "0.65rem",
+  },
+  categoryLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "flex",
+    fontWeight: 700,
+    minHeight: "var(--pc-control-height)",
+    textDecoration: "none",
+  },
+  categoryDescription: {
+    color: tokens.textSecondary,
+    fontSize: "0.88rem",
+    lineHeight: 1.5,
+    margin: 0,
+  },
+  section: { display: "grid", gap: "1rem" },
+  sectionTitle: { fontSize: "1.25rem", letterSpacing: "-0.025em", margin: 0 },
+});
+
+type HomeOutletContext = { viewer: RootViewer | null };
+
+export function HomeRoute() {
+  const loaderData = useLoaderData<typeof homeLoader>() as HomeLoaderData;
+  const outletContext = useOutletContext<HomeOutletContext | null>();
+  const viewer = outletContext?.viewer ?? null;
+
+  return (
+    <PageShell
+      description="Search the catalog, keep a comparison in view, and review current offers."
+      eyebrow="Product catalog"
+      title="Find the right product"
+    >
+      {loaderData.workspace ? (
+        <ResettableErrorBoundary
+          fallback={
+            <HomeWorkspaceRecovery
+              hasViewer={viewer !== null}
+              selectedSlugs={loaderData.selectedSlugs}
+            />
+          }
+          resetToken={loaderData.workspace}
+        >
+          <Suspense fallback={<FeedbackState kind="loading" title="Loading products..." />}>
+            <HomeWorkspace hasViewer={viewer !== null} query={loaderData.workspace} />
+          </Suspense>
+        </ResettableErrorBoundary>
+      ) : (
+        <HomeWorkspaceRecovery
+          hasViewer={viewer !== null}
+          selectedSlugs={loaderData.selectedSlugs}
+        />
+      )}
+    </PageShell>
+  );
+}
+
+function HomeWorkspace({
+  hasViewer,
+  query,
+}: {
+  hasViewer: boolean;
+  query: NonNullable<HomeLoaderData["workspace"]>;
+}) {
+  const queryRef = useRoutePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, query);
+  const data = usePreloadedQuery<HomeRouteQuery>(homeWorkspaceRouteQuery, queryRef);
+  const viewData = homeWorkspaceViewData(data.homeWorkspace);
+
+  return (
+    <>
+      <HomeSearch selectedSlugs={viewData.selectedSlugs} />
+      {viewData.comparisonProducts.length > 0 ? (
+        <ComparisonContinuity
+          destination={buildComparePathFromSlugs(
+            viewData.comparisonProducts.map((product) => product.slug),
+          )}
+          products={viewData.comparisonProducts}
+        />
+      ) : null}
+      <section aria-labelledby="home-categories-title" {...props(styles.section)}>
+        <h2 id="home-categories-title" {...props(styles.sectionTitle)}>
+          Browse by category
+        </h2>
+        {viewData.categories.length > 0 ? (
+          <ul aria-label="Product categories" {...props(styles.categories)}>
+            {viewData.categories.map((category) => (
+              <li key={category.href} {...props(styles.category)}>
+                <Link to={category.href} {...props(styles.categoryLink)}>
+                  {category.label}
+                </Link>
+                <p {...props(styles.categoryDescription)}>{category.description}</p>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <FeedbackState kind="empty" title="Categories are being prepared." />
+        )}
+      </section>
+      <section aria-labelledby="home-products-title" {...props(styles.section)}>
+        <h2 id="home-products-title" {...props(styles.sectionTitle)}>
+          Products to compare
+        </h2>
+        {data.homeWorkspace.products.edges.length > 0 ? (
+          <HomeProductLedger
+            products={data.homeWorkspace.products}
+            selectedSlugs={viewData.selectedSlugs}
+          />
+        ) : (
+          <FeedbackState
+            action={
+              <Button asChild>
+                <Link to={homeCatalogSearchPath("", viewData.selectedSlugs)}>
+                  Browse all products
+                </Link>
+              </Button>
+            }
+            kind="empty"
+            title="No products are ready to compare yet."
+          />
+        )}
+      </section>
+      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={viewData.selectedSlugs} />
+    </>
+  );
+}
+
+function HomeWorkspaceRecovery({
+  hasViewer,
+  selectedSlugs,
+}: {
+  hasViewer: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <>
+      <HomeSearch selectedSlugs={selectedSlugs} />
+      <HomeWorkspaceUnavailable selectedSlugs={selectedSlugs} />
+      <HomeDealsSection hasViewer={hasViewer} selectedSlugs={selectedSlugs} />
+    </>
+  );
+}
+
+function HomeDealsSection({
+  hasViewer,
+  selectedSlugs,
+}: {
+  hasViewer: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <section aria-labelledby="home-deals-title" {...props(styles.section)}>
+      <h2 id="home-deals-title" {...props(styles.sectionTitle)}>
+        New and trending offers
+      </h2>
+      <HomeDeals hasViewer={hasViewer} selectedSlugs={selectedSlugs} />
+    </section>
+  );
+}
+
+function HomeWorkspaceUnavailable({ selectedSlugs }: { selectedSlugs: readonly string[] }) {
+  const revalidator = useRevalidator();
+
+  return (
+    <section aria-label="Product workspace" {...props(styles.section)}>
+      <FeedbackState
+        action={
+          <>
+            <Button onClick={() => revalidator.revalidate()} type="button" variant="soft">
+              Try products again
+            </Button>
+            <Button asChild>
+              <Link to={homeCatalogSearchPath("", selectedSlugs)}>
+                Browse categories and products
+              </Link>
+            </Button>
+          </>
+        }
+        description="Search by category or model, or browse the catalog while we reconnect."
+        kind="error"
+        title="Products are unavailable right now."
+      />
+    </section>
+  );
+}

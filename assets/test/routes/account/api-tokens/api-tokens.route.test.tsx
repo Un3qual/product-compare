@@ -1,35 +1,40 @@
 import { createRef, useLayoutEffect } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { Link, MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
-import { ApiTokensRoute } from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
+import {
+  ApiTokensRoute,
+  type ApiTokenSummary,
+  type ApiTokensRouteLoaderData,
+} from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
 import {
   ApiTokenControls,
-  OneTimeApiToken
+  OneTimeApiToken,
 } from "../../../../src/routes/account/api-tokens/ApiTokenControls";
 import { ApiTokenItem } from "../../../../src/routes/account/api-tokens/ApiTokenItem";
 import { apiTokenIsActive } from "../../../../src/routes/account/api-tokens/api-token-status";
 import { buildApiTokenExpiresAtInputValue } from "../../../../src/routes/account/api-tokens/date-presets";
-import type { ApiTokenSummary, ApiTokensRouteLoaderData } from "../../../../src/routes/account/api-tokens/loader";
 
 const {
   commitCreateMutationMock,
   commitRevokeMutationMock,
   commitRotateMutationMock,
   useLoaderDataMock,
+  useFragmentMock,
   useMutationMock,
   usePreloadedQueryMock,
-  useRoutePreloadedQueryMock
+  useRoutePreloadedQueryMock,
 } = vi.hoisted(() => ({
   commitCreateMutationMock: vi.fn(),
   commitRevokeMutationMock: vi.fn(),
   commitRotateMutationMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useMutationMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
-  useRoutePreloadedQueryMock: vi.fn()
+  useRoutePreloadedQueryMock: vi.fn(),
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -37,7 +42,7 @@ vi.mock("react-router-dom", async () => {
 
   return {
     ...actual,
-    useLoaderData: useLoaderDataMock
+    useLoaderData: useLoaderDataMock,
   };
 });
 
@@ -46,23 +51,25 @@ vi.mock("react-relay", async () => {
 
   return {
     ...actual,
+    useFragment: useFragmentMock,
     useMutation: useMutationMock,
-    usePreloadedQuery: usePreloadedQueryMock
+    usePreloadedQuery: usePreloadedQueryMock,
   };
 });
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(
-    "../../../../src/relay/route-preload"
+    "../../../../src/relay/route-preload",
   );
 
   return {
     ...actual,
-    useRoutePreloadedQuery: useRoutePreloadedQueryMock
+    useRoutePreloadedQuery: useRoutePreloadedQueryMock,
   };
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -82,7 +89,7 @@ const ACTIVE_TOKEN: ApiTokenSummary = {
   lastUsedAt: null,
   expiresAt: "2026-08-29T12:00:00Z",
   revokedAt: null,
-  insertedAt: "2026-05-31T12:00:00Z"
+  insertedAt: "2026-05-31T12:00:00Z",
 };
 
 const REVOKED_TOKEN: ApiTokenSummary = {
@@ -92,7 +99,7 @@ const REVOKED_TOKEN: ApiTokenSummary = {
   lastUsedAt: "2026-05-30T12:00:00Z",
   expiresAt: null,
   revokedAt: "2026-05-31T13:00:00Z",
-  insertedAt: "2026-05-29T12:00:00Z"
+  insertedAt: "2026-05-29T12:00:00Z",
 };
 
 const BUILD_BOT_TOKEN: ApiTokenSummary = {
@@ -102,7 +109,7 @@ const BUILD_BOT_TOKEN: ApiTokenSummary = {
   lastUsedAt: null,
   expiresAt: null,
   revokedAt: null,
-  insertedAt: "2026-05-30T12:00:00Z"
+  insertedAt: "2026-05-30T12:00:00Z",
 };
 
 const EXPIRED_TOKEN: ApiTokenSummary = {
@@ -112,23 +119,23 @@ const EXPIRED_TOKEN: ApiTokenSummary = {
   lastUsedAt: null,
   expiresAt: "2000-01-01T00:00:00Z",
   revokedAt: null,
-  insertedAt: "2026-05-28T12:00:00Z"
+  insertedAt: "2026-05-28T12:00:00Z",
 };
 
 const API_TOKENS_QUERY_DESCRIPTOR = {
   __relayQuery: {
-    operationName: "ApiTokenOperationsQuery",
-    text: "query ApiTokenOperationsQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
+    operationName: "ApiTokensRouteQuery",
+    text: "query ApiTokensRouteQuery($first: Int!, $after: String, $status: ApiTokenStatusFilter) { myApiTokens(first: $first, after: $after, status: $status) { edges { node { id } } } }",
     variables: {
       first: 20,
-      status: "ALL" as const
-    }
-  }
+      status: "ALL" as const,
+    },
+  },
 };
 
 const API_TOKENS_QUERY_REF = {
   dispose: vi.fn(),
-  variables: API_TOKENS_QUERY_DESCRIPTOR.__relayQuery.variables
+  variables: API_TOKENS_QUERY_DESCRIPTOR.__relayQuery.variables,
 };
 
 const ROUTE_NOW = Date.parse("2026-06-01T00:00:00Z");
@@ -139,6 +146,8 @@ beforeEach(() => {
   commitRevokeMutationMock.mockReset();
   commitRotateMutationMock.mockReset();
   mockedUseLoaderData.mockReset();
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   mockedUseMutation.mockReset();
   mockedUsePreloadedQuery.mockReset();
   mockedUseRoutePreloadedQuery.mockReset();
@@ -166,8 +175,8 @@ function confirmApiTokenRevocation() {
   fireEvent.click(
     within(screen.getByRole("alertdialog", { name: "Revoke this API token?" })).getByRole(
       "button",
-      { name: "Revoke token" }
-    )
+      { name: "Revoke token" },
+    ),
   );
 }
 
@@ -176,7 +185,7 @@ test.each([
   ["before expiration", ACTIVE_TOKEN, true],
   ["after expiration", EXPIRED_TOKEN, false],
   ["after revocation", REVOKED_TOKEN, false],
-  ["with an invalid expiration", { ...ACTIVE_TOKEN, expiresAt: "invalid" }, true]
+  ["with an invalid expiration", { ...ACTIVE_TOKEN, expiresAt: "invalid" }, true],
 ])("API token lifecycle reports the expected state %s", (_caseName, token, expected) => {
   expect(apiTokenIsActive(token)).toBe(expected);
 });
@@ -193,9 +202,9 @@ test("API token item presents token lifecycle details and delegates actions", as
         revokePending={false}
         rotateError="Token rotation failed."
         rotatePending
-        token={ACTIVE_TOKEN}
+        token={apiTokenFragmentRef(ACTIVE_TOKEN)}
       />
-    </ul>
+    </ul>,
   );
 
   expect(screen.getByRole("heading", { name: "CLI" })).toBeInTheDocument();
@@ -204,9 +213,9 @@ test("API token item presents token lifecycle details and delegates actions", as
   expect(screen.getByText("Never used")).toBeInTheDocument();
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Active token")).toHaveAttribute("data-tone", "positive");
-  expect(screen.getAllByRole("button", { name: /30 days|90 days|1 year|No expiration/ })).toHaveLength(
-    4
-  );
+  expect(
+    screen.getAllByRole("button", { name: /30 days|90 days|1 year|No expiration/ }),
+  ).toHaveLength(4);
   expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Token rotation failed.");
   expect(screen.getByText("Token cannot be revoked.")).toHaveAttribute("role", "alert");
   expect(screen.getByRole("button", { name: "Rotating token..." })).toBeDisabled();
@@ -221,9 +230,9 @@ test("API token item presents token lifecycle details and delegates actions", as
         revokePending
         rotateError={null}
         rotatePending={false}
-        token={ACTIVE_TOKEN}
+        token={apiTokenFragmentRef(ACTIVE_TOKEN)}
       />
-    </ul>
+    </ul>,
   );
 
   expect(screen.getByRole("button", { name: "Revoking token..." })).toBeDisabled();
@@ -237,9 +246,9 @@ test("API token item presents token lifecycle details and delegates actions", as
         revokePending={false}
         rotateError={null}
         rotatePending={false}
-        token={ACTIVE_TOKEN}
+        token={apiTokenFragmentRef(ACTIVE_TOKEN)}
       />
-    </ul>
+    </ul>,
   );
 
   const revokeTrigger = screen.getByRole("button", { name: "Revoke token" });
@@ -248,7 +257,7 @@ test("API token item presents token lifecycle details and delegates actions", as
   expect(onRevoke).not.toHaveBeenCalled();
   const revokeDialog = screen.getByRole("alertdialog", { name: "Revoke this API token?" });
   expect(revokeDialog).toHaveTextContent(
-    "Revoking CLI will stop integrations that use this API token."
+    "Revoking CLI will stop integrations that use this API token.",
   );
   fireEvent.click(within(revokeDialog).getByRole("button", { name: "Cancel" }));
   expect(onRevoke).not.toHaveBeenCalled();
@@ -282,17 +291,14 @@ test("API token controls render status navigation, creation state, and expiratio
         submitting={false}
         tokenStatus="active"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("link", { name: "All" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=all"
+    "/account/api-tokens?status=all",
   );
-  expect(screen.getByRole("link", { name: "Active" })).toHaveAttribute(
-    "aria-current",
-    "page"
-  );
+  expect(screen.getByRole("link", { name: "Active" })).toHaveAttribute("aria-current", "page");
 
   view.rerender(
     <MemoryRouter>
@@ -306,7 +312,7 @@ test("API token controls render status navigation, creation state, and expiratio
         submitting
         tokenStatus="active"
       />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("form", { name: "Create API token" })).toBeInTheDocument();
@@ -322,7 +328,9 @@ test("one-time API token presentation warns before showing the secret", () => {
   render(<OneTimeApiToken token={ONE_TIME_TOKEN_VALUE} />);
 
   const region = screen.getByRole("region", { name: "One-time API token" });
-  expect(region).toHaveTextContent("Visible only once. Copy this token now before leaving the page.");
+  expect(region).toHaveTextContent(
+    "Visible only once. Copy this token now before leaving the page.",
+  );
   expect(region).toHaveTextContent(ONE_TIME_TOKEN_VALUE);
 });
 
@@ -331,7 +339,7 @@ test("API token route prompts unauthenticated users to sign in", () => {
     status: "unauthorized",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -341,7 +349,7 @@ test("API token route prompts unauthenticated users to sign in", () => {
   expect(screen.getByRole("status")).toHaveTextContent("Sign in to manage API tokens.");
   expect(screen.getByRole("link", { name: "Sign in to manage API tokens" })).toHaveAttribute(
     "href",
-    "/auth/login"
+    "/auth/login",
   );
 });
 
@@ -350,7 +358,7 @@ test("API token route renders an empty state for authenticated users without tok
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -366,10 +374,10 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [ACTIVE_TOKEN, REVOKED_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
   mockedUsePreloadedQuery.mockReturnValue(
-    buildApiTokenQueryData([ACTIVE_TOKEN, REVOKED_TOKEN]) as never
+    buildApiTokenQueryData([ACTIVE_TOKEN, REVOKED_TOKEN]) as never,
   );
 
   renderApiTokensRoute();
@@ -389,7 +397,7 @@ test("API token route renders token label, prefix, expiry, last-used, created, a
   expect(replacementLabel.id).not.toBe("");
   expect(replacementLabel).toHaveAttribute("aria-labelledby");
   expect(
-    document.getElementById(replacementLabel.getAttribute("aria-labelledby") ?? "")
+    document.getElementById(replacementLabel.getAttribute("aria-labelledby") ?? ""),
   ).toHaveTextContent("Replacement label for CLI");
 });
 
@@ -401,18 +409,18 @@ test("API token route renders first and next page links while preserving status"
     tokenStatus: "active",
     after: "cursor-current",
     hasNextPage: true,
-    endCursor: "cursor-next"
+    endCursor: "cursor-next",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
 
   expect(screen.getByRole("link", { name: "First page" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=active"
+    "/account/api-tokens?status=active",
   );
   expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=active&after=cursor-next"
+    "/account/api-tokens?status=active&after=cursor-next",
   );
 });
 
@@ -424,7 +432,7 @@ test("API token route suppresses a repeated next-page cursor", () => {
     tokenStatus: "active",
     after: "same-cursor",
     hasNextPage: true,
-    endCursor: "same-cursor"
+    endCursor: "same-cursor",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -437,7 +445,7 @@ test("API token route hides rotation controls for expired tokens", () => {
     status: "ready",
     tokenQueries: [],
     tokens: [EXPIRED_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -445,12 +453,12 @@ test("API token route hides rotation controls for expired tokens", () => {
   expect(screen.getByRole("heading", { name: "Expired token" })).toBeInTheDocument();
   expect(screen.getAllByText("Expired token")).toHaveLength(2);
   expect(
-    screen.queryByRole("form", { name: "Rotate Expired token API token" })
+    screen.queryByRole("form", { name: "Rotate Expired token API token" }),
   ).not.toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Rotate token" })).not.toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Revoke token" })).toHaveAttribute(
     "data-tone",
-    "danger"
+    "danger",
   );
 });
 
@@ -459,22 +467,22 @@ test("API token route links status filters without losing the route path", () =>
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "active"
+    tokenStatus: "active",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
 
   expect(screen.getByRole("link", { name: "All" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=all"
+    "/account/api-tokens?status=all",
   );
   expect(screen.getByRole("link", { name: "Active" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=active"
+    "/account/api-tokens?status=active",
   );
   expect(screen.getByRole("link", { name: "Revoked" })).toHaveAttribute(
     "href",
-    "/account/api-tokens?status=revoked"
+    "/account/api-tokens?status=revoked",
   );
 });
 
@@ -483,7 +491,7 @@ test("create token submits label and displays the one-time plain text token", as
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -491,10 +499,10 @@ test("create token submits label and displays the one-time plain text token", as
   openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
-    target: { value: "CLI automation" }
+    target: { value: "CLI automation" },
   });
   fireEvent.change(screen.getByLabelText("Expires at"), {
-    target: { value: "2026-08-29T12:00" }
+    target: { value: "2026-08-29T12:00" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -503,9 +511,9 @@ test("create token submits label and displays the one-time plain text token", as
       expect.objectContaining({
         variables: {
           label: "CLI automation",
-          expiresAt: new Date("2026-08-29T12:00").toISOString()
-        }
-      })
+          expiresAt: new Date("2026-08-29T12:00").toISOString(),
+        },
+      }),
     );
   });
 
@@ -518,7 +526,7 @@ test("create token submits label and displays the one-time plain text token", as
 
 test.each([
   ["status", "/account/api-tokens?status=revoked"],
-  ["cursor", "/account/api-tokens?status=all&after=cursor-next"]
+  ["cursor", "/account/api-tokens?status=all&after=cursor-next"],
 ])(
   "created token state does not render after navigating to a different %s location",
   async (_locationPart, destination) => {
@@ -532,7 +540,7 @@ test.each([
         tokenQueries: [],
         tokens: [],
         tokenStatus,
-        after
+        after,
       } satisfies ApiTokensRouteLoaderData;
     });
     const destinationRenders: boolean[] = [];
@@ -545,7 +553,7 @@ test.each([
           destination={destination}
           onDestinationRender={(leakedState) => destinationRenders.push(leakedState)}
         />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     openCreateApiTokenDialog();
@@ -564,7 +572,7 @@ test.each([
     expect(destinationRenders).toEqual([false]);
     expect(screen.queryByText(ONE_TIME_TOKEN_VALUE)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: "CLI automation" })).not.toBeInTheDocument();
-  }
+  },
 );
 
 test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
@@ -574,7 +582,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
       status: "empty",
       tokenQueries: [],
       tokens: [],
-      tokenStatus: "all"
+      tokenStatus: "all",
     } satisfies ApiTokensRouteLoaderData);
 
     renderApiTokensRoute();
@@ -585,9 +593,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
     const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
 
     fireEvent.click(within(createForm).getByRole("button", { name: preset }));
-    expect(
-      within(createForm).getByLabelText("Expires at")
-    ).toHaveValue(expectedExpiresAtInput);
+    expect(within(createForm).getByLabelText("Expires at")).toHaveValue(expectedExpiresAtInput);
     fireEvent.click(within(createForm).getByRole("button", { name: "Create API token" }));
 
     await waitFor(() => {
@@ -599,21 +605,21 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
         expect.objectContaining({
           variables: {
             label: null,
-            expiresAt: null
-          }
-        })
+            expiresAt: null,
+          },
+        }),
       );
     } else {
       expect(commitCreateMutationMock).toHaveBeenCalledWith(
         expect.objectContaining({
           variables: {
             label: null,
-            expiresAt: new Date(expectedExpiresAtInput).toISOString()
-          }
-        })
+            expiresAt: new Date(expectedExpiresAtInput).toISOString(),
+          },
+        }),
       );
     }
-  }
+  },
 );
 
 test("create token uses manual expiry after selecting an expiry preset", async () => {
@@ -621,7 +627,7 @@ test("create token uses manual expiry after selecting an expiry preset", async (
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -633,11 +639,11 @@ test("create token uses manual expiry after selecting an expiry preset", async (
 
   fireEvent.click(within(createForm).getByRole("button", { name: "30 days" }));
   expect(expiresAtInput).toHaveValue(
-    buildApiTokenExpiresAtInputValue("30 days", new Date(ROUTE_NOW))
+    buildApiTokenExpiresAtInputValue("30 days", new Date(ROUTE_NOW)),
   );
 
   fireEvent.change(expiresAtInput, {
-    target: { value: "2026-07-15T09:45" }
+    target: { value: "2026-07-15T09:45" },
   });
   fireEvent.click(within(createForm).getByRole("button", { name: "Create API token" }));
 
@@ -646,9 +652,9 @@ test("create token uses manual expiry after selecting an expiry preset", async (
       expect.objectContaining({
         variables: {
           label: null,
-          expiresAt: new Date("2026-07-15T09:45").toISOString()
-        }
-      })
+          expiresAt: new Date("2026-07-15T09:45").toISOString(),
+        },
+      }),
     );
   });
 });
@@ -658,7 +664,7 @@ test("create token ignores duplicate submits while the request is in flight", as
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -682,7 +688,7 @@ test("create token preserves the default expiry when the expiry field is blank",
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -697,7 +703,7 @@ test("create token preserves the default expiry when the expiry field is blank",
 
   const variables = commitCreateMutationMock.mock.calls[0]?.[0]?.variables;
   expect(variables).toEqual({
-    label: null
+    label: null,
   });
   expect(variables).not.toHaveProperty("expiresAt");
 });
@@ -710,7 +716,7 @@ test("create token sends null for invalid expiry input", async () => {
       status: "empty",
       tokenQueries: [],
       tokens: [],
-      tokenStatus: "all"
+      tokenStatus: "all",
     } satisfies ApiTokensRouteLoaderData);
 
     renderApiTokensRoute();
@@ -723,9 +729,9 @@ test("create token sends null for invalid expiry input", async () => {
       expect(commitCreateMutationMock).toHaveBeenCalledWith(
         expect.objectContaining({
           variables: expect.objectContaining({
-            expiresAt: null
-          })
-        })
+            expiresAt: null,
+          }),
+        }),
       );
     });
   } finally {
@@ -738,7 +744,7 @@ test("create token clears the one-time token when the next create starts", async
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -746,7 +752,7 @@ test("create token clears the one-time token when the next create starts", async
   openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
-    target: { value: "First token" }
+    target: { value: "First token" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -760,7 +766,7 @@ test("create token clears the one-time token when the next create starts", async
   openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
-    target: { value: "Second token" }
+    target: { value: "Second token" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -775,7 +781,7 @@ test("create token renders mutation payload errors", async () => {
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -783,7 +789,7 @@ test("create token renders mutation payload errors", async () => {
   openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
-    target: { value: "CLI automation" }
+    target: { value: "CLI automation" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -798,10 +804,10 @@ test("create token renders mutation payload errors", async () => {
         {
           code: "INVALID_ARGUMENT",
           field: "label",
-          message: "Label is too long."
-        }
-      ]
-    }
+          message: "Label is too long.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Label is too long.");
@@ -813,7 +819,7 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -821,7 +827,7 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
   openCreateApiTokenDialog();
 
   fireEvent.change(screen.getByLabelText("Label"), {
-    target: { value: "CLI automation" }
+    target: { value: "CLI automation" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Create API token" }));
 
@@ -839,7 +845,7 @@ test("revoke token commits the selected token id and updates the row status", as
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
 
@@ -852,9 +858,9 @@ test("revoke token commits the selected token id and updates the row status", as
     expect(commitRevokeMutationMock).toHaveBeenCalledWith(
       expect.objectContaining({
         variables: {
-          tokenId: ACTIVE_TOKEN.id
-        }
-      })
+          tokenId: ACTIVE_TOKEN.id,
+        },
+      }),
     );
   });
 
@@ -869,10 +875,10 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
   mockedUsePreloadedQuery.mockReturnValue(
-    buildApiTokenQueryData([ACTIVE_TOKEN, BUILD_BOT_TOKEN]) as never
+    buildApiTokenQueryData([ACTIVE_TOKEN, BUILD_BOT_TOKEN]) as never,
   );
 
   renderApiTokensRoute();
@@ -910,9 +916,9 @@ test("revoke token suppresses duplicate clicks while a row is pending", async ()
     2,
     expect.objectContaining({
       variables: {
-        tokenId: BUILD_BOT_TOKEN.id
-      }
-    })
+        tokenId: BUILD_BOT_TOKEN.id,
+      },
+    }),
   );
 });
 
@@ -921,7 +927,7 @@ test("revoke token clears the one-time token when revoke starts", async () => {
     status: "empty",
     tokenQueries: [],
     tokens: [],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -951,7 +957,7 @@ test("revoke token renders mutation payload errors", async () => {
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -969,10 +975,10 @@ test("revoke token renders mutation payload errors", async () => {
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "Token cannot be revoked."
-        }
-      ]
-    }
+          message: "Token cannot be revoked.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Token cannot be revoked.");
@@ -985,7 +991,7 @@ test("revoke token keeps concurrent row errors scoped to each token", async () =
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1007,10 +1013,10 @@ test("revoke token keeps concurrent row errors scoped to each token", async () =
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "CLI cannot be revoked."
-        }
-      ]
-    }
+          message: "CLI cannot be revoked.",
+        },
+      ],
+    },
   });
   completeRevokeMutationAt(1, {
     revokeApiToken: {
@@ -1019,10 +1025,10 @@ test("revoke token keeps concurrent row errors scoped to each token", async () =
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "Build bot cannot be revoked."
-        }
-      ]
-    }
+          message: "Build bot cannot be revoked.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByText("CLI cannot be revoked.")).toBeInTheDocument();
@@ -1038,7 +1044,7 @@ test("revoke token renders a generic alert for network errors", async () => {
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1055,17 +1061,17 @@ test("rotate token commits the selected token id and displays the replacement on
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([ACTIVE_TOKEN]) as never);
 
   renderApiTokensRoute();
 
   fireEvent.change(screen.getByLabelText("Replacement label for CLI"), {
-    target: { value: "CLI replacement" }
+    target: { value: "CLI replacement" },
   });
   fireEvent.change(screen.getByLabelText("Replacement expiry for CLI"), {
-    target: { value: "2026-09-01T12:00" }
+    target: { value: "2026-09-01T12:00" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
 
@@ -1075,9 +1081,9 @@ test("rotate token commits the selected token id and displays the replacement on
         variables: {
           tokenId: ACTIVE_TOKEN.id,
           label: "CLI replacement",
-          expiresAt: new Date("2026-09-01T12:00").toISOString()
-        }
-      })
+          expiresAt: new Date("2026-09-01T12:00").toISOString(),
+        },
+      }),
     );
   });
 
@@ -1096,7 +1102,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
       status: "ready",
       tokenQueries: [],
       tokens: [ACTIVE_TOKEN],
-      tokenStatus: "all"
+      tokenStatus: "all",
     } satisfies ApiTokensRouteLoaderData);
 
     renderApiTokensRoute();
@@ -1106,7 +1112,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
 
     fireEvent.click(within(rotateForm).getByRole("button", { name: preset }));
     expect(within(rotateForm).getByLabelText("Replacement expiry for CLI")).toHaveValue(
-      expectedExpiresAtInput
+      expectedExpiresAtInput,
     );
     fireEvent.submit(rotateForm);
 
@@ -1117,19 +1123,19 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
     const rotationVariables = commitRotateMutationMock.mock.calls.at(-1)?.[0]?.variables;
     expect(rotationVariables).toMatchObject({
       tokenId: ACTIVE_TOKEN.id,
-      label: "CLI"
+      label: "CLI",
     });
 
     if (preset === "No expiration") {
       expect(rotationVariables).toMatchObject({
-        expiresAt: null
+        expiresAt: null,
       });
     } else {
       expect(rotationVariables).toMatchObject({
-        expiresAt: new Date(expectedExpiresAtInput).toISOString()
+        expiresAt: new Date(expectedExpiresAtInput).toISOString(),
       });
     }
-  }
+  },
 );
 
 test("rotate token uses the selected row label when no replacement label is entered", async () => {
@@ -1137,7 +1143,7 @@ test("rotate token uses the selected row label when no replacement label is ente
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1149,9 +1155,9 @@ test("rotate token uses the selected row label when no replacement label is ente
       expect.objectContaining({
         variables: {
           tokenId: ACTIVE_TOKEN.id,
-          label: "CLI"
-        }
-      })
+          label: "CLI",
+        },
+      }),
     );
   });
 
@@ -1167,7 +1173,7 @@ test("rotate token sends null for invalid replacement expiry input", async () =>
       status: "ready",
       tokenQueries: [],
       tokens: [ACTIVE_TOKEN],
-      tokenStatus: "all"
+      tokenStatus: "all",
     } satisfies ApiTokensRouteLoaderData);
 
     renderApiTokensRoute();
@@ -1178,9 +1184,9 @@ test("rotate token sends null for invalid replacement expiry input", async () =>
       expect(commitRotateMutationMock).toHaveBeenCalledWith(
         expect.objectContaining({
           variables: expect.objectContaining({
-            expiresAt: null
-          })
-        })
+            expiresAt: null,
+          }),
+        }),
       );
     });
   } finally {
@@ -1193,7 +1199,7 @@ test("rotate token disables only the pending row", async () => {
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1225,9 +1231,9 @@ test("rotate token disables only the pending row", async () => {
     expect.objectContaining({
       variables: {
         tokenId: BUILD_BOT_TOKEN.id,
-        label: "Build bot"
-      }
-    })
+        label: "Build bot",
+      },
+    }),
   );
 });
 
@@ -1236,7 +1242,7 @@ test("rotate token renders mutation payload errors", async () => {
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1254,10 +1260,10 @@ test("rotate token renders mutation payload errors", async () => {
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "Token cannot be rotated."
-        }
-      ]
-    }
+          message: "Token cannot be rotated.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByRole("alert")).toHaveTextContent("Token cannot be rotated.");
@@ -1271,7 +1277,7 @@ test("rotate token keeps concurrent row errors scoped to each token", async () =
     status: "ready",
     tokenQueries: [],
     tokens: [ACTIVE_TOKEN, BUILD_BOT_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   } satisfies ApiTokensRouteLoaderData);
 
   renderApiTokensRoute();
@@ -1292,10 +1298,10 @@ test("rotate token keeps concurrent row errors scoped to each token", async () =
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "CLI cannot be rotated."
-        }
-      ]
-    }
+          message: "CLI cannot be rotated.",
+        },
+      ],
+    },
   });
   completeRotateMutationAt(1, {
     rotateApiToken: {
@@ -1305,10 +1311,10 @@ test("rotate token keeps concurrent row errors scoped to each token", async () =
         {
           code: "INVALID_ARGUMENT",
           field: "tokenId",
-          message: "Build bot cannot be rotated."
-        }
-      ]
-    }
+          message: "Build bot cannot be rotated.",
+        },
+      ],
+    },
   });
 
   expect(await screen.findByText("CLI cannot be rotated.")).toBeInTheDocument();
@@ -1321,7 +1327,7 @@ test("server token snapshots supersede local mutation snapshots after reload", a
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [ACTIVE_TOKEN],
-    tokenStatus: "all"
+    tokenStatus: "all",
   };
   const serverRotatedToken: ApiTokenSummary = {
     id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
@@ -1330,7 +1336,7 @@ test("server token snapshots supersede local mutation snapshots after reload", a
     lastUsedAt: "2026-06-01T13:00:00Z",
     expiresAt: "2026-09-02T12:00:00Z",
     revokedAt: null,
-    insertedAt: "2026-06-01T12:00:00Z"
+    insertedAt: "2026-06-01T12:00:00Z",
   };
 
   mockedUseLoaderData.mockImplementation(() => loaderData);
@@ -1339,7 +1345,7 @@ test("server token snapshots supersede local mutation snapshots after reload", a
   const { rerender } = renderApiTokensRoute();
 
   fireEvent.change(screen.getByLabelText("Replacement label for CLI"), {
-    target: { value: "Local replacement" }
+    target: { value: "Local replacement" },
   });
   fireEvent.click(screen.getByRole("button", { name: "Rotate token" }));
 
@@ -1354,14 +1360,14 @@ test("server token snapshots supersede local mutation snapshots after reload", a
     status: "ready",
     tokenQueries: [API_TOKENS_QUERY_DESCRIPTOR],
     tokens: [serverRotatedToken],
-    tokenStatus: "all"
+    tokenStatus: "all",
   };
   mockedUsePreloadedQuery.mockReturnValue(buildApiTokenQueryData([serverRotatedToken]) as never);
 
   rerender(
     <MemoryRouter>
       <ApiTokensRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByRole("heading", { name: "Server replacement" })).toBeInTheDocument();
@@ -1372,13 +1378,13 @@ function renderApiTokensRoute() {
   return render(
     <MemoryRouter>
       <ApiTokensRoute />
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 }
 
 function ApiTokenLocationRenderProbe({
   destination,
-  onDestinationRender
+  onDestinationRender,
 }: {
   destination: string;
   onDestinationRender: (leakedState: boolean) => void;
@@ -1392,7 +1398,7 @@ function ApiTokenLocationRenderProbe({
 
     const renderedText = document.body.textContent ?? "";
     onDestinationRender(
-      renderedText.includes(ONE_TIME_TOKEN_VALUE) || renderedText.includes("CLI automation")
+      renderedText.includes(ONE_TIME_TOKEN_VALUE) || renderedText.includes("CLI automation"),
     );
   }, [destination, location.pathname, location.search, onDestinationRender]);
 
@@ -1435,18 +1441,13 @@ function completeRotateMutationAt(index: number, response: unknown, graphQLError
 
 function stubFormDataExpiry(expiresAt: string) {
   const RealFormData = globalThis.FormData;
-  const FormDataWithExpiry = function (
-    form?: HTMLFormElement,
-    submitter?: HTMLElement | null
-  ) {
+  const FormDataWithExpiry = function (form?: HTMLFormElement, submitter?: HTMLElement | null) {
     const formData = new RealFormData(form, submitter);
     formData.set("expiresAt", expiresAt);
     return formData;
   } as unknown as typeof FormData;
 
-  return vi
-    .spyOn(globalThis, "FormData")
-    .mockImplementation(FormDataWithExpiry);
+  return vi.spyOn(globalThis, "FormData").mockImplementation(FormDataWithExpiry);
 }
 
 function buildSuccessfulCreateResponse() {
@@ -1460,10 +1461,10 @@ function buildSuccessfulCreateResponse() {
         lastUsedAt: null,
         expiresAt: "2026-08-29T12:00:00Z",
         revokedAt: null,
-        insertedAt: "2026-05-31T14:00:00Z"
+        insertedAt: "2026-05-31T14:00:00Z",
       },
-      errors: []
-    }
+      errors: [],
+    },
   };
 }
 
@@ -1478,10 +1479,10 @@ function buildSuccessfulRotateResponse() {
         lastUsedAt: null,
         expiresAt: "2026-09-01T12:00:00Z",
         revokedAt: null,
-        insertedAt: "2026-06-01T12:00:00Z"
+        insertedAt: "2026-06-01T12:00:00Z",
       },
-      errors: []
-    }
+      errors: [],
+    },
   };
 }
 
@@ -1490,10 +1491,10 @@ function buildSuccessfulRevokeResponse(token: ApiTokenSummary) {
     revokeApiToken: {
       apiToken: {
         ...token,
-        revokedAt: "2026-05-31T15:00:00Z"
+        revokedAt: "2026-05-31T15:00:00Z",
       },
-      errors: []
-    }
+      errors: [],
+    },
   };
 }
 
@@ -1502,14 +1503,18 @@ function buildApiTokenQueryData(tokens: ApiTokenSummary[]) {
     myApiTokens: {
       edges: tokens.map((token) => ({
         cursor: `cursor:${token.id}`,
-        node: token
+        node: token,
       })),
       pageInfo: {
         endCursor: tokens.length > 0 ? `cursor:${tokens[tokens.length - 1]?.id}` : null,
         hasNextPage: false,
         hasPreviousPage: false,
-        startCursor: tokens.length > 0 ? `cursor:${tokens[0]?.id}` : null
-      }
-    }
+        startCursor: tokens.length > 0 ? `cursor:${tokens[0]?.id}` : null,
+      },
+    },
   };
+}
+
+function apiTokenFragmentRef(token: ApiTokenSummary) {
+  return token as never;
 }

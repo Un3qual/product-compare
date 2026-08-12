@@ -1,15 +1,17 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, useLoaderData } from "react-router-dom";
-import { useMutation, usePreloadedQuery } from "react-relay";
+import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { OfferDiscoveryRoute } from "../../../src/routes/offers/OfferDiscoveryRoute";
+import {
+  OfferDiscoveryRoute,
+  type OfferDiscoveryLoaderData,
+} from "../../../src/routes/offers/OfferDiscoveryRoute";
 import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
 import type {
   ActiveCouponsConnection,
   OfferNode,
   PriceHistoryConnection,
 } from "../../../src/routes/offers/offer-discovery-data";
-import type { OfferDiscoveryLoaderData } from "../../../src/routes/offers/loader";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 
@@ -17,6 +19,7 @@ const {
   commitCommerceClickMock,
   graphqlMock,
   useMutationMock,
+  useFragmentMock,
   useLoaderDataMock,
   usePreloadedQueryMock,
   useRoutePreloadedQueryMock,
@@ -24,6 +27,7 @@ const {
   commitCommerceClickMock: vi.fn(),
   graphqlMock: vi.fn(),
   useMutationMock: vi.fn(),
+  useFragmentMock: vi.fn(),
   useLoaderDataMock: vi.fn(),
   usePreloadedQueryMock: vi.fn(),
   useRoutePreloadedQueryMock: vi.fn(),
@@ -44,6 +48,7 @@ vi.mock("react-relay", async () => {
   return {
     ...actual,
     graphql: graphqlMock,
+    useFragment: useFragmentMock,
     useMutation: useMutationMock,
     usePreloadedQuery: usePreloadedQueryMock,
   };
@@ -61,6 +66,7 @@ vi.mock("../../../src/relay/route-preload", async () => {
 });
 
 const mockedUseLoaderData = vi.mocked(useLoaderData);
+const mockedUseFragment = vi.mocked(useFragment);
 const mockedUseMutation = vi.mocked(useMutation);
 const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
@@ -88,6 +94,8 @@ const OFFER_DISCOVERY_QUERY_REF = {
 };
 
 beforeEach(() => {
+  mockedUseFragment.mockReset();
+  mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
   commitCommerceClickMock.mockReset();
   useMutationMock.mockReset();
   useLoaderDataMock.mockReset();
@@ -109,7 +117,7 @@ test("offer card directly renders tracked action, observations, price history, a
 
   render(
     <MemoryRouter>
-      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer} />
+      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer as never} />
     </MemoryRouter>,
   );
 
@@ -137,6 +145,7 @@ test("offer discovery asks users to start from browse products when productId is
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: ["alpha", "beta"],
       first: 6,
       merchantId: null,
       productId: null,
@@ -151,7 +160,7 @@ test("offer discovery asks users to start from browse products when productId is
   expect(screen.getByText("Choose a product to review its current merchant offers.")).toBeVisible();
   expect(screen.getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products",
+    "/products?slug=alpha&slug=beta",
   );
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
@@ -163,6 +172,7 @@ test("offer discovery summarizes missing product filters without reset actions",
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: null,
@@ -190,6 +200,7 @@ test("offer discovery summarizes missing product filters without reset actions",
 test("offer discovery renders filter controls with existing filter values", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
+      compareSlugs: ["alpha", "beta", "gamma"],
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
@@ -211,6 +222,11 @@ test("offer discovery renders filter controls with existing filter values", () =
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_desc");
+  expect(new FormData(filterForm as HTMLFormElement).getAll("slug")).toEqual([
+    "alpha",
+    "beta",
+    "gamma",
+  ]);
 });
 
 test("offer discovery summarizes active filters", () => {
@@ -270,6 +286,7 @@ test("offer discovery provides route-local filter reset links", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       after: "cursor-1",
+      compareSlugs: ["alpha", "beta"],
       first: 12,
       activeOnly: false,
       merchantId: "TWVyY2hhbnQ6NDU2",
@@ -281,11 +298,11 @@ test("offer discovery provides route-local filter reset links", () => {
 
   expect(screen.getByRole("link", { name: "Reset filters" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&sort=price_asc&slug=alpha&slug=beta",
   );
   expect(screen.getByRole("link", { name: "Clear merchant filter" })).toHaveAttribute(
     "href",
-    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc",
+    "/offers?productId=UHJvZHVjdDoxMjM%3D&activeOnly=false&first=12&sort=price_asc&slug=alpha&slug=beta",
   );
 });
 
@@ -295,6 +312,7 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       activeOnly: false,
+      compareSlugs: ["alpha", "beta"],
       first: 24,
       merchantId: "TWVyY2hhbnQ6NDU2",
       productId: "UHJvZHVjdDo5OTk=",
@@ -313,6 +331,11 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("merchant_name");
+  expect(
+    new FormData(
+      screen.getByRole("form", { name: "Offer discovery filters" }) as HTMLFormElement,
+    ).getAll("slug"),
+  ).toEqual(["alpha", "beta"]);
 });
 
 test("offer discovery renders ready offer rows", () => {
@@ -939,7 +962,7 @@ test("offer discovery uses product merchant ordering rather than the environment
       latestPriceValue: null,
       offer,
       originalIndex,
-    }));
+    })) as never;
 
     expect(
       sortedWithContrastingDefault(offers, "merchant_name", false).map(
@@ -1257,6 +1280,7 @@ test("offer discovery renders the loader error state", () => {
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",
@@ -1334,6 +1358,7 @@ function buildReadyLoaderData(
     filters: {
       activeOnly: true,
       after: null,
+      compareSlugs: [],
       first: 6,
       merchantId: null,
       productId: "UHJvZHVjdDoxMjM=",

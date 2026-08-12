@@ -5,7 +5,7 @@ import {
 } from "../../../src/routes/compare/recommendation-view-data";
 
 describe("getRecommendationViewData", () => {
-  test("returns the matching winner with source-ordered reasons and exact evidence", () => {
+  test("returns the matching winner with customer-facing reasons and supporting details", () => {
     const recommendation = buildRecommendation({
       rankings: [
         buildRanking({
@@ -13,7 +13,6 @@ describe("getRecommendationViewData", () => {
           productName: "Evidence Camera",
           reasons: ["Lowest eligible landed price: USD 119.00", "Two accepted claims."],
           claimIds: ["claim-1", "claim-2"],
-          pricePointId: "price-point-4",
         }),
       ],
       winnerProductId: "product-winner",
@@ -22,9 +21,8 @@ describe("getRecommendationViewData", () => {
     expect(getRecommendationViewData(recommendation)).toEqual({
       kind: "supported",
       productName: "Evidence Camera",
-      reasons: ["Lowest eligible landed price: USD 119.00", "Two accepted claims."],
-      evidence:
-        "Evidence: price observation price-point-4; 2 accepted claim references. Algorithm best-supported-current-cost-v1.",
+      reasons: ["Lowest current total price: USD 119.00", "Two verified product details."],
+      details: "Based on the current price and 2 verified product details.",
     });
   });
 
@@ -34,12 +32,10 @@ describe("getRecommendationViewData", () => {
         buildRanking({
           productId: "product-winner",
           productName: "First winner",
-          pricePointId: "first-observation",
         }),
         buildRanking({
           productId: "product-winner",
           productName: "Second winner",
-          pricePointId: "second-observation",
         }),
       ],
       winnerProductId: "product-winner",
@@ -48,7 +44,7 @@ describe("getRecommendationViewData", () => {
     expect(getRecommendationViewData(recommendation)).toMatchObject({
       kind: "supported",
       productName: "First winner",
-      evidence: expect.stringContaining("first-observation"),
+      details: "Based on the current price and 1 verified product detail.",
     });
   });
 
@@ -56,26 +52,64 @@ describe("getRecommendationViewData", () => {
     ["missing winner", null, [buildRanking()]],
     ["unmatched winner", "product-not-ranked", [buildRanking()]],
   ] as const)(
-    "uses source-ordered missing inputs for a %s",
+    "translates recommendation blockers without exposing backend text for a %s",
     (_caseName, winnerProductId, rankings) => {
       const recommendation = buildRecommendation({
         winnerProductId,
         rankings,
-        missingInputs: ["No complete in-stock offer.", "No shared eligible currency."],
+        missingInputs: [
+          "Products do not share one eligible offer currency.",
+          "price_point_id=price-point-42 failed internal policy v3",
+        ],
       });
 
       expect(getRecommendationViewData(recommendation)).toEqual({
         kind: "no-winner",
-        reasons: ["No complete in-stock offer.", "No shared eligible currency."],
+        reasons: [
+          "These products do not have current prices in the same currency.",
+          "More product or price details are needed before a winner can be recommended.",
+        ],
       });
     },
   );
 
+  test("explains a blocker safely when the backend supplies no details", () => {
+    expect(
+      getRecommendationViewData(
+        buildRecommendation({ winnerProductId: null, rankings: [], missingInputs: [] }),
+      ),
+    ).toEqual({
+      kind: "no-winner",
+      reasons: ["More product or price details are needed before a winner can be recommended."],
+    });
+  });
+
   test.each([
-    [[], "0 accepted claim references"],
-    [["claim-1"], "1 accepted claim reference"],
-    [["claim-1", "claim-2", "claim-3"], "3 accepted claim references"],
-  ] as const)("uses exact claim-reference copy for %s", (claimIds, claimReferenceCopy) => {
+    [
+      "Top products have the same eligible landed price.",
+      "The leading products have the same current total price.",
+    ],
+    [
+      "Recommendations require two or three existing products.",
+      "Choose two or three available products to get a recommendation.",
+    ],
+    ["Unsupported recommendation profile.", "This recommendation option is unavailable."],
+  ] as const)("translates the current backend blocker %s", (missingInput, expectedReason) => {
+    expect(
+      getRecommendationViewData(
+        buildRecommendation({ winnerProductId: null, rankings: [], missingInputs: [missingInput] }),
+      ),
+    ).toEqual({ kind: "no-winner", reasons: [expectedReason] });
+  });
+
+  test.each([
+    [[], "Based on the current price and 0 verified product details."],
+    [["claim-1"], "Based on the current price and 1 verified product detail."],
+    [
+      ["claim-1", "claim-2", "claim-3"],
+      "Based on the current price and 3 verified product details.",
+    ],
+  ] as const)("uses exact product-detail copy for %s", (claimIds, detailCopy) => {
     const recommendation = buildRecommendation({
       rankings: [buildRanking({ claimIds })],
     });
@@ -84,7 +118,7 @@ describe("getRecommendationViewData", () => {
 
     expect(data.kind).toBe("supported");
     if (data.kind === "supported") {
-      expect(data.evidence).toContain(claimReferenceCopy);
+      expect(data.details).toBe(detailCopy);
     }
   });
 
@@ -110,7 +144,6 @@ function buildRecommendation(
   overrides: Partial<RecommendationViewDataInput> = {},
 ): RecommendationViewDataInput {
   return {
-    algorithmVersion: "best-supported-current-cost-v1",
     winnerProductId: "product-1",
     missingInputs: [],
     rankings: [buildRanking()],
@@ -124,7 +157,6 @@ function buildRanking(
   return {
     productId: "product-1",
     productName: "Default Camera",
-    pricePointId: "price-point-1",
     claimIds: ["claim-1"],
     reasons: ["Lowest eligible landed price: USD 100.00"],
     ...overrides,
