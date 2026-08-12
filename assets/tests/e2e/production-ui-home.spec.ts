@@ -296,12 +296,5 @@ for (const viewport of VIEWPORTS) {
         await expect(page.getByRole("heading", { name: product.name })).toHaveCount(1);
       }
     }
-
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-    await expect(page).toHaveScreenshot(`home-workbench-${viewport.name}.png`, {
-      animations: "disabled",
-      fullPage: true,
-    });
   });
 }

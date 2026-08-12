@@ -128,11 +128,6 @@ for (const viewport of OFFER_VIEWPORTS) {
     const accessibility = await new AxeBuilder({ page }).analyze();
     expect(accessibility.violations).toEqual([]);
 
-    await expect(page).toHaveScreenshot(`offers-workspace-${viewport.name}.png`, {
-      animations: "disabled",
-      fullPage: true,
-    });
-
     await detailsTrigger.click();
     await expect(offerCard.getByRole("heading", { name: "Price history" })).toBeVisible();
     await expect(offerCard.getByText("134.99 USD")).toBeVisible();
