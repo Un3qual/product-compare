@@ -1,8 +1,11 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
+
+type AlertProps = StyleXPrimitiveProps<ComponentProps<"div">> & {
+  variant?: "default" | "destructive";
+};
 
 const styles = stylex.create({
   root: {
@@ -28,18 +31,16 @@ const styles = stylex.create({
 });
 
 export function Alert({
-  className,
   style,
   variant = "default",
   ...alertProps
-}: ComponentProps<"div"> & { variant?: "default" | "destructive" }) {
+}: AlertProps) {
   return (
     <div
       {...stylex.props(
         styles.root,
         variant === "destructive" && styles.destructive,
-        customClassName(className),
-        style as StyleXStyles,
+        style,
       )}
       data-slot="alert"
       data-variant={variant}
@@ -49,20 +50,26 @@ export function Alert({
   );
 }
 
-export function AlertTitle({ className, style, ...titleProps }: ComponentProps<"div">) {
+export function AlertTitle({
+  style,
+  ...titleProps
+}: StyleXPrimitiveProps<ComponentProps<"div">>) {
   return (
     <div
-      {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.title, style)}
       data-slot="alert-title"
       {...titleProps}
     />
   );
 }
 
-export function AlertDescription({ className, style, ...descriptionProps }: ComponentProps<"div">) {
+export function AlertDescription({
+  style,
+  ...descriptionProps
+}: StyleXPrimitiveProps<ComponentProps<"div">>) {
   return (
     <div
-      {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.description, style)}
       data-slot="alert-description"
       {...descriptionProps}
     />

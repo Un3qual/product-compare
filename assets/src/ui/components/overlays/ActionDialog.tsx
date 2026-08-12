@@ -64,10 +64,10 @@ export function ActionDialog({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogTrigger render={trigger} />
-      <DialogContent showCloseButton={false} {...props(styles.content)}>
-        <DialogTitle {...props(styles.title)}>{title}</DialogTitle>
+      <DialogContent showCloseButton={false} style={styles.content}>
+        <DialogTitle style={styles.title}>{title}</DialogTitle>
         {description ? (
-          <DialogDescription {...props(styles.description)}>{description}</DialogDescription>
+          <DialogDescription style={styles.description}>{description}</DialogDescription>
         ) : null}
         {children}
         <div {...props(styles.actions)}>

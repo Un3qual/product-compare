@@ -2,7 +2,7 @@
 
 > **Goal:** Remove the `customClassName` StyleQ escape hatch and make styled UI primitives accept compiled StyleX styles directly.
 
-**Architecture:** Styled primitives expose a typed `style?: StyleXStyles` prop instead of a raw `className`/DOM `style` pair. Each primitive calls `stylex.props()` exactly once at the DOM or Base UI boundary, with its own styles first and caller styles last. Consumers pass StyleX rules through `style={styles.rule}`; native DOM elements continue to use `stylex.props()` directly.
+**Architecture:** Styled primitives expose a typed `style?: StyleXStyles` prop instead of a raw `className`/DOM `style` pair. Each primitive resolves its own styles first and caller styles last through `stylex.props()` at the DOM or Base UI boundary. Stateful Base UI callbacks forward both the resolved class name and dynamic inline values. Consumers pass StyleX rules through `style={styles.rule}`; native DOM elements continue to use `stylex.props()` directly.
 
 **Tech stack:** React 19, TypeScript, StyleX, Base UI, Vitest, Testing Library, Playwright.
 

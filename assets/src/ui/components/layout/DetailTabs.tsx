@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { create, props } from "@stylexjs/stylex";
+import { create } from "@stylexjs/stylex";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../primitives/Tabs";
 import { tokens } from "../../theme/tokens.stylex";
 
@@ -54,13 +54,13 @@ export function DetailTabs({
       defaultValue={defaultValue ?? items[0]?.value}
       onValueChange={onValueChange}
       value={value}
-      {...props(styles.root)}
+      style={styles.root}
     >
       <TabsList
         aria-label={label}
         data-slot="detail-tabs-list"
         variant="line"
-        {...props(styles.list)}
+        style={styles.list}
       >
         {items.map((item) => (
           <TabsTrigger
@@ -68,14 +68,14 @@ export function DetailTabs({
             data-slot="detail-tab"
             key={item.value}
             value={item.value}
-            {...props(styles.trigger)}
+            style={styles.trigger}
           >
             {item.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {items.map((item) => (
-        <TabsContent key={item.value} value={item.value} {...props(styles.content)}>
+        <TabsContent key={item.value} value={item.value} style={styles.content}>
           {item.content}
         </TabsContent>
       ))}

@@ -1,8 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { LoaderCircleIcon } from "lucide-react";
 import type { ComponentProps } from "react";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const spin = stylex.keyframes({
   from: { transform: "rotate(0deg)" },
@@ -22,14 +21,13 @@ const styles = stylex.create({
 });
 
 export function Spinner({
-  className,
   style,
   ...spinnerProps
-}: ComponentProps<typeof LoaderCircleIcon>) {
+}: StyleXPrimitiveProps<ComponentProps<typeof LoaderCircleIcon>>) {
   return (
     <LoaderCircleIcon
       aria-label="Loading"
-      {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.root, style)}
       data-slot="spinner"
       role="status"
       {...spinnerProps}

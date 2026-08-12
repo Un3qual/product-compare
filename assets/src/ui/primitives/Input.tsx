@@ -1,8 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   root: {
@@ -40,12 +39,12 @@ const styles = stylex.create({
   },
 });
 
-export type InputProps = ComponentProps<"input">;
+export type InputProps = StyleXPrimitiveProps<ComponentProps<"input">>;
 
-export function Input({ className, style, type, ...inputProps }: InputProps) {
+export function Input({ style, type, ...inputProps }: InputProps) {
   return (
     <input
-      {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.root, style)}
       data-slot="input"
       type={type}
       {...inputProps}

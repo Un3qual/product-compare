@@ -231,7 +231,7 @@ function HomeDealRow({
       <p data-slot="home-deals-offer" {...props(styles.offer)}>
         {deal.offer}
       </p>
-      <StatusBadge data-slot="home-deals-reason" tone={tone} {...props(styles.reason)}>
+      <StatusBadge data-slot="home-deals-reason" style={styles.reason} tone={tone}>
         {deal.reason}
       </StatusBadge>
     </li>

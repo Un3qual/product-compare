@@ -88,9 +88,9 @@ function DestructiveActionDialogContent({
   title,
 }: Omit<DestructiveActionDialogProps, "trigger">) {
   return (
-    <AlertDialogContent {...props(styles.content)}>
-      <AlertDialogTitle {...props(styles.title)}>{title}</AlertDialogTitle>
-      <AlertDialogDescription {...props(styles.description)}>{description}</AlertDialogDescription>
+    <AlertDialogContent style={styles.content}>
+      <AlertDialogTitle style={styles.title}>{title}</AlertDialogTitle>
+      <AlertDialogDescription style={styles.description}>{description}</AlertDialogDescription>
       <div {...props(styles.actions)}>
         <AlertDialogCancel render={<Button variant="secondary" />}>Cancel</AlertDialogCancel>
         <AlertDialogAction

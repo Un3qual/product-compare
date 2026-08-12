@@ -166,7 +166,7 @@ export function AttributionLedger({
       {clicks.length === 0 ? (
         <p>No attribution clicks match these filters.</p>
       ) : (
-        <Table aria-labelledby="attribution-ledger-heading" {...props(styles.table)}>
+        <Table aria-labelledby="attribution-ledger-heading" style={styles.table}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -180,9 +180,9 @@ export function AttributionLedger({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} {...props(styles.row)}>
+              <TableRow key={row.id} style={styles.row}>
                 {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id} {...props(styles.cell)}>
+                  <TableCell key={cell.id} style={styles.cell}>
                     <table.FlexRender cell={cell} />
                   </TableCell>
                 ))}

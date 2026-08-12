@@ -1,9 +1,8 @@
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { createContext, useContext, type ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   root: { display: "flex", flexDirection: "column", gap: "0.5rem", minWidth: 0 },
@@ -71,14 +70,13 @@ const styles = stylex.create({
 const TabsVariantContext = createContext<"default" | "line">("default");
 
 export function Tabs({
-  className,
   style,
   ...rootProps
-}: Omit<ComponentProps<typeof TabsPrimitive.Root>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof TabsPrimitive.Root>>) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
-      {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.root, style)}
       {...rootProps}
     />
   );
@@ -86,12 +84,10 @@ export function Tabs({
 
 export function TabsList({
   children,
-  className,
   style,
   variant = "default",
   ...listProps
-}: Omit<ComponentProps<typeof TabsPrimitive.List>, "className"> & {
-  className?: string;
+}: StyleXPrimitiveProps<ComponentProps<typeof TabsPrimitive.List>> & {
   variant?: "default" | "line";
 }) {
   return (
@@ -99,8 +95,7 @@ export function TabsList({
       <TabsPrimitive.List
         {...stylex.props(
           variant === "line" ? styles.listLine : styles.list,
-          customClassName(className),
-          style as StyleXStyles,
+          style,
         )}
         data-slot="tabs-list"
         data-variant={variant}
@@ -116,37 +111,36 @@ export function TabsList({
 }
 
 export function TabsTrigger({
-  className,
   style,
   ...tabProps
-}: Omit<ComponentProps<typeof TabsPrimitive.Tab>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof TabsPrimitive.Tab>>) {
   const variant = useContext(TabsVariantContext);
+  const tabStyleProps = (active: boolean) =>
+    stylex.props(
+      styles.trigger,
+      variant === "line" && styles.triggerLine,
+      active && (variant === "line" ? styles.triggerLineActive : styles.triggerActive),
+      style,
+    );
+
   return (
     <TabsPrimitive.Tab
-      className={(state) =>
-        stylex.props(
-          styles.trigger,
-          variant === "line" && styles.triggerLine,
-          state.active && (variant === "line" ? styles.triggerLineActive : styles.triggerActive),
-          customClassName(className),
-        ).className
-      }
+      className={(state) => tabStyleProps(state.active).className}
       data-slot="tabs-trigger"
-      style={style}
+      style={(state) => tabStyleProps(state.active).style}
       {...tabProps}
     />
   );
 }
 
 export function TabsContent({
-  className,
   style,
   ...panelProps
-}: Omit<ComponentProps<typeof TabsPrimitive.Panel>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof TabsPrimitive.Panel>>) {
   return (
     <TabsPrimitive.Panel
       data-slot="tabs-content"
-      {...stylex.props(styles.panel, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.panel, style)}
       {...panelProps}
     />
   );

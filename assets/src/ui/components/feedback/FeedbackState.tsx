@@ -38,7 +38,7 @@ export function FeedbackState({ action, description, kind, title }: FeedbackStat
     >
       {kind === "loading" ? <Spinner aria-hidden data-slot="feedback-spinner" /> : null}
       <div>
-        <AlertDescription {...props(styles.body)}>
+        <AlertDescription style={styles.body}>
           <strong {...props(styles.title)}>{title}</strong>
           {description ? <span>{description}</span> : null}
         </AlertDescription>

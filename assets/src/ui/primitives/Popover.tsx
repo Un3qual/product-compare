@@ -2,7 +2,7 @@ import { Popover as PopoverPrimitive } from "@base-ui/react/popover";
 import * as stylex from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   popup: {
@@ -39,20 +39,21 @@ export function PopoverContent({
   align = "center",
   alignOffset,
   children,
-  className,
   collisionPadding,
   side = "bottom",
   sideOffset = 4,
   style,
   ...popupProps
-}: Omit<ComponentProps<typeof PopoverPrimitive.Popup>, "className"> & {
+}: StyleXPrimitiveProps<ComponentProps<typeof PopoverPrimitive.Popup>> & {
   align?: "start" | "center" | "end";
   alignOffset?: number;
-  className?: string;
   collisionPadding?: number;
   side?: "top" | "bottom" | "left" | "right";
   sideOffset?: number;
 }) {
+  const popupStyleProps = (transitionStatus: string | undefined) =>
+    stylex.props(styles.popup, hidden(transitionStatus) && styles.popupHidden, style);
+
   return (
     <PopoverPrimitive.Portal>
       <PopoverPrimitive.Positioner
@@ -63,15 +64,9 @@ export function PopoverContent({
         sideOffset={sideOffset}
       >
         <PopoverPrimitive.Popup
-          className={(state) =>
-            stylex.props(
-              styles.popup,
-              hidden(state.transitionStatus) && styles.popupHidden,
-              customClassName(className),
-            ).className
-          }
+          className={(state) => popupStyleProps(state.transitionStatus).className}
           data-slot="popover-content"
-          style={style}
+          style={(state) => popupStyleProps(state.transitionStatus).style}
           {...popupProps}
         >
           {children}

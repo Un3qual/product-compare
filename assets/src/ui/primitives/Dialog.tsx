@@ -1,10 +1,9 @@
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { XIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   backdrop: {
@@ -79,42 +78,41 @@ export const DialogClose = (props: ComponentProps<typeof DialogPrimitive.Close>)
   <DialogPrimitive.Close data-slot="dialog-close" {...props} />
 );
 
-export function DialogOverlay(props: ComponentProps<typeof DialogPrimitive.Backdrop>) {
+export function DialogOverlay({
+  style,
+  ...backdropProps
+}: StyleXPrimitiveProps<ComponentProps<typeof DialogPrimitive.Backdrop>>) {
+  const backdropStyleProps = (transitionStatus: string | undefined) =>
+    stylex.props(styles.backdrop, hidden(transitionStatus) && styles.backdropHidden, style);
+
   return (
     <DialogPrimitive.Backdrop
-      className={(state) =>
-        stylex.props(styles.backdrop, hidden(state.transitionStatus) && styles.backdropHidden)
-          .className
-      }
+      className={(state) => backdropStyleProps(state.transitionStatus).className}
       data-slot="dialog-overlay"
-      {...props}
+      style={(state) => backdropStyleProps(state.transitionStatus).style}
+      {...backdropProps}
     />
   );
 }
 
 export function DialogContent({
   children,
-  className,
   showCloseButton = true,
   style,
   ...popupProps
-}: Omit<ComponentProps<typeof DialogPrimitive.Popup>, "className"> & {
-  className?: string;
+}: StyleXPrimitiveProps<ComponentProps<typeof DialogPrimitive.Popup>> & {
   showCloseButton?: boolean;
 }) {
+  const popupStyleProps = (transitionStatus: string | undefined) =>
+    stylex.props(styles.popup, hidden(transitionStatus) && styles.popupHidden, style);
+
   return (
     <DialogPrimitive.Portal>
       <DialogOverlay />
       <DialogPrimitive.Popup
-        className={(state) =>
-          stylex.props(
-            styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
-          ).className
-        }
+        className={(state) => popupStyleProps(state.transitionStatus).className}
         data-slot="dialog-content"
-        style={style}
+        style={(state) => popupStyleProps(state.transitionStatus).style}
         {...popupProps}
       >
         {children}
@@ -130,28 +128,26 @@ export function DialogContent({
 }
 
 export function DialogTitle({
-  className,
   style,
   ...titleProps
-}: Omit<ComponentProps<typeof DialogPrimitive.Title>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof DialogPrimitive.Title>>) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.title, style)}
       {...titleProps}
     />
   );
 }
 
 export function DialogDescription({
-  className,
   style,
   ...descriptionProps
-}: Omit<ComponentProps<typeof DialogPrimitive.Description>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof DialogPrimitive.Description>>) {
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.description, style)}
       {...descriptionProps}
     />
   );

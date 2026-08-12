@@ -3,7 +3,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 import { isValidElement, type ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   base: {
@@ -130,17 +130,15 @@ const sizeStyles: Record<ButtonSize, StyleXStyles> = {
   sm: styles.sizeSm,
 };
 
-export interface ButtonProps extends Omit<ComponentProps<"button">, "className"> {
-  className?: string;
+export type ButtonProps = StyleXPrimitiveProps<ComponentProps<"button">> & {
   render?: useRender.RenderProp;
   size?: ButtonSize;
   variant?: ButtonVariant;
-}
+};
 
 export const MINIMUM_TOUCH_TARGET = "44px";
 
 export function Button({
-  className,
   render,
   size = "default",
   style,
@@ -159,8 +157,7 @@ export function Button({
         styles.focusable,
         variantStyles[variant],
         sizeStyles[size],
-        customClassName(className),
-        style as StyleXStyles,
+        style,
       ),
       "data-size": size,
       "data-slot": "button",

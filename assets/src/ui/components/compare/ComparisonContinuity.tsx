@@ -80,7 +80,7 @@ export function ComparisonContinuity({
           ))}
         </ol>
       </div>
-      <Button render={<Link to={destination} />} {...props(styles.action)}>
+      <Button render={<Link to={destination} />} style={styles.action}>
         Open comparison
       </Button>
     </section>

@@ -1,8 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   root: {
@@ -35,12 +34,12 @@ const styles = stylex.create({
   },
 });
 
-export type TextareaProps = ComponentProps<"textarea">;
+export type TextareaProps = StyleXPrimitiveProps<ComponentProps<"textarea">>;
 
-export function Textarea({ className, style, ...textareaProps }: TextareaProps) {
+export function Textarea({ style, ...textareaProps }: TextareaProps) {
   return (
     <textarea
-      {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.root, style)}
       data-slot="textarea"
       {...textareaProps}
     />

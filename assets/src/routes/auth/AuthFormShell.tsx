@@ -202,7 +202,7 @@ function AuthFooterLinks({ footerLinks }: { footerLinks: FooterLink[] }) {
           key={link.to}
           render={<Link to={link.to} />}
           variant="ghost"
-          {...props(styles.link)}
+          style={styles.link}
         >
           {link.label}
         </Button>
@@ -254,7 +254,7 @@ export function AuthSubmitButton({
   disabled,
 }: PropsWithChildren<{ disabled?: boolean }>) {
   return (
-    <Button {...props(styles.submit)} disabled={disabled} size="lg" type="submit">
+    <Button style={styles.submit} disabled={disabled} size="lg" type="submit">
       {children}
     </Button>
   );

@@ -1,10 +1,9 @@
 import { Radio as RadioPrimitive } from "@base-ui/react/radio";
 import { RadioGroup as RadioGroupPrimitive } from "@base-ui/react/radio-group";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { useCallback, useEffect, useRef, useState, type ComponentProps, type Ref } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   group: {
@@ -55,14 +54,11 @@ const styles = stylex.create({
   markChecked: { borderColor: tokens.actionAccent },
 });
 
-type RadioGroupProps = Omit<ComponentProps<typeof RadioGroupPrimitive>, "className"> & {
-  className?: string;
-};
+type RadioGroupProps = StyleXPrimitiveProps<ComponentProps<typeof RadioGroupPrimitive>>;
 
 type RadioGroupChangeHandler = NonNullable<RadioGroupProps["onValueChange"]>;
 
 export function RadioGroup({
-  className,
   defaultValue,
   inputRef,
   onValueChange,
@@ -103,7 +99,7 @@ export function RadioGroup({
 
   return (
     <RadioGroupPrimitive
-      {...stylex.props(styles.group, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.group, style)}
       data-slot="radio-group"
       inputRef={mergedInputRef}
       onValueChange={handleValueChange}
@@ -114,14 +110,12 @@ export function RadioGroup({
 }
 
 export function RadioGroupItem({
-  className,
+  style,
   ...itemProps
-}: Omit<ComponentProps<typeof RadioPrimitive.Root>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof RadioPrimitive.Root>>) {
   return (
     <RadioPrimitive.Root
-      className={stylex.props(styles.item, customClassName(className)).className}
+      {...stylex.props(styles.item, style)}
       data-slot="radio-group-item"
       render={(rootRenderProps, state) => (
         <span {...rootRenderProps}>

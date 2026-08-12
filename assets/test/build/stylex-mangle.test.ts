@@ -153,6 +153,7 @@ test("the Vite plugin rejects an empty class-name prefix", () => {
 test("the Vite development server emits shortened StyleX atomic class names", async () => {
   const server = await createServer({
     configFile: false,
+    optimizeDeps: { include: [], noDiscovery: true },
     plugins: [...reactWithStyleX(), stylexMangle({ classNamePrefix: PREFIX })],
     root: process.cwd(),
     server: { middlewareMode: true, watch: null, ws: false },
@@ -167,4 +168,4 @@ test("the Vite development server emits shortened StyleX atomic class names", as
   } finally {
     await server.close();
   }
-});
+}, 15_000);

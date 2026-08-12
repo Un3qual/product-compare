@@ -145,11 +145,11 @@ function SnapshotControlView({
   ...publishFormProps
 }: SnapshotControlViewProps) {
   return (
-    <Collapsible onOpenChange={onOpenChange} open={open} {...props(styles.control)}>
+    <Collapsible onOpenChange={onOpenChange} open={open} style={styles.control}>
       <CollapsibleTrigger render={<Button variant="ghost" />}>
         Share this comparison
       </CollapsibleTrigger>
-      <CollapsibleContent keepMounted {...props(styles.content)}>
+      <CollapsibleContent keepMounted style={styles.content}>
         <SnapshotPublishForm open={open} {...publishFormProps} />
       </CollapsibleContent>
     </Collapsible>
@@ -175,7 +175,7 @@ function SnapshotPublishForm({
     <form onSubmit={handlePublish} {...props(styles.form)}>
       <label htmlFor={titleId} {...props(styles.field)}>
         Optional title
-        <Input id={titleId} name="title" maxLength={120} {...props(styles.input)} />
+        <Input id={titleId} name="title" maxLength={120} style={styles.input} />
       </label>
       <label htmlFor={searchIndexableId} {...props(styles.field)}>
         <span>

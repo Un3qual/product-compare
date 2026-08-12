@@ -416,10 +416,10 @@ function ReviewEditForm({
 
   return (
     <form onSubmit={onSubmit} {...props(styles.form)}>
-      <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-rating`} style={styles.field}>
         Edit review rating
         <Select defaultValue={String(review.rating)} items={REVIEW_RATING_OPTIONS} name="rating">
-          <SelectTrigger id={`${fieldId}-rating`} {...props(styles.input)}>
+          <SelectTrigger id={`${fieldId}-rating`} style={styles.input}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -431,17 +431,17 @@ function ReviewEditForm({
           </SelectContent>
         </Select>
       </Label>
-      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-title`} style={styles.field}>
         Edit review title
         <Input
           id={`${fieldId}-title`}
           name="title"
           defaultValue={review.title ?? ""}
           maxLength={120}
-          {...props(styles.input)}
+          style={styles.input}
         />
       </Label>
-      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-body`} style={styles.field}>
         Edit review body
         <Textarea
           id={`${fieldId}-body`}
@@ -449,7 +449,7 @@ function ReviewEditForm({
           defaultValue={review.body ?? ""}
           maxLength={5000}
           rows={4}
-          {...props(styles.input)}
+          style={styles.input}
         />
       </Label>
       <EditActions label="review" onCancel={onCancel} pending={pending} />
@@ -476,7 +476,7 @@ function QuestionEditForm({
 
   return (
     <form onSubmit={onSubmit} {...props(styles.form)}>
-      <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-title`} style={styles.field}>
         Edit question title
         <Input
           id={`${fieldId}-title`}
@@ -484,10 +484,10 @@ function QuestionEditForm({
           defaultValue={question.title}
           required
           maxLength={200}
-          {...props(styles.input)}
+          style={styles.input}
         />
       </Label>
-      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-body`} style={styles.field}>
         Edit question body
         <Textarea
           id={`${fieldId}-body`}
@@ -495,7 +495,7 @@ function QuestionEditForm({
           defaultValue={question.body ?? ""}
           maxLength={5000}
           rows={3}
-          {...props(styles.input)}
+          style={styles.input}
         />
       </Label>
       <EditActions label="question" onCancel={onCancel} pending={pending} />
@@ -522,7 +522,7 @@ function AnswerEditForm({
 
   return (
     <form onSubmit={onSubmit} {...props(styles.form)}>
-      <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+      <Label htmlFor={`${fieldId}-body`} style={styles.field}>
         Edit answer body
         <Textarea
           id={`${fieldId}-body`}
@@ -531,7 +531,7 @@ function AnswerEditForm({
           required
           maxLength={5000}
           rows={3}
-          {...props(styles.input)}
+          style={styles.input}
         />
       </Label>
       <EditActions label="answer" onCancel={onCancel} pending={pending} />

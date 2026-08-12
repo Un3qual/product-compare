@@ -294,12 +294,12 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
   return (
     <Collapsible>
       <CollapsibleTrigger render={<Button variant="ghost" />}>Write a review</CollapsibleTrigger>
-      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
+      <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
-          <Label htmlFor={`${fieldId}-rating`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-rating`} style={styles.field}>
             Rating
             <Select defaultValue="5" items={REVIEW_RATING_OPTIONS} name="rating">
-              <SelectTrigger id={`${fieldId}-rating`} {...props(styles.input)}>
+              <SelectTrigger id={`${fieldId}-rating`} style={styles.input}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -311,18 +311,18 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
               </SelectContent>
             </Select>
           </Label>
-          <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-title`} style={styles.field}>
             Title
-            <Input id={`${fieldId}-title`} name="title" maxLength={120} {...props(styles.input)} />
+            <Input id={`${fieldId}-title`} name="title" maxLength={120} style={styles.input} />
           </Label>
-          <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-body`} style={styles.field}>
             Review
             <Textarea
               id={`${fieldId}-body`}
               name="body"
               maxLength={5000}
               rows={4}
-              {...props(styles.input)}
+              style={styles.input}
             />
           </Label>
           <Button disabled={pending} type="submit">
@@ -401,26 +401,26 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
   return (
     <Collapsible>
       <CollapsibleTrigger render={<Button variant="ghost" />}>Ask a question</CollapsibleTrigger>
-      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
+      <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
-          <Label htmlFor={`${fieldId}-title`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-title`} style={styles.field}>
             Question
             <Input
               id={`${fieldId}-title`}
               name="title"
               required
               maxLength={200}
-              {...props(styles.input)}
+              style={styles.input}
             />
           </Label>
-          <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-body`} style={styles.field}>
             Details
             <Textarea
               id={`${fieldId}-body`}
               name="body"
               maxLength={5000}
               rows={3}
-              {...props(styles.input)}
+              style={styles.input}
             />
           </Label>
           <Button disabled={pending} type="submit">
@@ -540,9 +540,9 @@ function AnswerForm({ questionId }: { questionId: string }) {
       <CollapsibleTrigger render={<Button variant="ghost" />}>
         Answer this question
       </CollapsibleTrigger>
-      <CollapsibleContent keepMounted {...props(disclosureStyles.content)}>
+      <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
-          <Label htmlFor={`${fieldId}-body`} {...props(styles.field)}>
+          <Label htmlFor={`${fieldId}-body`} style={styles.field}>
             Answer
             <Textarea
               id={`${fieldId}-body`}
@@ -550,7 +550,7 @@ function AnswerForm({ questionId }: { questionId: string }) {
               required
               maxLength={5000}
               rows={3}
-              {...props(styles.input)}
+              style={styles.input}
             />
           </Label>
           <Button disabled={pending} type="submit">

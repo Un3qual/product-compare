@@ -338,7 +338,7 @@ function CJProgramFeedDisclosure({
       >
         {isOpen ? "Hide feeds" : "Show feeds"}
       </CollapsibleTrigger>
-      <CollapsibleContent {...props(styles.feedDetails)}>
+      <CollapsibleContent style={styles.feedDetails}>
         {queryRef ? (
           <ResettableErrorBoundary
             fallback={<CJProgramFeedUnavailable onRetry={retryPage} programName={programName} />}

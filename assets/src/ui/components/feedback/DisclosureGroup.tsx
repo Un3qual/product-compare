@@ -5,7 +5,7 @@ import {
   AccordionTrigger,
 } from "../../primitives/Accordion";
 import type { ReactNode } from "react";
-import { create, props } from "@stylexjs/stylex";
+import { create } from "@stylexjs/stylex";
 import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
@@ -58,11 +58,11 @@ export function DisclosureGroup({
   label: string;
 }) {
   return (
-    <Accordion aria-label={label} multiple {...props(styles.root)}>
+    <Accordion aria-label={label} multiple style={styles.root}>
       {items.map((item) => (
-        <AccordionItem key={item.value} value={item.value} {...props(styles.item)}>
-          <AccordionTrigger {...props(styles.trigger)}>{item.label}</AccordionTrigger>
-          <AccordionContent data-slot="disclosure-content" {...props(styles.content)}>
+        <AccordionItem key={item.value} value={item.value} style={styles.item}>
+          <AccordionTrigger style={styles.trigger}>{item.label}</AccordionTrigger>
+          <AccordionContent data-slot="disclosure-content" style={styles.content}>
             {item.content}
           </AccordionContent>
         </AccordionItem>

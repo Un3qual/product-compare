@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { create, props } from "@stylexjs/stylex";
+import { create } from "@stylexjs/stylex";
 import {
   Table,
   TableBody,
@@ -80,7 +80,7 @@ export function CompareSpecificationMatrix({
       {rows.length === 0 ? (
         <p>{emptySpecificationMatrixMessage(specMode)}</p>
       ) : (
-        <Table aria-label={title} {...props(styles.table)}>
+        <Table aria-label={title} style={styles.table}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

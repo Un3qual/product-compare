@@ -1,4 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import * as stylex from "@stylexjs/stylex";
 import { MemoryRouter } from "react-router-dom";
 import {
   Button,
@@ -26,6 +27,15 @@ import {
 } from "../../src/ui/primitives/Collapsible";
 import { AppProviders } from "../../src/ui/providers/AppProviders";
 import { chooseSelectOption, openSelect } from "../helpers/base-select";
+
+const callerStyles = stylex.create({
+  button: {
+    backgroundColor: "rgb(12, 34, 56)",
+  },
+  tab: (color: string) => ({
+    backgroundColor: color,
+  }),
+});
 
 test("Label associates auth fields with their inputs", () => {
   render(
@@ -83,6 +93,13 @@ test("Button exposes the shadcn destructive variant", () => {
 
   expect(button).toHaveAttribute("data-variant", "destructive");
   expect(button).not.toHaveAttribute("color");
+});
+
+test("Button composes caller StyleX rules after its variant styles", () => {
+  render(<Button style={callerStyles.button}>Styled by caller</Button>);
+
+  expect(getComputedStyle(screen.getByRole("button", { name: "Styled by caller" })).backgroundColor)
+    .toBe("rgb(12, 34, 56)");
 });
 
 test("Input renders a named search input", () => {
@@ -383,6 +400,22 @@ test("Tabs register a stable Base UI composite list", () => {
   );
 
   expect(screen.getByRole("tab", { name: "One" })).toHaveAttribute("aria-selected", "true");
+});
+
+test("stateful Base UI primitives preserve dynamic StyleX inline values", () => {
+  render(
+    <Tabs defaultValue="one">
+      <TabsList aria-label="Views">
+        <TabsTrigger style={callerStyles.tab("rgb(23, 45, 67)")} value="one">
+          One
+        </TabsTrigger>
+      </TabsList>
+    </Tabs>,
+  );
+
+  expect(screen.getByRole("tab", { name: "One" }).getAttribute("style")).toContain(
+    "rgb(23, 45, 67)",
+  );
 });
 
 function ExampleSelect({

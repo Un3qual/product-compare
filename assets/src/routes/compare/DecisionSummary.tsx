@@ -84,7 +84,7 @@ export function DecisionSummary({
         Price comparisons use the offers currently shown for these products.
       </p>
       <div {...props(styles.tableWrap)}>
-        <Table aria-label="Decision summary" {...props(styles.table)}>
+        <Table aria-label="Decision summary" style={styles.table}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

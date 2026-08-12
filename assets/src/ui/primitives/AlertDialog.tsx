@@ -1,9 +1,8 @@
 import { AlertDialog as AlertDialogPrimitive } from "@base-ui/react/alert-dialog";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   backdrop: {
@@ -61,10 +60,12 @@ export const AlertDialogCancel = (props: ComponentProps<typeof AlertDialogPrimit
 
 export function AlertDialogContent({
   children,
-  className,
   style,
   ...popupProps
-}: Omit<ComponentProps<typeof AlertDialogPrimitive.Popup>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AlertDialogPrimitive.Popup>>) {
+  const popupStyleProps = (transitionStatus: string | undefined) =>
+    stylex.props(styles.popup, hidden(transitionStatus) && styles.popupHidden, style);
+
   return (
     <AlertDialogPrimitive.Portal>
       <AlertDialogPrimitive.Backdrop
@@ -75,15 +76,9 @@ export function AlertDialogContent({
         data-slot="alert-dialog-overlay"
       />
       <AlertDialogPrimitive.Popup
-        className={(state) =>
-          stylex.props(
-            styles.popup,
-            hidden(state.transitionStatus) && styles.popupHidden,
-            customClassName(className),
-          ).className
-        }
+        className={(state) => popupStyleProps(state.transitionStatus).className}
         data-slot="alert-dialog-content"
-        style={style}
+        style={(state) => popupStyleProps(state.transitionStatus).style}
         {...popupProps}
       >
         {children}
@@ -93,30 +88,26 @@ export function AlertDialogContent({
 }
 
 export function AlertDialogTitle({
-  className,
   style,
   ...titleProps
-}: Omit<ComponentProps<typeof AlertDialogPrimitive.Title>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AlertDialogPrimitive.Title>>) {
   return (
     <AlertDialogPrimitive.Title
       data-slot="alert-dialog-title"
-      {...stylex.props(styles.title, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.title, style)}
       {...titleProps}
     />
   );
 }
 
 export function AlertDialogDescription({
-  className,
   style,
   ...descriptionProps
-}: Omit<ComponentProps<typeof AlertDialogPrimitive.Description>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AlertDialogPrimitive.Description>>) {
   return (
     <AlertDialogPrimitive.Description
       data-slot="alert-dialog-description"
-      {...stylex.props(styles.description, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.description, style)}
       {...descriptionProps}
     />
   );

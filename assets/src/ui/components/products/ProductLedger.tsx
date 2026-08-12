@@ -200,8 +200,8 @@ function ProductLedgerItem({
         </div>
         <StatusBadge
           data-slot="product-ledger-freshness"
+          style={styles.freshness}
           tone="positive"
-          {...props(styles.freshness)}
         >
           {row.freshness}
         </StatusBadge>
@@ -209,20 +209,20 @@ function ProductLedgerItem({
           {row.actions}
         </div>
         {row.secondaryDetails ? (
-          <Collapsible {...props(styles.disclosure)}>
+          <Collapsible style={styles.disclosure}>
             <CollapsibleTrigger
               render={
                 <Button
                   size="sm"
                   type="button"
                   variant="secondary"
-                  {...props(styles.disclosureTrigger)}
+                  style={styles.disclosureTrigger}
                 />
               }
             >
               {secondaryDisclosureLabel}
             </CollapsibleTrigger>
-            <CollapsibleContent {...props(styles.disclosureContent)}>
+            <CollapsibleContent style={styles.disclosureContent}>
               {row.secondaryDetails}
             </CollapsibleContent>
           </Collapsible>

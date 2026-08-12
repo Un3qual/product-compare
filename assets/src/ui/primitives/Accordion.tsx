@@ -1,10 +1,9 @@
 import { Accordion as AccordionPrimitive } from "@base-ui/react/accordion";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { ChevronDownIcon } from "lucide-react";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   header: { display: "flex", margin: 0 },
@@ -38,19 +37,27 @@ const styles = stylex.create({
   iconOpen: { transform: "rotate(180deg)" },
 });
 
-export function Accordion(props: ComponentProps<typeof AccordionPrimitive.Root>) {
-  return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
+export function Accordion({
+  style,
+  ...rootProps
+}: StyleXPrimitiveProps<ComponentProps<typeof AccordionPrimitive.Root>>) {
+  return (
+    <AccordionPrimitive.Root
+      {...stylex.props(style)}
+      data-slot="accordion"
+      {...rootProps}
+    />
+  );
 }
 
 export function AccordionItem({
-  className,
   style,
   ...itemProps
-}: Omit<ComponentProps<typeof AccordionPrimitive.Item>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AccordionPrimitive.Item>>) {
   return (
     <AccordionPrimitive.Item
       data-slot="accordion-item"
-      {...stylex.props(styles.item, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.item, style)}
       {...itemProps}
     />
   );
@@ -58,15 +65,14 @@ export function AccordionItem({
 
 export function AccordionTrigger({
   children,
-  className,
   style,
   ...triggerProps
-}: Omit<ComponentProps<typeof AccordionPrimitive.Trigger>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AccordionPrimitive.Trigger>>) {
   return (
     <AccordionPrimitive.Header {...stylex.props(styles.header)}>
       <AccordionPrimitive.Trigger
         data-slot="accordion-trigger"
-        {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+        {...stylex.props(styles.trigger, style)}
         render={(renderProps, state) => (
           <button type="button" {...renderProps}>
             {children}
@@ -84,14 +90,13 @@ export function AccordionTrigger({
 }
 
 export function AccordionContent({
-  className,
   style,
   ...panelProps
-}: Omit<ComponentProps<typeof AccordionPrimitive.Panel>, "className"> & { className?: string }) {
+}: StyleXPrimitiveProps<ComponentProps<typeof AccordionPrimitive.Panel>>) {
   return (
     <AccordionPrimitive.Panel
       data-slot="accordion-content"
-      {...stylex.props(styles.panel, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.panel, style)}
       {...panelProps}
     />
   );

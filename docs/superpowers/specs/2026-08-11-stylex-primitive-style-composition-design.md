@@ -6,7 +6,7 @@ The frontend primitives currently accept ordinary `className` strings and pass t
 
 ## Decision
 
-Frontend primitives will expose one styling channel: a typed StyleX `style` prop. Consumers pass compiled StyleX objects or arrays directly, and the primitive calls `stylex.props()` once where it renders its host element or Base UI root.
+Frontend primitives will expose one styling channel: a typed StyleX `style` prop. Consumers pass compiled StyleX objects or arrays directly, and the primitive resolves them with its own styles through `stylex.props()` where it renders its host element or Base UI root. Stateful Base UI callbacks forward both the resolved class name and any dynamic StyleX inline values.
 
 Raw `className` is removed from primitive public props. Native elements can still use ordinary `className` directly when needed, but component-to-component styling remains in StyleX form until the final render boundary.
 

@@ -98,11 +98,11 @@ function PriceWatchForm({ productId }: { productId: string }) {
   ];
 
   return (
-    <Collapsible {...props(styles.details)}>
+    <Collapsible style={styles.details}>
       <CollapsibleTrigger render={<Button variant="ghost" />}>
         Watch price or availability
       </CollapsibleTrigger>
-      <CollapsibleContent keepMounted {...props(styles.content)}>
+      <CollapsibleContent keepMounted style={styles.content}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>
           <label htmlFor={ruleId} {...props(styles.field)}>
             Alert when
@@ -112,7 +112,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
               onValueChange={(value) => setRuleType(priceWatchRuleTypeFromValue(value ?? ""))}
               value={ruleType}
             >
-              <SelectTrigger id={ruleId} {...props(styles.input)}>
+              <SelectTrigger id={ruleId} style={styles.input}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -132,7 +132,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
               defaultValue="USD"
               maxLength={3}
               required
-              {...props(styles.input)}
+              style={styles.input}
             />
           </label>
           {amountField.visible ? (
@@ -145,7 +145,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
                 min="0.01"
                 step="0.01"
                 required
-                {...props(styles.input)}
+                style={styles.input}
               />
             </label>
           ) : null}

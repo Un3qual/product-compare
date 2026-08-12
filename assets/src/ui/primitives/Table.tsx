@@ -1,8 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   caption: { color: tokens.textSecondary, fontSize: "0.875rem", marginTop: "1rem" },
@@ -27,11 +26,11 @@ const styles = stylex.create({
   wrapper: { overflowX: "auto", position: "relative", width: "100%" },
 });
 
-export function Table({ className, style, ...tableProps }: ComponentProps<"table">) {
+export function Table({ style, ...tableProps }: StyleXPrimitiveProps<ComponentProps<"table">>) {
   return (
     <div {...stylex.props(styles.wrapper)} data-slot="table-container">
       <table
-        {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+        {...stylex.props(styles.root, style)}
         data-slot="table"
         {...tableProps}
       />
@@ -45,30 +44,42 @@ export const TableHeader = (props: ComponentProps<"thead">) => (
 export const TableBody = (props: ComponentProps<"tbody">) => (
   <tbody data-slot="table-body" {...props} />
 );
-export const TableRow = ({ className, style, ...rowProps }: ComponentProps<"tr">) => (
+export const TableRow = ({
+  style,
+  ...rowProps
+}: StyleXPrimitiveProps<ComponentProps<"tr">>) => (
   <tr
-    {...stylex.props(styles.row, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.row, style)}
     data-slot="table-row"
     {...rowProps}
   />
 );
-export const TableHead = ({ className, style, ...headProps }: ComponentProps<"th">) => (
+export const TableHead = ({
+  style,
+  ...headProps
+}: StyleXPrimitiveProps<ComponentProps<"th">>) => (
   <th
-    {...stylex.props(styles.head, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.head, style)}
     data-slot="table-head"
     {...headProps}
   />
 );
-export const TableCell = ({ className, style, ...cellProps }: ComponentProps<"td">) => (
+export const TableCell = ({
+  style,
+  ...cellProps
+}: StyleXPrimitiveProps<ComponentProps<"td">>) => (
   <td
-    {...stylex.props(styles.cell, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.cell, style)}
     data-slot="table-cell"
     {...cellProps}
   />
 );
-export const TableCaption = ({ className, style, ...captionProps }: ComponentProps<"caption">) => (
+export const TableCaption = ({
+  style,
+  ...captionProps
+}: StyleXPrimitiveProps<ComponentProps<"caption">>) => (
   <caption
-    {...stylex.props(styles.caption, customClassName(className), style as StyleXStyles)}
+    {...stylex.props(styles.caption, style)}
     data-slot="table-caption"
     {...captionProps}
   />

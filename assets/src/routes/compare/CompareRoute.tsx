@@ -441,7 +441,7 @@ function CompareSpecModeControls({
 
   return (
     <Tabs value={specMode}>
-      <TabsList aria-label="Specification views" variant="line" {...props(styles.tabList)}>
+      <TabsList aria-label="Specification views" variant="line" style={styles.tabList}>
         {navigation.modes.map((item) => (
           <TabsTrigger
             key={item.mode}

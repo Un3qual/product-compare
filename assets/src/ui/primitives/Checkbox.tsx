@@ -3,7 +3,7 @@ import * as stylex from "@stylexjs/stylex";
 import { CheckIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState, type ComponentProps, type Ref } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   indicator: {
@@ -54,18 +54,18 @@ const styles = stylex.create({
   },
 });
 
-export type CheckboxProps = Omit<ComponentProps<typeof CheckboxPrimitive.Root>, "className"> & {
-  className?: string;
-};
+export type CheckboxProps = StyleXPrimitiveProps<
+  ComponentProps<typeof CheckboxPrimitive.Root>
+>;
 
 type CheckboxChangeHandler = NonNullable<CheckboxProps["onCheckedChange"]>;
 
 export function Checkbox({
   checked: controlledChecked,
-  className,
   defaultChecked = false,
   inputRef,
   onCheckedChange,
+  style,
   ...checkboxProps
 }: CheckboxProps) {
   const controlled = controlledChecked !== undefined;
@@ -101,8 +101,8 @@ export function Checkbox({
 
   return (
     <CheckboxPrimitive.Root
+      {...stylex.props(styles.root, style)}
       checked={controlled ? controlledChecked : uncontrolledChecked}
-      className={stylex.props(styles.root, customClassName(className)).className}
       data-slot="checkbox"
       inputRef={mergedInputRef}
       onCheckedChange={handleCheckedChange}

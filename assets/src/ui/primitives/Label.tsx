@@ -1,8 +1,7 @@
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   root: {
@@ -14,10 +13,10 @@ const styles = stylex.create({
   },
 });
 
-export function Label({ className, style, ...labelProps }: ComponentProps<"label">) {
+export function Label({ style, ...labelProps }: StyleXPrimitiveProps<ComponentProps<"label">>) {
   return (
     <label
-      {...stylex.props(styles.root, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.root, style)}
       data-slot="label"
       {...labelProps}
     />

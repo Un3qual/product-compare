@@ -66,7 +66,7 @@ export function AppShell({ children, navigation }: PropsWithChildren<{ navigatio
       <nav {...props(styles.nav)} aria-label="Primary">
         <div {...props(styles.navContent)}>{navigation ?? "Product Compare"}</div>
       </nav>
-      <Separator {...props(styles.separator)} />
+      <Separator style={styles.separator} />
       <main id="main-content" tabIndex={-1} {...props(styles.main)}>
         {children}
       </main>

@@ -62,6 +62,9 @@ const styles = create({
     display: "grid",
     gap: "0.25rem",
   },
+  navigationMenuPopup: {
+    minWidth: "12rem",
+  },
   menuLink: {
     justifyContent: "start",
     width: "100%",
@@ -115,7 +118,7 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
     <div {...props(styles.navigation)}>
       <Button
         render={<NavLink end to={destinationWithComparison("/", selectedSlugs)} />}
-        {...props(styles.title)}
+        style={styles.title}
       >
         <CompareMark label="Product Compare" />
       </Button>
@@ -230,7 +233,7 @@ function DestinationLink({
       data-active={matchDestination ? String(isActive) : undefined}
       render={<NavLink end={end} onClick={onNavigate} to={destination} />}
       variant={isActive ? "secondary" : variant}
-      {...props(styles.link, style)}
+      style={[styles.link, style]}
     >
       {label}
     </Button>
@@ -272,7 +275,7 @@ function NavigationMenu({
         <Button
           aria-label={`${label} menu`}
           variant="secondary"
-          {...props(styles.navigationMenuTrigger)}
+          style={styles.navigationMenuTrigger}
         />
       }
     >
@@ -285,7 +288,11 @@ function NavigationMenu({
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
       <Popover onOpenChange={onOpenChange} open={open}>
         {menuTrigger}
-        <PopoverContent aria-label={`${label} menu`} align="end" style={{ minWidth: "12rem" }}>
+        <PopoverContent
+          aria-label={`${label} menu`}
+          align="end"
+          style={styles.navigationMenuPopup}
+        >
           <nav
             aria-label={`${label} navigation`}
             data-slot="navigation-menu-content"

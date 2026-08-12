@@ -2,7 +2,7 @@ import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 import type { ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   base: {
@@ -38,15 +38,14 @@ const variants: Record<BadgeVariant, StyleXStyles> = {
   secondary: styles.secondary,
 };
 
-export type BadgeProps = Omit<ComponentProps<"span">, "style"> & {
-  style?: StyleXStyles;
+export type BadgeProps = StyleXPrimitiveProps<ComponentProps<"span">> & {
   variant?: BadgeVariant;
 };
 
-export function Badge({ className, style, variant = "default", ...badgeProps }: BadgeProps) {
+export function Badge({ style, variant = "default", ...badgeProps }: BadgeProps) {
   return (
     <span
-      {...stylex.props(styles.base, variants[variant], customClassName(className), style)}
+      {...stylex.props(styles.base, variants[variant], style)}
       data-slot="badge"
       data-variant={variant}
       {...badgeProps}

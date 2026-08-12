@@ -1,7 +1,6 @@
 import { Select as SelectPrimitive } from "@base-ui/react/select";
 import type { SelectRootProps } from "@base-ui/react/select";
 import * as stylex from "@stylexjs/stylex";
-import type { StyleXStyles } from "@stylexjs/stylex";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
 import {
   useCallback,
@@ -13,7 +12,7 @@ import {
   type Ref,
 } from "react";
 import { tokens } from "../theme/tokens.stylex";
-import { customClassName } from "./utils.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   groupLabel: {
@@ -193,15 +192,12 @@ export function SelectGroup(props: ComponentProps<typeof SelectPrimitive.Group>)
 }
 
 export function SelectValue({
-  className,
   style,
   ...valueProps
-}: Omit<ComponentProps<typeof SelectPrimitive.Value>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof SelectPrimitive.Value>>) {
   return (
     <SelectPrimitive.Value
-      {...stylex.props(styles.value, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.value, style)}
       data-slot="select-value"
       {...valueProps}
     />
@@ -210,15 +206,14 @@ export function SelectValue({
 
 export function SelectTrigger({
   children,
-  className,
   style,
   ...triggerProps
-}: Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "className" | "render"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<
+  Omit<ComponentProps<typeof SelectPrimitive.Trigger>, "render">
+>) {
   return (
     <SelectPrimitive.Trigger
-      {...stylex.props(styles.trigger, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.trigger, style)}
       data-slot="select-trigger"
       render={(triggerRenderProps, state) => (
         <button
@@ -239,15 +234,16 @@ export function SelectTrigger({
 export function SelectContent({
   alignItemWithTrigger = false,
   children,
-  className,
   sideOffset = 4,
   style,
   ...popupProps
-}: Omit<ComponentProps<typeof SelectPrimitive.Popup>, "className"> & {
+}: StyleXPrimitiveProps<ComponentProps<typeof SelectPrimitive.Popup>> & {
   alignItemWithTrigger?: boolean;
-  className?: string;
   sideOffset?: number;
 }) {
+  const popupStyleProps = (transitionStatus: string | undefined) =>
+    stylex.props(styles.popup, hidden(transitionStatus) && styles.popupHidden, style);
+
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
@@ -256,15 +252,9 @@ export function SelectContent({
         sideOffset={sideOffset}
       >
         <SelectPrimitive.Popup
-          className={(state) =>
-            stylex.props(
-              styles.popup,
-              hidden(state.transitionStatus) && styles.popupHidden,
-              customClassName(className),
-            ).className
-          }
+          className={(state) => popupStyleProps(state.transitionStatus).className}
           data-slot="select-content"
-          style={style}
+          style={(state) => popupStyleProps(state.transitionStatus).style}
           {...popupProps}
         >
           {children}
@@ -275,15 +265,12 @@ export function SelectContent({
 }
 
 export function SelectLabel({
-  className,
   style,
   ...labelProps
-}: Omit<ComponentProps<typeof SelectPrimitive.GroupLabel>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof SelectPrimitive.GroupLabel>>) {
   return (
     <SelectPrimitive.GroupLabel
-      {...stylex.props(styles.groupLabel, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.groupLabel, style)}
       data-slot="select-label"
       {...labelProps}
     />
@@ -292,15 +279,12 @@ export function SelectLabel({
 
 export function SelectItem({
   children,
-  className,
   style,
   ...itemProps
-}: Omit<ComponentProps<typeof SelectPrimitive.Item>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof SelectPrimitive.Item>>) {
   return (
     <SelectPrimitive.Item
-      {...stylex.props(styles.item, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.item, style)}
       data-slot="select-item"
       {...itemProps}
     >
@@ -313,15 +297,12 @@ export function SelectItem({
 }
 
 export function SelectSeparator({
-  className,
   style,
   ...separatorProps
-}: Omit<ComponentProps<typeof SelectPrimitive.Separator>, "className"> & {
-  className?: string;
-}) {
+}: StyleXPrimitiveProps<ComponentProps<typeof SelectPrimitive.Separator>>) {
   return (
     <SelectPrimitive.Separator
-      {...stylex.props(styles.separator, customClassName(className), style as StyleXStyles)}
+      {...stylex.props(styles.separator, style)}
       data-slot="select-separator"
       {...separatorProps}
     />
