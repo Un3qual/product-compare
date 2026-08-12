@@ -989,6 +989,30 @@ defmodule ProductCompareWeb.GraphQL.HomeQueriesTest do
              end)
   end
 
+  test "homepage traversal includes the final visible row without counting the lookahead" do
+    owner = AccountsFixtures.user_fixture()
+    final_window_cursor = Absinthe.Relay.Connection.offset_to_cursor(899)
+    beyond_window_cursor = Absinthe.Relay.Connection.offset_to_cursor(900)
+    parent = %{current_user: nil, now: DateTime.utc_now(), selected_slugs: []}
+
+    assert {:ok, connection} =
+             HomeResolver.viewer_deals(
+               parent,
+               %{first: 100, after: final_window_cursor},
+               %{}
+             )
+
+    assert connection.edges == []
+    assert connection.page_info.has_previous_page
+
+    assert {:error, "invalid cursor"} =
+             HomeResolver.viewer_deals(
+               %{parent | current_user: owner},
+               %{first: 100, after: beyond_window_cursor},
+               %{}
+             )
+  end
+
   test "deep workspace Products rejects before selected-slug SQL when selectedProducts is absent",
        %{
          conn: conn

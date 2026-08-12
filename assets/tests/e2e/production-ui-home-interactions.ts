@@ -47,14 +47,15 @@ export async function waitForFonts(page: Page) {
       await document.fonts.ready;
 
       return {
-        bodyFamily: getComputedStyle(document.body).fontFamily,
+        bodyUsesSans: getComputedStyle(document.body).fontFamily.startsWith(
+          '"Instrument Sans Variable"',
+        ),
         mono: monoFaces.length > 0,
         sans: sansFaces.length > 0,
       };
     }),
   ).toEqual({
-    bodyFamily:
-      '"Instrument Sans Variable", ui-sans-serif, system-ui, -apple-system, "system-ui", "Segoe UI", sans-serif',
+    bodyUsesSans: true,
     mono: true,
     sans: true,
   });

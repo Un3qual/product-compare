@@ -339,7 +339,9 @@ defmodule ProductCompareWeb.Resolvers.HomeResolver do
   end
 
   defp validate_home_window(%{offset: offset, fetch_limit: fetch_limit}) do
-    if offset + fetch_limit <= @homepage_traversal_limit,
+    visible_limit = fetch_limit - 1
+
+    if offset + visible_limit <= @homepage_traversal_limit,
       do: :ok,
       else: {:error, "invalid cursor"}
   end
