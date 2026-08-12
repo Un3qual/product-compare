@@ -6,9 +6,9 @@
 - Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`
-- Last verified: 2026-08-11 after the offer-discovery hierarchy correction;
-  focused route coverage, desktop/mobile Playwright geometry and visual
-  snapshots, axe, the complete frontend check, client/SSR builds, StyleX
+- Last verified: 2026-08-12 after the responsive beauty and component-reuse
+  correction; 1,549 unit tests, 11 desktop/tablet/mobile Playwright scenarios,
+  axe, keyboard and focus behavior, visual snapshots, client/SSR builds, StyleX
   mangling, and bundle budgets passed.
 
 ## Target Outcome
@@ -49,6 +49,18 @@ The complete route suites named by the plan, deterministic Playwright/axe/visual
   and Base UI disclosures.
 - Product and merchant reference inputs stay mounted while collapsed so normal
   GET submissions retain the active scope.
+- The sticky mobile shell is one compact row. Its existing shadcn-cssinjs/Base
+  UI Popover keeps every destination reachable with keyboard, Escape, focus
+  restoration, and 44-pixel targets.
+- Offer refinement now appears before results on mobile in the existing
+  shadcn-cssinjs/Base UI Dialog. Active merchant filters initialize expanded,
+  retain their URL state, and reset with route changes.
+- Price signal and freshness remain visible at narrow widths, while redundant
+  home disclosures were removed. Comparable best offers alone use the green
+  decision signal; mixed currencies and other current prices stay neutral.
+- Visible field labels and authentication feedback now reuse the local
+  shadcn-cssinjs-derived Label and Alert primitives without changing their
+  associations or live-region semantics.
 
 ## Blocker Rule
 

@@ -13,9 +13,7 @@ import { offerDiscoveryPath } from "./paths";
 
 const styles = create({
   filterSection: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
+    alignContent: "start",
     display: "grid",
     gap: "0.6rem",
     paddingBlockEnd: "1rem",

@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { couponDiscountText } from "./affiliate-setup-data";
 
@@ -77,10 +78,10 @@ export function AffiliateNetworkForm({
       {...props(styles.form)}
     >
       <h2>Network</h2>
-      <label>
+      <Label>
         Network name
         <Input autoComplete="off" name="networkName" type="text" />
-      </label>
+      </Label>
       <Button disabled={pending} type="submit">
         Save network
       </Button>
@@ -127,7 +128,7 @@ export function AffiliateProgramForm({
     >
       <h2>Program</h2>
       {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
-      <label>
+      <Label>
         Affiliate network ID
         <Input
           autoComplete="off"
@@ -136,20 +137,20 @@ export function AffiliateProgramForm({
           type="text"
           value={affiliateNetworkId}
         />
-      </label>
+      </Label>
       <MerchantSelect
         merchantChoices={merchantChoices}
         onSelectedMerchantIdChange={onSelectedMerchantIdChange}
         selectedMerchantValue={selectedMerchantValue}
       />
-      <label>
+      <Label>
         Program code
         <Input autoComplete="off" name="programCode" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Program status
         <Input autoComplete="off" name="programStatus" type="text" />
-      </label>
+      </Label>
       <Button disabled={pending} type="submit">
         Save program
       </Button>
@@ -187,26 +188,26 @@ export function AffiliateLinkForm({
     >
       <h2>Link</h2>
       {selectedMerchantCopy ? <p>{selectedMerchantCopy}</p> : null}
-      <label>
+      <Label>
         Merchant product ID
         <Input autoComplete="off" name="merchantProductId" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Link affiliate network ID
         <Input autoComplete="off" name="linkAffiliateNetworkId" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Original URL
         <Input autoComplete="off" name="originalUrl" type="url" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Affiliate URL
         <Input autoComplete="off" name="affiliateUrl" type="url" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Last verified at
         <Input name="lastVerifiedAt" type="datetime-local" />
-      </label>
+      </Label>
       <Button disabled={pending} type="submit">
         Save link
       </Button>
@@ -256,39 +257,39 @@ export function AffiliateCouponForm({
         onSelectedMerchantIdChange={onSelectedMerchantIdChange}
         selectedMerchantValue={selectedMerchantValue}
       />
-      <label>
+      <Label>
         Coupon affiliate network ID
         <Input autoComplete="off" name="couponAffiliateNetworkId" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Coupon code
         <Input autoComplete="off" name="couponCode" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Description
         <Input autoComplete="off" name="couponDescription" type="text" />
-      </label>
+      </Label>
       <DiscountTypeSelect />
-      <label>
+      <Label>
         Discount value
         <Input autoComplete="off" name="discountValue" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Currency
         <Input autoComplete="off" maxLength={3} name="currency" type="text" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Valid from
         <Input name="validFrom" type="datetime-local" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Valid to
         <Input name="validTo" type="datetime-local" />
-      </label>
-      <label>
+      </Label>
+      <Label>
         Terms
         <Input autoComplete="off" name="terms" type="text" />
-      </label>
+      </Label>
       <Button disabled={pending} type="submit">
         Create coupon
       </Button>
@@ -317,7 +318,7 @@ function MerchantSelect({
   }));
 
   return (
-    <label>
+    <Label>
       {label}
       <Select
         items={options}
@@ -336,7 +337,7 @@ function MerchantSelect({
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 
@@ -347,7 +348,7 @@ function DiscountTypeSelect() {
   }));
 
   return (
-    <label>
+    <Label>
       Discount type
       <Select defaultValue="OTHER" items={options} name="discountType">
         <SelectTrigger>
@@ -361,7 +362,7 @@ function DiscountTypeSelect() {
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 

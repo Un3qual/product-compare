@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Textarea } from "$ui/primitives/Textarea";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
@@ -241,7 +242,7 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
         </ul>
       ) : null}
       <div {...props(styles.controls)}>
-        <label {...props(styles.field)}>
+        <Label style={styles.field}>
           <span {...props(styles.label)}>Stage for {programName}</span>
           <Select
             disabled={isUpdateInFlight || !stage}
@@ -265,15 +266,15 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
               ))}
             </SelectContent>
           </Select>
-        </label>
-        <label {...props(styles.field)}>
+        </Label>
+        <Label style={styles.field}>
           <span {...props(styles.label)}>Note for {programName}</span>
           <Textarea
             disabled={isUpdateInFlight || !stage}
             onChange={(event) => setNote(event.currentTarget.value)}
             value={note}
           />
-        </label>
+        </Label>
         <Button
           aria-label={`Save ${programName}`}
           disabled={isUpdateInFlight || !stage}

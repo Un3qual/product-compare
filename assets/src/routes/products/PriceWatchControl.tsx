@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
@@ -104,7 +105,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={styles.content}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>
-          <label htmlFor={ruleId} {...props(styles.field)}>
+          <Label htmlFor={ruleId} style={styles.field}>
             Alert when
             <Select
               items={ruleOptions}
@@ -123,8 +124,8 @@ function PriceWatchForm({ productId }: { productId: string }) {
                 ))}
               </SelectContent>
             </Select>
-          </label>
-          <label htmlFor={currencyId} {...props(styles.field)}>
+          </Label>
+          <Label htmlFor={currencyId} style={styles.field}>
             Currency
             <Input
               id={currencyId}
@@ -134,9 +135,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
               required
               style={styles.input}
             />
-          </label>
+          </Label>
           {amountField.visible ? (
-            <label htmlFor={amountId} {...props(styles.field)}>
+            <Label htmlFor={amountId} style={styles.field}>
               {amountField.label}
               <Input
                 id={amountId}
@@ -147,7 +148,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
                 required
                 style={styles.input}
               />
-            </label>
+            </Label>
           ) : null}
           <Button disabled={mutationPending} type="submit">
             {mutationPending ? "Creating watch…" : "Create watch"}

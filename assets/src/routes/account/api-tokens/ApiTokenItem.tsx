@@ -6,6 +6,7 @@ import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
@@ -256,7 +257,7 @@ function ApiTokenActions({
               type="text"
             />
           </div>
-          <label>
+          <Label>
             {`Replacement expiry for ${displayLabel}`}
             <Input
               name="expiresAt"
@@ -268,7 +269,7 @@ function ApiTokenActions({
               ref={rotateExpiresAtInputRef}
               type="datetime-local"
             />
-          </label>
+          </Label>
           <input name="expiresAtPreset" ref={rotateExpiresAtPresetInputRef} type="hidden" />
           <div>
             {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (

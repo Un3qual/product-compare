@@ -5,7 +5,7 @@ import { tokens } from "../../theme/tokens.stylex";
 const styles = create({
   page: {
     display: "grid",
-    gap: "1.75rem",
+    gap: { default: "1.75rem", "@media (max-width: 42rem)": "1.25rem" },
     marginInline: "auto",
     paddingBlock: tokens.routeSpace,
     paddingInline: "clamp(1rem, 3vw, 2rem)",
@@ -21,7 +21,7 @@ const styles = create({
     alignItems: "end",
     display: "flex",
     flexWrap: "wrap",
-    gap: "1rem 2rem",
+    gap: { default: "1rem 2rem", "@media (max-width: 42rem)": "0.75rem" },
     justifyContent: "space-between",
   },
   heading: {
@@ -45,8 +45,8 @@ const styles = create({
   },
   description: {
     color: tokens.textSecondary,
-    fontSize: "1.05rem",
-    lineHeight: 1.65,
+    fontSize: { default: "1.05rem", "@media (max-width: 42rem)": "0.98rem" },
+    lineHeight: { default: 1.65, "@media (max-width: 42rem)": 1.5 },
     margin: 0,
     maxWidth: "42rem",
   },
@@ -58,7 +58,7 @@ const styles = create({
   },
   content: {
     display: "grid",
-    gap: "1.5rem",
+    gap: { default: "1.5rem", "@media (max-width: 42rem)": "1.15rem" },
     minWidth: 0,
   },
 });

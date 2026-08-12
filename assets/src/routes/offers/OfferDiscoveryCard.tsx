@@ -115,6 +115,9 @@ const styles = create({
     margin: 0,
   },
   priceAvailable: {
+    color: tokens.text,
+  },
+  priceBest: {
     color: tokens.pricePositive,
   },
   priceUnavailable: {
@@ -218,9 +221,11 @@ const styles = create({
 export function OfferDiscoveryCard({
   offer,
   highlightLabel,
+  isBestVisiblePrice,
 }: {
   offer: OfferDiscoveryCard_offer$key;
   highlightLabel: string | null;
+  isBestVisiblePrice: boolean;
 }) {
   const data = useFragment(offerDiscoveryCardFragment, offer);
   const cardData = getOfferDiscoveryCardData(data);
@@ -238,6 +243,7 @@ export function OfferDiscoveryCard({
       <OfferDecisionContext
         hasLatestPrice={Boolean(data.latestPrice)}
         highlightLabel={highlightLabel}
+        isBestVisiblePrice={isBestVisiblePrice}
         latestPriceLabel={cardData.latestPriceLabel}
         offer={data}
         visitLabel={visitLabel}
@@ -255,12 +261,14 @@ export function OfferDiscoveryCard({
 function OfferDecisionContext({
   hasLatestPrice,
   highlightLabel,
+  isBestVisiblePrice,
   latestPriceLabel,
   offer,
   visitLabel,
 }: {
   hasLatestPrice: boolean;
   highlightLabel: string | null;
+  isBestVisiblePrice: boolean;
   latestPriceLabel: string;
   offer: OfferNode;
   visitLabel: string;
@@ -270,10 +278,12 @@ function OfferDecisionContext({
       <div data-slot="offer-card-price" {...props(styles.decisionSection)}>
         <h3 {...props(styles.decisionLabel)}>Current price</h3>
         <p
+          data-best-visible-price={isBestVisiblePrice ? "true" : undefined}
           data-slot="offer-card-price-value"
           {...props(
             styles.price,
             hasLatestPrice ? styles.priceAvailable : styles.priceUnavailable,
+            hasLatestPrice && isBestVisiblePrice && styles.priceBest,
           )}
         >
           {latestPriceLabel}

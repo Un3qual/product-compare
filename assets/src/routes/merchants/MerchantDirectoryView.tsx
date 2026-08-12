@@ -17,6 +17,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildMerchantDirectoryRows,
@@ -132,7 +133,7 @@ export function MerchantDirectoryControls({
 
   return (
     <form action={formAction} method="get" {...props(styles.controls)}>
-      <label>
+      <Label>
         Page size
         <Select items={options} key={pageSize} name="first" defaultValue={String(pageSize)}>
           <SelectTrigger>
@@ -146,7 +147,7 @@ export function MerchantDirectoryControls({
             ))}
           </SelectContent>
         </Select>
-      </label>
+      </Label>
       <Button type="submit">Apply</Button>
     </form>
   );

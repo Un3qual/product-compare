@@ -25,6 +25,8 @@ const styles = stylex.create({
     display: "flex",
     insetInlineEnd: "1rem",
     justifyContent: "center",
+    minHeight: tokens.controlHeight,
+    minWidth: tokens.controlHeight,
     padding: "0.25rem",
     position: "absolute",
     top: "1rem",

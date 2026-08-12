@@ -61,13 +61,21 @@ const styles = create({
     gap: "1.25rem",
     paddingBlockStart: "1.25rem",
   },
-  overview: {
+  decisionHeader: {
     borderBlockColor: tokens.borderQuiet,
     borderBlockStyle: "solid",
     borderBlockWidth: "1px",
     display: "grid",
-    gap: "0.65rem",
+    gap: "1.25rem 2rem",
+    gridTemplateColumns: {
+      default: "minmax(14rem, 0.8fr) minmax(18rem, 1.2fr)",
+      "@media (max-width: 42rem)": "minmax(0, 1fr)",
+    },
     paddingBlock: "1rem",
+  },
+  overview: {
+    display: "grid",
+    gap: "0.65rem",
   },
   overviewTitle: {
     fontSize: "0.82rem",
@@ -104,17 +112,27 @@ export function OfferDiscoveryList({
   const renderableOfferRows = renderableOffers(data);
   const canComparePrices = priceSortUsesSingleCurrency(renderableOfferRows);
   const offers = sortedRenderableOffers(renderableOfferRows, filters.sort, canComparePrices);
+  const summary = buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS);
   return (
     <div {...props(styles.results)}>
       {offers.length === 0 ? (
         <FeedbackState kind="empty" title="No offers match these filters." />
       ) : (
         <>
-          <VisibleOfferOverview
-            summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
+          <div data-slot="offer-decision-header" {...props(styles.decisionHeader)}>
+            <VisibleOfferOverview summary={summary} />
+            <VisibleMerchantFilters filters={filters} offers={offers} />
+          </div>
+          <OfferDataList
+            canComparePrices={canComparePrices}
+            lowestPricedOfferId={
+              summary.priceState === "comparable"
+                ? (summary.lowestPricedOffer?.offer.id ?? null)
+                : null
+            }
+            offers={offers}
+            sort={filters.sort}
           />
-          <VisibleMerchantFilters filters={filters} offers={offers} />
-          <OfferDataList canComparePrices={canComparePrices} offers={offers} sort={filters.sort} />
         </>
       )}
       <OfferPagination connection={data} filters={filters} />
@@ -124,10 +142,12 @@ export function OfferDiscoveryList({
 
 function OfferDataList({
   canComparePrices,
+  lowestPricedOfferId,
   offers,
   sort,
 }: {
   canComparePrices: boolean;
+  lowestPricedOfferId: string | null;
   offers: RenderableOffer[];
   sort: OfferDiscoverySort;
 }) {
@@ -138,6 +158,7 @@ function OfferDataList({
           <OfferDiscoveryCard
             offer={renderableOffer.offer}
             highlightLabel={priceSortHighlightLabel(sort, index, renderableOffer, canComparePrices)}
+            isBestVisiblePrice={renderableOffer.offer.id === lowestPricedOfferId}
           />
         </DataListItem>
       ))}

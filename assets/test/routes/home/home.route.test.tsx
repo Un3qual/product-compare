@@ -411,10 +411,7 @@ test("home renders a decision-led product list and restrained deal rows", async 
   );
   expect(screen.getByRole("tab", { name: "Trending" })).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { hidden: true, name: "More details" })).toHaveAttribute(
-    "aria-expanded",
-    "false",
-  );
+  expect(within(product).queryByRole("button", { name: "More details" })).not.toBeInTheDocument();
   const newOffers = screen.getByRole("list", { name: "New offers" });
   expect(newOffers).toHaveAttribute("data-slot", "home-deals-list");
   expect(within(newOffers).getByRole("listitem")).toHaveAttribute("data-slot", "home-deals-item");

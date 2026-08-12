@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
@@ -13,6 +13,14 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "$ui/primitives/Dialog";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   getOfferDiscoveryFilterData,
@@ -92,17 +100,34 @@ const styles = create({
   advancedFieldsClosed: {
     display: "none",
   },
+  mobileRefine: {
+    display: { default: "none", "@media (max-width: 62rem)": "block" },
+    paddingBlockStart: "0.25rem",
+  },
+  mobileRefineButton: { width: "100%" },
+  dialogContent: {
+    maxWidth: "32rem",
+  },
 });
 
 export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
-  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { formKey } = getOfferDiscoveryFilterData(filters);
+
+  return <OfferDiscoveryFilterFields filters={filters} key={formKey} />;
+}
+
+function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilters }) {
+  const [advancedOpen, setAdvancedOpen] = useState(filters.merchantId !== null);
+  const fieldPrefix = useId();
+  const pageSizeId = `${fieldPrefix}-page-size`;
+  const sortId = `${fieldPrefix}-sort`;
+  const productId = `${fieldPrefix}-product-id`;
+  const merchantId = `${fieldPrefix}-merchant-id`;
 
   return (
     <form
       action="/offers"
       aria-label="Offer discovery filters"
-      key={formKey}
       method="get"
       {...props(styles.form)}
     >
@@ -110,20 +135,21 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
         <Checkbox defaultChecked={!filters.activeOnly} name="activeOnly" value="false" />
         Include inactive offers
       </label>
-      <label>
+      <Label htmlFor={pageSizeId}>
         Page size
         <Input
           autoComplete="off"
           defaultValue={String(filters.first)}
+          id={pageSizeId}
           min={1}
           name="first"
           type="number"
         />
-      </label>
-      <label>
+      </Label>
+      <Label htmlFor={sortId}>
         Sort
         <Select defaultValue={filters.sort} items={OFFER_DISCOVERY_SORT_OPTIONS} name="sort">
-          <SelectTrigger>
+          <SelectTrigger id={sortId}>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -134,7 +160,7 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
             ))}
           </SelectContent>
         </Select>
-      </label>
+      </Label>
       <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen} style={styles.advanced}>
         <CollapsibleTrigger style={styles.disclosureTrigger}>Advanced filters</CollapsibleTrigger>
         <CollapsibleContent
@@ -142,28 +168,49 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
           hidden={!advancedOpen}
           style={advancedOpen ? styles.advancedFields : styles.advancedFieldsClosed}
         >
-          <label>
+          <Label htmlFor={productId}>
             Product ID
             <Input
               autoComplete="off"
               defaultValue={filters.productId ?? ""}
+              id={productId}
               name="productId"
               type="text"
             />
-          </label>
-          <label>
+          </Label>
+          <Label htmlFor={merchantId}>
             Merchant ID
             <Input
               autoComplete="off"
               defaultValue={filters.merchantId ?? ""}
+              id={merchantId}
               name="merchantId"
               type="text"
             />
-          </label>
+          </Label>
         </CollapsibleContent>
       </Collapsible>
       <Button type="submit">Apply filters</Button>
     </form>
+  );
+}
+
+export function MobileOfferDiscoveryFilters({ filters }: { filters: OfferDiscoveryFilters }) {
+  return (
+    <div data-slot="mobile-offer-refinement" {...props(styles.mobileRefine)}>
+      <Dialog>
+        <DialogTrigger render={<Button style={styles.mobileRefineButton} variant="secondary" />}>
+          Refine offers
+        </DialogTrigger>
+        <DialogContent style={styles.dialogContent}>
+          <DialogTitle>Refine offers</DialogTitle>
+          <DialogDescription>
+            Adjust availability, page size, ordering, and advanced product or merchant references.
+          </DialogDescription>
+          <OfferDiscoveryFilterForm filters={filters} />
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
 

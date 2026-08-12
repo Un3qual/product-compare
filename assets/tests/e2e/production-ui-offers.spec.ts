@@ -47,6 +47,7 @@ for (const viewport of OFFER_VIEWPORTS) {
     const priceColors = await page
       .locator('[data-slot="offer-card-price-value"]')
       .evaluateAll((prices) => prices.map((price) => getComputedStyle(price).color));
+    expect(priceColors[1]).not.toBe(priceColors[0]);
     expect(priceColors[2]).not.toBe(priceColors[0]);
 
     const order = await page.evaluate(() => {
@@ -66,6 +67,35 @@ for (const viewport of OFFER_VIEWPORTS) {
 
     expect(order).toEqual({ filtersBeforeList: true, overviewBeforeFilters: true });
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(viewport.width);
+
+    if (viewport.name === "mobile") {
+      const refine = page.getByRole("button", { name: "Refine offers" });
+      const refineBeforeList = await refine.evaluate((button) => {
+        const list = document.querySelector('ul[aria-label="Offers"]');
+        return Boolean(
+          button.compareDocumentPosition(list as Node) & Node.DOCUMENT_POSITION_FOLLOWING,
+        );
+      });
+
+      expect(refineBeforeList).toBe(true);
+      await refine.click();
+      const dialog = page.getByRole("dialog", { name: "Refine offers" });
+      await expect(dialog.getByRole("form", { name: "Offer discovery filters" })).toBeVisible();
+      await expect(dialog.getByRole("spinbutton", { name: "Page size" })).toHaveValue("6");
+      await expect(dialog.getByRole("combobox", { name: "Sort" })).toHaveAttribute(
+        "value",
+        "default",
+      );
+      const close = dialog.getByRole("button", { name: "Close" });
+      await expect
+        .poll(async () => {
+          const closeBox = await close.boundingBox();
+          return (closeBox?.height ?? 0) >= 44 && (closeBox?.width ?? 0) >= 44;
+        })
+        .toBe(true);
+      await close.click();
+      await expect(refine).toBeFocused();
+    }
 
     const offerCard = page.locator('[data-slot="offer-card"]').first();
     const detailsTrigger = offerCard.getByRole("button", {
@@ -113,8 +143,18 @@ for (const viewport of OFFER_VIEWPORTS) {
     await expect(offerCard.getByText("15%", { exact: true })).toBeVisible();
     await expect(offerCard.getByText("Online orders only; exclusions may apply.")).toBeVisible();
 
-    await page.getByRole("button", { name: "Advanced filters" }).click();
-    await expect(page.getByRole("textbox", { name: "Product ID" })).toHaveValue(OFFER_PRODUCT_ID);
-    await expect(page.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("");
+    if (viewport.name === "mobile") {
+      await page.getByRole("button", { name: "Refine offers" }).click();
+      const dialog = page.getByRole("dialog", { name: "Refine offers" });
+      await dialog.getByRole("button", { name: "Advanced filters" }).click();
+      await expect(dialog.getByRole("textbox", { name: "Product ID" })).toHaveValue(
+        OFFER_PRODUCT_ID,
+      );
+      await expect(dialog.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("");
+    } else {
+      await page.getByRole("button", { name: "Advanced filters" }).click();
+      await expect(page.getByRole("textbox", { name: "Product ID" })).toHaveValue(OFFER_PRODUCT_ID);
+      await expect(page.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("");
+    }
   });
 }

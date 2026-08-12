@@ -75,8 +75,8 @@ const styles = create({
   },
   marketLabel: {
     color: tokens.textSecondary,
-    fontFamily: tokens.fontMono,
     fontSize: "0.7rem",
+    fontWeight: 700,
     letterSpacing: "0.04em",
     textTransform: "uppercase",
   },
@@ -88,10 +88,7 @@ const styles = create({
   },
   marketSupporting: {
     alignItems: "center",
-    display: {
-      default: "flex",
-      "@media (max-width: 42rem)": "none",
-    },
+    display: "flex",
     flexWrap: "wrap",
     gap: "0.4rem 0.65rem",
   },
@@ -102,7 +99,6 @@ const styles = create({
     lineHeight: 1.4,
   },
   freshness: {
-    fontFamily: tokens.fontMono,
     fontSize: "0.75rem",
     lineHeight: 1.45,
   },

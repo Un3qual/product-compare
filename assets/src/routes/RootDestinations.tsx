@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "$ui/primitives/Popover";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
+import { MenuIcon, SearchIcon } from "lucide-react";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "$ui/components/brand/CompareMark";
 import { Button, type ButtonProps } from "$ui/primitives/Button";
@@ -23,27 +24,25 @@ const styles = create({
     gap: "0.5rem 1rem",
     gridTemplateColumns: {
       default: "auto minmax(0, 1fr)",
-      "@media (max-width: 48rem)": "minmax(0, 1fr)",
+      "@media (max-width: 48rem)": "minmax(0, 1fr) auto",
     },
     justifyContent: "space-between",
     width: "100%",
   },
   navigationLinks: {
     alignItems: "center",
-    display: {
-      default: "flex",
-      "@media (max-width: 48rem)": "grid",
-    },
+    display: { default: "flex", "@media (max-width: 48rem)": "none" },
     gap: "0.75rem",
-    gridTemplateColumns: {
-      default: "none",
-      "@media (max-width: 48rem)": "repeat(2, minmax(0, 1fr))",
-    },
-    justifyContent: {
-      default: "end",
-      "@media (max-width: 48rem)": "start",
-    },
+    justifyContent: "end",
     width: "100%",
+  },
+  mobileNavigation: {
+    alignItems: "center",
+    display: { default: "none", "@media (max-width: 48rem)": "flex" },
+    gap: "0.4rem",
+  },
+  mobileIconControl: {
+    paddingInline: 0,
   },
   navigationMenu: {
     width: {
@@ -82,10 +81,10 @@ const styles = create({
     letterSpacing: "-0.02em",
     fontWeight: 700,
     textDecoration: "none",
-    width: {
-      default: "auto",
-      "@media (max-width: 48rem)": "100%",
-    },
+    justifySelf: "start",
+    maxWidth: "100%",
+    paddingInline: { default: "0.9rem", "@media (max-width: 48rem)": "0.7rem" },
+    width: "auto",
   },
 });
 
@@ -111,6 +110,13 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
   const operatorDestinations = primary.destinations.filter(({ to }) => isOperatorDestination(to));
   const guestDestinations = viewer ? [] : primary.authDestinations;
   const accountDestinations = viewer ? [...memberDestinations, ...primary.authDestinations] : [];
+  const mobileDestinations = [
+    ...primaryDestinations.filter(({ to }) => to === "/compare"),
+    ...exploreDestinations,
+    ...memberDestinations,
+    ...operatorDestinations,
+    ...(viewer ? primary.authDestinations : guestDestinations),
+  ];
 
   useEffect(() => setOpenMenu(null), [location.pathname, location.search]);
 
@@ -167,7 +173,75 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
           />
         ) : null}
       </div>
+      <div data-slot="root-mobile-navigation-controls" {...props(styles.mobileNavigation)}>
+        <Button
+          aria-label="Search products"
+          render={<NavLink to={destinationWithComparison("/products", selectedSlugs)} />}
+          size="icon"
+          style={styles.mobileIconControl}
+          variant="secondary"
+        >
+          <SearchIcon aria-hidden="true" size={18} />
+        </Button>
+        <MobileNavigationMenu
+          destinations={mobileDestinations}
+          onOpenChange={(open) => setOpenMenu(open ? "Menu" : null)}
+          open={openMenu === "Menu"}
+          selectedSlugs={selectedSlugs}
+        />
+      </div>
     </div>
+  );
+}
+
+function MobileNavigationMenu({
+  destinations,
+  onOpenChange,
+  open,
+  selectedSlugs,
+}: {
+  destinations: readonly RootDestination[];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <Popover onOpenChange={onOpenChange} open={open}>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-label="Menu"
+            size="icon"
+            style={styles.mobileIconControl}
+            variant="secondary"
+          />
+        }
+      >
+        <MenuIcon aria-hidden="true" size={18} />
+      </PopoverTrigger>
+      <PopoverContent aria-label="Menu" align="end" style={styles.navigationMenuPopup}>
+        <nav
+          aria-label="Menu navigation"
+          data-slot="navigation-menu-content"
+          {...props(styles.navigationMenuContent)}
+        >
+          {destinations.map(({ end, label, to }) => (
+            <DestinationLink
+              end={end}
+              key={to}
+              label={label}
+              matchDestination={!isAuthDestination(to)}
+              onNavigate={() => onOpenChange(false)}
+              preserveComparison={!isAuthDestination(to)}
+              selectedSlugs={selectedSlugs}
+              style={styles.menuLink}
+              to={to}
+              variant={isAuthDestination(to) ? "default" : "ghost"}
+            />
+          ))}
+        </nav>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -288,11 +362,7 @@ function NavigationMenu({
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
       <Popover onOpenChange={onOpenChange} open={open}>
         {menuTrigger}
-        <PopoverContent
-          aria-label={`${label} menu`}
-          align="end"
-          style={styles.navigationMenuPopup}
-        >
+        <PopoverContent aria-label={`${label} menu`} align="end" style={styles.navigationMenuPopup}>
           <nav
             aria-label={`${label} navigation`}
             data-slot="navigation-menu-content"

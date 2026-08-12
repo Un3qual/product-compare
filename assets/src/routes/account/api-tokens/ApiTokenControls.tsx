@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { ActionDialog } from "$ui/components/overlays/ActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
 import {
@@ -92,7 +93,7 @@ function CreateApiTokenForm({
         <span id="api-token-label">Label</span>
         <Input aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
       </div>
-      <label>
+      <Label>
         Expires at
         <Input
           name="expiresAt"
@@ -104,7 +105,7 @@ function CreateApiTokenForm({
           ref={expiresAtInputRef}
           type="datetime-local"
         />
-      </label>
+      </Label>
       <input name="expiresAtPreset" ref={expiresAtPresetInputRef} type="hidden" />
       <div>
         {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (

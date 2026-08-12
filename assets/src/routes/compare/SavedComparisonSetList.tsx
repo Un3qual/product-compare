@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import { commitRouteMutation } from "../relay-mutations";
@@ -254,7 +255,7 @@ function SavedComparisonControls({
           value={filterText}
         />
       </div>
-      <label>
+      <Label>
         Sort saved comparisons
         <Select
           items={options}
@@ -272,7 +273,7 @@ function SavedComparisonControls({
             ))}
           </SelectContent>
         </Select>
-      </label>
+      </Label>
       <p {...props(styles.controlNote)}>Filtering and sorting apply to the visible page.</p>
     </div>
   );

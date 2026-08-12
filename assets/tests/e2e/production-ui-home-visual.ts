@@ -1,7 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 
 import { products, type HomeViewportName } from "./production-ui-home-fixture";
-import { expectVisibleFocus, focusByTab } from "./production-ui-home-interactions";
 
 export async function expectHomeVisualSystem(page: Page, viewport: HomeViewportName) {
   const visualSystem = await page.evaluate(() => {
@@ -128,38 +127,23 @@ export async function expectTabletLedgerGeometry(page: Page) {
   expect((widths.summary?.width ?? 0) / widths.list.width).toBeLessThan(0.8);
 }
 
-export async function expectMobileLedgerDisclosure(page: Page) {
+export async function expectMobileLedgerDecisionContext(page: Page) {
   await expect(page.locator('[data-slot="home-ledger-headings"]')).toHaveCount(0);
   const article = page.getByRole("article", { name: products[0].name });
 
   await expect(article.locator('[data-slot="product-ledger-highlights"]')).toBeVisible();
-  await expect(article.locator('[data-slot="product-ledger-price-signal"]')).toBeHidden();
-  await expect(article.locator('[data-slot="product-ledger-freshness"]')).toBeHidden();
+  await expect(article.locator('[data-slot="product-ledger-price-signal"]')).toBeVisible();
+  await expect(article.locator('[data-slot="product-ledger-freshness"]')).toBeVisible();
   await expect(article.locator('[data-slot="product-ledger-offer"]')).toBeVisible();
   await expect(article.locator('[data-slot="product-ledger-actions"]')).toBeVisible();
-
-  const trigger = article.getByRole("button", { name: "More details" });
-  await focusByTab(page, trigger);
-  await expectVisibleFocus(trigger);
-  await page.keyboard.press("Space");
-  const disclosure = article.locator('[data-slot="collapsible-content"]');
-  await expect(disclosure).toBeVisible();
-  await expect(disclosure).not.toContainText("Capacity: 1.0 L");
+  await expect(article.getByRole("button", { name: "More details" })).toHaveCount(0);
   await expect(article.locator('[data-slot="product-ledger-summary"]')).toContainText(
     "Capacity: 1.0 L · Temperature range: 40–100 °C · Warranty: 2 years",
   );
-  await expect(disclosure).toContainText("Below the 30-day price");
-  await expect(disclosure).toContainText("Last checked Aug 10, 2026");
-  await page.keyboard.press("Space");
-  await expect(disclosure).toBeHidden();
-  await trigger.evaluate((element) => element.blur());
-}
-
-export async function expectDisclosureTargets(page: Page) {
-  const disclosures = page.getByRole("button", { name: "More details" });
-  await expect(disclosures).toHaveCount(6);
-  const heights = await disclosures.evaluateAll((buttons) =>
-    buttons.map((button) => button.getBoundingClientRect().height),
+  await expect(article.locator('[data-slot="product-ledger-market"]')).toContainText(
+    "Below the 30-day price",
   );
-  for (const height of heights) expect(height).toBeGreaterThanOrEqual(44);
+  await expect(article.locator('[data-slot="product-ledger-market"]')).toContainText(
+    "Last checked Aug 10, 2026",
+  );
 }

@@ -4,6 +4,7 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { selectGlobalMutationErrors, type MutationError } from "./errors";
 import { Button } from "$ui/primitives/Button";
+import { Alert, AlertDescription } from "$ui/primitives/Alert";
 import { Label } from "$ui/primitives/Label";
 import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
@@ -153,14 +154,14 @@ export function AuthFormShell({
         <FormGlobalErrors errors={visibleErrors} />
 
         {successMessage ? (
-          <div
+          <Alert
             aria-live="polite"
             data-feedback-kind="success"
             data-slot="feedback-state"
             role="status"
           >
-            {successMessage}
-          </div>
+            <AlertDescription>{successMessage}</AlertDescription>
+          </Alert>
         ) : null}
 
         {useRender({
@@ -180,13 +181,23 @@ function FormGlobalErrors({ errors }: { errors: MutationError[] }) {
   }
 
   return (
-    <div aria-live="assertive" data-feedback-kind="error" data-slot="feedback-state" role="alert">
-      <ul {...props(styles.errorList)}>
-        {errors.map((error) => (
-          <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>{error.message}</li>
-        ))}
-      </ul>
-    </div>
+    <Alert
+      aria-live="assertive"
+      data-feedback-kind="error"
+      data-slot="feedback-state"
+      role="alert"
+      variant="destructive"
+    >
+      <AlertDescription>
+        <ul {...props(styles.errorList)}>
+          {errors.map((error) => (
+            <li key={`${error.code}-${error.field ?? "global"}-${error.message}`}>
+              {error.message}
+            </li>
+          ))}
+        </ul>
+      </AlertDescription>
+    </Alert>
   );
 }
 
@@ -198,12 +209,7 @@ function AuthFooterLinks({ footerLinks }: { footerLinks: FooterLink[] }) {
   return (
     <footer {...props(styles.footer)}>
       {footerLinks.map((link) => (
-        <Button
-          key={link.to}
-          render={<Link to={link.to} />}
-          variant="ghost"
-          style={styles.link}
-        >
+        <Button key={link.to} render={<Link to={link.to} />} variant="ghost" style={styles.link}>
           {link.label}
         </Button>
       ))}

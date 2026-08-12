@@ -11,6 +11,7 @@ import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "../relay-mutations";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import type { CompareProductSummary } from "./compare-route-data";
@@ -173,10 +174,10 @@ function SnapshotPublishForm({
 
   return (
     <form onSubmit={handlePublish} {...props(styles.form)}>
-      <label htmlFor={titleId} {...props(styles.field)}>
+      <Label htmlFor={titleId} style={styles.field}>
         Optional title
         <Input id={titleId} name="title" maxLength={120} style={styles.input} />
-      </label>
+      </Label>
       <label htmlFor={searchIndexableId} {...props(styles.field)}>
         <span>
           <Checkbox id={searchIndexableId} name="searchIndexable" /> Allow search engines to

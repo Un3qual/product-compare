@@ -8,6 +8,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import type { CatalogFilters } from "./filters";
 import {
@@ -84,7 +85,7 @@ function NumericFilterFields({ row }: { row: CatalogAdvancedNumericRow }) {
 
   return (
     <div>
-      <label htmlFor={minInputId}>
+      <Label htmlFor={minInputId}>
         {row.displayName} minimum
         <Input
           defaultValue={row.minValue}
@@ -92,8 +93,8 @@ function NumericFilterFields({ row }: { row: CatalogAdvancedNumericRow }) {
           inputMode="decimal"
           name={`numeric.${row.attributeId}.min`}
         />
-      </label>
-      <label htmlFor={maxInputId}>
+      </Label>
+      <Label htmlFor={maxInputId}>
         {row.displayName} maximum
         <Input
           defaultValue={row.maxValue}
@@ -101,7 +102,7 @@ function NumericFilterFields({ row }: { row: CatalogAdvancedNumericRow }) {
           inputMode="decimal"
           name={`numeric.${row.attributeId}.max`}
         />
-      </label>
+      </Label>
     </div>
   );
 }
@@ -129,7 +130,7 @@ function BooleanFilterField({ row }: { row: CatalogAdvancedBooleanRow }) {
   ];
 
   return (
-    <label>
+    <Label>
       {row.displayName}
       <Select defaultValue={row.defaultValue} items={options} name={`boolean.${row.attributeId}`}>
         <SelectTrigger id={`catalog-boolean-${row.attributeId}`}>
@@ -143,7 +144,7 @@ function BooleanFilterField({ row }: { row: CatalogAdvancedBooleanRow }) {
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 

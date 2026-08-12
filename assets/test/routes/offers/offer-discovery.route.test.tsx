@@ -117,7 +117,11 @@ test("offer card leads with the merchant and discloses supporting offer evidence
 
   render(
     <MemoryRouter>
-      <OfferDiscoveryCard highlightLabel="Best price on this page" offer={offer as never} />
+      <OfferDiscoveryCard
+        highlightLabel="Best price on this page"
+        isBestVisiblePrice
+        offer={offer as never}
+      />
     </MemoryRouter>,
   );
 
@@ -201,7 +205,7 @@ test("offer discovery summarizes missing product filters without reset actions",
   ).not.toBeInTheDocument();
 });
 
-test("offer discovery keeps technical filter ids editable behind progressive disclosure", () => {
+test("offer discovery opens technical filters when a merchant filter is active", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 12,
@@ -225,14 +229,12 @@ test("offer discovery keeps technical filter ids editable behind progressive dis
   const productIdInput = filterForm.querySelector<HTMLInputElement>('input[name="productId"]');
   const merchantIdInput = filterForm.querySelector<HTMLInputElement>('input[name="merchantId"]');
 
-  expect(screen.queryByRole("textbox", { name: "Product ID" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("textbox", { name: "Merchant ID" })).not.toBeInTheDocument();
-  expect(productIdInput).not.toBeVisible();
-  expect(merchantIdInput).not.toBeVisible();
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toBeVisible();
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toBeVisible();
+  expect(productIdInput).toBeVisible();
+  expect(merchantIdInput).toBeVisible();
   expect(new FormData(filterForm).get("productId")).toBe("UHJvZHVjdDoxMjM=");
   expect(new FormData(filterForm).get("merchantId")).toBe("TWVyY2hhbnQ6NDU2");
-
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
 
   expect(screen.getByRole("textbox", { name: "Product ID" })).toBeVisible();
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
@@ -339,8 +341,6 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
       <OfferDiscoveryRoute />
     </MemoryRouter>,
   );
-
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
 
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDo5OTk=");
   expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("TWVyY2hhbnQ6NDU2");
@@ -859,6 +859,10 @@ test("offer discovery sorts visible offers by ascending price and labels the fir
 
   expect(bestOffer).not.toBeNull();
   expect(within(bestOffer as HTMLElement).getByText("Best price on this page")).toBeVisible();
+  expect(within(bestOffer as HTMLElement).getByText("129.00 USD")).toHaveAttribute(
+    "data-best-visible-price",
+    "true",
+  );
   expect(screen.getAllByText("Best price on this page")).toHaveLength(1);
 });
 
@@ -890,6 +894,7 @@ test("offer discovery does not price-sort or label mixed-currency pages", () => 
   expect(offerHeadings()).toEqual(["USD Market", "Euro Market"]);
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
   expect(screen.queryByText("Highest price on this page")).not.toBeInTheDocument();
+  expect(document.querySelector('[data-best-visible-price="true"]')).toBeNull();
 });
 
 test("offer discovery sorts visible offers by descending price", () => {

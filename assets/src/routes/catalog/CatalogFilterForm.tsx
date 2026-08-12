@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import {
@@ -148,7 +149,7 @@ function SearchField({
   onQueryChange: (query: string) => void;
 }) {
   return (
-    <label>
+    <Label>
       Search products
       <Input
         type="search"
@@ -157,7 +158,7 @@ function SearchField({
         onChange={(event) => onQueryChange(event.currentTarget.value)}
         maxLength={MAX_CATALOG_SEARCH_QUERY_LENGTH}
       />
-    </label>
+    </Label>
   );
 }
 
@@ -184,7 +185,7 @@ function SortField({
   }));
 
   return (
-    <label>
+    <Label>
       Sort products
       <Select
         items={options}
@@ -203,7 +204,7 @@ function SortField({
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 
@@ -228,7 +229,7 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
   }));
 
   return (
-    <label>
+    <Label>
       Products per page
       <Select items={options} key={pageSize} name="first" defaultValue={String(pageSize)}>
         <SelectTrigger>
@@ -242,7 +243,7 @@ function PageSizeField({ pageSize }: { pageSize: number }) {
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 
@@ -265,7 +266,7 @@ function ProductTypeField({
   ];
 
   return (
-    <label>
+    <Label>
       Product type
       <Select
         items={options}
@@ -284,7 +285,7 @@ function ProductTypeField({
           ))}
         </SelectContent>
       </Select>
-    </label>
+    </Label>
   );
 }
 

@@ -23,9 +23,8 @@ import {
 } from "./production-ui-home-interactions";
 import {
   expectDesktopLedgerGeometry,
-  expectDisclosureTargets,
   expectHomeVisualSystem,
-  expectMobileLedgerDisclosure,
+  expectMobileLedgerDecisionContext,
   expectTabletLedgerGeometry,
 } from "./production-ui-home-visual";
 
@@ -211,7 +210,7 @@ test("optional deals failure stays local and retry restores offers", async ({ pa
   expect(dealsAttempts).toBe(2);
 });
 
-test("keyboard navigation exposes focus and reduced motion keeps disclosure behavior", async ({
+test("keyboard navigation exposes focus and reduced motion suppresses menu transitions", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -237,17 +236,16 @@ test("keyboard navigation exposes focus and reduced motion keeps disclosure beha
 
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/");
-  const disclosure = page.getByRole("button", { name: "More details" }).first();
-  await focusByTab(page, disclosure);
-  await expectVisibleFocus(disclosure);
-  await page.keyboard.press("Enter");
-  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
-  const disclosureContent = page.locator('[data-slot="collapsible-content"]').first();
-  await expect(disclosureContent).toBeVisible();
-  const reducedAnimationDuration = await disclosureContent.evaluate(
-    (element) => getComputedStyle(element).animationDuration,
+  const menu = page.getByRole("button", { name: "Menu" });
+  await menu.click();
+  const menuPopup = page.locator('[data-slot="popover-content"]');
+  await expect(menuPopup).toBeVisible();
+  const transitionDurations = await menuPopup.evaluate(
+    (element) => getComputedStyle(element).transitionDuration,
   );
-  expect(Number.parseFloat(reducedAnimationDuration)).toBeLessThanOrEqual(0.00001);
+  for (const duration of transitionDurations.split(",")) {
+    expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.00001);
+  }
 });
 
 for (const viewport of VIEWPORTS) {
@@ -292,9 +290,8 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByRole("button", { name: "More details" })).toHaveCount(0);
       await expectTabletLedgerGeometry(page);
     } else {
-      await expectDisclosureTargets(page);
       await expectMobileNavigation(page);
-      await expectMobileLedgerDisclosure(page);
+      await expectMobileLedgerDecisionContext(page);
       for (const product of products) {
         await expect(page.getByRole("heading", { name: product.name })).toHaveCount(1);
       }

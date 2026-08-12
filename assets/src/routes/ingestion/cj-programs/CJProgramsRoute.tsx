@@ -15,6 +15,7 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
+import { Label } from "$ui/primitives/Label";
 import {
   Select,
   SelectContent,
@@ -211,7 +212,7 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
       {pagination.unmatchedAfter ? (
         <input name="unmatchedAfter" type="hidden" value={pagination.unmatchedAfter} />
       ) : null}
-      <label {...props(styles.field)}>
+      <Label style={styles.field}>
         <span {...props(styles.label)}>Stage</span>
         <Select defaultValue={stageValue} items={stageOptions} key={stageValue} name="stage">
           <SelectTrigger>
@@ -225,8 +226,8 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
             ))}
           </SelectContent>
         </Select>
-      </label>
-      <label {...props(styles.field)}>
+      </Label>
+      <Label style={styles.field}>
         <span {...props(styles.label)}>Sort programs</span>
         <Select defaultValue={sortValue} items={sortOptions} key={sortValue} name="sort">
           <SelectTrigger>
@@ -240,7 +241,7 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
             ))}
           </SelectContent>
         </Select>
-      </label>
+      </Label>
       <Button type="submit">Apply</Button>
     </form>
   );
