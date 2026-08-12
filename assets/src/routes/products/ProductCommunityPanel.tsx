@@ -296,35 +296,7 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
       <CollapsibleTrigger render={<Button variant="link" />}>Write a review</CollapsibleTrigger>
       <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
-          <Label htmlFor={`${fieldId}-rating`} style={styles.field}>
-            Rating
-            <Select defaultValue="5" items={REVIEW_RATING_OPTIONS} name="rating">
-              <SelectTrigger id={`${fieldId}-rating`} style={styles.input}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {REVIEW_RATING_OPTIONS.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Label>
-          <Label htmlFor={`${fieldId}-title`} style={styles.field}>
-            Title
-            <Input id={`${fieldId}-title`} name="title" maxLength={120} style={styles.input} />
-          </Label>
-          <Label htmlFor={`${fieldId}-body`} style={styles.field}>
-            Review
-            <Textarea
-              id={`${fieldId}-body`}
-              name="body"
-              maxLength={5000}
-              rows={4}
-              style={styles.input}
-            />
-          </Label>
+          <ReviewSubmissionFields fieldId={fieldId} />
           <Button disabled={pending} type="submit">
             {pending ? "Submitting…" : "Submit review"}
           </Button>
@@ -332,6 +304,42 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
         </form>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+function ReviewSubmissionFields({ fieldId }: { fieldId: string }) {
+  return (
+    <>
+      <Label htmlFor={`${fieldId}-rating`} style={styles.field}>
+        Rating
+        <Select defaultValue="5" items={REVIEW_RATING_OPTIONS} name="rating">
+          <SelectTrigger id={`${fieldId}-rating`} style={styles.input}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {REVIEW_RATING_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label htmlFor={`${fieldId}-title`} style={styles.field}>
+        Title
+        <Input id={`${fieldId}-title`} name="title" maxLength={120} style={styles.input} />
+      </Label>
+      <Label htmlFor={`${fieldId}-body`} style={styles.field}>
+        Review
+        <Textarea
+          id={`${fieldId}-body`}
+          name="body"
+          maxLength={5000}
+          rows={4}
+          style={styles.input}
+        />
+      </Label>
+    </>
   );
 }
 

@@ -234,13 +234,7 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
   return (
     <li aria-busy={isUpdateInFlight} {...props(styles.item)}>
       {programSummary}
-      {warnings.length > 0 ? (
-        <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
-          {warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      ) : null}
+      <CJProgramWarnings programName={programName} warnings={warnings} />
       <div {...props(styles.controls)}>
         <Label style={styles.field}>
           <span {...props(styles.label)}>Stage for {programName}</span>
@@ -287,6 +281,26 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
       {feedback ? <p role="status">{feedback}</p> : null}
       <CJProgramFeedDisclosure programId={program.id} programName={programName} />
     </li>
+  );
+}
+
+function CJProgramWarnings({
+  programName,
+  warnings,
+}: {
+  programName: string;
+  warnings: readonly string[];
+}) {
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
+      {warnings.map((warning) => (
+        <li key={warning}>{warning}</li>
+      ))}
+    </ul>
   );
 }
 

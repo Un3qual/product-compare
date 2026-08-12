@@ -111,7 +111,9 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
 }
 
 function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilters }) {
-  const [advancedOpen, setAdvancedOpen] = useState(filters.merchantId !== null);
+  const [advancedOpen, setAdvancedOpen] = useState(
+    filters.productId !== null || filters.merchantId !== null,
+  );
   const fieldPrefix = useId();
   const pageSizeId = `${fieldPrefix}-page-size`;
   const sortId = `${fieldPrefix}-sort`;
@@ -128,6 +130,37 @@ function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilter
       {filters.compareSlugs.map((slug) => (
         <input key={slug} name="slug" type="hidden" value={slug} />
       ))}
+      <OfferDiscoveryPrimaryFields filters={filters} pageSizeId={pageSizeId} sortId={sortId} />
+      <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen} style={styles.advanced}>
+        <CollapsibleTrigger render={<Button variant="link" />}>Advanced filters</CollapsibleTrigger>
+        <CollapsibleContent
+          keepMounted
+          hidden={!advancedOpen}
+          style={advancedOpen ? styles.advancedFields : styles.advancedFieldsClosed}
+        >
+          <OfferDiscoveryAdvancedFields
+            filters={filters}
+            merchantId={merchantId}
+            productId={productId}
+          />
+        </CollapsibleContent>
+      </Collapsible>
+      <Button type="submit">Apply filters</Button>
+    </form>
+  );
+}
+
+function OfferDiscoveryPrimaryFields({
+  filters,
+  pageSizeId,
+  sortId,
+}: {
+  filters: OfferDiscoveryFilters;
+  pageSizeId: string;
+  sortId: string;
+}) {
+  return (
+    <>
       <label>
         <Checkbox defaultChecked={!filters.activeOnly} name="activeOnly" value="false" />
         Include inactive offers
@@ -158,37 +191,42 @@ function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilter
           </SelectContent>
         </Select>
       </Label>
-      <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen} style={styles.advanced}>
-        <CollapsibleTrigger render={<Button variant="link" />}>Advanced filters</CollapsibleTrigger>
-        <CollapsibleContent
-          keepMounted
-          hidden={!advancedOpen}
-          style={advancedOpen ? styles.advancedFields : styles.advancedFieldsClosed}
-        >
-          <Label htmlFor={productId}>
-            Product ID
-            <Input
-              autoComplete="off"
-              defaultValue={filters.productId ?? ""}
-              id={productId}
-              name="productId"
-              type="text"
-            />
-          </Label>
-          <Label htmlFor={merchantId}>
-            Merchant ID
-            <Input
-              autoComplete="off"
-              defaultValue={filters.merchantId ?? ""}
-              id={merchantId}
-              name="merchantId"
-              type="text"
-            />
-          </Label>
-        </CollapsibleContent>
-      </Collapsible>
-      <Button type="submit">Apply filters</Button>
-    </form>
+    </>
+  );
+}
+
+function OfferDiscoveryAdvancedFields({
+  filters,
+  merchantId,
+  productId,
+}: {
+  filters: OfferDiscoveryFilters;
+  merchantId: string;
+  productId: string;
+}) {
+  return (
+    <>
+      <Label htmlFor={productId}>
+        Product ID
+        <Input
+          autoComplete="off"
+          defaultValue={filters.productId ?? ""}
+          id={productId}
+          name="productId"
+          type="text"
+        />
+      </Label>
+      <Label htmlFor={merchantId}>
+        Merchant ID
+        <Input
+          autoComplete="off"
+          defaultValue={filters.merchantId ?? ""}
+          id={merchantId}
+          name="merchantId"
+          type="text"
+        />
+      </Label>
+    </>
   );
 }
 

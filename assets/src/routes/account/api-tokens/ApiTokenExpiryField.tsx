@@ -54,7 +54,9 @@ export function ApiTokenExpiryField({
 
     const clearSelectedPreset = () => setSelectedPreset("");
     form.addEventListener("reset", clearSelectedPreset);
-    return () => form.removeEventListener("reset", clearSelectedPreset);
+    return () => {
+      form.removeEventListener("reset", clearSelectedPreset);
+    };
   }, [inputRef]);
 
   return (

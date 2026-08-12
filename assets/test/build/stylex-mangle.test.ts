@@ -2,6 +2,7 @@ import stylexMangle from "stylex-mangle-classnames";
 import {
   findGeneratedStylexClassNames,
   findMangledStylexClassNames,
+  shortStylexClassName,
 } from "../../scripts/stylex-output";
 import { reactWithStyleX, STYLEX_CLASS_NAME_PREFIX } from "../../stylex-plugin";
 import { createServer } from "vite";
@@ -48,6 +49,13 @@ test("generated classes follow the a-to-z then aa sequence", () => {
     'const classes = "a b c d e f g h i j k l m n o p q r s t u v w x y z aa ab";',
   );
 });
+
+test.each([-1, 1.5, Number.POSITIVE_INFINITY])(
+  "short class names reject invalid sequence index %s",
+  (index) => {
+    expect(() => shortStylexClassName(index)).toThrow("non-negative integer");
+  },
+);
 
 test("build mappings stay stable when bundle encounter order differs", () => {
   const source = (classNames: string[]) =>

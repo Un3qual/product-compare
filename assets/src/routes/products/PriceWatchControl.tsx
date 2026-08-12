@@ -49,6 +49,19 @@ const styles = create({
   message: { color: "var(--pc-text-secondary)", margin: 0 },
 });
 
+const PRICE_WATCH_RULE_OPTIONS = [
+  { label: "Landed price reaches a target", value: "TARGET_PRICE" },
+  {
+    label: "Landed price drops by a percentage",
+    value: "PERCENTAGE_DROP",
+  },
+  { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
+  {
+    label: "A qualifying offer becomes available",
+    value: "NEWLY_AVAILABLE",
+  },
+];
+
 export function PriceWatchControl({ productId }: { productId: string }) {
   return <PriceWatchForm key={productId} productId={productId} />;
 }
@@ -85,18 +98,6 @@ function PriceWatchForm({ productId }: { productId: string }) {
   }
 
   const amountField = getPriceWatchAmountFieldData(ruleType);
-  const ruleOptions = [
-    { label: "Landed price reaches a target", value: "TARGET_PRICE" },
-    {
-      label: "Landed price drops by a percentage",
-      value: "PERCENTAGE_DROP",
-    },
-    { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
-    {
-      label: "A qualifying offer becomes available",
-      value: "NEWLY_AVAILABLE",
-    },
-  ];
 
   return (
     <Collapsible style={styles.details}>
@@ -105,26 +106,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={styles.content}>
         <form onSubmit={handleSubmit} {...props(styles.form)}>
-          <Label htmlFor={ruleId} style={styles.field}>
-            Alert when
-            <Select
-              items={ruleOptions}
-              name="ruleType"
-              onValueChange={(value) => setRuleType(priceWatchRuleTypeFromValue(value ?? ""))}
-              value={ruleType}
-            >
-              <SelectTrigger id={ruleId} style={styles.input}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {ruleOptions.map((option) => (
-                  <SelectItem key={option.value} value={option.value}>
-                    {option.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </Label>
+          <PriceWatchRuleField id={ruleId} onChange={setRuleType} value={ruleType} />
           <Label htmlFor={currencyId} style={styles.field}>
             Currency
             <Input
@@ -136,20 +118,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
               style={styles.input}
             />
           </Label>
-          {amountField.visible ? (
-            <Label htmlFor={amountId} style={styles.field}>
-              {amountField.label}
-              <Input
-                id={amountId}
-                name="amount"
-                inputMode="decimal"
-                min="0.01"
-                step="0.01"
-                required
-                style={styles.input}
-              />
-            </Label>
-          ) : null}
+          <PriceWatchAmountField amountField={amountField} id={amountId} />
           <Button disabled={mutationPending} type="submit">
             {mutationPending ? "Creating watch…" : "Create watch"}
           </Button>
@@ -162,5 +131,65 @@ function PriceWatchForm({ productId }: { productId: string }) {
         </form>
       </CollapsibleContent>
     </Collapsible>
+  );
+}
+
+function PriceWatchRuleField({
+  id,
+  onChange,
+  value,
+}: {
+  id: string;
+  onChange: (value: PriceWatchRuleType) => void;
+  value: PriceWatchRuleType;
+}) {
+  return (
+    <Label htmlFor={id} style={styles.field}>
+      Alert when
+      <Select
+        items={PRICE_WATCH_RULE_OPTIONS}
+        name="ruleType"
+        onValueChange={(nextValue) => onChange(priceWatchRuleTypeFromValue(nextValue ?? ""))}
+        value={value}
+      >
+        <SelectTrigger id={id} style={styles.input}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {PRICE_WATCH_RULE_OPTIONS.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Label>
+  );
+}
+
+function PriceWatchAmountField({
+  amountField,
+  id,
+}: {
+  amountField: ReturnType<typeof getPriceWatchAmountFieldData>;
+  id: string;
+}) {
+  if (!amountField.visible) {
+    return null;
+  }
+
+  return (
+    <Label htmlFor={id} style={styles.field}>
+      {amountField.label}
+      <Input
+        id={id}
+        name="amount"
+        inputMode="decimal"
+        min="0.01"
+        step="0.01"
+        required
+        style={styles.input}
+      />
+    </Label>
   );
 }

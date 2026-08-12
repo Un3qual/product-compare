@@ -1,17 +1,21 @@
 const SHORT_CLASS_NAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz";
-const CSS_IDENTIFIER_CHARACTER = "A-Za-z0-9_-";
+const stylexClassSelectorPattern = /\.([_A-Za-z][_A-Za-z0-9-]*)(?=[{:[.#])/g;
 const mangledClassSelectorPattern = /\.([a-z]+)(?=[{:[.#])/g;
 const stylexRulePattern = /\b(?:ltr|rtl)\s*:\s*(?:`([^`]*)`|"((?:\\.|[^"\\])*)")/g;
-
-function escapeRegularExpression(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
+const stylexHashPattern = /^(?:0|[1-9a-z][0-9a-z]*)$/;
 
 export function findStylexRules(source: string): Set<string> {
   const rules = new Set<string>();
 
   for (const match of source.matchAll(stylexRulePattern)) {
-    rules.add(match[1] ?? JSON.parse(`"${match[2]}"`));
+    const templateRule = match[1];
+    const quotedRule = match[2];
+
+    if (templateRule !== undefined) {
+      rules.add(templateRule);
+    } else if (quotedRule !== undefined) {
+      rules.add(JSON.parse(`"${quotedRule}"`));
+    }
   }
 
   return rules;
@@ -21,16 +25,14 @@ export function findGeneratedStylexClassNames(
   source: string,
   classNamePrefix: string,
 ): Set<string> {
-  const prefix = escapeRegularExpression(classNamePrefix);
-  const selectorPattern = new RegExp(
-    `\\.(${prefix}(?:0|[1-9a-z][0-9a-z]*))(?![${CSS_IDENTIFIER_CHARACTER}])`,
-    "g",
-  );
   const classNames = new Set<string>();
 
   for (const rule of findStylexRules(source)) {
-    for (const match of rule.matchAll(selectorPattern)) {
-      classNames.add(match[1]!);
+    for (const match of rule.matchAll(stylexClassSelectorPattern)) {
+      const className = match[1];
+      if (className && isGeneratedStylexClassName(className, classNamePrefix)) {
+        classNames.add(className);
+      }
     }
   }
 
@@ -42,7 +44,10 @@ export function findMangledStylexClassNames(source: string): Set<string> {
 
   for (const rule of findStylexRules(source)) {
     for (const match of rule.matchAll(mangledClassSelectorPattern)) {
-      classNames.add(match[1]!);
+      const className = match[1];
+      if (className) {
+        classNames.add(className);
+      }
     }
   }
 
@@ -50,13 +55,25 @@ export function findMangledStylexClassNames(source: string): Set<string> {
 }
 
 export function shortStylexClassName(index: number): string {
+  if (!Number.isSafeInteger(index) || index < 0) {
+    throw new RangeError("StyleX class-name sequence index must be a non-negative integer");
+  }
+
   let remainder = index;
   let result = "";
 
   do {
-    result = SHORT_CLASS_NAME_ALPHABET[remainder % SHORT_CLASS_NAME_ALPHABET.length]! + result;
+    result =
+      SHORT_CLASS_NAME_ALPHABET.charAt(remainder % SHORT_CLASS_NAME_ALPHABET.length) + result;
     remainder = Math.floor(remainder / SHORT_CLASS_NAME_ALPHABET.length) - 1;
   } while (remainder >= 0);
 
   return result;
+}
+
+export function isGeneratedStylexClassName(className: string, classNamePrefix: string): boolean {
+  return (
+    className.startsWith(classNamePrefix) &&
+    stylexHashPattern.test(className.slice(classNamePrefix.length))
+  );
 }

@@ -258,34 +258,48 @@ function AttributionLedgerCell({
     case "identity":
       return <AttributionIdentity click={click} />;
     case "diagnostics":
-      return (
-        <dl {...props(styles.details)}>
-          <dt>Referrer</dt>
-          <dd>{click.referrer ?? "Not captured"}</dd>
-          <dt>User agent</dt>
-          <dd>{click.userAgent ?? "Not captured"}</dd>
-          <dt>IP address</dt>
-          <dd>{click.ipAddress ?? "Not captured"}</dd>
-        </dl>
-      );
+      return <AttributionDiagnostics click={click} />;
     case "commerce":
-      return (
-        <dl {...props(styles.details)}>
-          <dt>Merchant</dt>
-          <dd>{click.merchantName}</dd>
-          <dt>Product</dt>
-          <dd>{click.productName ?? "No product"}</dd>
-          <dt>Merchant product</dt>
-          <dd>{click.merchantProductExternalSku ?? "No SKU"}</dd>
-          <dt>Program</dt>
-          <dd>{click.affiliateProgramCode ?? "No affiliate program"}</dd>
-          <dt>Network</dt>
-          <dd>{click.affiliateNetworkName ?? "No affiliate network"}</dd>
-        </dl>
-      );
+      return <AttributionCommerce click={click} />;
     case "conversions":
       return <AttributionConversionList conversions={click.matchedConversions} />;
+    default:
+      return assertNever(column);
   }
+}
+
+function AttributionDiagnostics({ click }: { click: AttributionClick }) {
+  return (
+    <dl {...props(styles.details)}>
+      <dt>Referrer</dt>
+      <dd>{click.referrer ?? "Not captured"}</dd>
+      <dt>User agent</dt>
+      <dd>{click.userAgent ?? "Not captured"}</dd>
+      <dt>IP address</dt>
+      <dd>{click.ipAddress ?? "Not captured"}</dd>
+    </dl>
+  );
+}
+
+function AttributionCommerce({ click }: { click: AttributionClick }) {
+  return (
+    <dl {...props(styles.details)}>
+      <dt>Merchant</dt>
+      <dd>{click.merchantName}</dd>
+      <dt>Product</dt>
+      <dd>{click.productName ?? "No product"}</dd>
+      <dt>Merchant product</dt>
+      <dd>{click.merchantProductExternalSku ?? "No SKU"}</dd>
+      <dt>Program</dt>
+      <dd>{click.affiliateProgramCode ?? "No affiliate program"}</dd>
+      <dt>Network</dt>
+      <dd>{click.affiliateNetworkName ?? "No affiliate network"}</dd>
+    </dl>
+  );
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unsupported attribution ledger column: ${String(value)}`);
 }
 
 function AttributionClickDetails({ click }: { click: AttributionClick }) {

@@ -1,10 +1,10 @@
-import * as stylex from "@stylexjs/stylex";
+import { create } from "@stylexjs/stylex";
 import { Badge, type BadgeProps } from "../../primitives/Badge";
 import { tokens } from "../../theme/tokens.stylex";
 
 export type StatusTone = "accent" | "danger" | "neutral" | "positive" | "warning";
 
-const styles = stylex.create({
+const styles = create({
   accent: { backgroundColor: "var(--pc-brand-50)", color: "var(--pc-brand-700)" },
   danger: { backgroundColor: "var(--pc-red-50)", color: "var(--pc-danger)" },
   neutral: {},

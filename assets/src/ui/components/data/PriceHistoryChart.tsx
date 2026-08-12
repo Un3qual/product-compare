@@ -63,87 +63,7 @@ export function PriceHistoryChart({
   rows: ReadonlyArray<PriceHistoryChartDatum>;
 }) {
   const points = useMemo(() => prepareChartPoints(rows), [rows]);
-  const definition = useMemo(() => {
-    const observedTimestampTicks = chartTimestampTicks(points);
-    const observedDatesByTimestamp = new Map(
-      points.map((point) => [point.observedTimestamp, point.observedDate]),
-    );
-
-    return defineChart({
-      focus: "group-x",
-      marks: [
-        lineY(points, {
-          id: "price-history-line",
-          key: "id",
-          points: false,
-          stroke: tokens.actionAccent,
-          strokeWidth: 2,
-          x: "observedTimestamp",
-          y: "priceValue",
-        }),
-        dot(points, {
-          fill: tokens.surfaceRaised,
-          id: "price-history-points",
-          key: "id",
-          r: 4,
-          stroke: tokens.actionAccent,
-          strokeWidth: 2,
-          x: "observedTimestamp",
-          y: "priceValue",
-        }),
-      ],
-      svgAnimation: false,
-      theme: {
-        background: "transparent",
-        foreground: tokens.textSecondary,
-        grid: tokens.borderQuiet,
-        muted: tokens.textSubtle,
-        palette: [tokens.actionAccent],
-      },
-      tooltip: {
-        use: tooltip,
-        items: [
-          {
-            channel: "y",
-            label: "Price",
-            text: (point) => point.datum.priceText,
-          },
-          {
-            channel: "x",
-            label: "Observed",
-            text: (point) => point.datum.observedDate,
-          },
-        ],
-        sticky: true,
-      },
-      x: {
-        axis: {
-          tickLabels: {
-            anchor: ({ value }) => timestampTickAnchor(value, observedTimestampTicks),
-          },
-          ticks: {
-            format: (value) =>
-              formatObservedDate(observedDatesByTimestamp.get(value)) ||
-              formatObservedTimestamp(value),
-            values: observedTimestampTicks,
-          },
-        },
-        scale: scaleLinear,
-      },
-      y: {
-        axis: {
-          tickLabels: { thin: true },
-          ticks: {
-            count: 3,
-            format: (value) => priceFormatter.format(value),
-          },
-        },
-        grid: true,
-        nice: true,
-        scale: scaleLinear,
-      },
-    });
-  }, [points]);
+  const definition = useMemo(() => createPriceHistoryDefinition(points), [points]);
 
   return (
     <figure data-slot="price-history-chart" {...props(styles.root)}>
@@ -156,25 +76,139 @@ export function PriceHistoryChart({
           initialWidth={360}
         />
       </div>
-      <table aria-label={`${label} data`} {...props(styles.visuallyHidden)}>
-        <thead>
-          <tr>
-            <th scope="col">Observed</th>
-            <th scope="col">Price</th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((point) => (
-            <tr key={point.id}>
-              <td>
-                <time dateTime={point.observedAt}>{point.observedDate}</time>
-              </td>
-              <td>{point.priceText}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <PriceHistoryDataTable label={label} points={points} />
     </figure>
+  );
+}
+
+function createPriceHistoryDefinition(points: ReadonlyArray<PriceHistoryChartPoint>) {
+  return defineChart({
+    focus: "group-x",
+    marks: createPriceHistoryMarks(points),
+    svgAnimation: false,
+    theme: {
+      background: "transparent",
+      foreground: tokens.textSecondary,
+      grid: tokens.borderQuiet,
+      muted: tokens.textSubtle,
+      palette: [tokens.actionAccent],
+    },
+    tooltip: {
+      use: tooltip,
+      items: [
+        {
+          channel: "y",
+          label: "Price",
+          text: (point) => point.datum.priceText,
+        },
+        {
+          channel: "x",
+          label: "Observed",
+          text: (point) => point.datum.observedDate,
+        },
+      ],
+      sticky: true,
+    },
+    x: createPriceHistoryXAxis(points),
+    y: {
+      axis: {
+        tickLabels: { thin: true },
+        ticks: {
+          count: 3,
+          format: (value) => priceFormatter.format(value),
+        },
+      },
+      grid: true,
+      nice: true,
+      scale: scaleLinear,
+    },
+  });
+}
+
+function createPriceHistoryMarks(points: ReadonlyArray<PriceHistoryChartPoint>) {
+  return [
+    lineY(points, {
+      id: "price-history-line",
+      key: "id",
+      points: false,
+      stroke: tokens.actionAccent,
+      strokeWidth: 2,
+      x: "observedTimestamp",
+      y: "priceValue",
+    }),
+    dot(points, {
+      fill: tokens.surfaceRaised,
+      id: "price-history-points",
+      key: "id",
+      r: 4,
+      stroke: tokens.actionAccent,
+      strokeWidth: 2,
+      x: "observedTimestamp",
+      y: "priceValue",
+    }),
+  ];
+}
+
+function createPriceHistoryXAxis(points: ReadonlyArray<PriceHistoryChartPoint>) {
+  const observedTimestampTicks = chartTimestampTicks(points);
+  const observedDatesByTimestamp = new Map(
+    points.map((point) => [point.observedTimestamp, point.observedDate]),
+  );
+
+  return {
+    axis: {
+      tickLabels: {
+        anchor: ({ value }: { value: number }) =>
+          timestampTickAnchor(value, observedTimestampTicks),
+      },
+      ticks: {
+        format: (value: number) =>
+          formatObservedDate(observedDatesByTimestamp.get(value)) || formatObservedTimestamp(value),
+        values: observedTimestampTicks,
+      },
+    },
+    scale: scaleLinear,
+  };
+}
+
+function PriceHistoryDataTable({
+  label,
+  points,
+}: {
+  label: string;
+  points: ReadonlyArray<PriceHistoryChartPoint>;
+}) {
+  return (
+    <table aria-label={`${label} data`} {...props(styles.visuallyHidden)}>
+      <thead>
+        <PriceHistoryDataHeader />
+      </thead>
+      <tbody>
+        {points.map((point) => (
+          <PriceHistoryDataRow key={point.id} point={point} />
+        ))}
+      </tbody>
+    </table>
+  );
+}
+
+function PriceHistoryDataHeader() {
+  return (
+    <tr>
+      <th scope="col">Observed</th>
+      <th scope="col">Price</th>
+    </tr>
+  );
+}
+
+function PriceHistoryDataRow({ point }: { point: PriceHistoryChartPoint }) {
+  return (
+    <tr>
+      <td>
+        <time dateTime={point.observedAt}>{point.observedDate}</time>
+      </td>
+      <td>{point.priceText}</td>
+    </tr>
   );
 }
 

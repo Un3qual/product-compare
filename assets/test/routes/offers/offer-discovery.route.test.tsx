@@ -261,6 +261,19 @@ test("offer discovery opens technical filters when a merchant filter is active",
   ]);
 });
 
+test("offer discovery opens technical filters when only a product filter is active", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ merchantId: null }));
+
+  renderOfferDiscoveryRoute();
+
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toBeVisible();
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toBeVisible();
+});
+
 test("offer discovery presents one product scope instead of a filter definition dump", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
@@ -1252,8 +1265,10 @@ test("offer discovery retains the product reference when selected product data i
     within(filterSummary).queryByRole("link", { name: "View product details" }),
   ).not.toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
-
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 
@@ -1270,8 +1285,10 @@ test("offer discovery retains the product reference for non-product nodes", () =
     within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
   ).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
-
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 
@@ -1359,8 +1376,10 @@ test("offer discovery renders the loader error state", () => {
     within(filterSummary).getByText("Showing active offers, sorted by Default order, 6 per page."),
   ).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
-
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(6);
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("default");
@@ -1383,8 +1402,10 @@ test("offer discovery keeps product scope and advanced reference available while
     within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
   ).toBeVisible();
 
-  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
-
+  expect(screen.getByRole("button", { name: "Advanced filters" })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+  );
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 

@@ -176,52 +176,66 @@ function ProductLedgerItem({
   return (
     <li {...props(styles.row)}>
       <article aria-labelledby={`product-ledger-${row.id}`} {...props(styles.article)}>
-        <div data-slot="product-ledger-context" {...props(styles.context)}>
-          <div data-slot="product-ledger-summary" {...props(styles.summary)}>
-            <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
-              {row.title}
-            </h3>
-            <p data-slot="product-ledger-highlights" {...props(styles.highlights)}>
-              {row.highlights}
-            </p>
-          </div>
-          <div data-slot="product-ledger-market" {...props(styles.market)}>
-            <span data-tone="secondary" {...props(styles.marketLabel)}>
-              Best available
-            </span>
-            <span data-slot="product-ledger-offer" {...props(styles.offer)}>
-              {row.offer}
-            </span>
-            <div {...props(styles.marketSupporting)}>
-              <span data-slot="product-ledger-price-signal" {...props(styles.priceSignal)}>
-                {row.priceSignal}
-              </span>
-              <StatusBadge
-                data-slot="product-ledger-freshness"
-                style={styles.freshness}
-                tone="positive"
-              >
-                {row.freshness}
-              </StatusBadge>
-            </div>
-          </div>
-        </div>
+        <ProductLedgerContext row={row} />
         <div data-slot="product-ledger-actions" {...props(styles.actions)}>
           {row.actions}
         </div>
-        {row.secondaryDetails ? (
-          <Collapsible style={styles.disclosure}>
-            <CollapsibleTrigger
-              render={<Button variant="link" style={styles.disclosureTrigger} />}
-            >
-              {secondaryDisclosureLabel}
-            </CollapsibleTrigger>
-            <CollapsibleContent style={styles.disclosureContent}>
-              {row.secondaryDetails}
-            </CollapsibleContent>
-          </Collapsible>
-        ) : null}
+        <ProductLedgerSecondaryDetails label={secondaryDisclosureLabel} row={row} />
       </article>
     </li>
+  );
+}
+
+function ProductLedgerContext({ row }: { row: ProductLedgerRow }) {
+  return (
+    <div data-slot="product-ledger-context" {...props(styles.context)}>
+      <div data-slot="product-ledger-summary" {...props(styles.summary)}>
+        <h3 id={`product-ledger-${row.id}`} {...props(styles.title)}>
+          {row.title}
+        </h3>
+        <p data-slot="product-ledger-highlights" {...props(styles.highlights)}>
+          {row.highlights}
+        </p>
+      </div>
+      <ProductLedgerMarket row={row} />
+    </div>
+  );
+}
+
+function ProductLedgerMarket({ row }: { row: ProductLedgerRow }) {
+  return (
+    <div data-slot="product-ledger-market" {...props(styles.market)}>
+      <span data-tone="secondary" {...props(styles.marketLabel)}>
+        Best available
+      </span>
+      <span data-slot="product-ledger-offer" {...props(styles.offer)}>
+        {row.offer}
+      </span>
+      <div {...props(styles.marketSupporting)}>
+        <span data-slot="product-ledger-price-signal" {...props(styles.priceSignal)}>
+          {row.priceSignal}
+        </span>
+        <StatusBadge data-slot="product-ledger-freshness" style={styles.freshness} tone="positive">
+          {row.freshness}
+        </StatusBadge>
+      </div>
+    </div>
+  );
+}
+
+function ProductLedgerSecondaryDetails({ label, row }: { label: string; row: ProductLedgerRow }) {
+  if (!row.secondaryDetails) {
+    return null;
+  }
+
+  return (
+    <Collapsible style={styles.disclosure}>
+      <CollapsibleTrigger render={<Button variant="link" style={styles.disclosureTrigger} />}>
+        {label}
+      </CollapsibleTrigger>
+      <CollapsibleContent style={styles.disclosureContent}>
+        {row.secondaryDetails}
+      </CollapsibleContent>
+    </Collapsible>
   );
 }

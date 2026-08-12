@@ -1,16 +1,18 @@
 import { readFile, readdir } from "node:fs/promises";
-import { extname, resolve } from "node:path";
+import { extname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { STYLEX_CLASS_NAME_PREFIX } from "../stylex-plugin.ts";
 import {
   findGeneratedStylexClassNames,
   findMangledStylexClassNames,
   findStylexRules,
+  isGeneratedStylexClassName,
   shortStylexClassName,
 } from "./stylex-output.ts";
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
 const distDirectory = resolve(scriptDirectory, "../dist");
+const serverDirectory = resolve(distDirectory, "server");
 const textExtensions = new Set([".css", ".html", ".js", ".mjs"]);
 const failures: string[] = [];
 const outputContracts = {
@@ -27,10 +29,8 @@ const outputContracts = {
     stylexRules: new Set<string>(),
   },
 };
-const escapedPrefix = STYLEX_CLASS_NAME_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-const stylexHash = `${escapedPrefix}(?:0|[1-9a-z][0-9a-z]*)`;
-const variablePattern = new RegExp(`--(${stylexHash})(?![A-Za-z0-9_-])`, "g");
-const constKeyPattern = new RegExp(`\\bconstKey\\s*:\\s*(["'\\\`])(${stylexHash})\\1`, "g");
+const variablePattern = /--([_A-Za-z][_A-Za-z0-9-]*)(?![A-Za-z0-9_-])/g;
+const constKeyPattern = /\bconstKey\s*:\s*(["'`])([A-Za-z][A-Za-z0-9]*)\1/g;
 
 for (const entry of await readdir(distDirectory, {
   recursive: true,
@@ -42,7 +42,7 @@ for (const entry of await readdir(distDirectory, {
 
   const path = resolve(entry.parentPath, entry.name);
   const source = await readFile(path, "utf8");
-  const output = path.startsWith(resolve(distDirectory, "server") + "/")
+  const output = path.startsWith(`${serverDirectory}${sep}`)
     ? outputContracts.ssr
     : outputContracts.client;
 
@@ -59,11 +59,17 @@ for (const entry of await readdir(distDirectory, {
   }
 
   for (const match of source.matchAll(variablePattern)) {
-    output.references.add(match[1]!);
+    const className = match[1];
+    if (className && isGeneratedStylexClassName(className, STYLEX_CLASS_NAME_PREFIX)) {
+      output.references.add(className);
+    }
   }
 
   for (const match of source.matchAll(constKeyPattern)) {
-    output.registrations.add(match[2]!);
+    const className = match[2];
+    if (className && isGeneratedStylexClassName(className, STYLEX_CLASS_NAME_PREFIX)) {
+      output.registrations.add(className);
+    }
   }
 }
 
@@ -118,5 +124,5 @@ if (failures.length > 0) {
 }
 
 process.stdout.write(
-  `StyleX class mangling contract passed: atomic classes use the a-to-z sequence with matching client and SSR rules, and generated constants are registered.\n`,
+  "StyleX class mangling contract passed: atomic classes use the a-to-z sequence with matching client and SSR rules, and generated constants are registered.\n",
 );
