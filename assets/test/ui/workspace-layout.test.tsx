@@ -44,6 +44,8 @@ test("DetailTabs switches between peer views with accessible tab semantics", () 
 
   expect(tablist).toHaveAttribute("data-slot", "detail-tabs-list");
   expect(tablist.querySelector('[data-slot="tabs-indicator"]')).toBeInTheDocument();
+  expect(getComputedStyle(tablist).overflowX).toBe("auto");
+  expect(getComputedStyle(tablist).overflowY).toBe("hidden");
   expect(specifications).toHaveAttribute("data-slot", "detail-tab");
   expect(screen.getByRole("tabpanel")).toHaveTextContent("Decision highlights");
 

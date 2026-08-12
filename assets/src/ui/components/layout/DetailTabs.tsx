@@ -12,6 +12,7 @@ const styles = create({
   list: {
     maxWidth: "100%",
     overflowX: "auto",
+    overflowY: "hidden",
     width: "fit-content",
   },
   trigger: {
