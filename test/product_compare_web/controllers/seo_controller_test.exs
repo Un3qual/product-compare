@@ -13,12 +13,36 @@ defmodule ProductCompareWeb.SeoControllerTest do
   end
 
   test "sitemap index is partitioned and empty partitions remain valid XML", %{conn: conn} do
-    index = conn |> recycle() |> get("/sitemap.xml") |> response(200)
-    assert index =~ "http://localhost:5173/sitemaps/products.xml"
-    assert index =~ "http://localhost:5173/sitemaps/comparisons.xml"
+    index_conn = conn |> recycle() |> get("/sitemap.xml")
+    index = response(index_conn, 200)
 
-    products = conn |> recycle() |> get("/sitemaps/products.xml") |> response(200)
-    assert products =~ "<urlset"
+    assert get_resp_header(index_conn, "content-type") == ["application/xml; charset=utf-8"]
+
+    assert get_resp_header(index_conn, "cache-control") == [
+             "public, max-age=300, stale-while-revalidate=600"
+           ]
+
+    assert {:ok, {"sitemapindex", [{"xmlns", sitemap_namespace}], sitemap_nodes}} =
+             Saxy.SimpleForm.parse_string(index)
+
+    assert sitemap_namespace == "http://www.sitemaps.org/schemas/sitemap/0.9"
+
+    locations = Enum.map(sitemap_nodes, &element_text(&1, "sitemap", "loc"))
+
+    assert "http://localhost:5173/sitemaps/products.xml" in locations
+    assert "http://localhost:5173/sitemaps/comparisons.xml" in locations
+
+    products_conn = conn |> recycle() |> get("/sitemaps/products.xml")
+    products = response(products_conn, 200)
+
+    assert {:ok, {"urlset", [{"xmlns", ^sitemap_namespace}], []}} =
+             Saxy.SimpleForm.parse_string(products)
+
     refute products =~ "/account/"
+  end
+
+  defp element_text({parent_name, _attributes, children}, parent_name, child_name) do
+    {^child_name, _attributes, [text]} = Enum.find(children, &(elem(&1, 0) == child_name))
+    text
   end
 end
