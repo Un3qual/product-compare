@@ -91,8 +91,13 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
 
   return {
     name: "product-compare:stylex-mangle",
-    apply: "build",
     enforce: "post",
+    transform(code) {
+      const result = rewriteStylexClassNames(code, classNamePrefix);
+      remember(code);
+
+      return result.changed ? { code: result.code, map: null } : null;
+    },
     renderChunk(code) {
       const result = rewriteStylexClassNames(code, classNamePrefix);
       remember(code);

@@ -5,7 +5,8 @@ import {
   rewriteStylexClassNames,
 } from "../../plugins/stylex-class-name";
 import stylexMangle from "../../plugins/stylex-mangle";
-import { STYLEX_CLASS_NAME_PREFIX } from "../../stylex-plugin";
+import { reactWithStyleX, STYLEX_CLASS_NAME_PREFIX } from "../../stylex-plugin";
+import { createServer } from "vite";
 
 const PREFIX = STYLEX_CLASS_NAME_PREFIX;
 
@@ -109,4 +110,23 @@ test("the Vite plugin fails closed when its output namespace collides with autho
 
 test("the Vite plugin rejects an empty class-name prefix", () => {
   expect(() => stylexMangle({ classNamePrefix: "" })).toThrow("classNamePrefix cannot be empty");
+});
+
+test("the Vite development server emits shortened StyleX atomic class names", async () => {
+  const server = await createServer({
+    configFile: false,
+    plugins: [...reactWithStyleX(), stylexMangle({ classNamePrefix: PREFIX })],
+    root: process.cwd(),
+    server: { middlewareMode: true, watch: null, ws: false },
+  });
+
+  try {
+    const result = await server.transformRequest("/src/ui/primitives/Button.tsx");
+
+    expect(result).not.toBeNull();
+    expect(findStylexClassNames(result!.code, PREFIX)).toEqual(new Set());
+    expect(findMangledStylexClassNames(result!.code).size).toBeGreaterThan(0);
+  } finally {
+    await server.close();
+  }
 });
