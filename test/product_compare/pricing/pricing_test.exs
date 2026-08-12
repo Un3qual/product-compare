@@ -432,6 +432,66 @@ defmodule ProductCompare.PricingTest do
                first_a.id
     end
 
+    test "landed price medians preserve numeric precision for even cardinalities", %{
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-precise-median"})
+      from = ~U[2026-08-01 12:00:00Z]
+      to = ~U[2026-08-11 12:00:00Z]
+      offer = offer_fixture(product, "USD", "#{test_name}-precise-median", true, nil)
+
+      Enum.each(["9007199254740992", "9007199254740993"], fn price ->
+        assert {:ok, _point} =
+                 Pricing.add_price_point(%{
+                   merchant_product_id: offer.id,
+                   observed_at: from,
+                   price: price,
+                   shipping: "0",
+                   in_stock: true
+                 })
+      end)
+
+      assert %{median: median} =
+               product.id
+               |> List.wrap()
+               |> PriceHistory.landed_price_medians_query(
+                 from: from,
+                 to: to,
+                 currency: "USD"
+               )
+               |> Repo.one!()
+
+      assert Decimal.eq?(median, Decimal.new("9007199254740992.5"))
+    end
+
+    test "landed price medians accept numerics larger than float8", %{test: test_name} do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-large-median"})
+      from = ~U[2026-08-01 12:00:00Z]
+      to = ~U[2026-08-11 12:00:00Z]
+      offer = offer_fixture(product, "USD", "#{test_name}-large-median", true, nil)
+
+      assert {:ok, _point} =
+               Pricing.add_price_point(%{
+                 merchant_product_id: offer.id,
+                 observed_at: from,
+                 price: "1" <> String.duplicate("0", 400),
+                 shipping: "0",
+                 in_stock: true
+               })
+
+      assert %{median: median} =
+               product.id
+               |> List.wrap()
+               |> PriceHistory.landed_price_medians_query(
+                 from: from,
+                 to: to,
+                 currency: "USD"
+               )
+               |> Repo.one!()
+
+      assert Decimal.eq?(median, Decimal.new("1E+400"))
+    end
+
     test "landed price medians use inclusive arbitrary bounds and reject reversed ranges", %{
       test: test_name
     } do

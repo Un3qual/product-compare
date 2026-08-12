@@ -1805,6 +1805,10 @@ test("renders a persistent compare tray on browse and preserves compare slugs th
     "href",
     "/products?first=24&after=cursor-next-page&slug=detail-product&slug=second-product",
   );
+  expect(screen.getByRole("link", { name: "View offers for Catalog First" })).toHaveAttribute(
+    "href",
+    "/offers?productId=product-1&slug=detail-product&slug=second-product",
+  );
 
   const filterForm = screen.getByRole("form", { name: "Filter products" }) as HTMLFormElement;
 

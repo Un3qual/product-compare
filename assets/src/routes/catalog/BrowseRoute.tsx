@@ -266,7 +266,7 @@ function BrowseProducts({
       <BrowseProductList
         compareActionFor={(product) => browseRouteData.compareActionFor(product.slug)}
         detailHrefFor={(product) => browseRouteData.productDetailPathFor(product.slug)}
-        offerHrefFor={(product) => productOffersPath(product.id)}
+        offerHrefFor={(product) => productOffersPath(product.id, selectedCompareSlugs)}
         products={productConnection}
       />
       {paginationLinks}

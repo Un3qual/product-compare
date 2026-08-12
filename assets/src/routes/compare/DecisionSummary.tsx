@@ -57,11 +57,11 @@ export function DecisionSummary({
           cell: ({ row }) => row.original.label,
         }),
         ...products.map((product, index) =>
-      columnHelper.accessor((row) => row.cells[index], {
-        id: product.id,
-        header: product.name,
-        cell: (info) => info.getValue(),
-      }),
+          columnHelper.accessor((row) => row.cells[index], {
+            id: product.id,
+            header: product.name,
+            cell: (info) => info.getValue(),
+          }),
         ),
       ]),
     [products],
@@ -129,11 +129,13 @@ function decisionTableRows(
     label: row.label,
   }));
 
+  const compareSlugs = products.map((product) => product.slug);
+
   return [
     ...metricRows,
     {
       cells: products.map((product) => (
-        <Link key={product.id} to={productOffersPath(product.id)}>
+        <Link key={product.id} to={productOffersPath(product.id, compareSlugs)}>
           Review {product.name} offers
         </Link>
       )),

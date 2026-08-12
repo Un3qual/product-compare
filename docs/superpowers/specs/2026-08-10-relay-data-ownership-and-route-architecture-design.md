@@ -112,42 +112,35 @@ The table deliberately has no profile, fingerprint, account association,
 activity counters, or mutable last-seen field. It is a first-class relational
 identity and foreign-key target, not a visitor analytics model.
 
-Replace the free-form `commerce_click_sessions.anonymous_id` text column with
-`anonymous_visitor_id`, a nullable bigint foreign key to
+Store guest identity only in `commerce_click_sessions.anonymous_visitor_id`, a
+nullable bigint foreign key to
 `anonymous_visitors.id`. Use `ON DELETE SET NULL`, matching the existing user
 deletion behavior: removing an identity detaches it from historical clicks
 without deleting attribution and conversion records.
 
 Add a named same-row check that prevents `user_id` and
 `anonymous_visitor_id` from both being populated. A click may still have
-neither identity when it comes from an internal or legacy path; such clicks
-remain valid attribution records but never contribute to trending identity
-thresholds. The owning Ecto changeset must provide equivalent pre-write
-validation, an explicit `check_constraint/3` mapping, a changeset behavior
-test, and direct database coverage.
+neither identity when it comes from an identity-free internal path; such
+clicks remain valid attribution records but never contribute to trending
+identity thresholds. The owning Ecto changeset must provide equivalent
+pre-write validation, an explicit `check_constraint/3` mapping, a changeset
+behavior test, and direct database coverage.
 
-### Existing data migration
+### Final pre-release schema
 
-The migration must preserve equality groups without assuming existing text
-values are UUIDs. It will:
+Because the application has not shipped, the original commerce-attribution
+migration creates the final anonymous-visitor schema directly. It creates
+`anonymous_visitors` before `commerce_click_sessions`, then creates the click
+session `anonymous_visitor_id` foreign key, its lookup index, and the named
+mutual-exclusion constraint in the same migration. The click-session table
+never contains an `anonymous_id` text column.
 
-1. create `anonymous_visitors` and its unique entropy-ID index;
-2. add nullable `commerce_click_sessions.anonymous_visitor_id` with its foreign
-   key and lookup index;
-3. build a transaction-local mapping from each distinct, nonblank legacy
-   `anonymous_id` to one newly inserted visitor row;
-4. backfill guest clicks with the mapped internal visitor IDs;
-5. leave the new anonymous value null when `user_id` is present, matching the
-   existing user-first trending semantics;
-6. add the named mutual-exclusion check; and
-7. drop the legacy text column and temporary mapping.
-
-Repeated legacy strings must resolve to one visitor row, while distinct legacy
-strings resolve to distinct rows. The reverse migration restores a text
-anonymous ID from each related visitor's entropy UUID before removing the
-foreign key and visitor table, preserving identity equality even though it
-cannot recover the original opaque legacy text. The migration must not rewrite
-user identities or expose visitor IDs through GraphQL.
+There is no later anonymous-visitor expansion migration, transition mapping,
+trigger, backfill, dual-write window, or rollback reconstruction. Development
+databases may be reset rather than carrying an unreleased intermediate schema
+forward. Fresh-schema migration coverage proves the table, indexes, foreign
+key, and check constraint, including invalid direct writes. The schema must
+not rewrite user identities or expose visitor IDs through GraphQL.
 
 ### Browser lifecycle
 
@@ -385,8 +378,8 @@ Follow test-driven red-green-refactor cycles for every milestone.
   and direct-database tests;
 - changeset and direct-database tests for the user/visitor mutual-exclusion
   check;
-- migration coverage for repeated legacy IDs, authenticated legacy rows,
-  blank/nil IDs, and mapping equality;
+- fresh-schema migration coverage for the visitor table, click foreign key,
+  lookup indexes, mutual-exclusion constraint, and invalid direct writes;
 - signed-cookie tests for reuse, generation, forgery replacement, production
   flags, and guest/member precedence;
 - concurrent first-click coverage proving one visitor row is created for one

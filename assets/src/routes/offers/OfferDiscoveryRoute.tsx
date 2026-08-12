@@ -16,6 +16,7 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
+import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
 import type { OfferDiscoveryFilters } from "./offer-discovery-filter-data";
 import {
   offerDiscoveryFiltersFromUrl,
@@ -95,7 +96,7 @@ export function OfferDiscoveryRoute() {
           <>
             <OfferDiscoveryFilterSummary filters={loaderData.filters} />
             <MobileOfferDiscoveryFilters filters={loaderData.filters} />
-            <MissingProductState />
+            <MissingProductState compareSlugs={loaderData.filters.compareSlugs} />
           </>
         ) : loaderData.status === "error" ? (
           <OfferDiscoveryQueryFallback filters={loaderData.filters} />
@@ -141,10 +142,18 @@ function OfferDiscoveryPanel({
   );
 }
 
-function MissingProductState() {
+function MissingProductState({ compareSlugs }: { compareSlugs: readonly string[] }) {
   return (
     <FeedbackState
-      action={<Button render={<Link to="/products" />}>Browse products</Button>}
+      action={
+        <Button
+          render={
+            <Link to={buildCurrentRoutePathWithCompareSlugs("/products", "", compareSlugs)} />
+          }
+        >
+          Browse products
+        </Button>
+      }
       description="Choose a product to review its current merchant offers."
       kind="empty"
       title="Start from browse products to choose a product."

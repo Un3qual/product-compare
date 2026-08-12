@@ -1,3 +1,8 @@
+import {
+  buildCurrentRoutePathWithCompareSlugs,
+  MAX_COMPARE_PRODUCTS,
+  normalizedCompareSlugs,
+} from "../compare/paths";
 import { nextRelayPageCursor } from "../relay-pagination";
 
 export const DEFAULT_OFFERS_PAGE_SIZE = 6;
@@ -16,6 +21,7 @@ export type OfferDiscoverySort = (typeof OFFER_DISCOVERY_SORT_OPTIONS)[number]["
 export interface OfferDiscoveryFilters {
   activeOnly: boolean;
   after: string | null;
+  compareSlugs: string[];
   first: number;
   merchantId: string | null;
   productId: string | null;
@@ -92,6 +98,10 @@ export function offerDiscoveryPath(filters: OfferDiscoveryFilterDataInput, after
     params.set("sort", canonicalFilters.sort);
   }
 
+  for (const slug of canonicalFilters.compareSlugs) {
+    params.append("slug", slug);
+  }
+
   if (after) {
     params.set("after", after);
   }
@@ -130,6 +140,10 @@ export function offerDiscoveryResetPath(filters: OfferDiscoveryFilterDataInput) 
     params.set("sort", canonicalFilters.sort);
   }
 
+  for (const slug of canonicalFilters.compareSlugs) {
+    params.append("slug", slug);
+  }
+
   const query = params.toString();
 
   return query ? `/offers?${query}` : "/offers";
@@ -152,9 +166,14 @@ export function getOfferDiscoveryFilterData(
       canonicalFilters.activeOnly,
       canonicalFilters.first,
       canonicalFilters.sort,
+      canonicalFilters.compareSlugs,
     ]),
     productDetailsPath: selectedProduct
-      ? `/products/${encodeURIComponent(selectedProduct.slug)}`
+      ? buildCurrentRoutePathWithCompareSlugs(
+          `/products/${encodeURIComponent(selectedProduct.slug)}`,
+          "",
+          canonicalFilters.compareSlugs,
+        )
       : null,
     showReset: hasNonDefaultOfferFilters(canonicalFilters),
     scopeBadge: offerDiscoveryScopeBadgeData(canonicalFilters),
@@ -176,7 +195,13 @@ function offerDiscoveryScopeBadgeData(
 }
 
 function canonicalizeFilters(filters: OfferDiscoveryFilterDataInput): OfferDiscoveryFilters {
-  return { ...filters, sort: normalizeOfferDiscoverySort(filters.sort) };
+  return {
+    ...filters,
+    compareSlugs: normalizedCompareSlugs(filters.compareSlugs, {
+      maxProducts: MAX_COMPARE_PRODUCTS,
+    }),
+    sort: normalizeOfferDiscoverySort(filters.sort),
+  };
 }
 
 function isOfferDiscoveryProductNode(

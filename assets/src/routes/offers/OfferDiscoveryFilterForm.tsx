@@ -125,6 +125,9 @@ function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilter
       method="get"
       {...props(styles.form)}
     >
+      {filters.compareSlugs.map((slug) => (
+        <input key={slug} name="slug" type="hidden" value={slug} />
+      ))}
       <label>
         <Checkbox defaultChecked={!filters.activeOnly} name="activeOnly" value="false" />
         Include inactive offers

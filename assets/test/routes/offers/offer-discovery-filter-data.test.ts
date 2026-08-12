@@ -7,6 +7,7 @@ import {
 const DEFAULT_FILTERS = {
   activeOnly: true,
   after: null,
+  compareSlugs: [] as string[],
   first: 6,
   merchantId: null,
   productId: null,
@@ -85,6 +86,7 @@ test("buildOfferDiscoveryPaginationData preserves every filter in first and next
       filters: {
         activeOnly: false,
         after: "current-cursor",
+        compareSlugs: [" alpha ", "beta", "alpha", "", "gamma", "fourth"],
         first: 12,
         merchantId: "merchant/+ id",
         productId: "product/+ id",
@@ -95,9 +97,9 @@ test("buildOfferDiscoveryPaginationData preserves every filter in first and next
     }),
   ).toEqual({
     firstHref:
-      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc",
+      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&slug=alpha&slug=beta&slug=gamma",
     nextHref:
-      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&after=next+cursor%2F%2B",
+      "/offers?productId=product%2F%2B+id&merchantId=merchant%2F%2B+id&activeOnly=false&first=12&sort=price_desc&slug=alpha&slug=beta&slug=gamma&after=next+cursor%2F%2B",
   });
 });
 
@@ -188,7 +190,7 @@ test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
 test("builds the default form reset key and readable offer scope without actions", () => {
   expect(getOfferDiscoveryFilterData(DEFAULT_FILTERS)).toEqual({
     clearMerchantFilterPath: null,
-    formKey: JSON.stringify([null, null, true, 6, "default"]),
+    formKey: JSON.stringify([null, null, true, 6, "default", []]),
     productDetailsPath: null,
     showReset: false,
     scopeBadge: { label: "Active offers", tone: "positive" },
@@ -205,6 +207,7 @@ test("projects selected-product identity and filter context with route actions",
       {
         activeOnly: false,
         after: "stale-cursor",
+        compareSlugs: ["detail-product", "second-product"],
         first: 12,
         merchantId: "merchant-1",
         productId: "product-1",
@@ -218,9 +221,18 @@ test("projects selected-product identity and filter context with route actions",
       },
     ),
   ).toEqual({
-    clearMerchantFilterPath: "/offers?productId=product-1&activeOnly=false&first=12&sort=price_asc",
-    formKey: JSON.stringify(["product-1", "merchant-1", false, 12, "price_asc"]),
-    productDetailsPath: "/products/detail%20product%20%2F%202026",
+    clearMerchantFilterPath:
+      "/offers?productId=product-1&activeOnly=false&first=12&sort=price_asc&slug=detail-product&slug=second-product",
+    formKey: JSON.stringify([
+      "product-1",
+      "merchant-1",
+      false,
+      12,
+      "price_asc",
+      ["detail-product", "second-product"],
+    ]),
+    productDetailsPath:
+      "/products/detail%20product%20%2F%202026?slug=detail-product&slug=second-product",
     showReset: true,
     scopeBadge: { label: "All offers", tone: "neutral" },
     scopeDescription:
@@ -248,7 +260,7 @@ test("normalizes unknown sorts before building scope, form keys, and merchant-cl
   );
 
   expect(data.sortLabel).toBe("Default order");
-  expect(data.formKey).toBe(JSON.stringify(["product-1", "merchant-1", true, 6, "default"]));
+  expect(data.formKey).toBe(JSON.stringify(["product-1", "merchant-1", true, 6, "default", []]));
   expect(data.scopeDescription).toBe(
     "Showing active offers, sorted by Default order, 6 per page. Merchant filter applied.",
   );

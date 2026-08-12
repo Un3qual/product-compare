@@ -25,7 +25,7 @@ of active and candidate plans, not the dispatch queue.
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
 
-The approved homepage query-scaling outcome is ready through:
+The approved homepage query-scaling outcome is complete through:
 
 - `docs/superpowers/plans/2026-08-11-homepage-query-scaling-and-ownership-implementation-plan.md`
 

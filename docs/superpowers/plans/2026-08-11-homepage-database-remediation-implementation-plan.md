@@ -4,7 +4,7 @@
 
 **Goal:** Make homepage and anonymous-attribution reads bounded, snapshot-consistent, and candidate-scoped without adding performance gates or a second read-model authority.
 
-**Architecture:** Preserve the existing domain contexts and GraphQL connection shapes. Rewrite reads from their presentation-sized candidate pages outward, hydrate only selected offer facts inside the owning transaction, and use an expand/backfill visitor migration that remains compatible with the old application version during rolling deployment.
+**Architecture:** Preserve the existing domain contexts and GraphQL connection shapes. Rewrite reads from their presentation-sized candidate pages outward, hydrate only selected offer facts inside the owning transaction, and create the final anonymous-visitor schema directly in the original commerce-attribution migration because the application is unreleased.
 
 **Tech Stack:** Elixir 1.19, Ecto 3.13, PostgreSQL 18, Absinthe, ExUnit, Postgrex, and Oban's existing repository configuration.
 
@@ -23,51 +23,50 @@
 
 ---
 
-### Task 1: Make Anonymous Visitor Rollout Expand-Only And Repeat Reads Write-Free
+### Task 1: Finalize Anonymous Visitor Schema And Keep Repeat Reads Write-Free
 
 **Files:**
 
-- Modify: `priv/repo/migrations/20260810140000_create_anonymous_visitors.exs`
+- Modify: `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
 - Modify: `lib/product_compare/commerce_attribution/visitors.ex`
-- Modify: `test/product_compare/repo/migrations/create_anonymous_visitors_test.exs`
+- Create: `test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs`
 - Modify: `test/product_compare/commerce_attribution/anonymous_visitors_test.exs`
 - Modify: `test/support/database_test_helpers.ex`
 
 **Interfaces:**
 
-- Consumes: legacy `commerce_click_sessions.anonymous_id`, the existing `anonymous_visitors.entropy_id` unique key, and `Visitors.get_or_create/1` callers.
-- Produces: an expand-only schema retaining `anonymous_id`, a transition mapping/trigger for old writers, validated visitor FK/check constraints, a post-backfill concurrent lookup index, and the unchanged `get_or_create/1` result contract.
+- Consumes: the original commerce-attribution migration and
+  `Visitors.get_or_create/1` callers.
+- Produces: the final pre-release schema with `anonymous_visitors`,
+  `commerce_click_sessions.anonymous_visitor_id`, owning indexes, foreign key,
+  and same-row constraint, plus the unchanged `get_or_create/1` result contract.
 
-- [ ] **Step 1: Add RED migration-contract coverage**
+- [ ] **Step 1: Add RED fresh-schema migration coverage**
 
-  Extend the migration fixture and assert after `up/0`:
+  Apply the original commerce-attribution migration in an empty isolated prefix
+  and assert the final contract:
 
   ```elixir
-  assert column_exists?(prefix, "commerce_click_sessions", "anonymous_id")
-  assert constraint_validated?(prefix, "commerce_click_sessions_anonymous_visitor_id_fkey")
-  assert constraint_validated?(prefix, "commerce_click_sessions_single_actor")
-  assert index_exists?(prefix, "commerce_click_sessions_anonymous_visitor_idx")
-
-  assert [["legacy-one"], ["legacy-one"]] =
-           MigrationRepo.query!("""
-           SELECT anonymous_id
-           FROM "#{prefix}"."commerce_click_sessions"
-           WHERE click_id IN ('first', 'repeat')
-           ORDER BY click_id
-           """).rows
+  assert column_exists?(prefix, "commerce_click_sessions", "anonymous_visitor_id")
+  refute column_exists?(prefix, "commerce_click_sessions", "anonymous_id")
+  assert constraint_exists?(prefix, "commerce_click_sessions_single_actor")
+  assert index_definition(prefix, "commerce_click_sessions_anonymous_visitor_idx") =~
+           "(anonymous_visitor_id)"
   ```
 
-  Insert an old-version row after migration using only `anonymous_id = 'late-legacy'`; assert the transition trigger assigns a visitor ID. Run `down/0` and assert every original text value, including the authenticated legacy value, remains byte-for-byte unchanged.
+  Insert a visitor and click, then prove the foreign key and the single-actor
+  check reject invalid direct writes.
 
 - [ ] **Step 2: Run the migration test and confirm RED**
 
   Run:
 
   ```bash
-  mix test test/product_compare/repo/migrations/create_anonymous_visitors_test.exs --seed 0
+  mix test test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs --seed 0
   ```
 
-  Expected: failures show that `up/0` drops `anonymous_id`, has no transition trigger/mapping, and cannot prove post-backfill index/constraint state.
+  Expected: failures show that the original migration still creates
+  `anonymous_id` and does not create the final visitor schema directly.
 
 - [ ] **Step 3: Add RED repeat-click query coverage**
 
@@ -92,27 +91,14 @@
 
   Expected: the repeat lookup still emits `INSERT ... ON CONFLICT DO NOTHING` before its SELECT.
 
-- [ ] **Step 5: Implement the expand/backfill migration**
+- [ ] **Step 5: Implement the final pre-release schema**
 
-  Mark the migration with:
-
-  ```elixir
-  @disable_ddl_transaction true
-  @disable_migration_lock true
-  ```
-
-  In `up/0`:
-
-  1. create `anonymous_visitors` with nullable `legacy_anonymous_id` and unique indexes for non-null legacy IDs and entropy IDs;
-  2. add `anonymous_visitor_id bigint` without its index or FK;
-  3. install a prefix-qualified PL/pgSQL transition function/trigger that resolves nonblank legacy guest IDs while leaving authenticated rows visitor-free;
-  4. insert distinct legacy guest mappings;
-  5. update click IDs in `id` windows no larger than the configured batch size using separate `repo().query!/2` statements;
-  6. create `commerce_click_sessions_anonymous_visitor_idx` with `CONCURRENTLY`;
-  7. add the FK and `commerce_click_sessions_single_actor` as `NOT VALID`, then `VALIDATE CONSTRAINT`; and
-  8. retain the trigger, mapping column, and legacy click column for the contract deployment.
-
-  `down/0` drops the new trigger/function, constraints, index, column, and visitor table while leaving the pre-existing `anonymous_id` values untouched.
+  Create `anonymous_visitors` before `commerce_click_sessions` in the original
+  commerce-attribution migration. Give the click-session table only the final
+  `anonymous_visitor_id` foreign key, its lookup index, and the named
+  single-actor constraint. Do not keep a later anonymous-visitor migration,
+  legacy text column, transition mapping or trigger, backfill, dual-write
+  window, or rollback reconstruction. Development databases may be reset.
 
 - [ ] **Step 6: Implement the visitor read fast path**
 
@@ -132,17 +118,18 @@
   Run:
 
   ```bash
-  mix test test/product_compare/repo/migrations/create_anonymous_visitors_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/product_compare_web/plugs/put_anonymous_visitor_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs --seed 0
-  mix format --check-formatted priv/repo/migrations/20260810140000_create_anonymous_visitors.exs lib/product_compare/commerce_attribution/visitors.ex test/product_compare/repo/migrations/create_anonymous_visitors_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/support/database_test_helpers.ex
+  mix test test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/product_compare_web/plugs/put_anonymous_visitor_test.exs test/product_compare_web/controllers/commerce_redirect_controller_test.exs test/product_compare_web/graphql/commerce_click_test.exs --seed 0
+  mix format --check-formatted priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs lib/product_compare/commerce_attribution/visitors.ex test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/support/database_test_helpers.ex
   ```
 
-  Expected: migration preserves legacy values and rolling-write compatibility; repeat reads perform one SELECT; concurrent creation still converges.
+  Expected: the original migration creates only the final schema; repeat reads
+  perform one SELECT; concurrent creation still converges.
 
 - [ ] **Step 8: Commit the visitor milestone**
 
   ```bash
-  git add priv/repo/migrations/20260810140000_create_anonymous_visitors.exs lib/product_compare/commerce_attribution/visitors.ex test/product_compare/repo/migrations/create_anonymous_visitors_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/support/database_test_helpers.ex
-  git commit -m "fix: make visitor migration rollout safe"
+  git add priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs lib/product_compare/commerce_attribution/visitors.ex test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/support/database_test_helpers.ex
+  git commit -m "fix: finalize anonymous visitor schema"
   ```
 
 ### Task 2: Make Catalog, SEO, Trending, And Highlight Reads Candidate-Scoped
@@ -207,7 +194,7 @@
   (merchant_product_id, observed_at DESC, id DESC) INCLUDE (price, shipping, in_stock)
   ```
 
-  and that `price_points_merchant_product_observed_idx` no longer exists after `up/0` but is restored by `down/0`.
+  and that `price_points_mp_time_idx` no longer exists after `up/0` but is restored by `down/0`.
 
 - [ ] **Step 4: Run the index migration test and confirm RED**
 
@@ -403,7 +390,7 @@
   Capture SELECT SQL and assert:
 
   ```elixir
-  refute Enum.any?(deal_queries, &String.contains?(&1, "percentile_cont"))
+  refute Enum.any?(deal_queries, &any_page_fact_median_query?/1)
   refute Enum.any?(deal_queries, &String.contains?(&1, "active_offer_count"))
   refute Enum.any?(workspace_queries, &String.contains?(&1, "active_offer_count"))
   ```
@@ -487,7 +474,7 @@
 - [ ] **Step 1: Run the complete focused backend suite**
 
   ```bash
-  mix test test/product_compare/repo/migrations/create_anonymous_visitors_test.exs test/product_compare/repo/migrations/optimize_homepage_price_reads_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/product_compare/commerce_attribution/trending_activity_test.exs test/product_compare/catalog/home_workspace_test.exs test/product_compare/seo_test.exs test/product_compare/specs/home_highlights_test.exs test/product_compare/alerts/home_relevance_test.exs test/product_compare/pricing/home_offers_test.exs test/product_compare_web/graphql/home_queries_test.exs test/product_compare_web/graphql/home_deal_consistency_test.exs test/product_compare_web/graphql/home_workspace_consistency_test.exs --seed 0
+  mix test test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs test/product_compare/repo/migrations/optimize_homepage_price_reads_test.exs test/product_compare/commerce_attribution/anonymous_visitors_test.exs test/product_compare/commerce_attribution/trending_activity_test.exs test/product_compare/catalog/home_workspace_test.exs test/product_compare/seo_test.exs test/product_compare/specs/home_highlights_test.exs test/product_compare/alerts/home_relevance_test.exs test/product_compare/pricing/home_offers_test.exs test/product_compare_web/graphql/home_queries_test.exs test/product_compare_web/graphql/home_deal_consistency_test.exs test/product_compare_web/graphql/home_workspace_consistency_test.exs --seed 0
   ```
 
 - [ ] **Step 2: Run repository verification**

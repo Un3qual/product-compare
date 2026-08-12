@@ -236,7 +236,7 @@ function ProductDetail({
             <ProductDecisionActions
               browseHref={routeData.browsePath}
               compareAction={routeData.compareAction}
-              offerHref={productOffersPath(product.id)}
+              offerHref={productOffersPath(product.id, routeData.selectedCompareSlugs)}
             />
             <PriceWatchControl productId={product.id} />
           </ContextRail>

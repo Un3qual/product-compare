@@ -1,3 +1,4 @@
+import { MAX_COMPARE_PRODUCTS, selectedCompareSlugsFromSearch } from "../compare/paths";
 import {
   DEFAULT_OFFERS_PAGE_SIZE,
   normalizeOfferDiscoverySort,
@@ -11,6 +12,9 @@ export function offerDiscoveryFiltersFromUrl(url: URL): OfferDiscoveryFilters {
   return {
     activeOnly: nonBlankParam(url, "activeOnly") !== "false",
     after: nonBlankParam(url, "after"),
+    compareSlugs: selectedCompareSlugsFromSearch(url.search, {
+      maxProducts: MAX_COMPARE_PRODUCTS,
+    }),
     first: pageSizeFromUrl(url),
     merchantId: nonBlankParam(url, "merchantId"),
     productId: nonBlankParam(url, "productId"),

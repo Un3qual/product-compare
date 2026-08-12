@@ -1247,7 +1247,11 @@ test("renders product decision actions with compare, offer review, and browse de
   });
 
   render(
-    <MemoryRouter initialEntries={["/products/detail%2Fproduct%20slug"]}>
+    <MemoryRouter
+      initialEntries={[
+        "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta",
+      ]}
+    >
       <ProductDetailRoute />
     </MemoryRouter>,
   );
@@ -1256,14 +1260,17 @@ test("renders product decision actions with compare, offer review, and browse de
 
   expect(
     within(actions).getByRole("link", { name: "Add this product to compare" }),
-  ).toHaveAttribute("href", "/products/detail%2Fproduct%20slug?slug=detail%2Fproduct+slug");
+  ).toHaveAttribute(
+    "href",
+    "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta&slug=detail%2Fproduct+slug",
+  );
   expect(within(actions).getByRole("link", { name: "Review active offers" })).toHaveAttribute(
     "href",
-    "/offers?productId=product%2Fid%2Bvalue%3D",
+    "/offers?productId=product%2Fid%2Bvalue%3D&slug=alpha&slug=beta",
   );
   expect(within(actions).getByRole("link", { name: "Browse products" })).toHaveAttribute(
     "href",
-    "/products",
+    "/products?slug=alpha&slug=beta",
   );
 });
 
