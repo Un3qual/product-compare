@@ -319,10 +319,25 @@ test("ProductOfferList presents each merchant as a decision row with grouped evi
       },
       priceHistory: [
         {
+          id: "price-3",
+          observedAt: "2026-05-15T00:00:00Z",
+          observedDate: "2026-05-15",
+          priceText: "229.99 USD",
+          priceValue: 229.99,
+        },
+        {
           id: "price-1",
           observedAt: "2026-05-01T00:00:00Z",
           observedDate: "2026-05-01",
           priceText: "249.99 USD",
+          priceValue: 249.99,
+        },
+        {
+          id: "price-2",
+          observedAt: "2026-05-08T00:00:00Z",
+          observedDate: "2026-05-08",
+          priceText: "239.99 USD",
+          priceValue: 239.99,
         },
       ],
       priceHistoryHasMore: true,
@@ -367,8 +382,26 @@ test("ProductOfferList presents each merchant as a decision row with grouped evi
   const history = offerItem.getByRole("region", { name: "Price history" });
   const coupons = offerItem.getByRole("region", { name: "Coupons" });
 
-  expect(within(history).getByRole("list", { name: "Acme price history" })).toBeVisible();
-  expect(offerItem.getByText("249.99 USD")).toBeVisible();
+  const historyChart = within(history).getByRole("img", { name: "Acme price history chart" });
+  const historyData = within(history).getByRole("table", { name: "Acme price history data" });
+
+  expect(historyChart).toBeVisible();
+  expect(historyChart.querySelector("path")).not.toBeNull();
+  expect(
+    historyChart.querySelectorAll('[data-ts-key="price-history-points"] > circle'),
+  ).toHaveLength(3);
+  expect(
+    within(history).queryByRole("list", { name: "Acme price history" }),
+  ).not.toBeInTheDocument();
+  expect(within(historyData).getByText("249.99 USD")).toBeInTheDocument();
+  const historyRows = within(historyData).getAllByRole("row");
+
+  expect(historyRows).toHaveLength(4);
+  expect(historyRows.slice(1).map((row) => row.textContent)).toEqual([
+    "2026-05-01249.99 USD",
+    "2026-05-08239.99 USD",
+    "2026-05-15229.99 USD",
+  ]);
   expect(offerItem.getByText("More price history available.")).toBeVisible();
   expect(within(coupons).getByRole("list", { name: "Acme active coupons" })).toBeVisible();
   expect(offerItem.getByText("SAVE20")).toBeVisible();
@@ -1567,7 +1600,7 @@ test("renders offers when a merchant has no active coupons", () => {
   ).toBeVisible();
 });
 
-test("renders active offer price history rows", () => {
+test("renders active offer price history as a chart with exact accessible data", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -1662,22 +1695,26 @@ test("renders active offer price history rows", () => {
   expect(offerItem).not.toBeNull();
 
   const offer = within(offerItem as HTMLElement);
-  const historyList = offer.getByRole("list", { name: "Acme price history" });
-  const firstObservedAt = offer.getByText("2026-05-30");
-  const secondObservedAt = offer.getByText("2026-06-01");
+  const historyChart = offer.getByRole("img", { name: "Acme price history chart" });
+  const historyData = offer.getByRole("table", { name: "Acme price history data" });
+  const history = within(historyData);
+  const firstObservedAt = history.getByText("2026-05-30");
+  const secondObservedAt = history.getByText("2026-06-01");
   const offerText = offerItem?.textContent ?? "";
 
-  expect(historyList).toBeVisible();
-  expect(firstObservedAt).toBeVisible();
+  expect(historyChart).toBeVisible();
+  expect(within(historyChart).getByText("Jun 1")).toBeInTheDocument();
+  expect(offer.queryByRole("list", { name: "Acme price history" })).not.toBeInTheDocument();
+  expect(firstObservedAt).toBeInTheDocument();
   expect(firstObservedAt).toHaveAttribute("dateTime", "2026-05-30T10:00:00Z");
-  expect(offer.getByText("249.99 USD")).toBeVisible();
-  expect(secondObservedAt).toBeVisible();
+  expect(history.getByText("249.99 USD")).toBeInTheDocument();
+  expect(secondObservedAt).toBeInTheDocument();
   expect(secondObservedAt).toHaveAttribute("dateTime", "2026-06-01T00:30:00+02:00");
-  expect(offer.getByText("229.99 USD")).toBeVisible();
+  expect(history.getByText("229.99 USD")).toBeInTheDocument();
   expect(offer.getByText("More price history available.")).toBeVisible();
-  expect(offer.queryByText("not-a-date")).not.toBeInTheDocument();
-  expect(offer.queryByText("219.99 USD")).not.toBeInTheDocument();
-  expect(offer.queryByText("2026-06-02")).not.toBeInTheDocument();
+  expect(history.queryByText("not-a-date")).not.toBeInTheDocument();
+  expect(history.queryByText("219.99 USD")).not.toBeInTheDocument();
+  expect(history.queryByText("2026-06-02")).not.toBeInTheDocument();
   expect(offerText.indexOf("199.99 USD")).toBeLessThan(offerText.indexOf("2026-05-30"));
   expect(offerText.indexOf("2026-06-01")).toBeLessThan(offerText.indexOf("SAVE20"));
 });

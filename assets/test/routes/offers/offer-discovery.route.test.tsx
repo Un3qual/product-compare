@@ -141,8 +141,16 @@ test("offer card leads with the merchant and discloses supporting offer evidence
 
   fireEvent.click(screen.getByRole("button", { name: "Offer details for Acme Market" }));
 
-  expect(screen.getByText("2026-05-30", { selector: "time" })).toBeVisible();
-  expect(screen.getByText("189.99 USD")).toBeVisible();
+  const historyChart = screen.getByRole("img", { name: "Acme Market price history chart" });
+  const historyData = screen.getByRole("table", { name: "Acme Market price history data" });
+
+  expect(historyChart).toBeVisible();
+  expect(
+    historyChart.querySelectorAll('[data-ts-key="price-history-points"] > circle'),
+  ).toHaveLength(1);
+  expect(screen.queryByRole("list", { name: "Acme Market price history" })).not.toBeInTheDocument();
+  expect(within(historyData).getByText("2026-05-30", { selector: "time" })).toBeInTheDocument();
+  expect(within(historyData).getByText("189.99 USD")).toBeInTheDocument();
   expect(screen.getByText("SAVE20")).toBeVisible();
   expect(screen.getByText("2026-06-30", { selector: "time" }).parentElement).toHaveTextContent(
     "Valid through 2026-06-30",

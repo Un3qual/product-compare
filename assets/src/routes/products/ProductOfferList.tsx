@@ -1,6 +1,7 @@
 import { useId } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
+import { PriceHistoryChart } from "$ui/components/data/PriceHistoryChart";
 import { Badge } from "$ui/primitives/Badge";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { TrackedCommerceClickAction } from "../offers/TrackedCommerceClickAction";
@@ -136,18 +137,6 @@ const styles = create({
     margin: 0,
     padding: 0,
   },
-  historyRow: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
-    display: "grid",
-    gap: "0.75rem",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    paddingBlock: "0.6rem",
-  },
-  historyPrice: {
-    fontWeight: 650,
-  },
   coupon: {
     borderBlockEndColor: tokens.borderQuiet,
     borderBlockEndStyle: "solid",
@@ -256,14 +245,7 @@ function OfferPriceHistory({
       {historyRows.length === 0 ? (
         <p {...props(styles.supportingText)}>No price history for this offer yet.</p>
       ) : (
-        <ul aria-label={`${merchantName} price history`} {...props(styles.detailList)}>
-          {historyRows.map((row) => (
-            <li key={row.id} {...props(styles.historyRow)}>
-              <time dateTime={row.observedAt}>{row.observedDate}</time>
-              <span {...props(styles.historyPrice)}>{row.priceText}</span>
-            </li>
-          ))}
-        </ul>
+        <PriceHistoryChart label={`${merchantName} price history`} rows={historyRows} />
       )}
       {hasMore ? <p {...props(styles.supportingText)}>More price history available.</p> : null}
     </section>

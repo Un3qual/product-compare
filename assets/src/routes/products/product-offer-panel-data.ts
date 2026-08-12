@@ -23,6 +23,7 @@ export type ProductOfferPriceHistoryRow = {
   observedAt: string;
   observedDate: string;
   priceText: string;
+  priceValue: number;
 };
 
 export type ProductOfferListItem = {
@@ -256,12 +257,13 @@ function buildPriceHistoryRows(
   return edges.flatMap(({ node }) => {
     const observedDate = graphQLDateTimeLabel(node.observedAt);
     const priceText = formatPriceText(node.price, currency);
+    const priceValue = decimalStringToNumber(node.price);
 
-    if (!observedDate || !priceText || typeof node.observedAt !== "string") {
+    if (!observedDate || !priceText || priceValue === null || typeof node.observedAt !== "string") {
       return [];
     }
 
-    return [{ id: node.id, observedAt: node.observedAt, observedDate, priceText }];
+    return [{ id: node.id, observedAt: node.observedAt, observedDate, priceText, priceValue }];
   });
 }
 

@@ -1,6 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { OfferDiscoveryCard_offer$key } from "$generated/OfferDiscoveryCard_offer.graphql";
+import { PriceHistoryChart } from "$ui/components/data/PriceHistoryChart";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
@@ -56,7 +57,7 @@ const offerDiscoveryCardFragment = graphql`
         hasNextPage
       }
     }
-    priceHistory(first: 3) {
+    priceHistory(first: 12) {
       edges {
         node {
           id
@@ -213,12 +214,6 @@ const styles = create({
     display: "grid",
     gap: "0.25rem",
     paddingBlockStart: "0.65rem",
-  },
-  historyRow: {
-    alignItems: "baseline",
-    display: "flex",
-    gap: "1rem",
-    justifyContent: "space-between",
   },
 });
 
@@ -456,14 +451,7 @@ function PriceHistorySummary({
 
   return (
     <>
-      <ul aria-label={`${merchantName} price history`} {...props(styles.detailList)}>
-        {rows.map((row) => (
-          <li key={row.id} {...props(styles.detailListItem, styles.historyRow)}>
-            <time dateTime={row.observedAt}>{row.observedDate}</time>
-            <span>{row.price}</span>
-          </li>
-        ))}
-      </ul>
+      <PriceHistoryChart label={`${merchantName} price history`} rows={rows} />
       {hasMore ? <p>More price history available.</p> : null}
     </>
   );

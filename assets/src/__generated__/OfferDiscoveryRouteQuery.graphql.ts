@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<05c95294361914caa6ec75a6d8bb8228>>
+ * @generated SignedSource<<b46a77eb59ed347f5e203822a3638be9>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -443,7 +443,7 @@ return {
                       {
                         "kind": "Literal",
                         "name": "first",
-                        "value": 3
+                        "value": 12
                       }
                     ],
                     "concreteType": "PricePointConnection",
@@ -478,7 +478,7 @@ return {
                       },
                       (v12/*: any*/)
                     ],
-                    "storageKey": "priceHistory(first:3)"
+                    "storageKey": "priceHistory(first:12)"
                   }
                 ],
                 "storageKey": null
@@ -518,12 +518,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "c7d081fb07b3bea94d6737667c3ca686",
+    "cacheID": "d7eb27fbb1d93e04bde8a95c6b515fef",
     "id": null,
     "metadata": {},
     "name": "OfferDiscoveryRouteQuery",
     "operationKind": "query",
-    "text": "query OfferDiscoveryRouteQuery(\n  $after: String\n  $first: Int!\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(after: $after, first: $first, input: $input) {\n    ...OfferDiscoveryList_connection\n  }\n}\n\nfragment OfferDiscoveryCard_offer on MerchantProduct {\n  id\n  url\n  currency\n  lastSeenAt\n  isActive\n  merchant {\n    id\n    name\n    domain\n  }\n  product {\n    id\n    name\n    slug\n  }\n  latestPrice {\n    id\n    price\n    observedAt\n  }\n  activeCoupons(first: 2) {\n    edges {\n      cursor\n      node {\n        code\n        description\n        discountType\n        discountValue\n        currency\n        validTo\n        terms\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  priceHistory(first: 3) {\n    edges {\n      node {\n        id\n        price\n        observedAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment OfferDiscoveryList_connection on MerchantProductConnection {\n  edges {\n    node {\n      id\n      url\n      currency\n      merchant {\n        id\n        name\n      }\n      latestPrice {\n        price\n        id\n      }\n      activeCoupons(first: 2) {\n        edges {\n          cursor\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n      ...OfferDiscoveryCard_offer\n    }\n  }\n  pageInfo {\n    endCursor\n    hasNextPage\n    hasPreviousPage\n  }\n}\n"
+    "text": "query OfferDiscoveryRouteQuery(\n  $after: String\n  $first: Int!\n  $input: MerchantProductsInput!\n  $productId: ID!\n) {\n  selectedProduct: node(id: $productId) {\n    __typename\n    ... on Product {\n      id\n      name\n      slug\n      brand {\n        id\n        name\n      }\n    }\n    id\n  }\n  merchantProducts(after: $after, first: $first, input: $input) {\n    ...OfferDiscoveryList_connection\n  }\n}\n\nfragment OfferDiscoveryCard_offer on MerchantProduct {\n  id\n  url\n  currency\n  lastSeenAt\n  isActive\n  merchant {\n    id\n    name\n    domain\n  }\n  product {\n    id\n    name\n    slug\n  }\n  latestPrice {\n    id\n    price\n    observedAt\n  }\n  activeCoupons(first: 2) {\n    edges {\n      cursor\n      node {\n        code\n        description\n        discountType\n        discountValue\n        currency\n        validTo\n        terms\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n  priceHistory(first: 12) {\n    edges {\n      node {\n        id\n        price\n        observedAt\n      }\n    }\n    pageInfo {\n      hasNextPage\n    }\n  }\n}\n\nfragment OfferDiscoveryList_connection on MerchantProductConnection {\n  edges {\n    node {\n      id\n      url\n      currency\n      merchant {\n        id\n        name\n      }\n      latestPrice {\n        price\n        id\n      }\n      activeCoupons(first: 2) {\n        edges {\n          cursor\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n      ...OfferDiscoveryCard_offer\n    }\n  }\n  pageInfo {\n    endCursor\n    hasNextPage\n    hasPreviousPage\n  }\n}\n"
   }
 };
 })();

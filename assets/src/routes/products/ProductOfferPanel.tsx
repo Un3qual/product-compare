@@ -45,7 +45,7 @@ const productOfferPanelFragment = graphql`
             hasNextPage
           }
         }
-        priceHistory(first: 3) {
+        priceHistory(first: 12) {
           edges {
             node {
               id

@@ -28,7 +28,8 @@ export type PriceHistoryRow = {
   id: string;
   observedAt: string;
   observedDate: string;
-  price: string;
+  priceText: string;
+  priceValue: number;
 };
 
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
@@ -217,10 +218,11 @@ export function priceHistoryRow(
   pricePoint: PriceHistoryNode,
   currency: string,
 ): PriceHistoryRow | null {
-  const price = priceLabel(pricePoint.price, currency);
+  const priceText = priceLabel(pricePoint.price, currency);
+  const priceValue = decimalStringToNumber(pricePoint.price);
   const observedDate = graphQLDateTimeLabel(pricePoint.observedAt);
 
-  if (!price || !observedDate) {
+  if (!priceText || priceValue === null || !observedDate) {
     return null;
   }
 
@@ -228,7 +230,8 @@ export function priceHistoryRow(
     id: pricePoint.id,
     observedAt: pricePoint.observedAt,
     observedDate,
-    price,
+    priceText,
+    priceValue,
   };
 }
 
