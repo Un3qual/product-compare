@@ -5,7 +5,6 @@ import {
   graphQLDateTimeLabel,
   type GraphQLDateTimeContext,
 } from "../graphql-datetime";
-import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
 import { buildOfferSnapshotSummary, type OfferSnapshotSelectors } from "../offer-snapshot";
 import { productDetailPath } from "./product-detail-route-data";
 import { nextRelayPageCursor } from "../relay-pagination";
@@ -89,9 +88,9 @@ export type ProductOfferPageInfo = {
 };
 
 export type ProductOfferSnapshot = {
-  couponAvailabilityText: string;
+  couponOfferCount: number;
   lowestVisiblePriceText: string | null;
-  missingLatestPriceText: string;
+  missingPriceCount: number;
   visibleOfferCount: number;
 };
 
@@ -185,9 +184,9 @@ function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOf
   const summary = buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS);
 
   return {
-    couponAvailabilityText: formatCouponAvailabilityCount(summary.couponAvailabilityCount),
+    couponOfferCount: summary.couponAvailabilityCount,
     lowestVisiblePriceText: lowestVisiblePriceText(summary),
-    missingLatestPriceText: formatOfferCount(summary.missingPriceCount),
+    missingPriceCount: summary.missingPriceCount,
     visibleOfferCount: summary.visibleOfferCount,
   };
 }

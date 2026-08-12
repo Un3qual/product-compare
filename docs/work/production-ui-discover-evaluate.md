@@ -40,6 +40,12 @@ The complete route suites named by the plan, deterministic Playwright/axe/visual
 
 ## Corrective Evidence
 
+- The product-detail Offers tab now uses the same merchant-first buying ledger
+  as the wider offer workspace instead of a raw nested list. Current price,
+  observation date, complete visible price history, coupon code, discount,
+  description, validity, terms, continuation messages, and empty states remain
+  visible in named evidence regions, while the offer snapshot reads as a
+  natural summary rather than a sequence of parameter counts.
 - Offer discovery now presents one product scope, one best-price overview,
   merchant shortcuts, and merchant-led result rows instead of equal-weight
   definition dumps.

@@ -190,9 +190,6 @@ function ProductOfferPagination({
 
 function OfferSnapshot({ snapshot }: { snapshot: ProductOfferSnapshot }) {
   const titleId = useId();
-  const visibleOfferLabel = `${snapshot.visibleOfferCount} active ${
-    snapshot.visibleOfferCount === 1 ? "offer" : "offers"
-  } on this page.`;
 
   return (
     <section aria-labelledby={titleId} {...props(styles.snapshot)}>
@@ -205,11 +202,31 @@ function OfferSnapshot({ snapshot }: { snapshot: ProductOfferSnapshot }) {
           {snapshot.lowestVisiblePriceText ?? "No visible prices"}
         </strong>
       </div>
-      <p {...props(styles.snapshotContext)}>
-        <span>{visibleOfferLabel}</span>
-        <span>{`${snapshot.couponAvailabilityText}.`}</span>
-        <span>{`${snapshot.missingLatestPriceText} without a current price.`}</span>
-      </p>
+      <p {...props(styles.snapshotContext)}>{offerSnapshotContext(snapshot)}</p>
     </section>
   );
+}
+
+function offerSnapshotContext(snapshot: ProductOfferSnapshot) {
+  if (snapshot.visibleOfferCount === 1) {
+    const couponContext = snapshot.couponOfferCount === 1 ? "a coupon" : "no coupon";
+    const priceContext = snapshot.missingPriceCount === 0 ? "a current price" : "no current price";
+
+    return `1 active offer on this page with ${couponContext} and ${priceContext}.`;
+  }
+
+  const couponContext =
+    snapshot.couponOfferCount === 0
+      ? "No offers include coupons"
+      : snapshot.couponOfferCount === 1
+        ? "1 offer includes a coupon"
+        : `${snapshot.couponOfferCount} offers include coupons`;
+  const priceContext =
+    snapshot.missingPriceCount === 0
+      ? "every offer has a current price"
+      : snapshot.missingPriceCount === snapshot.visibleOfferCount
+        ? "current prices are unavailable for every offer"
+        : `${snapshot.missingPriceCount} do not have a current price`;
+
+  return `${snapshot.visibleOfferCount} active offers on this page. ${couponContext}, and ${priceContext}.`;
 }
