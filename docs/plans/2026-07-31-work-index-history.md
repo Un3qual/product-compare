@@ -3425,3 +3425,30 @@ No internal slice was promoted as another batch, and no new independently
 shippable outcome was validated at closeout. The live queue records the
 resulting zero-ready ready-floor exception and a fresh product/architecture
 replenishment action.
+
+## Completed 2026-08-12 Base UI, StyleX, And Table Foundation
+
+Status: complete
+Lane: Base UI, StyleX, and table foundation
+Plan: `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
+
+Batch outcome: ProductCompare uses locally owned, ProductCompare-themed
+shadcn-cssinjs primitives backed by Base UI; Radix is absent; all existing
+semantic tables use TanStack Table v9; and client and SSR builds share one
+deterministic sequential StyleX class-name contract supplied by the standalone
+`stylex-mangle-classnames` package.
+
+This P0 foundation replacement was explicitly user-directed and temporarily
+owned the frontend dependency, theme, primitive, shared-component, route-
+consumer, semantic-table, build-contract, and focused-test paths documented in
+the lane record. Its implementation superseded work on overlapping route
+surfaces while four production-UI cohorts remained ready. At closeout, the
+foundation became an explicit prerequisite of those cohorts so each worker
+must re-run its RED characterization against the migrated UI before editing.
+
+Internal slices covered deterministic client/SSR StyleX mangling, the Base UI
+and shadcn-cssinjs primitive cutover, TanStack Table adoption, direct StyleX
+composition, offer and product decision hierarchy, and accessible price-
+history charts. The lane document preserves milestone-level verification and
+review evidence. Completed work remains archived here rather than occupying
+the live dispatch queue.

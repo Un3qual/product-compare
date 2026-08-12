@@ -5,11 +5,11 @@ test("renders the semantic theme boundary with compiled StyleX props", () => {
   const html = renderToStaticMarkup(
     <AppProviders>
       <div>content</div>
-    </AppProviders>
+    </AppProviders>,
   );
 
   expect(html).toContain('data-theme="default"');
   expect(html).toContain('class="');
   expect(html).toContain("content");
-  expect(html).not.toContain('style=');
+  expect(html).not.toContain("style=");
 });

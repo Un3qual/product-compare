@@ -3,34 +3,44 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 
 const styles = create({
   picker: {
     display: "grid",
-    gap: "1rem"
+    gap: "1rem",
   },
   title: {
     fontSize: "1.25rem",
-    margin: 0
+    margin: 0,
   },
   filter: {
     display: "grid",
     gap: "0.35rem",
-    maxWidth: "24rem"
+    maxWidth: "24rem",
   },
   option: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   optionTitle: {
-    margin: 0
+    margin: 0,
   },
   metadata: {
     color: tokens.textSecondary,
-    margin: 0
-  }
+    margin: 0,
+  },
+  compareLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export type CompareProductPickerOption = {
@@ -43,7 +53,7 @@ export type CompareProductPickerOption = {
 export function CompareProductPickerView({
   heading,
   onShowMore,
-  options
+  options,
 }: {
   heading: string;
   onShowMore: (() => void) | null;
@@ -62,7 +72,7 @@ export function CompareProductPickerView({
       <h2 {...props(styles.title)}>{heading}</h2>
       <div {...props(styles.filter)}>
         <span id={filterLabelId}>Filter loaded products</span>
-        <TextField
+        <Input
           aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
@@ -82,9 +92,9 @@ export function CompareProductPickerView({
           {visibleOptions.map((option) => (
             <DataListItem
               actions={
-                <Button asChild variant="soft">
-                  <Link to={option.href}>Compare {option.name}</Link>
-                </Button>
+                <Link to={option.href} {...props(styles.compareLink)}>
+                  Compare {option.name}&nbsp;<span aria-hidden="true">→</span>
+                </Link>
               }
               key={option.id}
             >
@@ -97,7 +107,7 @@ export function CompareProductPickerView({
         </DataList>
       )}
       {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
+        <Button onClick={onShowMore} type="button" variant="link">
           Show more products
         </Button>
       ) : null}

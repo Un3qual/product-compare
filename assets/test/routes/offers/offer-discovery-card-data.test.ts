@@ -74,13 +74,15 @@ test("keeps valid price-history rows in source order and leaves offer connection
       id: "valid-first",
       observedAt: "2026-05-30T10:00:00Z",
       observedDate: "2026-05-30",
-      price: "189.99 USD",
+      priceText: "189.99 USD",
+      priceValue: 189.99,
     },
     {
       id: "valid-last",
       observedAt: "2026-05-28T10:00:00Z",
       observedDate: "2026-05-28",
-      price: "169.99 USD",
+      priceText: "169.99 USD",
+      priceValue: 169.99,
     },
   ]);
   expect(offer.priceHistory).toBe(priceHistory);

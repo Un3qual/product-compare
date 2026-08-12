@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { create, props } from "@stylexjs/stylex";
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { OfferDiscoveryRouteQuery } from "$generated/OfferDiscoveryRouteQuery.graphql";
@@ -21,9 +22,19 @@ import {
   offerDiscoveryFiltersFromUrl,
   offerDiscoveryInputFromFilters,
 } from "./offer-discovery-filters";
-import { OfferDiscoveryFilterForm, OfferDiscoveryFilterSummary } from "./OfferDiscoveryFilterForm";
+import {
+  MobileOfferDiscoveryFilters,
+  OfferDiscoveryFilterForm,
+  OfferDiscoveryFilterSummary,
+} from "./OfferDiscoveryFilterForm";
 import { offerDiscoverySelectedProductContext } from "./offer-discovery-filter-data";
 import { OfferDiscoveryList } from "./OfferDiscoveryList";
+
+const styles = create({
+  desktopFilters: {
+    display: { default: "block", "@media (max-width: 62rem)": "none" },
+  },
+});
 
 const offerDiscoveryRouteQuery = graphql`
   query OfferDiscoveryRouteQuery(
@@ -70,18 +81,21 @@ export function OfferDiscoveryRoute() {
     >
       <WorkspaceLayout
         context={
-          <ContextRail
-            description="Scope the product, merchant, availability, and ordering of the visible offers."
-            label="Offer controls"
-          >
-            <OfferDiscoveryFilterForm filters={loaderData.filters} />
-          </ContextRail>
+          <div {...props(styles.desktopFilters)}>
+            <ContextRail
+              description="Adjust availability, page size, ordering, and advanced product or merchant references."
+              label="Refine offers"
+            >
+              <OfferDiscoveryFilterForm filters={loaderData.filters} />
+            </ContextRail>
+          </div>
         }
         label="Offer results"
       >
         {loaderData.status === "missingProduct" ? (
           <>
             <OfferDiscoveryFilterSummary filters={loaderData.filters} />
+            <MobileOfferDiscoveryFilters filters={loaderData.filters} />
             <MissingProductState compareSlugs={loaderData.filters.compareSlugs} />
           </>
         ) : loaderData.status === "error" ? (
@@ -118,6 +132,7 @@ function OfferDiscoveryPanel({
   return (
     <>
       <OfferDiscoveryFilterSummary filters={filters} selectedProduct={selectedProduct} />
+      <MobileOfferDiscoveryFilters filters={filters} />
       {data.merchantProducts ? (
         <OfferDiscoveryList connection={data.merchantProducts} filters={filters} />
       ) : (
@@ -131,10 +146,12 @@ function MissingProductState({ compareSlugs }: { compareSlugs: readonly string[]
   return (
     <FeedbackState
       action={
-        <Button asChild variant="solid">
-          <Link to={buildCurrentRoutePathWithCompareSlugs("/products", "", compareSlugs)}>
-            Browse products
-          </Link>
+        <Button
+          render={
+            <Link to={buildCurrentRoutePathWithCompareSlugs("/products", "", compareSlugs)} />
+          }
+        >
+          Browse products
         </Button>
       }
       description="Choose a product to review its current merchant offers."
@@ -148,6 +165,7 @@ function OfferDiscoveryQueryFallback({ filters }: { filters: OfferDiscoveryFilte
   return (
     <>
       <OfferDiscoveryFilterSummary filters={filters} />
+      <MobileOfferDiscoveryFilters filters={filters} />
       <FeedbackState kind="error" title="Offers unavailable." />
     </>
   );
@@ -157,6 +175,7 @@ function OfferDiscoveryLoadingFallback({ filters }: { filters: OfferDiscoveryFil
   return (
     <>
       <OfferDiscoveryFilterSummary filters={filters} />
+      <MobileOfferDiscoveryFilters filters={filters} />
       <FeedbackState kind="loading" title="Loading offers..." />
     </>
   );

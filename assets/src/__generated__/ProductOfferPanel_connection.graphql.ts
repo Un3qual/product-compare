@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<04a78fa690b43cb430641450f74a99d3>>
+ * @generated SignedSource<<9a5603877dace6cd626fd83bb0fec6d8>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -275,7 +275,7 @@ return {
                 {
                   "kind": "Literal",
                   "name": "first",
-                  "value": 3
+                  "value": 12
                 }
               ],
               "concreteType": "PricePointConnection",
@@ -306,7 +306,7 @@ return {
                 },
                 (v4/*: any*/)
               ],
-              "storageKey": "priceHistory(first:3)"
+              "storageKey": "priceHistory(first:12)"
             }
           ],
           "storageKey": null
@@ -339,6 +339,6 @@ return {
 };
 })();
 
-(node as any).hash = "a1b1c08bf9c83791af20fb014ddd718f";
+(node as any).hash = "4f0fe6ea03c2fdc2fd34ead0394f48f1";
 
 export default node;

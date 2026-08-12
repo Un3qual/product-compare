@@ -9,28 +9,28 @@ const styles = create({
     gap: tokens.workspaceGap,
     gridTemplateAreas: {
       default: '"workspace context"',
-      "@media (max-width: 62rem)": '"workspace" "context"'
+      "@media (max-width: 62rem)": '"workspace" "context"',
     },
     gridTemplateColumns: {
       default: `minmax(0, 1fr) ${tokens.contextRailWidth}`,
-      "@media (max-width: 62rem)": "minmax(0, 1fr)"
+      "@media (max-width: 62rem)": "minmax(0, 1fr)",
     },
-    minWidth: 0
+    minWidth: 0,
   },
   workspace: {
     gridArea: "workspace",
-    minWidth: 0
+    minWidth: 0,
   },
   context: {
     gridArea: "context",
-    minWidth: 0
-  }
+    minWidth: 0,
+  },
 });
 
 export function WorkspaceLayout({
   children,
   context,
-  label
+  label,
 }: PropsWithChildren<{
   context?: ReactNode;
   label: string;

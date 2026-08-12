@@ -16,21 +16,21 @@ type ProductDecisionActionsProps = {
 const styles = create({
   actions: {
     display: "grid",
-    gap: "0.65rem"
+    gap: "0.65rem",
   },
   actionList: {
     display: "grid",
     gap: "0.65rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
-  }
+    padding: 0,
+  },
 });
 
 export function ProductDecisionActions({
   browseHref,
   compareAction,
-  offerHref
+  offerHref,
 }: ProductDecisionActionsProps) {
   const titleId = useId();
 
@@ -68,7 +68,5 @@ function CompareAction({ action }: { action: ProductDecisionCompareAction }) {
 }
 
 function unexpectedCompareAction(action: never): never {
-  throw new TypeError(
-    `Unexpected product decision compare action: ${JSON.stringify(action)}`
-  );
+  throw new TypeError(`Unexpected product decision compare action: ${JSON.stringify(action)}`);
 }

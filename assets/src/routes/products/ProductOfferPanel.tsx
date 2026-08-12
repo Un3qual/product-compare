@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { graphql, useFragment } from "react-relay";
 import type { ProductOfferPanel_connection$key } from "$generated/ProductOfferPanel_connection.graphql";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
+import { create, props } from "@stylexjs/stylex";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { ProductOfferList } from "./ProductOfferList";
 import {
   buildProductOfferPanelData,
@@ -43,7 +45,7 @@ const productOfferPanelFragment = graphql`
             hasNextPage
           }
         }
-        priceHistory(first: 3) {
+        priceHistory(first: 12) {
           edges {
             node {
               id
@@ -63,6 +65,53 @@ const productOfferPanelFragment = graphql`
     }
   }
 `;
+
+const styles = create({
+  snapshot: {
+    borderBlockColor: tokens.borderQuiet,
+    borderBlockStyle: "solid",
+    borderBlockWidth: "1px",
+    display: "grid",
+    gap: "0.75rem",
+    marginBlockEnd: "1rem",
+    paddingBlock: "1rem",
+  },
+  snapshotTitle: {
+    color: tokens.textSecondary,
+    fontFamily: tokens.fontMono,
+    fontSize: "0.72rem",
+    letterSpacing: "0.04em",
+    margin: 0,
+    textTransform: "uppercase",
+  },
+  snapshotPrimary: {
+    display: "grid",
+    gap: "0.2rem",
+  },
+  snapshotLabel: {
+    color: tokens.textSecondary,
+    fontSize: "0.82rem",
+  },
+  snapshotValue: {
+    color: tokens.text,
+    fontSize: {
+      default: "1.35rem",
+      "@media (max-width: 42rem)": "1.15rem",
+    },
+    fontWeight: 700,
+    letterSpacing: "-0.02em",
+    lineHeight: 1.25,
+  },
+  snapshotContext: {
+    color: tokens.textSecondary,
+    display: "flex",
+    flexWrap: "wrap",
+    fontSize: "0.86rem",
+    gap: "0.25rem 0.65rem",
+    lineHeight: 1.45,
+    margin: 0,
+  },
+});
 
 export function ProductOfferPanel({
   connection,
@@ -143,26 +192,41 @@ function OfferSnapshot({ snapshot }: { snapshot: ProductOfferSnapshot }) {
   const titleId = useId();
 
   return (
-    <section aria-labelledby={titleId}>
-      <h3 id={titleId}>Offer snapshot</h3>
-      <dl>
-        <div>
-          <dt>Visible active offers</dt>
-          <dd>{snapshot.visibleOfferCount}</dd>
-        </div>
-        <div>
-          <dt>Lowest visible price</dt>
-          <dd>{snapshot.lowestVisiblePriceText ?? "No visible prices"}</dd>
-        </div>
-        <div>
-          <dt>Coupon availability</dt>
-          <dd>{snapshot.couponAvailabilityText}</dd>
-        </div>
-        <div>
-          <dt>Missing latest price</dt>
-          <dd>{snapshot.missingLatestPriceText}</dd>
-        </div>
-      </dl>
+    <section aria-labelledby={titleId} {...props(styles.snapshot)}>
+      <h3 id={titleId} {...props(styles.snapshotTitle)}>
+        Offer snapshot
+      </h3>
+      <div {...props(styles.snapshotPrimary)}>
+        <span {...props(styles.snapshotLabel)}>Best visible offer</span>
+        <strong data-slot="offer-snapshot-primary" {...props(styles.snapshotValue)}>
+          {snapshot.lowestVisiblePriceText ?? "No visible prices"}
+        </strong>
+      </div>
+      <p {...props(styles.snapshotContext)}>{offerSnapshotContext(snapshot)}</p>
     </section>
   );
+}
+
+function offerSnapshotContext(snapshot: ProductOfferSnapshot) {
+  if (snapshot.visibleOfferCount === 1) {
+    const couponContext = snapshot.couponOfferCount === 1 ? "a coupon" : "no coupon";
+    const priceContext = snapshot.missingPriceCount === 0 ? "a current price" : "no current price";
+
+    return `1 active offer on this page with ${couponContext} and ${priceContext}.`;
+  }
+
+  const couponContext =
+    snapshot.couponOfferCount === 0
+      ? "No offers include coupons"
+      : snapshot.couponOfferCount === 1
+        ? "1 offer includes a coupon"
+        : `${snapshot.couponOfferCount} offers include coupons`;
+  const priceContext =
+    snapshot.missingPriceCount === 0
+      ? "every offer has a current price"
+      : snapshot.missingPriceCount === snapshot.visibleOfferCount
+        ? "current prices are unavailable for every offer"
+        : `${snapshot.missingPriceCount} do not have a current price`;
+
+  return `${snapshot.visibleOfferCount} active offers on this page. ${couponContext}, and ${priceContext}.`;
 }

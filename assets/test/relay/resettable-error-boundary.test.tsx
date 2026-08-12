@@ -23,7 +23,7 @@ test("renders fallback after child errors until the reset token changes", () => 
   const view = render(
     <ResettableErrorBoundary fallback={<p>Route fallback.</p>} resetToken="initial">
       <ThrowingChild shouldThrow />
-    </ResettableErrorBoundary>
+    </ResettableErrorBoundary>,
   );
 
   expect(screen.getByText("Route fallback.")).toBeInTheDocument();
@@ -31,7 +31,7 @@ test("renders fallback after child errors until the reset token changes", () => 
   view.rerender(
     <ResettableErrorBoundary fallback={<p>Route fallback.</p>} resetToken="initial">
       <ThrowingChild shouldThrow={false} />
-    </ResettableErrorBoundary>
+    </ResettableErrorBoundary>,
   );
 
   expect(screen.getByText("Route fallback.")).toBeInTheDocument();
@@ -39,7 +39,7 @@ test("renders fallback after child errors until the reset token changes", () => 
   view.rerender(
     <ResettableErrorBoundary fallback={<p>Route fallback.</p>} resetToken="next">
       <ThrowingChild shouldThrow={false} />
-    </ResettableErrorBoundary>
+    </ResettableErrorBoundary>,
   );
 
   expect(screen.getByText("Route content restored.")).toBeInTheDocument();

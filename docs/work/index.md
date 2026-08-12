@@ -78,6 +78,10 @@ Prerequisites:
 
 - The Production UI System Spine And Home outcome is complete and its shared
   owners are stable.
+- The Base UI, StyleX, And Table Foundation outcome is complete; its shared
+  primitives, theme, and table owners are stable. Re-run the planned RED
+  characterization before changing route surfaces already migrated by that
+  foundation.
 - Its owned route, test, E2E, and lane paths do not overlap the other three
   ready cohorts.
 
@@ -124,6 +128,10 @@ Prerequisites:
 
 - The Production UI System Spine And Home outcome is complete and its shared
   owners are stable.
+- The Base UI, StyleX, And Table Foundation outcome is complete; its shared
+  primitives, theme, and table owners are stable. Re-run the planned RED
+  characterization before changing route surfaces already migrated by that
+  foundation.
 - Its owned route, test, E2E, and lane paths do not overlap the other three
   ready cohorts.
 
@@ -169,6 +177,10 @@ Prerequisites:
 
 - The Production UI System Spine And Home outcome is complete and its shared
   owners are stable.
+- The Base UI, StyleX, And Table Foundation outcome is complete; its shared
+  primitives, theme, and table owners are stable. Re-run the planned RED
+  characterization before changing route surfaces already migrated by that
+  foundation.
 - Its owned route, test, E2E, and lane paths do not overlap the other three
   ready cohorts.
 
@@ -213,6 +225,10 @@ Prerequisites:
 
 - The Production UI System Spine And Home outcome is complete and its shared
   owners are stable.
+- The Base UI, StyleX, And Table Foundation outcome is complete; its shared
+  primitives, theme, and table owners are stable. Re-run the planned RED
+  characterization before changing route surfaces already migrated by that
+  foundation.
 - Its owned route, test, E2E, and lane paths do not overlap the other three
   ready cohorts.
 

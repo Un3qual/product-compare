@@ -6,30 +6,30 @@ const {
   createStaticRouterMock,
   dehydrateRelayEnvironmentMock,
   renderRelayRecordsScriptMock,
-  renderToReadableStreamMock
+  renderToReadableStreamMock,
 } = vi.hoisted(() => ({
   createRelayEnvironmentMock: vi.fn(() => ({})),
   createStaticHandlerMock: vi.fn(() => ({
     dataRoutes: [],
-    query: vi.fn(() => ({}))
+    query: vi.fn(() => ({})),
   })),
   createStaticRouterMock: vi.fn(() => ({})),
   dehydrateRelayEnvironmentMock: vi.fn(() => ({})),
   renderRelayRecordsScriptMock: vi.fn(() => ""),
-  renderToReadableStreamMock: vi.fn()
+  renderToReadableStreamMock: vi.fn(),
 }));
 
 vi.mock("react-dom/server", () => ({
-  renderToReadableStream: renderToReadableStreamMock
+  renderToReadableStream: renderToReadableStreamMock,
 }));
 
 vi.mock("../src/relay/environment", () => ({
-  createRelayEnvironment: createRelayEnvironmentMock
+  createRelayEnvironment: createRelayEnvironmentMock,
 }));
 
 vi.mock("../src/relay/ssr", () => ({
   dehydrateRelayEnvironment: dehydrateRelayEnvironmentMock,
-  renderRelayRecordsScript: renderRelayRecordsScriptMock
+  renderRelayRecordsScript: renderRelayRecordsScriptMock,
 }));
 
 vi.mock("react-router-dom", async () => {
@@ -38,12 +38,12 @@ vi.mock("react-router-dom", async () => {
   return {
     ...actual,
     createStaticHandler: createStaticHandlerMock,
-    createStaticRouter: createStaticRouterMock
+    createStaticRouter: createStaticRouterMock,
   };
 });
 
 vi.mock("../src/router", () => ({
-  routes: []
+  routes: [],
 }));
 
 beforeEach(() => {
@@ -53,7 +53,7 @@ beforeEach(() => {
   createStaticHandlerMock.mockReset();
   createStaticHandlerMock.mockImplementation(() => ({
     dataRoutes: [],
-    query: vi.fn(() => ({}))
+    query: vi.fn(() => ({})),
   }));
   createStaticRouterMock.mockReset();
   createStaticRouterMock.mockImplementation(() => ({}));
@@ -77,7 +77,7 @@ function createReactReadableStream(html = "<div>Product Compare</div>"): ReactRe
     start(controller) {
       controller.enqueue(new TextEncoder().encode(html));
       controller.close();
-    }
+    },
   }) as ReactReadableStream;
 
   htmlStream.allReady = Promise.resolve();
@@ -97,7 +97,7 @@ function buildRequestLike({
   headers = new Headers(),
   method = "GET",
   signal,
-  url
+  url,
 }: {
   headers?: Headers;
   method?: string;
@@ -108,7 +108,7 @@ function buildRequestLike({
     headers,
     method,
     signal,
-    url
+    url,
   } as Request;
 }
 
@@ -116,9 +116,9 @@ test("server render passes SSR context into the Relay environment", async () => 
   const ssrContext = {
     request: new Request("https://app.example.com/products", {
       headers: {
-        cookie: "session=abc"
-      }
-    })
+        cookie: "session=abc",
+      },
+    }),
   };
 
   mockServerRenderHtml();
@@ -135,7 +135,7 @@ test("server render passes the incoming request URL and headers into the static 
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: queryMock
+    query: queryMock,
   });
 
   mockServerRenderHtml();
@@ -143,9 +143,9 @@ test("server render passes the incoming request URL and headers into the static 
   const ssrContext = {
     request: new Request("https://app.example.com/products?featured=true", {
       headers: {
-        cookie: "session=abc"
-      }
-    })
+        cookie: "session=abc",
+      },
+    }),
   };
 
   const { render } = await import("../src/entry.server");
@@ -166,18 +166,18 @@ test("server render forwards the incoming request abort signal into the static h
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: queryMock
+    query: queryMock,
   });
 
   mockServerRenderHtml();
 
   const incomingRequest = buildRequestLike({
     signal: controller.signal,
-    url: "https://app.example.com/products"
+    url: "https://app.example.com/products",
   });
 
   const ssrContext = {
-    request: incomingRequest
+    request: incomingRequest,
   };
 
   const { render } = await import("../src/entry.server");
@@ -198,7 +198,7 @@ test("server render preserves cookieString when building the static-handler requ
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: queryMock
+    query: queryMock,
   });
 
   mockServerRenderHtml();
@@ -206,7 +206,7 @@ test("server render preserves cookieString when building the static-handler requ
   const { render } = await import("../src/entry.server");
 
   await render("/products", {
-    cookieString: "session=from-cookie-string"
+    cookieString: "session=from-cookie-string",
   });
 
   const request = staticHandlerRequestFrom(queryMock);
@@ -218,13 +218,13 @@ test("server render returns redirect responses from the static handler unchanged
   const redirectResponse = new Response(null, {
     status: 302,
     headers: {
-      location: "/auth/login"
-    }
+      location: "/auth/login",
+    },
   });
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: vi.fn(() => redirectResponse)
+    query: vi.fn(() => redirectResponse),
   });
 
   const { render } = await import("../src/entry.server");
@@ -240,7 +240,7 @@ test("server render preserves non-success static-handler status and headers", as
     query: vi.fn(() => ({
       actionData: null,
       actionHeaders: {
-        action: new Headers({ "X-Action-Result": "preserved" })
+        action: new Headers({ "X-Action-Result": "preserved" }),
       },
       activeDeferreds: null,
       basename: "/",
@@ -249,19 +249,19 @@ test("server render preserves non-success static-handler status and headers", as
       loaderHeaders: {
         loader: new Headers({
           "Content-Type": "application/json",
-          "X-Loader-Result": "preserved"
-        })
+          "X-Loader-Result": "preserved",
+        }),
       },
       location: {
         hash: "",
         key: "default",
         pathname: "/missing-page",
         search: "",
-        state: null
+        state: null,
       },
       matches: [],
-      statusCode: 404
-    }))
+      statusCode: 404,
+    })),
   });
   mockServerRenderHtml("<div>The requested page could not be found.</div>");
 
@@ -280,14 +280,15 @@ test("server render preserves non-success static-handler status and headers", as
 });
 
 test("server render inserts Relay records before a full document body closes", async () => {
-  const relayRecordsScript = '<script id="__relayRecords" type="application/json">{"records":{}}</script>';
+  const relayRecordsScript =
+    '<script id="__relayRecords" type="application/json">{"records":{}}</script>';
   mockServerRenderHtml("<!doctype html><html><body><div>Product Compare</div></body></html>");
   renderRelayRecordsScriptMock.mockReturnValue(relayRecordsScript);
 
   const { render } = await import("../src/entry.server");
 
   await expect(render("/")).resolves.toBe(
-    `<!doctype html><html><body><div>Product Compare</div>${relayRecordsScript}</body></html>`
+    `<!doctype html><html><body><div>Product Compare</div>${relayRecordsScript}</body></html>`,
   );
 });
 
@@ -316,7 +317,7 @@ test("server render logs and falls back when request URL resolution fails", asyn
 
   createStaticHandlerMock.mockReturnValue({
     dataRoutes: [],
-    query: queryMock
+    query: queryMock,
   });
 
   mockServerRenderHtml();
@@ -326,7 +327,7 @@ test("server render logs and falls back when request URL resolution fails", asyn
   try {
     const { render } = await import("../src/entry.server");
     const request = buildRequestLike({
-      url: "not a valid url"
+      url: "not a valid url",
     });
 
     await expect(render("http://[invalid", { request })).resolves.toContain("Product Compare");
@@ -339,8 +340,8 @@ test("server render logs and falls back when request URL resolution fails", asyn
       expect.objectContaining({
         url: "http://[invalid",
         baseUrl: "not a valid url",
-        error: expect.any(TypeError)
-      })
+        error: expect.any(TypeError),
+      }),
     );
   } finally {
     consoleErrorSpy.mockRestore();

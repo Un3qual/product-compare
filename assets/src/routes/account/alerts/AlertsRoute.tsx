@@ -342,7 +342,7 @@ function AlertListItem({
       {error ? <FeedbackState kind="error" title={error} /> : null}
       {!data.readAt ? (
         <div {...props(styles.actions)}>
-          <Button disabled={pending} variant="soft" onClick={() => onMarkRead(data)}>
+          <Button disabled={pending} variant="secondary" onClick={() => onMarkRead(data)}>
             Mark read
           </Button>
         </div>
@@ -409,7 +409,11 @@ function WatchListItem({
       </p>
       {error ? <FeedbackState kind="error" title={error} /> : null}
       <div {...props(styles.actions)}>
-        <Button disabled={pendingIds.has(data.id)} variant="soft" onClick={() => onToggle(data)}>
+        <Button
+          disabled={pendingIds.has(data.id)}
+          variant="secondary"
+          onClick={() => onToggle(data)}
+        >
           {control.label}
         </Button>
         <DestructiveActionDialog
@@ -419,7 +423,7 @@ function WatchListItem({
           onConfirm={() => onDelete(data)}
           title="Delete this price watch?"
           trigger={
-            <Button disabled={pendingIds.has(data.id)} tone="danger" variant="ghost">
+            <Button disabled={pendingIds.has(data.id)} variant="destructive">
               Delete
             </Button>
           }

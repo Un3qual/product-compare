@@ -1459,10 +1459,12 @@ test("product picker view filters loaded options, clears the filter, and keeps r
 
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
-  expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toHaveAttribute(
+  const compareAlpha = screen.getByRole("link", { name: "Compare Monitor Alpha" });
+  expect(compareAlpha).toHaveAttribute(
     "href",
     "/compare?slug=monitor-alpha",
   );
+  expect(compareAlpha).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
     "href",
     "/compare?slug=monitor-beta",
@@ -2044,9 +2046,7 @@ test("ready compare page scopes relative loaded price to already-loaded offers",
   renderCompareRoute();
 
   expect(
-    screen.getByText(
-      "Price comparisons use the offers currently shown for these products.",
-    ),
+    screen.getByText("Price comparisons use the offers currently shown for these products."),
   ).toBeVisible();
 });
 
@@ -3069,6 +3069,11 @@ test("ready compare page renders a selected-product tray with ordered remove lin
     }),
   ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product");
   expect(
+    within(selectedProducts[0]).getByRole("link", {
+      name: "Remove Detail Product from selection",
+    }),
+  ).not.toHaveAttribute("data-slot", "button");
+  expect(
     within(selectedProducts[1]).getByRole("link", {
       name: "Remove Second Product from selection",
     }),
@@ -3482,6 +3487,25 @@ test("compare route presents URL-driven specification modes as tabs", () => {
   );
 });
 
+test("compare specification tabs preserve modified-click browser navigation", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const differencesTab = screen.getByRole("tab", { name: "Differences" });
+  differencesTab.setAttribute("target", "_blank");
+  const modifiedClick = new MouseEvent("click", {
+    bubbles: true,
+    button: 0,
+    cancelable: true,
+    ctrlKey: true,
+  });
+
+  act(() => differencesTab.dispatchEvent(modifiedClick));
+
+  expect(modifiedClick.defaultPrevented).toBe(false);
+});
+
 test("comparison matrix keeps its selected view inside a named workspace", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
@@ -3663,7 +3687,6 @@ test("isUnauthorizedSavedComparisonsResponse returns false when the response has
     }),
   ).toBe(false);
 });
-
 
 function getSaveFeedbackStatus() {
   return screen.getAllByRole("status")[0];

@@ -5,7 +5,9 @@ export function chooseSelectOption(select: HTMLElement, optionName: string) {
     openSelect(select);
   }
 
-  fireEvent.click(screen.getByRole("option", { name: optionName }));
+  const option = screen.getByRole("option", { name: optionName });
+  fireEvent.pointerDown(option, { pointerType: "mouse" });
+  fireEvent.click(option);
 }
 
 export function openSelect(select: HTMLElement) {

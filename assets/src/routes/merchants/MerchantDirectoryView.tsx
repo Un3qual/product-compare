@@ -9,8 +9,15 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { SectionHeading } from "$ui/components/layout/SectionHeading";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildMerchantDirectoryRows,
@@ -49,6 +56,16 @@ const styles = create({
   merchant: { display: "grid", gap: "0.45rem" },
   name: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
   domain: { color: tokens.textSecondary, margin: 0 },
+  link: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 type MerchantDirectoryViewProps = {
@@ -86,7 +103,7 @@ export function MerchantDirectoryView({
       />
       <div {...props(styles.filter)}>
         <span id={filterLabelId}>Filter merchants on this page</span>
-        <TextField
+        <Input
           aria-labelledby={filterLabelId}
           autoComplete="off"
           id={filterInputId}
@@ -119,17 +136,28 @@ export function MerchantDirectoryControls({
   formAction,
   pageSize,
 }: MerchantDirectoryControlsProps) {
+  const options = [20, 35, 50].map((size) => ({
+    label: String(size),
+    value: String(size),
+  }));
+
   return (
     <form action={formAction} method="get" {...props(styles.controls)}>
-      <label>
+      <Label>
         Page size
-        <Select
-          key={pageSize}
-          name="first"
-          defaultValue={String(pageSize)}
-          options={[20, 35, 50].map((size) => ({ label: String(size), value: String(size) }))}
-        />
-      </label>
+        <Select items={options} key={pageSize} name="first" defaultValue={String(pageSize)}>
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
       <Button type="submit">Apply</Button>
     </form>
   );
@@ -143,23 +171,23 @@ function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryVi
   return (
     <DataListItem
       actions={
-        <>
-          <Button asChild variant="soft">
-            <Link to={row.detailHref}>View merchant details</Link>
-          </Button>
-          {row.websiteHref ? (
-            <Button asChild variant="soft">
-              <a href={row.websiteHref} target="_blank" rel="noopener noreferrer">
-                Visit merchant website
-              </a>
-            </Button>
-          ) : null}
-        </>
+        row.websiteHref ? (
+          <a
+            href={row.websiteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            {...props(styles.link)}
+          >
+            Visit merchant website&nbsp;<span aria-hidden="true">↗</span>
+          </a>
+        ) : null
       }
     >
       <div {...props(styles.merchant)}>
         <h2 {...props(styles.name)}>
-          <Link to={row.detailHref}>{row.name}</Link>
+          <Link to={row.detailHref} {...props(styles.link)}>
+            {row.name}
+          </Link>
         </h2>
         <p {...props(styles.domain)}>{row.domain}</p>
       </div>

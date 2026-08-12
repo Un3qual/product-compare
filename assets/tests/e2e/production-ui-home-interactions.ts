@@ -87,39 +87,37 @@ export function plainLanguageViolations(page: Page) {
 export async function expectMobileNavigation(page: Page) {
   const primary = page.getByRole("navigation", { name: "Primary" });
   const search = primary.getByRole("link", { name: "Search products" });
-  const compare = primary.getByRole("link", { name: "Compare products" });
-  const explore = primary.getByRole("button", { name: "Explore menu" });
-  const guest = primary.getByRole("button", { name: "Guest menu" });
-  const boxes = await Promise.all(
-    [search, compare, explore, guest].map((control) => control.boundingBox()),
-  );
+  const menu = primary.getByRole("button", { name: "Menu" });
+  const brand = primary.getByRole("link", { name: "Product Compare" });
+  const boxes = await Promise.all([brand, search, menu].map((control) => control.boundingBox()));
 
   for (const [index, box] of boxes.entries()) {
-    expect(
-      box?.height ?? 0,
-      ["Search", "Compare", "Explore", "Guest"][index],
-    ).toBeGreaterThanOrEqual(44);
+    expect(box?.height ?? 0, ["Brand", "Search", "Menu"][index]).toBeGreaterThanOrEqual(44);
   }
   expect(boxes[0]?.y).toBe(boxes[1]?.y);
-  expect(boxes[2]?.y).toBe(boxes[3]?.y);
-  expect(boxes[0]?.x).not.toBe(boxes[1]?.x);
+  expect(boxes[1]?.y).toBe(boxes[2]?.y);
+  expect((await primary.boundingBox())?.height ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(72);
 
-  await focusByTab(page, explore);
-  await expectVisibleFocus(explore);
+  await focusByTab(page, menu);
+  await expectVisibleFocus(menu);
   await page.keyboard.press("Space");
-  const exploreNavigation = page.getByRole("navigation", { name: "Explore navigation" });
-  await expect(exploreNavigation.locator("..")).toHaveAttribute("role", "dialog");
-  await expect(exploreNavigation.getByRole("link", { name: "Offers" })).toBeVisible();
-  await expect(exploreNavigation.getByRole("link", { name: "Merchants" })).toBeVisible();
+  const menuNavigation = page.getByRole("navigation", { name: "Menu navigation" });
+  await expect(menuNavigation.locator("..")).toHaveAttribute("role", "dialog");
+  await expect(menuNavigation.getByRole("link", { name: "Compare products" })).toBeVisible();
+  await expect(menuNavigation.getByRole("link", { name: "Offers" })).toBeVisible();
+  await expect(menuNavigation.getByRole("link", { name: "Merchants" })).toBeVisible();
+  await expect(menuNavigation.getByRole("link", { name: "Sign in" })).toBeVisible();
+  await expect(menuNavigation.getByRole("link", { name: "Create account" })).toBeVisible();
   const openMenuAccessibility = await new AxeBuilder({ page }).analyze();
   expect(openMenuAccessibility.violations).toEqual([]);
   const viewport = page.viewportSize();
   await page.mouse.click((viewport?.width ?? 390) - 8, (viewport?.height ?? 844) - 8);
-  await expect(exploreNavigation).toBeHidden();
+  await expect(menuNavigation).toBeHidden();
 
-  await explore.click();
-  await expect(exploreNavigation).toBeVisible();
+  await menu.click();
+  await expect(menuNavigation).toBeVisible();
   await page.keyboard.press("Escape");
-  await expect(exploreNavigation).toBeHidden();
-  await expect(explore).toBeFocused();
+  await expect(menuNavigation).toBeHidden();
+  await expect(menu).toBeFocused();
+  await menu.evaluate((element) => element.blur());
 }

@@ -20,7 +20,6 @@ type HomeOffer = {
 };
 
 export type HomeLedgerRow = {
-  category: string;
   freshness: string;
   highlights: string;
   href: string;
@@ -113,7 +112,6 @@ function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string
   const { offer, node: product } = row;
 
   return {
-    category: "Product",
     freshness: formatObservedAt(scalarText(offer.observedAt)),
     highlights: formatHighlights(row.highlights),
     href: homeProductDetailPath(product.slug, selectedSlugs),

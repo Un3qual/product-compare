@@ -396,6 +396,33 @@ function emptyBrowseData() {
   };
 }
 
+export function browseDataWithTargetControls() {
+  const data = emptyBrowseData();
+
+  return {
+    ...data,
+    productFilterMetadata: {
+      ...data.productFilterMetadata,
+      enumFilters: [
+        {
+          attributeId: "attribute-finish",
+          code: "finish",
+          displayName: "Finish",
+          options: [
+            {
+              count: 2,
+              disabled: false,
+              id: "finish-matte",
+              label: "Matte",
+              selected: false,
+            },
+          ],
+        },
+      ],
+    },
+  };
+}
+
 function emptyProductPickerData() {
   return {
     products: {

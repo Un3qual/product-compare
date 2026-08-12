@@ -16,8 +16,15 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextArea } from "$ui/primitives/TextArea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Textarea } from "$ui/primitives/Textarea";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
@@ -163,6 +170,10 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
     .map(cjProgramWarningCopy)
     .filter((warning) => warning !== null);
   const lastChanged = formatCJDateTime(program.lastChanged);
+  const stageOptions = [
+    ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
+    ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({ label, value })),
+  ];
 
   useEffect(() => {
     setStage(isCJProgramStage(program.stage) ? program.stage : null);
@@ -223,41 +234,41 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
   return (
     <li aria-busy={isUpdateInFlight} {...props(styles.item)}>
       {programSummary}
-      {warnings.length > 0 ? (
-        <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
-          {warnings.map((warning) => (
-            <li key={warning}>{warning}</li>
-          ))}
-        </ul>
-      ) : null}
+      <CJProgramWarnings programName={programName} warnings={warnings} />
       <div {...props(styles.controls)}>
-        <label {...props(styles.field)}>
+        <Label style={styles.field}>
           <span {...props(styles.label)}>Stage for {programName}</span>
           <Select
             disabled={isUpdateInFlight || !stage}
+            items={stageOptions}
             onValueChange={(nextStage) => {
-              if (isCJProgramStage(nextStage)) {
-                setStage(nextStage);
+              const value = nextStage ?? "";
+              if (isCJProgramStage(value)) {
+                setStage(value);
               }
             }}
-            options={[
-              ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
-              ...CJ_PROGRAM_STAGES.map(({ label, value }) => ({
-                label,
-                value,
-              })),
-            ]}
             value={stage ?? ""}
-          />
-        </label>
-        <label {...props(styles.field)}>
+          >
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {stageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Label>
+        <Label style={styles.field}>
           <span {...props(styles.label)}>Note for {programName}</span>
-          <TextArea
+          <Textarea
             disabled={isUpdateInFlight || !stage}
             onChange={(event) => setNote(event.currentTarget.value)}
             value={note}
           />
-        </label>
+        </Label>
         <Button
           aria-label={`Save ${programName}`}
           disabled={isUpdateInFlight || !stage}
@@ -270,6 +281,26 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
       {feedback ? <p role="status">{feedback}</p> : null}
       <CJProgramFeedDisclosure programId={program.id} programName={programName} />
     </li>
+  );
+}
+
+function CJProgramWarnings({
+  programName,
+  warnings,
+}: {
+  programName: string;
+  warnings: readonly string[];
+}) {
+  if (warnings.length === 0) {
+    return null;
+  }
+
+  return (
+    <ul aria-label={`Warnings for ${programName}`} {...props(styles.warnings)}>
+      {warnings.map((warning) => (
+        <li key={warning}>{warning}</li>
+      ))}
+    </ul>
   );
 }
 
@@ -311,16 +342,13 @@ function CJProgramFeedDisclosure({
       }}
       open={isOpen}
     >
-      <CollapsibleTrigger asChild>
-        <Button
-          aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
-          type="button"
-          variant="soft"
-        >
-          {isOpen ? "Hide feeds" : "Show feeds"}
-        </Button>
+      <CollapsibleTrigger
+        aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
+        render={<Button variant="link" />}
+      >
+        {isOpen ? "Hide feeds" : "Show feeds"}
       </CollapsibleTrigger>
-      <CollapsibleContent {...props(styles.feedDetails)}>
+      <CollapsibleContent style={styles.feedDetails}>
         {queryRef ? (
           <ResettableErrorBoundary
             fallback={<CJProgramFeedUnavailable onRetry={retryPage} programName={programName} />}
@@ -350,7 +378,7 @@ function CJProgramFeedUnavailable({
         aria-label={`Retry feeds for ${programName}`}
         onClick={onRetry}
         type="button"
-        variant="soft"
+        variant="secondary"
       >
         Retry feeds
       </Button>
@@ -394,7 +422,7 @@ function CJProgramFeeds({
               aria-label={`First feeds for ${programName}`}
               onClick={() => onPage(null)}
               type="button"
-              variant="soft"
+              variant="link"
             >
               First feeds
             </Button>
@@ -404,6 +432,7 @@ function CJProgramFeeds({
               aria-label={`Next feeds for ${programName}`}
               onClick={() => onPage(feeds.pageInfo.endCursor ?? null)}
               type="button"
+              variant="link"
             >
               Next feeds
             </Button>

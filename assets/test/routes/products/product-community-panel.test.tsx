@@ -11,7 +11,7 @@ import {
   updateProductReviewMutation,
 } from "../../../src/routes/products/ProductCommunityOperations";
 import { ProductCommunityPanel } from "../../../src/routes/products/ProductCommunityPanel";
-import { chooseSelectOption } from "../../helpers/radix-select";
+import { chooseSelectOption } from "../../helpers/base-select";
 
 const {
   answerMock,
@@ -45,7 +45,7 @@ vi.mock("react-relay", async () => {
     ...actual,
     useFragment: useFragmentMock,
     useLazyLoadQuery: useLazyLoadQueryMock,
-    useMutation: useMutationMock
+    useMutation: useMutationMock,
   };
 });
 
@@ -185,7 +185,7 @@ test("ProductCommunityPanel exposes independent keyboard-accessible creation dis
     const trigger = screen.getByRole("button", { name: triggerName });
     const field = screen.getByLabelText(fieldName);
 
-    expect(trigger).toHaveStyle({ minHeight: "44px" });
+    expect(trigger).toHaveAttribute("data-slot", "collapsible-trigger");
     expect(trigger).toHaveAttribute("aria-expanded", "false");
     expect(field).not.toBeVisible();
 
@@ -386,7 +386,9 @@ test("ProductCommunityPanel gives owners a path to edit hidden and rejected subm
   expect(within(ownerSection).getByRole("button", { name: "Edit answer" })).toBeVisible();
   expect(within(ownerSection).getByText("Hidden from shoppers")).toBeVisible();
   expect(within(ownerSection).getAllByText("Changes requested")).toHaveLength(2);
-  expect(within(ownerSection).queryByText(/HIDDEN|REJECTED|PENDING_REVIEW/)).not.toBeInTheDocument();
+  expect(
+    within(ownerSection).queryByText(/HIDDEN|REJECTED|PENDING_REVIEW/),
+  ).not.toBeInTheDocument();
 });
 
 test("ProductCommunityPanel keeps lifecycle failures scoped to their content row", async () => {

@@ -307,7 +307,7 @@ test("ProductDecisionActions fails closed for an unsupported compare state", () 
   ).toThrow("Unexpected product decision compare action");
 });
 
-test("ProductOfferList renders normalized offer details with bounded-more messages", () => {
+test("ProductOfferList presents each merchant as a decision row with grouped evidence", () => {
   const offers: ProductOfferListItem[] = [
     {
       id: "merchant-product-1",
@@ -319,10 +319,25 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
       },
       priceHistory: [
         {
+          id: "price-3",
+          observedAt: "2026-05-15T00:00:00Z",
+          observedDate: "2026-05-15",
+          priceText: "229.99 USD",
+          priceValue: 229.99,
+        },
+        {
           id: "price-1",
           observedAt: "2026-05-01T00:00:00Z",
           observedDate: "2026-05-01",
           priceText: "249.99 USD",
+          priceValue: 249.99,
+        },
+        {
+          id: "price-2",
+          observedAt: "2026-05-08T00:00:00Z",
+          observedDate: "2026-05-08",
+          priceText: "239.99 USD",
+          priceValue: 239.99,
         },
       ],
       priceHistoryHasMore: true,
@@ -343,24 +358,52 @@ test("ProductOfferList renders normalized offer details with bounded-more messag
   render(<ProductOfferList offers={offers} />);
 
   const offerList = screen.getByRole("list", { name: "Active offer list" });
-  const merchantAction = within(offerList).getByRole("link", { name: "Acme" });
+  const offerArticle = within(offerList).getByRole("article", { name: "Acme" });
+  const offerItem = within(offerArticle);
+  const merchantAction = offerItem.getByRole("link", { name: "Visit Acme" });
   const offer = merchantAction.closest("li");
 
   expect(offer).not.toBeNull();
-  const offerItem = within(offer as HTMLElement);
+  expect(offer).toHaveAttribute("data-slot", "data-list-item");
+  expect(offerItem.getByRole("heading", { name: "Acme" })).toBeVisible();
   expect(merchantAction).toHaveAttribute(
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
-  expect(offerItem.getByText("199.99 USD")).toBeVisible();
+  const decision = offerArticle.querySelector('[data-slot="product-offer-decision"]');
+
+  expect(decision).not.toBeNull();
+  expect(within(decision as HTMLElement).getByText("Current price")).toBeVisible();
+  expect(within(decision as HTMLElement).getByText("199.99 USD")).toBeVisible();
   const priceObservedAt = offerItem.getByText("2026-06-01", { selector: "time" });
 
-  expect(offerItem.getByText("Price observed", { selector: "p" })).toBeVisible();
+  expect(offerItem.getByText("Price observed", { selector: "span" })).toBeVisible();
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
-  expect(offerItem.getByRole("list", { name: "Acme price history" })).toBeVisible();
-  expect(offerItem.getByText("249.99 USD")).toBeVisible();
+  const history = offerItem.getByRole("region", { name: "Price history" });
+  const coupons = offerItem.getByRole("region", { name: "Coupons" });
+
+  const historyChart = within(history).getByRole("img", { name: "Acme price history chart" });
+  const historyData = within(history).getByRole("table", { name: "Acme price history data" });
+
+  expect(historyChart).toBeVisible();
+  expect(historyChart.querySelector("path")).not.toBeNull();
+  expect(
+    historyChart.querySelectorAll('[data-ts-key="price-history-points"] > circle'),
+  ).toHaveLength(3);
+  expect(
+    within(history).queryByRole("list", { name: "Acme price history" }),
+  ).not.toBeInTheDocument();
+  expect(within(historyData).getByText("249.99 USD")).toBeInTheDocument();
+  const historyRows = within(historyData).getAllByRole("row");
+
+  expect(historyRows).toHaveLength(4);
+  expect(historyRows.slice(1).map((row) => row.textContent)).toEqual([
+    "2026-05-01249.99 USD",
+    "2026-05-08239.99 USD",
+    "2026-05-15229.99 USD",
+  ]);
   expect(offerItem.getByText("More price history available.")).toBeVisible();
-  expect(offerItem.getByRole("list", { name: "Acme active coupons" })).toBeVisible();
+  expect(within(coupons).getByRole("list", { name: "Acme active coupons" })).toBeVisible();
   expect(offerItem.getByText("SAVE20")).toBeVisible();
   expect(offerItem.getByText("20.00 USD")).toBeVisible();
   expect(offerItem.getByText("Valid through 2026-07-01")).toBeVisible();
@@ -683,21 +726,15 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
 
-  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Specifications" }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Specifications" }));
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
 
-  fireEvent.mouseDown(within(detailTabs).getByRole("tab", { name: "Offers" }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Offers" }));
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Acme" })).toHaveAttribute(
+  expect(screen.getByRole("link", { name: "Visit Acme" })).toHaveAttribute(
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
@@ -834,7 +871,7 @@ test("product detail tracks merchant clicks with only the merchant product ID", 
 
   openProductDetailTab("Offers");
 
-  fireEvent.click(screen.getByRole("link", { name: "Acme" }));
+  fireEvent.click(screen.getByRole("link", { name: "Visit Acme" }));
 
   expect(commitCommerceClickMock).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -887,7 +924,7 @@ test("product detail blocks pending tracked merchant action re-clicks", () => {
 
   openProductDetailTab("Offers");
 
-  const merchantLink = screen.getByRole("link", { name: "Acme" });
+  const merchantLink = screen.getByRole("link", { name: "Visit Acme" });
   const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
 
   expect(merchantLink).toHaveAttribute("aria-disabled", "true");
@@ -1064,15 +1101,20 @@ test("renders an offer snapshot from the visible active offer page", () => {
   expect(
     offerSnapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(within(offerSnapshot).getByText("Visible active offers")).toBeVisible();
-  expect(within(offerSnapshot).getByText("4")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
-  expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Coupon availability")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers with coupons")).toBeVisible();
-  expect(within(offerSnapshot).getByText("Missing latest price")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
-  expect(within(offersList).getByRole("link", { name: "Bad Price Shop" })).toBeVisible();
+  expect(within(offerSnapshot).getByText("Best visible offer")).toBeVisible();
+  expect(within(offerSnapshot).getByText("149.50 USD at Value Mart")).toHaveAttribute(
+    "data-slot",
+    "offer-snapshot-primary",
+  );
+  expect(
+    within(offerSnapshot).getByText(
+      "4 active offers on this page. 2 offers include coupons, and 2 do not have a current price.",
+    ),
+  ).toBeVisible();
+  expect(within(offerSnapshot).queryByText("Visible active offers")).not.toBeInTheDocument();
+  expect(within(offerSnapshot).queryByText("Coupon availability")).not.toBeInTheDocument();
+  expect(within(offerSnapshot).queryByText("Missing latest price")).not.toBeInTheDocument();
+  expect(within(offersList).getByRole("link", { name: "Visit Bad Price Shop" })).toBeVisible();
   expect(within(offersList).queryByText("not-a-price USD")).not.toBeInTheDocument();
 });
 
@@ -1125,7 +1167,11 @@ test("renders offer snapshot fallback when no visible offer has a numeric displa
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
   expect(within(offerSnapshot).getByText("No visible prices")).toBeVisible();
-  expect(within(offerSnapshot).getByText("2 offers")).toBeVisible();
+  expect(
+    within(offerSnapshot).getByText(
+      "2 active offers on this page. No offers include coupons, and current prices are unavailable for every offer.",
+    ),
+  ).toBeVisible();
 });
 
 test("renders offer snapshot without lowest-price claim for mixed currencies", () => {
@@ -1179,7 +1225,7 @@ test("renders offer snapshot without lowest-price claim for mixed currencies", (
 
   const offerSnapshot = screen.getByRole("region", { name: "Offer snapshot" });
 
-  expect(within(offerSnapshot).getByText("Lowest visible price")).toBeVisible();
+  expect(within(offerSnapshot).getByText("Best visible offer")).toBeVisible();
   expect(within(offerSnapshot).getByText("Multiple currencies")).toBeVisible();
   expect(within(offerSnapshot).queryByText("149.99 EUR at Euro Shop")).not.toBeInTheDocument();
 });
@@ -1408,7 +1454,7 @@ test("renders active coupon details for product offers", () => {
 
     openProductDetailTab("Offers");
 
-    const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+    const offerItem = screen.getByRole("link", { name: "Visit Acme" }).closest("li");
 
     expect(offerItem).not.toBeNull();
     const offer = within(offerItem as HTMLElement);
@@ -1552,7 +1598,7 @@ test("renders offers when a merchant has no active coupons", () => {
 
   openProductDetailTab("Offers");
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Visit Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
   expect(within(offerItem as HTMLElement).getByText("199.99 USD")).toBeVisible();
@@ -1561,7 +1607,7 @@ test("renders offers when a merchant has no active coupons", () => {
   ).toBeVisible();
 });
 
-test("renders active offer price history rows", () => {
+test("renders active offer price history as a chart with exact accessible data", () => {
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
     productQuery: PRODUCT_QUERY_DESCRIPTOR,
@@ -1651,27 +1697,31 @@ test("renders active offer price history rows", () => {
 
   openProductDetailTab("Offers");
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Visit Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
   const offer = within(offerItem as HTMLElement);
-  const historyList = offer.getByRole("list", { name: "Acme price history" });
-  const firstObservedAt = offer.getByText("2026-05-30");
-  const secondObservedAt = offer.getByText("2026-06-01");
+  const historyChart = offer.getByRole("img", { name: "Acme price history chart" });
+  const historyData = offer.getByRole("table", { name: "Acme price history data" });
+  const history = within(historyData);
+  const firstObservedAt = history.getByText("2026-05-30");
+  const secondObservedAt = history.getByText("2026-06-01");
   const offerText = offerItem?.textContent ?? "";
 
-  expect(historyList).toBeVisible();
-  expect(firstObservedAt).toBeVisible();
+  expect(historyChart).toBeVisible();
+  expect(within(historyChart).getByText("Jun 1")).toBeInTheDocument();
+  expect(offer.queryByRole("list", { name: "Acme price history" })).not.toBeInTheDocument();
+  expect(firstObservedAt).toBeInTheDocument();
   expect(firstObservedAt).toHaveAttribute("dateTime", "2026-05-30T10:00:00Z");
-  expect(offer.getByText("249.99 USD")).toBeVisible();
-  expect(secondObservedAt).toBeVisible();
+  expect(history.getByText("249.99 USD")).toBeInTheDocument();
+  expect(secondObservedAt).toBeInTheDocument();
   expect(secondObservedAt).toHaveAttribute("dateTime", "2026-06-01T00:30:00+02:00");
-  expect(offer.getByText("229.99 USD")).toBeVisible();
+  expect(history.getByText("229.99 USD")).toBeInTheDocument();
   expect(offer.getByText("More price history available.")).toBeVisible();
-  expect(offer.queryByText("not-a-date")).not.toBeInTheDocument();
-  expect(offer.queryByText("219.99 USD")).not.toBeInTheDocument();
-  expect(offer.queryByText("2026-06-02")).not.toBeInTheDocument();
+  expect(history.queryByText("not-a-date")).not.toBeInTheDocument();
+  expect(history.queryByText("219.99 USD")).not.toBeInTheDocument();
+  expect(history.queryByText("2026-06-02")).not.toBeInTheDocument();
   expect(offerText.indexOf("199.99 USD")).toBeLessThan(offerText.indexOf("2026-05-30"));
   expect(offerText.indexOf("2026-06-01")).toBeLessThan(offerText.indexOf("SAVE20"));
 });
@@ -1724,7 +1774,7 @@ test("renders empty price history state for active offers", () => {
 
   openProductDetailTab("Offers");
 
-  const offerItem = screen.getByRole("link", { name: "Acme" }).closest("li");
+  const offerItem = screen.getByRole("link", { name: "Visit Acme" }).closest("li");
 
   expect(offerItem).not.toBeNull();
 
@@ -2087,7 +2137,8 @@ test("renders an offer without a latest price", () => {
   openProductDetailTab("Offers");
 
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Acme" })).toBeVisible();
+  expect(screen.getByRole("link", { name: "Visit Acme" })).toBeVisible();
+  expect(screen.getByText("Price unavailable")).toBeVisible();
   expect(screen.queryByText("199.99 USD")).not.toBeInTheDocument();
 });
 
@@ -2160,7 +2211,7 @@ test.each([
   openProductDetailTab("Offers");
 
   expect(screen.getByText("No active offers yet.")).toBeInTheDocument();
-  expect(screen.queryByRole("link", { name: "Acme" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("link", { name: "Visit Acme" })).not.toBeInTheDocument();
 });
 
 test("renders an unavailable-offers message without collapsing the product detail", () => {
@@ -2261,10 +2312,7 @@ function mockRouteQueryRefs(offersDescriptor = OFFERS_QUERY_DESCRIPTOR) {
 
 function openProductDetailTab(name: "Offers" | "Reviews & Q&A" | "Specifications") {
   const tabList = screen.getByRole("tablist", { name: "Product details" });
-  fireEvent.mouseDown(within(tabList).getByRole("tab", { name }), {
-    button: 0,
-    ctrlKey: false,
-  });
+  fireEvent.click(within(tabList).getByRole("tab", { name }));
 }
 
 function LocationProbe() {

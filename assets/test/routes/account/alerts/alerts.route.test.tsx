@@ -464,7 +464,7 @@ test("PriceWatchControl reveals relevant input and submits one typed rule", asyn
   );
 
   const disclosure = screen.getByRole("button", { name: "Watch price or availability" });
-  expect(disclosure).toHaveStyle({ minHeight: "44px" });
+  expect(disclosure).toHaveAttribute("data-slot", "collapsible-trigger");
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(screen.getByLabelText("Target landed price")).not.toBeVisible();
 

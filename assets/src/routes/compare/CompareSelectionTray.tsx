@@ -6,7 +6,7 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildCompareSelectionTrayViewData,
   type CompareSelectionTrayItem,
-  type CompareSelectionTrayRow
+  type CompareSelectionTrayRow,
 } from "./compare-selection-tray-data";
 
 const styles = create({
@@ -18,22 +18,22 @@ const styles = create({
     borderWidth: "1px",
     display: "grid",
     gap: "0.85rem",
-    padding: "1.15rem"
+    padding: "1.15rem",
   },
   header: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
     gap: "0.75rem",
-    justifyContent: "space-between"
+    justifyContent: "space-between",
   },
   title: {
     fontSize: "1rem",
-    margin: 0
+    margin: 0,
   },
   status: {
     color: tokens.textSecondary,
-    margin: 0
+    margin: 0,
   },
   list: {
     display: "flex",
@@ -41,7 +41,7 @@ const styles = create({
     gap: "0.55rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   item: {
     alignItems: "center",
@@ -49,8 +49,19 @@ const styles = create({
     borderRadius: "var(--pc-radius-medium)",
     display: "flex",
     gap: "0.55rem",
-    padding: "0.4rem 0.55rem"
-  }
+    padding: "0.4rem 0.55rem",
+  },
+  removeLink: {
+    alignItems: "center",
+    color: tokens.textSecondary,
+    display: "inline-flex",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export function CompareSelectionTray({
@@ -59,7 +70,7 @@ export function CompareSelectionTray({
   openComparePath,
   removePathForIndex,
   selectedSlugs,
-  title = "Selected products"
+  title = "Selected products",
 }: {
   selectedSlugs: readonly string[];
   items: readonly CompareSelectionTrayItem[];
@@ -73,22 +84,22 @@ export function CompareSelectionTray({
     items,
     maxProducts,
     removePathForIndex,
-    selectedSlugs
+    selectedSlugs,
   });
 
   return (
     <section aria-labelledby={titleId} {...props(styles.tray)}>
       <div {...props(styles.header)}>
         <div>
-          <h2 id={titleId} {...props(styles.title)}>{title}</h2>
+          <h2 id={titleId} {...props(styles.title)}>
+            {title}
+          </h2>
           <p aria-live="polite" role="status" {...props(styles.status)}>
             {viewData.selectionCountCopy}
           </p>
         </div>
         {viewData.showOpenAction ? (
-          <Button asChild variant="solid">
-            <Link to={openComparePath}>Open comparison</Link>
-          </Button>
+          <Button render={<Link to={openComparePath} />}>Open comparison</Button>
         ) : null}
       </div>
       <SelectionItems rows={viewData.rows} />
@@ -96,19 +107,15 @@ export function CompareSelectionTray({
   );
 }
 
-function SelectionItems({
-  rows
-}: {
-  rows: readonly CompareSelectionTrayRow[];
-}) {
+function SelectionItems({ rows }: { rows: readonly CompareSelectionTrayRow[] }) {
   return (
     <ul {...props(styles.list)}>
       {rows.map(({ label, removePath, slug }) => (
         <li key={slug} {...props(styles.item)}>
           <span>{label}</span>{" "}
-          <Button asChild size="1" variant="ghost">
-            <Link to={removePath}>Remove {label} from selection</Link>
-          </Button>
+          <Link to={removePath} {...props(styles.removeLink)}>
+            <span aria-hidden="true">×&nbsp;</span>Remove {label} from selection
+          </Link>
         </li>
       ))}
     </ul>

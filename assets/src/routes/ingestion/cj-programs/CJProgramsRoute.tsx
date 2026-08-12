@@ -15,7 +15,14 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
+import { Label } from "$ui/primitives/Label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { recoverRouteLoaderError } from "../../loader-errors";
 import { CJProgramList } from "./CJProgramList";
@@ -186,6 +193,17 @@ function CJProgramsPanel({
 function CJProgramControls({ pagination }: { pagination: CJProgramsPagination }) {
   const stageValue = pagination.stage ? cjProgramStageToUrlParam(pagination.stage) : "";
   const sortValue = cjProgramSortToUrlParam(pagination.sort);
+  const stageOptions = [
+    { label: "All stages", value: "" },
+    ...CJ_PROGRAM_STAGES.map(({ label, urlValue }) => ({
+      label,
+      value: urlValue,
+    })),
+  ];
+  const sortOptions = CJ_PROGRAM_SORTS.map(({ label, urlValue }) => ({
+    label,
+    value: urlValue,
+  }));
 
   return (
     <form action="/ingestion/cj-programs" method="get" {...props(styles.controls)}>
@@ -194,33 +212,36 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
       {pagination.unmatchedAfter ? (
         <input name="unmatchedAfter" type="hidden" value={pagination.unmatchedAfter} />
       ) : null}
-      <label {...props(styles.field)}>
+      <Label style={styles.field}>
         <span {...props(styles.label)}>Stage</span>
-        <Select
-          defaultValue={stageValue}
-          key={stageValue}
-          name="stage"
-          options={[
-            { label: "All stages", value: "" },
-            ...CJ_PROGRAM_STAGES.map(({ label, urlValue }) => ({
-              label,
-              value: urlValue,
-            })),
-          ]}
-        />
-      </label>
-      <label {...props(styles.field)}>
+        <Select defaultValue={stageValue} items={stageOptions} key={stageValue} name="stage">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {stageOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
+      <Label style={styles.field}>
         <span {...props(styles.label)}>Sort programs</span>
-        <Select
-          defaultValue={sortValue}
-          key={sortValue}
-          name="sort"
-          options={CJ_PROGRAM_SORTS.map(({ label, urlValue }) => ({
-            label,
-            value: urlValue,
-          }))}
-        />
-      </label>
+        <Select defaultValue={sortValue} items={sortOptions} key={sortValue} name="sort">
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {sortOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
       <Button type="submit">Apply</Button>
     </form>
   );

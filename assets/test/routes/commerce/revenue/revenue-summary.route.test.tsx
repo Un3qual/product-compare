@@ -291,7 +291,10 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
   expect(screen.getByText("Conversion Product")).toBeInTheDocument();
   expect(screen.getByText("Conversion Network")).toBeInTheDocument();
-  expect(screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/)).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
+  ).not.toBeInTheDocument();
+  expect(mockedUseFragment).toHaveBeenCalledTimes(1);
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
@@ -500,12 +503,8 @@ test("revenue route renders equal conversion references from different networks 
   try {
     renderRevenueSummaryRoute();
 
-    expect(
-      screen.getByText("Conversion Network"),
-    ).toBeVisible();
-    expect(
-      screen.getByText("Second Conversion Network"),
-    ).toBeVisible();
+    expect(screen.getByText("Conversion Network")).toBeVisible();
+    expect(screen.getByText("Second Conversion Network")).toBeVisible();
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
   } finally {
     consoleErrorSpy.mockRestore();

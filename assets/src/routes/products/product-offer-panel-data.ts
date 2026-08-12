@@ -5,7 +5,6 @@ import {
   graphQLDateTimeLabel,
   type GraphQLDateTimeContext,
 } from "../graphql-datetime";
-import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
 import { buildOfferSnapshotSummary, type OfferSnapshotSelectors } from "../offer-snapshot";
 import { productDetailPath } from "./product-detail-route-data";
 import { nextRelayPageCursor } from "../relay-pagination";
@@ -24,6 +23,7 @@ export type ProductOfferPriceHistoryRow = {
   observedAt: string;
   observedDate: string;
   priceText: string;
+  priceValue: number;
 };
 
 export type ProductOfferListItem = {
@@ -89,9 +89,9 @@ export type ProductOfferPageInfo = {
 };
 
 export type ProductOfferSnapshot = {
-  couponAvailabilityText: string;
+  couponOfferCount: number;
   lowestVisiblePriceText: string | null;
-  missingLatestPriceText: string;
+  missingPriceCount: number;
   visibleOfferCount: number;
 };
 
@@ -185,9 +185,9 @@ function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOf
   const summary = buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS);
 
   return {
-    couponAvailabilityText: formatCouponAvailabilityCount(summary.couponAvailabilityCount),
+    couponOfferCount: summary.couponAvailabilityCount,
     lowestVisiblePriceText: lowestVisiblePriceText(summary),
-    missingLatestPriceText: formatOfferCount(summary.missingPriceCount),
+    missingPriceCount: summary.missingPriceCount,
     visibleOfferCount: summary.visibleOfferCount,
   };
 }
@@ -257,12 +257,13 @@ function buildPriceHistoryRows(
   return edges.flatMap(({ node }) => {
     const observedDate = graphQLDateTimeLabel(node.observedAt);
     const priceText = formatPriceText(node.price, currency);
+    const priceValue = decimalStringToNumber(node.price);
 
-    if (!observedDate || !priceText || typeof node.observedAt !== "string") {
+    if (!observedDate || !priceText || priceValue === null || typeof node.observedAt !== "string") {
       return [];
     }
 
-    return [{ id: node.id, observedAt: node.observedAt, observedDate, priceText }];
+    return [{ id: node.id, observedAt: node.observedAt, observedDate, priceText, priceValue }];
   });
 }
 

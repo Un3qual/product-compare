@@ -1,15 +1,24 @@
-import { Root as LabelPrimitive } from "@radix-ui/react-label";
-import { forwardRef, type ComponentPropsWithoutRef, type ElementRef } from "react";
+import * as stylex from "@stylexjs/stylex";
+import type { ComponentProps } from "react";
+import { tokens } from "../theme/tokens.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
-type LabelProps = ComponentPropsWithoutRef<typeof LabelPrimitive> & {
-  "data-slot"?: string;
-};
-
-export const Label = forwardRef<
-  ElementRef<typeof LabelPrimitive>,
-  LabelProps
->(function Label(props, ref) {
-  const { ["data-slot"]: dataSlot = "label", ...restProps } = props;
-
-  return <LabelPrimitive data-slot={dataSlot} ref={ref} {...restProps} />;
+const styles = stylex.create({
+  root: {
+    color: tokens.textSecondary,
+    display: "grid",
+    fontSize: "0.9rem",
+    fontWeight: 600,
+    gap: "0.35rem",
+  },
 });
+
+export function Label({ style, ...labelProps }: StyleXPrimitiveProps<ComponentProps<"label">>) {
+  return (
+    <label
+      {...stylex.props(styles.root, style)}
+      data-slot="label"
+      {...labelProps}
+    />
+  );
+}

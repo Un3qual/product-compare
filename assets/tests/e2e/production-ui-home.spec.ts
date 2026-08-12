@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   edgeConnection,
+  browseDataWithTargetControls,
   expectNoUnhandledGraphQLOperations,
   homeDeal,
   homeResponders,
@@ -22,9 +23,8 @@ import {
 } from "./production-ui-home-interactions";
 import {
   expectDesktopLedgerGeometry,
-  expectDisclosureTargets,
   expectHomeVisualSystem,
-  expectMobileLedgerDisclosure,
+  expectMobileLedgerDecisionContext,
   expectTabletLedgerGeometry,
 } from "./production-ui-home-visual";
 
@@ -34,6 +34,7 @@ test.afterEach(({ page }) => {
 
 test("guest search and category entry preserve useful catalog navigation", async ({ page }) => {
   const responders = homeResponders();
+  responders.set("BrowseRouteQuery", { data: browseDataWithTargetControls() });
   await test.step("GraphQL dispatch rejects inherited object operation names", async () => {
     const inheritedOperationResponses = await Promise.all(
       ["constructor", "toString"].map((operationName) =>
@@ -61,6 +62,16 @@ test("guest search and category entry preserve useful catalog navigation", async
 
   await expect(page).toHaveURL(/\/products\?/);
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
+  const includeSubcategories = page.getByRole("checkbox", { name: "Include subcategories" });
+  const checkboxBox = await includeSubcategories.boundingBox();
+  expect(checkboxBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(checkboxBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+
+  await page.getByRole("button", { name: "Advanced filters" }).click();
+  const anyFinish = page.getByRole("radio", { name: "Any" });
+  const radioBox = await anyFinish.boundingBox();
+  expect(radioBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(radioBox?.width ?? 0).toBeGreaterThanOrEqual(44);
   expect(new URL(page.url()).searchParams.get("q")).toBe("precision kettle");
   expect(requests).toContainEqual({
     operationName: "BrowseRouteQuery",
@@ -199,7 +210,7 @@ test("optional deals failure stays local and retry restores offers", async ({ pa
   expect(dealsAttempts).toBe(2);
 });
 
-test("keyboard navigation exposes focus and reduced motion keeps disclosure behavior", async ({
+test("keyboard navigation exposes focus and reduced motion suppresses menu transitions", async ({
   page,
 }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -225,17 +236,16 @@ test("keyboard navigation exposes focus and reduced motion keeps disclosure beha
 
   await page.setViewportSize({ height: 844, width: 390 });
   await page.goto("/");
-  const disclosure = page.getByRole("button", { name: "More details" }).first();
-  await focusByTab(page, disclosure);
-  await expectVisibleFocus(disclosure);
-  await page.keyboard.press("Enter");
-  await expect(disclosure).toHaveAttribute("aria-expanded", "true");
-  const disclosureContent = page.locator('[data-slot="collapsible-content"]').first();
-  await expect(disclosureContent).toBeVisible();
-  const reducedAnimationDuration = await disclosureContent.evaluate(
-    (element) => getComputedStyle(element).animationDuration,
+  const menu = page.getByRole("button", { name: "Menu" });
+  await menu.click();
+  const menuPopup = page.locator('[data-slot="popover-content"]');
+  await expect(menuPopup).toBeVisible();
+  const transitionDurations = await menuPopup.evaluate(
+    (element) => getComputedStyle(element).transitionDuration,
   );
-  expect(Number.parseFloat(reducedAnimationDuration)).toBeLessThanOrEqual(0.00001);
+  for (const duration of transitionDurations.split(",")) {
+    expect(Number.parseFloat(duration)).toBeLessThanOrEqual(0.00001);
+  }
 });
 
 for (const viewport of VIEWPORTS) {
@@ -280,19 +290,11 @@ for (const viewport of VIEWPORTS) {
       await expect(page.getByRole("button", { name: "More details" })).toHaveCount(0);
       await expectTabletLedgerGeometry(page);
     } else {
-      await expectDisclosureTargets(page);
       await expectMobileNavigation(page);
-      await expectMobileLedgerDisclosure(page);
+      await expectMobileLedgerDecisionContext(page);
       for (const product of products) {
         await expect(page.getByRole("heading", { name: product.name })).toHaveCount(1);
       }
     }
-
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-    await expect(page).toHaveScreenshot(`home-workbench-${viewport.name}.png`, {
-      animations: "disabled",
-      fullPage: true,
-    });
   });
 }

@@ -1,12 +1,6 @@
 import { Suspense, type ReactNode, useRef, useState } from "react";
-import {
-  Content as TabsContent,
-  List as TabsList,
-  Root as TabsRoot,
-  Trigger as TabsTrigger,
-} from "@radix-ui/react-tabs";
 import { create, props } from "@stylexjs/stylex";
-import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
+import { useLoaderData, useNavigate, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
@@ -23,6 +17,7 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
@@ -236,9 +231,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
-    useMutation<CompareRouteCreateSavedComparisonSetMutation>(
-      createSavedComparisonSetMutation,
-    );
+    useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -444,28 +437,49 @@ function CompareSpecModeControls({
   specMode: CompareSpecMode;
 }) {
   const navigation = buildCompareSpecModeNavigationData({ selectedSlugs, specMode });
+  const navigate = useNavigate();
 
   return (
-    <TabsRoot value={specMode}>
-      <TabsList aria-label="Specification views" {...props(styles.tabList)}>
+    <Tabs value={specMode}>
+      <TabsList aria-label="Specification views" variant="line" style={styles.tabList}>
         {navigation.modes.map((item) => (
-          <TabsTrigger asChild key={item.mode} value={item.mode}>
-            <Link
-              aria-current={item.isCurrent ? "page" : undefined}
-              to={item.path}
-              {...props(styles.tab, item.isCurrent ? styles.tabActive : null)}
-            >
-              {item.label}
-            </Link>
+          <TabsTrigger
+            key={item.mode}
+            nativeButton={false}
+            render={
+              <a
+                aria-current={item.isCurrent ? "page" : undefined}
+                href={item.path}
+                onClick={(event) => {
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.altKey ||
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.shiftKey
+                  ) {
+                    return;
+                  }
+
+                  event.preventDefault();
+                  navigate(item.path);
+                }}
+                {...props(styles.tab, item.isCurrent ? styles.tabActive : null)}
+              />
+            }
+            value={item.mode}
+          >
+            {item.label}
           </TabsTrigger>
         ))}
       </TabsList>
       {navigation.modes.map((item) => (
-        <TabsContent forceMount hidden={!item.isCurrent} key={item.mode} value={item.mode}>
+        <TabsContent keepMounted hidden={!item.isCurrent} key={item.mode} value={item.mode}>
           {item.isCurrent ? children : null}
         </TabsContent>
       ))}
-    </TabsRoot>
+    </Tabs>
   );
 }
 

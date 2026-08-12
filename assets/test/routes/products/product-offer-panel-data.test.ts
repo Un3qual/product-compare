@@ -106,9 +106,9 @@ describe("product offer panel data", () => {
       },
     ]);
     expect(data.snapshot).toEqual({
-      couponAvailabilityText: "0 offers with coupons",
+      couponOfferCount: 0,
       lowestVisiblePriceText: "19.50 USD at Numeric Store",
-      missingLatestPriceText: "2 offers",
+      missingPriceCount: 2,
       visibleOfferCount: 3,
     });
   });
@@ -226,6 +226,7 @@ describe("product offer panel data", () => {
           observedAt: "2026-06-01T00:00:00Z",
           observedDate: "2026-06-01",
           priceText: "24.00 USD",
+          priceValue: 24,
         },
       ],
       priceHistoryHasMore: true,

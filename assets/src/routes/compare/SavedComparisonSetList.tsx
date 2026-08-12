@@ -15,8 +15,15 @@ import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import { commitRouteMutation } from "../relay-mutations";
@@ -90,6 +97,16 @@ const styles = create({
   metadata: { color: tokens.textSecondary, margin: 0 },
   savedSet: { display: "grid", gap: "0.55rem" },
   title: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
+  openLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export function SavedComparisonSetList({
@@ -231,29 +248,42 @@ function SavedComparisonControls({
   onSortModeChange: (sortMode: SavedComparisonSortMode) => void;
   sortMode: SavedComparisonSortMode;
 }) {
+  const options = [
+    { label: "Current order", value: "current" },
+    { label: "Name A-Z", value: "name-asc" },
+    { label: "Product count high-to-low", value: "product-count-desc" },
+    { label: "Product count low-to-high", value: "product-count-asc" },
+  ];
+
   return (
     <div {...props(styles.controls)}>
       <div>
         <span id="saved-comparison-filter-label">Filter saved comparisons</span>
-        <TextField
+        <Input
           aria-labelledby="saved-comparison-filter-label"
           onChange={(event) => onFilterTextChange(event.target.value)}
           value={filterText}
         />
       </div>
-      <label>
+      <Label>
         Sort saved comparisons
         <Select
-          onValueChange={(value) => onSortModeChange(savedComparisonSortModeFromValue(value))}
-          options={[
-            { label: "Current order", value: "current" },
-            { label: "Name A-Z", value: "name-asc" },
-            { label: "Product count high-to-low", value: "product-count-desc" },
-            { label: "Product count low-to-high", value: "product-count-asc" },
-          ]}
+          items={options}
+          onValueChange={(value) => onSortModeChange(savedComparisonSortModeFromValue(value ?? ""))}
           value={sortMode}
-        />
-      </label>
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Label>
       <p {...props(styles.controlNote)}>Filtering and sorting apply to the visible page.</p>
     </div>
   );
@@ -278,9 +308,9 @@ function SavedComparisonSetItem({
       <p>{savedSet.productNamesText}</p>
       <fieldset {...props(styles.actions)}>
         <legend>Actions for {savedSet.name}</legend>
-        <Button asChild variant="soft">
-          <Link to={comparisonPath}>Open comparison</Link>
-        </Button>
+        <Link to={comparisonPath} {...props(styles.openLink)}>
+          Open comparison&nbsp;<span aria-hidden="true">→</span>
+        </Link>
         <DestructiveActionDialog
           confirmLabel="Delete comparison"
           description={`Deleting ${savedSet.name} permanently removes this saved comparison.`}
@@ -288,7 +318,7 @@ function SavedComparisonSetItem({
           onConfirm={() => onDelete(savedSet.id)}
           title="Delete this saved comparison?"
           trigger={
-            <Button disabled={deletePending} tone="danger" type="button">
+            <Button disabled={deletePending} variant="destructive" type="button">
               {deletePending ? "Deleting comparison..." : "Delete comparison"}
             </Button>
           }
@@ -301,8 +331,7 @@ function SavedComparisonSetItem({
 function SavedComparisonReturnActions() {
   return (
     <nav aria-label="Saved comparison return paths">
-      <Link to="/products">Browse products</Link>{" "}
-      <Link to="/compare">Start a new comparison</Link>
+      <Link to="/products">Browse products</Link> <Link to="/compare">Start a new comparison</Link>
     </nav>
   );
 }

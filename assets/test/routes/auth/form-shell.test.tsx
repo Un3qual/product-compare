@@ -18,18 +18,25 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
           <AuthSubmitButton disabled>Sign in</AuthSubmitButton>
         </form>
       </AuthFormShell>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(screen.getByLabelText("Email")).toHaveAttribute("aria-describedby", "email-error");
   expect(screen.getByText("Email is required.")).toHaveAttribute("id", "email-error");
   expect(screen.getByRole("button", { name: "Sign in" })).toBeDisabled();
-  expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute("href", "/auth/register");
+  expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register",
+  );
+  expect(screen.getByRole("link", { name: "Create account" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
   expect(screen.getByRole("alert")).toHaveTextContent("Request failed.");
   expect(screen.getByRole("status")).toHaveTextContent("Request completed.");
   expect(screen.getByRole("region", { name: "Sign in" })).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Account context" })).toHaveTextContent(
-    "Keep your shopping decisions connected."
+    "Keep your shopping decisions connected.",
   );
 });
 
@@ -43,7 +50,7 @@ test("auth global error lists render as valid server markup outside paragraph te
       >
         <form />
       </AuthFormShell>
-    </MemoryRouter>
+    </MemoryRouter>,
   );
 
   expect(markup).toContain("<ul");

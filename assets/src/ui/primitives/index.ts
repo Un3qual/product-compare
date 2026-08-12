@@ -1,16 +1,32 @@
 export { Button } from "./Button";
+export type { ButtonProps, ButtonSize, ButtonVariant } from "./Button";
 export { Checkbox } from "./Checkbox";
-export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./Collapsible";
-export type { ButtonProps } from "./Button";
 export type { CheckboxProps } from "./Checkbox";
+export { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./Collapsible";
+export { Input } from "./Input";
+export type { InputProps } from "./Input";
 export { Label } from "./Label";
-export { Radio } from "./Radio";
-export type { RadioProps } from "./Radio";
-export { Select } from "./Select";
-export type { SelectOption, SelectProps } from "./Select";
+export { RadioGroup, RadioGroupItem } from "./RadioGroup";
+export {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from "./Select";
 export { Separator } from "./Separator";
-export { Slot } from "./Slot";
-export { TextArea } from "./TextArea";
-export type { TextAreaProps } from "./TextArea";
-export { TextField } from "./TextField";
-export type { TextFieldProps } from "./TextField";
+export { Tabs, TabsContent, TabsList, TabsTrigger } from "./Tabs";
+export {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./Table";
+export { Textarea } from "./Textarea";
+export type { TextareaProps } from "./Textarea";

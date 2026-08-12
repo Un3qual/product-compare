@@ -333,7 +333,7 @@ test("home keeps the workspace available while the client deals query fails", as
   );
 });
 
-test("home renders desktop ledger headings, one semantic list, and restrained deal rows", async () => {
+test("home renders a decision-led product list and restrained deal rows", async () => {
   mockedUseLoaderData.mockReturnValue({
     workspace: WORKSPACE_DESCRIPTOR,
     selectedSlugs: ["model-1"],
@@ -393,21 +393,16 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
   const productResults = screen.getByRole("list", { name: "Product results" });
   expect(productResults).toBeInTheDocument();
   expect(within(productResults).getAllByRole("article")).toHaveLength(1);
-  for (const label of [
-    "Product",
-    "Highlights",
-    "Best offer",
-    "Price signal",
-    "Last checked",
-    "Actions",
-  ]) {
-    expect(
-      screen.getByText(label, {
-        exact: true,
-        selector: '[data-slot="home-ledger-headings"] span',
-      }),
-    ).toBeVisible();
-  }
+  const product = within(productResults).getByRole("article", { name: "Model 1" });
+  expect(product.querySelector('[data-slot="product-ledger-summary"]')).toHaveTextContent(
+    "Model 1Details available on the product page",
+  );
+  expect(product.querySelector('[data-slot="product-ledger-market"]')).toHaveTextContent(
+    "$499.00 at Camera ShopBelow the 30-day priceLast checked Aug 10, 2026",
+  );
+  expect(screen.queryByText("Highlights", { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText("Price signal", { exact: true })).not.toBeInTheDocument();
+  expect(screen.queryByText("Actions", { exact: true })).not.toBeInTheDocument();
   expect(screen.queryByRole("columnheader")).not.toBeInTheDocument();
   expect(await screen.findByRole("tab", { name: "New" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
@@ -416,9 +411,10 @@ test("home renders desktop ledger headings, one semantic list, and restrained de
   );
   expect(screen.getByRole("tab", { name: "Trending" })).toBeInTheDocument();
   expect(screen.queryByRole("tab", { name: "For you" })).not.toBeInTheDocument();
-  expect(screen.getByRole("button", { hidden: true, name: "More details" })).toHaveAttribute(
-    "aria-expanded",
-    "false",
+  expect(within(product).queryByRole("button", { name: "More details" })).not.toBeInTheDocument();
+  expect(within(product).getByRole("link", { name: "View details" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
   );
   const newOffers = screen.getByRole("list", { name: "New offers" });
   expect(newOffers).toHaveAttribute("data-slot", "home-deals-list");

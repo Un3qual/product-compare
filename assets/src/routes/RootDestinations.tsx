@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Popover } from "@radix-ui/themes";
+import { Popover, PopoverContent, PopoverTrigger } from "$ui/primitives/Popover";
 import { create, props, type StyleXStyles } from "@stylexjs/stylex";
+import { MenuIcon, SearchIcon } from "lucide-react";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "$ui/components/brand/CompareMark";
-import { Button, type ButtonProps } from "$ui/primitives/Button";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -14,8 +16,20 @@ import type { RootViewer } from "./root/viewer-data";
 
 const styles = create({
   link: {
+    alignItems: "center",
+    borderBlockEndColor: "transparent",
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "2px",
+    color: tokens.textSecondary,
+    display: "inline-flex",
     fontWeight: 600,
+    minHeight: tokens.controlHeight,
+    paddingInline: "0.25rem",
     textDecoration: "none",
+  },
+  linkActive: {
+    borderBlockEndColor: tokens.actionAccent,
+    color: tokens.actionAccent,
   },
   navigation: {
     alignItems: "center",
@@ -23,27 +37,25 @@ const styles = create({
     gap: "0.5rem 1rem",
     gridTemplateColumns: {
       default: "auto minmax(0, 1fr)",
-      "@media (max-width: 48rem)": "minmax(0, 1fr)",
+      "@media (max-width: 48rem)": "minmax(0, 1fr) auto",
     },
     justifyContent: "space-between",
     width: "100%",
   },
   navigationLinks: {
     alignItems: "center",
-    display: {
-      default: "flex",
-      "@media (max-width: 48rem)": "grid",
-    },
+    display: { default: "flex", "@media (max-width: 48rem)": "none" },
     gap: "0.75rem",
-    gridTemplateColumns: {
-      default: "none",
-      "@media (max-width: 48rem)": "repeat(2, minmax(0, 1fr))",
-    },
-    justifyContent: {
-      default: "end",
-      "@media (max-width: 48rem)": "start",
-    },
+    justifyContent: "end",
     width: "100%",
+  },
+  mobileNavigation: {
+    alignItems: "center",
+    display: { default: "none", "@media (max-width: 48rem)": "flex" },
+    gap: "0.4rem",
+  },
+  mobileIconControl: {
+    paddingInline: 0,
   },
   navigationMenu: {
     width: {
@@ -62,8 +74,13 @@ const styles = create({
     display: "grid",
     gap: "0.25rem",
   },
+  navigationMenuPopup: {
+    minWidth: "12rem",
+  },
   menuLink: {
+    borderBlockEndWidth: 0,
     justifyContent: "start",
+    paddingInline: "0.65rem",
     width: "100%",
   },
   navigationControl: {
@@ -75,14 +92,18 @@ const styles = create({
     },
   },
   title: {
+    alignItems: "center",
+    color: tokens.text,
+    display: "inline-flex",
     flexShrink: 0,
     letterSpacing: "-0.02em",
     fontWeight: 700,
     textDecoration: "none",
-    width: {
-      default: "auto",
-      "@media (max-width: 48rem)": "100%",
-    },
+    justifySelf: "start",
+    maxWidth: "100%",
+    minHeight: tokens.controlHeight,
+    paddingInline: 0,
+    width: "auto",
   },
 });
 
@@ -108,16 +129,21 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
   const operatorDestinations = primary.destinations.filter(({ to }) => isOperatorDestination(to));
   const guestDestinations = viewer ? [] : primary.authDestinations;
   const accountDestinations = viewer ? [...memberDestinations, ...primary.authDestinations] : [];
+  const mobileDestinations = [
+    ...primaryDestinations.filter(({ to }) => to === "/compare"),
+    ...exploreDestinations,
+    ...memberDestinations,
+    ...operatorDestinations,
+    ...(viewer ? primary.authDestinations : guestDestinations),
+  ];
 
   useEffect(() => setOpenMenu(null), [location.pathname, location.search]);
 
   return (
     <div {...props(styles.navigation)}>
-      <Button asChild {...props(styles.title)}>
-        <NavLink end to={destinationWithComparison("/", selectedSlugs)}>
-          <CompareMark label="Product Compare" />
-        </NavLink>
-      </Button>
+      <NavLink end to={destinationWithComparison("/", selectedSlugs)} {...props(styles.title)}>
+        <CompareMark label="Product Compare" />
+      </NavLink>
       <div data-slot="root-navigation-controls" {...props(styles.navigationLinks)}>
         <DestinationLinks
           destinations={primaryDestinations}
@@ -125,7 +151,6 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
           searchLabel
           selectedSlugs={selectedSlugs}
           style={styles.navigationControl}
-          variant="soft"
         />
         <NavigationMenu
           destinations={exploreDestinations}
@@ -163,7 +188,74 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
           />
         ) : null}
       </div>
+      <div data-slot="root-mobile-navigation-controls" {...props(styles.mobileNavigation)}>
+        <Button
+          aria-label="Search products"
+          render={<NavLink to={destinationWithComparison("/products", selectedSlugs)} />}
+          size="icon"
+          style={styles.mobileIconControl}
+          variant="secondary"
+        >
+          <SearchIcon aria-hidden="true" size={18} />
+        </Button>
+        <MobileNavigationMenu
+          destinations={mobileDestinations}
+          onOpenChange={(open) => setOpenMenu(open ? "Menu" : null)}
+          open={openMenu === "Menu"}
+          selectedSlugs={selectedSlugs}
+        />
+      </div>
     </div>
+  );
+}
+
+function MobileNavigationMenu({
+  destinations,
+  onOpenChange,
+  open,
+  selectedSlugs,
+}: {
+  destinations: readonly RootDestination[];
+  onOpenChange: (open: boolean) => void;
+  open: boolean;
+  selectedSlugs: readonly string[];
+}) {
+  return (
+    <Popover onOpenChange={onOpenChange} open={open}>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-label="Menu"
+            size="icon"
+            style={styles.mobileIconControl}
+            variant="secondary"
+          />
+        }
+      >
+        <MenuIcon aria-hidden="true" size={18} />
+      </PopoverTrigger>
+      <PopoverContent aria-label="Menu" align="end" style={styles.navigationMenuPopup}>
+        <nav
+          aria-label="Menu navigation"
+          data-slot="navigation-menu-content"
+          {...props(styles.navigationMenuContent)}
+        >
+          {destinations.map(({ end, label, to }) => (
+            <DestinationLink
+              end={end}
+              key={to}
+              label={label}
+              matchDestination={!isAuthDestination(to)}
+              onNavigate={() => onOpenChange(false)}
+              preserveComparison={!isAuthDestination(to)}
+              selectedSlugs={selectedSlugs}
+              style={styles.menuLink}
+              to={to}
+            />
+          ))}
+        </nav>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -174,7 +266,6 @@ function DestinationLinks({
   searchLabel = false,
   selectedSlugs = [],
   style,
-  variant = "ghost",
 }: {
   destinations: readonly RootDestination[];
   onNavigate?: () => void;
@@ -182,7 +273,6 @@ function DestinationLinks({
   searchLabel?: boolean;
   selectedSlugs?: readonly string[];
   style?: StyleXStyles;
-  variant?: ButtonProps["variant"];
 }) {
   return destinations.map(({ end, label, to }) => (
     <DestinationLink
@@ -194,7 +284,6 @@ function DestinationLinks({
       selectedSlugs={selectedSlugs}
       style={style}
       to={to}
-      variant={variant}
     />
   ));
 }
@@ -208,7 +297,6 @@ function DestinationLink({
   selectedSlugs = [],
   style,
   to,
-  variant = "ghost",
 }: {
   end?: boolean;
   label: string;
@@ -218,23 +306,21 @@ function DestinationLink({
   selectedSlugs?: readonly string[];
   style?: StyleXStyles;
   to: string;
-  variant?: ButtonProps["variant"];
 }) {
   const routeMatch = useMatch({ end, path: to });
   const isActive = matchDestination ? Boolean(routeMatch) : false;
   const destination = preserveComparison ? destinationWithComparison(to, selectedSlugs) : to;
 
   return (
-    <Button
-      asChild
+    <NavLink
       data-active={matchDestination ? String(isActive) : undefined}
-      variant={isActive ? "soft" : variant}
-      {...props(styles.link, style)}
+      end={end}
+      onClick={onNavigate}
+      to={destination}
+      {...props(styles.link, isActive && styles.linkActive, style)}
     >
-      <NavLink end={end} onClick={onNavigate} to={destination}>
-        {label}
-      </NavLink>
-    </Button>
+      {label}
+    </NavLink>
   );
 }
 
@@ -264,27 +350,28 @@ function NavigationMenu({
       selectedSlugs={selectedSlugs}
       style={styles.menuLink}
       to={to}
-      variant={isAuthDestination(to) ? "solid" : "ghost"}
     />
   ));
   const menuTrigger = (
-    <Popover.Trigger>
-      <Button
-        aria-label={`${label} menu`}
-        variant="soft"
-        {...props(styles.navigationMenuTrigger)}
-      >
-        <span>{label}</span>
-        <span aria-hidden>⌄</span>
-      </Button>
-    </Popover.Trigger>
+    <PopoverTrigger
+      render={
+        <Button
+          aria-label={`${label} menu`}
+          variant="ghost"
+          style={styles.navigationMenuTrigger}
+        />
+      }
+    >
+      <span>{label}</span>
+      <span aria-hidden>⌄</span>
+    </PopoverTrigger>
   );
 
   return (
     <div data-slot="navigation-menu" {...props(styles.navigationMenu)}>
-      <Popover.Root onOpenChange={onOpenChange} open={open}>
+      <Popover onOpenChange={onOpenChange} open={open}>
         {menuTrigger}
-        <Popover.Content aria-label={`${label} menu`} align="end" minWidth="12rem" size="1">
+        <PopoverContent aria-label={`${label} menu`} align="end" style={styles.navigationMenuPopup}>
           <nav
             aria-label={`${label} navigation`}
             data-slot="navigation-menu-content"
@@ -292,8 +379,8 @@ function NavigationMenu({
           >
             {destinationLinks}
           </nav>
-        </Popover.Content>
-      </Popover.Root>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }

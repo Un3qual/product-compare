@@ -19,6 +19,7 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-05-community-authored-text-storage-bounds-design.md`
 - `docs/superpowers/specs/2026-08-09-database-constraint-application-parity-design.md`
 - `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
+- `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
 
 ## Active Plan Catalog
 
@@ -50,7 +51,16 @@ test, browser, and lane paths are disjoint. The durable product and
 feature-parity contract is
 `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
 
-The most recently completed consolidated implementation plan is:
+The most recently completed foundation plan is:
+
+- `docs/superpowers/plans/2026-08-11-base-ui-stylex-table-foundation-implementation-plan.md`
+
+It completed the Radix-to-Base UI cutover with locally adapted
+shadcn-cssinjs components, preserved ProductCompare's visual identity, moved
+all current semantic tables to TanStack Table v9, and made the user-supplied
+StyleX mangler deterministic and constant-safe across client and SSR builds.
+
+The preceding completed consolidated implementation plan is:
 
 - `docs/superpowers/plans/2026-08-09-database-constraint-application-parity-implementation-plan.md`
 

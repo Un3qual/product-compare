@@ -3,9 +3,9 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { ActionDialog } from "$ui/components/overlays/ActionDialog";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
+import { ApiTokenExpiryField } from "./ApiTokenExpiryField";
 import {
   buildApiTokenStatusFilterNavigationData,
   type ApiTokenStatus,
@@ -90,45 +90,13 @@ function CreateApiTokenForm({
     <form aria-label="Create API token" onSubmit={onSubmit} {...props(styles.createForm)}>
       <div>
         <span id="api-token-label">Label</span>
-        <TextField aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
+        <Input aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
       </div>
-      <label>
-        Expires at
-        <TextField
-          name="expiresAt"
-          onChange={() => {
-            if (expiresAtPresetInputRef.current) {
-              expiresAtPresetInputRef.current.value = "";
-            }
-          }}
-          ref={expiresAtInputRef}
-          type="datetime-local"
-        />
-      </label>
-      <input name="expiresAtPreset" ref={expiresAtPresetInputRef} type="hidden" />
-      <div>
-        {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-          <Button
-            key={preset.label}
-            onClick={() => {
-              if (expiresAtInputRef.current) {
-                expiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
-                  preset.label,
-                  new Date(Date.now()),
-                );
-              }
-              if (expiresAtPresetInputRef.current) {
-                expiresAtPresetInputRef.current.value = preset.label;
-              }
-            }}
-            size="1"
-            type="button"
-            variant="soft"
-          >
-            {preset.label}
-          </Button>
-        ))}
-      </div>
+      <ApiTokenExpiryField
+        inputLabel="Expires at"
+        inputRef={expiresAtInputRef}
+        presetInputRef={expiresAtPresetInputRef}
+      />
       <Button disabled={submitting} type="submit">
         {submitting ? "Creating API token..." : "Create API token"}
       </Button>

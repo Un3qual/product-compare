@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
-import { Callout, Spinner } from "@radix-ui/themes";
 import { create, props } from "@stylexjs/stylex";
+import { Alert, AlertDescription } from "../../primitives/Alert";
+import { Spinner } from "../../primitives/Spinner";
 
 const styles = create({
   body: {
@@ -18,14 +19,6 @@ const styles = create({
 
 type FeedbackKind = "empty" | "error" | "loading" | "success" | "warning";
 
-const kindColor = {
-  empty: "gray",
-  error: "red",
-  loading: "indigo",
-  success: "green",
-  warning: "amber",
-} as const;
-
 export type FeedbackStateProps = {
   action?: ReactNode;
   description?: ReactNode;
@@ -37,25 +30,20 @@ export function FeedbackState({ action, description, kind, title }: FeedbackStat
   const role = kind === "error" ? "alert" : "status";
 
   return (
-    <Callout.Root
-      color={kindColor[kind]}
+    <Alert
       data-feedback-kind={kind}
       data-slot="feedback-state"
       role={role}
-      variant="surface"
+      variant={kind === "error" ? "destructive" : "default"}
     >
-      {kind === "loading" ? (
-        <Callout.Icon>
-          <Spinner aria-hidden data-slot="feedback-spinner" />
-        </Callout.Icon>
-      ) : null}
+      {kind === "loading" ? <Spinner aria-hidden data-slot="feedback-spinner" /> : null}
       <div>
-        <Callout.Text {...props(styles.body)}>
+        <AlertDescription style={styles.body}>
           <strong {...props(styles.title)}>{title}</strong>
           {description ? <span>{description}</span> : null}
-        </Callout.Text>
+        </AlertDescription>
         {action ? <div {...props(styles.action)}>{action}</div> : null}
       </div>
-    </Callout.Root>
+    </Alert>
   );
 }

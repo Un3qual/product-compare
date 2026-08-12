@@ -6,11 +6,11 @@ import { tokens } from "../../theme/tokens.stylex";
 const styles = create({
   shell: {
     backgroundColor: tokens.surface,
-    minHeight: "100vh"
+    minHeight: "100vh",
   },
   skipLink: {
     ":focus-visible": {
-      transform: "translateY(0)"
+      transform: "translateY(0)",
     },
     backgroundColor: tokens.actionAccent,
     borderRadius: "0.5rem",
@@ -22,7 +22,7 @@ const styles = create({
     paddingInline: "0.9rem",
     position: "absolute",
     transform: "translateY(-200%)",
-    zIndex: 30
+    zIndex: 30,
   },
   navContent: {
     alignItems: "center",
@@ -30,7 +30,7 @@ const styles = create({
     justifyContent: "space-between",
     marginInline: "auto",
     maxWidth: tokens.pageMax,
-    width: "100%"
+    width: "100%",
   },
   nav: {
     backdropFilter: "blur(18px)",
@@ -40,16 +40,16 @@ const styles = create({
     paddingInline: "clamp(1rem, 3vw, 2rem)",
     position: "sticky",
     top: 0,
-    zIndex: 20
+    zIndex: 20,
   },
   separator: {
     backgroundColor: tokens.border,
     height: "1px",
-    width: "100%"
+    width: "100%",
   },
   main: {
-    minWidth: 0
-  }
+    minWidth: 0,
+  },
 });
 
 function focusMainContent(event: MouseEvent<HTMLAnchorElement>) {
@@ -57,10 +57,7 @@ function focusMainContent(event: MouseEvent<HTMLAnchorElement>) {
   document.getElementById("main-content")?.focus();
 }
 
-export function AppShell({
-  children,
-  navigation
-}: PropsWithChildren<{ navigation?: ReactNode }>) {
+export function AppShell({ children, navigation }: PropsWithChildren<{ navigation?: ReactNode }>) {
   return (
     <div data-slot="app-shell" {...props(styles.shell)}>
       <a href="#main-content" onClick={focusMainContent} {...props(styles.skipLink)}>
@@ -69,7 +66,7 @@ export function AppShell({
       <nav {...props(styles.nav)} aria-label="Primary">
         <div {...props(styles.navContent)}>{navigation ?? "Product Compare"}</div>
       </nav>
-      <Separator {...props(styles.separator)} />
+      <Separator style={styles.separator} />
       <main id="main-content" tabIndex={-1} {...props(styles.main)}>
         {children}
       </main>

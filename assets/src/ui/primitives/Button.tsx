@@ -1,38 +1,170 @@
-import { Button as RadixButton, type ButtonProps as RadixButtonProps } from "@radix-ui/themes";
+import { useRender } from "@base-ui/react";
+import * as stylex from "@stylexjs/stylex";
+import type { StyleXStyles } from "@stylexjs/stylex";
+import { isValidElement, type ComponentProps } from "react";
+import { tokens } from "../theme/tokens.stylex";
+import type { StyleXPrimitiveProps } from "./stylex-props";
 
-export type ButtonVariant = "ghost" | "soft" | "solid";
-export type ButtonTone = "accent" | "danger";
+const styles = stylex.create({
+  base: {
+    alignItems: "center",
+    borderRadius: "var(--pc-radius-medium)",
+    borderStyle: "solid",
+    borderWidth: 0,
+    cursor: {
+      ":disabled": "not-allowed",
+      ":where([aria-disabled=true])": "not-allowed",
+      default: "pointer",
+    },
+    display: "inline-flex",
+    flexShrink: 0,
+    fontFamily: tokens.fontSans,
+    fontSize: "0.875rem",
+    fontWeight: 700,
+    gap: "0.5rem",
+    justifyContent: "center",
+    lineHeight: 1,
+    opacity: { ":disabled": 0.55, ":where([aria-disabled=true])": 0.55, default: 1 },
+    pointerEvents: { ":disabled": "none", default: null },
+    textDecoration: "none",
+    transition: "color 0.15s, background-color 0.15s, box-shadow 0.15s, border-color 0.15s",
+    whiteSpace: "nowrap",
+  },
+  default: {
+    backgroundColor: {
+      ":hover": tokens.actionAccentHover,
+      default: tokens.actionAccent,
+    },
+    boxShadow: "0 1px 2px rgb(33 31 28 / 0.08)",
+    color: tokens.textInverted,
+  },
+  destructive: {
+    backgroundColor: {
+      ":hover": "color-mix(in srgb, var(--pc-danger) 85%, black)",
+      default: "var(--pc-danger)",
+    },
+    color: tokens.textInverted,
+  },
+  focusable: {
+    boxShadow: {
+      ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 35%, transparent)",
+      default: null,
+    },
+  },
+  ghost: {
+    backgroundColor: {
+      ":hover": "var(--pc-brand-100)",
+      default: "transparent",
+    },
+    color: {
+      ":hover": "var(--pc-brand-700)",
+      default: tokens.textSecondary,
+    },
+  },
+  link: {
+    backgroundColor: "transparent",
+    color: tokens.actionAccent,
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
+  outline: {
+    backgroundColor: {
+      ":hover": tokens.surfaceInteractive,
+      default: tokens.surfaceRaised,
+    },
+    borderColor: tokens.border,
+    borderWidth: "1px",
+    color: tokens.text,
+  },
+  secondary: {
+    backgroundColor: {
+      ":hover": "var(--pc-brand-100)",
+      default: tokens.surfaceInteractive,
+    },
+    borderColor: "var(--pc-brand-100)",
+    borderWidth: "1px",
+    color: "var(--pc-brand-700)",
+  },
+  sizeDefault: { minHeight: tokens.controlHeight, paddingInline: "0.9rem" },
+  sizeIcon: {
+    height: tokens.controlHeight,
+    paddingInline: 0,
+    width: tokens.controlHeight,
+  },
+  sizeIconLg: {
+    height: "3rem",
+    paddingInline: 0,
+    width: "3rem",
+  },
+  sizeIconSm: {
+    height: tokens.controlHeight,
+    paddingInline: 0,
+    width: tokens.controlHeight,
+  },
+  sizeLg: { minHeight: "3rem", paddingInline: "1.1rem" },
+  sizeSm: {
+    fontSize: "0.82rem",
+    minHeight: tokens.controlHeight,
+    paddingInline: "0.65rem",
+  },
+});
 
-export type ButtonProps = Omit<RadixButtonProps, "color" | "size" | "variant"> & {
-  size?: "1" | "2" | "3";
-  tone?: ButtonTone;
+export type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+export type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
+
+const variantStyles: Record<ButtonVariant, StyleXStyles> = {
+  default: styles.default,
+  destructive: styles.destructive,
+  ghost: styles.ghost,
+  link: styles.link,
+  outline: styles.outline,
+  secondary: styles.secondary,
+};
+
+const sizeStyles: Record<ButtonSize, StyleXStyles> = {
+  default: styles.sizeDefault,
+  icon: styles.sizeIcon,
+  "icon-lg": styles.sizeIconLg,
+  "icon-sm": styles.sizeIconSm,
+  lg: styles.sizeLg,
+  sm: styles.sizeSm,
+};
+
+export type ButtonProps = StyleXPrimitiveProps<ComponentProps<"button">> & {
+  render?: useRender.RenderProp;
+  size?: ButtonSize;
   variant?: ButtonVariant;
 };
 
 export const MINIMUM_TOUCH_TARGET = "44px";
 
 export function Button({
-  asChild = false,
-  size = "2",
+  render,
+  size = "default",
   style,
-  tone = "accent",
   type,
-  variant = "solid",
+  variant = "default",
   ...buttonProps
 }: ButtonProps) {
-  return (
-    <RadixButton
-      {...buttonProps}
-      asChild={asChild}
-      color={tone === "danger" ? "red" : undefined}
-      data-size={size}
-      data-slot="button"
-      data-tone={tone}
-      data-variant={variant}
-      size={size}
-      style={{ ...style, minHeight: MINIMUM_TOUCH_TARGET }}
-      type={asChild ? undefined : (type ?? "button")}
-      variant={variant}
-    />
-  );
+  const rendersNativeButton =
+    render === undefined || (isValidElement(render) && render.type === "button");
+
+  return useRender({
+    defaultTagName: "button",
+    props: {
+      ...stylex.props(
+        styles.base,
+        styles.focusable,
+        variantStyles[variant],
+        sizeStyles[size],
+        style,
+      ),
+      "data-size": size,
+      "data-slot": "button",
+      "data-variant": variant,
+      ...(rendersNativeButton || type !== undefined ? { type: type ?? "button" } : null),
+      ...buttonProps,
+    },
+    render,
+  });
 }

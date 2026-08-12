@@ -8,7 +8,7 @@ import { commitRouteMutation } from "../relay-mutations";
 import {
   type MutationError,
   resolveSessionMutationResult,
-  transportMutationErrors
+  transportMutationErrors,
 } from "./errors";
 import { CredentialAuthForm } from "./CredentialAuthForm";
 import { setRootViewer } from "./viewer-store";
@@ -61,11 +61,11 @@ export function RegisterRoute() {
         },
         onError(error) {
           setErrors(transportMutationErrors(error));
-        }
+        },
       },
       (error) => {
         setErrors(transportMutationErrors(error));
-      }
+      },
     );
   }
 
@@ -76,7 +76,7 @@ export function RegisterRoute() {
       errors={errors}
       footerLinks={[
         { label: "Sign in instead", to: "/auth/login" },
-        { label: "Forgot password?", to: "/auth/forgot-password" }
+        { label: "Forgot password?", to: "/auth/forgot-password" },
       ]}
       isSubmitting={isSubmitting}
       onSubmit={handleSubmit}

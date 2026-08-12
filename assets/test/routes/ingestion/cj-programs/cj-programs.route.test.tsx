@@ -11,7 +11,7 @@ import {
   CJProgramsRoute,
   type CJProgramsLoaderData,
 } from "../../../../src/routes/ingestion/cj-programs/CJProgramsRoute";
-import { chooseSelectOption, openSelect } from "../../../helpers/radix-select";
+import { chooseSelectOption, openSelect } from "../../../helpers/base-select";
 
 const {
   commitUpdateMutationMock,

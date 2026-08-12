@@ -9,7 +9,7 @@ import {
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
-  transportMutationErrors
+  transportMutationErrors,
 } from "./errors";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
 
@@ -26,8 +26,7 @@ const forgotPasswordMutation = graphql`
   }
 `;
 
-const successMessage =
-  "If an account exists for that email, reset instructions are on the way.";
+const successMessage = "If an account exists for that email, reset instructions are on the way.";
 
 export function ForgotPasswordRoute() {
   const [errors, setErrors] = useState<MutationError[]>([]);
@@ -48,10 +47,7 @@ export function ForgotPasswordRoute() {
       {
         variables: { email },
         onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(
-            response?.forgotPassword,
-            graphQLErrors
-          );
+          const result = resolveActionMutationResult(response?.forgotPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             setMessage(successMessage);
@@ -62,11 +58,11 @@ export function ForgotPasswordRoute() {
         },
         onError(error) {
           setErrors(transportMutationErrors(error));
-        }
+        },
       },
       (error) => {
         setErrors(transportMutationErrors(error));
-      }
+      },
     );
   }
 
@@ -77,7 +73,7 @@ export function ForgotPasswordRoute() {
       fieldNames={["email"]}
       footerLinks={[
         { label: "Sign in", to: "/auth/login" },
-        { label: "Create account", to: "/auth/register" }
+        { label: "Create account", to: "/auth/register" },
       ]}
       successMessage={message}
       title="Reset your password"

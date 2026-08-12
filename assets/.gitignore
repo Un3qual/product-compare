@@ -2,6 +2,7 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+tests/e2e/*.spec.ts-snapshots/
 
 src/__generated__/*
 !src/__generated__/.gitkeep

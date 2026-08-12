@@ -3,7 +3,7 @@ import { create, props } from "@stylexjs/stylex";
 import { useNavigate } from "react-router-dom";
 import { Button } from "$ui/primitives/Button";
 import { Label } from "$ui/primitives/Label";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { homeCatalogSearchPath } from "./home-paths";
 
@@ -41,10 +41,10 @@ export function HomeSearch({ selectedSlugs }: { selectedSlugs: readonly string[]
       {...props(styles.form)}
     >
       <div {...props(styles.field)}>
-        <Label htmlFor="home-product-search" {...props(styles.label)}>
+        <Label htmlFor="home-product-search" style={styles.label}>
           Search products, brands, or model numbers
         </Label>
-        <TextField
+        <Input
           id="home-product-search"
           name="q"
           onChange={(event) => setQuery(event.target.value)}

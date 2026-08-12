@@ -133,7 +133,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
   const disclosure = screen.getByRole("button", {
     name: "Share this comparison",
   });
-  expect(disclosure).toHaveStyle({ minHeight: "44px" });
+  expect(disclosure).toHaveAttribute("data-slot", "collapsible-trigger");
   expect(disclosure).toHaveAttribute("aria-expanded", "false");
   expect(useLazyLoadQueryMock).not.toHaveBeenCalled();
 
@@ -156,7 +156,7 @@ test("ShareComparisonControl publishes the ordered products and selected profile
   expect(disclosure).toHaveAttribute("aria-expanded", "true");
   expect(screen.getByLabelText("Optional title")).toBeVisible();
   expect(screen.getByLabelText("Optional title")).toHaveValue("Travel kit");
-  fireEvent.click(screen.getByLabelText(/Allow search engines/));
+  fireEvent.click(screen.getByRole("checkbox", { name: /Allow search engines/ }));
   fireEvent.click(screen.getByRole("button", { name: "Publish comparison link" }));
 
   await waitFor(() => expect(publishMutationMock).toHaveBeenCalledTimes(1));

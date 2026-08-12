@@ -12,14 +12,14 @@ const styles = create({
     gap: "0.85rem",
     gridTemplateColumns: {
       default: "minmax(0, 1fr) auto",
-      "@media (max-width: 40rem)": "minmax(0, 1fr)"
+      "@media (max-width: 40rem)": "minmax(0, 1fr)",
     },
-    padding: "0.8rem 1rem"
+    padding: "0.8rem 1rem",
   },
   content: {
     display: "grid",
     gap: "0.35rem",
-    minWidth: 0
+    minWidth: 0,
   },
   title: {
     color: tokens.textSecondary,
@@ -28,7 +28,7 @@ const styles = create({
     fontWeight: 500,
     letterSpacing: "0.04em",
     margin: 0,
-    textTransform: "uppercase"
+    textTransform: "uppercase",
   },
   selections: {
     display: "flex",
@@ -36,7 +36,7 @@ const styles = create({
     gap: "0.4rem",
     listStyle: "none",
     margin: 0,
-    padding: 0
+    padding: 0,
   },
   selection: {
     backgroundColor: tokens.surfaceRaised,
@@ -44,14 +44,14 @@ const styles = create({
     color: tokens.text,
     fontSize: "0.88rem",
     padding: "0.28rem 0.45rem",
-    transition: "background-color 160ms ease, border-color 160ms ease"
+    transition: "background-color 160ms ease, border-color 160ms ease",
   },
   action: {
     width: {
       default: "auto",
-      "@media (max-width: 40rem)": "100%"
-    }
-  }
+      "@media (max-width: 40rem)": "100%",
+    },
+  },
 });
 
 export type ComparisonContinuityProduct = {
@@ -61,7 +61,7 @@ export type ComparisonContinuityProduct = {
 
 export function ComparisonContinuity({
   destination,
-  products
+  products,
 }: {
   destination: string;
   products: readonly ComparisonContinuityProduct[];
@@ -80,8 +80,8 @@ export function ComparisonContinuity({
           ))}
         </ol>
       </div>
-      <Button asChild {...props(styles.action)}>
-        <Link to={destination}>Open comparison</Link>
+      <Button render={<Link to={destination} />} style={styles.action}>
+        Open comparison
       </Button>
     </section>
   );

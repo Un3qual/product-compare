@@ -1,7 +1,14 @@
 import { Checkbox } from "$ui/primitives/Checkbox";
-import { Radio } from "$ui/primitives/Radio";
-import { Select } from "$ui/primitives/Select";
-import { TextField } from "$ui/primitives/TextField";
+import { RadioGroup, RadioGroupItem } from "$ui/primitives/RadioGroup";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "$ui/primitives/Select";
+import { Input } from "$ui/primitives/Input";
+import { Label } from "$ui/primitives/Label";
 import type { BrowseRouteQuery } from "$generated/BrowseRouteQuery.graphql";
 import type { CatalogFilters } from "./filters";
 import {
@@ -78,24 +85,24 @@ function NumericFilterFields({ row }: { row: CatalogAdvancedNumericRow }) {
 
   return (
     <div>
-      <label htmlFor={minInputId}>
+      <Label htmlFor={minInputId}>
         {row.displayName} minimum
-        <TextField
+        <Input
           defaultValue={row.minValue}
           id={minInputId}
           inputMode="decimal"
           name={`numeric.${row.attributeId}.min`}
         />
-      </label>
-      <label htmlFor={maxInputId}>
+      </Label>
+      <Label htmlFor={maxInputId}>
         {row.displayName} maximum
-        <TextField
+        <Input
           defaultValue={row.maxValue}
           id={maxInputId}
           inputMode="decimal"
           name={`numeric.${row.attributeId}.max`}
         />
-      </label>
+      </Label>
     </div>
   );
 }
@@ -116,20 +123,28 @@ function BooleanFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedBoolea
 }
 
 function BooleanFilterField({ row }: { row: CatalogAdvancedBooleanRow }) {
+  const options = [
+    { label: "Any", value: "" },
+    { label: `Yes (${row.trueCount})`, value: "true" },
+    { label: `No (${row.falseCount})`, value: "false" },
+  ];
+
   return (
-    <label>
+    <Label>
       {row.displayName}
-      <Select
-        defaultValue={row.defaultValue}
-        id={`catalog-boolean-${row.attributeId}`}
-        name={`boolean.${row.attributeId}`}
-        options={[
-          { label: "Any", value: "" },
-          { label: `Yes (${row.trueCount})`, value: "true" },
-          { label: `No (${row.falseCount})`, value: "false" },
-        ]}
-      />
-    </label>
+      <Select defaultValue={row.defaultValue} items={options} name={`boolean.${row.attributeId}`}>
+        <SelectTrigger id={`catalog-boolean-${row.attributeId}`}>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {options.map((option) => (
+            <SelectItem key={option.value} value={option.value}>
+              {option.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+    </Label>
   );
 }
 
@@ -150,31 +165,29 @@ function EnumFiltersFieldset({ rows }: { rows: readonly CatalogAdvancedEnumRow[]
 
 function EnumFilterFieldset({ row }: { row: CatalogAdvancedEnumRow }) {
   const inputName = `enum.${row.attributeId}`;
+  const defaultValue = row.anySelected
+    ? ""
+    : (row.options.find((option) => option.selected)?.id ?? "");
 
   return (
     <fieldset>
       <legend>{row.displayName}</legend>
-      <label>
-        <Radio
-          defaultChecked={row.anySelected}
-          id={`catalog-enum-${row.attributeId}-any`}
-          name={inputName}
-          value=""
-        />
-        Any
-      </label>
-      {row.options.map((option) => (
-        <label key={option.id}>
-          <Radio
-            defaultChecked={option.selected}
-            disabled={option.disabled}
-            id={`catalog-enum-${row.attributeId}-${option.id}`}
-            name={inputName}
-            value={option.id}
-          />
-          {option.label} ({option.count})
+      <RadioGroup defaultValue={defaultValue} name={inputName}>
+        <label>
+          <RadioGroupItem id={`catalog-enum-${row.attributeId}-any`} value="" />
+          Any
         </label>
-      ))}
+        {row.options.map((option) => (
+          <label key={option.id}>
+            <RadioGroupItem
+              disabled={option.disabled}
+              id={`catalog-enum-${row.attributeId}-${option.id}`}
+              value={option.id}
+            />
+            {option.label} ({option.count})
+          </label>
+        ))}
+      </RadioGroup>
     </fieldset>
   );
 }

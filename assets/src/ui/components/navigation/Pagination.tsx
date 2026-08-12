@@ -1,14 +1,25 @@
 import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
-import { Button } from "../../primitives/Button";
+import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
   root: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.75rem"
-  }
+    gap: "0.75rem",
+  },
+  link: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
+  arrow: { fontFamily: tokens.fontMono },
 });
 
 export type PaginationProps = {
@@ -24,7 +35,7 @@ export function Pagination({
   firstLabel = "First page",
   label,
   nextHref,
-  nextLabel = "Next page"
+  nextLabel = "Next page",
 }: PaginationProps) {
   if (!firstHref && !nextHref) {
     return null;
@@ -33,14 +44,20 @@ export function Pagination({
   return (
     <nav aria-label={label} {...props(styles.root)}>
       {firstHref ? (
-        <Button asChild variant="soft">
-          <Link to={firstHref}>{firstLabel}</Link>
-        </Button>
+        <Link to={firstHref} {...props(styles.link)}>
+          <span aria-hidden="true" {...props(styles.arrow)}>
+            ←&nbsp;
+          </span>
+          {firstLabel}
+        </Link>
       ) : null}
       {nextHref ? (
-        <Button asChild variant="solid">
-          <Link to={nextHref}>{nextLabel}</Link>
-        </Button>
+        <Link to={nextHref} {...props(styles.link)}>
+          {nextLabel}
+          <span aria-hidden="true" {...props(styles.arrow)}>
+            &nbsp;→
+          </span>
+        </Link>
       ) : null}
     </nav>
   );

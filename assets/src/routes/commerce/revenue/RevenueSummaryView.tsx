@@ -5,7 +5,7 @@ import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
-import { TextField } from "$ui/primitives/TextField";
+import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildRevenueSummaryFilterFormData,
@@ -13,7 +13,7 @@ import {
   type RevenueDatePresetLink,
   type RevenueSummaryFilterFormValues,
   type RevenueSummaryFilters,
-  type RevenueSummaryMetric
+  type RevenueSummaryMetric,
 } from "./revenue-summary-view-data";
 
 type RevenueFilters = RevenueSummaryFilters;
@@ -22,13 +22,13 @@ const REVENUE_FILTER_LABEL_IDS = {
   currency: "revenue-filter-currency-label",
   from: "revenue-filter-from-label",
   network: "revenue-filter-network-label",
-  to: "revenue-filter-to-label"
+  to: "revenue-filter-to-label",
 } as const;
 
 const styles = create({
   filterField: {
     display: "grid",
-    gap: "0.35rem"
+    gap: "0.35rem",
   },
   filters: {
     alignItems: "end",
@@ -37,15 +37,15 @@ const styles = create({
     display: "grid",
     gap: "1rem",
     gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
-    padding: "1rem"
-  }
+    padding: "1rem",
+  },
 });
 
 export function RevenueSummaryView({
   activeFilters,
   children,
   datePresetLinks,
-  filters
+  filters,
 }: {
   activeFilters: readonly RevenueActiveFilter[];
   children: ReactNode;
@@ -71,7 +71,7 @@ export function RevenueSummaryView({
 function RevenueSummaryControls({
   activeFilters,
   datePresetLinks,
-  filters
+  filters,
 }: {
   activeFilters: readonly RevenueActiveFilter[];
   datePresetLinks: readonly RevenueDatePresetLink[];
@@ -84,10 +84,7 @@ function RevenueSummaryControls({
       description="Filter recorded attribution by network, currency, or date range."
       label="Revenue controls"
     >
-      <RevenueSummaryFilterForm
-        key={filterFormData.key}
-        values={filterFormData.values}
-      />
+      <RevenueSummaryFilterForm key={filterFormData.key} values={filterFormData.values} />
       <RevenueDatePresetList links={datePresetLinks} />
       <RevenueActiveFilterList filters={activeFilters} />
     </ContextRail>
@@ -95,7 +92,7 @@ function RevenueSummaryControls({
 }
 
 function RevenueSummaryFilterForm({
-  values
+  values,
 }: {
   values: RevenueSummaryFilterFormValues;
 }): ReactElement {
@@ -103,7 +100,7 @@ function RevenueSummaryFilterForm({
     <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.network}>Network</span>
-        <TextField
+        <Input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.network}
           autoComplete="off"
           defaultValue={values.network}
@@ -113,7 +110,7 @@ function RevenueSummaryFilterForm({
       </div>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.currency}>Currency</span>
-        <TextField
+        <Input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.currency}
           autoComplete="off"
           defaultValue={values.currency}
@@ -124,7 +121,7 @@ function RevenueSummaryFilterForm({
       </div>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.from}>From</span>
-        <TextField
+        <Input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.from}
           defaultValue={values.from}
           name="from"
@@ -133,7 +130,7 @@ function RevenueSummaryFilterForm({
       </div>
       <div {...props(styles.filterField)}>
         <span id={REVENUE_FILTER_LABEL_IDS.to}>To</span>
-        <TextField
+        <Input
           aria-labelledby={REVENUE_FILTER_LABEL_IDS.to}
           defaultValue={values.to}
           name="to"
@@ -147,7 +144,7 @@ function RevenueSummaryFilterForm({
 }
 
 function RevenueDatePresetList({
-  links
+  links,
 }: {
   links: readonly RevenueDatePresetLink[];
 }): ReactElement | null {
@@ -167,7 +164,7 @@ function RevenueDatePresetList({
 }
 
 function RevenueActiveFilterList({
-  filters
+  filters,
 }: {
   filters: readonly RevenueActiveFilter[];
 }): ReactElement {
@@ -188,7 +185,7 @@ function RevenueActiveFilterList({
 }
 
 export function RevenueSummaryMetrics({
-  metrics
+  metrics,
 }: {
   metrics: readonly RevenueSummaryMetric[];
 }): ReactElement {

@@ -212,10 +212,8 @@ function HomeWorkspace({
         ) : (
           <FeedbackState
             action={
-              <Button asChild>
-                <Link to={homeCatalogSearchPath("", viewData.selectedSlugs)}>
-                  Browse all products
-                </Link>
+              <Button render={<Link to={homeCatalogSearchPath("", viewData.selectedSlugs)} />}>
+                Browse all products
               </Button>
             }
             kind="empty"
@@ -269,13 +267,11 @@ function HomeWorkspaceUnavailable({ selectedSlugs }: { selectedSlugs: readonly s
       <FeedbackState
         action={
           <>
-            <Button onClick={() => revalidator.revalidate()} type="button" variant="soft">
+            <Button onClick={() => revalidator.revalidate()} type="button" variant="secondary">
               Try products again
             </Button>
-            <Button asChild>
-              <Link to={homeCatalogSearchPath("", selectedSlugs)}>
-                Browse categories and products
-              </Link>
+            <Button render={<Link to={homeCatalogSearchPath("", selectedSlugs)} />}>
+              Browse categories and products
             </Button>
           </>
         }

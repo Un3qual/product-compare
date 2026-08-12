@@ -37,23 +37,18 @@ const homeProductLedgerFragment = graphql`
 `;
 
 const styles = create({
-  headings: {
-    color: tokens.textSecondary,
-    display: {
-      default: "grid",
-      "@media (max-width: 62rem)": "none",
-    },
-    fontFamily: tokens.fontMono,
-    fontSize: "0.7rem",
-    gap: "1rem",
-    gridTemplateColumns:
-      "minmax(13rem, 1.35fr) minmax(10rem, 1fr) minmax(10rem, 1fr) minmax(9rem, 0.8fr) minmax(12rem, 0.7fr) 10rem",
-    letterSpacing: "0.04em",
-    padding: "0.6rem 0",
-    textTransform: "uppercase",
-  },
   actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
-  secondaryDetails: { display: "grid", gap: "0.25rem" },
+  detailLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontSize: "0.86rem",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
   workspace: { maxWidth: "100%", minWidth: 0 },
 });
 
@@ -69,25 +64,15 @@ export function HomeProductLedger({
 
   return (
     <section aria-label="Product workspace" {...props(styles.workspace)}>
-      <div aria-hidden="true" data-slot="home-ledger-headings" {...props(styles.headings)}>
-        <span>Product</span>
-        <span>Highlights</span>
-        <span>Best offer</span>
-        <span>Price signal</span>
-        <span>Last checked</span>
-        <span>Actions</span>
-      </div>
       <ProductLedger
         label="Product results"
         rows={rows.map((row) => ({
           actions: <HomeLedgerActions row={row} selectedSlugs={selectedSlugs} />,
-          category: row.category,
           freshness: row.freshness,
           highlights: row.highlights,
           id: row.id,
           offer: row.offer,
           priceSignal: row.priceSignal,
-          secondaryDetails: <HomeLedgerDetails row={row} />,
           title: row.name,
         }))}
         secondaryDisclosureLabel="More details"
@@ -113,32 +98,22 @@ function HomeLedgerActions({
 
   return (
     <div {...props(styles.actions)}>
-      <Button asChild size="1" variant="soft">
-        <Link to={row.href}>View details</Link>
-      </Button>
+      <Link to={row.href} {...props(styles.detailLink)}>
+        View details&nbsp;<span aria-hidden="true">→</span>
+      </Link>
       {isSelected ? (
-        <Button asChild size="1">
-          <Link to={buildComparePathFromSlugs(selectedSlugs)}>Open comparison</Link>
+        <Button render={<Link to={buildComparePathFromSlugs(selectedSlugs)} />} size="sm">
+          Open comparison
         </Button>
       ) : isFull ? (
-        <Button asChild size="1" variant="ghost">
-          <Link to={buildComparePathFromSlugs(selectedSlugs)}>Comparison is full</Link>
-        </Button>
+        <Link to={buildComparePathFromSlugs(selectedSlugs)} {...props(styles.detailLink)}>
+          Comparison is full&nbsp;<span aria-hidden="true">→</span>
+        </Link>
       ) : (
-        <Button asChild size="1" variant="ghost">
-          <Link to={compareHref}>Add to comparison</Link>
+        <Button render={<Link to={compareHref} />} size="sm">
+          Add to comparison
         </Button>
       )}
-    </div>
-  );
-}
-
-function HomeLedgerDetails({ row }: { row: HomeLedgerRow }) {
-  return (
-    <div {...props(styles.secondaryDetails)}>
-      <span>{row.highlights}</span>
-      <span>{row.priceSignal}</span>
-      <span>{row.freshness}</span>
     </div>
   );
 }
