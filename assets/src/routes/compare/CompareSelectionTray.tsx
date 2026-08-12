@@ -51,6 +51,17 @@ const styles = create({
     gap: "0.55rem",
     padding: "0.4rem 0.55rem",
   },
+  removeLink: {
+    alignItems: "center",
+    color: tokens.textSecondary,
+    display: "inline-flex",
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export function CompareSelectionTray({
@@ -102,9 +113,9 @@ function SelectionItems({ rows }: { rows: readonly CompareSelectionTrayRow[] }) 
       {rows.map(({ label, removePath, slug }) => (
         <li key={slug} {...props(styles.item)}>
           <span>{label}</span>{" "}
-          <Button render={<Link to={removePath} />} size="sm" variant="ghost">
-            Remove {label} from selection
-          </Button>
+          <Link to={removePath} {...props(styles.removeLink)}>
+            <span aria-hidden="true">×&nbsp;</span>Remove {label} from selection
+          </Link>
         </li>
       ))}
     </ul>

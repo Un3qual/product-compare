@@ -164,17 +164,21 @@ const styles = create({
       "@media (max-width: 42rem)": "start",
     },
   },
+  merchantLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
   details: {
     borderBlockStartColor: tokens.borderQuiet,
     borderBlockStartStyle: "solid",
     borderBlockStartWidth: "1px",
     paddingBlockStart: "0.25rem",
-  },
-  detailsTrigger: {
-    color: tokens.actionAccent,
-    fontSize: "0.85rem",
-    fontWeight: 700,
-    minHeight: tokens.controlHeight,
   },
   supportingDetail: {
     display: "grid",
@@ -321,7 +325,7 @@ function OfferSupportingDetail({
     <Collapsible style={styles.details}>
       <CollapsibleTrigger
         aria-label={`Offer details for ${merchantName}`}
-        style={styles.detailsTrigger}
+        render={<Button variant="link" />}
       >
         Price history and coupons
       </CollapsibleTrigger>
@@ -398,9 +402,9 @@ function OfferMerchantAction({
 
   return (
     <div>
-      <Button render={<a href={directMerchantHref} />} variant="secondary">
-        {label}
-      </Button>
+      <a href={directMerchantHref} {...props(styles.merchantLink)}>
+        {label}&nbsp;<span aria-hidden="true">↗</span>
+      </a>
     </div>
   );
 }

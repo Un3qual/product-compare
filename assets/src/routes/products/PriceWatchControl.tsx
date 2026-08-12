@@ -100,7 +100,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible style={styles.details}>
-      <CollapsibleTrigger render={<Button variant="ghost" />}>
+      <CollapsibleTrigger render={<Button variant="link" />}>
         Watch price or availability
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={styles.content}>

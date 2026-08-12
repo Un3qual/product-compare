@@ -227,7 +227,7 @@ test("API token item presents token lifecycle details and delegates actions", as
   expect(screen.getByText("2026-05-31 12:00 UTC")).toBeInTheDocument();
   expect(screen.getByText("Active token")).toHaveAttribute("data-tone", "positive");
   expect(
-    screen.getAllByRole("button", { name: /30 days|90 days|1 year|No expiration/ }),
+    screen.getAllByRole("radio", { name: /30 days|90 days|1 year|No expiration/ }),
   ).toHaveLength(4);
   expect(screen.getAllByRole("alert")[0]).toHaveTextContent("Token rotation failed.");
   expect(screen.getByText("Token cannot be revoked.")).toHaveAttribute("role", "alert");
@@ -329,10 +329,10 @@ test("API token controls render status navigation, creation state, and expiratio
   );
 
   expect(screen.getByRole("form", { name: "Create API token" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "30 days" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "90 days" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "1 year" })).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "No expiration" })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: "30 days" })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: "90 days" })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: "1 year" })).toBeInTheDocument();
+  expect(screen.getByRole("radio", { name: "No expiration" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "Creating API token..." })).toBeDisabled();
   expect(screen.getByRole("alert")).toHaveTextContent("Token creation failed.");
 });
@@ -605,7 +605,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
     const createForm = screen.getByRole("form", { name: "Create API token" });
     const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
 
-    fireEvent.click(within(createForm).getByRole("button", { name: preset }));
+    fireEvent.click(within(createForm).getByRole("radio", { name: preset }));
     expect(within(createForm).getByLabelText("Expires at")).toHaveValue(expectedExpiresAtInput);
     fireEvent.click(within(createForm).getByRole("button", { name: "Create API token" }));
 
@@ -650,7 +650,7 @@ test("create token uses manual expiry after selecting an expiry preset", async (
   const createForm = screen.getByRole("form", { name: "Create API token" });
   const expiresAtInput = within(createForm).getByLabelText("Expires at");
 
-  fireEvent.click(within(createForm).getByRole("button", { name: "30 days" }));
+  fireEvent.click(within(createForm).getByRole("radio", { name: "30 days" }));
   expect(expiresAtInput).toHaveValue(
     buildApiTokenExpiresAtInputValue("30 days", new Date(ROUTE_NOW)),
   );
@@ -1123,7 +1123,7 @@ test.each(["30 days", "90 days", "1 year", "No expiration"] as const)(
     const rotateForm = screen.getByRole("form", { name: "Rotate CLI API token" });
     const expectedExpiresAtInput = buildApiTokenExpiresAtInputValue(preset, new Date(ROUTE_NOW));
 
-    fireEvent.click(within(rotateForm).getByRole("button", { name: preset }));
+    fireEvent.click(within(rotateForm).getByRole("radio", { name: preset }));
     expect(within(rotateForm).getByLabelText("Replacement expiry for CLI")).toHaveValue(
       expectedExpiresAtInput,
     );

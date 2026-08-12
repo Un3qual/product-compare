@@ -329,13 +329,8 @@ function CJProgramFeedDisclosure({
       open={isOpen}
     >
       <CollapsibleTrigger
-        render={
-          <Button
-            aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
-            type="button"
-            variant="secondary"
-          />
-        }
+        aria-label={`${isOpen ? "Hide" : "Show"} feeds for ${programName}`}
+        render={<Button variant="link" />}
       >
         {isOpen ? "Hide feeds" : "Show feeds"}
       </CollapsibleTrigger>
@@ -413,7 +408,7 @@ function CJProgramFeeds({
               aria-label={`First feeds for ${programName}`}
               onClick={() => onPage(null)}
               type="button"
-              variant="secondary"
+              variant="link"
             >
               First feeds
             </Button>
@@ -423,6 +418,7 @@ function CJProgramFeeds({
               aria-label={`Next feeds for ${programName}`}
               onClick={() => onPage(feeds.pageInfo.endCursor ?? null)}
               type="button"
+              variant="link"
             >
               Next feeds
             </Button>

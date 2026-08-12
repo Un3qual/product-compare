@@ -4,7 +4,8 @@ import { create, props, type StyleXStyles } from "@stylexjs/stylex";
 import { MenuIcon, SearchIcon } from "lucide-react";
 import { NavLink, useLocation, useMatch } from "react-router-dom";
 import { CompareMark } from "$ui/components/brand/CompareMark";
-import { Button, type ButtonProps } from "$ui/primitives/Button";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -15,8 +16,20 @@ import type { RootViewer } from "./root/viewer-data";
 
 const styles = create({
   link: {
+    alignItems: "center",
+    borderBlockEndColor: "transparent",
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "2px",
+    color: tokens.textSecondary,
+    display: "inline-flex",
     fontWeight: 600,
+    minHeight: tokens.controlHeight,
+    paddingInline: "0.25rem",
     textDecoration: "none",
+  },
+  linkActive: {
+    borderBlockEndColor: tokens.actionAccent,
+    color: tokens.actionAccent,
   },
   navigation: {
     alignItems: "center",
@@ -65,7 +78,9 @@ const styles = create({
     minWidth: "12rem",
   },
   menuLink: {
+    borderBlockEndWidth: 0,
     justifyContent: "start",
+    paddingInline: "0.65rem",
     width: "100%",
   },
   navigationControl: {
@@ -77,13 +92,17 @@ const styles = create({
     },
   },
   title: {
+    alignItems: "center",
+    color: tokens.text,
+    display: "inline-flex",
     flexShrink: 0,
     letterSpacing: "-0.02em",
     fontWeight: 700,
     textDecoration: "none",
     justifySelf: "start",
     maxWidth: "100%",
-    paddingInline: { default: "0.9rem", "@media (max-width: 48rem)": "0.7rem" },
+    minHeight: tokens.controlHeight,
+    paddingInline: 0,
     width: "auto",
   },
 });
@@ -122,12 +141,9 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
 
   return (
     <div {...props(styles.navigation)}>
-      <Button
-        render={<NavLink end to={destinationWithComparison("/", selectedSlugs)} />}
-        style={styles.title}
-      >
+      <NavLink end to={destinationWithComparison("/", selectedSlugs)} {...props(styles.title)}>
         <CompareMark label="Product Compare" />
-      </Button>
+      </NavLink>
       <div data-slot="root-navigation-controls" {...props(styles.navigationLinks)}>
         <DestinationLinks
           destinations={primaryDestinations}
@@ -135,7 +151,6 @@ export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
           searchLabel
           selectedSlugs={selectedSlugs}
           style={styles.navigationControl}
-          variant="secondary"
         />
         <NavigationMenu
           destinations={exploreDestinations}
@@ -236,7 +251,6 @@ function MobileNavigationMenu({
               selectedSlugs={selectedSlugs}
               style={styles.menuLink}
               to={to}
-              variant={isAuthDestination(to) ? "default" : "ghost"}
             />
           ))}
         </nav>
@@ -252,7 +266,6 @@ function DestinationLinks({
   searchLabel = false,
   selectedSlugs = [],
   style,
-  variant = "ghost",
 }: {
   destinations: readonly RootDestination[];
   onNavigate?: () => void;
@@ -260,7 +273,6 @@ function DestinationLinks({
   searchLabel?: boolean;
   selectedSlugs?: readonly string[];
   style?: StyleXStyles;
-  variant?: ButtonProps["variant"];
 }) {
   return destinations.map(({ end, label, to }) => (
     <DestinationLink
@@ -272,7 +284,6 @@ function DestinationLinks({
       selectedSlugs={selectedSlugs}
       style={style}
       to={to}
-      variant={variant}
     />
   ));
 }
@@ -286,7 +297,6 @@ function DestinationLink({
   selectedSlugs = [],
   style,
   to,
-  variant = "ghost",
 }: {
   end?: boolean;
   label: string;
@@ -296,21 +306,21 @@ function DestinationLink({
   selectedSlugs?: readonly string[];
   style?: StyleXStyles;
   to: string;
-  variant?: ButtonProps["variant"];
 }) {
   const routeMatch = useMatch({ end, path: to });
   const isActive = matchDestination ? Boolean(routeMatch) : false;
   const destination = preserveComparison ? destinationWithComparison(to, selectedSlugs) : to;
 
   return (
-    <Button
+    <NavLink
       data-active={matchDestination ? String(isActive) : undefined}
-      render={<NavLink end={end} onClick={onNavigate} to={destination} />}
-      variant={isActive ? "secondary" : variant}
-      style={[styles.link, style]}
+      end={end}
+      onClick={onNavigate}
+      to={destination}
+      {...props(styles.link, isActive && styles.linkActive, style)}
     >
       {label}
-    </Button>
+    </NavLink>
   );
 }
 
@@ -340,7 +350,6 @@ function NavigationMenu({
       selectedSlugs={selectedSlugs}
       style={styles.menuLink}
       to={to}
-      variant={isAuthDestination(to) ? "default" : "ghost"}
     />
   ));
   const menuTrigger = (
@@ -348,7 +357,7 @@ function NavigationMenu({
       render={
         <Button
           aria-label={`${label} menu`}
-          variant="secondary"
+          variant="ghost"
           style={styles.navigationMenuTrigger}
         />
       }

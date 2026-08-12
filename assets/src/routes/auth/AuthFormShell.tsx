@@ -209,9 +209,9 @@ function AuthFooterLinks({ footerLinks }: { footerLinks: FooterLink[] }) {
   return (
     <footer {...props(styles.footer)}>
       {footerLinks.map((link) => (
-        <Button key={link.to} render={<Link to={link.to} />} variant="ghost" style={styles.link}>
+        <Link key={link.to} to={link.to} {...props(styles.link)}>
           {link.label}
-        </Button>
+        </Link>
       ))}
     </footer>
   );

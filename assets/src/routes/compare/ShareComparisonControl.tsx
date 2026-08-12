@@ -147,7 +147,7 @@ function SnapshotControlView({
 }: SnapshotControlViewProps) {
   return (
     <Collapsible onOpenChange={onOpenChange} open={open} style={styles.control}>
-      <CollapsibleTrigger render={<Button variant="ghost" />}>
+      <CollapsibleTrigger render={<Button variant="link" />}>
         Share this comparison
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={styles.content}>
@@ -419,7 +419,7 @@ function PublishedSnapshots({
         </ul>
       ) : null}
       {next ? (
-        <Button onClick={() => setAfter(next)} type="button">
+        <Button onClick={() => setAfter(next)} type="button" variant="link">
           Show more links
         </Button>
       ) : null}

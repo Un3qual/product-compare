@@ -4,7 +4,6 @@ import { graphql, useFragment } from "react-relay";
 import type { CompareProductList_product$key } from "$generated/CompareProductList_product.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { DisclosureGroup } from "$ui/components/feedback/DisclosureGroup";
-import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { ProductAttributeList } from "../products/ProductAttributeList";
 import type {
@@ -58,6 +57,16 @@ const styles = create({
   metadata: {
     color: tokens.textSecondary,
     margin: 0,
+  },
+  removeLink: {
+    alignItems: "center",
+    color: tokens.textSecondary,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
   },
 });
 
@@ -153,9 +162,9 @@ function CompareProductCard({
         emptyMessage="No product attributes available yet."
       />
       <nav aria-label={`Actions for ${product.name}`}>
-        <Button render={<Link to={removePath} />} variant="secondary">
+        <Link to={removePath} {...props(styles.removeLink)}>
           Remove {product.name}
-        </Button>
+        </Link>
       </nav>
     </article>
   );

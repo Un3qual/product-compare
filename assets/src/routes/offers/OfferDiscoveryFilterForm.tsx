@@ -86,12 +86,6 @@ const styles = create({
     borderBlockStartWidth: "1px",
     paddingBlockStart: "0.25rem",
   },
-  disclosureTrigger: {
-    color: tokens.textSecondary,
-    fontSize: "0.85rem",
-    fontWeight: 700,
-    minHeight: tokens.controlHeight,
-  },
   advancedFields: {
     display: "grid",
     gap: "0.85rem",
@@ -162,7 +156,7 @@ function OfferDiscoveryFilterFields({ filters }: { filters: OfferDiscoveryFilter
         </Select>
       </Label>
       <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen} style={styles.advanced}>
-        <CollapsibleTrigger style={styles.disclosureTrigger}>Advanced filters</CollapsibleTrigger>
+        <CollapsibleTrigger render={<Button variant="link" />}>Advanced filters</CollapsibleTrigger>
         <CollapsibleContent
           keepMounted
           hidden={!advancedOpen}

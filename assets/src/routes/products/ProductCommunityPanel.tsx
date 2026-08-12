@@ -254,7 +254,7 @@ function ReviewSection({
         ))}
       </ul>
       {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
+        <Button onClick={onShowMore} type="button" variant="link">
           Show more reviews
         </Button>
       ) : null}
@@ -293,7 +293,7 @@ function ReviewSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger render={<Button variant="ghost" />}>Write a review</CollapsibleTrigger>
+      <CollapsibleTrigger render={<Button variant="link" />}>Write a review</CollapsibleTrigger>
       <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-rating`} style={styles.field}>
@@ -362,7 +362,7 @@ function QuestionSection({
         <p>No published questions yet.</p>
       )}
       {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
+        <Button onClick={onShowMore} type="button" variant="link">
           Show more questions
         </Button>
       ) : null}
@@ -400,7 +400,7 @@ function QuestionSubmissionForm({ productId }: { productId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger render={<Button variant="ghost" />}>Ask a question</CollapsibleTrigger>
+      <CollapsibleTrigger render={<Button variant="link" />}>Ask a question</CollapsibleTrigger>
       <CollapsibleContent keepMounted style={disclosureStyles.content}>
         <form onSubmit={submit} {...props(styles.form)}>
           <Label htmlFor={`${fieldId}-title`} style={styles.field}>
@@ -457,7 +457,7 @@ function QuestionAnswers({ question }: { question: Question }) {
           </Suspense>
         </ResettableErrorBoundary>
       ) : next ? (
-        <Button onClick={() => setShowMore(true)} type="button">
+        <Button onClick={() => setShowMore(true)} type="button" variant="link">
           Show more answers
         </Button>
       ) : null}
@@ -496,7 +496,7 @@ function AdditionalAnswers({
         <AnswerView acceptedAnswerId={acceptedAnswerId} answer={answer} key={answer.id} />
       ))}
       {next ? (
-        <Button onClick={() => setAfter(next)} type="button">
+        <Button onClick={() => setAfter(next)} type="button" variant="link">
           Show more answers
         </Button>
       ) : null}
@@ -537,7 +537,7 @@ function AnswerForm({ questionId }: { questionId: string }) {
 
   return (
     <Collapsible>
-      <CollapsibleTrigger render={<Button variant="ghost" />}>
+      <CollapsibleTrigger render={<Button variant="link" />}>
         Answer this question
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={disclosureStyles.content}>

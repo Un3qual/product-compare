@@ -28,6 +28,10 @@ test("auth form shell uses shared primitives for labels, actions, and footer lin
     "href",
     "/auth/register",
   );
+  expect(screen.getByRole("link", { name: "Create account" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
   expect(screen.getByRole("alert")).toHaveTextContent("Request failed.");
   expect(screen.getByRole("status")).toHaveTextContent("Request completed.");
   expect(screen.getByRole("region", { name: "Sign in" })).toBeInTheDocument();

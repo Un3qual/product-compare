@@ -97,6 +97,16 @@ const styles = create({
   metadata: { color: tokens.textSecondary, margin: 0 },
   savedSet: { display: "grid", gap: "0.55rem" },
   title: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
+  openLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export function SavedComparisonSetList({
@@ -298,9 +308,9 @@ function SavedComparisonSetItem({
       <p>{savedSet.productNamesText}</p>
       <fieldset {...props(styles.actions)}>
         <legend>Actions for {savedSet.name}</legend>
-        <Button render={<Link to={comparisonPath} />} variant="secondary">
-          Open comparison
-        </Button>
+        <Link to={comparisonPath} {...props(styles.openLink)}>
+          Open comparison&nbsp;<span aria-hidden="true">→</span>
+        </Link>
         <DestructiveActionDialog
           confirmLabel="Delete comparison"
           description={`Deleting ${savedSet.name} permanently removes this saved comparison.`}

@@ -31,6 +31,16 @@ const styles = create({
     color: tokens.textSecondary,
     margin: 0,
   },
+  compareLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 export type CompareProductPickerOption = {
@@ -82,9 +92,9 @@ export function CompareProductPickerView({
           {visibleOptions.map((option) => (
             <DataListItem
               actions={
-                <Button render={<Link to={option.href} />} variant="secondary">
-                  Compare {option.name}
-                </Button>
+                <Link to={option.href} {...props(styles.compareLink)}>
+                  Compare {option.name}&nbsp;<span aria-hidden="true">→</span>
+                </Link>
               }
               key={option.id}
             >
@@ -97,7 +107,7 @@ export function CompareProductPickerView({
         </DataList>
       )}
       {onShowMore ? (
-        <Button onClick={onShowMore} type="button">
+        <Button onClick={onShowMore} type="button" variant="link">
           Show more products
         </Button>
       ) : null}

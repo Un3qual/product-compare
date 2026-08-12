@@ -1459,10 +1459,12 @@ test("product picker view filters loaded options, clears the filter, and keeps r
 
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
-  expect(screen.getByRole("link", { name: "Compare Monitor Alpha" })).toHaveAttribute(
+  const compareAlpha = screen.getByRole("link", { name: "Compare Monitor Alpha" });
+  expect(compareAlpha).toHaveAttribute(
     "href",
     "/compare?slug=monitor-alpha",
   );
+  expect(compareAlpha).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
     "href",
     "/compare?slug=monitor-beta",
@@ -3060,6 +3062,11 @@ test("ready compare page renders a selected-product tray with ordered remove lin
       name: "Remove Detail Product from selection",
     }),
   ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product");
+  expect(
+    within(selectedProducts[0]).getByRole("link", {
+      name: "Remove Detail Product from selection",
+    }),
+  ).not.toHaveAttribute("data-slot", "button");
   expect(
     within(selectedProducts[1]).getByRole("link", {
       name: "Remove Second Product from selection",

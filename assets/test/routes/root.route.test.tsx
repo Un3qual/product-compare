@@ -179,12 +179,23 @@ test("primary navigation preserves the URL-backed comparison across public desti
     "href",
     "/compare?slug=model-1&slug=model-2",
   );
+  expect(within(primary).getByRole("link", { name: "Product Compare" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
+  expect(within(primary).getByRole("link", { name: "Search products" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
+  expect(within(primary).getByRole("link", { name: "Compare products" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
 
   const explore = openNavigationMenu(primary, "Explore");
-  expect(within(explore).getByRole("link", { name: "Offers" })).toHaveAttribute(
-    "href",
-    "/offers?slug=model-1&slug=model-2",
-  );
+  const offers = within(explore).getByRole("link", { name: "Offers" });
+  expect(offers).toHaveAttribute("href", "/offers?slug=model-1&slug=model-2");
+  expect(offers).not.toHaveAttribute("data-slot", "button");
 });
 
 test("primary navigation keeps one disclosure open and dismisses it after navigation", async () => {

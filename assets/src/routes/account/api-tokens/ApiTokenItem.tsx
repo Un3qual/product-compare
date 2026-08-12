@@ -6,9 +6,8 @@ import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
-import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
+import { ApiTokenExpiryField } from "./ApiTokenExpiryField";
 import {
   buildApiTokenActionPolicy,
   buildApiTokenDisplayData,
@@ -257,43 +256,11 @@ function ApiTokenActions({
               type="text"
             />
           </div>
-          <Label>
-            {`Replacement expiry for ${displayLabel}`}
-            <Input
-              name="expiresAt"
-              onChange={() => {
-                if (rotateExpiresAtPresetInputRef.current) {
-                  rotateExpiresAtPresetInputRef.current.value = "";
-                }
-              }}
-              ref={rotateExpiresAtInputRef}
-              type="datetime-local"
-            />
-          </Label>
-          <input name="expiresAtPreset" ref={rotateExpiresAtPresetInputRef} type="hidden" />
-          <div>
-            {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-              <Button
-                size="sm"
-                variant="secondary"
-                key={`${token.id}-${preset.label}`}
-                onClick={() => {
-                  if (rotateExpiresAtInputRef.current) {
-                    rotateExpiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
-                      preset.label,
-                      new Date(Date.now()),
-                    );
-                  }
-                  if (rotateExpiresAtPresetInputRef.current) {
-                    rotateExpiresAtPresetInputRef.current.value = preset.label;
-                  }
-                }}
-                type="button"
-              >
-                {preset.label}
-              </Button>
-            ))}
-          </div>
+          <ApiTokenExpiryField
+            inputLabel={`Replacement expiry for ${displayLabel}`}
+            inputRef={rotateExpiresAtInputRef}
+            presetInputRef={rotateExpiresAtPresetInputRef}
+          />
           <Button disabled={actionPolicy.rotate.disabled} type="submit">
             {actionPolicy.rotate.copy}
           </Button>

@@ -10,7 +10,7 @@ const styles = stylex.create({
   },
   trigger: {
     alignItems: "center",
-    background: "none",
+    backgroundColor: "transparent",
     borderWidth: 0,
     color: "inherit",
     cursor: "pointer",
@@ -35,13 +35,15 @@ export function Collapsible({
 }
 
 export function CollapsibleTrigger({
+  render,
   style,
   ...triggerProps
 }: StyleXPrimitiveProps<ComponentProps<typeof CollapsiblePrimitive.Trigger>>) {
   return (
     <CollapsiblePrimitive.Trigger
       data-slot="collapsible-trigger"
-      {...stylex.props(styles.trigger, style)}
+      render={render}
+      {...stylex.props(render ? style : [styles.trigger, style])}
       {...triggerProps}
     />
   );

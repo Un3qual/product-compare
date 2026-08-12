@@ -123,9 +123,12 @@ test("merchant directory view renders only supplied safe actions", () => {
   renderMerchantDirectoryView();
 
   const safeMerchant = getMerchantListItem("Acme Market");
+  const website = within(safeMerchant).getByRole("link", { name: "Visit merchant website" });
+  expect(website).toHaveAttribute("href", "https://acme.example");
+  expect(website).not.toHaveAttribute("data-slot", "button");
   expect(
-    within(safeMerchant).getByRole("link", { name: "Visit merchant website" }),
-  ).toHaveAttribute("href", "https://acme.example");
+    within(safeMerchant).queryByRole("link", { name: "View merchant details" }),
+  ).not.toBeInTheDocument();
   expect(
     within(getMerchantListItem("Unsafe Seller")).queryByRole("link", {
       name: "Visit merchant website",

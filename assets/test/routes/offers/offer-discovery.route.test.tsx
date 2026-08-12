@@ -716,10 +716,12 @@ test("offer discovery exposes row merchant filter actions that preserve filters 
 
   renderOfferDiscoveryRoute();
 
-  expect(screen.getByRole("link", { name: "Filter to Acme Market" })).toHaveAttribute(
+  const acmeFilter = screen.getByRole("link", { name: "Filter to Acme Market" });
+  expect(acmeFilter).toHaveAttribute(
     "href",
     "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6NDU2&activeOnly=false&first=12&sort=price_asc",
   );
+  expect(acmeFilter).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Filter to Value Mart" })).toHaveAttribute(
     "href",
     "/offers?productId=UHJvZHVjdDoxMjM%3D&merchantId=TWVyY2hhbnQ6Nzg5&activeOnly=false&first=12&sort=price_asc",

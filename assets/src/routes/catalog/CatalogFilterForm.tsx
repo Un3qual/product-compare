@@ -127,9 +127,7 @@ export function CatalogFilterForm({
         />
       </div>
       <Collapsible open={advancedOpen} onOpenChange={setAdvancedOpen}>
-        <CollapsibleTrigger render={<Button variant="secondary" />}>
-          Advanced filters
-        </CollapsibleTrigger>
+        <CollapsibleTrigger render={<Button variant="link" />}>Advanced filters</CollapsibleTrigger>
         <CollapsibleContent keepMounted hidden={!advancedOpen} style={styles.advanced}>
           <CatalogAdvancedFilters filters={filters} metadata={metadata} />
         </CollapsibleContent>

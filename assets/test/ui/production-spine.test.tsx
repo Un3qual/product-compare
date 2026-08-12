@@ -161,6 +161,7 @@ test("product ledger groups identity and market facts around the buying decision
   expect(within(ledger).getAllByRole("article")).toHaveLength(1);
   expect(within(ledger).getByRole("heading", { name: "Alpha Camera" })).toBeInTheDocument();
   expect(mobileDisclosure).toHaveAttribute("aria-expanded", "false");
+  expect(mobileDisclosure).not.toHaveAttribute("data-slot", "button");
   expect(within(ledger).getByRole("link", { name: "View Alpha Camera" })).toBeInTheDocument();
   expect(within(ledger).queryByText("Highlights")).not.toBeInTheDocument();
   expect(within(ledger).queryByText("Price signal")).not.toBeInTheDocument();
@@ -187,7 +188,7 @@ test("product ledger groups identity and market facts around the buying decision
     "product-ledger-freshness",
   );
   expect(mobileDisclosure).toHaveAttribute("data-slot", "collapsible-trigger");
-  expect(mobileDisclosure).toHaveAttribute("data-variant", "secondary");
+  expect(mobileDisclosure).toHaveAttribute("data-variant", "link");
   const style = installProductionTheme();
   expectTouchTargetRule(style, mobileDisclosure);
   style.remove();

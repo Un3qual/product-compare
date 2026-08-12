@@ -4,9 +4,8 @@ import { Link } from "react-router-dom";
 import { ActionDialog } from "$ui/components/overlays/ActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
-import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { API_TOKEN_EXPIRES_AT_PRESETS, buildApiTokenExpiresAtInputValue } from "./date-presets";
+import { ApiTokenExpiryField } from "./ApiTokenExpiryField";
 import {
   buildApiTokenStatusFilterNavigationData,
   type ApiTokenStatus,
@@ -93,43 +92,11 @@ function CreateApiTokenForm({
         <span id="api-token-label">Label</span>
         <Input aria-labelledby="api-token-label" autoComplete="off" name="label" type="text" />
       </div>
-      <Label>
-        Expires at
-        <Input
-          name="expiresAt"
-          onChange={() => {
-            if (expiresAtPresetInputRef.current) {
-              expiresAtPresetInputRef.current.value = "";
-            }
-          }}
-          ref={expiresAtInputRef}
-          type="datetime-local"
-        />
-      </Label>
-      <input name="expiresAtPreset" ref={expiresAtPresetInputRef} type="hidden" />
-      <div>
-        {API_TOKEN_EXPIRES_AT_PRESETS.map((preset) => (
-          <Button
-            key={preset.label}
-            onClick={() => {
-              if (expiresAtInputRef.current) {
-                expiresAtInputRef.current.value = buildApiTokenExpiresAtInputValue(
-                  preset.label,
-                  new Date(Date.now()),
-                );
-              }
-              if (expiresAtPresetInputRef.current) {
-                expiresAtPresetInputRef.current.value = preset.label;
-              }
-            }}
-            size="sm"
-            type="button"
-            variant="secondary"
-          >
-            {preset.label}
-          </Button>
-        ))}
-      </div>
+      <ApiTokenExpiryField
+        inputLabel="Expires at"
+        inputRef={expiresAtInputRef}
+        presetInputRef={expiresAtPresetInputRef}
+      />
       <Button disabled={submitting} type="submit">
         {submitting ? "Creating API token..." : "Create API token"}
       </Button>

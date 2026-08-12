@@ -553,7 +553,7 @@ function EditActions({
       <Button disabled={pending} type="submit">
         {pending ? "Saving…" : `Save ${label}`}
       </Button>
-      <Button onClick={onCancel} type="button">
+      <Button onClick={onCancel} type="button" variant="ghost">
         Cancel edit
       </Button>
     </div>
@@ -584,7 +584,7 @@ function CommunityOwnerActions({
   return (
     <div {...props(styles.actions)}>
       {canEdit && !editing ? (
-        <Button onClick={onEdit} type="button">
+        <Button onClick={onEdit} type="button" variant="link">
           Edit {label}
         </Button>
       ) : null}
@@ -634,7 +634,7 @@ function RemoveCommunityControl({
   if (!confirming) {
     return (
       <>
-        <Button onClick={() => setConfirming(true)} type="button">
+        <Button onClick={() => setConfirming(true)} type="button" variant="link">
           Remove {label}
         </Button>
         <RowMessage message={message} />
@@ -646,10 +646,15 @@ function RemoveCommunityControl({
     <fieldset aria-label={`Confirm removal of ${label}`} {...props(styles.confirmation)}>
       <legend>Remove this {label}?</legend>
       <div {...props(styles.actions)}>
-        <Button disabled={pending} onClick={remove} type="button">
+        <Button disabled={pending} onClick={remove} type="button" variant="destructive">
           {pending ? "Removing…" : `Confirm remove ${label}`}
         </Button>
-        <Button disabled={pending} onClick={() => setConfirming(false)} type="button">
+        <Button
+          disabled={pending}
+          onClick={() => setConfirming(false)}
+          type="button"
+          variant="secondary"
+        >
           Cancel removal
         </Button>
       </div>

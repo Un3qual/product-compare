@@ -54,6 +54,14 @@ test("Pagination exposes one navigation landmark", () => {
     "href",
     "/offers?after=next",
   );
+  expect(within(navigation).getByRole("link", { name: "First page" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
+  expect(within(navigation).getByRole("link", { name: "Next page" })).not.toHaveAttribute(
+    "data-slot",
+    "button",
+  );
 });
 
 test("DataList preserves list semantics for dense rows", () => {

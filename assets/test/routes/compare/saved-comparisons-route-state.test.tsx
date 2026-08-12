@@ -29,9 +29,11 @@ beforeEach(() => {
 test("saved comparisons reopens, paginates, filters, and sorts Relay-backed sets", () => {
   renderReadySavedComparisons();
 
-  expect(
-    within(actionsFor("Desk setup")).getByRole("link", { name: "Open comparison" }),
-  ).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
+  const openComparison = within(actionsFor("Desk setup")).getByRole("link", {
+    name: "Open comparison",
+  });
+  expect(openComparison).toHaveAttribute("href", "/compare?slug=chair&slug=desk");
+  expect(openComparison).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Next page" })).toHaveAttribute(
     "href",
     "/compare/saved?after=cursor-2",

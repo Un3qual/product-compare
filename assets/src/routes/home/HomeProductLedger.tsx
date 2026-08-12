@@ -4,6 +4,7 @@ import { graphql, useFragment } from "react-relay";
 import type { HomeProductLedger_products$key } from "$generated/HomeProductLedger_products.graphql";
 import { ProductLedger } from "$ui/components/products/ProductLedger";
 import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
@@ -37,6 +38,17 @@ const homeProductLedgerFragment = graphql`
 
 const styles = create({
   actions: { display: "flex", flexWrap: "wrap", gap: "0.5rem" },
+  detailLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontSize: "0.86rem",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
   workspace: { maxWidth: "100%", minWidth: 0 },
 });
 
@@ -86,21 +98,17 @@ function HomeLedgerActions({
 
   return (
     <div {...props(styles.actions)}>
-      <Button render={<Link to={row.href} />} size="sm" variant="secondary">
-        View details
-      </Button>
+      <Link to={row.href} {...props(styles.detailLink)}>
+        View details&nbsp;<span aria-hidden="true">→</span>
+      </Link>
       {isSelected ? (
         <Button render={<Link to={buildComparePathFromSlugs(selectedSlugs)} />} size="sm">
           Open comparison
         </Button>
       ) : isFull ? (
-        <Button
-          render={<Link to={buildComparePathFromSlugs(selectedSlugs)} />}
-          size="sm"
-          variant="ghost"
-        >
-          Comparison is full
-        </Button>
+        <Link to={buildComparePathFromSlugs(selectedSlugs)} {...props(styles.detailLink)}>
+          Comparison is full&nbsp;<span aria-hidden="true">→</span>
+        </Link>
       ) : (
         <Button render={<Link to={compareHref} />} size="sm">
           Add to comparison

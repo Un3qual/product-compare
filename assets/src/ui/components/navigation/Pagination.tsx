@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { create, props } from "@stylexjs/stylex";
-import { Button } from "../../primitives/Button";
+import { tokens } from "../../theme/tokens.stylex";
 
 const styles = create({
   root: {
@@ -9,6 +9,17 @@ const styles = create({
     flexWrap: "wrap",
     gap: "0.75rem",
   },
+  link: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
+  arrow: { fontFamily: tokens.fontMono },
 });
 
 export type PaginationProps = {
@@ -33,11 +44,21 @@ export function Pagination({
   return (
     <nav aria-label={label} {...props(styles.root)}>
       {firstHref ? (
-        <Button render={<Link to={firstHref} />} variant="secondary">
+        <Link to={firstHref} {...props(styles.link)}>
+          <span aria-hidden="true" {...props(styles.arrow)}>
+            ←&nbsp;
+          </span>
           {firstLabel}
-        </Button>
+        </Link>
       ) : null}
-      {nextHref ? <Button render={<Link to={nextHref} />}>{nextLabel}</Button> : null}
+      {nextHref ? (
+        <Link to={nextHref} {...props(styles.link)}>
+          {nextLabel}
+          <span aria-hidden="true" {...props(styles.arrow)}>
+            &nbsp;→
+          </span>
+        </Link>
+      ) : null}
     </nav>
   );
 }

@@ -56,6 +56,16 @@ const styles = create({
   merchant: { display: "grid", gap: "0.45rem" },
   name: { fontSize: "1.25rem", letterSpacing: "-0.02em", margin: 0 },
   domain: { color: tokens.textSecondary, margin: 0 },
+  link: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
+  },
 });
 
 type MerchantDirectoryViewProps = {
@@ -161,24 +171,23 @@ function MerchantDirectoryViewItem({ merchant }: { merchant: MerchantDirectoryVi
   return (
     <DataListItem
       actions={
-        <>
-          <Button render={<Link to={row.detailHref} />} variant="secondary">
-            View merchant details
-          </Button>
-          {row.websiteHref ? (
-            <Button
-              render={<a href={row.websiteHref} target="_blank" rel="noopener noreferrer" />}
-              variant="secondary"
-            >
-              Visit merchant website
-            </Button>
-          ) : null}
-        </>
+        row.websiteHref ? (
+          <a
+            href={row.websiteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            {...props(styles.link)}
+          >
+            Visit merchant website&nbsp;<span aria-hidden="true">↗</span>
+          </a>
+        ) : null
       }
     >
       <div {...props(styles.merchant)}>
         <h2 {...props(styles.name)}>
-          <Link to={row.detailHref}>{row.name}</Link>
+          <Link to={row.detailHref} {...props(styles.link)}>
+            {row.name}
+          </Link>
         </h2>
         <p {...props(styles.domain)}>{row.domain}</p>
       </div>

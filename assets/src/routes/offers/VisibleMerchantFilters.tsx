@@ -1,6 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   activeVisibleMerchant,
@@ -35,6 +34,16 @@ const styles = create({
     listStyle: "none",
     margin: 0,
     padding: 0,
+  },
+  filterLink: {
+    alignItems: "center",
+    color: tokens.actionAccent,
+    display: "inline-flex",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+    textDecoration: "none",
+    textDecorationLine: { ":hover": "underline", default: "none" },
+    textUnderlineOffset: "0.2em",
   },
 });
 
@@ -85,18 +94,13 @@ function VisibleMerchantFilterLinks({
     <ul {...props(styles.filterList)}>
       {merchants.map((merchant) => (
         <li key={merchant.id}>
-          <Button
-            render={
-              <Link
-                aria-label={`Filter to ${merchant.name}`}
-                to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}
-              />
-            }
-            size="sm"
-            variant="outline"
+          <Link
+            aria-label={`Filter to ${merchant.name}`}
+            to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}
+            {...props(styles.filterLink)}
           >
-            {merchant.name}
-          </Button>
+            {merchant.name}&nbsp;<span aria-hidden="true">→</span>
+          </Link>
         </li>
       ))}
     </ul>

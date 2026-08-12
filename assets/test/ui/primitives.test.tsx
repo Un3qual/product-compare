@@ -379,6 +379,7 @@ test("Collapsible exposes Base UI state and accessibility semantics", () => {
   const trigger = screen.getByRole("button", { name: "Advanced filters" });
 
   expect(trigger).toHaveAttribute("aria-expanded", "false");
+  expect(getComputedStyle(trigger).backgroundColor).toBe("rgba(0, 0, 0, 0)");
 });
 
 test("Tabs register a stable Base UI composite list", () => {
