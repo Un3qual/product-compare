@@ -2,8 +2,8 @@
 
 ## Status
 
-Approved conversationally on 2026-08-12. This written version is pending the
-required final spec review before implementation planning begins.
+Approved in written form on 2026-08-12. Implementation is dispatched through
+the six cohort plans listed in `docs/plans/INDEX.md`.
 
 This document amends the production UI direction in
 `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`. Where the
