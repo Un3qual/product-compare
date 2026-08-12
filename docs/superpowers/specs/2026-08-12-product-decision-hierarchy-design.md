@@ -13,7 +13,9 @@ still present every value with equal weight:
 - the homepage product ledger repeats a six-field schema above and inside every
   product row; and
 - the product-detail offer snapshot renders four same-weight definition rows;
-  and
+- the offer-discovery route exposes internal filter identifiers, repeats the
+  selected product in every merchant row, and gives price history and coupons
+  the same weight as the current price; and
 - API-token rows give identity, lifecycle, and status identical visual weight.
 
 These surfaces expose correct data, but they read like serialized parameters
@@ -51,6 +53,22 @@ availability, and missing-price coverage become supporting prose rather than
 four equal definition rows. Mixed-currency and missing-price states retain
 their truthful existing copy.
 
+### Offer discovery
+
+The selected product anchors the workspace once with brand, offer scope,
+ordering, and route actions. Internal product and merchant identifiers remain
+URL/form state but are not editable shopper-facing fields.
+
+The lowest visible price is the primary page signal. Visible-offer, coupon, and
+missing-price coverage become one supporting sentence. Merchant shortcuts sit
+before the result list so they act as navigation rather than an afterthought.
+
+Each result is a merchant choice: merchant identity, current price,
+availability, freshness, and the visit action remain visible. The repeated
+product name becomes quiet context. Price history and coupon terms move into an
+accessible Base UI disclosure so evidence is available without dominating the
+comparison.
+
 ### Product specifications
 
 Specifications remain grouped definition lists. A parameter-like structure is
@@ -74,6 +92,8 @@ context and freshness without duplicating the visible product highlights.
 
 - Preserve GraphQL fragments, Relay ownership, URL state, offer calculations,
   comparison limits, and all existing destinations.
+- Preserve hidden product and merchant filter values in GET submissions while
+  removing raw database/global identifiers from the visible control surface.
 - Preserve semantic lists, headings, status meaning, and accessible names.
 - Use StyleX and existing primitives; do not add class-name composition helpers,
   card mosaics, or new dependencies.
