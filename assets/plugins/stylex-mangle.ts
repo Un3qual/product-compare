@@ -1,4 +1,4 @@
-import type { Plugin, Rollup } from "vite";
+import type { Plugin, ResolvedConfig, Rollup } from "vite";
 import {
   findStylexClassNames,
   mangleStylexClassName,
@@ -32,24 +32,32 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
     throw new Error("stylex-mangle: classNamePrefix cannot be empty");
   }
 
+  const classNames = new Map<string, string>();
   const generatedNames = new Map<string, string>();
+  let command: ResolvedConfig["command"] = "build";
+
+  function rememberClassName(original: string): void {
+    const mangled = mangleStylexClassName(original, classNamePrefix, classNames);
+
+    if (mangled !== null) {
+      generatedNames.set(mangled, original);
+    }
+  }
 
   function remember(source: string): void {
     for (const original of findStylexClassNames(source, classNamePrefix)) {
-      const mangled = mangleStylexClassName(original, classNamePrefix);
-
-      if (mangled !== null) {
-        generatedNames.set(mangled, original);
-      }
+      rememberClassName(original);
     }
   }
 
   function rewrite(source: string): string {
     remember(source);
-    return rewriteStylexClassNames(source, classNamePrefix).code;
+    return rewriteStylexClassNames(source, classNamePrefix, classNames).code;
   }
 
   function rewriteBundle(this: Rollup.PluginContext, bundle: Rollup.OutputBundle): void {
+    const originals = new Set<string>();
+
     for (const output of Object.values(bundle)) {
       const source =
         output.type === "chunk"
@@ -59,8 +67,14 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
             : null;
 
       if (source !== null) {
-        remember(source);
+        for (const original of findStylexClassNames(source, classNamePrefix)) {
+          originals.add(original);
+        }
       }
+    }
+
+    for (const original of [...originals].sort()) {
+      rememberClassName(original);
     }
 
     for (const output of Object.values(bundle)) {
@@ -92,15 +106,16 @@ export default function stylexMangle(options: StylexMangleOptions): Plugin {
   return {
     name: "product-compare:stylex-mangle",
     enforce: "post",
-    transform(code) {
-      const result = rewriteStylexClassNames(code, classNamePrefix);
-      remember(code);
-
-      return result.changed ? { code: result.code, map: null } : null;
+    configResolved(config) {
+      command = config.command;
     },
-    renderChunk(code) {
-      const result = rewriteStylexClassNames(code, classNamePrefix);
+    transform(code) {
+      if (command !== "serve") {
+        return null;
+      }
+
       remember(code);
+      const result = rewriteStylexClassNames(code, classNamePrefix, classNames);
 
       return result.changed ? { code: result.code, map: null } : null;
     },

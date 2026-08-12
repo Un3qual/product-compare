@@ -1,5 +1,4 @@
-const BASE_36_DIGITS = "0123456789abcdefghijklmnopqrstuvwxyz";
-const BASE_62_DIGITS = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+const SHORT_CLASS_NAME_ALPHABET = "abcdefghijklmnopqrstuvwxyz";
 const CSS_IDENTIFIER_CHARACTER = "A-Za-z0-9_-";
 
 export type StylexRewriteResult = {
@@ -20,7 +19,8 @@ function atomicClassPattern(classNamePrefix: string): RegExp {
   );
 }
 
-const mangledClassSelectorPattern = /\.(_[A-Za-z0-9]+)(?=[{:[.#])/g;
+const mangledClassSelectorPattern = /\.([a-z]+)(?=[{:[.#])/g;
+const stylexRulePattern = /\b(?:ltr|rtl)\s*:\s*(?:`([^`]*)`|"((?:\\.|[^"\\])*)")/g;
 
 function isStylexConstKey(source: string, classNameOffset: number): boolean {
   return /\bconstKey\s*:\s*["'`]$/.test(
@@ -28,33 +28,23 @@ function isStylexConstKey(source: string, classNameOffset: number): boolean {
   );
 }
 
-function parseBase36(value: string): bigint {
-  let result = 0n;
-
-  for (const character of value) {
-    result = result * 36n + BigInt(BASE_36_DIGITS.indexOf(character.toLowerCase()));
-  }
-
-  return result;
-}
-
-function encodeBase62(value: bigint): string {
-  if (value === 0n) {
-    return BASE_62_DIGITS[0]!;
-  }
-
-  let remainder = value;
+export function shortStylexClassName(index: number): string {
+  let remainder = index;
   let result = "";
 
-  while (remainder > 0n) {
-    result = BASE_62_DIGITS[Number(remainder % 62n)]! + result;
-    remainder /= 62n;
-  }
+  do {
+    result = SHORT_CLASS_NAME_ALPHABET[remainder % SHORT_CLASS_NAME_ALPHABET.length]! + result;
+    remainder = Math.floor(remainder / SHORT_CLASS_NAME_ALPHABET.length) - 1;
+  } while (remainder >= 0);
 
   return result;
 }
 
-export function mangleStylexClassName(className: string, classNamePrefix: string): string | null {
+export function mangleStylexClassName(
+  className: string,
+  classNamePrefix: string,
+  classNames: Map<string, string>,
+): string | null {
   if (!classNamePrefix || !className.startsWith(classNamePrefix)) {
     return null;
   }
@@ -65,7 +55,15 @@ export function mangleStylexClassName(className: string, classNamePrefix: string
     return null;
   }
 
-  return `_${encodeBase62(parseBase36(hash))}`;
+  const existing = classNames.get(className);
+
+  if (existing !== undefined) {
+    return existing;
+  }
+
+  const mangled = shortStylexClassName(classNames.size);
+  classNames.set(className, mangled);
+  return mangled;
 }
 
 export function findStylexClassNames(source: string, classNamePrefix: string): Set<string> {
@@ -86,13 +84,32 @@ export function findStylexClassNames(source: string, classNamePrefix: string): S
   return classNames;
 }
 
+export function findStylexRules(source: string): Set<string> {
+  const rules = new Set<string>();
+
+  for (const match of source.matchAll(stylexRulePattern)) {
+    rules.add(match[1] ?? JSON.parse(`"${match[2]}"`));
+  }
+
+  return rules;
+}
+
 export function findMangledStylexClassNames(source: string): Set<string> {
-  return new Set([...source.matchAll(mangledClassSelectorPattern)].map((match) => match[1]!));
+  const classNames = new Set<string>();
+
+  for (const rule of findStylexRules(source)) {
+    for (const match of rule.matchAll(mangledClassSelectorPattern)) {
+      classNames.add(match[1]!);
+    }
+  }
+
+  return classNames;
 }
 
 export function rewriteStylexClassNames(
   source: string,
   classNamePrefix: string,
+  classNames: Map<string, string>,
 ): StylexRewriteResult {
   if (!classNamePrefix) {
     return { changed: false, code: source };
@@ -108,7 +125,7 @@ export function rewriteStylexClassNames(
         return match;
       }
 
-      const mangled = mangleStylexClassName(className, classNamePrefix);
+      const mangled = mangleStylexClassName(className, classNamePrefix, classNames);
 
       if (mangled === null) {
         return match;
