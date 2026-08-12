@@ -31,11 +31,11 @@
 
 **Files:**
 
-- Create: `priv/repo/migrations/20260810140000_create_anonymous_visitors.exs`
+- Modify: `priv/repo/migrations/20260521160000_create_commerce_attribution_core.exs`
 - Create: `lib/product_compare_schemas/commerce_attribution/anonymous_visitor.ex`
 - Create: `lib/product_compare/commerce_attribution/visitors.ex`
 - Create: `lib/product_compare_web/plugs/put_anonymous_visitor.ex`
-- Create: `test/product_compare/repo/migrations/create_anonymous_visitors_test.exs`
+- Create: `test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs`
 - Create: `test/product_compare/commerce_attribution/anonymous_visitors_test.exs`
 - Create: `test/product_compare_web/plugs/put_anonymous_visitor_test.exs`
 - Modify: `lib/product_compare_schemas/commerce_attribution/commerce_click_session.ex`
@@ -88,7 +88,16 @@ assert_raise Postgrex.Error, ~r/commerce_click_sessions_single_actor/, fn ->
 end
 ```
 
-The migration test must seed repeated, distinct, blank, nil, and authenticated legacy `anonymous_id` values before `up/0`, then assert repeated guest strings map to one visitor, distinct strings map to distinct visitors, authenticated rows have a null visitor, and `down/0` restores equal entropy UUID strings. Plug tests must cover valid-cookie reuse, missing-cookie generation, forged-cookie replacement, HTTP-only/SameSite/secure attributes, and no database row creation. Concurrent `Visitors.get_or_create/1` calls for one entropy UUID must return the same row and leave `Repo.aggregate(AnonymousVisitor, :count) == 1`.
+The migration test must apply the original commerce-attribution migration to an
+empty isolated prefix and assert that `anonymous_visitors`, its unique entropy
+index, `commerce_click_sessions.anonymous_visitor_id`, its lookup index, the
+foreign key, and the named mutual-exclusion constraint all exist directly.
+It must refute an `anonymous_id` column and prove invalid direct writes fail.
+Plug tests must cover valid-cookie reuse, missing-cookie generation,
+forged-cookie replacement, HTTP-only/SameSite/secure attributes, and no
+database row creation. Concurrent `Visitors.get_or_create/1` calls for one
+entropy UUID must return the same row and leave
+`Repo.aggregate(AnonymousVisitor, :count) == 1`.
 
 Update trending tests so two clicks from one visitor count once, a numeric-looking visitor entropy cannot collide with a user ID, unidentified clicks do not count, and the existing seven-day/five-identity/active-offer/query-budget behavior stays intact.
 
@@ -98,7 +107,7 @@ Run:
 
 ```bash
 mix test \
-  test/product_compare/repo/migrations/create_anonymous_visitors_test.exs \
+  test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs \
   test/product_compare/commerce_attribution/anonymous_visitors_test.exs \
   test/product_compare/commerce_attribution/trending_activity_test.exs \
   test/product_compare_web/plugs/put_anonymous_visitor_test.exs \
@@ -107,11 +116,15 @@ mix test \
   test/product_compare_web/graphql/commerce_attribution_ledger_test.exs
 ```
 
-Expected: failures name the missing table/schema/plug, the old `anonymous_id` contract, the unhandled single-actor constraint, or the old tagged-string aggregation.
+Expected: failures name the missing final table/schema/plug, the old
+`anonymous_id` contract, the unhandled single-actor constraint, or the old
+tagged-string aggregation.
 
 - [ ] **Step 3: Implement the relational migration and Ecto contracts**
 
-Create `anonymous_visitors` with repository-standard bigint identity and `uuidv7()` entropy default. In the migration, use a temporary legacy mapping table inside the migration transaction:
+Create `anonymous_visitors` with repository-standard bigint identity and
+`uuidv7()` entropy default directly in the original commerce-attribution
+migration, before `commerce_click_sessions`:
 
 ```elixir
 create table(:anonymous_visitors) do
@@ -133,7 +146,11 @@ create constraint(:commerce_click_sessions, :commerce_click_sessions_single_acto
 )
 ```
 
-Use explicit SQL to populate the temporary mapping and backfill. `down/0` adds a text column, restores `anonymous_id = anonymous_visitors.entropy_id::text`, then removes the new constraint/FK/table in dependency order.
+Create `commerce_click_sessions` with `anonymous_visitor_id` as its only guest
+identity column, then create the lookup index and named same-row constraint.
+Do not add a later expansion migration, mapping table, transition trigger,
+backfill, dual-write path, or rollback reconstruction for the unshipped text
+schema. Development databases may be reset.
 
 In `CommerceClickSession.changeset/2`, validate the mutual exclusion before the database write and add the named `check_constraint/3`. Keep neither identity valid.
 
@@ -171,7 +188,7 @@ Run:
 
 ```bash
 mix test \
-  test/product_compare/repo/migrations/create_anonymous_visitors_test.exs \
+  test/product_compare/repo/migrations/create_commerce_attribution_core_test.exs \
   test/product_compare/commerce_attribution/anonymous_visitors_test.exs \
   test/product_compare/commerce_attribution/commerce_attribution_test.exs \
   test/product_compare/commerce_attribution/trending_activity_test.exs \

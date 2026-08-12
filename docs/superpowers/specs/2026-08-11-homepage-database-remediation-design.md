@@ -31,9 +31,8 @@ preserving code or schema fix:
 - scope active-offer counts and Product hydration to returned candidate pages;
 - stop loading evidence/source associations for homepage specification labels;
 - avoid a conflict-writing visitor insert on every repeat click;
-- replace the anonymous-visitor migration with an expand/backfill contract that
-  does not index before backfill or discard the legacy column in the same
-  deployment; and
+- put the final anonymous-visitor tables, foreign key, indexes, and same-row
+  constraint directly in the original commerce-attribution migration; and
 - add the latest-price access path used by current-offer probes.
 
 The following review proposals are deliberately excluded:
@@ -44,8 +43,8 @@ The following review proposals are deliberately excluded:
   production sizing data; and
 - no anonymous-visitor deletion policy. Visitor deletion changes historical
   attribution semantics and requires a product-level retention decision, not a
-  query-only patch. The expand migration must nevertheless preserve exact
-  rollback data and avoid creating new lifecycle loss.
+  query-only patch. The final foreign key continues to detach a deleted visitor
+  from historical clicks without deleting attribution records.
 
 Ordinary deterministic behavior, concurrency, migration-contract, and query-
 shape regression tests remain required. They are tests of correctness, not the
@@ -161,31 +160,19 @@ This avoids both unrequested work and the prior cross-snapshot lazy-field bug.
 Products are joined or hydrated once per returned page. The implementation must
 not add per-edge field queries or a new generic dashboard/data-loader layer.
 
-## Anonymous Visitor Migration And Write Path
+## Anonymous Visitor Schema And Write Path
 
-The current unshipped migration becomes an expand/backfill migration:
+The application is unreleased, so the original commerce-attribution migration
+owns the final schema. It creates `anonymous_visitors` before click sessions,
+then creates `commerce_click_sessions.anonymous_visitor_id`, the visitor entropy
+and click lookup indexes, the foreign key, and the named single-actor check.
+The click-session table never has an `anonymous_id` text column.
 
-1. create `anonymous_visitors` and add a nullable, initially unindexed
-   `anonymous_visitor_id` column;
-2. preserve the original `anonymous_id` column through the rollout window;
-3. retain the original string on a nullable, uniquely indexed
-   `anonymous_visitors.legacy_anonymous_id` transition column;
-4. install a transition trigger before backfill so the old application version
-   maps guest writes that race the migration;
-5. backfill visitor mappings and click foreign keys in committed batches of at
-   most 10,000 click-session IDs;
-6. build the click-session visitor lookup index concurrently after backfill;
-7. add the foreign key and single-actor check as `NOT VALID`, then validate
-   them separately; and
-8. leave trigger, transition-column, and legacy click-column removal to a later
-   contract migration after all running
-   application versions write the foreign key.
-
-The old column and transition mapping retain exact legacy values during the
-rollback window. Rolling deployment cannot create an unmapped guest click: old
-writers are covered by the transition trigger and new writers set the foreign
-key directly. The migration must not hold one transaction across the table
-rewrite, index build, and validation.
+There is no expand/backfill deployment, transition column, trigger, legacy
+mapping, rolling-writer window, contract migration, or rollback data
+reconstruction. Development databases may be reset rather than preserving an
+unreleased intermediate schema. A fresh-prefix migration test proves the final
+tables, indexes, foreign key, same-row check, and direct-write rejection.
 
 The runtime visitor lookup uses a read fast path. On a miss it performs the
 unique-authoritative insert with conflict handling and rereads after a conflict.
@@ -229,8 +216,8 @@ Implementation follows RED/GREEN behavior tests for:
 - homepage highlights without evidence/source queries;
 - repeat visitor lookup without conflict writes plus concurrent first-click
   convergence; and
-- expand/backfill migration preservation, batching, constraint validation, and
-  rollback-window fidelity.
+- fresh-schema visitor table, index, foreign-key, same-row constraint, and
+  invalid direct-write coverage.
 
 Tests can inspect generated SQL for the presence or absence of an owning
 predicate, CTE, aggregate, or association query when that is the public query
