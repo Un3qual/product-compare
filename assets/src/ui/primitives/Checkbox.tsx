@@ -16,25 +16,35 @@ const styles = stylex.create({
   },
   root: {
     alignItems: "center",
+    backgroundColor: "transparent",
+    borderWidth: 0,
+    boxShadow: {
+      ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 35%, transparent)",
+      default: null,
+    },
+    cursor: { ":disabled": "not-allowed", default: "pointer" },
+    display: "inline-flex",
+    flexShrink: 0,
+    height: tokens.controlHeight,
+    justifyContent: "center",
+    opacity: { ":disabled": 0.55, default: 1 },
+    padding: 0,
+    width: tokens.controlHeight,
+  },
+  mark: {
+    alignItems: "center",
     backgroundColor: tokens.surfaceRaised,
     borderColor: tokens.borderEmphasized,
     borderRadius: "var(--pc-radius-small)",
     borderStyle: "solid",
     borderWidth: "1px",
-    boxShadow: {
-      ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 35%, transparent)",
-      default: "0 1px 2px rgb(33 31 28 / 0.08)",
-    },
-    cursor: { ":disabled": "not-allowed", default: "pointer" },
+    boxShadow: "0 1px 2px rgb(33 31 28 / 0.08)",
     display: "inline-flex",
-    flexShrink: 0,
     height: "1.125rem",
     justifyContent: "center",
-    opacity: { ":disabled": 0.55, default: 1 },
-    padding: 0,
     width: "1.125rem",
   },
-  rootChecked: {
+  markChecked: {
     backgroundColor: tokens.actionAccent,
     borderColor: tokens.actionAccent,
   },
@@ -47,19 +57,21 @@ export type CheckboxProps = Omit<ComponentProps<typeof CheckboxPrimitive.Root>, 
 export function Checkbox({ className, ...checkboxProps }: CheckboxProps) {
   return (
     <CheckboxPrimitive.Root
-      className={(state) =>
-        stylex.props(styles.root, state.checked && styles.rootChecked, customClassName(className))
-          .className
-      }
+      className={stylex.props(styles.root, customClassName(className)).className}
       data-slot="checkbox"
+      render={(rootRenderProps, state) => (
+        <span {...rootRenderProps}>
+          <span {...stylex.props(styles.mark, state.checked && styles.markChecked)}>
+            <CheckboxPrimitive.Indicator
+              {...stylex.props(styles.indicator)}
+              data-slot="checkbox-indicator"
+            >
+              <CheckIcon aria-hidden="true" size={14} />
+            </CheckboxPrimitive.Indicator>
+          </span>
+        </span>
+      )}
       {...checkboxProps}
-    >
-      <CheckboxPrimitive.Indicator
-        {...stylex.props(styles.indicator)}
-        data-slot="checkbox-indicator"
-      >
-        <CheckIcon aria-hidden="true" size={14} />
-      </CheckboxPrimitive.Indicator>
-    </CheckboxPrimitive.Root>
+    />
   );
 }

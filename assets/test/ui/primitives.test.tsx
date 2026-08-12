@@ -5,6 +5,8 @@ import {
   Checkbox,
   Input,
   Label,
+  RadioGroup,
+  RadioGroupItem,
   Select,
   SelectContent,
   SelectItem,
@@ -51,6 +53,21 @@ test("Button defaults to native button semantics", () => {
   const button = screen.getByRole("button", { name: "Apply" });
 
   expect(button).toHaveAttribute("type", "button");
+});
+
+test("Button keeps type=button safety when rendering a native button", () => {
+  const onSubmit = vi.fn((event: React.FormEvent<HTMLFormElement>) => event.preventDefault());
+
+  render(
+    <form onSubmit={onSubmit}>
+      <Button render={<button />}>Preview</Button>
+    </form>,
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+  expect(screen.getByRole("button", { name: "Preview" })).toHaveAttribute("type", "button");
+  expect(onSubmit).not.toHaveBeenCalled();
 });
 
 test("Button preserves explicit submit semantics", () => {
@@ -146,6 +163,54 @@ test("Select exposes its value and updates its form value through accessible opt
   expect(new FormData(form).get("sort")).toBe("name_asc");
 });
 
+test("uncontrolled Select restores its default label and form value on native form reset", () => {
+  render(
+    <AppProviders>
+      <form aria-label="Resettable select">
+        <ExampleSelect
+          aria-label="Sort"
+          defaultValue="price_asc"
+          name="sort"
+          options={[
+            { label: "Price", value: "price_asc" },
+            { label: "Name", value: "name_asc" },
+          ]}
+        />
+      </form>
+    </AppProviders>,
+  );
+
+  const form = screen.getByRole("form", { name: "Resettable select" }) as HTMLFormElement;
+  const select = screen.getByRole("combobox", { name: "Sort" });
+
+  chooseSelectOption(select, "Name");
+  expect(select).toHaveTextContent("Name");
+  expect(new FormData(form).get("sort")).toBe("name_asc");
+
+  act(() => form.reset());
+
+  expect(select).toHaveTextContent("Price");
+  expect(new FormData(form).get("sort")).toBe("price_asc");
+});
+
+test("checkbox and radio controls use the shared interaction-target height", () => {
+  render(
+    <AppProviders>
+      <Checkbox aria-label="Searchable" />
+      <RadioGroup defaultValue="all">
+        <RadioGroupItem aria-label="All products" value="all" />
+      </RadioGroup>
+    </AppProviders>,
+  );
+
+  expect(getComputedStyle(screen.getByRole("checkbox", { name: "Searchable" })).height).toMatch(
+    /^var\(--/,
+  );
+  expect(getComputedStyle(screen.getByRole("radio", { name: "All products" })).height).toMatch(
+    /^var\(--/,
+  );
+});
+
 test("Select gives keyboard-moved options a visible highlighted background", async () => {
   render(
     <AppProviders>
@@ -235,18 +300,10 @@ test("Tabs register a stable Base UI composite list", () => {
     <MemoryRouter>
       <Tabs defaultValue="one">
         <TabsList aria-label="Views">
-          <TabsTrigger
-            nativeButton={false}
-            render={<a href="?view=one" />}
-            value="one"
-          >
+          <TabsTrigger nativeButton={false} render={<a href="?view=one" />} value="one">
             One
           </TabsTrigger>
-          <TabsTrigger
-            nativeButton={false}
-            render={<a href="?view=two" />}
-            value="two"
-          >
+          <TabsTrigger nativeButton={false} render={<a href="?view=two" />} value="two">
             Two
           </TabsTrigger>
         </TabsList>
@@ -256,10 +313,7 @@ test("Tabs register a stable Base UI composite list", () => {
     </MemoryRouter>,
   );
 
-  expect(screen.getByRole("tab", { name: "One" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  expect(screen.getByRole("tab", { name: "One" })).toHaveAttribute("aria-selected", "true");
 });
 
 function ExampleSelect({

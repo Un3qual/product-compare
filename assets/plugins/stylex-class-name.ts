@@ -20,6 +20,8 @@ function atomicClassPattern(classNamePrefix: string): RegExp {
   );
 }
 
+const mangledClassSelectorPattern = /\.(_[A-Za-z0-9]+)(?=[{:[.#])/g;
+
 function isStylexConstKey(source: string, classNameOffset: number): boolean {
   return /\bconstKey\s*:\s*["'`]$/.test(
     source.slice(Math.max(0, classNameOffset - 32), classNameOffset),
@@ -82,6 +84,10 @@ export function findStylexClassNames(source: string, classNamePrefix: string): S
   }
 
   return classNames;
+}
+
+export function findMangledStylexClassNames(source: string): Set<string> {
+  return new Set([...source.matchAll(mangledClassSelectorPattern)].map((match) => match[1]!));
 }
 
 export function rewriteStylexClassNames(

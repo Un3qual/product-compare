@@ -37,7 +37,7 @@
 - [ ] Add failing unit cases for invalid options, boundary-safe matching, base-36 to base-62 determinism, discovery-order independence, client/SSR parity, JavaScript/CSS/HTML rewriting, collision failure, and untouched variables/keyframes.
 - [ ] Run `cd assets && pnpm run test:unit -- test/build/stylex-mangle.test.ts`; confirm failure because the new build modules do not exist.
 - [ ] Implement the two focused build modules using official Vite/Rollup types and the approved direct hash encoding; delete bundle-local ordinal allocation, AST-wide reservation heuristics, dynamic dependency imports, and write-after-build mutation.
-- [ ] Configure Babel and Vite with one `__pcx_` production prefix and enable the mangler after the React/StyleX transform only for `vite build`.
+- [ ] Configure Babel and Vite with one alphanumeric `pcx` production prefix and enable the mangler after the React/StyleX transform only for `vite build`.
 - [ ] Add `check:stylex` to the production build chain and assert both client and SSR output contain shortened names and no unmangled atomic prefix.
 - [ ] Run the focused test, `pnpm run typecheck`, and `pnpm run build`; confirm the mangling and existing bundle contracts pass.
 - [ ] Commit the plugin milestone with the user-supplied file history preserved through the move.

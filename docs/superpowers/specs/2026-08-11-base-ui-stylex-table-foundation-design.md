@@ -104,7 +104,7 @@ Move the user-supplied prototype to focused build tooling:
 - `assets/stylex-plugin.ts` exports one production class prefix used by both
   the Babel plugin and mangler configuration.
 
-Production StyleX compilation uses the distinctive `__pcx_` prefix. The
+Production StyleX compilation uses the distinctive alphanumeric `pcx` prefix. The
 mangler converts each base-36 StyleX hash directly to a CSS-safe base-62 name
 with a one-character namespace, making the mapping injective and independent
 of discovery order or bundle contents. A class therefore receives the same
@@ -118,7 +118,7 @@ an authored-class collision. It does not write a persistent manifest or rely
 on one build running before another.
 
 The production bundle gate must prove that client and SSR output contain
-mangled StyleX classes, contain no unmangled `__pcx_` atomic class names, and
+mangled StyleX classes, contain no unmangled `pcx` atomic class names, and
 stay within the existing client bundle budget.
 
 ### Table contract

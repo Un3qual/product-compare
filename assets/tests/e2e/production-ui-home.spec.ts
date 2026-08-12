@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   edgeConnection,
+  browseDataWithTargetControls,
   expectNoUnhandledGraphQLOperations,
   homeDeal,
   homeResponders,
@@ -34,6 +35,7 @@ test.afterEach(({ page }) => {
 
 test("guest search and category entry preserve useful catalog navigation", async ({ page }) => {
   const responders = homeResponders();
+  responders.set("BrowseRouteQuery", { data: browseDataWithTargetControls() });
   await test.step("GraphQL dispatch rejects inherited object operation names", async () => {
     const inheritedOperationResponses = await Promise.all(
       ["constructor", "toString"].map((operationName) =>
@@ -61,6 +63,16 @@ test("guest search and category entry preserve useful catalog navigation", async
 
   await expect(page).toHaveURL(/\/products\?/);
   await expect(page.getByRole("heading", { name: "Browse products" })).toBeVisible();
+  const includeSubcategories = page.getByRole("checkbox", { name: "Include subcategories" });
+  const checkboxBox = await includeSubcategories.boundingBox();
+  expect(checkboxBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(checkboxBox?.width ?? 0).toBeGreaterThanOrEqual(44);
+
+  await page.getByRole("button", { name: "Advanced filters" }).click();
+  const anyFinish = page.getByRole("radio", { name: "Any" });
+  const radioBox = await anyFinish.boundingBox();
+  expect(radioBox?.height ?? 0).toBeGreaterThanOrEqual(44);
+  expect(radioBox?.width ?? 0).toBeGreaterThanOrEqual(44);
   expect(new URL(page.url()).searchParams.get("q")).toBe("precision kettle");
   expect(requests).toContainEqual({
     operationName: "BrowseRouteQuery",

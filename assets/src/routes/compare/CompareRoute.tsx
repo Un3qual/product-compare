@@ -451,6 +451,17 @@ function CompareSpecModeControls({
                 aria-current={item.isCurrent ? "page" : undefined}
                 href={item.path}
                 onClick={(event) => {
+                  if (
+                    event.defaultPrevented ||
+                    event.button !== 0 ||
+                    event.altKey ||
+                    event.ctrlKey ||
+                    event.metaKey ||
+                    event.shiftKey
+                  ) {
+                    return;
+                  }
+
                   event.preventDefault();
                   navigate(item.path);
                 }}

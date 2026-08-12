@@ -1,4 +1,5 @@
 import {
+  findMangledStylexClassNames,
   findStylexClassNames,
   mangleStylexClassName,
   rewriteStylexClassNames,
@@ -65,6 +66,14 @@ test("noncanonical and unrelated names are not treated as StyleX atomic classes"
   expect(mangleStylexClassName(`${PREFIX}01`, PREFIX)).toBeNull();
   expect(mangleStylexClassName(`${PREFIX}ABC`, PREFIX)).toBeNull();
   expect(mangleStylexClassName("product-card", PREFIX)).toBeNull();
+});
+
+test("mangled class discovery requires emitted CSS selectors in the reserved namespace", () => {
+  expect(
+    findMangledStylexClassNames(
+      'const _jsx = value; class="_a _A0 authored_name";._z9{color:red};before_a after',
+    ),
+  ).toEqual(new Set(["_z9"]));
 });
 
 test("the Vite plugin fails closed when its output namespace collides with authored CSS", () => {

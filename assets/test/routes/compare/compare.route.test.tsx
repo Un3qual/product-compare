@@ -3474,6 +3474,25 @@ test("compare route presents URL-driven specification modes as tabs", () => {
   );
 });
 
+test("compare specification tabs preserve modified-click browser navigation", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
+
+  renderCompareRoute();
+
+  const differencesTab = screen.getByRole("tab", { name: "Differences" });
+  differencesTab.setAttribute("target", "_blank");
+  const modifiedClick = new MouseEvent("click", {
+    bubbles: true,
+    button: 0,
+    cancelable: true,
+    ctrlKey: true,
+  });
+
+  act(() => differencesTab.dispatchEvent(modifiedClick));
+
+  expect(modifiedClick.defaultPrevented).toBe(false);
+});
+
 test("comparison matrix keeps its selected view inside a named workspace", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 

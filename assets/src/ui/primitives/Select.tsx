@@ -3,7 +3,15 @@ import type { SelectRootProps } from "@base-ui/react/select";
 import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
 import { CheckIcon, ChevronDownIcon } from "lucide-react";
-import type { ComponentProps } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+  type Ref,
+} from "react";
 import { tokens } from "../theme/tokens.stylex";
 import { customClassName } from "./utils.stylex";
 
@@ -115,7 +123,69 @@ const hidden = (status: string | undefined) => status === "starting" || status =
 export function Select<Value, Multiple extends boolean | undefined = false>(
   props: SelectRootProps<Value, Multiple>,
 ) {
-  return <SelectPrimitive.Root data-slot="select" {...props} />;
+  const {
+    defaultValue,
+    inputRef,
+    multiple,
+    onValueChange,
+    value: controlledValue,
+    ...rootProps
+  } = props;
+  type RootValue = SelectRootProps<Value, Multiple>["value"];
+  type ChangeHandler = NonNullable<SelectRootProps<Value, Multiple>["onValueChange"]>;
+  const controlled = controlledValue !== undefined;
+  const resetValue = useMemo(
+    () => (defaultValue ?? (multiple ? [] : null)) as RootValue,
+    [defaultValue, multiple],
+  );
+  const [uncontrolledValue, setUncontrolledValue] = useState<RootValue>(() => resetValue);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const mergedInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      hiddenInputRef.current = node;
+      assignRef(inputRef, node);
+    },
+    [inputRef],
+  );
+  const handleValueChange: ChangeHandler = (nextValue, eventDetails) => {
+    if (!controlled) {
+      setUncontrolledValue(nextValue as RootValue);
+    }
+
+    onValueChange?.(nextValue, eventDetails);
+  };
+
+  useEffect(() => {
+    const form = hiddenInputRef.current?.form;
+
+    if (!form || controlled) {
+      return;
+    }
+
+    const handleReset = () => setUncontrolledValue(resetValue);
+    form.addEventListener("reset", handleReset);
+
+    return () => form.removeEventListener("reset", handleReset);
+  }, [controlled, resetValue]);
+
+  return (
+    <SelectPrimitive.Root
+      data-slot="select"
+      inputRef={mergedInputRef}
+      multiple={multiple}
+      onValueChange={handleValueChange}
+      value={controlled ? controlledValue : uncontrolledValue}
+      {...rootProps}
+    />
+  );
+}
+
+function assignRef<Value>(ref: Ref<Value> | undefined, value: Value | null): void {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
 }
 
 export function SelectGroup(props: ComponentProps<typeof SelectPrimitive.Group>) {

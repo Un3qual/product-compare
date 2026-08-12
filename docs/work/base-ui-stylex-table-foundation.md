@@ -89,10 +89,14 @@ behavior and do not retain a permanent Radix fallback or bundle-order mapping.
   visual baselines.
 - 2026-08-11: Converted Attribution Ledger, Decision Summary, and Specification
   Matrix to TanStack Table 9.1.2 without introducing a generic table wrapper.
-- 2026-08-11: Final frontend verification passed 115 Vitest files and 1,532
+- 2026-08-11: Final frontend verification passed 115 Vitest files and 1,537
   tests, Relay validation, typecheck, lint, formatting, client/SSR builds,
-  StyleX constant/mangling checks, and the 215,004-byte gzip initial bundle
+  StyleX constant/mangling checks, and the 215,110-byte gzip initial bundle
   contract. All 19 Playwright tests passed, including accessibility, focus,
   reduced-motion, responsive geometry, and reviewed visual coverage.
+- 2026-08-11: Final code review hardened Linux filename casing, native form
+  reset and button-submit contracts, modified-click navigation, 44px checkbox
+  and radio targets, and positive mangled-selector evidence in both build
+  outputs. Focused regressions and the full frontend/browser gates passed.
 - 2026-08-11: Repository closeout passed `mix work_queue.validate` with four
   ready rows, backend formatting, 1,482 backend tests, and `git diff --check`.

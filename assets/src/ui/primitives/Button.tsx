@@ -1,7 +1,7 @@
 import { useRender } from "@base-ui/react";
 import * as stylex from "@stylexjs/stylex";
 import type { StyleXStyles } from "@stylexjs/stylex";
-import type { ComponentProps } from "react";
+import { isValidElement, type ComponentProps } from "react";
 import { tokens } from "../theme/tokens.stylex";
 import { customClassName } from "./utils.stylex";
 
@@ -87,6 +87,16 @@ const styles = stylex.create({
     paddingInline: 0,
     width: tokens.controlHeight,
   },
+  sizeIconLg: {
+    height: "3rem",
+    paddingInline: 0,
+    width: "3rem",
+  },
+  sizeIconSm: {
+    height: tokens.controlHeight,
+    paddingInline: 0,
+    width: tokens.controlHeight,
+  },
   sizeLg: { minHeight: "3rem", paddingInline: "1.1rem" },
   sizeSm: {
     fontSize: "0.82rem",
@@ -96,7 +106,7 @@ const styles = stylex.create({
 });
 
 export type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
-export type ButtonSize = "default" | "sm" | "lg" | "icon";
+export type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
 
 const variantStyles: Record<ButtonVariant, StyleXStyles> = {
   default: styles.default,
@@ -110,6 +120,8 @@ const variantStyles: Record<ButtonVariant, StyleXStyles> = {
 const sizeStyles: Record<ButtonSize, StyleXStyles> = {
   default: styles.sizeDefault,
   icon: styles.sizeIcon,
+  "icon-lg": styles.sizeIconLg,
+  "icon-sm": styles.sizeIconSm,
   lg: styles.sizeLg,
   sm: styles.sizeSm,
 };
@@ -128,9 +140,13 @@ export function Button({
   render,
   size = "default",
   style,
+  type,
   variant = "default",
   ...buttonProps
 }: ButtonProps) {
+  const rendersNativeButton =
+    render === undefined || (isValidElement(render) && render.type === "button");
+
   return useRender({
     defaultTagName: "button",
     props: {
@@ -145,7 +161,7 @@ export function Button({
       "data-size": size,
       "data-slot": "button",
       "data-variant": variant,
-      ...(render ? null : { type: "button" }),
+      ...(rendersNativeButton || type !== undefined ? { type: type ?? "button" } : null),
       ...buttonProps,
     },
     render,

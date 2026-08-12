@@ -21,24 +21,34 @@ const styles = stylex.create({
   item: {
     alignItems: "center",
     backgroundColor: "transparent",
-    borderColor: tokens.borderEmphasized,
-    borderRadius: "9999px",
-    borderStyle: "solid",
-    borderWidth: "1px",
+    borderWidth: 0,
     boxShadow: {
       ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 35%, transparent)",
-      default: "0 1px 2px rgb(33 31 28 / 0.08)",
+      default: null,
     },
     cursor: { ":disabled": "not-allowed", default: "pointer" },
     display: "inline-flex",
     flexShrink: 0,
-    height: "1.125rem",
+    height: tokens.controlHeight,
     justifyContent: "center",
     opacity: { ":disabled": 0.55, default: 1 },
     padding: 0,
+    width: tokens.controlHeight,
+  },
+  mark: {
+    alignItems: "center",
+    backgroundColor: tokens.surfaceRaised,
+    borderColor: tokens.borderEmphasized,
+    borderRadius: "9999px",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    boxShadow: "0 1px 2px rgb(33 31 28 / 0.08)",
+    display: "inline-flex",
+    height: "1.125rem",
+    justifyContent: "center",
     width: "1.125rem",
   },
-  itemChecked: { borderColor: tokens.actionAccent },
+  markChecked: { borderColor: tokens.actionAccent },
 });
 
 export function RadioGroup({
@@ -65,17 +75,19 @@ export function RadioGroupItem({
 }) {
   return (
     <RadioPrimitive.Root
-      className={(state) =>
-        stylex.props(styles.item, state.checked && styles.itemChecked, customClassName(className))
-          .className
-      }
+      className={stylex.props(styles.item, customClassName(className)).className}
       data-slot="radio-group-item"
+      render={(rootRenderProps, state) => (
+        <span {...rootRenderProps}>
+          <span {...stylex.props(styles.mark, state.checked && styles.markChecked)}>
+            <RadioPrimitive.Indicator
+              {...stylex.props(styles.indicator)}
+              data-slot="radio-group-indicator"
+            />
+          </span>
+        </span>
+      )}
       {...itemProps}
-    >
-      <RadioPrimitive.Indicator
-        {...stylex.props(styles.indicator)}
-        data-slot="radio-group-indicator"
-      />
-    </RadioPrimitive.Root>
+    />
   );
 }

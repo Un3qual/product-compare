@@ -1,7 +1,7 @@
 import { readFile, readdir } from "node:fs/promises";
 import { extname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { findStylexClassNames } from "../plugins/stylex-class-name.ts";
+import { findMangledStylexClassNames, findStylexClassNames } from "../plugins/stylex-class-name.ts";
 import { STYLEX_CLASS_NAME_PREFIX } from "../stylex-plugin.ts";
 
 const scriptDirectory = fileURLToPath(new URL(".", import.meta.url));
@@ -9,8 +9,16 @@ const distDirectory = resolve(scriptDirectory, "../dist");
 const textExtensions = new Set([".css", ".html", ".js", ".mjs"]);
 const failures: string[] = [];
 const outputContracts = {
-  client: { references: new Set<string>(), registrations: new Set<string>() },
-  ssr: { references: new Set<string>(), registrations: new Set<string>() },
+  client: {
+    mangledClasses: new Set<string>(),
+    references: new Set<string>(),
+    registrations: new Set<string>(),
+  },
+  ssr: {
+    mangledClasses: new Set<string>(),
+    references: new Set<string>(),
+    registrations: new Set<string>(),
+  },
 };
 const escapedPrefix = STYLEX_CLASS_NAME_PREFIX.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const stylexHash = `${escapedPrefix}(?:0|[1-9a-z][0-9a-z]*)`;
@@ -35,6 +43,10 @@ for (const entry of await readdir(distDirectory, {
     failures.push(path.slice(distDirectory.length + 1));
   }
 
+  for (const className of findMangledStylexClassNames(source)) {
+    output.mangledClasses.add(className);
+  }
+
   for (const match of source.matchAll(variablePattern)) {
     output.references.add(match[1]!);
   }
@@ -45,6 +57,10 @@ for (const entry of await readdir(distDirectory, {
 }
 
 for (const [label, output] of Object.entries(outputContracts)) {
+  if (output.mangledClasses.size === 0) {
+    failures.push(`${label}: no mangled StyleX atomic classes found`);
+  }
+
   const missing = [...output.references].filter((name) => !output.registrations.has(name));
 
   if (missing.length > 0) {
@@ -55,7 +71,7 @@ for (const [label, output] of Object.entries(outputContracts)) {
 if (failures.length > 0) {
   throw new Error(
     [
-      `StyleX class mangling left atomic classes with the production prefix "${STYLEX_CLASS_NAME_PREFIX}" in build output:`,
+      `StyleX class mangling contract failed for production prefix "${STYLEX_CLASS_NAME_PREFIX}":`,
       ...failures.map((file) => `- ${file}`),
     ].join("\n"),
   );
