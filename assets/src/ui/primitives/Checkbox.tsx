@@ -1,7 +1,7 @@
 import { Checkbox as CheckboxPrimitive } from "@base-ui/react/checkbox";
 import * as stylex from "@stylexjs/stylex";
 import { CheckIcon } from "lucide-react";
-import type { ComponentProps } from "react";
+import { useCallback, useEffect, useRef, useState, type ComponentProps, type Ref } from "react";
 import { tokens } from "../theme/tokens.stylex";
 import { customClassName } from "./utils.stylex";
 
@@ -22,12 +22,16 @@ const styles = stylex.create({
       ":focus-visible": "0 0 0 3px color-mix(in srgb, var(--pc-action-accent) 35%, transparent)",
       default: null,
     },
-    cursor: { ":disabled": "not-allowed", default: "pointer" },
+    cursor: {
+      ":disabled": "not-allowed",
+      ":where([aria-disabled=true])": "not-allowed",
+      default: "pointer",
+    },
     display: "inline-flex",
     flexShrink: 0,
     height: tokens.controlHeight,
     justifyContent: "center",
-    opacity: { ":disabled": 0.55, default: 1 },
+    opacity: { ":disabled": 0.55, ":where([aria-disabled=true])": 0.55, default: 1 },
     padding: 0,
     width: tokens.controlHeight,
   },
@@ -54,11 +58,54 @@ export type CheckboxProps = Omit<ComponentProps<typeof CheckboxPrimitive.Root>, 
   className?: string;
 };
 
-export function Checkbox({ className, ...checkboxProps }: CheckboxProps) {
+type CheckboxChangeHandler = NonNullable<CheckboxProps["onCheckedChange"]>;
+
+export function Checkbox({
+  checked: controlledChecked,
+  className,
+  defaultChecked = false,
+  inputRef,
+  onCheckedChange,
+  ...checkboxProps
+}: CheckboxProps) {
+  const controlled = controlledChecked !== undefined;
+  const [uncontrolledChecked, setUncontrolledChecked] = useState(defaultChecked);
+  const hiddenInputRef = useRef<HTMLInputElement>(null);
+  const mergedInputRef = useCallback(
+    (node: HTMLInputElement | null) => {
+      hiddenInputRef.current = node;
+      assignRef(inputRef, node);
+    },
+    [inputRef],
+  );
+  const handleCheckedChange: CheckboxChangeHandler = (nextChecked, eventDetails) => {
+    onCheckedChange?.(nextChecked, eventDetails);
+
+    if (!controlled && !eventDetails.isCanceled) {
+      setUncontrolledChecked(nextChecked);
+    }
+  };
+
+  useEffect(() => {
+    const form = hiddenInputRef.current?.form;
+
+    if (!form || controlled) {
+      return;
+    }
+
+    const handleReset = () => setUncontrolledChecked(defaultChecked);
+    form.addEventListener("reset", handleReset);
+
+    return () => form.removeEventListener("reset", handleReset);
+  }, [controlled, defaultChecked]);
+
   return (
     <CheckboxPrimitive.Root
+      checked={controlled ? controlledChecked : uncontrolledChecked}
       className={stylex.props(styles.root, customClassName(className)).className}
       data-slot="checkbox"
+      inputRef={mergedInputRef}
+      onCheckedChange={handleCheckedChange}
       render={(rootRenderProps, state) => (
         <span {...rootRenderProps}>
           <span {...stylex.props(styles.mark, state.checked && styles.markChecked)}>
@@ -74,4 +121,12 @@ export function Checkbox({ className, ...checkboxProps }: CheckboxProps) {
       {...checkboxProps}
     />
   );
+}
+
+function assignRef<Value>(ref: Ref<Value> | undefined, value: Value | null): void {
+  if (typeof ref === "function") {
+    ref(value);
+  } else if (ref) {
+    ref.current = value;
+  }
 }

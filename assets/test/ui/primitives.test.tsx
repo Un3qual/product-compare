@@ -193,6 +193,52 @@ test("uncontrolled Select restores its default label and form value on native fo
   expect(new FormData(form).get("sort")).toBe("price_asc");
 });
 
+test("uncontrolled Checkbox restores its visible and submitted default on native form reset", () => {
+  render(
+    <form aria-label="Resettable checkbox">
+      <Checkbox aria-label="Searchable" defaultChecked name="searchable" />
+    </form>,
+  );
+
+  const form = screen.getByRole("form", { name: "Resettable checkbox" }) as HTMLFormElement;
+  const checkbox = screen.getByRole("checkbox", { name: "Searchable" });
+
+  fireEvent.click(checkbox);
+  expect(checkbox).not.toBeChecked();
+  expect(new FormData(form).get("searchable")).toBeNull();
+
+  act(() => form.reset());
+
+  expect(checkbox).toBeChecked();
+  expect(new FormData(form).get("searchable")).toBe("on");
+});
+
+test("uncontrolled RadioGroup restores its visible and submitted default on native form reset", () => {
+  render(
+    <form aria-label="Resettable radio group">
+      <RadioGroup defaultValue="all" name="scope">
+        <RadioGroupItem aria-label="All products" value="all" />
+        <RadioGroupItem aria-label="Available products" value="available" />
+      </RadioGroup>
+    </form>,
+  );
+
+  const form = screen.getByRole("form", { name: "Resettable radio group" }) as HTMLFormElement;
+  const allProducts = screen.getByRole("radio", { name: "All products" });
+  const availableProducts = screen.getByRole("radio", { name: "Available products" });
+
+  fireEvent.click(availableProducts);
+  expect(allProducts).not.toBeChecked();
+  expect(availableProducts).toBeChecked();
+  expect(new FormData(form).get("scope")).toBe("available");
+
+  act(() => form.reset());
+
+  expect(allProducts).toBeChecked();
+  expect(availableProducts).not.toBeChecked();
+  expect(new FormData(form).get("scope")).toBe("all");
+});
+
 test("checkbox and radio controls use the shared interaction-target height", () => {
   render(
     <AppProviders>
@@ -209,6 +255,29 @@ test("checkbox and radio controls use the shared interaction-target height", () 
   expect(getComputedStyle(screen.getByRole("radio", { name: "All products" })).height).toMatch(
     /^var\(--/,
   );
+});
+
+test("disabled composed controls expose disabled visual state", () => {
+  render(
+    <>
+      <Button aria-disabled render={<a href="/products" />}>
+        Pending offer
+      </Button>
+      <Checkbox aria-label="Unavailable checkbox" disabled />
+      <RadioGroup defaultValue="unavailable">
+        <RadioGroupItem aria-label="Unavailable radio" disabled value="unavailable" />
+      </RadioGroup>
+    </>,
+  );
+
+  for (const control of [
+    screen.getByRole("link", { name: "Pending offer" }),
+    screen.getByRole("checkbox", { name: "Unavailable checkbox" }),
+    screen.getByRole("radio", { name: "Unavailable radio" }),
+  ]) {
+    expect(getComputedStyle(control).cursor).toBe("not-allowed");
+    expect(getComputedStyle(control).opacity).toBe("0.55");
+  }
 });
 
 test("Select gives keyboard-moved options a visible highlighted background", async () => {

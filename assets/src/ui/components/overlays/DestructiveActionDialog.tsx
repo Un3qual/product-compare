@@ -31,7 +31,6 @@ const styles = create({
     top: "50%",
     transform: "translate(-50%, -50%)",
     width: "calc(100vw - 2rem)",
-    zIndex: 21,
   },
   title: {
     fontSize: "1.35rem",
