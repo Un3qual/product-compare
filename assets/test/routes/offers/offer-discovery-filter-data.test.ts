@@ -185,24 +185,21 @@ test("buildOfferDiscoveryPaginationData does not mutate its input", () => {
   });
 });
 
-test("builds the default form reset key and active-filter summary without actions", () => {
+test("builds the default form reset key and readable offer scope without actions", () => {
   expect(getOfferDiscoveryFilterData(DEFAULT_FILTERS)).toEqual({
     clearMerchantFilterPath: null,
     formKey: JSON.stringify([null, null, true, 6, "default"]),
     productDetailsPath: null,
     showReset: false,
     scopeBadge: { label: "Active offers", tone: "positive" },
+    scopeDescription: "Showing active offers, sorted by Default order, 6 per page.",
+    scopeEyebrow: "Offer scope",
+    scopeTitle: "Choose a product",
     sortLabel: "Default order",
-    summaryItems: [
-      { label: "Product ID", value: "Not selected" },
-      { label: "Offer status", value: "Active offers only" },
-      { label: "Page size", value: "6" },
-      { label: "Sort", value: "Default order" },
-    ],
   });
 });
 
-test("orders selected-product, brand, merchant, and filter summaries with route actions", () => {
+test("projects selected-product identity and filter context with route actions", () => {
   expect(
     getOfferDiscoveryFilterData(
       {
@@ -226,19 +223,15 @@ test("orders selected-product, brand, merchant, and filter summaries with route 
     productDetailsPath: "/products/detail%20product%20%2F%202026",
     showReset: true,
     scopeBadge: { label: "All offers", tone: "neutral" },
+    scopeDescription:
+      "Showing all offers, sorted by Price: low to high, 12 per page. Merchant filter applied.",
+    scopeEyebrow: "Example Brand",
+    scopeTitle: "Detail Product",
     sortLabel: "Price: low to high",
-    summaryItems: [
-      { label: "Product", value: "Detail Product" },
-      { label: "Brand", value: "Example Brand" },
-      { label: "Merchant ID", value: "merchant-1" },
-      { label: "Offer status", value: "All offers included" },
-      { label: "Page size", value: "12" },
-      { label: "Sort", value: "Price: low to high" },
-    ],
   });
 });
 
-test("normalizes unknown sorts before building summaries, form keys, and merchant-clear paths", () => {
+test("normalizes unknown sorts before building scope, form keys, and merchant-clear paths", () => {
   const data = getOfferDiscoveryFilterData(
     {
       ...DEFAULT_FILTERS,
@@ -256,13 +249,11 @@ test("normalizes unknown sorts before building summaries, form keys, and merchan
 
   expect(data.sortLabel).toBe("Default order");
   expect(data.formKey).toBe(JSON.stringify(["product-1", "merchant-1", true, 6, "default"]));
-  expect(data.summaryItems).toEqual([
-    { label: "Product", value: "Detail Product" },
-    { label: "Merchant ID", value: "merchant-1" },
-    { label: "Offer status", value: "Active offers only" },
-    { label: "Page size", value: "6" },
-    { label: "Sort", value: "Default order" },
-  ]);
+  expect(data.scopeDescription).toBe(
+    "Showing active offers, sorted by Default order, 6 per page. Merchant filter applied.",
+  );
+  expect(data.scopeEyebrow).toBe("Offer scope");
+  expect(data.scopeTitle).toBe("Detail Product");
   expect(data.clearMerchantFilterPath).toBe("/offers?productId=product-1&activeOnly=true&first=6");
   expect(data.showReset).toBe(true);
 });

@@ -1,5 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { Button } from "$ui/primitives/Button";
+import { tokens } from "$ui/theme/tokens.stylex";
 import {
   activeVisibleMerchant,
   visibleMerchants,
@@ -11,8 +13,30 @@ import { offerDiscoveryPath } from "./paths";
 
 const styles = create({
   filterSection: {
+    borderBlockEndColor: tokens.borderQuiet,
+    borderBlockEndStyle: "solid",
+    borderBlockEndWidth: "1px",
     display: "grid",
-    gap: "0.75rem",
+    gap: "0.6rem",
+    paddingBlockEnd: "1rem",
+  },
+  heading: {
+    fontSize: "0.82rem",
+    letterSpacing: "0.04em",
+    margin: 0,
+    textTransform: "uppercase",
+  },
+  activeSummary: {
+    color: tokens.textSecondary,
+    margin: 0,
+  },
+  filterList: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.5rem",
+    listStyle: "none",
+    margin: 0,
+    padding: 0,
   },
 });
 
@@ -32,7 +56,12 @@ export function VisibleMerchantFilters({
   }
 
   return (
-    <section aria-label="Merchant filters on this page" {...props(styles.filterSection)}>
+    <section
+      aria-label="Merchant filters on this page"
+      data-slot="offer-merchant-filters"
+      {...props(styles.filterSection)}
+    >
+      <h2 {...props(styles.heading)}>Merchants on this page</h2>
       <ActiveMerchantFilterSummary merchant={activeMerchant} />
       <VisibleMerchantFilterLinks filters={filters} merchants={filterableMerchants} />
     </section>
@@ -40,7 +69,7 @@ export function VisibleMerchantFilters({
 }
 
 function ActiveMerchantFilterSummary({ merchant }: { merchant: VisibleMerchant | null }) {
-  return merchant ? <p>{`Filtered to ${merchant.name}`}</p> : null;
+  return merchant ? <p {...props(styles.activeSummary)}>{`Filtered to ${merchant.name}`}</p> : null;
 }
 
 function VisibleMerchantFilterLinks({
@@ -55,12 +84,21 @@ function VisibleMerchantFilterLinks({
   }
 
   return (
-    <ul>
+    <ul {...props(styles.filterList)}>
       {merchants.map((merchant) => (
         <li key={merchant.id}>
-          <Link to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}>
-            {`Filter to ${merchant.name}`}
-          </Link>
+          <Button
+            render={
+              <Link
+                aria-label={`Filter to ${merchant.name}`}
+                to={offerDiscoveryPath({ ...filters, merchantId: merchant.id }, null)}
+              />
+            }
+            size="sm"
+            variant="outline"
+          >
+            {merchant.name}
+          </Button>
         </li>
       ))}
     </ul>

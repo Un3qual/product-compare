@@ -1,10 +1,10 @@
+import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { OfferDiscoveryList_connection$key } from "$generated/OfferDiscoveryList_connection.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
-import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import { StatusBadge } from "$ui/components/status/StatusBadge";
+import { tokens } from "$ui/theme/tokens.stylex";
 import { formatCouponAvailabilityCount, formatOfferCount } from "../offer-formatting";
 import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "../offer-snapshot";
 import {
@@ -17,10 +17,7 @@ import {
   type OfferConnection,
   type RenderableOffer,
 } from "./offer-discovery-data";
-import {
-  buildOfferDiscoveryPaginationData,
-  getOfferDiscoveryFilterData,
-} from "./offer-discovery-filter-data";
+import { buildOfferDiscoveryPaginationData } from "./offer-discovery-filter-data";
 import type { OfferDiscoveryFilters, OfferDiscoverySort } from "./offer-discovery-filter-data";
 import { VisibleMerchantFilters } from "./VisibleMerchantFilters";
 import { OfferDiscoveryCard } from "./OfferDiscoveryCard";
@@ -58,6 +55,44 @@ const offerDiscoveryListFragment = graphql`
   }
 `;
 
+const styles = create({
+  results: {
+    display: "grid",
+    gap: "1.25rem",
+    paddingBlockStart: "1.25rem",
+  },
+  overview: {
+    borderBlockColor: tokens.borderQuiet,
+    borderBlockStyle: "solid",
+    borderBlockWidth: "1px",
+    display: "grid",
+    gap: "0.65rem",
+    paddingBlock: "1rem",
+  },
+  overviewTitle: {
+    fontSize: "0.82rem",
+    fontWeight: 700,
+    letterSpacing: "0.04em",
+    margin: 0,
+    textTransform: "uppercase",
+  },
+  overviewValue: {
+    color: tokens.pricePositive,
+    fontSize: {
+      default: "2rem",
+      "@media (max-width: 42rem)": "1.65rem",
+    },
+    fontWeight: 750,
+    letterSpacing: "-0.035em",
+    lineHeight: 1.1,
+  },
+  overviewContext: {
+    color: tokens.textSecondary,
+    lineHeight: 1.55,
+    margin: 0,
+  },
+});
+
 export function OfferDiscoveryList({
   connection,
   filters,
@@ -69,24 +104,21 @@ export function OfferDiscoveryList({
   const renderableOfferRows = renderableOffers(data);
   const canComparePrices = priceSortUsesSingleCurrency(renderableOfferRows);
   const offers = sortedRenderableOffers(renderableOfferRows, filters.sort, canComparePrices);
-  const { scopeBadge } = getOfferDiscoveryFilterData(filters);
-
   return (
-    <>
-      <StatusBadge tone={scopeBadge.tone}>{scopeBadge.label}</StatusBadge>
+    <div {...props(styles.results)}>
       {offers.length === 0 ? (
         <FeedbackState kind="empty" title="No offers match these filters." />
       ) : (
         <>
-          <VisibleOfferSnapshot
+          <VisibleOfferOverview
             summary={buildOfferSnapshotSummary(offers, OFFER_SNAPSHOT_SELECTORS)}
           />
+          <VisibleMerchantFilters filters={filters} offers={offers} />
           <OfferDataList canComparePrices={canComparePrices} offers={offers} sort={filters.sort} />
         </>
       )}
-      <VisibleMerchantFilters filters={filters} offers={offers} />
       <OfferPagination connection={data} filters={filters} />
-    </>
+    </div>
   );
 }
 
@@ -113,20 +145,30 @@ function OfferDataList({
   );
 }
 
-function VisibleOfferSnapshot({ summary }: { summary: OfferSnapshotSummary<RenderableOffer> }) {
+function VisibleOfferOverview({ summary }: { summary: OfferSnapshotSummary<RenderableOffer> }) {
+  const visibleOfferLabel = `${summary.visibleOfferCount} visible ${
+    summary.visibleOfferCount === 1 ? "offer" : "offers"
+  }.`;
+  const missingPriceLabel = `${formatOfferCount(
+    summary.missingPriceCount,
+  )} without a current price.`;
+
   return (
-    <SummaryStrip
-      items={[
-        { label: "Visible offers on this page", value: summary.visibleOfferCount },
-        { label: "Lowest visible price", value: visibleLowestPriceLabel(summary) },
-        {
-          label: "Visible coupon availability",
-          value: formatCouponAvailabilityCount(summary.couponAvailabilityCount),
-        },
-        { label: "Missing latest price", value: formatOfferCount(summary.missingPriceCount) },
-      ]}
-      label="Visible offer snapshot"
-    />
+    <section
+      aria-label="Offer price overview"
+      data-slot="offer-price-overview"
+      {...props(styles.overview)}
+    >
+      <h2 {...props(styles.overviewTitle)}>Best visible price</h2>
+      <strong data-slot="offer-overview-primary" {...props(styles.overviewValue)}>
+        {visibleLowestPriceLabel(summary)}
+      </strong>
+      <p {...props(styles.overviewContext)}>
+        {`${visibleOfferLabel} ${formatCouponAvailabilityCount(
+          summary.couponAvailabilityCount,
+        )}. ${missingPriceLabel}`}
+      </p>
+    </section>
   );
 }
 

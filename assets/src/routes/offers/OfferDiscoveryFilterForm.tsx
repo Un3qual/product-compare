@@ -1,8 +1,10 @@
-import { Fragment } from "react";
+import { useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
+import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { Checkbox } from "$ui/primitives/Checkbox";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import {
   Select,
   SelectContent,
@@ -25,7 +27,7 @@ export type { OfferDiscoveryProductContext } from "./offer-discovery-filter-data
 const styles = create({
   form: {
     display: "grid",
-    gap: "0.85rem",
+    gap: "1rem",
     gridTemplateColumns: "minmax(0, 1fr)",
   },
   summary: {
@@ -33,17 +35,35 @@ const styles = create({
     borderBlockEndStyle: "solid",
     borderBlockEndWidth: "1px",
     display: "grid",
-    gap: "0.75rem",
+    gap: "0.8rem",
     paddingBlockEnd: "1rem",
   },
-  summaryList: {
+  summaryHeader: {
+    alignItems: "start",
+    display: "flex",
+    gap: "1rem",
+    justifyContent: "space-between",
+  },
+  summaryIdentity: {
     display: "grid",
-    gap: "0.5rem 1.5rem",
-    gridTemplateColumns: "max-content minmax(0, 1fr)",
+    gap: "0.25rem",
+  },
+  eyebrow: {
+    color: tokens.textSecondary,
+    fontSize: "0.75rem",
+    fontWeight: 700,
+    letterSpacing: "0.08em",
+    margin: 0,
+    textTransform: "uppercase",
+  },
+  summaryTitle: {
+    fontSize: "1.35rem",
+    letterSpacing: "-0.025em",
     margin: 0,
   },
-  summaryValue: {
+  summaryDescription: {
     color: tokens.textSecondary,
+    lineHeight: 1.5,
     margin: 0,
   },
   actions: {
@@ -52,9 +72,30 @@ const styles = create({
     flexWrap: "wrap",
     gap: "1rem",
   },
+  advanced: {
+    borderBlockStartColor: tokens.borderQuiet,
+    borderBlockStartStyle: "solid",
+    borderBlockStartWidth: "1px",
+    paddingBlockStart: "0.25rem",
+  },
+  disclosureTrigger: {
+    color: tokens.textSecondary,
+    fontSize: "0.85rem",
+    fontWeight: 700,
+    minHeight: tokens.controlHeight,
+  },
+  advancedFields: {
+    display: "grid",
+    gap: "0.85rem",
+    paddingBlock: "0.5rem 0.25rem",
+  },
+  advancedFieldsClosed: {
+    display: "none",
+  },
 });
 
 export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryFilters }) {
+  const [advancedOpen, setAdvancedOpen] = useState(false);
   const { formKey } = getOfferDiscoveryFilterData(filters);
 
   return (
@@ -65,24 +106,6 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
       method="get"
       {...props(styles.form)}
     >
-      <label>
-        Product ID
-        <Input
-          autoComplete="off"
-          defaultValue={filters.productId ?? ""}
-          name="productId"
-          type="text"
-        />
-      </label>
-      <label>
-        Merchant ID
-        <Input
-          autoComplete="off"
-          defaultValue={filters.merchantId ?? ""}
-          name="merchantId"
-          type="text"
-        />
-      </label>
       <label>
         <Checkbox defaultChecked={!filters.activeOnly} name="activeOnly" value="false" />
         Include inactive offers
@@ -112,6 +135,33 @@ export function OfferDiscoveryFilterForm({ filters }: { filters: OfferDiscoveryF
           </SelectContent>
         </Select>
       </label>
+      <Collapsible onOpenChange={setAdvancedOpen} open={advancedOpen} style={styles.advanced}>
+        <CollapsibleTrigger style={styles.disclosureTrigger}>Advanced filters</CollapsibleTrigger>
+        <CollapsibleContent
+          keepMounted
+          hidden={!advancedOpen}
+          style={advancedOpen ? styles.advancedFields : styles.advancedFieldsClosed}
+        >
+          <label>
+            Product ID
+            <Input
+              autoComplete="off"
+              defaultValue={filters.productId ?? ""}
+              name="productId"
+              type="text"
+            />
+          </label>
+          <label>
+            Merchant ID
+            <Input
+              autoComplete="off"
+              defaultValue={filters.merchantId ?? ""}
+              name="merchantId"
+              type="text"
+            />
+          </label>
+        </CollapsibleContent>
+      </Collapsible>
       <Button type="submit">Apply filters</Button>
     </form>
   );
@@ -127,15 +177,15 @@ export function OfferDiscoveryFilterSummary({
   const filterData = getOfferDiscoveryFilterData(filters, selectedProduct);
 
   return (
-    <section aria-label="Active offer filters" {...props(styles.summary)}>
-      <dl {...props(styles.summaryList)}>
-        {filterData.summaryItems.map(({ label, value }) => (
-          <Fragment key={label}>
-            <dt>{label}</dt>
-            <dd {...props(styles.summaryValue)}>{value}</dd>
-          </Fragment>
-        ))}
-      </dl>
+    <section aria-label="Active offer filters" data-slot="offer-scope" {...props(styles.summary)}>
+      <header {...props(styles.summaryHeader)}>
+        <div {...props(styles.summaryIdentity)}>
+          <p {...props(styles.eyebrow)}>{filterData.scopeEyebrow}</p>
+          <h2 {...props(styles.summaryTitle)}>{filterData.scopeTitle}</h2>
+        </div>
+        <StatusBadge tone={filterData.scopeBadge.tone}>{filterData.scopeBadge.label}</StatusBadge>
+      </header>
+      <p {...props(styles.summaryDescription)}>{filterData.scopeDescription}</p>
       <div {...props(styles.actions)}>
         {filterData.productDetailsPath ? (
           <Link to={filterData.productDetailsPath}>View product details</Link>

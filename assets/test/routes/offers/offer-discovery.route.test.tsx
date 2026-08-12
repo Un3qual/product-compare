@@ -108,7 +108,7 @@ beforeEach(() => {
   mockedUsePreloadedQuery.mockReturnValue(buildOfferDiscoveryData());
 });
 
-test("offer card directly renders tracked action, observations, price history, and coupon validity", () => {
+test("offer card leads with the merchant and discloses supporting offer evidence on demand", () => {
   const offer = buildOfferDiscoveryData().merchantProducts.edges[0]?.node;
 
   if (!offer) {
@@ -121,8 +121,9 @@ test("offer card directly renders tracked action, observations, price history, a
     </MemoryRouter>,
   );
 
-  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
-  expect(screen.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
+  expect(screen.getByRole("heading", { name: "Acme Market" })).toBeInTheDocument();
+  expect(screen.getByText("Offer for Detail Product")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Visit Acme Market" })).toHaveAttribute(
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
@@ -131,6 +132,11 @@ test("offer card directly renders tracked action, observations, price history, a
   expect(screen.getByText("2026-06-02", { selector: "time" }).parentElement).toHaveTextContent(
     "Offer checked 2026-06-02",
   );
+  expect(screen.queryByText("2026-05-30", { selector: "time" })).not.toBeInTheDocument();
+  expect(screen.queryByText("SAVE20")).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Offer details for Acme Market" }));
+
   expect(screen.getByText("2026-05-30", { selector: "time" })).toBeVisible();
   expect(screen.getByText("189.99 USD")).toBeVisible();
   expect(screen.getByText("SAVE20")).toBeVisible();
@@ -182,10 +188,10 @@ test("offer discovery summarizes missing product filters without reset actions",
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("Not selected")).toBeVisible();
-  expect(within(filterSummary).getByText("Sort")).toBeVisible();
-  expect(within(filterSummary).getByText("Default order")).toBeVisible();
+  expect(within(filterSummary).getByRole("heading", { name: "Choose a product" })).toBeVisible();
+  expect(
+    within(filterSummary).getByText("Showing active offers, sorted by Default order, 6 per page."),
+  ).toBeVisible();
   expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
   expect(
     within(filterSummary).queryByRole("link", { name: "Clear merchant filter" }),
@@ -195,7 +201,7 @@ test("offer discovery summarizes missing product filters without reset actions",
   ).not.toBeInTheDocument();
 });
 
-test("offer discovery renders filter controls with existing filter values", () => {
+test("offer discovery keeps technical filter ids editable behind progressive disclosure", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 12,
@@ -208,20 +214,36 @@ test("offer discovery renders filter controls with existing filter values", () =
   renderOfferDiscoveryRoute();
 
   expect(screen.getByRole("region", { name: "Offer results" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Offer controls" })).toBeInTheDocument();
+  expect(screen.getByRole("complementary", { name: "Refine offers" })).toBeInTheDocument();
 
-  const filterForm = screen.getByRole("form", { name: "Offer discovery filters" });
+  const filterForm = screen.getByRole("form", {
+    name: "Offer discovery filters",
+  }) as HTMLFormElement;
 
   expect(filterForm).toHaveAttribute("action", "/offers");
   expect(filterForm).toHaveAttribute("method", "get");
+  const productIdInput = filterForm.querySelector<HTMLInputElement>('input[name="productId"]');
+  const merchantIdInput = filterForm.querySelector<HTMLInputElement>('input[name="merchantId"]');
+
+  expect(screen.queryByRole("textbox", { name: "Product ID" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("textbox", { name: "Merchant ID" })).not.toBeInTheDocument();
+  expect(productIdInput).not.toBeVisible();
+  expect(merchantIdInput).not.toBeVisible();
+  expect(new FormData(filterForm).get("productId")).toBe("UHJvZHVjdDoxMjM=");
+  expect(new FormData(filterForm).get("merchantId")).toBe("TWVyY2hhbnQ6NDU2");
+
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toBeVisible();
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
+  expect(screen.getByRole("textbox", { name: "Merchant ID" })).toBeVisible();
   expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("TWVyY2hhbnQ6NDU2");
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(12);
   expect(screen.getByRole("checkbox", { name: "Include inactive offers" })).toBeChecked();
   expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("price_desc");
 });
 
-test("offer discovery summarizes active filters", () => {
+test("offer discovery presents one product scope instead of a filter definition dump", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData({
       first: 12,
@@ -235,9 +257,9 @@ test("offer discovery summarizes active filters", () => {
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product")).toBeVisible();
-  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
-  expect(within(filterSummary).getByText("Brand")).toBeVisible();
+  expect(
+    within(filterSummary).getByRole("heading", { level: 2, name: "Detail Product" }),
+  ).toBeVisible();
   expect(within(filterSummary).getByText("Example Brand")).toBeVisible();
   expect(within(filterSummary).getByRole("link", { name: "View product details" })).toHaveAttribute(
     "href",
@@ -245,14 +267,16 @@ test("offer discovery summarizes active filters", () => {
   );
   expect(within(filterSummary).queryByText("Product ID")).not.toBeInTheDocument();
   expect(within(filterSummary).queryByText("UHJvZHVjdDoxMjM=")).not.toBeInTheDocument();
-  expect(within(filterSummary).getByText("Merchant ID")).toBeVisible();
-  expect(within(filterSummary).getByText("TWVyY2hhbnQ6NDU2")).toBeVisible();
-  expect(within(filterSummary).getByText("Offer status")).toBeVisible();
-  expect(within(filterSummary).getByText("All offers included")).toBeVisible();
-  expect(within(filterSummary).getByText("Page size")).toBeVisible();
-  expect(within(filterSummary).getByText("12")).toBeVisible();
-  expect(within(filterSummary).getByText("Sort")).toBeVisible();
-  expect(within(filterSummary).getByText("Merchant name")).toBeVisible();
+  expect(within(filterSummary).queryByText("Merchant ID")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("TWVyY2hhbnQ6NDU2")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("Offer status")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("Page size")).not.toBeInTheDocument();
+  expect(within(filterSummary).queryByText("Sort")).not.toBeInTheDocument();
+  expect(
+    within(filterSummary).getByText(
+      "Showing all offers, sorted by Merchant name, 12 per page. Merchant filter applied.",
+    ),
+  ).toBeVisible();
 });
 
 test("offer discovery omits merchant summary actions when no merchant filter is active", () => {
@@ -316,6 +340,8 @@ test("offer discovery refreshes uncontrolled filter controls when filters change
     </MemoryRouter>,
   );
 
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
   expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDo5OTk=");
   expect(screen.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("TWVyY2hhbnQ6NDU2");
   expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(24);
@@ -330,14 +356,15 @@ test("offer discovery renders ready offer rows", () => {
   expect(screen.getByRole("region", { name: "Offers" })).toBeInTheDocument();
   expect(screen.getByText("Active offers")).toBeVisible();
 
-  const offer = screen.getByRole("heading", { name: "Detail Product" }).closest("li");
+  const offer = screen.getByRole("heading", { name: "Acme Market" }).closest("li");
 
   expect(offer).not.toBeNull();
 
   const offerContent = within(offer as HTMLElement);
 
-  expect(offerContent.getByRole("heading", { name: "Detail Product" })).toBeVisible();
-  expect(offerContent.getByRole("link", { name: "Acme Market" })).toHaveAttribute(
+  expect(offerContent.getByRole("heading", { name: "Acme Market" })).toBeVisible();
+  expect(offerContent.getByText("Offer for Detail Product")).toBeVisible();
+  expect(offerContent.getByRole("link", { name: "Visit Acme Market" })).toHaveAttribute(
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
@@ -346,12 +373,16 @@ test("offer discovery renders ready offer rows", () => {
   expect(offerContent.getByText("199.99 USD")).toBeVisible();
   const offerCheckedAt = offerContent.getByText("2026-06-02", { selector: "time" });
   const priceObservedAt = offerContent.getByText("2026-06-01", { selector: "time" });
-  const couponValidTo = offerContent.getByText("2026-06-30", { selector: "time" });
-
   expect(offerCheckedAt).toHaveAttribute("datetime", "2026-06-02T12:00:00Z");
   expect(offerCheckedAt.parentElement).toHaveTextContent("Offer checked 2026-06-02");
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
   expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
+  expect(offerContent.queryByText("SAVE20")).not.toBeInTheDocument();
+
+  fireEvent.click(offerContent.getByRole("button", { name: "Offer details for Acme Market" }));
+
+  const couponValidTo = offerContent.getByText("2026-06-30", { selector: "time" });
+
   expect(offerContent.getByText("SAVE20")).toBeVisible();
   expect(offerContent.getByText("20.00 USD")).toBeVisible();
   expect(couponValidTo).toHaveAttribute("datetime", "2026-06-30T23:59:59Z");
@@ -400,12 +431,13 @@ test("offer discovery omits unsafe observation and coupon validity claims", () =
 
   renderOfferDiscoveryRoute();
 
-  const offer = screen.getByRole("heading", { name: "Detail Product" }).closest("li");
+  const offer = screen.getByRole("heading", { name: "Acme Market" }).closest("li");
 
   expect(offer).not.toBeNull();
   const offerContent = within(offer as HTMLElement);
 
   expect(offerContent.getByText("199.99 USD")).toBeVisible();
+  fireEvent.click(offerContent.getByRole("button", { name: "Offer details for Acme Market" }));
   expect(offerContent.getByText("SAVE20")).toBeVisible();
   expect(offerContent.queryByText(/^Offer checked/)).not.toBeInTheDocument();
   expect(offerContent.queryByText(/^Price observed/)).not.toBeInTheDocument();
@@ -448,7 +480,7 @@ test("offer discovery keeps offer actions when merchant metadata is unavailable"
 test("offer discovery tracks merchant clicks with only the merchant product ID", () => {
   renderOfferDiscoveryRoute();
 
-  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+  fireEvent.click(screen.getByRole("link", { name: "Visit Acme Market" }));
 
   expect(commitCommerceClickMock).toHaveBeenCalledWith(
     expect.objectContaining({
@@ -498,7 +530,7 @@ test("offer discovery blocks pending tracked merchant action re-clicks", () => {
 
   renderOfferDiscoveryRoute();
 
-  const merchantLink = screen.getByRole("link", { name: "Acme Market" });
+  const merchantLink = screen.getByRole("link", { name: "Visit Acme Market" });
   const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
 
   expect(merchantLink).toHaveAttribute("aria-disabled", "true");
@@ -526,7 +558,7 @@ test("offer discovery keeps active All offers rows on tracked merchant actions",
 
   renderOfferDiscoveryRoute();
 
-  const merchantLink = screen.getByRole("link", { name: "Active Market" });
+  const merchantLink = screen.getByRole("link", { name: "Visit Active Market" });
 
   expect(screen.getByText("All offers")).toBeVisible();
   expect(merchantLink).toHaveAttribute(
@@ -564,7 +596,7 @@ test("offer discovery renders inactive All offers rows as safe direct merchant l
 
   renderOfferDiscoveryRoute();
 
-  const merchantLink = screen.getByRole("link", { name: "Inactive Market" });
+  const merchantLink = screen.getByRole("link", { name: "Visit Inactive Market" });
 
   expect(screen.getByText("All offers")).toBeVisible();
   expect(screen.getByText("Inactive")).toBeVisible();
@@ -578,7 +610,7 @@ test("offer discovery renders inactive All offers rows as safe direct merchant l
 
 test("offer discovery renders a route error when a tracked redirect is cross-origin", () => {
   renderOfferDiscoveryRoute();
-  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+  fireEvent.click(screen.getByRole("link", { name: "Visit Acme Market" }));
 
   const onCompleted = commitCommerceClickMock.mock.calls[0]?.[0]?.onCompleted;
 
@@ -619,7 +651,7 @@ test("offer discovery renders tracked click errors without nested paragraph mark
   });
 
   renderOfferDiscoveryRoute();
-  fireEvent.click(screen.getByRole("link", { name: "Acme Market" }));
+  fireEvent.click(screen.getByRole("link", { name: "Visit Acme Market" }));
 
   const alert = screen.getByRole("alert");
 
@@ -655,7 +687,7 @@ test.each([
   expect(screen.getByText("No offers match these filters.")).toBeVisible();
   expect(screen.queryByRole("link", { name: "Unsafe Market" })).not.toBeInTheDocument();
   expect(screen.queryByRole("link", { name: "Filter to Unsafe Market" })).not.toBeInTheDocument();
-  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Offer price overview" })).not.toBeInTheDocument();
 });
 
 test("offer discovery exposes row merchant filter actions that preserve filters and drop cursors", () => {
@@ -821,9 +853,9 @@ test("offer discovery sorts visible offers by ascending price and labels the fir
 
   renderOfferDiscoveryRoute();
 
-  expect(offerHeadings()).toEqual(["Budget Product", "Expensive Product", "No Price Product"]);
+  expect(offerHeadings()).toEqual(["Alpha Market", "Zephyr Market", "Middle Market"]);
 
-  const bestOffer = screen.getByRole("heading", { name: "Budget Product" }).closest("li");
+  const bestOffer = screen.getByRole("heading", { name: "Alpha Market" }).closest("li");
 
   expect(bestOffer).not.toBeNull();
   expect(within(bestOffer as HTMLElement).getByText("Best price on this page")).toBeVisible();
@@ -855,7 +887,7 @@ test("offer discovery does not price-sort or label mixed-currency pages", () => 
 
   renderOfferDiscoveryRoute();
 
-  expect(offerHeadings()).toEqual(["USD Product", "EUR Product"]);
+  expect(offerHeadings()).toEqual(["USD Market", "Euro Market"]);
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
   expect(screen.queryByText("Highest price on this page")).not.toBeInTheDocument();
 });
@@ -883,7 +915,7 @@ test("offer discovery sorts visible offers by descending price", () => {
 
   renderOfferDiscoveryRoute();
 
-  expect(offerHeadings()).toEqual(["Expensive Product", "Budget Product"]);
+  expect(offerHeadings()).toEqual(["Zephyr Market", "Alpha Market"]);
   expect(screen.getByText("Highest price on this page")).toBeVisible();
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
 });
@@ -909,7 +941,7 @@ test("offer discovery sorts visible offers by merchant name without price labels
 
   renderOfferDiscoveryRoute();
 
-  expect(offerHeadings()).toEqual(["Alpha Product", "Zephyr Product"]);
+  expect(offerHeadings()).toEqual(["Alpha Market", "Zephyr Market"]);
   expect(screen.queryByText("Best price on this page")).not.toBeInTheDocument();
 });
 
@@ -960,7 +992,7 @@ test("offer discovery uses product merchant ordering rather than the environment
   }
 });
 
-test("offer discovery summarizes the visible single-currency offer page", () => {
+test("offer discovery presents one primary price with concise page coverage", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({
       offers: [
@@ -1008,23 +1040,21 @@ test("offer discovery summarizes the visible single-currency offer page", () => 
 
   renderOfferDiscoveryRoute();
 
-  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+  const snapshot = screen.getByRole("region", { name: "Offer price overview" });
   const offersList = screen.getByRole("list", { name: "Offers" });
 
   expect(
-    within(snapshot).getByRole("heading", { level: 2, name: "Visible offer snapshot" }),
+    within(snapshot).getByRole("heading", { level: 2, name: "Best visible price" }),
   ).toBeVisible();
   expect(
     snapshot.compareDocumentPosition(offersList) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
-  expect(within(snapshot).getByText("Visible offers on this page")).toBeVisible();
-  expect(within(snapshot).getByText("4")).toBeVisible();
-  expect(within(snapshot).getByText("Lowest visible price")).toBeVisible();
   expect(within(snapshot).getByText("129.00 USD")).toBeVisible();
-  expect(within(snapshot).getByText("Visible coupon availability")).toBeVisible();
-  expect(within(snapshot).getByText("1 offer with coupons")).toBeVisible();
-  expect(within(snapshot).getByText("Missing latest price")).toBeVisible();
-  expect(within(snapshot).getByText("2 offers")).toBeVisible();
+  expect(
+    within(snapshot).getByText(
+      "4 visible offers. 1 offer with coupons. 2 offers without a current price.",
+    ),
+  ).toBeVisible();
 });
 
 test("offer discovery refuses a lowest-price claim for mixed currencies", () => {
@@ -1047,7 +1077,7 @@ test("offer discovery refuses a lowest-price claim for mixed currencies", () => 
 
   renderOfferDiscoveryRoute();
 
-  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+  const snapshot = screen.getByRole("region", { name: "Offer price overview" });
 
   expect(within(snapshot).getByText("Not comparable across currencies")).toBeVisible();
   expect(within(snapshot).queryByText("149.00 EUR")).not.toBeInTheDocument();
@@ -1067,10 +1097,14 @@ test("offer discovery reports no visible prices when every renderable row lacks 
 
   renderOfferDiscoveryRoute();
 
-  const snapshot = screen.getByRole("region", { name: "Visible offer snapshot" });
+  const snapshot = screen.getByRole("region", { name: "Offer price overview" });
 
   expect(within(snapshot).getByText("No visible prices")).toBeVisible();
-  expect(within(snapshot).getByText("1 offer")).toBeVisible();
+  expect(
+    within(snapshot).getByText(
+      "1 visible offer. 0 offers with coupons. 1 offer without a current price.",
+    ),
+  ).toBeVisible();
 });
 
 test("offer discovery renders inactive filter state", () => {
@@ -1171,24 +1205,29 @@ test("offer discovery renders an empty state", () => {
     "href",
     "/products/detail-product",
   );
-  expect(screen.queryByRole("region", { name: "Visible offer snapshot" })).not.toBeInTheDocument();
+  expect(screen.queryByRole("region", { name: "Offer price overview" })).not.toBeInTheDocument();
 });
 
-test("offer discovery falls back to the raw product id when the selected product is missing", () => {
+test("offer discovery retains the product reference when selected product data is missing", () => {
   mockedUsePreloadedQuery.mockReturnValue(buildOfferDiscoveryData({ selectedProduct: null }));
 
   renderOfferDiscoveryRoute();
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(
+    within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
+  ).toBeVisible();
   expect(
     within(filterSummary).queryByRole("link", { name: "View product details" }),
   ).not.toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 
-test("offer discovery falls back to the raw product id for non-product nodes", () => {
+test("offer discovery retains the product reference for non-product nodes", () => {
   mockedUsePreloadedQuery.mockReturnValue(
     buildOfferDiscoveryData({ selectedProduct: { __typename: "Brand" } }),
   );
@@ -1197,8 +1236,13 @@ test("offer discovery falls back to the raw product id for non-product nodes", (
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(
+    within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
+  ).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 
 test("offer discovery omits brand context when the selected product has no brand", () => {
@@ -1210,8 +1254,8 @@ test("offer discovery omits brand context when the selected product has no brand
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product")).toBeVisible();
-  expect(within(filterSummary).getByText("Detail Product")).toBeVisible();
+  expect(within(filterSummary).getByRole("heading", { name: "Detail Product" })).toBeVisible();
+  expect(within(filterSummary).getByText("Offer scope")).toBeVisible();
   expect(within(filterSummary).queryByText("Brand")).not.toBeInTheDocument();
   expect(within(filterSummary).queryByText("Example Brand")).not.toBeInTheDocument();
 });
@@ -1277,19 +1321,23 @@ test("offer discovery renders the loader error state", () => {
   expect(screen.getByRole("alert")).toHaveTextContent("Offers unavailable.");
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
-  expect(within(filterSummary).getByText("Offer status")).toBeVisible();
-  expect(within(filterSummary).getByText("Active offers only")).toBeVisible();
-  expect(within(filterSummary).getByText("Page size")).toBeVisible();
-  expect(within(filterSummary).getByText("6")).toBeVisible();
-  expect(within(filterSummary).getByText("Sort")).toBeVisible();
-  expect(within(filterSummary).getByText("Default order")).toBeVisible();
+  expect(
+    within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
+  ).toBeVisible();
+  expect(
+    within(filterSummary).getByText("Showing active offers, sorted by Default order, 6 per page."),
+  ).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
+  expect(screen.getByRole("spinbutton", { name: "Page size" })).toHaveValue(6);
+  expect(screen.getByRole("combobox", { name: "Sort" })).toHaveValue("default");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();
   expect(mockedUsePreloadedQuery).not.toHaveBeenCalled();
 });
 
-test("offer discovery keeps raw product context visible while the query loads", () => {
+test("offer discovery keeps product scope and advanced reference available while the query loads", () => {
   mockedUsePreloadedQuery.mockImplementation(() => {
     throw new Promise<never>(() => undefined);
   });
@@ -1300,8 +1348,13 @@ test("offer discovery keeps raw product context visible while the query loads", 
 
   const filterSummary = screen.getByRole("region", { name: "Active offer filters" });
 
-  expect(within(filterSummary).getByText("Product ID")).toBeVisible();
-  expect(within(filterSummary).getByText("UHJvZHVjdDoxMjM=")).toBeVisible();
+  expect(
+    within(filterSummary).getByRole("heading", { name: "Selected product unavailable" }),
+  ).toBeVisible();
+
+  fireEvent.click(screen.getByRole("button", { name: "Advanced filters" }));
+
+  expect(screen.getByRole("textbox", { name: "Product ID" })).toHaveValue("UHJvZHVjdDoxMjM=");
 });
 
 test("offer discovery renders the query unavailable state", () => {

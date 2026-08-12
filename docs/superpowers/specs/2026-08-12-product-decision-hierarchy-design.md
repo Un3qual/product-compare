@@ -57,7 +57,8 @@ their truthful existing copy.
 
 The selected product anchors the workspace once with brand, offer scope,
 ordering, and route actions. Internal product and merchant identifiers remain
-URL/form state but are not editable shopper-facing fields.
+available as editable advanced filters, but move behind a clearly named
+disclosure instead of leading the shopper-facing control surface.
 
 The lowest visible price is the primary page signal. Visible-offer, coupon, and
 missing-price coverage become one supporting sentence. Merchant shortcuts sit
@@ -92,8 +93,12 @@ context and freshness without duplicating the visible product highlights.
 
 - Preserve GraphQL fragments, Relay ownership, URL state, offer calculations,
   comparison limits, and all existing destinations.
-- Preserve hidden product and merchant filter values in GET submissions while
-  removing raw database/global identifiers from the visible control surface.
+- Preserve product and merchant filter values and editability in GET
+  submissions while moving raw database/global identifiers into progressive
+  disclosure.
+- Preserve every fact already available on a route. Improve comprehension by
+  grouping, hierarchy, readable sentences, and disclosure—not by deleting
+  information.
 - Preserve semantic lists, headings, status meaning, and accessible names.
 - Use StyleX and existing primitives; do not add class-name composition helpers,
   card mosaics, or new dependencies.

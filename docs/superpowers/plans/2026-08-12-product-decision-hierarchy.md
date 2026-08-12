@@ -10,8 +10,9 @@ hierarchy while preserving all behavior and data.
 Change only the component composition and StyleX layout. Render the product
 offer snapshot as a primary value plus supporting context from the existing
 `ProductOfferSnapshot` model. Compose offer discovery around one product scope,
-one price overview, and merchant-first results; retain URL state as hidden form
-inputs and use the existing Base UI disclosure for secondary evidence.
+one price overview, and merchant-first results; retain URL state and advanced
+filter editability behind a disclosure, and use the existing Base UI disclosure
+for secondary evidence.
 
 **Stack:** React 19, Relay, Base UI primitives, StyleX, Vitest/Testing Library,
 Playwright.
@@ -96,6 +97,8 @@ Playwright.
 
 ## Corrective Task 7: Restructure offer discovery
 
+**Status:** Complete and verified on 2026-08-11.
+
 **Files:**
 
 - Modify: `assets/test/routes/offers/offer-discovery.route.test.tsx`
@@ -107,8 +110,8 @@ Playwright.
 - Modify: `assets/src/routes/offers/VisibleMerchantFilters.tsx`
 
 1. Add failing route assertions for one product scope, one primary price
-   overview, merchant-first rows, hidden internal IDs, and collapsed secondary
-   evidence.
+   overview, merchant-first rows, progressively disclosed internal IDs, and
+   collapsed secondary evidence.
 2. Replace the definition-list filter dump with a product scope header and
    concise scope sentence.
 3. Move merchant shortcuts before the result list and replace the four equal

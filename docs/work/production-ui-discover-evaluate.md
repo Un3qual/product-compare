@@ -6,9 +6,10 @@
 - Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`
-- Last verified: 2026-08-10 after completion of the shared production UI spine;
-  the owned route, test, browser, and lane paths are disjoint from the other
-  ready cohorts.
+- Last verified: 2026-08-11 after the offer-discovery hierarchy correction;
+  focused route coverage, desktop/mobile Playwright geometry and visual
+  snapshots, axe, the complete frontend check, client/SSR builds, StyleX
+  mangling, and bundle budgets passed.
 
 ## Target Outcome
 
@@ -36,6 +37,18 @@ Catalog, category, product, offer, and merchant routes use the stable production
 ## Verification
 
 The complete route suites named by the plan, deterministic Playwright/axe/visual checks at three widths, `cd assets && pnpm run check`, `mix work_queue.validate`, and `git diff --check`.
+
+## Corrective Evidence
+
+- Offer discovery now presents one product scope, one best-price overview,
+  merchant shortcuts, and merchant-led result rows instead of equal-weight
+  definition dumps.
+- Every previous fact remains available. Coupon descriptions, discounts,
+  validity, terms, price history, continuation indicators, product and merchant
+  references, status, sort, and page size are preserved through readable groups
+  and Base UI disclosures.
+- Product and merchant reference inputs stay mounted while collapsed so normal
+  GET submissions retain the active scope.
 
 ## Blocker Rule
 

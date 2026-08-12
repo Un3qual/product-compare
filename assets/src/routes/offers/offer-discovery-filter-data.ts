@@ -47,11 +47,6 @@ export type OfferDiscoverySelectedProductNode =
   | OfferDiscoveryProductNode
   | Readonly<{ __typename: string }>;
 
-export interface OfferDiscoveryFilterSummaryItem {
-  label: string;
-  value: string;
-}
-
 export interface OfferDiscoveryScopeBadgeData {
   label: string;
   tone: "neutral" | "positive";
@@ -163,8 +158,12 @@ export function getOfferDiscoveryFilterData(
       : null,
     showReset: hasNonDefaultOfferFilters(canonicalFilters),
     scopeBadge: offerDiscoveryScopeBadgeData(canonicalFilters),
+    scopeDescription: offerDiscoveryScopeDescription(canonicalFilters, sortLabel),
+    scopeEyebrow: selectedProduct?.brand?.name ?? "Offer scope",
+    scopeTitle:
+      selectedProduct?.name ??
+      (canonicalFilters.productId ? "Selected product unavailable" : "Choose a product"),
     sortLabel,
-    summaryItems: buildSummaryItems(canonicalFilters, selectedProduct, sortLabel),
   };
 }
 
@@ -192,63 +191,11 @@ function sortLabelFor(sort: OfferDiscoverySort) {
   return option?.label ?? DEFAULT_OFFER_DISCOVERY_SORT_OPTION.label;
 }
 
-function buildSummaryItems(
-  filters: OfferDiscoveryFilters,
-  selectedProduct: OfferDiscoveryProductContext | null,
-  sortLabel: string,
-): OfferDiscoveryFilterSummaryItem[] {
-  return [
-    ...selectedProductSummaryItems(filters, selectedProduct),
-    ...(filters.merchantId
-      ? [
-          {
-            label: "Merchant ID",
-            value: filters.merchantId,
-          },
-        ]
-      : []),
-    {
-      label: "Offer status",
-      value: filters.activeOnly ? "Active offers only" : "All offers included",
-    },
-    {
-      label: "Page size",
-      value: String(filters.first),
-    },
-    {
-      label: "Sort",
-      value: sortLabel,
-    },
-  ];
-}
+function offerDiscoveryScopeDescription(filters: OfferDiscoveryFilters, sortLabel: string): string {
+  const offerScope = filters.activeOnly ? "active offers" : "all offers";
+  const merchantScope = filters.merchantId ? " Merchant filter applied." : "";
 
-function selectedProductSummaryItems(
-  filters: OfferDiscoveryFilters,
-  selectedProduct: OfferDiscoveryProductContext | null,
-): OfferDiscoveryFilterSummaryItem[] {
-  if (!selectedProduct) {
-    return [
-      {
-        label: "Product ID",
-        value: filters.productId ?? "Not selected",
-      },
-    ];
-  }
-
-  return [
-    {
-      label: "Product",
-      value: selectedProduct.name,
-    },
-    ...(selectedProduct.brand
-      ? [
-          {
-            label: "Brand",
-            value: selectedProduct.brand.name,
-          },
-        ]
-      : []),
-  ];
+  return `Showing ${offerScope}, sorted by ${sortLabel}, ${filters.first} per page.${merchantScope}`;
 }
 
 function hasNonDefaultOfferFilters(filters: OfferDiscoveryFilters) {

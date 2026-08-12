@@ -70,8 +70,8 @@ export function OfferDiscoveryRoute() {
       <WorkspaceLayout
         context={
           <ContextRail
-            description="Scope the product, merchant, availability, and ordering of the visible offers."
-            label="Offer controls"
+            description="Adjust availability, page size, ordering, and advanced product or merchant references."
+            label="Refine offers"
           >
             <OfferDiscoveryFilterForm filters={loaderData.filters} />
           </ContextRail>
