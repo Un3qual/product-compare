@@ -46,3 +46,7 @@ export function resolveRouteDocumentMetadata(
 
   return null;
 }
+
+export function routeMetadata(title: string, description: string): RouteMetadataHandle {
+  return { metadata: { description, title } };
+}

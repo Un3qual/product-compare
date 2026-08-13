@@ -11,8 +11,39 @@ import {
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsFromSearch,
 } from "./compare/paths";
-import { getRootDestinationData, type RootDestination } from "./root-destination-data";
 import type { RootViewer } from "./root/viewer-data";
+
+type RootDestination = {
+  end?: boolean;
+  label: string;
+  to: string;
+};
+
+const PUBLIC_DESTINATIONS = [
+  { label: "Browse products", to: "/products" },
+  { label: "Merchants", to: "/merchants" },
+  { label: "Offers", to: "/offers" },
+  { end: true, label: "Compare products", to: "/compare" },
+] as const satisfies readonly RootDestination[];
+
+const MEMBER_DESTINATIONS = [
+  { label: "Price alerts", to: "/account/alerts" },
+  { label: "Saved comparisons", to: "/compare/saved" },
+  { label: "API tokens", to: "/account/api-tokens" },
+] as const satisfies readonly RootDestination[];
+
+const OPERATOR_DESTINATIONS = [
+  { label: "Affiliate setup", to: "/affiliate/setup" },
+  { label: "Revenue preview", to: "/commerce/revenue" },
+  { label: "CJ programs", to: "/ingestion/cj-programs" },
+] as const satisfies readonly RootDestination[];
+
+const GUEST_DESTINATIONS = [
+  { label: "Sign in", to: "/auth/login" },
+  { label: "Create account", to: "/auth/register" },
+] as const satisfies readonly RootDestination[];
+
+const SIGN_OUT_DESTINATION = { label: "Sign out", to: "/auth/logout" } as const;
 
 const styles = create({
   link: {
@@ -114,27 +145,23 @@ type RootDestinationsProps = {
 export function RootPrimaryNavigation({ viewer }: RootDestinationsProps) {
   const location = useLocation();
   const [openMenu, setOpenMenu] = useState<string | null>(null);
-  const { primary } = getRootDestinationData(viewer);
   const selectedSlugs = selectedCompareSlugsFromSearch(location.search);
-  const publicDestinations = primary.destinations.filter(
-    ({ to }) => !isMemberDestination(to) && !isOperatorDestination(to),
-  );
-  const primaryDestinations = publicDestinations.filter(
+  const primaryDestinations = PUBLIC_DESTINATIONS.filter(
     ({ to }) => to === "/products" || to === "/compare",
   );
-  const exploreDestinations = publicDestinations.filter(
+  const exploreDestinations = PUBLIC_DESTINATIONS.filter(
     ({ to }) => to === "/offers" || to === "/merchants",
   );
-  const memberDestinations = primary.destinations.filter(({ to }) => isMemberDestination(to));
-  const operatorDestinations = primary.destinations.filter(({ to }) => isOperatorDestination(to));
-  const guestDestinations = viewer ? [] : primary.authDestinations;
-  const accountDestinations = viewer ? [...memberDestinations, ...primary.authDestinations] : [];
+  const memberDestinations = viewer ? MEMBER_DESTINATIONS : [];
+  const operatorDestinations = viewer?.isOperator ? OPERATOR_DESTINATIONS : [];
+  const guestDestinations = viewer ? [] : GUEST_DESTINATIONS;
+  const accountDestinations = viewer ? [...MEMBER_DESTINATIONS, SIGN_OUT_DESTINATION] : [];
   const mobileDestinations = [
     ...primaryDestinations.filter(({ to }) => to === "/compare"),
     ...exploreDestinations,
     ...memberDestinations,
     ...operatorDestinations,
-    ...(viewer ? primary.authDestinations : guestDestinations),
+    ...(viewer ? [SIGN_OUT_DESTINATION] : guestDestinations),
   ];
 
   useEffect(() => setOpenMenu(null), [location.pathname, location.search]);
@@ -355,11 +382,7 @@ function NavigationMenu({
   const menuTrigger = (
     <PopoverTrigger
       render={
-        <Button
-          aria-label={`${label} menu`}
-          variant="ghost"
-          style={styles.navigationMenuTrigger}
-        />
+        <Button aria-label={`${label} menu`} variant="ghost" style={styles.navigationMenuTrigger} />
       }
     >
       <span>{label}</span>
@@ -385,18 +408,10 @@ function NavigationMenu({
   );
 }
 
-function isMemberDestination(to: string) {
-  return to === "/account/alerts" || to === "/compare/saved" || to === "/account/api-tokens";
-}
-
 function destinationWithComparison(to: string, selectedSlugs: readonly string[]) {
   if (to === "/compare") return buildComparePathFromSlugs(selectedSlugs);
 
   return buildCurrentRoutePathWithCompareSlugs(to, "", selectedSlugs);
-}
-
-function isOperatorDestination(to: string) {
-  return to === "/affiliate/setup" || to === "/commerce/revenue" || to === "/ingestion/cj-programs";
 }
 
 function isAuthDestination(to: string) {

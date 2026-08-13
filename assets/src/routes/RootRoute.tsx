@@ -30,17 +30,10 @@ const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 
 export type RootViewerQueryDescriptor = RelayRouteQueryDescriptor<RootRouteQuery["variables"]>;
 
-export type RootLoaderData =
-  | {
-      status: "ready";
-      viewer: RootViewer | null;
-      viewerQuery: RootViewerQueryDescriptor;
-    }
-  | {
-      status: "degraded";
-      viewer: RootViewer | null;
-      viewerQuery: null;
-    };
+export type RootLoaderData = {
+  viewer: RootViewer | null;
+  viewerQuery: RootViewerQueryDescriptor | null;
+};
 
 type RootOutletContext = {
   viewer: RootViewer | null;
@@ -49,19 +42,15 @@ type RootOutletContext = {
 export function RootLayout() {
   const loaderData = useLoaderData() as RootLoaderData;
 
-  if (loaderData.status === "degraded") {
+  if (!loaderData.viewerQuery) {
     return <RootLayoutShell viewer={loaderData.viewer} />;
   }
 
-  return <ReadyRootLayout loaderData={loaderData} />;
+  return <ReadyRootLayout viewerQuery={loaderData.viewerQuery} />;
 }
 
-function ReadyRootLayout({
-  loaderData,
-}: {
-  loaderData: Extract<RootLoaderData, { status: "ready" }>;
-}) {
-  const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, loaderData.viewerQuery);
+function ReadyRootLayout({ viewerQuery }: { viewerQuery: RootViewerQueryDescriptor }) {
+  const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, viewerQuery);
   const data = usePreloadedQuery<RootRouteQuery>(rootRouteQuery, queryRef);
 
   return <RootLayoutShell viewer={projectRootViewer(data.viewer)} />;
@@ -95,14 +84,12 @@ export async function rootLoader({
     );
 
     return {
-      status: "ready",
       viewer: projectRootViewer(fetchedViewer.data.viewer),
       viewerQuery: fetchedViewer.descriptor,
     };
   } catch {
     throwIfAborted(request.signal);
     return {
-      status: "degraded",
       viewer: readCachedRootViewer(environment),
       viewerQuery: null,
     };
