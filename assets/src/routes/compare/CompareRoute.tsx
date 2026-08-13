@@ -1,6 +1,11 @@
-import { Suspense, type ReactNode, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLoaderData, useNavigate, type LoaderFunctionArgs } from "react-router-dom";
+import {
+  useLoaderData,
+  useLocation,
+  useOutletContext,
+  type LoaderFunctionArgs,
+} from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
@@ -14,37 +19,36 @@ import {
   useRoutePreloadedQuery,
 } from "$relay/route-preload";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
-import { ContextRail } from "$ui/components/layout/ContextRail";
-import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
-import { Button } from "$ui/primitives/Button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "$relay/mutations";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+import type { RootViewer } from "../root/viewer";
+import {
+  consumePendingIntent,
+  readPendingIntent,
+  safeRelativeReturnPath,
+  useAuthenticatedIntent,
+  type PendingIntent,
+  type SaveComparisonIntentDraft,
+} from "../auth/continuity";
 import { CompareShell } from "./CompareShell";
 import {
   compareQueryViewData,
   compareSpecModeFromUrl,
   COMPARE_OFFER_CONTEXT_PAGE_SIZE,
   MAX_COMPARE_PRODUCTS,
-  type CompareSpecMode,
   type CompareRouteLoaderData,
 } from "./compare-route-data";
-import { CompareProductList, CompareProductSummaryList } from "./CompareProductList";
-import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
-import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
-import {
-  buildComparePathAfterRemovingSlugIndex,
-  buildComparePathFromSlugs,
-  selectedCompareSlugsFromSearch,
-} from "./paths";
-import { CompareSelectionTray } from "./CompareSelectionTray";
-import { ShareComparisonControl } from "./ShareComparisonControl";
+import { CompareProductList } from "./live/CompareProductList";
+import { CompareProductPickerBoundary } from "./picker/CompareProductPickerBoundary";
+import { selectedCompareSlugsFromSearch } from "./paths";
+import { ComparisonToolbar } from "./live/ComparisonToolbar";
+import { ProductDecisionSummaries } from "./live/ProductDecisionSummaries";
 import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome,
-} from "./saved-comparison-mutation-data";
+} from "./saved/saved-comparison-mutation";
 
 export {
   recommendationProfileFromUrl,
@@ -76,6 +80,9 @@ const compareRouteQuery = graphql`
         booleanValue
         enumOptionId
         unitSymbol
+      }
+      offerTruth {
+        asOf
       }
       merchantProducts(first: $offerFirst, activeOnly: true) {
         edges {
@@ -146,27 +153,10 @@ const createSavedComparisonSetMutation = graphql`
 `;
 
 const styles = create({
-  tabList: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
-    display: "flex",
-    gap: "0.25rem",
-    overflowX: "auto",
-  },
-  tab: {
-    borderBlockEndColor: "transparent",
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "2px",
-    color: tokens.textSecondary,
-    fontWeight: 650,
-    paddingBlock: "0.65rem",
-    paddingInline: "0.9rem",
-    textDecoration: "none",
-  },
-  tabActive: {
-    borderBlockEndColor: tokens.actionAccent,
-    color: tokens.text,
+  workspace: {
+    display: "grid",
+    gap: tokens.workspaceGap,
+    minWidth: 0,
   },
 });
 
@@ -222,16 +212,48 @@ export function CompareRoute() {
 }
 
 function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderData }) {
+  const outletContext = useOutletContext<{ viewer: RootViewer | null } | null>();
+  const viewer = outletContext?.viewer;
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null | undefined>(() =>
+    viewer ? readPendingIntent() : undefined,
+  );
+  const restoredComparison =
+    loaderData.status === "ready" &&
+    pendingIntent?.kind === "save_comparison" &&
+    orderedValuesEqual(
+      pendingIntent.productIds,
+      loaderData.products.map(({ id }) => id),
+    )
+      ? pendingIntent
+      : null;
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
     error: null,
     isInFlight: false,
-    message: null,
+    message: restoredComparison
+      ? "Your comparison draft was restored. Review it before saving the comparison."
+      : null,
   });
   const isSaveInFlightRef = useRef(false);
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
     useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+
+  useEffect(() => {
+    if (viewer && pendingIntent === undefined) setPendingIntent(readPendingIntent());
+  }, [pendingIntent, viewer]);
+
+  useEffect(() => {
+    if (!viewer || !restoredComparison) return;
+
+    setSaveFeedback({
+      error: null,
+      isInFlight: false,
+      message: "Your comparison draft was restored. Review it before saving the comparison.",
+    });
+    consumePendingIntent();
+    setPendingIntent(null);
+  }, [restoredComparison, viewer]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -311,6 +333,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
         loaderData={loaderData}
         onSave={handleSave}
         saveFeedback={saveFeedback}
+        viewer={viewer}
       />
     );
   }
@@ -340,65 +363,53 @@ function ReadyCompareSelectionRoute({
   loaderData,
   onSave,
   saveFeedback,
+  viewer,
 }: {
   loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
   onSave: () => void;
   saveFeedback: SaveFeedbackState;
+  viewer: RootViewer | null | undefined;
 }) {
+  const location = useLocation();
   const queryRef = useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, loaderData.query);
   const data = usePreloadedQuery<CompareRouteQuery>(compareRouteQuery, queryRef);
   const saveInFlight = saveFeedback.isInFlight;
+  const returnTo =
+    safeRelativeReturnPath(`${location.pathname}${location.search}${location.hash}`) ?? "/";
+  const intent = useMemo<SaveComparisonIntentDraft>(
+    () => ({
+      kind: "save_comparison",
+      version: 1,
+      returnTo,
+      productIds: loaderData.products.map(({ id }) => id),
+    }),
+    [loaderData.products, returnTo],
+  );
+  const authenticatedIntent = useAuthenticatedIntent({
+    viewer,
+    intent,
+    onAuthenticated: onSave,
+  });
 
   return (
     <CompareShell title="Compare products">
-      <WorkspaceLayout
-        context={
-          <ContextRail
-            description="Save this set, remove selected products, or add another product."
-            label="Comparison controls"
-          >
-            <Button disabled={saveInFlight} onClick={onSave} type="button">
-              {saveInFlight ? "Saving comparison..." : "Save comparison"}
-            </Button>
-            <ShareComparisonControl products={loaderData.products} />
-            <p aria-label="Save comparison status" aria-live="polite" role="status">
-              {saveFeedback.message ?? ""}
-            </p>
-            <CompareSelectionTray
-              items={loaderData.products.map((product) => ({
-                label: product.name,
-                slug: product.slug,
-              }))}
-              maxProducts={MAX_COMPARE_PRODUCTS}
-              openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
-                specMode: loaderData.specMode,
-              })}
-              removePathForIndex={(index) =>
-                buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
-                  specMode: loaderData.specMode,
-                })
-              }
-              selectedSlugs={loaderData.slugs}
-            />
-            {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
-              <CompareProductPickerBoundary
-                heading="Add another product"
-                specMode={loaderData.specMode}
-                selectedSlugs={loaderData.slugs}
-              />
-            ) : null}
-          </ContextRail>
-        }
-        label="Comparison workspace"
-      >
+      <section aria-label="Comparison workspace" {...props(styles.workspace)}>
+        <ComparisonToolbar
+          authDialog={authenticatedIntent.dialog}
+          maxProducts={MAX_COMPARE_PRODUCTS}
+          onSave={authenticatedIntent.request}
+          products={loaderData.products}
+          saveInFlight={saveInFlight}
+          saveMessage={saveFeedback.message}
+          selectedSlugs={loaderData.slugs}
+          specMode={loaderData.specMode}
+        />
         {saveFeedback.error ? <FeedbackState kind="error" title={saveFeedback.error} /> : null}
-        <CompareSpecModeControls selectedSlugs={loaderData.slugs} specMode={loaderData.specMode}>
-          <CompareProductDetailsBoundary
-            fragmentProducts={data.comparisonProducts}
-            loaderData={loaderData}
-          />
-        </CompareSpecModeControls>
-      </WorkspaceLayout>
+        <CompareProductDetailsBoundary
+          fragmentProducts={data.comparisonProducts}
+          loaderData={loaderData}
+        />
+      </section>
     </CompareShell>
   );
 }
@@ -416,7 +427,7 @@ function CompareProductDetailsBoundary({
       fallback={
         <>
           <FeedbackState kind="error" title="Comparison details unavailable." />
-          <CompareProductSummaryList products={loaderData.products} />
+          <ProductDecisionSummaries fragmentProducts={[]} loaderData={loaderData} />
         </>
       }
     >
@@ -427,65 +438,13 @@ function CompareProductDetailsBoundary({
   );
 }
 
-function CompareSpecModeControls({
-  children,
-  selectedSlugs,
-  specMode,
-}: {
-  children: ReactNode;
-  selectedSlugs: readonly string[];
-  specMode: CompareSpecMode;
-}) {
-  const navigation = buildCompareSpecModeNavigationData({ selectedSlugs, specMode });
-  const navigate = useNavigate();
-
-  return (
-    <Tabs value={specMode}>
-      <TabsList aria-label="Specification views" variant="line" style={styles.tabList}>
-        {navigation.modes.map((item) => (
-          <TabsTrigger
-            key={item.mode}
-            nativeButton={false}
-            render={
-              <a
-                aria-current={item.isCurrent ? "page" : undefined}
-                href={item.path}
-                onClick={(event) => {
-                  if (
-                    event.defaultPrevented ||
-                    event.button !== 0 ||
-                    event.altKey ||
-                    event.ctrlKey ||
-                    event.metaKey ||
-                    event.shiftKey
-                  ) {
-                    return;
-                  }
-
-                  event.preventDefault();
-                  navigate(item.path);
-                }}
-                {...props(styles.tab, item.isCurrent ? styles.tabActive : null)}
-              />
-            }
-            value={item.mode}
-          >
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {navigation.modes.map((item) => (
-        <TabsContent keepMounted hidden={!item.isCurrent} key={item.mode} value={item.mode}>
-          {item.isCurrent ? children : null}
-        </TabsContent>
-      ))}
-    </Tabs>
-  );
-}
-
 function isActiveSaveRequest(
   activeSaveRequest: { id: number } | null,
   saveRequest: { id: number },
 ) {
   return activeSaveRequest?.id === saveRequest.id;
+}
+
+function orderedValuesEqual(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }

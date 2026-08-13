@@ -1,6 +1,13 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { MemoryRouter, useLoaderData, useRevalidator } from "react-router-dom";
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLoaderData,
+  useRevalidator,
+} from "react-router-dom";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import {
   AlertsRoute,
@@ -459,7 +466,19 @@ test("PriceWatchControl reveals relevant input and submits one typed rule", asyn
   const user = userEvent.setup();
   render(
     <MemoryRouter>
-      <PriceWatchControl productId="product-id" />
+      <Routes>
+        <Route
+          element={
+            <Outlet
+              context={{
+                viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+              }}
+            />
+          }
+        >
+          <Route path="*" element={<PriceWatchControl productId="product-id" />} />
+        </Route>
+      </Routes>
     </MemoryRouter>,
   );
 

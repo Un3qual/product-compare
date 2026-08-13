@@ -28,23 +28,22 @@ import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
 import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+import { resolveMarkAlertReadMutationError } from "./alert-rows/alert-event-mutation-result";
+import { alertRuleLabel, observationDateLabel } from "./alert-rows/alert-event-view";
 import {
   resolveDeletePriceWatchMutationError,
-  resolveMarkAlertReadMutationError,
   resolveTogglePriceWatchMutationError,
-} from "./alerts-mutation-data";
+} from "./watches/price-watch-mutation-results";
 import {
   deletePriceWatchMutation,
   markAlertReadMutation,
   updatePriceWatchMutation,
 } from "./AlertOperations";
 import {
-  alertRuleLabel,
   buildAlertsViewData,
-  observationDateLabel,
   priceWatchToggleControl,
   priceWatchLabel,
-} from "./alerts-view-data";
+} from "./watches/price-watch-view";
 
 const alertsRouteQuery = graphql`
   query AlertsRouteQuery($first: Int!) {

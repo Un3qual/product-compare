@@ -2,7 +2,7 @@ import { fetchRouteQuery } from "../../../src/relay/route-preload";
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader,
-} from "../../../src/routes/compare/SavedComparisonsRoute";
+} from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import {
   buildGraphQLResponseWithErrors,
   buildRouteLoaderGraphQLError,

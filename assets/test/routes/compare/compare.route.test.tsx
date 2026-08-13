@@ -2,7 +2,15 @@ import { startTransition } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { MemoryRouter, useLoaderData, useLocation, useRouteError } from "react-router-dom";
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLoaderData,
+  useLocation,
+  useRouteError,
+} from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
@@ -13,18 +21,18 @@ import {
 import {
   isUnauthorizedSavedComparisonsResponse,
   savedComparisonsLoader,
-} from "../../../src/routes/compare/SavedComparisonsRoute";
+} from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
-import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
-import { CompareSpecificationMatrix } from "../../../src/routes/compare/CompareSpecificationMatrix";
+import { CompareProductPickerView } from "../../../src/routes/compare/picker/CompareProductPickerView";
+import { SpecificationMatrix } from "../../../src/routes/compare/live/SpecificationMatrix";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsAfterAdding,
   selectedCompareSlugsFromSearch,
 } from "../../../src/routes/compare/paths";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import {
   buildAbortableRequest,
   buildCompareLoaderArgs,
@@ -314,6 +322,7 @@ const buildFetchedProductQuery = (
       product
         ? {
             ...product,
+            offerTruth: { asOf: "2026-06-29T13:00:00Z" },
             merchantProducts: buildOfferContextConnection({ offers: [] }),
           }
         : null,
@@ -342,6 +351,7 @@ const buildFetchedCompareRouteQuery = ({
       product
         ? {
             ...product,
+            offerTruth: { asOf: "2026-06-29T13:00:00Z" },
             merchantProducts: offerConnections.has(product.id)
               ? offerConnections.get(product.id)
               : buildOfferContextConnection({ offers: [] }),
@@ -366,6 +376,7 @@ const buildAvailableOfferContextSummary = (
     hasMoreActiveOffers: boolean;
     hasMoreCoupons: boolean;
     latestPriceObservedAt: string | null;
+    referenceTime: string;
   }> = {},
 ) => ({
   status: "available" as const,
@@ -376,6 +387,7 @@ const buildAvailableOfferContextSummary = (
   hasMoreActiveOffers: false,
   hasMoreCoupons: false,
   latestPriceObservedAt: null,
+  referenceTime: "2026-06-29T13:00:00Z",
   ...overrides,
 });
 
@@ -488,9 +500,7 @@ const buildReadyCompareLoaderData = (overrides: ReadyCompareLoaderDataOverrides 
   };
 };
 
-function renderRelativeLoadedPriceCells(
-  overrides: ReadyCompareLoaderDataOverrides,
-) {
+function renderRelativeLoadedPriceCells(overrides: ReadyCompareLoaderDataOverrides) {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
   renderCompareRoute();
 
@@ -527,7 +537,7 @@ beforeEach(() => {
 
 test("comparison matrix directly renders ordered rows, missing values, and the selected mode", () => {
   render(
-    <CompareSpecificationMatrix
+    <SpecificationMatrix
       products={completeProductSummaries([
         {
           ...buildProductSummary(DETAIL_PRODUCT),
@@ -589,7 +599,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
 
   try {
     render(
-      <CompareSpecificationMatrix
+      <SpecificationMatrix
         products={completeProductSummaries([
           {
             ...buildProductSummary(DETAIL_PRODUCT),
@@ -1903,7 +1913,7 @@ test("product picker resets pagination before rendering a changed selected set",
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -1954,7 +1964,6 @@ test("renders compared product cards returned by the route loader", () => {
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-  openIndividualProductDetails();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
 });
@@ -2011,11 +2020,17 @@ test("ready compare page renders decision summary rows above the specification m
   renderCompareRoute();
 
   expect(screen.getByRole("region", { name: "Comparison workspace" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Comparison controls" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("complementary", { name: "Comparison controls" }),
+  ).not.toBeInTheDocument();
+  const controls = screen.getByRole("region", { name: "Comparison controls" });
   const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
   const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
 
+  expect(
+    controls.compareDocumentPosition(decisionHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(
     decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
@@ -2213,11 +2228,61 @@ test("ready compare cards render product attributes", () => {
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
   expect(screen.getAllByText("144 Hz")).toHaveLength(2);
   expect(screen.getAllByText("165 Hz")).toHaveLength(2);
   expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
+});
+
+test("ready compare page renders curated product summaries without slugs or generic property dumps", () => {
+  const currentAttributes = [
+    {
+      code: "refresh-rate",
+      dataType: "numeric",
+      displayName: "Refresh rate",
+      valueText: "144 Hz",
+    },
+    {
+      code: "panel-type",
+      dataType: "text",
+      displayName: "Panel type",
+      valueText: "IPS",
+    },
+    {
+      code: "internal-calibration-code",
+      dataType: "text",
+      displayName: "Internal calibration code",
+      valueText: "CAL-001",
+    },
+  ];
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        { ...buildProductSummary(DETAIL_PRODUCT), currentAttributes },
+        buildProductSummary(SECOND_PRODUCT),
+      ],
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          latestPriceObservedAt: "2026-06-29T12:00:00Z",
+          referenceTime: "2026-06-29T13:00:00Z",
+        }),
+        [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id),
+      },
+    }),
+  );
+  mockBatchedCompareProducts([{ ...DETAIL_PRODUCT, currentAttributes }, SECOND_PRODUCT]);
+
+  renderCompareRoute();
+
+  const summaries = screen.getByRole("region", { name: "Product decision summaries" });
+  expect(within(summaries).getByRole("heading", { name: "Detail Product" })).toBeVisible();
+  expect(within(summaries).getByText("Acme")).toBeVisible();
+  expect(within(summaries).getByText("A narrow product detail baseline.")).toBeVisible();
+  expect(within(summaries).getByText("Refresh rate")).toBeVisible();
+  const freshness = within(summaries).getByText("Observed 1 hour ago", { selector: "time" });
+  expect(freshness).toHaveAttribute("datetime", "2026-06-29T12:00:00Z");
+  expect(within(summaries).queryByText("detail-product")).not.toBeInTheDocument();
+  expect(within(summaries).queryByText("Internal calibration code")).not.toBeInTheDocument();
+  expect(within(summaries).queryByText(DETAIL_PRODUCT.id)).not.toBeInTheDocument();
 });
 
 test("ready compare cards render from batched loader data without synthetic product reads", () => {
@@ -2269,8 +2334,6 @@ test("ready compare cards render from batched loader data without synthetic prod
   });
 
   renderCompareRoute();
-
-  openIndividualProductDetails();
 
   expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
   expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
@@ -2368,8 +2431,7 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
   expect(rows[2]).toHaveTextContent("144 Hz");
   expect(rows[2]).toHaveTextContent("165 Hz");
   expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
-  openIndividualProductDetails();
-  expect(screen.getByText("350 nits")).toBeVisible();
+  expect(screen.queryByText("350 nits")).not.toBeInTheDocument();
 });
 
 test("ready compare matrix orders specification rows by sort order before display name", () => {
@@ -2608,6 +2670,12 @@ test("ready compare page renders specification mode tabs with stable URL state",
   }
 
   expect(document.getElementById(activePanelId)).not.toHaveAttribute("hidden");
+
+  const tabs = screen.getByRole("tablist", { name: "Specification views" });
+  const matrixHeading = screen.getByRole("heading", { name: "Different specifications" });
+  expect(
+    tabs.compareDocumentPosition(matrixHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("specification mode tab clicks navigate to loader-backed URL state", () => {
@@ -2615,7 +2683,7 @@ test("specification mode tab clicks navigate to loader-backed URL state", () => 
 
   render(
     <MemoryRouter initialEntries={["/compare?slug=detail-product&slug=second-product"]}>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -2671,8 +2739,6 @@ test("ready compare page preserves specification mode in remove links", () => {
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
 
   expect(
@@ -2680,10 +2746,6 @@ test("ready compare page preserves specification mode in remove links", () => {
       name: "Remove Detail Product from selection",
     }),
   ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product&specs=differences");
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=second-product&slug=third-product&specs=differences",
-  );
 });
 
 test("ready compare page renders all specification rows with missing cells", () => {
@@ -3152,94 +3214,6 @@ test("ready compare page labels the picker as an add-another-product path", () =
   );
 });
 
-test("ready compare cards include a remove link for the first selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=second-product&slug=third-product",
-  );
-});
-
-test("ready compare cards include a remove link for a middle selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=detail-product&slug=third-product",
-  );
-});
-
-test("ready compare cards include a remove link for the last selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=detail-product&slug=second-product",
-  );
-});
-
-test("ready compare card remove link clears all selected slugs when only one is selected", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug],
-      products: [buildProductSummary(DETAIL_PRODUCT)],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare",
-  );
-});
-
 test("compare route renders the compare error boundary when the loader throws", () => {
   mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
@@ -3335,7 +3309,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   const { rerender } = render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3355,7 +3329,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3366,7 +3340,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3399,7 +3373,7 @@ test("compare save completion settles the visible selection when a new selection
 
   const { rerender } = render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3429,7 +3403,7 @@ test("compare save completion settles the visible selection when a new selection
     startTransition(() => {
       rerender(
         <MemoryRouter>
-          <CompareRoute />
+          <AuthenticatedCompareRoute />
         </MemoryRouter>,
       );
     });
@@ -3541,24 +3515,21 @@ test("comparison matrix keeps its selected view inside a named workspace", () =>
   ).toBeInTheDocument();
 });
 
-test("compared product actions use named navigation landmarks", () => {
+test("compared product summaries expose direct product navigation", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
-  expect(
-    screen.getByRole("navigation", { name: "Actions for Detail Product" }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("navigation", { name: "Actions for Second Product" }),
-  ).toBeInTheDocument();
+  const summaries = screen.getByRole("region", { name: "Product decision summaries" });
+  expect(within(summaries).getByRole("link", { name: "View Detail Product" })).toHaveAttribute(
+    "href",
+    "/products/detail-product",
+  );
+  expect(within(summaries).getByRole("link", { name: "View Second Product" })).toHaveAttribute(
+    "href",
+    "/products/second-product",
+  );
 });
-
-function openIndividualProductDetails() {
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
-}
 
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
   mockedUseLoaderData.mockReturnValue({
@@ -3715,8 +3686,26 @@ function getSaveFeedbackStatus() {
 function renderCompareRoute() {
   return render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
+  );
+}
+
+function AuthenticatedCompareRoute() {
+  return (
+    <Routes>
+      <Route
+        element={
+          <Outlet
+            context={{
+              viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+            }}
+          />
+        }
+      >
+        <Route path="*" element={<CompareRoute />} />
+      </Route>
+    </Routes>
   );
 }
 

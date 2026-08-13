@@ -1,7 +1,7 @@
 import {
   buildSpecificationMatrixRows,
   type SpecificationMatrixProduct,
-} from "../../../src/routes/compare/specification-matrix-data";
+} from "../../../src/routes/compare/live/specification-matrix";
 
 type MatrixAttribute = SpecificationMatrixProduct["currentAttributes"][number];
 type MatrixAttributeFixture = Pick<MatrixAttribute, "code" | "displayName" | "valueText"> &

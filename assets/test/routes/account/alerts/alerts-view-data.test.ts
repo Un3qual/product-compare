@@ -1,10 +1,12 @@
 import {
   alertRuleLabel,
-  buildAlertsViewData,
   observationDateLabel,
+} from "../../../../src/routes/account/alerts/alert-rows/alert-event-view";
+import {
+  buildAlertsViewData,
   priceWatchToggleControl,
   priceWatchLabel,
-} from "../../../../src/routes/account/alerts/alerts-view-data";
+} from "../../../../src/routes/account/alerts/watches/price-watch-view";
 
 const alerts = [
   { id: "alert-1", ruleType: "TARGET_PRICE", observedAt: "2026-07-13T20:00:00Z" },

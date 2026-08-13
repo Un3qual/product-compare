@@ -2,8 +2,8 @@ import { readFileSync } from "node:fs";
 
 const dataTables = [
   "src/routes/commerce/revenue/AttributionLedger.tsx",
-  "src/routes/compare/CompareSpecificationMatrix.tsx",
-  "src/routes/compare/DecisionSummary.tsx",
+  "src/routes/compare/live/SpecificationMatrix.tsx",
+  "src/routes/compare/live/DecisionSummary.tsx",
 ] as const;
 
 test.each(dataTables)("%s delegates its row and column model to TanStack Table", (path) => {

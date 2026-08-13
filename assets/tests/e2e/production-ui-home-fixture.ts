@@ -351,6 +351,9 @@ function compareProduct(product: (typeof products)[number]) {
     })),
     description: `${product.name} comparison details.`,
     id: `${product.id}-compare`,
+    offerTruth: {
+      asOf: product.offer.observedAt,
+    },
     merchantProducts: {
       edges: [
         {

@@ -176,6 +176,100 @@ test("login renders typed credential errors from the GraphQL payload", async ({ 
   await expect(page).toHaveURL("/auth/login");
 });
 
+test("guest price-watch intent returns through login for review without automatic submission", async ({
+  page,
+}) => {
+  const password = randomUUID();
+  const productResponse = priceWatchProductResponse();
+  const requests = await mockGraphQL(page, {
+    RootRouteQuery: [
+      rootViewerResponse(),
+      rootViewerResponse(),
+      rootViewerResponse({ id: "member-1", email: "member@example.com" }),
+      rootViewerResponse({ id: "member-1", email: "member@example.com" }),
+    ],
+    ProductDetailRouteQuery: [productResponse, productResponse],
+    LoginRouteMutation: {
+      data: {
+        login: {
+          viewer: { id: "member-1", email: "member@example.com", isOperator: false },
+          errors: [],
+        },
+      },
+    },
+    AlertOperationsCreatePriceWatchMutation: {
+      data: {
+        createPriceWatch: {
+          watch: {
+            id: "watch-1",
+            productName: "Field Camera",
+            ruleType: "TARGET_PRICE",
+            currency: "USD",
+            targetAmount: "125.00",
+            percentageDrop: null,
+            enabled: true,
+          },
+          errors: [],
+        },
+      },
+    },
+  });
+
+  await page.goto("/products/field-camera");
+  await page.getByRole("button", { name: "Watch price or availability" }).click();
+  const amount = page.getByLabel("Target landed price");
+  await amount.fill("125.00");
+  const createWatch = page.getByRole("button", { name: "Create watch" });
+  await createWatch.click();
+
+  const dialog = page.getByRole("dialog", { name: "Sign in to watch this product" });
+  await expect(dialog).toBeVisible();
+  expect(requests.some(({ operationName }) => operationName.includes("CreatePriceWatch"))).toBe(
+    false,
+  );
+
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(createWatch).toBeFocused();
+  await expect(amount).toHaveValue("125.00");
+
+  await createWatch.click();
+  await dialog.getByRole("button", { name: "Sign in" }).click();
+  await expect(page).toHaveURL(
+    /\/auth\/login\?returnTo=%2Fproducts%2Ffield-camera&intent=price_watch$/,
+  );
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.sessionStorage.getItem("product-compare.pending-intent")),
+    )
+    .not.toBeNull();
+  await page.getByLabel("Email").fill("member@example.com");
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+
+  await expect(page).toHaveURL("/products/field-camera");
+  await page.getByRole("button", { name: "Watch price or availability" }).click();
+  await expect(page.getByRole("status")).toContainText("Your watch draft was restored");
+  await expect(page.getByLabel("Target landed price")).toHaveValue("125.00");
+  expect(requests.some(({ operationName }) => operationName.includes("CreatePriceWatch"))).toBe(
+    false,
+  );
+
+  await page.getByRole("button", { name: "Create watch" }).click();
+  await expect(page.getByRole("status")).toContainText("Watch created");
+  expect(requests).toContainEqual({
+    operationName: "AlertOperationsCreatePriceWatchMutation",
+    variables: {
+      input: {
+        currency: "USD",
+        productId: "product-field-camera",
+        ruleType: "TARGET_PRICE",
+        targetAmount: "125.00",
+      },
+    },
+  });
+});
+
 test("register redirects to the home route after a successful session mutation", async ({
   page,
 }) => {
@@ -357,3 +451,39 @@ test("logout clears the browser session through GraphQL and returns to sign in",
     variables: {},
   });
 });
+
+function priceWatchProductResponse(): GraphQLMockResponse {
+  return {
+    data: {
+      product: {
+        id: "product-field-camera",
+        name: "Field Camera",
+        slug: "field-camera",
+        description: "A detailed field camera.",
+        modelNumber: "FC-36",
+        seo: {
+          title: "Field Camera specifications and prices | Product Compare",
+          description: "Compare Field Camera specifications and prices.",
+          canonicalPath: "/products/field-camera",
+          indexable: true,
+          imageUrl: null,
+          structuredData: null,
+        },
+        brand: { id: "brand-acme", name: "Acme" },
+        currentAttributes: [],
+        offerTruth: {
+          asOf: "2026-08-12T17:00:00Z",
+          offerCount: 0,
+          observedOfferCount: 0,
+          eligibleOfferCount: 0,
+          currencySummaries: [],
+        },
+        priceHistory90d: [],
+        merchantProducts: {
+          edges: [],
+          pageInfo: { endCursor: null, hasNextPage: false },
+        },
+      },
+    },
+  };
+}

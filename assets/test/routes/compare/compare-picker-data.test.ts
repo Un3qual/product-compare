@@ -7,7 +7,7 @@ import {
   comparePickerResetToken,
   isComparePickerEmpty,
   nextComparePickerPageCursor,
-} from "../../../src/routes/compare/compare-picker-data";
+} from "../../../src/routes/compare/picker/compare-picker";
 
 const PRODUCTS = [
   {

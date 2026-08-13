@@ -6,7 +6,7 @@ import savedComparisonsRouteQueryArtifact, {
   type SavedComparisonsRouteQuery,
 } from "../../../src/__generated__/SavedComparisonsRouteQuery.graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
-import { SavedComparisonsRoute } from "../../../src/routes/compare/SavedComparisonsRoute";
+import { SavedComparisonsRoute } from "../../../src/routes/compare/saved/SavedComparisonsRoute";
 import { chooseSelectOption } from "../../helpers/base-select";
 
 const { fetchGraphQLMock, useLoaderDataMock } = vi.hoisted(() => ({

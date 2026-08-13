@@ -14,7 +14,7 @@ import {
   snapshotRevocationRowState,
   snapshotFromNode,
   type PublishedComparisonSnapshot,
-} from "../../../src/routes/compare/share-comparison-data";
+} from "../../../src/routes/compare/sharing/share-comparison";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 
 const MUTATION_ERROR = {

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
@@ -133,15 +133,14 @@ const compareRouteQueryDescriptor = {
   },
 };
 
-const compareRouteQueryRef = mockPreloadedQuery(
-  compareRouteQueryDescriptor.__relayQuery.variables,
-);
+const compareRouteQueryRef = mockPreloadedQuery(compareRouteQueryDescriptor.__relayQuery.variables);
 
 function buildCombinedCompareQuery() {
   return {
     data: {
       comparisonProducts: [DETAIL_PRODUCT, SECOND_PRODUCT].map((product) => ({
         ...product,
+        offerTruth: { asOf: "2026-06-29T13:00:00Z" },
         merchantProducts: {
           edges: [],
           pageInfo: {
@@ -166,6 +165,7 @@ function buildEmptyOfferContextSummary(productId: string) {
     hasMoreActiveOffers: false,
     hasMoreCoupons: false,
     latestPriceObservedAt: null,
+    referenceTime: "2026-06-29T13:00:00Z",
   };
 }
 
@@ -258,11 +258,10 @@ test("compare route renders compared product cards from batched loader summaries
 
   render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
@@ -286,12 +285,11 @@ test("compare route does not require per-product Relay detail reads", () => {
 
   render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), compareRouteQueryRef);
@@ -315,7 +313,7 @@ test("compare route saves the current selection through a Relay mutation", async
 
   render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -337,6 +335,24 @@ test("compare route saves the current selection through a Relay mutation", async
     "Comparison saved.",
   );
 });
+
+function AuthenticatedCompareRoute() {
+  return (
+    <Routes>
+      <Route
+        element={
+          <Outlet
+            context={{
+              viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+            }}
+          />
+        }
+      >
+        <Route path="*" element={<CompareRoute />} />
+      </Route>
+    </Routes>
+  );
+}
 
 function buildReadyLoaderData() {
   return {

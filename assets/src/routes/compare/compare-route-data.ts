@@ -31,6 +31,7 @@ export interface CompareAvailableOfferContextSummary {
   hasMoreActiveOffers: boolean;
   hasMoreCoupons: boolean;
   latestPriceObservedAt: string | null;
+  referenceTime: string;
 }
 
 export interface CompareUnavailableOfferContextSummary {
@@ -137,7 +138,7 @@ function summarizeOfferContexts(products: PresentCompareProduct[]) {
 
   for (const product of products) {
     offerContexts[product.id] = product.merchantProducts
-      ? summarizeOfferContext(product.id, product.merchantProducts)
+      ? summarizeOfferContext(product.id, product.merchantProducts, String(product.offerTruth.asOf))
       : summarizeUnavailableOfferContext(product.id);
   }
 
@@ -147,6 +148,7 @@ function summarizeOfferContexts(products: PresentCompareProduct[]) {
 function summarizeOfferContext(
   productId: string,
   connection: CompareOfferConnection,
+  referenceTime: string,
 ): CompareAvailableOfferContextSummary {
   const offerNodes = connection.edges.map(({ node }) => node);
   const hasMoreActiveOffers = connection.pageInfo.hasNextPage;
@@ -160,6 +162,7 @@ function summarizeOfferContext(
     hasMoreActiveOffers,
     hasMoreCoupons: offerNodes.some((offer) => offer.activeCoupons?.pageInfo.hasNextPage ?? false),
     latestPriceObservedAt: mostRecentObservedAt(offerNodes),
+    referenceTime,
   };
 }
 
