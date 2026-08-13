@@ -13,9 +13,7 @@ import {
 } from "$relay/route-preload";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
-import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { Label } from "$ui/primitives/Label";
 import {
@@ -58,6 +56,10 @@ const cjProgramsRouteQuery = graphql`
       edges {
         node {
           id
+          advertiserId
+          advertiserName
+          stage
+          warningCodes
           ...ProgramLifecycleRow_program
         }
       }
@@ -142,9 +144,15 @@ function preloadUnmatchedFeeds(
 const styles = create({
   controls: {
     alignItems: "end",
-    display: "grid",
-    gap: "0.85rem",
-    paddingBlock: "0.25rem",
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--pc-radius-large)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.65rem",
+    padding: "0.75rem",
   },
   field: {
     display: "grid",
@@ -155,6 +163,19 @@ const styles = create({
     fontSize: "0.82rem",
     fontWeight: 600,
   },
+  dashboard: {
+    display: "grid",
+    gap: "1rem",
+    gridTemplateAreas: {
+      default: '"lifecycle lifecycle" "attention feedHealth" "programs programs" "unmatched unmatched"',
+      "@media (max-width: 48rem)": '"lifecycle" "attention" "feedHealth" "programs" "unmatched"',
+    },
+    gridTemplateColumns: {
+      default: "repeat(2, minmax(0, 1fr))",
+      "@media (max-width: 48rem)": "minmax(0, 1fr)",
+    },
+    minWidth: 0,
+  },
 });
 
 export function CJProgramsRoute() {
@@ -162,21 +183,12 @@ export function CJProgramsRoute() {
 
   return (
     <PageShell
+      actions={<CJProgramControls pagination={loaderData.pagination} />}
       description="Track each advertiser program from discovery through its application outcome."
       eyebrow="Ingestion"
       title="CJ programs"
     >
-      <WorkspaceLayout
-        context={
-          <ContextRail
-            description="Filter programs while their lifecycle counts remain global."
-            label="Program controls"
-          >
-            <CJProgramControls pagination={loaderData.pagination} />
-          </ContextRail>
-        }
-        label="CJ program operations"
-      >
+      <section aria-label="CJ program operations" {...props(styles.dashboard)}>
         {loaderData.status === "ready" ? (
           <ResettableErrorBoundary
             fallback={<CJProgramsUnavailableFallback />}
@@ -193,7 +205,7 @@ export function CJProgramsRoute() {
         ) : (
           <CJProgramsUnavailableFallback />
         )}
-      </WorkspaceLayout>
+      </section>
     </PageShell>
   );
 }
@@ -278,7 +290,12 @@ function CJProgramControls({ pagination }: { pagination: CJProgramsPagination })
   }));
 
   return (
-    <form action="/ingestion/cj-programs" method="get" {...props(styles.controls)}>
+    <form
+      action="/ingestion/cj-programs"
+      aria-label="CJ program filters"
+      method="get"
+      {...props(styles.controls)}
+    >
       <input name="first" type="hidden" value={pagination.first} />
       <input name="unmatchedFirst" type="hidden" value={pagination.unmatchedFirst} />
       {pagination.unmatchedAfter ? (

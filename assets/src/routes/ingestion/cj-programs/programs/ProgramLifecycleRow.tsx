@@ -19,8 +19,9 @@ import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   CJ_PROGRAM_STAGES,
+  cjProgramRequiredAction,
   cjProgramStageLabel,
-  cjProgramWarningCopy,
+  cjProgramWarningMessages,
   editableCJProgramStage,
   type CJProgramStage,
 } from "./lifecycle-policy";
@@ -103,12 +104,14 @@ const styles = create({
   requiredAction: { fontWeight: 600, margin: 0 },
   warnings: {
     color: tokens.textSecondary,
-    display: "grid",
+    display: "flex",
+    flexWrap: "wrap",
     fontSize: "0.82rem",
-    gap: "0.15rem",
+    gap: "0.15rem 1.15rem",
     lineHeight: 1.3,
+    listStyle: "none",
     margin: 0,
-    paddingInlineStart: "1rem",
+    padding: 0,
   },
 });
 
@@ -128,9 +131,7 @@ export function ProgramLifecycleRow({
   const [commitUpdate, isUpdateInFlight] =
     useMutation<ProgramLifecycleRowUpdateCJProgramMutation>(updateCJProgramMutation);
   const stageLabel = cjProgramStageLabel(program.stage) ?? program.stage;
-  const warnings = program.warningCodes
-    .map(cjProgramWarningCopy)
-    .filter((warning) => warning !== null);
+  const warnings = cjProgramWarningMessages(program.warningCodes);
   const lastChanged = formatCJDateTime(program.lastChanged);
   const stageOptions = [
     ...(stage ? [] : [{ label: "Stage unavailable", value: "" }]),
@@ -202,7 +203,7 @@ export function ProgramLifecycleRow({
         <TableCell style={styles.cell}>
           <div {...props(styles.action)}>
             <p {...props(styles.requiredAction)}>
-              {cjProgramRequiredAction(program.stage, warnings)}
+              {cjProgramRequiredAction(program.stage, program.warningCodes)}
             </p>
             <Button
               aria-controls={editorId}
@@ -305,31 +306,4 @@ function formatFeedCount(feedCount: number | null) {
   }
 
   return feedCount === 1 ? "1 feed" : `${feedCount} feeds`;
-}
-
-function cjProgramRequiredAction(
-  stage: Parameters<typeof cjProgramStageLabel>[0],
-  warnings: readonly string[],
-) {
-  if (warnings.length > 0) {
-    return "Review feed warnings";
-  }
-
-  switch (stage) {
-    case "NEW":
-      return "Decide whether to pursue";
-    case "CONSIDERING":
-      return "Complete program review";
-    case "SELECTED":
-      return "Submit application";
-    case "APPLIED":
-      return "Monitor application";
-    case "ACCEPTED":
-      return "Inspect available feeds";
-    case "NOT_PURSUING":
-    case "DECLINED":
-      return "No action required";
-    default:
-      return "Review new lifecycle stage";
-  }
 }

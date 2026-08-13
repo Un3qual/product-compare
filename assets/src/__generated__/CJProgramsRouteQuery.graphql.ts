@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9f0b195af57ae89c6a0be373f72c7048>>
+ * @generated SignedSource<<8a05efb748302c593963d97f8ff05572>>
  * @lightSyntaxTransform
  */
 
@@ -11,6 +11,7 @@ import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CJProgramSort = "FEED_COUNT_DESC" | "LAST_CHANGED_DESC" | "NAME_ASC" | "%future added value";
 export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
+export type CJProgramWarningCode = "MISSING_ADVERTISER_NAME" | "MISSING_PRODUCT_COUNT" | "NON_ENGLISH_LANGUAGE" | "NON_USD_CURRENCY" | "NON_US_MARKET" | "%future added value";
 export type CJProgramsRouteQuery$variables = {
   after?: string | null;
   first: number;
@@ -30,7 +31,11 @@ export type CJProgramsRouteQuery$data = {
   readonly cjPrograms: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly advertiserId: string;
+        readonly advertiserName: string | null;
         readonly id: string;
+        readonly stage: CJProgramStage;
+        readonly warningCodes: ReadonlyArray<CJProgramWarningCode>;
         readonly " $fragmentSpreads": FragmentRefs<"ProgramLifecycleRow_program">;
       };
     }>;
@@ -159,6 +164,34 @@ v6 = {
 v7 = {
   "alias": null,
   "args": null,
+  "kind": "ScalarField",
+  "name": "advertiserId",
+  "storageKey": null
+},
+v8 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "advertiserName",
+  "storageKey": null
+},
+v9 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "stage",
+  "storageKey": null
+},
+v10 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "warningCodes",
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
   "concreteType": "PageInfo",
   "kind": "LinkedField",
   "name": "pageInfo",
@@ -226,6 +259,10 @@ return {
                 "plural": false,
                 "selections": [
                   (v6/*:: as any*/),
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/),
+                  (v10/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
@@ -237,7 +274,7 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*:: as any*/)
+          (v11/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -282,27 +319,10 @@ return {
                 "plural": false,
                 "selections": [
                   (v6/*:: as any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "advertiserId",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "advertiserName",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "stage",
-                    "storageKey": null
-                  },
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/),
+                  (v10/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -323,13 +343,6 @@ return {
                     "kind": "ScalarField",
                     "name": "feedCount",
                     "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "warningCodes",
-                    "storageKey": null
                   }
                 ],
                 "storageKey": null
@@ -337,23 +350,23 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*:: as any*/)
+          (v11/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "910511a7fa50828501a31d2616feabce",
+    "cacheID": "0fce2ddf2826f4d6e9aa889e6f55359a",
     "id": null,
     "metadata": {},
     "name": "CJProgramsRouteQuery",
     "operationKind": "query",
-    "text": "query CJProgramsRouteQuery(\n  $first: Int!\n  $after: String\n  $stage: CJProgramStage\n  $sort: CJProgramSort!\n) {\n  cjProgramStageCounts {\n    new\n    considering\n    selected\n    applied\n    accepted\n    notPursuing\n    declined\n  }\n  cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) {\n    edges {\n      node {\n        id\n        ...ProgramLifecycleRow_program\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment ProgramLifecycleRow_program on CJProgram {\n  id\n  advertiserId\n  advertiserName\n  stage\n  note\n  lastChanged\n  feedCount\n  warningCodes\n}\n"
+    "text": "query CJProgramsRouteQuery(\n  $first: Int!\n  $after: String\n  $stage: CJProgramStage\n  $sort: CJProgramSort!\n) {\n  cjProgramStageCounts {\n    new\n    considering\n    selected\n    applied\n    accepted\n    notPursuing\n    declined\n  }\n  cjPrograms(first: $first, after: $after, stage: $stage, sort: $sort) {\n    edges {\n      node {\n        id\n        advertiserId\n        advertiserName\n        stage\n        warningCodes\n        ...ProgramLifecycleRow_program\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment ProgramLifecycleRow_program on CJProgram {\n  id\n  advertiserId\n  advertiserName\n  stage\n  note\n  lastChanged\n  feedCount\n  warningCodes\n}\n"
   }
 };
 })();
 
-(node as any).hash = "f9f4b96b8b06a5e5ab7537ac023c709d";
+(node as any).hash = "d467f3ab069fcceeca964d43b0e912b5";
 
 export default node;

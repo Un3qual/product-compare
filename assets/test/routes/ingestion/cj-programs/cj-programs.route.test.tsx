@@ -153,6 +153,8 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
 
   const summary = screen.getByLabelText("CJ program lifecycle summary");
 
+  expect(within(summary).getByText("All programs")).toBeInTheDocument();
+  expect(within(summary).getByText("7")).toBeInTheDocument();
   expect(within(summary).getByText("New")).toBeInTheDocument();
   expect(within(summary).getByText("Considering")).toBeInTheDocument();
   expect(within(summary).getByText("Selected")).toBeInTheDocument();
@@ -161,6 +163,17 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
   expect(within(summary).getByText("Not pursuing")).toBeInTheDocument();
   expect(within(summary).getByText("Declined")).toBeInTheDocument();
   expect(within(summary).getAllByText("1")).toHaveLength(7);
+  expect(within(summary).queryByRole("progressbar")).not.toBeInTheDocument();
+
+  expect(screen.getByRole("form", { name: "CJ program filters" })).toBeVisible();
+  expect(
+    screen.queryByRole("complementary", { name: "Program controls" }),
+  ).not.toBeInTheDocument();
+  const attention = screen.getByRole("region", { name: "Program attention" });
+  expect(attention).toHaveTextContent("Needs attention on this page");
+  expect(attention).toHaveTextContent("5 programs on this page need attention");
+  expect(attention).toHaveTextContent("New Merchant");
+  expect(attention).toHaveTextContent("Review feed warnings");
 
   expect(screen.getByRole("combobox", { name: "Stage" })).toBeInTheDocument();
   expect(screen.getByRole("combobox", { name: "Sort programs" })).toBeInTheDocument();

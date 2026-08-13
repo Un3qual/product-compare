@@ -66,3 +66,41 @@ export function cjProgramWarningCopy(code: CJProgramWarningCode) {
       return null;
   }
 }
+
+export function cjProgramWarningMessages(codes: readonly CJProgramWarningCode[]) {
+  return codes.map(cjProgramWarningCopy).filter((warning) => warning !== null);
+}
+
+export function cjProgramRequiredAction(
+  stage: GeneratedCJProgramStage,
+  warningCodes: readonly CJProgramWarningCode[],
+) {
+  if (cjProgramWarningMessages(warningCodes).length > 0) {
+    return "Review feed warnings";
+  }
+
+  switch (stage) {
+    case "NEW":
+      return "Decide whether to pursue";
+    case "CONSIDERING":
+      return "Complete program review";
+    case "SELECTED":
+      return "Submit application";
+    case "APPLIED":
+      return "Monitor application";
+    case "ACCEPTED":
+      return "Inspect available feeds";
+    case "NOT_PURSUING":
+    case "DECLINED":
+      return "No action required";
+    default:
+      return "Review new lifecycle stage";
+  }
+}
+
+export function cjProgramNeedsAttention(
+  stage: GeneratedCJProgramStage,
+  warningCodes: readonly CJProgramWarningCode[],
+) {
+  return cjProgramRequiredAction(stage, warningCodes) !== "No action required";
+}
