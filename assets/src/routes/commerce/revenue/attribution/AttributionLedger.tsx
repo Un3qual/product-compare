@@ -1,6 +1,7 @@
 import { create, props } from "@stylexjs/stylex";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { useState } from "react";
+import { ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
 import type { AttributionLedger_connection$key } from "$generated/AttributionLedger_connection.graphql";
 import type { AttributionLedgerPaginationQuery } from "$generated/AttributionLedgerPaginationQuery.graphql";
@@ -20,8 +21,19 @@ import {
   TableRow,
 } from "$ui/primitives/Table";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../summary/revenue-summary-data";
-import { ConversionDetails } from "./ConversionDetails";
+import {
+  ATTRIBUTION_LEDGER_PAGE_SIZE,
+  formatCurrencyAmount,
+} from "../summary/revenue-summary-data";
+import { AttributionClickDetails } from "./AttributionClickDetails";
+import { buildAttributionOutcome } from "./attribution-ledger-data";
+import {
+  attributionConfidenceCopy,
+  attributionConfidenceTone,
+  conversionStatusCopy,
+  conversionStatusTone,
+} from "./ConversionDetails";
+import { RecentConversion } from "./RecentConversion";
 
 export const attributionLedgerRouteQuery = graphql`
   query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $first: Int!, $after: String) {
@@ -30,58 +42,56 @@ export const attributionLedgerRouteQuery = graphql`
 `;
 
 const styles = create({
-  cell: { minWidth: "12rem", textAlign: "start", verticalAlign: "top" },
-  commerceColumn: { width: "19%" },
-  code: {
-    fontFamily: tokens.fontMono,
-    fontSize: "0.78rem",
-    overflowWrap: "anywhere",
+  wrapper: {
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--pc-radius-large)",
+    borderStyle: "solid",
+    borderWidth: "1px",
+    display: "grid",
+    gap: "0.75rem",
+    gridArea: "ledger",
+    minWidth: 0,
+    paddingBlock: "0.9rem",
   },
-  conversionList: { display: "grid", gap: "0.4rem", listStyle: "none", margin: 0, padding: 0 },
-  conversionColumn: { width: "37%" },
-  factGroup: { display: "grid", gap: "0.25rem" },
-  identity: {
-    fontSize: "0.9rem",
-    fontWeight: 700,
-    lineHeight: 1.3,
-    overflowWrap: "anywhere",
-  },
-  line: {
-    alignItems: "baseline",
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "0.2rem 0.45rem",
-  },
-  metadataLine: {
+  header: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.2rem 0.4rem",
+    gap: "0.5rem 1rem",
+    justifyContent: "space-between",
+    paddingInline: "1rem",
   },
-  primary: {
-    fontWeight: 700,
-    lineHeight: 1.3,
-    margin: 0,
+  heading: { display: "grid", gap: "0.2rem" },
+  title: { fontSize: "1rem", margin: 0 },
+  description: { color: tokens.textSecondary, fontSize: "0.8rem", margin: 0 },
+  cell: {
+    fontSize: "0.8rem",
+    minWidth: 0,
     overflowWrap: "anywhere",
+    textAlign: "start",
+    verticalAlign: "middle",
   },
-  requestColumn: { width: "18%" },
-  row: { borderBlockStart: "1px solid var(--pc-border-quiet)" },
-  secondary: {
-    color: tokens.textSecondary,
-    fontSize: "0.88rem",
-    lineHeight: 1.4,
-    margin: 0,
-    overflowWrap: "anywhere",
-  },
+  row: { borderBlockStart: `1px solid ${tokens.borderQuiet}` },
   table: {
     borderCollapse: "collapse",
-    minWidth: { default: "44rem", "@media (min-width: 48rem)": 0 },
+    minWidth: { default: "52rem", "@media (min-width: 72rem)": 0 },
     tableLayout: "fixed",
     width: "100%",
   },
-  title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
-  visitColumn: { width: "26%" },
-  wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
+  visitColumn: { width: "15%" },
+  customerColumn: { width: "20%" },
+  commerceColumn: { width: "23%" },
+  amountColumn: { width: "11%" },
+  stateColumn: { width: "14%" },
+  actionColumn: { width: "8%" },
+  time: { fontWeight: 650, whiteSpace: "nowrap" },
+  identity: { display: "grid", gap: "0.1rem" },
+  primary: { fontWeight: 700, lineHeight: 1.25, overflowWrap: "anywhere" },
+  secondary: { color: tokens.textSecondary, fontSize: "0.72rem", lineHeight: 1.25 },
+  state: { display: "flex", flexWrap: "wrap", gap: "0.25rem" },
+  actionCell: { textAlign: "end", whiteSpace: "nowrap" },
+  actionButton: { minHeight: "2rem", paddingInline: "0.4rem" },
+  pagination: { paddingInline: "1rem" },
 });
 
 const attributionLedgerFragment = graphql`
@@ -116,7 +126,16 @@ const attributionLedgerRowFragment = graphql`
     linkType
     matchedConversions {
       affiliateNetworkCode
+      affiliateNetworkName
+      attributionConfidence
+      commissionAmount
+      currency
+      merchantName
       networkConversionRef
+      orderAmount
+      productName
+      reportedAt
+      status
       ...ConversionDetails_conversion
     }
     merchantName
@@ -137,30 +156,45 @@ const columns = columnHelper.columns([
   columnHelper.display({
     id: "visit",
     header: "Visit",
-    cell: ({ row }) => <AttributionVisit click={row.original} />,
+    cell: ({ row }) => (
+      <time dateTime={row.original.insertedAt} {...props(styles.time)}>
+        {formatProductDateTimeLabel(row.original.insertedAt)}
+      </time>
+    ),
   }),
   columnHelper.display({
-    id: "request",
-    header: "Request",
-    cell: ({ row }) => <AttributionDiagnostics click={row.original} />,
+    id: "customer",
+    header: "Customer",
+    cell: ({ row }) => <AttributionIdentity click={row.original} />,
   }),
   columnHelper.display({
     id: "commerce",
     header: "Commerce",
-    cell: ({ row }) => <AttributionCommerce click={row.original} />,
+    cell: ({ row }) => (
+      <span {...props(styles.primary)}>
+        {row.original.merchantName} · {row.original.productName ?? "No product"}
+      </span>
+    ),
   }),
   columnHelper.display({
-    id: "conversion",
-    header: "Conversion",
-    cell: ({ row }) => <AttributionConversionList conversions={row.original.matchedConversions} />,
+    id: "order",
+    header: "Order",
+    cell: ({ row }) => <AttributionAmount click={row.original} kind="order" />,
   }),
+  columnHelper.display({
+    id: "commission",
+    header: "Commission",
+    cell: ({ row }) => <AttributionAmount click={row.original} kind="commission" />,
+  }),
+  columnHelper.display({
+    id: "state",
+    header: "State",
+    cell: ({ row }) => <AttributionState click={row.original} />,
+  }),
+  columnHelper.display({ id: "details", header: "", cell: () => null }),
 ]);
 
-export function AttributionLedger({
-  fragmentRef,
-}: {
-  fragmentRef: AttributionLedger_connection$key;
-}) {
+export function AttributionLedger({ fragmentRef }: { fragmentRef: AttributionLedger_connection$key }) {
   const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
     AttributionLedgerPaginationQuery,
     AttributionLedger_connection$key
@@ -184,63 +218,157 @@ export function AttributionLedger({
   });
 
   return (
-    <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
-      <div>
-        <h2 id="attribution-ledger-heading" {...props(styles.title)}>
-          Attribution ledger
-        </h2>
-        <p>Individual visits and purchases for the active revenue filters.</p>
-      </div>
-      {clicks.length === 0 ? (
-        <p>No attribution clicks match these filters.</p>
-      ) : (
-        <Table aria-labelledby="attribution-ledger-heading" style={styles.table} tabIndex={0}>
-          <colgroup>
-            <col {...props(styles.visitColumn)} />
-            <col {...props(styles.requestColumn)} />
-            <col {...props(styles.commerceColumn)} />
-            <col {...props(styles.conversionColumn)} />
-          </colgroup>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} scope="col">
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id} style={styles.row}>
-                {row.getAllCells().map((cell) => (
-                  <TableCell key={cell.id} style={styles.cell}>
-                    <table.FlexRender cell={cell} />
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
-      <AttributionPaginationControl
-        failed={paginationFailed}
-        hasNext={hasNext}
-        isLoadingNext={isLoadingNext}
-        onLoadMore={loadMore}
-      />
-    </section>
+    <>
+      <RecentConversion clicks={clicks} />
+      <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
+        <header {...props(styles.header)}>
+          <div {...props(styles.heading)}>
+            <h2 id="attribution-ledger-heading" {...props(styles.title)}>
+              Attribution clicks
+            </h2>
+            <p {...props(styles.description)}>
+              Individual visits and purchases for the active revenue filters.
+            </p>
+          </div>
+          <AttributionPaginationControl
+            failed={paginationFailed}
+            hasNext={hasNext}
+            isLoadingNext={isLoadingNext}
+            onLoadMore={loadMore}
+          />
+        </header>
+        {clicks.length === 0 ? (
+          <p {...props(styles.pagination)}>No attribution clicks match these filters.</p>
+        ) : (
+          <Table aria-label="Attribution ledger" style={styles.table} tabIndex={0}>
+            <colgroup>
+              <col {...props(styles.visitColumn)} />
+              <col {...props(styles.customerColumn)} />
+              <col {...props(styles.commerceColumn)} />
+              <col {...props(styles.amountColumn)} />
+              <col {...props(styles.amountColumn)} />
+              <col {...props(styles.stateColumn)} />
+              <col {...props(styles.actionColumn)} />
+            </colgroup>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} scope="col">
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <AttributionLedgerRow click={row.original} key={row.id}>
+                  {row.getAllCells().slice(0, -1).map((cell) => (
+                    <TableCell key={cell.id} style={styles.cell}>
+                      <table.FlexRender cell={cell} />
+                    </TableCell>
+                  ))}
+                </AttributionLedgerRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+      </section>
+    </>
   );
 }
 
-function AttributionPaginationControl({
-  failed,
-  hasNext,
-  isLoadingNext,
-  onLoadMore,
-}: {
+function AttributionLedgerRow({ click, children }: { click: AttributionClick; children: ReactNode }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const time = formatProductDateTimeLabel(click.insertedAt);
+  const identity = attributionIdentityCopy(click);
+  const target = `${identity} at ${time}`;
+  const detailsLabel = `Attribution details for ${target}`;
+
+  return (
+    <>
+      <TableRow style={styles.row}>
+        {children}
+        <TableCell style={[styles.cell, styles.actionCell]}>
+          <Button
+            aria-expanded={isExpanded}
+            aria-label={`${isExpanded ? "Close" : "Show"} details for ${target}`}
+            onClick={() => setIsExpanded((expanded) => !expanded)}
+            size="sm"
+            style={styles.actionButton}
+            type="button"
+            variant="link"
+          >
+            {isExpanded ? "Close details" : "Details"}
+            {isExpanded ? (
+              <ChevronUpIcon aria-hidden="true" size={14} />
+            ) : (
+              <ChevronDownIcon aria-hidden="true" size={14} />
+            )}
+          </Button>
+        </TableCell>
+      </TableRow>
+      {isExpanded ? <AttributionClickDetails click={click} label={detailsLabel} /> : null}
+    </>
+  );
+}
+
+function AttributionIdentity({ click }: { click: AttributionClick }) {
+  return (
+    <span {...props(styles.identity)}>
+      <strong {...props(styles.primary)}>{attributionIdentityCopy(click)}</strong>
+      <span {...props(styles.secondary)}>
+        {click.userEmail
+          ? "Known customer"
+          : click.anonymousVisitor
+            ? "No account linked"
+            : "Identity unavailable"}
+      </span>
+    </span>
+  );
+}
+
+function attributionIdentityCopy(click: AttributionClick) {
+  if (click.userEmail) return click.userEmail;
+  return click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click";
+}
+
+function AttributionAmount({ click, kind }: { click: AttributionClick; kind: "commission" | "order" }) {
+  const outcome = buildAttributionOutcome(click.matchedConversions);
+
+  if (outcome.kind === "none") return <>—</>;
+  if (outcome.kind === "multiple") return <>Multiple</>;
+
+  return (
+    <>
+      {formatCurrencyAmount(
+        kind === "order" ? outcome.conversion.orderAmount : outcome.conversion.commissionAmount,
+        outcome.conversion.currency,
+      )}
+    </>
+  );
+}
+
+function AttributionState({ click }: { click: AttributionClick }) {
+  const outcome = buildAttributionOutcome(click.matchedConversions);
+
+  if (outcome.kind === "none") return <StatusBadge>No conversion</StatusBadge>;
+  if (outcome.kind === "multiple") return <StatusBadge>{outcome.count} conversions</StatusBadge>;
+
+  return (
+    <span {...props(styles.state)}>
+      <StatusBadge tone={conversionStatusTone(outcome.conversion.status)}>
+        {conversionStatusCopy(outcome.conversion.status)}
+      </StatusBadge>
+      <StatusBadge tone={attributionConfidenceTone(outcome.conversion.attributionConfidence)}>
+        {attributionConfidenceCopy(outcome.conversion.attributionConfidence)}
+      </StatusBadge>
+    </span>
+  );
+}
+
+function AttributionPaginationControl({ failed, hasNext, isLoadingNext, onLoadMore }: {
   failed: boolean;
   hasNext: boolean;
   isLoadingNext: boolean;
@@ -258,147 +386,8 @@ function AttributionPaginationControl({
   }
 
   return hasNext ? (
-    <Button disabled={isLoadingNext} onClick={onLoadMore} type="button">
+    <Button disabled={isLoadingNext} onClick={onLoadMore} type="button" variant="link">
       {isLoadingNext ? "Loading more attribution clicks…" : "Load more attribution clicks"}
     </Button>
   ) : null;
-}
-
-function AttributionDiagnostics({ click }: { click: AttributionClick }) {
-  const referrer = referrerCopy(click.referrer);
-
-  return (
-    <div {...props(styles.factGroup)}>
-      <strong title={click.referrer ?? undefined} {...props(styles.primary)}>
-        {referrer}
-      </strong>
-      <div {...props(styles.metadataLine)}>
-        <span title={click.userAgent ?? undefined} {...props(styles.secondary)}>
-          {userAgentCopy(click.userAgent)}
-        </span>
-        <code {...props(styles.code)}>{click.ipAddress ?? "IP not captured"}</code>
-      </div>
-    </div>
-  );
-}
-
-function AttributionCommerce({ click }: { click: AttributionClick }) {
-  return (
-    <div {...props(styles.factGroup)}>
-      <p {...props(styles.primary)}>
-        {click.merchantName}
-        <span {...props(styles.secondary)}> · {click.productName ?? "No product"}</span>
-      </p>
-      <div {...props(styles.metadataLine)}>
-        <StatusBadge>{click.affiliateNetworkName ?? "No network"}</StatusBadge>
-        <code title="Merchant SKU" {...props(styles.code)}>
-          {click.merchantProductExternalSku ?? "No SKU"}
-        </code>
-        <code title="Affiliate program" {...props(styles.code)}>
-          {click.affiliateProgramCode ?? "No affiliate program"}
-        </code>
-      </div>
-    </div>
-  );
-}
-
-function AttributionVisit({ click }: { click: AttributionClick }) {
-  return (
-    <div {...props(styles.factGroup)}>
-      <div {...props(styles.line)}>
-        <time dateTime={click.insertedAt} {...props(styles.primary)}>
-          {formatProductDateTimeLabel(click.insertedAt)}
-        </time>
-        <AttributionIdentity click={click} />
-      </div>
-      <div {...props(styles.metadataLine)}>
-        <StatusBadge tone="accent">{sourceSurfaceCopy(click.sourceSurface)}</StatusBadge>
-        <StatusBadge>{linkTypeCopy(click.linkType)}</StatusBadge>
-      </div>
-    </div>
-  );
-}
-
-function AttributionIdentity({ click }: { click: AttributionClick }) {
-  if (click.userEmail) {
-    return (
-      <span {...props(styles.line)}>
-        <strong {...props(styles.identity)}>{click.userEmail}</strong>
-        <span {...props(styles.secondary)}>Known customer</span>
-      </span>
-    );
-  }
-
-  return (
-    <span {...props(styles.line)}>
-      <strong {...props(styles.primary)}>
-        {click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}
-      </strong>
-      <span {...props(styles.secondary)}>No account linked</span>
-    </span>
-  );
-}
-
-function AttributionConversionList({
-  conversions,
-}: {
-  conversions: AttributionClick["matchedConversions"];
-}) {
-  if (conversions.length === 0) {
-    return <p>No matched conversions.</p>;
-  }
-
-  return (
-    <ul aria-label="Matched conversions" {...props(styles.conversionList)}>
-      {conversions.map((conversion) => (
-        <ConversionDetails
-          conversion={conversion}
-          key={`${conversion.affiliateNetworkCode}:${conversion.networkConversionRef}`}
-        />
-      ))}
-    </ul>
-  );
-}
-
-function sourceSurfaceCopy(value: AttributionClick["sourceSurface"]) {
-  switch (value) {
-    case "API":
-      return "Connected tool";
-    case "EXTENSION":
-      return "Browser extension";
-    case "WEB":
-      return "Product Compare website";
-    default:
-      return "Source unavailable";
-  }
-}
-
-function linkTypeCopy(value: AttributionClick["linkType"]) {
-  switch (value) {
-    case "AFFILIATE":
-      return "Partner link";
-    case "NON_AFFILIATE":
-      return "Direct link";
-    default:
-      return "Link type unavailable";
-  }
-}
-
-function referrerCopy(value: AttributionClick["referrer"]) {
-  if (!value) {
-    return "Not captured";
-  }
-
-  try {
-    const url = new URL(value);
-    const path = url.pathname === "/" ? "" : ` ${url.pathname}`;
-
-    return `${url.hostname}${path}`;
-  } catch {
-    return value;
-  }
-}
-
-function userAgentCopy(value: AttributionClick["userAgent"]) {
-  return value?.replace(/([A-Za-z])\/(?=\d)/g, "$1 ") ?? "Not captured";
 }

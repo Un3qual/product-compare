@@ -3,6 +3,10 @@ import {
   buildRevenueSummaryFilterFormData,
   buildRevenueDashboardMetrics,
 } from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
+import {
+  buildAttributionOutcome,
+  selectRecentLoadedConversion,
+} from "../../../../src/routes/commerce/revenue/attribution/attribution-ledger-data";
 
 test("buildRevenueSummaryFilterFormData normalizes only nullish form values", () => {
   expect(
@@ -210,5 +214,45 @@ test("buildRevenueDashboardMetrics preserves null and empty-string amount semant
       { label: "Commission revenue", value: "Not available" },
       { label: "Average paid price", value: "Not available" },
     ],
+  });
+});
+
+test("selectRecentLoadedConversion selects by reported time across loaded clicks", () => {
+  const earlierReported = { reportedAt: "2026-08-13T10:05:00Z", value: "earlier" };
+  const laterReported = { reportedAt: "2026-08-13T11:00:00Z", value: "later" };
+
+  expect(
+    selectRecentLoadedConversion([
+      { matchedConversions: [earlierReported] },
+      { matchedConversions: [laterReported] },
+    ]),
+  ).toBe(laterReported);
+});
+
+test("selectRecentLoadedConversion keeps loaded order for equal report times", () => {
+  const first = { reportedAt: "2026-08-13T11:00:00Z", value: "first" };
+  const second = { reportedAt: "2026-08-13T11:00:00Z", value: "second" };
+
+  expect(
+    selectRecentLoadedConversion([
+      { matchedConversions: [first] },
+      { matchedConversions: [second] },
+    ]),
+  ).toBe(first);
+  expect(selectRecentLoadedConversion([])).toBeNull();
+});
+
+test("buildAttributionOutcome preserves exact zero, one, and multiple semantics", () => {
+  const paidConversion = { networkConversionRef: "paid" };
+  const reversedConversion = { networkConversionRef: "reversed" };
+
+  expect(buildAttributionOutcome([])).toEqual({ kind: "none" });
+  expect(buildAttributionOutcome([paidConversion])).toEqual({
+    kind: "single",
+    conversion: paidConversion,
+  });
+  expect(buildAttributionOutcome([paidConversion, reversedConversion])).toEqual({
+    kind: "multiple",
+    count: 2,
   });
 });

@@ -149,7 +149,7 @@ export function ConversionDetails({
   );
 }
 
-function conversionStatusTone(value: CommerceConversionStatus) {
+export function conversionStatusTone(value: CommerceConversionStatus) {
   switch (value) {
     case "APPROVED":
     case "PAID":
@@ -163,7 +163,7 @@ function conversionStatusTone(value: CommerceConversionStatus) {
   }
 }
 
-function conversionStatusCopy(value: CommerceConversionStatus) {
+export function conversionStatusCopy(value: CommerceConversionStatus) {
   switch (value) {
     case "APPROVED":
       return "Approved";
@@ -178,7 +178,7 @@ function conversionStatusCopy(value: CommerceConversionStatus) {
   }
 }
 
-function attributionConfidenceCopy(value: CommerceAttributionConfidence) {
+export function attributionConfidenceCopy(value: CommerceAttributionConfidence) {
   switch (value) {
     case "HIGH":
       return "Strong match";
@@ -191,7 +191,7 @@ function attributionConfidenceCopy(value: CommerceAttributionConfidence) {
   }
 }
 
-function attributionConfidenceTone(value: CommerceAttributionConfidence) {
+export function attributionConfidenceTone(value: CommerceAttributionConfidence) {
   switch (value) {
     case "HIGH":
       return "positive";

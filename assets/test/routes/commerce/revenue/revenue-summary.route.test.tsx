@@ -282,6 +282,10 @@ test("revenue route keeps exact conversion timing visible in the ledger", () => 
 
   renderRevenueSummaryRoute();
 
+  const visitRow = screen.getByRole("row", { name: /operator@example\.test/ });
+  fireEvent.click(
+    within(visitRow).getByRole("button", { name: /Show details for operator@example\.test/ }),
+  );
   const conversion = screen.getByRole("group", {
     name: "Conversion impact-conversion-123",
   });
@@ -295,11 +299,6 @@ test("revenue route keeps exact conversion timing visible in the ledger", () => 
     "datetime",
     "2026-06-01T09:00:00Z",
   );
-  expect(
-    screen.queryByRole("button", {
-      name: "Show conversion impact-conversion-123 details",
-    }),
-  ).not.toBeInTheDocument();
 });
 
 test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
@@ -315,7 +314,7 @@ test("revenue route renders customer-facing visit and purchase details without i
   renderRevenueSummaryRoute();
 
   const summary = screen.getByRole("region", { name: "Attribution performance" });
-  const ledgerHeading = screen.getByRole("heading", { name: "Attribution ledger" });
+  const ledgerHeading = screen.getByRole("heading", { name: "Attribution clicks" });
 
   expect(
     summary.compareDocumentPosition(ledgerHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -326,36 +325,47 @@ test("revenue route renders customer-facing visit and purchase details without i
     within(ledger)
       .getAllByRole("columnheader")
       .map((header) => header.textContent),
-  ).toEqual(["Visit", "Request", "Commerce", "Conversion"]);
+  ).toEqual(["Visit", "Customer", "Commerce", "Order", "Commission", "State", ""]);
   expect(ledger.querySelectorAll("dl")).toHaveLength(0);
   const visitRow = within(ledger).getByRole("row", { name: /operator@example\.test/ });
   expect(within(visitRow).getByText("May 31, 2026, 12:30 PM")).toHaveAttribute(
     "datetime",
     "2026-05-31T12:30:00Z",
   );
-  expect(within(ledger).getByText("operator@example.test")).toBeInTheDocument();
-  expect(within(ledger).getByText("Known customer")).toBeInTheDocument();
-  expect(within(ledger).getByText("Product Compare website")).toBeInTheDocument();
-  expect(within(ledger).getByText("Partner link")).toBeInTheDocument();
-  expect(within(ledger).getByText("example.test /compare")).toHaveAttribute(
-    "title",
-    "https://example.test/compare",
-  );
-  expect(within(ledger).queryByText("https://example.test/compare")).not.toBeInTheDocument();
-  expect(within(ledger).getByText("ExampleBrowser 1.0")).toHaveAttribute(
-    "title",
-    "ExampleBrowser/1.0",
-  );
-  expect(within(ledger).queryByText("ExampleBrowser/1.0")).not.toBeInTheDocument();
-  expect(within(ledger).getByText("203.0.113.44")).toBeInTheDocument();
-  expect(within(ledger).getByText("Impact")).toBeInTheDocument();
-  expect(within(ledger).getByText("SKU-42")).toBeInTheDocument();
-  expect(within(ledger).getByText("impact-program")).toBeInTheDocument();
-  expect(within(ledger).getByText("impact-conversion-123")).toBeInTheDocument();
-  expect(within(ledger).getByText("90.00 USD")).toBeInTheDocument();
-  expect(within(ledger).queryByText("Order: 90.00 USD")).not.toBeInTheDocument();
-  expect(within(ledger).getByText("Paid")).toBeInTheDocument();
-  expect(within(ledger).getByText("Strong match")).toBeInTheDocument();
+  expect(within(visitRow).getByText("operator@example.test")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Known customer")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Example Merchant · Example camera")).toBeInTheDocument();
+  expect(within(visitRow).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(visitRow).getByText("9.00 USD")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Paid")).toBeInTheDocument();
+  expect(within(visitRow).getByText("Strong match")).toBeInTheDocument();
+  expect(within(visitRow).queryByText("203.0.113.44")).not.toBeInTheDocument();
+  expect(within(visitRow).queryByText("impact-conversion-123")).not.toBeInTheDocument();
+
+  const detailsButton = within(visitRow).getByRole("button", {
+    name: /Show details for operator@example\.test/,
+  });
+  fireEvent.click(detailsButton);
+
+  expect(detailsButton).toHaveAttribute("aria-expanded", "true");
+  const details = screen.getByRole("region", {
+    name: /Attribution details for operator@example\.test/,
+  });
+  expect(details.closest("td")).toHaveAttribute("colspan", "7");
+  expect(visitRow.nextElementSibling).toBe(details.closest("tr"));
+  expect(within(details).getByText("Touchpoint")).toBeVisible();
+  expect(within(details).getByText("Request evidence")).toBeVisible();
+  expect(within(details).getByText("Commerce")).toBeVisible();
+  expect(within(details).getByText("Conversion")).toBeVisible();
+  expect(within(details).getByText("Product Compare website")).toBeInTheDocument();
+  expect(within(details).getByText("Partner link")).toBeInTheDocument();
+  expect(within(details).getByText("example.test /compare")).toBeInTheDocument();
+  expect(within(details).getByText("ExampleBrowser 1.0")).toBeInTheDocument();
+  expect(within(details).getByText("203.0.113.44")).toBeInTheDocument();
+  expect(within(details).getByText("Impact")).toBeInTheDocument();
+  expect(within(details).getByText("SKU-42")).toBeInTheDocument();
+  expect(within(details).getByText("impact-program")).toBeInTheDocument();
+  expect(within(details).getByText("impact-conversion-123")).toBeInTheDocument();
   const conversion = screen.getByRole("group", {
     name: "Conversion impact-conversion-123",
   });
@@ -369,6 +379,25 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
   expect(within(conversion).getByText("Reported")).toBeInTheDocument();
   expect(conversion.querySelector("dl")).not.toBeInTheDocument();
+  fireEvent.click(
+    within(visitRow).getByRole("button", { name: /Close details for operator@example\.test/ }),
+  );
+  expect(
+    screen.queryByRole("region", { name: /Attribution details for operator@example\.test/ }),
+  ).not.toBeInTheDocument();
+
+  const recent = screen.getByRole("region", { name: "Recent conversion" });
+  expect(within(recent).getByText("Latest in loaded activity")).toBeVisible();
+  expect(within(recent).getByText("Conversion Merchant")).toBeVisible();
+  expect(within(recent).getByText("Conversion Product")).toBeVisible();
+  expect(within(recent).getByText("Paid")).toBeVisible();
+  expect(within(recent).getByText("Strong match")).toBeVisible();
+  expect(within(recent).getByText("90.00 USD")).toBeVisible();
+  expect(within(recent).getByText("9.00 USD")).toBeVisible();
+  expect(within(recent).getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-06-01T09:00:00Z",
+  );
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();
@@ -489,7 +518,12 @@ test("revenue route distinguishes an anonymous click and an empty ledger", () =>
   );
 
   expect(screen.getByText("Anonymous visitor")).toBeInTheDocument();
-  expect(screen.getByText("No matched conversions.")).toBeInTheDocument();
+  expect(screen.getByText("No conversion")).toBeInTheDocument();
+  expect(screen.getAllByText("—")).toHaveLength(2);
+  expect(screen.getByText("No matched conversion in loaded activity")).toBeInTheDocument();
+  const anonymousRow = screen.getByRole("row", { name: /Anonymous visitor/ });
+  fireEvent.click(within(anonymousRow).getByRole("button", { name: /Show details/ }));
+  expect(screen.getByText("No matched conversions")).toBeInTheDocument();
 
   mockedUsePaginationFragment.mockReturnValue({
     data: {
@@ -520,7 +554,9 @@ test("revenue route keeps the summary visible when the ledger preload failed", (
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
+  expect(screen.getAllByRole("alert")).toHaveLength(2);
+  expect(screen.getByText("Recent conversion unavailable.")).toBeVisible();
+  expect(screen.getByText("Attribution ledger unavailable.")).toBeVisible();
 });
 
 test("revenue route keeps the attribution ledger visible when the summary preload failed", () => {
@@ -547,7 +583,9 @@ test("revenue route renders the summary while the ledger preload is pending", as
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
-  expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
+  expect(screen.getAllByRole("status")).toHaveLength(2);
+  expect(screen.getByText("Loading recent conversion...")).toBeVisible();
+  expect(screen.getByText("Loading attribution ledger...")).toBeVisible();
   expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
 
   await act(() => {
@@ -594,12 +632,55 @@ test("revenue route renders equal conversion references from different networks 
   try {
     renderRevenueSummaryRoute();
 
+    const row = screen.getByRole("row", { name: /operator@example\.test/ });
+    expect(within(row).getAllByText("Multiple")).toHaveLength(2);
+    expect(within(row).getByText("2 conversions")).toBeVisible();
+    fireEvent.click(within(row).getByRole("button", { name: /Show details/ }));
     expect(screen.getByText("Conversion Network")).toBeVisible();
     expect(screen.getByText("Second Conversion Network")).toBeVisible();
     expect(keyWarningCalls(consoleErrorSpy)).toHaveLength(0);
   } finally {
     consoleErrorSpy.mockRestore();
   }
+});
+
+test("revenue route keeps attribution detail expansion local to each row", () => {
+  const firstNode = ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0].node;
+  const secondNode = {
+    ...firstNode,
+    clickId: "second-click",
+    insertedAt: "2026-05-31T12:45:00Z",
+    userEmail: "second@example.test",
+  };
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+  mockedUsePaginationFragment.mockReturnValue({
+    data: {
+      commerceAttributionClicks: {
+        edges: [
+          ATTRIBUTION_LEDGER_PAGE.commerceAttributionClicks.edges[0],
+          { cursor: "ledger-cursor-2", node: secondNode },
+        ],
+        pageInfo: { endCursor: null, hasNextPage: false },
+      },
+    },
+    hasNext: false,
+    isLoadingNext: false,
+    loadNext: vi.fn(),
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  const firstRow = screen.getByRole("row", { name: /operator@example\.test/ });
+  const secondRow = screen.getByRole("row", { name: /second@example\.test/ });
+  fireEvent.click(within(firstRow).getByRole("button", { name: /Show details/ }));
+  fireEvent.click(within(secondRow).getByRole("button", { name: /Show details/ }));
+
+  expect(screen.getAllByRole("region", { name: /Attribution details for/ })).toHaveLength(2);
+  fireEvent.click(within(firstRow).getByRole("button", { name: /Close details/ }));
+  expect(screen.getAllByRole("region", { name: /Attribution details for/ })).toHaveLength(1);
+  expect(
+    screen.getByRole("region", { name: /Attribution details for second@example\.test/ }),
+  ).toBeVisible();
 });
 
 test("revenue route renders one-conversion metrics without hidden-metrics copy", () => {

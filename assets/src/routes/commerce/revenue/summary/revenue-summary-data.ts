@@ -93,7 +93,10 @@ export function buildRevenueDatePresetLinks(
     }));
 }
 
-export function buildRevenueDashboardMetrics(summary: RevenueSummaryMetricSource, currency: string) {
+export function buildRevenueDashboardMetrics(
+  summary: RevenueSummaryMetricSource,
+  currency: string,
+) {
   return {
     attribution: {
       clicks: formatCount(summary.metrics.clicks),

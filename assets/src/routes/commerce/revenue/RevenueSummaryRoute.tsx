@@ -32,9 +32,18 @@ const styles = create({
   dashboard: {
     display: "grid",
     gap: "1rem",
-    gridTemplateAreas: '"summary" "ledger"',
+    gridTemplateAreas: {
+      default: '"summary recent" "ledger ledger"',
+      "@media (max-width: 64rem)": '"summary" "recent" "ledger"',
+    },
+    gridTemplateColumns: {
+      default: "minmax(0, 2fr) minmax(18rem, 1fr)",
+      "@media (max-width: 64rem)": "minmax(0, 1fr)",
+    },
     minWidth: 0,
   },
+  recentSlot: { gridArea: "recent", minWidth: 0 },
+  ledgerSlot: { gridArea: "ledger", minWidth: 0 },
 });
 
 const revenueSummaryRouteQuery = graphql`
@@ -214,11 +223,11 @@ function DeferredAttributionLedgerBoundary({
 
   // SSR waits for all Suspense work, so subscribe to this optional query only after hydration.
   if (!isHydrated) {
-    return <FeedbackState kind="loading" title="Loading attribution ledger..." />;
+    return <AttributionActivityLoadingFallback />;
   }
 
   return (
-    <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+    <Suspense fallback={<AttributionActivityLoadingFallback />}>
       <Await resolve={query} errorElement={<AttributionLedgerUnavailableFallback />}>
         {(resolvedQuery) => <AttributionLedgerBoundary query={resolvedQuery} />}
       </Await>
@@ -237,7 +246,7 @@ function AttributionLedgerBoundary({
 
   return (
     <ResettableErrorBoundary fallback={<AttributionLedgerUnavailableFallback />} resetToken={query}>
-      <Suspense fallback={<FeedbackState kind="loading" title="Loading attribution ledger..." />}>
+      <Suspense fallback={<AttributionActivityLoadingFallback />}>
         <AttributionLedgerPanel query={query} />
       </Suspense>
     </ResettableErrorBoundary>
@@ -273,9 +282,27 @@ function RevenueSummaryUnavailableFallback() {
 
 function AttributionLedgerUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Attribution ledger unavailable.</p>
-    </section>
+    <>
+      <div {...props(styles.recentSlot)}>
+        <FeedbackState kind="error" title="Recent conversion unavailable." />
+      </div>
+      <div {...props(styles.ledgerSlot)}>
+        <FeedbackState kind="error" title="Attribution ledger unavailable." />
+      </div>
+    </>
+  );
+}
+
+function AttributionActivityLoadingFallback() {
+  return (
+    <>
+      <div {...props(styles.recentSlot)}>
+        <FeedbackState kind="loading" title="Loading recent conversion..." />
+      </div>
+      <div {...props(styles.ledgerSlot)}>
+        <FeedbackState kind="loading" title="Loading attribution ledger..." />
+      </div>
+    </>
   );
 }
 
