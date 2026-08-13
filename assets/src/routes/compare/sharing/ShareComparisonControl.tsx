@@ -147,7 +147,7 @@ function SnapshotControlView({
 }: SnapshotControlViewProps) {
   return (
     <Collapsible onOpenChange={onOpenChange} open={open} style={styles.control}>
-      <CollapsibleTrigger render={<Button variant="link" />}>
+      <CollapsibleTrigger render={<Button variant="outline" />}>
         Share this comparison
       </CollapsibleTrigger>
       <CollapsibleContent keepMounted style={styles.content}>

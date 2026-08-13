@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
-import { create } from "@stylexjs/stylex";
+import { create, props } from "@stylexjs/stylex";
 import {
   Table,
   TableBody,
@@ -16,6 +16,7 @@ const tableModel = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableModel, SpecificationMatrixRow>();
 
 const styles = create({
+  tableWrap: { maxWidth: "100%", overflowX: "auto" },
   table: { minWidth: "48rem" },
 });
 
@@ -59,36 +60,38 @@ export function SpecificationMatrix({
       {view.rows.length === 0 ? (
         <p>{view.emptyMessage}</p>
       ) : (
-        <Table aria-label={view.title} style={styles.table}>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id} scope="col">
-                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows.map((row) => (
-              <TableRow key={row.id}>
-                {row.getAllCells().map((cell, index) =>
-                  index === 0 ? (
-                    <TableHead key={cell.id} scope="row">
-                      <table.FlexRender cell={cell} />
+        <div {...props(styles.tableWrap)}>
+          <Table aria-label={view.title} style={styles.table} tabIndex={0}>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead key={header.id} scope="col">
+                      {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
-                  ) : (
-                    <TableCell key={cell.id}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ),
-                )}
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+                  ))}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getAllCells().map((cell, index) =>
+                    index === 0 ? (
+                      <TableHead key={cell.id} scope="row">
+                        <table.FlexRender cell={cell} />
+                      </TableHead>
+                    ) : (
+                      <TableCell key={cell.id}>
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ),
+                  )}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
     </div>
   );
