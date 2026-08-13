@@ -399,12 +399,15 @@ function partialProductData(error: unknown): ProductDetailResponseWithProduct | 
   const response = error.response;
   if (Array.isArray(response) || !("data" in response)) return null;
 
-  const responseData = response.data as ProductDetailRouteQuery["response"] | null;
-  return hasProduct(responseData) ? responseData : null;
+  return hasProduct(response.data) ? response.data : null;
 }
 
-function hasProduct(
-  productData: ProductDetailRouteQuery["response"] | null,
-): productData is ProductDetailResponseWithProduct {
-  return Boolean(productData?.product);
+function hasProduct(productData: unknown): productData is ProductDetailResponseWithProduct {
+  return Boolean(
+    productData &&
+    typeof productData === "object" &&
+    "product" in productData &&
+    productData.product &&
+    typeof productData.product === "object",
+  );
 }

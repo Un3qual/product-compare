@@ -25,7 +25,7 @@ export function readSpecFilterDraft(storage: Storage, productId: string): SpecFi
   if (!value) return [];
 
   try {
-    const draft = JSON.parse(value) as unknown;
+    const draft: unknown = JSON.parse(value);
     return validDraft(draft, productId) ? draft.selections : [];
   } catch {
     return [];

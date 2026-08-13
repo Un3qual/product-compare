@@ -10,6 +10,7 @@ import {
   createOperationDescriptor,
   getRequest,
   type CacheConfig,
+  type Disposable,
   type Environment,
   type OperationType,
   type PayloadData,
@@ -20,8 +21,8 @@ const ROUTE_QUERY_REF_CACHE_LIMIT = 50;
 
 const relayEnvironmentRouterContext = createContext<Environment | null>(null);
 const routeQueryRefs = new WeakMap<Environment, Map<string, RouteQueryRefEntry>>();
-const routeQueryLeaseHandles = new WeakMap<PreloadedQuery<OperationType>, RouteQueryRefEntry>();
-const activeRouteQueryLeases = new WeakSet<PreloadedQuery<OperationType>>();
+const routeQueryLeaseHandles = new WeakMap<object, RouteQueryRefEntry>();
+const activeRouteQueryLeases = new WeakSet<object>();
 
 interface RouteQueryRefEntry {
   activeLeaseCount: number;
@@ -29,7 +30,7 @@ interface RouteQueryRefEntry {
   disposeTimer: ReturnType<typeof setTimeout> | null;
   environment: Environment;
   isDisposed: boolean;
-  queryRef: PreloadedQuery<OperationType>;
+  queryRef: Disposable;
 }
 
 export interface RelayRouteQueryDescriptor<TVariables = Record<string, unknown>> {
@@ -191,7 +192,7 @@ function createRouteQueryRefLease<TQuery extends OperationType>(entry: RouteQuer
     configurable: true,
     value: () => releaseRouteQueryRefLease(lease),
   });
-  routeQueryLeaseHandles.set(lease as PreloadedQuery<OperationType>, entry);
+  routeQueryLeaseHandles.set(lease, entry);
 
   return lease;
 }
@@ -225,27 +226,25 @@ const cancelRouteQueryRefDisposal = (entry: RouteQueryRefEntry) => {
 function activateRouteQueryRefLease<TQuery extends OperationType>(
   queryRef: PreloadedQuery<TQuery>,
 ) {
-  const lease = queryRef as PreloadedQuery<OperationType>;
-  const entry = routeQueryLeaseHandles.get(lease);
+  const entry = routeQueryLeaseHandles.get(queryRef);
 
-  if (!entry || entry.isDisposed || activeRouteQueryLeases.has(lease)) {
+  if (!entry || entry.isDisposed || activeRouteQueryLeases.has(queryRef)) {
     return;
   }
 
   cancelRouteQueryRefDisposal(entry);
-  activeRouteQueryLeases.add(lease);
+  activeRouteQueryLeases.add(queryRef);
   entry.activeLeaseCount += 1;
 }
 
 function releaseRouteQueryRefLease<TQuery extends OperationType>(queryRef: PreloadedQuery<TQuery>) {
-  const lease = queryRef as PreloadedQuery<OperationType>;
-  const entry = routeQueryLeaseHandles.get(lease);
+  const entry = routeQueryLeaseHandles.get(queryRef);
 
-  if (!entry || !activeRouteQueryLeases.has(lease)) {
+  if (!entry || !activeRouteQueryLeases.has(queryRef)) {
     return;
   }
 
-  activeRouteQueryLeases.delete(lease);
+  activeRouteQueryLeases.delete(queryRef);
   entry.activeLeaseCount -= 1;
 
   if (entry.activeLeaseCount === 0) {
@@ -284,7 +283,7 @@ function setRouteQueryRef<TQuery extends OperationType>(
     disposeTimer: null,
     environment,
     isDisposed: false,
-    queryRef: queryRef as PreloadedQuery<OperationType>,
+    queryRef,
   };
 
   environmentQueryRefs.set(descriptorKey, entry);
@@ -386,7 +385,7 @@ function stableJsonValue(value: unknown): unknown {
 
   if (value && typeof value === "object") {
     return Object.fromEntries(
-      Object.entries(value as Record<string, unknown>)
+      Object.entries(value)
         .sort(([leftKey], [rightKey]) => leftKey.localeCompare(rightKey))
         .map(([key, nestedValue]) => [key, stableJsonValue(nestedValue)]),
     );

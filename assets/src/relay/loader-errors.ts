@@ -21,10 +21,7 @@ export function normalizeRouteLoaderThrownError(error: unknown, message: string)
     return error;
   }
 
-  const wrappedError = new Error(message) as Error & { cause?: unknown };
-  wrappedError.cause = error;
-
-  return wrappedError;
+  return new Error(message, { cause: error });
 }
 
 function getErrorName(error: unknown) {

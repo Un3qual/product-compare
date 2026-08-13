@@ -130,8 +130,8 @@ export function Select<Value, Multiple extends boolean | undefined = false>(
     value: controlledValue,
     ...rootProps
   } = props;
-  type RootValue = SelectRootProps<Value, Multiple>["value"];
   type ChangeHandler = NonNullable<SelectRootProps<Value, Multiple>["onValueChange"]>;
+  type RootValue = Parameters<ChangeHandler>[0];
   const controlled = controlledValue !== undefined;
   const resetValue = useMemo(
     () => (defaultValue ?? (multiple ? [] : null)) as RootValue,
@@ -150,7 +150,7 @@ export function Select<Value, Multiple extends boolean | undefined = false>(
     onValueChange?.(nextValue, eventDetails);
 
     if (!controlled && !eventDetails.isCanceled) {
-      setUncontrolledValue(nextValue as RootValue);
+      setUncontrolledValue(nextValue);
     }
   };
 

@@ -6,6 +6,7 @@ import {
   Store,
   type GraphQLResponse,
   type GraphQLSingularResponse,
+  type PayloadError,
   type RequestParameters,
   type Variables,
 } from "relay-runtime";
@@ -18,6 +19,10 @@ export interface CreateRelayEnvironmentOptions {
   records?: RelayRecordMap;
   ssrContext?: SSRContext;
 }
+
+type GraphQLResponseWithErrors = GraphQLSingularResponse & {
+  errors: readonly PayloadError[];
+};
 
 export class RouteLoaderGraphQLError extends Error {
   readonly response: GraphQLResponse;
@@ -41,7 +46,7 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
 
         const routeSignal = routeLoaderSignal(cacheConfig);
 
-        return fetchGraphQL(params.text, variables as Record<string, unknown>, {
+        return fetchGraphQL(params.text, variables, {
           ...options.ssrContext,
           signal: routeSignal ?? options.ssrContext?.signal,
         }).then((response) => {
@@ -67,7 +72,7 @@ function routeLoaderSignal(cacheConfig: CacheConfig) {
   return undefined;
 }
 
-export function hasGraphQLErrors(response: GraphQLResponse) {
+export function hasGraphQLErrors(response: GraphQLResponse): response is GraphQLResponseWithErrors {
   if (!response || typeof response !== "object" || Array.isArray(response)) {
     return false;
   }
@@ -93,8 +98,7 @@ export function graphQLResponseHasErrorCode(
             !pathSegment ||
             !error.path?.length ||
             error.path.some((segment) => segment === pathSegment);
-          const code = (error as typeof error & { extensions?: { code?: unknown } }).extensions
-            ?.code;
+          const code = graphQLErrorCode(error);
 
           return relevantPath && typeof code === "string" && codes.has(code.toUpperCase());
         }),
@@ -107,13 +111,22 @@ export function formatGraphQLErrorMessage(response: GraphQLResponse) {
     return "GraphQL response contained errors";
   }
 
-  const errors = (response as { errors?: Array<{ message?: unknown }> }).errors;
   const messages =
-    errors
-      ?.map((error) => (typeof error.message === "string" ? error.message : null))
-      .filter((message): message is string => message !== null) ?? [];
+    response.errors
+      ?.map((error) => error.message)
+      .filter((message): message is string => typeof message === "string" && message.length > 0) ??
+    [];
 
   return messages.length > 0
     ? `GraphQL response contained errors: ${messages.join("; ")}`
     : "GraphQL response contained errors";
+}
+
+function graphQLErrorCode(error: PayloadError) {
+  if (!("extensions" in error)) return null;
+
+  const extensions = error.extensions;
+  if (!extensions || typeof extensions !== "object" || !("code" in extensions)) return null;
+
+  return typeof extensions.code === "string" ? extensions.code : null;
 }

@@ -121,10 +121,9 @@ function readCachedRootViewer(environment: Environment): RootViewer | null {
 
 function linkedRecordId(value: unknown) {
   if (!value || typeof value !== "object") return null;
+  if (!(RELAY_LINKED_RECORD_REF_KEY in value)) return null;
 
-  const recordId = (value as { [RELAY_LINKED_RECORD_REF_KEY]?: unknown })[
-    RELAY_LINKED_RECORD_REF_KEY
-  ];
+  const recordId = value[RELAY_LINKED_RECORD_REF_KEY];
   return typeof recordId === "string" ? recordId : null;
 }
 

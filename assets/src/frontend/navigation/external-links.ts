@@ -174,19 +174,11 @@ function parseIPv4Address(hostname: string) {
     return null;
   }
 
-  const parsedOctets: number[] = [];
+  const [first, second, third, fourth] = octets.map(parseIPv4Octet);
 
-  for (const octet of octets) {
-    const parsedOctet = parseIPv4Octet(octet);
+  if (first === null || second === null || third === null || fourth === null) return null;
 
-    if (parsedOctet === null) {
-      return null;
-    }
-
-    parsedOctets.push(parsedOctet);
-  }
-
-  return parsedOctets as [number, number, number, number];
+  return [first, second, third, fourth] satisfies [number, number, number, number];
 }
 
 function parseIPv4Octet(value: string) {

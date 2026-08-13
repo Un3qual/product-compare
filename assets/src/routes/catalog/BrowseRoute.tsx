@@ -316,7 +316,14 @@ function browseProductsPageSizeFromUrl(url: URL) {
 }
 
 function isBrowseProductsPageSize(value: number): value is BrowseProductsPageSize {
-  return BROWSE_PRODUCTS_PAGE_SIZES.includes(value as BrowseProductsPageSize);
+  switch (value) {
+    case 12:
+    case 24:
+    case 48:
+      return true;
+    default:
+      return false;
+  }
 }
 
 function nonBlankParam(url: URL, name: string) {

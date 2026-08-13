@@ -1,4 +1,4 @@
-import type { RouteDocumentMetadata } from "./route-head";
+import { structuredDataFromUnknown, type RouteDocumentMetadata } from "./route-head";
 
 type GraphQLSeoMetadata = {
   readonly canonicalPath: string;
@@ -30,8 +30,8 @@ function absoluteStructuredData(value: GraphQLSeoMetadata["structuredData"], req
   if (!value) return null;
 
   try {
-    const parsed = JSON.parse(value) as unknown;
-    return absolutizeUrls(parsed, requestUrl) as RouteDocumentMetadata["structuredData"];
+    const parsed: unknown = JSON.parse(value);
+    return structuredDataFromUnknown(absolutizeUrls(parsed, requestUrl));
   } catch {
     return null;
   }

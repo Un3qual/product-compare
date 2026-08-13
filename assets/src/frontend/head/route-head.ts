@@ -62,6 +62,10 @@ function routeDocumentMetadataFrom(value: unknown): RouteDocumentMetadata | null
     return null;
   }
 
+  const structuredData = structuredDataFromUnknown(
+    "structuredData" in metadata ? metadata.structuredData : undefined,
+  );
+
   return {
     description: metadata.description,
     title: metadata.title,
@@ -75,17 +79,17 @@ function routeDocumentMetadataFrom(value: unknown): RouteDocumentMetadata | null
     ...("indexable" in metadata && typeof metadata.indexable === "boolean"
       ? { indexable: metadata.indexable }
       : {}),
-    ...("structuredData" in metadata && isStructuredData(metadata.structuredData)
-      ? { structuredData: metadata.structuredData }
-      : {}),
+    ...(structuredData ? { structuredData } : {}),
   };
 }
 
-function isStructuredData(value: unknown): value is StructuredData {
-  if (typeof value !== "object" || value === null) return false;
-  if (!Array.isArray(value)) return true;
+export function structuredDataFromUnknown(value: unknown): StructuredData | null {
+  if (typeof value !== "object" || value === null) return null;
+  if (!Array.isArray(value)) return Object.fromEntries(Object.entries(value));
 
-  return value.every((item) => typeof item === "object" && item !== null && !Array.isArray(item));
+  return value.every((item) => typeof item === "object" && item !== null && !Array.isArray(item))
+    ? value
+    : null;
 }
 
 export function routeMetadata(title: string, description: string): RouteMetadataHandle {

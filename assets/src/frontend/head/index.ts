@@ -4,6 +4,7 @@ export {
   projectRouteMetadataTagPolicy,
   resolveRouteDocumentMetadata,
   routeMetadata,
+  structuredDataFromUnknown,
   type RouteDocumentMetadata,
   type RouteMetadataHandle,
   type RouteMetadataTagPolicy,

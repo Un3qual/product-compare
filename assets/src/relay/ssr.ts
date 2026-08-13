@@ -30,7 +30,8 @@ export function readRelayRecordsFromDocument(documentRef: Document = document): 
   }
 
   try {
-    const parsed = JSON.parse(element.textContent) as { records?: unknown };
+    const parsed: unknown = JSON.parse(element.textContent);
+    if (!parsed || typeof parsed !== "object" || !("records" in parsed)) return {};
 
     return isRelayRecordMap(parsed.records) ? parsed.records : {};
   } catch {

@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9e9df19404296fce9d2415c8a8f802a0>>
+ * @generated SignedSource<<ca51cdc8e37819df1c17bc1af24e1950>>
  * @lightSyntaxTransform
  */
 
@@ -13,7 +13,7 @@ export type CommerceAttributionLinkType = "AFFILIATE" | "NON_AFFILIATE" | "%futu
 export type CommerceClickSourceSurface = "API" | "EXTENSION" | "WEB" | "%future added value";
 export type CommerceConversionStatus = "APPROVED" | "PAID" | "PENDING" | "REVERSED" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
-export type AttributionLedger_row$data = {
+export type AttributionLedger_row$data = ReadonlyArray<{
   readonly affiliateNetworkCode: string | null;
   readonly affiliateNetworkName: string | null;
   readonly affiliateProgramCode: string | null;
@@ -44,11 +44,11 @@ export type AttributionLedger_row$data = {
   readonly userAgent: string | null;
   readonly userEmail: string | null;
   readonly " $fragmentType": "AttributionLedger_row";
-};
-export type AttributionLedger_row$key = {
+}>;
+export type AttributionLedger_row$key = ReadonlyArray<{
   readonly " $data"?: AttributionLedger_row$data;
   readonly " $fragmentSpreads": FragmentRefs<"AttributionLedger_row">;
-};
+}>;
 
 const node: ReaderFragment = (function(){
 var v0 = {
@@ -82,7 +82,9 @@ v3 = {
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
-  "metadata": null,
+  "metadata": {
+    "plural": true
+  },
   "name": "AttributionLedger_row",
   "selections": [
     (v0/*:: as any*/),
@@ -243,6 +245,6 @@ return {
 };
 })();
 
-(node as any).hash = "3f6ebc21599247f0c656e6b01f1cc81d";
+(node as any).hash = "077e1884473aa75ad5a54958a4981005";
 
 export default node;

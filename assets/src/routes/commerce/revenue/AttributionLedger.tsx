@@ -1,10 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
+import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
 import { Fragment, useState } from "react";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
-import type {
-  AttributionLedger_connection$data,
-  AttributionLedger_connection$key,
-} from "$generated/AttributionLedger_connection.graphql";
+import type { AttributionLedger_connection$key } from "$generated/AttributionLedger_connection.graphql";
 import type { AttributionLedgerPaginationQuery } from "$generated/AttributionLedgerPaginationQuery.graphql";
 import type {
   AttributionLedger_row$data,
@@ -59,7 +57,7 @@ const attributionLedgerFragment = graphql`
 `;
 
 const attributionLedgerRowFragment = graphql`
-  fragment AttributionLedger_row on CommerceAttributionClick {
+  fragment AttributionLedger_row on CommerceAttributionClick @relay(plural: true) {
     affiliateNetworkCode
     affiliateNetworkName
     affiliateProgramCode
@@ -92,34 +90,39 @@ const attributionLedgerRowFragment = graphql`
   }
 `;
 
-type AttributionClickRef =
-  AttributionLedger_connection$data["commerceAttributionClicks"]["edges"][number]["node"];
-type AttributionClick = AttributionLedger_row$data;
+type AttributionClick = AttributionLedger_row$data[number];
 
-const columns = [
-  {
+const tableModel = tableFeatures({});
+const columnHelper = createColumnHelper<typeof tableModel, AttributionClick>();
+const columns = columnHelper.columns([
+  columnHelper.display({
+    id: "click",
     header: "Click",
-    render: (click: AttributionClick) => <AttributionClickDetails click={click} />,
-  },
-  {
+    cell: ({ row }) => <AttributionClickDetails click={row.original} />,
+  }),
+  columnHelper.display({
+    id: "identity",
     header: "Identity",
-    render: (click: AttributionClick) => <AttributionIdentity click={click} />,
-  },
-  {
+    cell: ({ row }) => <AttributionIdentity click={row.original} />,
+  }),
+  columnHelper.display({
+    id: "diagnostics",
     header: "Request diagnostics",
-    render: (click: AttributionClick) => <AttributionDiagnostics click={click} />,
-  },
-  {
+    cell: ({ row }) => <AttributionDiagnostics click={row.original} />,
+  }),
+  columnHelper.display({
+    id: "commerce",
     header: "Commerce",
-    render: (click: AttributionClick) => <AttributionCommerce click={click} />,
-  },
-  {
+    cell: ({ row }) => <AttributionCommerce click={row.original} />,
+  }),
+  columnHelper.display({
+    id: "conversions",
     header: "Matched conversions",
-    render: (click: AttributionClick) => (
-      <AttributionConversionList conversions={click.matchedConversions} />
+    cell: ({ row }) => (
+      <AttributionConversionList conversions={row.original.matchedConversions} />
     ),
-  },
-];
+  }),
+]);
 
 export function AttributionLedger({
   fragmentRef,
@@ -130,7 +133,10 @@ export function AttributionLedger({
     AttributionLedgerPaginationQuery,
     AttributionLedger_connection$key
   >(attributionLedgerFragment, fragmentRef);
-  const clicks = data.commerceAttributionClicks.edges.map(({ node }) => node);
+  const rowFragmentRefs: AttributionLedger_row$key = data.commerceAttributionClicks.edges.map(
+    ({ node }) => node,
+  );
+  const clicks = useFragment(attributionLedgerRowFragment, rowFragmentRefs);
   const [paginationFailed, setPaginationFailed] = useState(false);
   const loadMore = () => {
     setPaginationFailed(false);
@@ -138,6 +144,13 @@ export function AttributionLedger({
       onComplete: (error) => setPaginationFailed(error !== null),
     });
   };
+  const table = useTable({
+    columns,
+    data: clicks,
+    features: tableModel,
+    getRowId: (row) => row.clickId,
+  });
+
   return (
     <section aria-labelledby="attribution-ledger-heading" {...props(styles.wrapper)}>
       <div>
@@ -151,17 +164,25 @@ export function AttributionLedger({
       ) : (
         <Table aria-labelledby="attribution-ledger-heading" style={styles.table}>
           <TableHeader>
-            <TableRow>
-              {columns.map((column) => (
-                <TableHead key={column.header} scope="col">
-                  {column.header}
-                </TableHead>
-              ))}
-            </TableRow>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id} scope="col">
+                    {header.isPlaceholder ? null : <table.FlexRender header={header} />}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
           </TableHeader>
           <TableBody>
-            {clicks.map((fragmentRef) => (
-              <AttributionLedgerRow fragmentRef={fragmentRef} key={fragmentRef.clickId} />
+            {table.getRowModel().rows.map((row) => (
+              <TableRow key={row.id} style={styles.row}>
+                {row.getAllCells().map((cell) => (
+                  <TableCell key={cell.id} style={styles.cell}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
+                ))}
+              </TableRow>
             ))}
           </TableBody>
         </Table>
@@ -203,25 +224,6 @@ function AttributionPaginationControl({
       {isLoadingNext ? "Loading more attribution clicks…" : "Load more attribution clicks"}
     </Button>
   ) : null;
-}
-
-function AttributionLedgerRow({
-  fragmentRef,
-}: {
-  fragmentRef: AttributionClickRef;
-}) {
-  const rowFragmentRef: AttributionLedger_row$key = fragmentRef;
-  const click = useFragment(attributionLedgerRowFragment, rowFragmentRef);
-
-  return (
-    <TableRow style={styles.row}>
-      {columns.map((column) => (
-        <TableCell key={column.header} style={styles.cell}>
-          {column.render(click)}
-        </TableCell>
-      ))}
-    </TableRow>
-  );
 }
 
 function AttributionDiagnostics({ click }: { click: AttributionClick }) {
