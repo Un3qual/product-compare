@@ -488,9 +488,7 @@ const buildReadyCompareLoaderData = (overrides: ReadyCompareLoaderDataOverrides 
   };
 };
 
-function renderRelativeLoadedPriceCells(
-  overrides: ReadyCompareLoaderDataOverrides,
-) {
+function renderRelativeLoadedPriceCells(overrides: ReadyCompareLoaderDataOverrides) {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
   renderCompareRoute();
 
@@ -2011,7 +2009,9 @@ test("ready compare page renders decision summary rows above the specification m
   renderCompareRoute();
 
   expect(screen.getByRole("region", { name: "Comparison workspace" })).toBeInTheDocument();
-  expect(screen.queryByRole("complementary", { name: "Comparison controls" })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole("complementary", { name: "Comparison controls" }),
+  ).not.toBeInTheDocument();
   const controls = screen.getByRole("region", { name: "Comparison controls" });
   const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
   const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
@@ -2658,7 +2658,9 @@ test("ready compare page renders specification mode tabs with stable URL state",
 
   const tabs = screen.getByRole("tablist", { name: "Specification views" });
   const matrixHeading = screen.getByRole("heading", { name: "Different specifications" });
-  expect(tabs.compareDocumentPosition(matrixHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(
+    tabs.compareDocumentPosition(matrixHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
 });
 
 test("specification mode tab clicks navigate to loader-backed URL state", () => {

@@ -39,7 +39,7 @@ test("a guest keeps entered watch values behind the auth modal and commits no mu
 
   expect(commitMutationMock).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: "Sign in to watch this product" })).toBeVisible();
-  expect(screen.getByLabelText("Target landed price")).toHaveValue(75);
+  expect(screen.getByLabelText("Target landed price")).toHaveValue("75");
   expect(screen.getByRole("link", { name: "Sign in" })).toBeVisible();
   expect(screen.getByRole("link", { name: "Create account" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Cancel" })).toBeVisible();
@@ -57,7 +57,7 @@ test("cancel and Escape restore focus without changing entered values or storage
   await user.keyboard("{Escape}");
 
   await waitFor(() => expect(submit).toHaveFocus());
-  expect(screen.getByLabelText("Target landed price")).toHaveValue(75);
+  expect(screen.getByLabelText("Target landed price")).toHaveValue("75");
   expect(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY)).toBeNull();
 });
 
@@ -86,13 +86,13 @@ test("a matching signed-in return restores the watch for review without submitti
   writePendingIntent(draft);
 
   renderPriceWatch({ id: "viewer-1", email: "person@example.com", isOperator: false });
-  await userEvent.setup().click(
-    screen.getByRole("button", { name: "Watch price or availability" }),
-  );
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Watch price or availability" }));
 
   expect(screen.getByRole("status")).toHaveTextContent(/watch draft was restored/i);
   expect(screen.getByLabelText("Currency")).toHaveValue("EUR");
-  expect(screen.getByLabelText("Percentage drop")).toHaveValue(12.5);
+  expect(screen.getByLabelText("Percentage drop")).toHaveValue("12.5");
   expect(commitMutationMock).not.toHaveBeenCalled();
   expect(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY)).toBeNull();
 });
@@ -110,11 +110,11 @@ test("a mismatched product discards the draft and shows a normal empty form", as
   });
 
   renderPriceWatch({ id: "viewer-1", email: "person@example.com", isOperator: false });
-  await userEvent.setup().click(
-    screen.getByRole("button", { name: "Watch price or availability" }),
-  );
+  await userEvent
+    .setup()
+    .click(screen.getByRole("button", { name: "Watch price or availability" }));
 
-  expect(screen.getByLabelText("Target landed price")).toHaveValue(null);
+  expect(screen.getByLabelText("Target landed price")).toHaveValue("");
   expect(screen.queryByText(/draft was restored/i)).not.toBeInTheDocument();
   expect(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY)).toBeNull();
 });

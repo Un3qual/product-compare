@@ -1,6 +1,6 @@
-import { type FormEvent, useId, useState } from "react";
+import { type ChangeEvent, type FormEvent, useEffect, useId, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useOutletContext } from "react-router-dom";
 import { useMutation } from "react-relay";
 import type { AlertOperationsCreatePriceWatchMutation } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
 import { Button } from "$ui/primitives/Button";
@@ -23,6 +23,15 @@ import {
   type PriceWatchRuleType,
 } from "./price-watch-data";
 import { createPriceWatchMutation } from "../account/alerts/AlertOperations";
+import type { RootViewer } from "../root/viewer";
+import {
+  PENDING_INTENT_TTL_MS,
+  consumePendingIntent,
+  readPendingIntent,
+  safeRelativeReturnPath,
+  useAuthenticatedIntent,
+  type PriceWatchIntent,
+} from "../auth/continuity";
 
 const styles = create({
   content: {
@@ -66,34 +75,73 @@ export function PriceWatchControl({ productId }: { productId: string }) {
 }
 
 function PriceWatchForm({ productId }: { productId: string }) {
+  const outletContext = useOutletContext<{ viewer: RootViewer | null } | null>();
+  const viewer = outletContext?.viewer;
+  const location = useLocation();
+  const [pendingIntent] = useState(() => (viewer ? readPendingIntent() : null));
+  const restoredIntent =
+    pendingIntent?.kind === "price_watch" && pendingIntent.productId === productId
+      ? pendingIntent
+      : null;
   const amountId = useId();
   const currencyId = useId();
   const ruleId = useId();
-  const [ruleType, setRuleType] = useState<PriceWatchRuleType>("TARGET_PRICE");
-  const [message, setMessage] = useState<string | null>(null);
+  const [ruleType, setRuleType] = useState<PriceWatchRuleType>(
+    restoredIntent?.ruleType ?? "TARGET_PRICE",
+  );
+  const [amount, setAmount] = useState(restoredIntent?.amount ?? "");
+  const [currency, setCurrency] = useState(restoredIntent?.currency ?? "USD");
+  const [message, setMessage] = useState<string | null>(
+    restoredIntent ? "Your watch draft was restored. Review it before creating the watch." : null,
+  );
   const [commitCreate, mutationPending] =
     useMutation<AlertOperationsCreatePriceWatchMutation>(createPriceWatchMutation);
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  useEffect(() => {
+    if (viewer && pendingIntent?.kind === "price_watch") consumePendingIntent();
+  }, [pendingIntent, viewer]);
+
+  function submitWatch() {
     setMessage(null);
-    const form = new FormData(event.currentTarget);
     const input = buildCreatePriceWatchInput({
       productId,
       ruleType,
-      amount: form.get("amount"),
-      currency: form.get("currency"),
+      amount,
+      currency,
     });
 
-    try {
-      const { response, graphQLErrors } = await commitRouteMutationPromise(commitCreate, {
-        variables: { input },
-      });
-      const payload = response.createPriceWatch;
-      setMessage(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors));
-    } catch {
-      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
-    }
+    void commitRouteMutationPromise(commitCreate, {
+      variables: { input },
+    })
+      .then(({ response, graphQLErrors }) => {
+        setMessage(
+          resolveCreatePriceWatchMutationMessage(response.createPriceWatch, graphQLErrors),
+        );
+      })
+      .catch(() => setMessage(DEFAULT_MUTATION_ERROR_MESSAGE));
+  }
+
+  const returnTo =
+    safeRelativeReturnPath(`${location.pathname}${location.search}${location.hash}`) ?? "/";
+  const intent: PriceWatchIntent = {
+    kind: "price_watch",
+    version: 1,
+    expiresAt: Date.now() + PENDING_INTENT_TTL_MS,
+    returnTo,
+    productId,
+    ruleType,
+    amount: amount.trim() || null,
+    currency: currency.trim().toUpperCase(),
+  };
+  const authenticatedIntent = useAuthenticatedIntent({
+    viewer,
+    intent,
+    onAuthenticated: submitWatch,
+  });
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    authenticatedIntent.request();
   }
 
   const amountField = getPriceWatchAmountFieldData(ruleType);
@@ -111,13 +159,19 @@ function PriceWatchForm({ productId }: { productId: string }) {
             <Input
               id={currencyId}
               name="currency"
-              defaultValue="USD"
               maxLength={3}
+              onChange={(event) => setCurrency(event.currentTarget.value)}
               required
               style={styles.input}
+              value={currency}
             />
           </Label>
-          <PriceWatchAmountField amountField={amountField} id={amountId} />
+          <PriceWatchAmountField
+            amount={amount}
+            amountField={amountField}
+            id={amountId}
+            onChange={setAmount}
+          />
           <Button disabled={mutationPending} type="submit">
             {mutationPending ? "Creating watch…" : "Create watch"}
           </Button>
@@ -128,6 +182,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
           ) : null}
           <Link to="/account/alerts">Open price alert inbox</Link>
         </form>
+        {authenticatedIntent.dialog}
       </CollapsibleContent>
     </Collapsible>
   );
@@ -169,11 +224,15 @@ function PriceWatchRuleField({
 }
 
 function PriceWatchAmountField({
+  amount,
   amountField,
   id,
+  onChange,
 }: {
+  amount: string;
   amountField: ReturnType<typeof getPriceWatchAmountFieldData>;
   id: string;
+  onChange: (value: string) => void;
 }) {
   if (!amountField.visible) {
     return null;
@@ -185,11 +244,13 @@ function PriceWatchAmountField({
       <Input
         id={id}
         name="amount"
+        onChange={(event: ChangeEvent<HTMLInputElement>) => onChange(event.currentTarget.value)}
         inputMode="decimal"
         min="0.01"
         step="0.01"
         required
         style={styles.input}
+        value={amount}
       />
     </Label>
   );

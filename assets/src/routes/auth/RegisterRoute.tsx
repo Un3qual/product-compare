@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { RegisterRouteMutation } from "$generated/RegisterRouteMutation.graphql";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { commitRouteMutation } from "$relay/mutations";
@@ -11,6 +11,7 @@ import {
   transportMutationErrors,
 } from "./errors";
 import { CredentialAuthForm } from "./CredentialAuthForm";
+import { authContinuationPath, safeRelativeReturnPath } from "./continuity";
 import { setRootViewer } from "./viewer-store";
 
 const registerMutation = graphql`
@@ -33,6 +34,8 @@ const registerMutation = graphql`
 export function RegisterRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = safeRelativeReturnPath(searchParams.get("returnTo"));
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [commitRegister, isSubmitting] = useMutation<RegisterRouteMutation>(registerMutation);
 
@@ -53,7 +56,7 @@ export function RegisterRoute() {
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);
-            navigate("/");
+            navigate(returnTo ?? "/");
             return;
           }
 
@@ -75,7 +78,7 @@ export function RegisterRoute() {
       description="Create an email/password account and let Phoenix establish the browser session."
       errors={errors}
       footerLinks={[
-        { label: "Sign in instead", to: "/auth/login" },
+        { label: "Sign in instead", to: authContinuationPath("/auth/login", searchParams) },
         { label: "Forgot password?", to: "/auth/forgot-password" },
       ]}
       isSubmitting={isSubmitting}

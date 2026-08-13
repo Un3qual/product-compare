@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { LoginRouteMutation } from "$generated/LoginRouteMutation.graphql";
 import { routeFormValue } from "$frontend/forms/route-form";
 import { commitRouteMutation } from "$relay/mutations";
@@ -11,6 +11,7 @@ import {
   transportMutationErrors,
 } from "./errors";
 import { CredentialAuthForm } from "./CredentialAuthForm";
+import { authContinuationPath, safeRelativeReturnPath } from "./continuity";
 import { setRootViewer } from "./viewer-store";
 
 const loginMutation = graphql`
@@ -33,6 +34,8 @@ const loginMutation = graphql`
 export function LoginRoute() {
   const relayEnvironment = useRelayEnvironment();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = safeRelativeReturnPath(searchParams.get("returnTo"));
   const [errors, setErrors] = useState<MutationError[]>([]);
   const [commitLogin, isSubmitting] = useMutation<LoginRouteMutation>(loginMutation);
 
@@ -53,7 +56,7 @@ export function LoginRoute() {
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);
-            navigate("/");
+            navigate(returnTo ?? "/");
             return;
           }
 
@@ -75,7 +78,7 @@ export function LoginRoute() {
       description="Use your email and password to continue through the GraphQL auth flow."
       errors={errors}
       footerLinks={[
-        { label: "Create account", to: "/auth/register" },
+        { label: "Create account", to: authContinuationPath("/auth/register", searchParams) },
         { label: "Forgot password?", to: "/auth/forgot-password" },
       ]}
       isSubmitting={isSubmitting}

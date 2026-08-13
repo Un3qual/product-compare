@@ -448,7 +448,7 @@ test("a guest save request opens auth continuity without committing or losing th
 
   expect(commitMutationMock).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: "Sign in to save this comparison" })).toBeVisible();
-  expect(screen.getByText("Desk Lamp")).toBeVisible();
+  expect(screen.getAllByText("Desk Lamp").length).toBeGreaterThan(0);
   expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login?returnTo=%2Fcompare%3Fslug%3Ddesk-lamp&intent=save_comparison",

@@ -588,9 +588,7 @@ test("register route updates root viewer after a successful session response", a
 });
 
 test("register returns to a validated relative target and preserves it on the sign-in link", async () => {
-  renderRoute(
-    "/auth/register?returnTo=%2Fproducts%2Fdesk-lamp%23watch&intent=price_watch",
-  );
+  renderRoute("/auth/register?returnTo=%2Fproducts%2Fdesk-lamp%23watch&intent=price_watch");
   expect(screen.getByRole("link", { name: "Sign in instead" })).toHaveAttribute(
     "href",
     "/auth/login?returnTo=%2Fproducts%2Fdesk-lamp%23watch&intent=price_watch",

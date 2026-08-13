@@ -9,17 +9,18 @@ import {
 
 const NOW = Date.UTC(2026, 7, 13, 12, 0, 0);
 
-const watchIntent = (overrides: Partial<PendingIntent> = {}): PendingIntent => ({
-  kind: "price_watch",
-  version: 1,
-  expiresAt: NOW + 10 * 60_000,
-  returnTo: "/products/desk-lamp?merchant=one#watch",
-  productId: "product-1",
-  ruleType: "TARGET_PRICE",
-  amount: "75.00",
-  currency: "USD",
-  ...overrides,
-} as PendingIntent);
+const watchIntent = (overrides: Partial<PendingIntent> = {}): PendingIntent =>
+  ({
+    kind: "price_watch",
+    version: 1,
+    expiresAt: NOW + 10 * 60_000,
+    returnTo: "/products/desk-lamp?merchant=one#watch",
+    productId: "product-1",
+    ruleType: "TARGET_PRICE",
+    amount: "75.00",
+    currency: "USD",
+    ...overrides,
+  }) as PendingIntent;
 
 beforeEach(() => {
   sessionStorage.clear();
@@ -44,9 +45,12 @@ test("preserves ordered comparison identity", () => {
 
   writePendingIntent(intent);
 
-  expect(readPendingIntent(NOW)).toEqual(intent);
-  expect(readPendingIntent(NOW)?.kind === "save_comparison" && readPendingIntent(NOW)?.productIds)
-    .toEqual(["product-lamp", "product-chair"]);
+  const restored = readPendingIntent(NOW);
+  expect(restored).toEqual(intent);
+  expect(restored?.kind === "save_comparison" ? restored.productIds : null).toEqual([
+    "product-lamp",
+    "product-chair",
+  ]);
 });
 
 test.each([

@@ -1,6 +1,12 @@
-import { Suspense, type ReactNode, useRef, useState } from "react";
+import { Suspense, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
-import { useLoaderData, useNavigate, type LoaderFunctionArgs } from "react-router-dom";
+import {
+  useLoaderData,
+  useLocation,
+  useNavigate,
+  useOutletContext,
+  type LoaderFunctionArgs,
+} from "react-router-dom";
 import { graphql, useMutation, usePreloadedQuery } from "react-relay";
 import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
 import type {
@@ -22,6 +28,15 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "$relay/mutations";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
+import type { RootViewer } from "../root/viewer";
+import {
+  PENDING_INTENT_TTL_MS,
+  consumePendingIntent,
+  readPendingIntent,
+  safeRelativeReturnPath,
+  useAuthenticatedIntent,
+  type SaveComparisonIntent,
+} from "../auth/continuity";
 import { CompareShell } from "./CompareShell";
 import {
   compareQueryViewData,
@@ -222,16 +237,32 @@ export function CompareRoute() {
 }
 
 function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderData }) {
+  const outletContext = useOutletContext<{ viewer: RootViewer | null } | null>();
+  const viewer = outletContext?.viewer;
+  const [pendingIntent] = useState(() => (viewer ? readPendingIntent() : null));
+  const restoredComparison =
+    loaderData.status === "ready" &&
+    pendingIntent?.kind === "save_comparison" &&
+    orderedValuesEqual(
+      pendingIntent.productIds,
+      loaderData.products.map(({ id }) => id),
+    );
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
     error: null,
     isInFlight: false,
-    message: null,
+    message: restoredComparison
+      ? "Your comparison draft was restored. Review it before saving the comparison."
+      : null,
   });
   const isSaveInFlightRef = useRef(false);
   const activeSaveRequestRef = useRef<{ id: number } | null>(null);
   const nextSaveRequestIdRef = useRef(0);
   const [commitCreateSavedComparisonSet] =
     useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
+
+  useEffect(() => {
+    if (viewer && pendingIntent?.kind === "save_comparison") consumePendingIntent();
+  }, [pendingIntent, viewer]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -311,6 +342,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
         loaderData={loaderData}
         onSave={handleSave}
         saveFeedback={saveFeedback}
+        viewer={viewer}
       />
     );
   }
@@ -340,14 +372,34 @@ function ReadyCompareSelectionRoute({
   loaderData,
   onSave,
   saveFeedback,
+  viewer,
 }: {
   loaderData: Extract<CompareRouteLoaderData, { status: "ready" }>;
   onSave: () => void;
   saveFeedback: SaveFeedbackState;
+  viewer: RootViewer | null | undefined;
 }) {
+  const location = useLocation();
   const queryRef = useRoutePreloadedQuery<CompareRouteQuery>(compareRouteQuery, loaderData.query);
   const data = usePreloadedQuery<CompareRouteQuery>(compareRouteQuery, queryRef);
   const saveInFlight = saveFeedback.isInFlight;
+  const returnTo =
+    safeRelativeReturnPath(`${location.pathname}${location.search}${location.hash}`) ?? "/";
+  const intent = useMemo<SaveComparisonIntent>(
+    () => ({
+      kind: "save_comparison",
+      version: 1,
+      expiresAt: Date.now() + PENDING_INTENT_TTL_MS,
+      returnTo,
+      productIds: loaderData.products.map(({ id }) => id),
+    }),
+    [loaderData.products, returnTo],
+  );
+  const authenticatedIntent = useAuthenticatedIntent({
+    viewer,
+    intent,
+    onAuthenticated: onSave,
+  });
 
   return (
     <CompareShell title="Compare products">
@@ -357,9 +409,10 @@ function ReadyCompareSelectionRoute({
             description="Save this set, remove selected products, or add another product."
             label="Comparison controls"
           >
-            <Button disabled={saveInFlight} onClick={onSave} type="button">
+            <Button disabled={saveInFlight} onClick={authenticatedIntent.request} type="button">
               {saveInFlight ? "Saving comparison..." : "Save comparison"}
             </Button>
+            {authenticatedIntent.dialog}
             <ShareComparisonControl products={loaderData.products} />
             <p aria-label="Save comparison status" aria-live="polite" role="status">
               {saveFeedback.message ?? ""}
@@ -488,4 +541,8 @@ function isActiveSaveRequest(
   saveRequest: { id: number },
 ) {
   return activeSaveRequest?.id === saveRequest.id;
+}
+
+function orderedValuesEqual(left: readonly string[], right: readonly string[]) {
+  return left.length === right.length && left.every((value, index) => value === right[index]);
 }
