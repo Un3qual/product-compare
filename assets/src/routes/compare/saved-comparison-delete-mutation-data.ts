@@ -1,9 +1,12 @@
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
+import type { SavedComparisonSetListDeleteSavedComparisonSetMutation } from "$generated/SavedComparisonSetListDeleteSavedComparisonSetMutation.graphql";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 
-type DeleteSavedComparisonSetPayload = {
-  readonly errors?: unknown;
-  readonly savedComparisonSet?: { readonly id?: string | null } | null;
-};
+type DeleteSavedComparisonSetPayload =
+  SavedComparisonSetListDeleteSavedComparisonSetMutation["response"]["deleteSavedComparisonSet"];
 
 export type DeleteSavedComparisonSetMutationOutcome =
   | {
@@ -16,17 +19,17 @@ export type DeleteSavedComparisonSetMutationOutcome =
     };
 
 export function resolveDeleteSavedComparisonSetMutationOutcome(
-  payload: DeleteSavedComparisonSetPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: DeleteSavedComparisonSetPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): DeleteSavedComparisonSetMutationOutcome {
-  const deletedSavedComparisonSetId = payload?.savedComparisonSet?.id;
+  const deletedSavedComparisonSetId = payload.savedComparisonSet?.id;
 
-  if (deletedSavedComparisonSetId && !hasRouteGraphQLErrors(graphQLErrors)) {
+  if (deletedSavedComparisonSetId && !hasGraphQLErrors(graphQLErrors)) {
     return { deletedSavedComparisonSetId, error: null };
   }
 
   return {
     deletedSavedComparisonSetId: null,
-    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    error: mutationErrorMessage(payload.errors, graphQLErrors),
   };
 }

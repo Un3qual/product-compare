@@ -7,7 +7,7 @@ import {
   type GraphQLDateTimeContext,
 } from "../../graphql-datetime";
 import { buildOfferSnapshotSummary, type OfferSnapshotSelectors } from "../../offer-snapshot";
-import { nextRelayPageCursor } from "../../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 import { productDetailPath } from "../product-detail-route-data";
 
 export type ProductOfferCouponRow = {
@@ -49,6 +49,7 @@ export type ProductOfferPanelConnection = Pick<
 >;
 export type ProductOfferPanelOffer = ProductOfferPanelConnection["edges"][number]["node"];
 export type ProductOfferCouponConnection = NonNullable<ProductOfferPanelOffer["activeCoupons"]>;
+type ProductOfferCoupon = ProductOfferCouponConnection["edges"][number]["node"];
 export type ProductOfferPrice = NonNullable<ProductOfferPanelOffer["latestPrice"]>;
 export type ProductOfferPriceHistoryConnection = NonNullable<
   ProductOfferPanelOffer["priceHistory"]
@@ -88,7 +89,7 @@ export function productOfferPaginationPaths({
   productSlug: string;
   selectedCompareSlugs?: readonly string[];
 }) {
-  const nextCursor = nextRelayPageCursor(connection.pageInfo, offersAfter);
+  const nextCursor = nextPageCursor(connection.pageInfo, offersAfter);
 
   return {
     firstPath: offersAfter ? productOffersPath(productSlug, null, selectedCompareSlugs) : null,
@@ -223,7 +224,7 @@ function buildPriceHistoryRows(
     const priceText = formatPriceText(node.price, currency);
     const priceValue = decimalStringToNumber(node.price);
 
-    if (!observedDate || !priceText || priceValue === null || typeof node.observedAt !== "string") {
+    if (!observedDate || !priceText || priceValue === null) {
       return [];
     }
 
@@ -231,21 +232,17 @@ function buildPriceHistoryRows(
   });
 }
 
-function formatPriceText(price: unknown, currency: string) {
-  if (typeof price === "string" && decimalStringToNumber(price) !== null) {
+function formatPriceText(price: string | null | undefined, currency: string) {
+  if (price && decimalStringToNumber(price) !== null) {
     return `${price} ${currency}`;
-  }
-
-  if (typeof price === "number" && Number.isFinite(price)) {
-    return `${price.toFixed(2)} ${currency}`;
   }
 
   return null;
 }
 
 function formatCouponDiscountText(
-  discountType: ProductOfferCouponConnection["edges"][number]["node"]["discountType"],
-  discountValue: unknown,
+  discountType: ProductOfferCoupon["discountType"],
+  discountValue: ProductOfferCoupon["discountValue"],
   currency: string | null | undefined,
 ) {
   if (discountType === "FREE_SHIPPING") {
@@ -267,17 +264,13 @@ function formatCouponDiscountText(
     : null;
 }
 
-function formatCouponValidToText(validTo: unknown) {
+function formatCouponValidToText(validTo: ProductOfferCoupon["validTo"]) {
   const dateText = graphQLDateTimeLabel(validTo);
   return dateText ? `Valid through ${dateText}` : null;
 }
 
-function formatFiniteNumberText(value: unknown) {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return String(value);
-  }
-
-  if (typeof value !== "string") {
+function formatFiniteNumberText(value: string | null | undefined) {
+  if (!value) {
     return null;
   }
 

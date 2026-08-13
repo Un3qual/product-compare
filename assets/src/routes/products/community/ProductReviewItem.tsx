@@ -17,7 +17,7 @@ import {
 } from "$ui/primitives/Select";
 import { Textarea } from "$ui/primitives/Textarea";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   applyCommunityUpdate,
   CommunityOwnerActions,
@@ -117,7 +117,7 @@ function useReviewUpdate(review: Review, ownerView: boolean, state: CommunityIte
       const nextMessage = resolveProductReviewUpdateMessage(payload, graphQLErrors);
       applyCommunityUpdate(payload.review, nextMessage, graphQLErrors, ownerView, state);
     } catch {
-      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      state.setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

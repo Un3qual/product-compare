@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<2023fd749808ad6558bc69d28e946ad5>>
+ * @generated SignedSource<<c22f2cf1e58e0e50f488384dfa144155>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -8,15 +8,15 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ReaderFragment } from 'relay-runtime';
+import { ReaderFragment } from "relay-runtime";
 import { FragmentRefs } from "relay-runtime";
 export type ApiTokenItem_token$data = {
-  readonly expiresAt: any | null | undefined;
+  readonly expiresAt: string | null | undefined;
   readonly id: string;
-  readonly insertedAt: any;
+  readonly insertedAt: string;
   readonly label: string | null | undefined;
-  readonly lastUsedAt: any | null | undefined;
-  readonly revokedAt: any | null | undefined;
+  readonly lastUsedAt: string | null | undefined;
+  readonly revokedAt: string | null | undefined;
   readonly tokenPrefix: string;
   readonly " $fragmentType": "ApiTokenItem_token";
 };
@@ -26,63 +26,63 @@ export type ApiTokenItem_token$key = {
 };
 
 const node: ReaderFragment = {
-  "argumentDefinitions": [],
-  "kind": "Fragment",
-  "metadata": null,
-  "name": "ApiTokenItem_token",
-  "selections": [
+  argumentDefinitions: [],
+  kind: "Fragment",
+  metadata: null,
+  name: "ApiTokenItem_token",
+  selections: [
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "id",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "id",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "label",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "label",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "tokenPrefix",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "tokenPrefix",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "lastUsedAt",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "lastUsedAt",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "expiresAt",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "expiresAt",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "revokedAt",
-      "storageKey": null
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "revokedAt",
+      storageKey: null,
     },
     {
-      "alias": null,
-      "args": null,
-      "kind": "ScalarField",
-      "name": "insertedAt",
-      "storageKey": null
-    }
+      alias: null,
+      args: null,
+      kind: "ScalarField",
+      name: "insertedAt",
+      storageKey: null,
+    },
   ],
-  "type": "ApiToken",
-  "abstractKey": null
+  type: "ApiToken",
+  abstractKey: null,
 };
 
 (node as any).hash = "de66582383f51e872664ec0060e714a3";

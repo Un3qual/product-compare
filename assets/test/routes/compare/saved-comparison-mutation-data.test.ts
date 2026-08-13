@@ -1,4 +1,4 @@
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   SAVED_COMPARISON_SUCCESS_MESSAGE,
   buildSavedComparisonSetMutationInput,
@@ -83,13 +83,6 @@ test("resolveSavedComparisonSetMutationOutcome uses the payload error when the s
   ).toEqual({ error: MUTATION_ERROR.message, message: null });
 });
 
-test("resolveSavedComparisonSetMutationOutcome uses the shared fallback for missing mutation payloads", () => {
-  expect(resolveSavedComparisonSetMutationOutcome(undefined, [])).toEqual({
-    error: DEFAULT_ROUTE_ERROR_MESSAGE,
-    message: null,
-  });
-});
-
 test("resolveSavedComparisonSetMutationOutcome gives top-level GraphQL errors precedence", () => {
   expect(
     resolveSavedComparisonSetMutationOutcome(
@@ -99,5 +92,5 @@ test("resolveSavedComparisonSetMutationOutcome gives top-level GraphQL errors pr
       },
       [{ message: "database stacktrace" }],
     ),
-  ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, message: null });
+  ).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, message: null });
 });

@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 
 const {
@@ -297,7 +297,7 @@ test("compare route reports a generic error when save completes with top-level G
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(saveComparisonStatus()).toBeEmptyDOMElement();
 });
 

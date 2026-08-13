@@ -75,7 +75,7 @@ export function ResetPasswordRoute() {
             return;
           }
 
-          const result = resolveActionMutationResult(response?.resetPassword, graphQLErrors);
+          const result = resolveActionMutationResult(response.resetPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             setMessage(CREDENTIAL_RESET_COMPLETION_MESSAGE);

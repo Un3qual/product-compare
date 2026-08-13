@@ -81,8 +81,7 @@ export function merchantNameByProductId(series: ProductPriceTrendCurrency) {
   return new Map(series.merchants.map(({ merchantProductId, name }) => [merchantProductId, name]));
 }
 
-function chartRow(id: string, observedAtValue: unknown, priceValue: unknown, currency: string) {
-  if (typeof observedAtValue !== "string") return [];
+function chartRow(id: string, observedAtValue: string, priceValue: string, currency: string) {
   const observedDate = shortDate(observedAtValue);
   const observedExact = exactDateTime(observedAtValue);
   const price = decimalStringToNumber(priceValue);

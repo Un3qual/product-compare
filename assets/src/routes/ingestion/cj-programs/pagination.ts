@@ -1,4 +1,4 @@
-import { nextRelayPageCursor } from "../../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 import {
   CJ_PROGRAM_SORTS,
   CJ_PROGRAM_STAGES,
@@ -80,8 +80,8 @@ export function buildCJProgramPaginationData(
     readonly unmatched: ConnectionPageInfo;
   },
 ) {
-  const programNextCursor = nextRelayPageCursor(program, pagination.after);
-  const unmatchedNextCursor = nextRelayPageCursor(unmatched, pagination.unmatchedAfter);
+  const programNextCursor = nextPageCursor(program, pagination.after);
+  const unmatchedNextCursor = nextPageCursor(unmatched, pagination.unmatchedAfter);
 
   return {
     program: {

@@ -2,15 +2,19 @@ import type {
   AlertOperationsCreatePriceWatchMutation,
   PriceWatchRuleType as RelayPriceWatchRuleType,
 } from "$generated/AlertOperationsCreatePriceWatchMutation.graphql";
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 
 export type PriceWatchRuleType = Exclude<RelayPriceWatchRuleType, "%future added value">;
 
 export type PriceWatchInputSource = Readonly<{
   productId: string;
   ruleType: PriceWatchRuleType;
-  amount: unknown;
-  currency: unknown;
+  amount: FormDataEntryValue | null;
+  currency: FormDataEntryValue | null;
 }>;
 
 type CreatePriceWatchInput = AlertOperationsCreatePriceWatchMutation["variables"]["input"];
@@ -25,12 +29,12 @@ export const PRICE_WATCH_CREATED_MESSAGE =
   "Watch created. New qualifying changes will appear in your inbox.";
 
 export function resolveCreatePriceWatchMutationMessage(
-  payload: CreatePriceWatchPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: CreatePriceWatchPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
-  return payload?.watch && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload.watch && !hasGraphQLErrors(graphQLErrors)
     ? PRICE_WATCH_CREATED_MESSAGE
-    : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+    : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function getPriceWatchAmountFieldData(

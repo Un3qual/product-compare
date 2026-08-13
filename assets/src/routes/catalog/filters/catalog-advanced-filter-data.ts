@@ -5,21 +5,9 @@ export interface CatalogAdvancedFilterSelections {
   enums: readonly CatalogAdvancedEnumSelection[];
 }
 
-export interface CatalogAdvancedNumericSelection {
-  attributeId: string;
-  min?: string;
-  max?: string;
-}
-
-export interface CatalogAdvancedBooleanSelection {
-  attributeId: string;
-  value: boolean;
-}
-
-export interface CatalogAdvancedEnumSelection {
-  attributeId: string;
-  enumOptionId: string;
-}
+export type CatalogAdvancedNumericSelection = ProductNumericFilterInput;
+export type CatalogAdvancedBooleanSelection = ProductBooleanFilterInput;
+export type CatalogAdvancedEnumSelection = ProductEnumFilterInput;
 
 export interface CatalogAdvancedFilterOptionMetadata {
   id: string;
@@ -173,7 +161,7 @@ function catalogAdvancedNumericRow(
 }
 
 function selectedNumericFieldValue(
-  selectedValue: string | undefined,
+  selectedValue: string | null | undefined,
   metadataValue: string | null | undefined,
 ) {
   return selectedValue ?? metadataValue ?? "";
@@ -217,3 +205,8 @@ function booleanDefaultValue(
 
   return value ? "true" : "false";
 }
+import type {
+  ProductBooleanFilterInput,
+  ProductEnumFilterInput,
+  ProductNumericFilterInput,
+} from "$generated/BrowseRouteQuery.graphql";

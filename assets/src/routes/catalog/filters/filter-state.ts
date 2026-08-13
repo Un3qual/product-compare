@@ -273,18 +273,18 @@ function validCatalogNumericFilters(filters: readonly CatalogNumericFilter[]) {
 }
 
 function hasNumericFilterBound(filter: CatalogNumericFilter) {
-  return filter.min !== undefined || filter.max !== undefined;
+  return filter.min != null || filter.max != null;
 }
 
 function hasValidNumericBounds(filter: CatalogNumericFilter) {
   return (
-    (filter.min === undefined || isValidDecimalFilterValue(filter.min)) &&
-    (filter.max === undefined || isValidDecimalFilterValue(filter.max))
+    (filter.min == null || isValidDecimalFilterValue(filter.min)) &&
+    (filter.max == null || isValidDecimalFilterValue(filter.max))
   );
 }
 
 function hasOrderedNumericBounds(filter: CatalogNumericFilter) {
-  if (filter.min === undefined || filter.max === undefined) {
+  if (filter.min == null || filter.max == null) {
     return true;
   }
 

@@ -18,7 +18,7 @@ import {
 } from "$relay/route-preload";
 import { buildComparePathFromSlugs } from "$routes/compare/paths";
 import { isAbortError } from "$routes/loader-errors";
-import type { RootViewer } from "$routes/root/viewer-data";
+import type { RootViewer } from "$routes/root/viewer";
 import { ComparisonContinuity } from "$ui/components/compare/ComparisonContinuity";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";

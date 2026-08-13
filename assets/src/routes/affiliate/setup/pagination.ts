@@ -1,5 +1,5 @@
 import type { MerchantPagination } from "../../merchants/pagination";
-import { nextRelayPageCursor } from "../../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 export type AffiliateSetupMerchantPagination = MerchantPagination;
 
@@ -26,7 +26,7 @@ export function buildAffiliateSetupPaginationData({
   readonly hasPreviousPage: boolean;
   readonly pagination: Readonly<AffiliateSetupMerchantPagination>;
 }) {
-  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, pagination.after);
+  const nextCursor = nextPageCursor({ endCursor, hasNextPage }, pagination.after);
 
   return {
     firstHref:

@@ -1,4 +1,4 @@
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   invalidTokenMutationError,
   isSuccessfulActionResult,
@@ -12,18 +12,18 @@ import {
 
 test("auth transport errors use the shared route fallback message", () => {
   expect(sanitizeTransportError(new Error("network unavailable"))).toBe(
-    DEFAULT_ROUTE_ERROR_MESSAGE,
+    DEFAULT_MUTATION_ERROR_MESSAGE,
   );
   expect(transportMutationError(new Error("network unavailable"))).toMatchObject({
     code: "NETWORK_ERROR",
     field: null,
-    message: DEFAULT_ROUTE_ERROR_MESSAGE,
+    message: DEFAULT_MUTATION_ERROR_MESSAGE,
   });
   expect(transportMutationErrors(new Error("network unavailable"))).toEqual([
     {
       code: "NETWORK_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+      message: DEFAULT_MUTATION_ERROR_MESSAGE,
     },
   ]);
 });
@@ -34,6 +34,7 @@ test("session mutation results treat top-level Relay errors as session failures"
       viewer: {
         id: "viewer-1",
         email: "user@example.com",
+        isOperator: false,
       },
       errors: [],
     },
@@ -45,32 +46,27 @@ test("session mutation results treat top-level Relay errors as session failures"
     {
       code: "NETWORK_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+      message: DEFAULT_MUTATION_ERROR_MESSAGE,
     },
   ]);
 });
 
-test("session mutation results reject viewers without an operator capability", () => {
+test("session mutation results preserve the generated Relay viewer", () => {
   expect(
     resolveSessionMutationResult(
       {
         viewer: {
           id: "viewer-1",
           email: "user@example.com",
+          isOperator: false,
         },
         errors: [],
       },
       [],
     ),
   ).toEqual({
-    viewer: null,
-    errors: [
-      {
-        code: "UNKNOWN_ERROR",
-        field: null,
-        message: DEFAULT_ROUTE_ERROR_MESSAGE,
-      },
-    ],
+    viewer: { id: "viewer-1", email: "user@example.com", isOperator: false },
+    errors: [],
   });
 });
 
@@ -102,7 +98,7 @@ test("invalid token mutation errors use the shared token field shape", () => {
 
 test("global mutation errors retain missing, null, blank, and unknown fields", () => {
   const errors = [
-    { code: "MISSING", message: "Missing field." },
+    { code: "MISSING", field: undefined, message: "Missing field." },
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
     { code: "UNKNOWN", field: "username", message: "Unknown field." },
@@ -110,7 +106,7 @@ test("global mutation errors retain missing, null, blank, and unknown fields", (
   ];
 
   expect(selectGlobalMutationErrors(errors, ["email", "password"])).toEqual([
-    { code: "MISSING", message: "Missing field." },
+    { code: "MISSING", field: undefined, message: "Missing field." },
     { code: "NULL", field: null, message: "Null field." },
     { code: "BLANK", field: "", message: "Blank field." },
     { code: "UNKNOWN", field: "username", message: "Unknown field." },

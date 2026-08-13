@@ -14,7 +14,7 @@ import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { AppProviders } from "$ui/providers/AppProviders";
 import { RootPrimaryNavigation } from "./RootDestinations";
 import { RouteMetadata } from "./RouteMetadata";
-import { projectRootViewer, type RootViewer } from "./root/viewer-data";
+import { rootViewerFromRelayRecord, type RootViewer } from "./root/viewer";
 
 const rootRouteQuery = graphql`
   query RootRouteQuery {
@@ -69,7 +69,7 @@ function ReadyRootLayout({ viewerQuery }: { viewerQuery: RootViewerQueryDescript
   const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, viewerQuery);
   const data = usePreloadedQuery<RootRouteQuery>(rootRouteQuery, queryRef);
 
-  return <RootLayoutShell viewer={projectRootViewer(data.viewer)} />;
+  return <RootLayoutShell viewer={data.viewer ?? null} />;
 }
 
 function RootLayoutShell({ viewer }: RootOutletContext) {
@@ -100,7 +100,7 @@ export async function rootLoader({
     );
 
     return {
-      viewer: projectRootViewer(fetchedViewer.data.viewer),
+      viewer: fetchedViewer.data.viewer ?? null,
       viewerQuery: fetchedViewer.descriptor,
     };
   } catch {
@@ -116,7 +116,7 @@ function readCachedRootViewer(environment: Environment): RootViewer | null {
   const source = environment.getStore().getSource();
   const rootRecord = source.get(RELAY_ROOT_ID);
   const viewerRecordId = linkedRecordId(rootRecord?.viewer);
-  return viewerRecordId ? projectRootViewer(source.get(viewerRecordId)) : null;
+  return viewerRecordId ? rootViewerFromRelayRecord(source.get(viewerRecordId)) : null;
 }
 
 function linkedRecordId(value: unknown) {

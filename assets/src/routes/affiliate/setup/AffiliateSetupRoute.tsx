@@ -21,7 +21,7 @@ import { Pagination } from "$ui/components/navigation/Pagination";
 import { recoverRouteLoaderError } from "../../loader-errors";
 import { merchantPaginationFromUrl } from "../../merchants/pagination";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   AffiliateCouponForm,
   AffiliateLinkForm,
@@ -63,6 +63,7 @@ const affiliateSetupRouteQuery = graphql`
         node {
           id
           name
+          domain
           ...MerchantDirectoryView_item
         }
       }
@@ -229,7 +230,7 @@ function AffiliateSetupPanel({
         setNetworkError(outcome.error);
       }
     } catch {
-      setNetworkError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setNetworkError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       networkInFlightRef.current = false;
       setNetworkPending(false);
@@ -266,7 +267,7 @@ function AffiliateSetupPanel({
         setProgramError(outcome.error);
       }
     } catch {
-      setProgramError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setProgramError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       programInFlightRef.current = false;
       setProgramPending(false);
@@ -301,7 +302,7 @@ function AffiliateSetupPanel({
         setLinkError(outcome.error);
       }
     } catch {
-      setLinkError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setLinkError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       linkInFlightRef.current = false;
       setLinkPending(false);
@@ -333,7 +334,7 @@ function AffiliateSetupPanel({
         setCouponError(outcome.error);
       }
     } catch {
-      setCouponError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setCouponError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       couponInFlightRef.current = false;
       setCouponPending(false);

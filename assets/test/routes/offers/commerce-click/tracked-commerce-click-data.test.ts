@@ -4,7 +4,7 @@ import {
   shouldTrackCommerceClick,
   trackedMerchantProductHref,
 } from "../../../../src/routes/offers/commerce-click/TrackedCommerceClickAction";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 
 const API_ENDPOINT = "http://localhost:4000/api/graphql";
 const SCRIPT_SCHEME_REDIRECT = ["java", "script:alert(1)"].join("");
@@ -98,10 +98,8 @@ test("tracked-click completion resolves an API-origin redirect without mutating 
 });
 
 test.each([
-  ["missing payload", undefined, [], DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["null payload", null, [], DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["null redirect path", { redirectPath: null, errors: [] }, [], DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["empty redirect path", { redirectPath: "", errors: [] }, [], DEFAULT_ROUTE_ERROR_MESSAGE],
+  ["null redirect path", { redirectPath: null, errors: [] }, [], DEFAULT_MUTATION_ERROR_MESSAGE],
+  ["empty redirect path", { redirectPath: "", errors: [] }, [], DEFAULT_MUTATION_ERROR_MESSAGE],
   [
     "payload error",
     { redirectPath: "/r/click-123", errors: [MUTATION_ERROR] },
@@ -112,13 +110,13 @@ test.each([
     "top-level GraphQL error",
     { redirectPath: "/r/click-123", errors: [] },
     [GRAPHQL_ERROR],
-    DEFAULT_ROUTE_ERROR_MESSAGE,
+    DEFAULT_MUTATION_ERROR_MESSAGE,
   ],
   [
     "unsafe redirect path",
     { redirectPath: "https://attacker.example/r/click-123", errors: [] },
     [],
-    DEFAULT_ROUTE_ERROR_MESSAGE,
+    DEFAULT_MUTATION_ERROR_MESSAGE,
   ],
 ] as const)(
   "tracked-click completion handles %s as an error",

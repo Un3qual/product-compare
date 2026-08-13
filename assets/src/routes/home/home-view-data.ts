@@ -13,11 +13,7 @@ type HomeWorkspace = HomeRouteQuery$data["homeWorkspace"];
 type HomeDeals = HomeDealsQuery$data["homeDeals"];
 type HomeWorkspaceProduct = HomeProductLedger_products$data["edges"][number];
 type HomeDealEdge = HomeDeals["new"]["edges"][number];
-type HomeOffer = {
-  readonly currency: string;
-  readonly landedPrice: unknown;
-  readonly merchantName: string;
-};
+type HomeOffer = Pick<HomeDeals_deal$data["offer"], "currency" | "landedPrice" | "merchantName">;
 
 export type HomeLedgerRow = {
   freshness: string;
@@ -30,10 +26,7 @@ export type HomeLedgerRow = {
   slug: string;
 };
 
-export type HomeDealReason = {
-  code: HomeDealReasonCode;
-  watchTarget?: unknown;
-};
+export type HomeDealReason = HomeDeals_deal$data["reasons"][number];
 
 export function homeWorkspaceViewData(workspace: HomeWorkspace) {
   const selectedSlugs = workspace.selectedProducts.map((product) => product.slug);
@@ -91,7 +84,7 @@ export function homeDealReasonCopy(reason: HomeDealReason, currency: string) {
     case "TRENDING_BELOW_MEDIAN":
       return "Below the 30-day price";
     case "WATCH_TARGET": {
-      const watchTarget = scalarText(reason.watchTarget);
+      const watchTarget = nonBlankText(reason.watchTarget);
 
       return watchTarget
         ? `Matches your ${formatCurrency(watchTarget, currency)} price watch`
@@ -112,7 +105,7 @@ function homeLedgerRow(row: HomeWorkspaceProduct, selectedSlugs: readonly string
   const { offer, node: product } = row;
 
   return {
-    freshness: formatObservedAt(scalarText(offer.observedAt)),
+    freshness: formatObservedAt(offer.observedAt),
     highlights: formatHighlights(row.highlights),
     href: homeProductDetailPath(product.slug, selectedSlugs),
     id: product.id,
@@ -142,7 +135,7 @@ function formatHighlights(highlights: ReadonlyArray<{ label: string; value: stri
 }
 
 function formatOffer(offer: HomeOffer) {
-  return `${formatCurrency(scalarText(offer.landedPrice) ?? "0", offer.currency)} at ${offer.merchantName}`;
+  return `${formatCurrency(offer.landedPrice, offer.currency)} at ${offer.merchantName}`;
 }
 
 function formatCurrency(value: string, currency: string) {
@@ -203,9 +196,7 @@ function formatObservedAt(observedAt: string | null) {
   }).format(new Date(observedAt))}`;
 }
 
-function scalarText(value: unknown) {
-  if (typeof value !== "string" && typeof value !== "number") return null;
-
-  const text = String(value).trim();
-  return text.length > 0 ? text : null;
+function nonBlankText(value: string | null | undefined) {
+  const text = value?.trim();
+  return text ? text : null;
 }

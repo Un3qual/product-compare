@@ -49,7 +49,7 @@ export function RegisterRoute() {
       {
         variables: { email, password },
         onCompleted(response, graphQLErrors) {
-          const result = resolveSessionMutationResult(response?.register, graphQLErrors);
+          const result = resolveSessionMutationResult(response.register, graphQLErrors);
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);

@@ -1,4 +1,4 @@
-import { nextRelayPageCursor } from "../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 export type CategorySpecificationHighlight = {
   attributeId: string;
@@ -48,7 +48,7 @@ export function getCategoryViewData(
 }
 
 function categoryNextPagePath(category: CategoryViewDataInput, currentAfter: string | null) {
-  const nextCursor = nextRelayPageCursor(category.products.pageInfo, currentAfter);
+  const nextCursor = nextPageCursor(category.products.pageInfo, currentAfter);
 
   return nextCursor
     ? `/categories/${encodeURIComponent(category.slug)}?after=${encodeURIComponent(nextCursor)}`

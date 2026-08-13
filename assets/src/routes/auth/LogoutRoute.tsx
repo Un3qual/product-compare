@@ -41,7 +41,7 @@ export function LogoutRoute() {
       {
         variables: {},
         onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(response?.logout, graphQLErrors);
+          const result = resolveActionMutationResult(response.logout, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             clearRootViewer(relayEnvironment);

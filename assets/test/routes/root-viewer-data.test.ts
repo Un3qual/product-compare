@@ -1,12 +1,12 @@
-import { projectRootViewer } from "../../src/routes/root/viewer-data";
+import { rootViewerFromRelayRecord } from "../../src/routes/root/viewer";
 
 test.each([null, undefined])("projects no viewer for a nullish value", (viewer) => {
-  expect(projectRootViewer(viewer)).toBeNull();
+  expect(rootViewerFromRelayRecord(viewer)).toBeNull();
 });
 
 test("projects no viewer for primitive values", () => {
   for (const viewer of ["viewer", 42, true, Symbol("viewer")]) {
-    expect(projectRootViewer(viewer)).toBeNull();
+    expect(rootViewerFromRelayRecord(viewer)).toBeNull();
   }
 });
 
@@ -23,12 +23,12 @@ test.each([
     { id: "viewer-1", email: "person@example.com", isOperator: "false" },
   ],
 ])("projects no viewer for an incomplete or invalid viewer with %s", (_, viewer) => {
-  expect(projectRootViewer(viewer)).toBeNull();
+  expect(rootViewerFromRelayRecord(viewer)).toBeNull();
 });
 
 test("projects the exact valid viewer fields", () => {
   expect(
-    projectRootViewer({
+    rootViewerFromRelayRecord({
       id: "viewer-1",
       email: "person@example.com",
       isOperator: true,
@@ -49,7 +49,7 @@ test("does not mutate a valid viewer input", () => {
   };
   const before = { ...viewer };
 
-  const projected = projectRootViewer(viewer);
+  const projected = rootViewerFromRelayRecord(viewer);
 
   expect(viewer).toEqual(before);
   expect(projected).not.toBe(viewer);

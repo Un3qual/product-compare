@@ -9,7 +9,7 @@ import type { ProductCommunityOperationsUpdateProductAnswerMutation } from "$gen
 import { Label } from "$ui/primitives/Label";
 import { Textarea } from "$ui/primitives/Textarea";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   applyCommunityUpdate,
   CommunityOwnerActions,
@@ -98,7 +98,7 @@ function useAnswerUpdate(answer: Answer, ownerView: boolean, state: CommunityIte
       const nextMessage = resolveProductAnswerUpdateMessage(payload, graphQLErrors);
       applyCommunityUpdate(payload.answer, nextMessage, graphQLErrors, ownerView, state);
     } catch {
-      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      state.setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

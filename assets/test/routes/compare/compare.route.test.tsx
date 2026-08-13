@@ -4,7 +4,7 @@ import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData, useLocation, useRouteError } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   MAX_COMPARE_PRODUCTS,
   type CompareRouteLoaderData,
@@ -1460,10 +1460,7 @@ test("product picker view filters loaded options, clears the filter, and keeps r
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
   const compareAlpha = screen.getByRole("link", { name: "Compare Monitor Alpha" });
-  expect(compareAlpha).toHaveAttribute(
-    "href",
-    "/compare?slug=monitor-alpha",
-  );
+  expect(compareAlpha).toHaveAttribute("href", "/compare?slug=monitor-alpha");
   expect(compareAlpha).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
     "href",
@@ -3436,7 +3433,7 @@ test("compare route reports a fallback error when the save commit throws synchro
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 

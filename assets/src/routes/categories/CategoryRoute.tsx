@@ -10,7 +10,6 @@ import {
 } from "$relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { isCanonicalSlug } from "$routes/route-params";
 import { routeMetadataFromSeo } from "$routes/seo";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
@@ -152,7 +151,7 @@ function ReadyCategory({
 
 export async function categoryLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!isCanonicalSlug(slug)) return categoryNotFound();
+  if (!slug) return categoryNotFound();
 
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);

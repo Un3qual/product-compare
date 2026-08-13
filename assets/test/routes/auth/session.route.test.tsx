@@ -714,37 +714,3 @@ test("login route shows a generic alert when the session payload fails without e
   expectNoLocalRootViewerUpdate();
   expect(await screen.findByRole("alert")).toHaveTextContent("Request failed. Please try again.");
 });
-
-test("login route ignores malformed payload error fields and falls back to a generic alert", async () => {
-  renderRoute("/auth/login");
-
-  fireEvent.change(screen.getByLabelText(/email/i), {
-    target: { value: "person@example.com" },
-  });
-  fireEvent.change(screen.getByLabelText(/password/i), {
-    target: { value: TEST_PASSWORD },
-  });
-  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-
-  await waitFor(() => {
-    expect(commitMutationMock).toHaveBeenCalled();
-  });
-
-  completeMutation({
-    login: {
-      viewer: null,
-      errors: [
-        {
-          code: "INVALID_ARGUMENT",
-          field: 123,
-          message: "bad field shape",
-        },
-      ],
-    },
-  });
-
-  const alert = await screen.findByRole("alert");
-
-  expect(alert).toHaveTextContent("Request failed. Please try again.");
-  expect(alert).not.toHaveTextContent("bad field shape");
-});

@@ -1,23 +1,24 @@
-import { parseGraphQLDateTime } from "../../graphql-datetime";
-import { nextRelayPageCursor } from "../../relay-pagination";
+import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTokenOperationsCreateApiTokenMutation.graphql";
+import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
+import type { ApiTokenOperationsRotateApiTokenMutation } from "$generated/ApiTokenOperationsRotateApiTokenMutation.graphql";
+import type { ApiTokensRouteQuery } from "$generated/ApiTokensRouteQuery.graphql";
 import {
-  hasRouteGraphQLErrors,
-  isRouteRecord,
-  routeMutationErrorMessage,
-} from "../../route-errors";
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
+import { nextPageCursor } from "$relay/pagination";
+import { parseGraphQLDateTime } from "../../graphql-datetime";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
 
-export interface ApiTokenRecord {
-  id: string;
-  label: string | null;
-  tokenPrefix: string;
-  lastUsedAt: string | null;
-  expiresAt: string | null;
-  revokedAt: string | null;
-  insertedAt: string;
-}
+type ApiTokenQueryNode = ApiTokensRouteQuery["response"]["myApiTokens"]["edges"][number]["node"];
+type CreateApiTokenPayload = ApiTokenOperationsCreateApiTokenMutation["response"]["createApiToken"];
+type RotateApiTokenPayload = ApiTokenOperationsRotateApiTokenMutation["response"]["rotateApiToken"];
+type RevokeApiTokenPayload = ApiTokenOperationsRevokeApiTokenMutation["response"]["revokeApiToken"];
+
+export type ApiTokenRecord = ReturnType<typeof normalizeApiToken>;
 
 type AuthorizedApiTokensRouteData = {
   status: "ready" | "empty";
@@ -39,33 +40,10 @@ export type ApiTokensRouteIdentityData = {
   after?: string | null;
 };
 
-export type CreateApiTokenVariables = {
-  label: string | null;
-  expiresAt?: string | null;
-};
-
-export type RotateApiTokenVariables = CreateApiTokenVariables & {
-  tokenId: string;
-};
-
-export type MutationApiToken = {
-  readonly id: string;
-  readonly label: string | null | undefined;
-  readonly tokenPrefix: string;
-  readonly lastUsedAt: string | null | undefined;
-  readonly expiresAt: string | null | undefined;
-  readonly revokedAt: string | null | undefined;
-  readonly insertedAt: string;
-};
-
-type ApiTokenMutationPayload = {
-  readonly apiToken?: MutationApiToken | null;
-  readonly errors?: unknown;
-};
-
-type ApiTokenCredentialMutationPayload = ApiTokenMutationPayload & {
-  readonly plainTextToken?: string | null;
-};
+export type CreateApiTokenVariables = ApiTokenOperationsCreateApiTokenMutation["variables"];
+export type RotateApiTokenVariables = ApiTokenOperationsRotateApiTokenMutation["variables"];
+export type MutationApiToken = NonNullable<CreateApiTokenPayload["apiToken"]>;
+type ApiTokenCredentialMutationPayload = CreateApiTokenPayload | RotateApiTokenPayload;
 
 export type ApiTokenCredentialMutationOutcome =
   | {
@@ -179,7 +157,7 @@ export function buildApiTokenPaginationData({
   readonly hasNextPage: boolean;
   readonly tokenStatus: ApiTokenStatus;
 }) {
-  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, after);
+  const nextCursor = nextPageCursor({ endCursor, hasNextPage }, after);
 
   return {
     firstHref: after ? apiTokenPagePath(tokenStatus, null) : null,
@@ -259,16 +237,16 @@ export function buildRotateApiTokenVariables(
 }
 
 export function resolveApiTokenCredentialMutationOutcome(
-  payload: ApiTokenCredentialMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: ApiTokenCredentialMutationPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): ApiTokenCredentialMutationOutcome {
-  if (hasRouteGraphQLErrors(graphQLErrors)) {
+  if (hasGraphQLErrors(graphQLErrors)) {
     return credentialMutationFailure(payload, graphQLErrors);
   }
 
-  const token = summarizeMutationApiToken(payload?.apiToken);
+  const token = summarizeMutationApiToken(payload.apiToken);
 
-  if (payload?.plainTextToken && token) {
+  if (payload.plainTextToken && token) {
     return { error: null, plainTextToken: payload.plainTextToken, token };
   }
 
@@ -276,14 +254,14 @@ export function resolveApiTokenCredentialMutationOutcome(
 }
 
 export function resolveRevokeApiTokenMutationOutcome(
-  payload: ApiTokenMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: RevokeApiTokenPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): RevokeApiTokenMutationOutcome {
-  if (hasRouteGraphQLErrors(graphQLErrors)) {
+  if (hasGraphQLErrors(graphQLErrors)) {
     return revokeMutationFailure(payload, graphQLErrors);
   }
 
-  const token = summarizeMutationApiToken(payload?.apiToken);
+  const token = summarizeMutationApiToken(payload.apiToken);
 
   if (token) {
     return { error: null, token };
@@ -293,79 +271,20 @@ export function resolveRevokeApiTokenMutationOutcome(
 }
 
 export function summarizeMutationApiToken(token?: MutationApiToken | null) {
-  if (!token) {
-    return null;
-  }
-
-  const {
-    id,
-    label = null,
-    tokenPrefix,
-    lastUsedAt = null,
-    expiresAt = null,
-    revokedAt = null,
-    insertedAt,
-  } = token;
-
-  return {
-    id,
-    label,
-    tokenPrefix,
-    lastUsedAt,
-    expiresAt,
-    revokedAt,
-    insertedAt,
-  } satisfies ApiTokenRecord;
+  return token ? normalizeApiToken(token) : null;
 }
 
-export function summarizeApiTokensPage(data: unknown): {
-  tokens: ApiTokenRecord[];
-  hasNextPage: boolean;
-  endCursor: string | null;
-} {
-  const connection = isRouteRecord(data) ? data.myApiTokens : null;
-
-  if (
-    !isRouteRecord(connection) ||
-    !Array.isArray(connection.edges) ||
-    !isRouteRecord(connection.pageInfo)
-  ) {
-    throw new Error("Failed to parse API tokens response");
-  }
-
-  const { hasNextPage, endCursor } = connection.pageInfo;
-
-  if (typeof hasNextPage !== "boolean" || !(endCursor == null || typeof endCursor === "string")) {
-    throw new Error("Failed to parse API tokens response");
-  }
+export function summarizeApiTokensPage(data: ApiTokensRouteQuery["response"]) {
+  const { edges, pageInfo } = data.myApiTokens;
 
   return {
-    tokens: connection.edges.map((edge) => {
-      if (!isRouteRecord(edge)) {
-        throw new Error("Failed to parse API tokens response");
-      }
-
-      return summarizeApiTokenRecord(edge.node);
-    }),
-    hasNextPage,
-    endCursor: endCursor ?? null,
+    tokens: edges.map(({ node }) => normalizeApiToken(node)),
+    hasNextPage: pageInfo.hasNextPage,
+    endCursor: pageInfo.endCursor ?? null,
   };
 }
 
-function summarizeApiTokenRecord(node: unknown): ApiTokenRecord {
-  if (
-    !isRouteRecord(node) ||
-    typeof node.id !== "string" ||
-    !(node.label == null || typeof node.label === "string") ||
-    typeof node.tokenPrefix !== "string" ||
-    !(node.lastUsedAt == null || typeof node.lastUsedAt === "string") ||
-    !(node.expiresAt == null || typeof node.expiresAt === "string") ||
-    !(node.revokedAt == null || typeof node.revokedAt === "string") ||
-    typeof node.insertedAt !== "string"
-  ) {
-    throw new Error("Failed to parse API tokens response");
-  }
-
+function normalizeApiToken(node: ApiTokenQueryNode | MutationApiToken) {
   return {
     id: node.id,
     label: node.label ?? null,
@@ -422,22 +341,22 @@ function normalizeExpiresAtFormValue(formData: FormData) {
 }
 
 function credentialMutationFailure(
-  payload: ApiTokenCredentialMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: ApiTokenCredentialMutationPayload,
+  graphQLErrors: MutationGraphQLErrors,
 ): ApiTokenCredentialMutationOutcome {
   return {
-    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    error: mutationErrorMessage(payload.errors, graphQLErrors),
     plainTextToken: null,
     token: null,
   };
 }
 
 function revokeMutationFailure(
-  payload: ApiTokenMutationPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: RevokeApiTokenPayload,
+  graphQLErrors: MutationGraphQLErrors,
 ): RevokeApiTokenMutationOutcome {
   return {
-    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    error: mutationErrorMessage(payload.errors, graphQLErrors),
     token: null,
   };
 }

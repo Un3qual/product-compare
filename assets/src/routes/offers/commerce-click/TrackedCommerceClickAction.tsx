@@ -5,10 +5,11 @@ import { resolveGraphQLEndpoint } from "$relay/fetch-graphql";
 import { Button } from "$ui/primitives/Button";
 import { commitRouteMutation } from "../../relay-mutations";
 import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  routeMutationErrorMessage,
-} from "../../route-errors";
+  DEFAULT_MUTATION_ERROR_MESSAGE,
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 
 export const trackCommerceClickMutation = graphql`
   mutation TrackedCommerceClickActionMutation($input: TrackCommerceClickInput!) {
@@ -63,7 +64,7 @@ export function TrackedCommerceClickAction({
             try {
               window.location.assign(outcome.redirectUrl);
             } catch {
-              setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+              setErrorMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
             }
             return;
           }
@@ -71,11 +72,11 @@ export function TrackedCommerceClickAction({
           setErrorMessage(outcome.error);
         },
         onError: () => {
-          setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setErrorMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
         },
       },
       () => {
-        setErrorMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setErrorMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
       },
     );
   }
@@ -143,13 +144,13 @@ export function resolveTrackedCommerceRedirectUrl(redirectPath: string, graphQLE
 }
 
 export function resolveTrackedCommerceClickMutationOutcome(
-  payload: TrackedCommerceClickPayload | null | undefined,
+  payload: TrackedCommerceClickPayload,
   graphQLEndpoint: string,
-  graphQLErrors?: readonly unknown[] | null,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): TrackedCommerceClickMutationOutcome {
-  if (!payload?.redirectPath || payload.errors.length > 0 || hasRouteGraphQLErrors(graphQLErrors)) {
+  if (!payload.redirectPath || payload.errors.length > 0 || hasGraphQLErrors(graphQLErrors)) {
     return {
-      error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+      error: mutationErrorMessage(payload.errors, graphQLErrors),
       redirectUrl: null,
     };
   }
@@ -160,6 +161,6 @@ export function resolveTrackedCommerceClickMutationOutcome(
       redirectUrl: resolveTrackedCommerceRedirectUrl(payload.redirectPath, graphQLEndpoint),
     };
   } catch {
-    return { error: DEFAULT_ROUTE_ERROR_MESSAGE, redirectUrl: null };
+    return { error: DEFAULT_MUTATION_ERROR_MESSAGE, redirectUrl: null };
   }
 }

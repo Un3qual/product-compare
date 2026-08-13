@@ -5,6 +5,7 @@ import {
   RecordSource,
   Store,
   type GraphQLResponse,
+  type GraphQLSingularResponse,
   type RequestParameters,
   type Variables,
 } from "relay-runtime";
@@ -74,6 +75,33 @@ export function hasGraphQLErrors(response: GraphQLResponse) {
   }
 
   return "errors" in response && Array.isArray(response.errors) && response.errors.length > 0;
+}
+
+export function graphQLResponseHasErrorCode(
+  response: GraphQLResponse,
+  codes: ReadonlySet<string>,
+  pathSegment?: string,
+) {
+  const responses: readonly GraphQLSingularResponse[] = Array.isArray(response)
+    ? response
+    : [response];
+
+  return responses.some(
+    (item) =>
+      "errors" in item &&
+      Boolean(
+        item.errors?.some((error) => {
+          const relevantPath =
+            !pathSegment ||
+            !error.path?.length ||
+            error.path.some((segment) => segment === pathSegment);
+          const code = (error as typeof error & { extensions?: { code?: unknown } }).extensions
+            ?.code;
+
+          return relevantPath && typeof code === "string" && codes.has(code.toUpperCase());
+        }),
+      ),
+  );
 }
 
 export function formatGraphQLErrorMessage(response: GraphQLResponse) {

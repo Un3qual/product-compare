@@ -47,7 +47,7 @@ export function ForgotPasswordRoute() {
       {
         variables: { email },
         onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(response?.forgotPassword, graphQLErrors);
+          const result = resolveActionMutationResult(response.forgotPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             setMessage(successMessage);

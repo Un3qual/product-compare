@@ -15,7 +15,7 @@ import {
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
@@ -92,7 +92,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
       const payload = response.createPriceWatch;
       setMessage(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors));
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

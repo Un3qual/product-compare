@@ -7,7 +7,7 @@ import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTok
 import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
 import type { ApiTokenOperationsRotateApiTokenMutation } from "$generated/ApiTokenOperationsRotateApiTokenMutation.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -26,7 +26,7 @@ import {
   removeSetValue,
   upsertMapValue,
 } from "../../immutable-collection-state";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, isRouteRecord } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { ApiTokenList, RelayApiTokenList } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
 import {
@@ -193,24 +193,7 @@ function isUnauthorizedApiTokensError(error: unknown) {
 }
 
 function isUnauthorizedApiTokensResponse(response: GraphQLResponse) {
-  if (!response || typeof response !== "object" || Array.isArray(response)) return false;
-  if (!("errors" in response) || !Array.isArray(response.errors)) return false;
-
-  return response.errors.some((error) => {
-    if (!isRouteRecord(error)) return false;
-    const relevantPath =
-      error.path == null ||
-      (Array.isArray(error.path) &&
-        (error.path.length === 0 || error.path.some((segment) => segment === "myApiTokens")));
-    const extensions = error.extensions;
-
-    return (
-      relevantPath &&
-      isRouteRecord(extensions) &&
-      typeof extensions.code === "string" &&
-      API_TOKENS_AUTH_ERROR_CODES.has(extensions.code.toUpperCase())
-    );
-  });
+  return graphQLResponseHasErrorCode(response, API_TOKENS_AUTH_ERROR_CODES, "myApiTokens");
 }
 
 export function ApiTokensRoute() {
@@ -288,7 +271,7 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         setCreateError(outcome.error);
       }
     } catch {
-      setCreateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setCreateError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       createInFlightRef.current = false;
       setCreatePending(false);
@@ -360,14 +343,14 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         },
         onError: () => {
           setRotateErrorsByTokenId((currentErrors) =>
-            upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+            upsertMapValue(currentErrors, token.id, DEFAULT_MUTATION_ERROR_MESSAGE),
           );
           finishRotate(token.id);
         },
       },
       () => {
         setRotateErrorsByTokenId((currentErrors) =>
-          upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+          upsertMapValue(currentErrors, token.id, DEFAULT_MUTATION_ERROR_MESSAGE),
         );
         finishRotate(token.id);
       },
@@ -407,14 +390,14 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         },
         onError: () => {
           setRevokeErrorsByTokenId((currentErrors) =>
-            upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE),
+            upsertMapValue(currentErrors, tokenId, DEFAULT_MUTATION_ERROR_MESSAGE),
           );
           finishRevoke(tokenId);
         },
       },
       () => {
         setRevokeErrorsByTokenId((currentErrors) =>
-          upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE),
+          upsertMapValue(currentErrors, tokenId, DEFAULT_MUTATION_ERROR_MESSAGE),
         );
         finishRevoke(tokenId);
       },

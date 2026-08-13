@@ -49,7 +49,7 @@ export function LoginRoute() {
       {
         variables: { email, password },
         onCompleted(response, graphQLErrors) {
-          const result = resolveSessionMutationResult(response?.login, graphQLErrors);
+          const result = resolveSessionMutationResult(response.login, graphQLErrors);
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);

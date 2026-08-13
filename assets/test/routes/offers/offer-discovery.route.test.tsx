@@ -13,7 +13,7 @@ import type {
   PriceHistoryConnection,
 } from "../../../src/routes/offers/discovery/offer-discovery-data";
 import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/commerce-click/TrackedCommerceClickAction";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 
 const {
   commitCommerceClickMock,
@@ -440,7 +440,7 @@ test("offer discovery omits unsafe observation and coupon validity claims", () =
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
-          lastSeenAt: 1_717_326_000_000,
+          lastSeenAt: "not-a-date",
           latestPrice: {
             id: "price-invalid-date",
             price: "199.99",
@@ -664,7 +664,7 @@ test("offer discovery renders a route error when a tracked redirect is cross-ori
       );
     });
   }).not.toThrow();
-  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
 });
 
 test("offer discovery renders tracked click errors without nested paragraph markup", () => {

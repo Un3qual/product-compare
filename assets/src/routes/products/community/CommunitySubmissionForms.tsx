@@ -17,7 +17,7 @@ import {
 } from "$ui/primitives/Select";
 import { Textarea } from "$ui/primitives/Textarea";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   buildProductAnswerInput,
   buildProductQuestionInput,
@@ -71,7 +71,7 @@ export function ReviewSubmissionForm({ productId }: { productId: string }) {
       submissionKey.clear();
       setMessage(resolveProductReviewMutationMessage(response.submitProductReview, graphQLErrors));
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 
@@ -150,7 +150,7 @@ export function QuestionSubmissionForm({ productId }: { productId: string }) {
       submissionKey.clear();
       setMessage(resolveProductQuestionMutationMessage(response.askProductQuestion, graphQLErrors));
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 
@@ -216,7 +216,7 @@ export function AnswerSubmissionForm({ questionId }: { questionId: string }) {
         resolveProductAnswerMutationMessage(response.answerProductQuestion, graphQLErrors),
       );
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

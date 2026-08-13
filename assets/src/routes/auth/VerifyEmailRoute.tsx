@@ -127,7 +127,7 @@ function verifyEmailOnce(token: string, commitVerifyEmail: VerifyEmailCommit) {
     variables: { token },
   })
     .then(({ response, graphQLErrors }) =>
-      resolveActionMutationResult(response?.verifyEmail, graphQLErrors),
+      resolveActionMutationResult(response.verifyEmail, graphQLErrors),
     )
     .then((result) => {
       if (!isSuccessfulActionResult(result)) {

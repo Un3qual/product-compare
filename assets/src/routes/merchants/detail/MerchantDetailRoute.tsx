@@ -9,7 +9,6 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
-import { isCanonicalSlug } from "$routes/route-params";
 import { routeMetadataFromSeo } from "$routes/seo";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
@@ -175,7 +174,7 @@ function ReadyMerchantDetail({
 
 export async function merchantDetailLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!isCanonicalSlug(slug)) return merchantNotFound();
+  if (!slug) return merchantNotFound();
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);
 

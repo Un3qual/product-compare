@@ -1,94 +1,78 @@
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../../route-errors";
+import type {
+  AffiliateSetupOperationsCreateCouponMutation,
+  CouponDiscountType,
+} from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateNetworkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateNetworkMutation.graphql";
+import type { AffiliateSetupOperationsUpsertAffiliateProgramMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateProgramMutation.graphql";
+import type { AffiliateSetupRouteQuery } from "$generated/AffiliateSetupRouteQuery.graphql";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 
 export type AffiliateSetupFormValues = Readonly<Record<string, string | undefined>>;
 
-export type MerchantChoice = {
-  domain: string;
-  id: string;
-  name: string;
+type MerchantConnection = NonNullable<AffiliateSetupRouteQuery["response"]["merchants"]>;
+type MerchantNode = MerchantConnection["edges"][number]["node"];
+export type MerchantChoice = Pick<MerchantNode, "domain" | "id" | "name">;
+type MerchantChoiceConnection = {
+  readonly edges: readonly { readonly node: MerchantChoice }[];
 };
+type NetworkPayload =
+  AffiliateSetupOperationsUpsertAffiliateNetworkMutation["response"]["upsertAffiliateNetwork"];
+type ProgramPayload =
+  AffiliateSetupOperationsUpsertAffiliateProgramMutation["response"]["upsertAffiliateProgram"];
+type LinkPayload =
+  AffiliateSetupOperationsUpsertAffiliateLinkMutation["response"]["upsertAffiliateLink"];
+type CouponPayload = AffiliateSetupOperationsCreateCouponMutation["response"]["createCoupon"];
+type AffiliateMutationErrors = NonNullable<NetworkPayload>["errors"];
+type Coupon = NonNullable<NonNullable<CouponPayload>["coupon"]>;
 
-type AffiliateSetupMerchantNode = {
-  domain?: string | null;
-  id?: string | null;
-  name?: string | null;
-};
+export type AffiliateCouponResultCopyFact = Pick<Coupon, "discountType"> &
+  Partial<Pick<Coupon, "currency" | "discountValue">>;
 
-type AffiliateSetupMerchantConnection = {
-  edges: readonly {
-    node?: AffiliateSetupMerchantNode | null;
-  }[];
-};
-
-export type AffiliateCouponDiscountType =
-  | "AMOUNT"
-  | "FREE_SHIPPING"
-  | "OTHER"
-  | "PERCENT"
-  | "%future added value";
-
-export type AffiliateCouponResultCopyFact = {
-  readonly currency?: string | null;
-  readonly discountType: string;
-  readonly discountValue?: unknown | null;
-};
-
-type AffiliateSetupMutationPayload = {
-  readonly errors?: unknown;
-};
-
-export type AffiliateSetupMutationOutcome<T> =
-  | { readonly error: null; readonly result: T }
-  | { readonly error: string; readonly result: null };
-
-export function resolveAffiliateNetworkMutationOutcome<T extends object>(
-  payload: (AffiliateSetupMutationPayload & { readonly network?: T | null }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+export function resolveAffiliateNetworkMutationOutcome(
+  payload: NetworkPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.network, payload?.errors, graphQLErrors);
 }
 
-export function resolveAffiliateProgramMutationOutcome<T extends object>(
-  payload: (AffiliateSetupMutationPayload & { readonly program?: T | null }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+export function resolveAffiliateProgramMutationOutcome(
+  payload: ProgramPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.program, payload?.errors, graphQLErrors);
 }
 
-export function resolveAffiliateLinkMutationOutcome<T extends object>(
-  payload: (AffiliateSetupMutationPayload & { readonly link?: T | null }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+export function resolveAffiliateLinkMutationOutcome(
+  payload: LinkPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors, graphQLErrors);
 }
 
-export function resolveAffiliateCouponMutationOutcome<T extends object>(
-  payload: (AffiliateSetupMutationPayload & { readonly coupon?: T | null }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+export function resolveAffiliateCouponMutationOutcome(
+  payload: CouponPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveAffiliateSetupMutationOutcome(payload?.coupon, payload?.errors, graphQLErrors);
 }
 
 export function buildMerchantChoices(
-  merchants: AffiliateSetupMerchantConnection | null | undefined,
+  merchants: MerchantChoiceConnection | null | undefined,
 ): MerchantChoice[] {
   if (!merchants) {
     return [];
   }
 
-  return merchants.edges.flatMap(({ node }) => {
-    if (!node?.id || !node.name || !node.domain) {
-      return [];
-    }
-
-    return [
-      {
-        id: node.id,
-        name: node.name,
-        domain: node.domain,
-      },
-    ];
-  });
+  return merchants.edges.map(({ node }) => ({
+    id: node.id,
+    name: node.name,
+    domain: node.domain,
+  }));
 }
 
 export function getMerchantChoiceById(
@@ -160,7 +144,7 @@ export function buildCouponVariables(formValues: AffiliateSetupFormValues) {
       artifactId: null,
       code: requiredFormString(formValues, "couponCode"),
       description: optionalFormString(formValues, "couponDescription"),
-      discountType: requiredFormString(formValues, "discountType") as AffiliateCouponDiscountType,
+      discountType: requiredFormString(formValues, "discountType") as CouponDiscountType,
       discountValue: optionalFormString(formValues, "discountValue"),
       currency: optionalCurrencyString(formValues, "currency"),
       validFrom: optionalDateTimeString(formValues, "validFrom"),
@@ -187,8 +171,8 @@ export function couponDiscountText(coupon: AffiliateCouponResultCopyFact) {
   }
 }
 
-function couponDiscountValue(discountValue: unknown | null | undefined) {
-  return discountValue == null ? null : String(discountValue);
+function couponDiscountValue(discountValue: string | null | undefined) {
+  return discountValue ?? null;
 }
 
 function amountCouponDiscountText(value: string | null, currency: string | null | undefined) {
@@ -223,15 +207,15 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
 
 function resolveAffiliateSetupMutationOutcome<T extends object>(
   result: T | null | undefined,
-  errors: unknown,
-  graphQLErrors?: readonly unknown[] | null,
-): AffiliateSetupMutationOutcome<T> {
-  if (result && !hasRouteGraphQLErrors(graphQLErrors)) {
+  errors: AffiliateMutationErrors | undefined,
+  graphQLErrors: MutationGraphQLErrors,
+) {
+  if (result && !hasGraphQLErrors(graphQLErrors)) {
     return { error: null, result };
   }
 
   return {
-    error: routeMutationErrorMessage(errors, graphQLErrors),
+    error: mutationErrorMessage(errors, graphQLErrors),
     result: null,
   };
 }

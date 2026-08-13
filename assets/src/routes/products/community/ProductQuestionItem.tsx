@@ -10,7 +10,7 @@ import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { Textarea } from "$ui/primitives/Textarea";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   applyCommunityUpdate,
   CommunityOwnerActions,
@@ -107,7 +107,7 @@ function useQuestionUpdate(question: Question, ownerView: boolean, state: Commun
       const nextMessage = resolveProductQuestionUpdateMessage(payload, graphQLErrors);
       applyCommunityUpdate(payload.question, nextMessage, graphQLErrors, ownerView, state);
     } catch {
-      state.setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      state.setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

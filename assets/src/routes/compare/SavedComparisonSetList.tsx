@@ -27,7 +27,7 @@ import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { addSetValue, removeSetValue } from "../immutable-collection-state";
 import { commitRouteMutation } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
 import {
   buildSavedComparisonReopenPath,
@@ -160,12 +160,12 @@ export function SavedComparisonSetList({
           finishDelete(savedComparisonSetId);
         },
         onError: () => {
-          setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setDeleteError(DEFAULT_MUTATION_ERROR_MESSAGE);
           finishDelete(savedComparisonSetId);
         },
       },
       () => {
-        setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setDeleteError(DEFAULT_MUTATION_ERROR_MESSAGE);
         finishDelete(savedComparisonSetId);
       },
     );

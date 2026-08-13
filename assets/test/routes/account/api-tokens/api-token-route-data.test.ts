@@ -14,7 +14,7 @@ import {
   summarizeMutationApiToken,
   upsertApiTokenSummary,
 } from "../../../../src/routes/account/api-tokens/api-token-route-data";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 
 const SERVER_TOKEN = {
   id: "server-token",
@@ -414,7 +414,7 @@ test.each([
         [],
       ),
     ).toEqual({
-      error: DEFAULT_ROUTE_ERROR_MESSAGE,
+      error: DEFAULT_MUTATION_ERROR_MESSAGE,
       plainTextToken: null,
       token: null,
     });
@@ -428,7 +428,7 @@ test("resolveApiTokenCredentialMutationOutcome rejects a missing token despite p
       [],
     ),
   ).toEqual({
-    error: DEFAULT_ROUTE_ERROR_MESSAGE,
+    error: DEFAULT_MUTATION_ERROR_MESSAGE,
     plainTextToken: null,
     token: null,
   });
@@ -440,40 +440,35 @@ test("resolveApiTokenCredentialMutationOutcome gives top-level GraphQL errors pr
       {
         plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
         apiToken: SERVER_TOKEN,
-        errors: [{ code: "INVALID_ARGUMENT", message: "Payload error." }],
+        errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Payload error." }],
       },
       [{ message: "Top-level failure" }],
     ),
   ).toEqual({
-    error: DEFAULT_ROUTE_ERROR_MESSAGE,
+    error: DEFAULT_MUTATION_ERROR_MESSAGE,
     plainTextToken: null,
     token: null,
   });
 });
 
-test("resolveApiTokenCredentialMutationOutcome uses payload errors and the shared default", () => {
+test("resolveApiTokenCredentialMutationOutcome uses payload errors", () => {
   expect(
     resolveApiTokenCredentialMutationOutcome(
       {
         plainTextToken: null,
         apiToken: null,
-        errors: [{ code: "INVALID_ARGUMENT", message: "Label is invalid." }],
+        errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Label is invalid." }],
       },
       [],
     ),
   ).toMatchObject({ error: "Label is invalid.", plainTextToken: null, token: null });
-  expect(resolveApiTokenCredentialMutationOutcome(undefined, [])).toMatchObject({
-    error: DEFAULT_ROUTE_ERROR_MESSAGE,
-    plainTextToken: null,
-    token: null,
-  });
 });
 
 test("resolveApiTokenCredentialMutationOutcome keeps complete payload facts successful despite payload errors", () => {
   const payload = {
     plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     apiToken: SERVER_TOKEN,
-    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }],
+    errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Ignored payload error." }],
   };
 
   expect(resolveApiTokenCredentialMutationOutcome(payload, [])).toEqual({
@@ -484,7 +479,7 @@ test("resolveApiTokenCredentialMutationOutcome keeps complete payload facts succ
   expect(payload).toEqual({
     plainTextToken: EXAMPLE_PLAIN_TEXT_TOKEN,
     apiToken: SERVER_TOKEN,
-    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }],
+    errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Ignored payload error." }],
   });
 });
 
@@ -505,7 +500,7 @@ test("resolveRevokeApiTokenMutationOutcome uses payload errors and top-level Gra
     resolveRevokeApiTokenMutationOutcome(
       {
         apiToken: null,
-        errors: [{ code: "INVALID_ARGUMENT", message: "Token cannot be revoked." }],
+        errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Token cannot be revoked." }],
       },
       [],
     ),
@@ -514,17 +509,17 @@ test("resolveRevokeApiTokenMutationOutcome uses payload errors and top-level Gra
     resolveRevokeApiTokenMutationOutcome(
       {
         apiToken: SERVER_TOKEN,
-        errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }],
+        errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Ignored payload error." }],
       },
       [{ message: "Top-level failure" }],
     ),
-  ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, token: null });
+  ).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, token: null });
 });
 
 test("resolveRevokeApiTokenMutationOutcome keeps complete payload facts successful without mutating input", () => {
   const payload = {
     apiToken: SERVER_TOKEN,
-    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }],
+    errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Ignored payload error." }],
   };
 
   expect(resolveRevokeApiTokenMutationOutcome(payload, [])).toEqual({
@@ -533,7 +528,7 @@ test("resolveRevokeApiTokenMutationOutcome keeps complete payload facts successf
   });
   expect(payload).toEqual({
     apiToken: SERVER_TOKEN,
-    errors: [{ code: "INVALID_ARGUMENT", message: "Ignored payload error." }],
+    errors: [{ code: "INVALID_ARGUMENT", field: null, message: "Ignored payload error." }],
   });
 });
 

@@ -114,8 +114,6 @@ test("create-watch completion returns success for a complete error-free payload"
 });
 
 test.each([
-  ["missing payload", undefined, [], "Request failed. Please try again."],
-  ["null payload", null, [], "Request failed. Please try again."],
   [
     "null watch with a payload error",
     { watch: null, errors: [MUTATION_ERROR] },

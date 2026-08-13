@@ -1,4 +1,4 @@
-import { nextRelayPageCursor } from "../../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 export type MerchantDetailViewDataInput = {
   slug: string;
@@ -86,7 +86,7 @@ function merchantProductPath(slug: string) {
 }
 
 function merchantNextPagePath(merchant: MerchantDetailViewDataInput, currentAfter: string | null) {
-  const nextCursor = nextRelayPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
+  const nextCursor = nextPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
 
   return nextCursor
     ? `/merchants/${encodeURIComponent(merchant.slug)}?after=${encodeURIComponent(nextCursor)}`

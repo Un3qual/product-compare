@@ -337,13 +337,3 @@ test("community create completions reject partial data with top-level GraphQL er
     resolveProductAnswerMutationMessage({ answer: createdAnswer, errors: [] }, [graphQLError]),
   ).toBe(message);
 });
-
-test("community create completions handle absent payloads", () => {
-  expect(resolveProductReviewMutationMessage(undefined, [])).toBe(
-    "Request failed. Please try again.",
-  );
-  expect(resolveProductQuestionMutationMessage(null, [])).toBe("Request failed. Please try again.");
-  expect(resolveProductAnswerMutationMessage(undefined, [])).toBe(
-    "Request failed. Please try again.",
-  );
-});

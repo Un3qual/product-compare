@@ -1,8 +1,9 @@
 import { Suspense } from "react";
 import { Link, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
+import type { GraphQLResponse } from "relay-runtime";
 import type { SavedComparisonsRouteQuery } from "$generated/SavedComparisonsRouteQuery.graphql";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -11,7 +12,6 @@ import {
 } from "$relay/route-preload";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { Button } from "$ui/primitives/Button";
-import { isRouteRecord } from "../route-errors";
 import { CompareShell } from "./CompareShell";
 import { SavedComparisonSetList } from "./SavedComparisonSetList";
 import { buildSavedComparisonsPagination } from "./saved-comparisons-route-data";
@@ -156,20 +156,10 @@ export function isUnauthorizedSavedComparisonsError(error: unknown) {
   );
 }
 
-export function isUnauthorizedSavedComparisonsResponse(response: unknown) {
-  if (!isRouteRecord(response) || !Array.isArray(response.errors)) return false;
-
-  return response.errors.some((error) => {
-    if (!isRouteRecord(error)) return false;
-
-    const relevantPath =
-      error.path == null ||
-      (Array.isArray(error.path) &&
-        (error.path.length === 0 ||
-          error.path.some((segment) => segment === "mySavedComparisonSets")));
-    if (!relevantPath || !isRouteRecord(error.extensions)) return false;
-
-    const code = error.extensions.code;
-    return typeof code === "string" && SAVED_COMPARISONS_AUTH_ERROR_CODES.has(code.toUpperCase());
-  });
+export function isUnauthorizedSavedComparisonsResponse(response: GraphQLResponse) {
+  return graphQLResponseHasErrorCode(
+    response,
+    SAVED_COMPARISONS_AUTH_ERROR_CODES,
+    "mySavedComparisonSets",
+  );
 }

@@ -3,7 +3,7 @@ import {
   MAX_COMPARE_PRODUCTS,
   normalizedCompareSlugs,
 } from "../../compare/paths";
-import { nextRelayPageCursor } from "../../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 export const DEFAULT_OFFERS_PAGE_SIZE = 6;
 
@@ -120,7 +120,7 @@ export function buildOfferDiscoveryPaginationData({
   readonly hasNextPage: boolean;
   readonly hasPreviousPage: boolean;
 }) {
-  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, filters.after);
+  const nextCursor = nextPageCursor({ endCursor, hasNextPage }, filters.after);
 
   return {
     firstHref: hasPreviousPage && filters.after ? offerDiscoveryPath(filters, null) : null,

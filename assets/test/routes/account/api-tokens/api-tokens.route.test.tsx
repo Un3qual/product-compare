@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { Link, MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 import {
   ApiTokensRoute,
   type ApiTokenSummary,
@@ -849,7 +849,7 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse(), [{ message: "boom" }]);
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
 });
 
@@ -1065,7 +1065,7 @@ test("revoke token renders a generic alert for network errors", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
   confirmApiTokenRevocation();
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
 });
 

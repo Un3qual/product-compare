@@ -1,4 +1,9 @@
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
+import type { CompareRouteCreateSavedComparisonSetMutation } from "$generated/CompareRouteCreateSavedComparisonSetMutation.graphql";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 import { buildSavedComparisonName } from "./saved-comparison-name-data";
 
 type SavedComparisonMutationProduct = {
@@ -6,10 +11,8 @@ type SavedComparisonMutationProduct = {
   readonly name: string;
 };
 
-type SavedComparisonSetPayload = {
-  readonly errors?: unknown;
-  readonly savedComparisonSet?: { readonly id?: unknown } | null;
-};
+type SavedComparisonSetPayload =
+  CompareRouteCreateSavedComparisonSetMutation["response"]["createSavedComparisonSet"];
 
 export const SAVED_COMPARISON_SUCCESS_MESSAGE = "Comparison saved.";
 
@@ -23,15 +26,15 @@ export function buildSavedComparisonSetMutationInput(
 }
 
 export function resolveSavedComparisonSetMutationOutcome(
-  payload: SavedComparisonSetPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: SavedComparisonSetPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
-  if (payload?.savedComparisonSet?.id && !hasRouteGraphQLErrors(graphQLErrors)) {
+  if (payload.savedComparisonSet?.id && !hasGraphQLErrors(graphQLErrors)) {
     return { error: null, message: SAVED_COMPARISON_SUCCESS_MESSAGE };
   }
 
   return {
-    error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+    error: mutationErrorMessage(payload.errors, graphQLErrors),
     message: null,
   };
 }

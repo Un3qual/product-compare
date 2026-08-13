@@ -1,4 +1,11 @@
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../route-errors";
+import type { ComparisonSharingOperationsPublishComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsPublishComparisonSnapshotMutation.graphql";
+import type { ComparisonSharingOperationsQuery } from "$generated/ComparisonSharingOperationsQuery.graphql";
+import type { ComparisonSharingOperationsRevokeComparisonSnapshotMutation } from "$generated/ComparisonSharingOperationsRevokeComparisonSnapshotMutation.graphql";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 
 export interface PublishedComparisonSnapshot {
   id: string;
@@ -6,12 +13,8 @@ export interface PublishedComparisonSnapshot {
   title: string | null;
 }
 
-export interface ComparisonSnapshotPublishInput {
-  productIds: readonly string[];
-  recommendationProfile: "BEST_VALUE" | "LOWEST_CURRENT_COST";
-  searchIndexable: boolean;
-  title?: string;
-}
+export type ComparisonSnapshotPublishInput =
+  ComparisonSharingOperationsPublishComparisonSnapshotMutation["variables"]["input"];
 
 export interface ComparisonSnapshotState {
   message: string | null;
@@ -19,33 +22,24 @@ export interface ComparisonSnapshotState {
   revokedSnapshotIds: ReadonlySet<string>;
 }
 
-export interface ComparisonSnapshotPageConnection {
-  readonly pageInfo?: {
-    readonly endCursor?: string | null;
-    readonly hasNextPage?: boolean | null;
-  } | null;
-}
+type GeneratedSnapshotConnection = NonNullable<
+  ComparisonSharingOperationsQuery["response"]["viewer"]
+>["comparisonSnapshots"];
+export type ComparisonSnapshotPageConnection = Pick<GeneratedSnapshotConnection, "pageInfo">;
 
-export type ComparisonSnapshotPublishPayload = {
-  readonly errors?: unknown;
-  readonly snapshot?: { readonly id?: string | null } | null;
-  readonly sharePath?: string | null;
-};
+export type ComparisonSnapshotPublishPayload =
+  ComparisonSharingOperationsPublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"];
 
-export type ComparisonSnapshotRevokePayload = {
-  readonly errors?: unknown;
-  readonly revokedSnapshotId?: string | null;
-};
+export type ComparisonSnapshotRevokePayload =
+  ComparisonSharingOperationsRevokeComparisonSnapshotMutation["response"]["revokeComparisonSnapshot"];
 
 export type ComparisonSnapshotMutationOutcome =
   | { readonly error: null; readonly snapshot: PublishedComparisonSnapshot }
   | { readonly error: string; readonly snapshot: null };
 
-export type ComparisonSnapshotSourceNode = {
-  readonly id: string;
-  readonly sharePath: string;
-  readonly title?: string | null;
-};
+export type ComparisonSnapshotSourceNode = NonNullable<
+  GeneratedSnapshotConnection["edges"][number]["node"]
+>;
 
 export const PUBLISHED_COMPARISON_SNAPSHOT_SUCCESS_MESSAGE =
   "Public comparison link published. Its product details and prices will remain unchanged.";
@@ -75,38 +69,38 @@ export function buildComparisonSnapshotPublishInput({
 }
 
 export function publishedSnapshotFromPayload(
-  payload: ComparisonSnapshotPublishPayload | null | undefined,
+  payload: ComparisonSnapshotPublishPayload,
   title: string | null,
 ): PublishedComparisonSnapshot | null {
-  return payload?.snapshot?.id && payload.sharePath
+  return payload.snapshot?.id && payload.sharePath
     ? { id: payload.snapshot.id, path: payload.sharePath, title }
     : null;
 }
 
 export function resolvePublishComparisonSnapshotMutationOutcome(
-  payload: ComparisonSnapshotPublishPayload | null | undefined,
+  payload: ComparisonSnapshotPublishPayload,
   title: string | null,
-  graphQLErrors?: readonly unknown[] | null,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): ComparisonSnapshotMutationOutcome {
   const snapshot = publishedSnapshotFromPayload(payload, title);
 
-  return snapshot && !hasRouteGraphQLErrors(graphQLErrors)
+  return snapshot && !hasGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
-        error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+        error: mutationErrorMessage(payload.errors, graphQLErrors),
         snapshot: null,
       };
 }
 
 export function resolveRevokeComparisonSnapshotMutationOutcome(
-  payload: ComparisonSnapshotRevokePayload | null | undefined,
+  payload: ComparisonSnapshotRevokePayload,
   snapshot: PublishedComparisonSnapshot,
-  graphQLErrors?: readonly unknown[] | null,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ): ComparisonSnapshotMutationOutcome {
-  return payload?.revokedSnapshotId === snapshot.id && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload.revokedSnapshotId === snapshot.id && !hasGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }
     : {
-        error: routeMutationErrorMessage(payload?.errors, graphQLErrors),
+        error: mutationErrorMessage(payload.errors, graphQLErrors),
         snapshot: null,
       };
 }

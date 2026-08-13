@@ -54,6 +54,11 @@ beforeEach(() => {
 
 test("category loader returns 404 for invalid slugs and canonical metadata for curated categories", async () => {
   const environment = createRelayEnvironment();
+  mockedFetchRouteQuery.mockResolvedValueOnce({
+    data: { category: null },
+    descriptor: {},
+    dispose: vi.fn(),
+  } as never);
   const invalid = await categoryLoader({
     context: createRelayRouterContext(environment),
     params: { slug: "Bad Slug" },

@@ -6,8 +6,13 @@ import type { ProductCommunityOperationsSubmitProductReviewMutation } from "$gen
 import type { ProductCommunityOperationsUpdateProductAnswerMutation } from "$generated/ProductCommunityOperationsUpdateProductAnswerMutation.graphql";
 import type { ProductCommunityOperationsUpdateProductQuestionMutation } from "$generated/ProductCommunityOperationsUpdateProductQuestionMutation.graphql";
 import type { ProductCommunityOperationsUpdateProductReviewMutation } from "$generated/ProductCommunityOperationsUpdateProductReviewMutation.graphql";
-import { hasRouteGraphQLErrors, routeMutationErrorMessage } from "../../route-errors";
-import { nextRelayPageCursor } from "../../relay-pagination";
+import type { ProductCommunityItems_review$data } from "$generated/ProductCommunityItems_review.graphql";
+import {
+  hasGraphQLErrors,
+  mutationErrorMessage,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
+import { nextPageCursor } from "$relay/pagination";
 
 type SubmitReviewPayload =
   ProductCommunityOperationsSubmitProductReviewMutation["response"]["submitProductReview"];
@@ -24,16 +29,16 @@ type UpdateAnswerPayload =
 type RemoveContentPayload =
   ProductCommunityOperationsRemoveCommunityContentMutation["response"]["removeCommunityContent"];
 type CommunityMutationErrors = SubmitReviewPayload["errors"];
+type ReviewSummary = NonNullable<
+  ProductCommunityOperationsQuery["response"]["product"]
+>["reviewSummary"];
 type CommunityPageInfo = NonNullable<
   ProductCommunityOperationsQuery["response"]["product"]
 >["reviews"]["pageInfo"];
-
-export type PublishedReviewRowFacts = {
-  readonly authorLabel: string;
-  readonly rating: number;
-  readonly title: string | null | undefined;
-  readonly verifiedPurchase: boolean;
-};
+export type PublishedReviewRowFacts = Pick<
+  ProductCommunityItems_review$data,
+  "authorLabel" | "rating" | "title" | "verifiedPurchase"
+>;
 
 export function publishedReviewRowDisplayData({
   authorLabel,
@@ -59,75 +64,75 @@ function normalizePublishedReviewRating(rating: number) {
 }
 
 export function resolveProductReviewMutationMessage(
-  payload: SubmitReviewPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: SubmitReviewPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
-  return payload?.review && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload.review && !hasGraphQLErrors(graphQLErrors)
     ? "Review submitted for review."
-    : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+    : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveProductQuestionMutationMessage(
-  payload: AskQuestionPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: AskQuestionPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
-  return payload?.question && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload.question && !hasGraphQLErrors(graphQLErrors)
     ? "Question submitted for review."
-    : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+    : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveProductAnswerMutationMessage(
-  payload: AnswerQuestionPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: AnswerQuestionPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
-  return payload?.answer && !hasRouteGraphQLErrors(graphQLErrors)
+  return payload.answer && !hasGraphQLErrors(graphQLErrors)
     ? "Answer submitted for review."
-    : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+    : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveProductReviewUpdateMessage(
-  payload: UpdateReviewPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: UpdateReviewPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveCommunityMutationMessage(
-    Boolean(payload?.review),
-    payload?.errors,
+    Boolean(payload.review),
+    payload.errors,
     graphQLErrors,
     "Review updated and submitted for review.",
   );
 }
 
 export function resolveProductQuestionUpdateMessage(
-  payload: UpdateQuestionPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: UpdateQuestionPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveCommunityMutationMessage(
-    Boolean(payload?.question),
-    payload?.errors,
+    Boolean(payload.question),
+    payload.errors,
     graphQLErrors,
     "Question updated and submitted for review.",
   );
 }
 
 export function resolveProductAnswerUpdateMessage(
-  payload: UpdateAnswerPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: UpdateAnswerPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveCommunityMutationMessage(
-    Boolean(payload?.answer),
-    payload?.errors,
+    Boolean(payload.answer),
+    payload.errors,
     graphQLErrors,
     "Answer updated and submitted for review.",
   );
 }
 
 export function resolveCommunityContentRemovalMessage(
-  payload: RemoveContentPayload | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: RemoveContentPayload,
+  graphQLErrors: MutationGraphQLErrors = undefined,
 ) {
   return resolveCommunityMutationMessage(
-    Boolean(payload?.removedContentId),
-    payload?.errors,
+    Boolean(payload.removedContentId),
+    payload.errors,
     graphQLErrors,
     "Community content removed.",
   );
@@ -195,15 +200,9 @@ export function buildProductAnswerInput({
   };
 }
 
-export function publishedReviewSummary({
-  averageRating,
-  count,
-}: {
-  averageRating: string;
-  count: number;
-}) {
+export function publishedReviewSummary({ averageRating, count }: ReviewSummary) {
   return count
-    ? `${averageRating} out of 5 from ${count} published review${count === 1 ? "" : "s"}.`
+    ? `${averageRating ?? "—"} out of 5 from ${count} published review${count === 1 ? "" : "s"}.`
     : "No published reviews yet.";
 }
 
@@ -219,7 +218,7 @@ export function nextCommunityPageCursor(
   pageInfo: CommunityPageInfo | null | undefined,
   currentAfter: string | null = null,
 ) {
-  return nextRelayPageCursor(pageInfo, currentAfter);
+  return nextPageCursor(pageInfo, currentAfter);
 }
 
 export function appendUniqueCommunityItems<T extends { readonly id: string }>(
@@ -249,11 +248,11 @@ function normalizedCommunityText(value: unknown) {
 
 function resolveCommunityMutationMessage(
   completed: boolean,
-  errors: CommunityMutationErrors | undefined,
-  graphQLErrors: readonly unknown[] | null | undefined,
+  errors: CommunityMutationErrors,
+  graphQLErrors: MutationGraphQLErrors,
   successMessage: string,
 ) {
-  return completed && !hasRouteGraphQLErrors(graphQLErrors)
+  return completed && !hasGraphQLErrors(graphQLErrors)
     ? successMessage
-    : routeMutationErrorMessage(errors, graphQLErrors);
+    : mutationErrorMessage(errors, graphQLErrors);
 }

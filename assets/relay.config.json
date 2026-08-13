@@ -2,5 +2,10 @@
   "src": "./src",
   "schema": "./schema.graphql",
   "artifactDirectory": "./src/__generated__",
-  "language": "typescript"
+  "language": "typescript",
+  "customScalarTypes": {
+    "Date": "string",
+    "DateTime": "string",
+    "Decimal": "string"
+  }
 }

@@ -15,7 +15,7 @@ import {
   snapshotFromNode,
   type PublishedComparisonSnapshot,
 } from "../../../src/routes/compare/share-comparison-data";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 
 const MUTATION_ERROR = {
   code: "INVALID_ARGUMENT",
@@ -24,6 +24,12 @@ const MUTATION_ERROR = {
 } as const;
 
 const GRAPHQL_ERROR = { message: "Private GraphQL failure" } as const;
+const PUBLISHED_PAYLOAD_SNAPSHOT = {
+  capturedAt: "2026-08-12T12:00:00Z",
+  id: "snapshot-1",
+  searchIndexable: false,
+  title: "Travel kit",
+} as const;
 
 test("buildComparisonSnapshotPublishInput preserves product order and maps profiles", () => {
   expect(
@@ -102,8 +108,6 @@ test("nextComparisonSnapshotCursor returns a non-empty advancing cursor for a ne
 
 test.each([
   ["a missing connection", undefined],
-  ["an incomplete connection", {}],
-  ["incomplete page info", { pageInfo: {} }],
   ["a false next-page flag", { pageInfo: { endCursor: "cursor-40", hasNextPage: false } }],
   ["a blank cursor", { pageInfo: { endCursor: "", hasNextPage: true } }],
   ["a whitespace-only cursor", { pageInfo: { endCursor: "   ", hasNextPage: true } }],
@@ -144,7 +148,11 @@ test("snapshot revocation row state isolates pending copy, disabled state, error
 test("publishedSnapshotFromPayload projects only a complete publish payload", () => {
   expect(
     publishedSnapshotFromPayload(
-      { snapshot: { id: "snapshot-1" }, sharePath: "/compare/shared/public-token" },
+      {
+        snapshot: PUBLISHED_PAYLOAD_SNAPSHOT,
+        sharePath: "/compare/shared/public-token",
+        errors: [],
+      },
       "Travel kit",
     ),
   ).toEqual({
@@ -153,9 +161,11 @@ test("publishedSnapshotFromPayload projects only a complete publish payload", ()
     title: "Travel kit",
   });
 
-  expect(publishedSnapshotFromPayload({ snapshot: { id: "snapshot-1" } }, "Travel kit")).toBeNull();
   expect(
-    publishedSnapshotFromPayload({ sharePath: "/compare/shared/public-token" }, "Travel kit"),
+    publishedSnapshotFromPayload(
+      { snapshot: null, sharePath: "/compare/shared/public-token", errors: [] },
+      "Travel kit",
+    ),
   ).toBeNull();
 });
 
@@ -163,7 +173,7 @@ test("publish mutation outcome projects a complete error-free snapshot", () => {
   const payload = Object.freeze({
     errors: Object.freeze([]),
     sharePath: "/compare/shared/public-token",
-    snapshot: Object.freeze({ id: "snapshot-1" }),
+    snapshot: Object.freeze(PUBLISHED_PAYLOAD_SNAPSHOT),
   });
   const graphQLErrors = Object.freeze([]);
 
@@ -180,29 +190,20 @@ test("publish mutation outcome projects a complete error-free snapshot", () => {
   expect(payload).toEqual({
     errors: [],
     sharePath: "/compare/shared/public-token",
-    snapshot: { id: "snapshot-1" },
+    snapshot: PUBLISHED_PAYLOAD_SNAPSHOT,
   });
   expect(graphQLErrors).toEqual([]);
 });
 
 test.each([
-  ["missing payload", undefined, DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["null payload", null, DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["missing snapshot", { sharePath: "/compare/shared/token" }, DEFAULT_ROUTE_ERROR_MESSAGE],
   [
-    "missing snapshot id",
-    { snapshot: {}, sharePath: "/compare/shared/token" },
-    DEFAULT_ROUTE_ERROR_MESSAGE,
-  ],
-  [
-    "null snapshot id",
-    { snapshot: { id: null }, sharePath: "/compare/shared/token", errors: [MUTATION_ERROR] },
+    "null snapshot",
+    { snapshot: null, sharePath: "/compare/shared/token", errors: [MUTATION_ERROR] },
     MUTATION_ERROR.message,
   ],
-  ["missing share path", { snapshot: { id: "snapshot-1" } }, DEFAULT_ROUTE_ERROR_MESSAGE],
   [
     "null share path",
-    { snapshot: { id: "snapshot-1" }, sharePath: null, errors: [MUTATION_ERROR] },
+    { snapshot: PUBLISHED_PAYLOAD_SNAPSHOT, sharePath: null, errors: [MUTATION_ERROR] },
     MUTATION_ERROR.message,
   ],
 ] as const)("publish mutation outcome rejects a %s", (_case, payload, error) => {
@@ -216,14 +217,14 @@ test("publish outcomes give top-level GraphQL errors precedence over complete da
   expect(
     resolvePublishComparisonSnapshotMutationOutcome(
       {
-        snapshot: { id: "snapshot-1" },
+        snapshot: PUBLISHED_PAYLOAD_SNAPSHOT,
         sharePath: "/compare/shared/public-token",
         errors: [],
       },
       null,
       [GRAPHQL_ERROR],
     ),
-  ).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, snapshot: null });
+  ).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, snapshot: null });
 });
 
 test("revoke mutation outcome returns the original snapshot for an error-free payload", () => {
@@ -242,21 +243,18 @@ test("revoke mutation outcome returns the original snapshot for an error-free pa
 });
 
 test.each([
-  ["missing payload", undefined, [], DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["null payload", null, [], DEFAULT_ROUTE_ERROR_MESSAGE],
-  ["missing fact", { errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
   ["null fact", { revokedSnapshotId: null, errors: [MUTATION_ERROR] }, [], MUTATION_ERROR.message],
   [
     "mismatched fact",
     { revokedSnapshotId: "snapshot-2", errors: [] },
     [],
-    DEFAULT_ROUTE_ERROR_MESSAGE,
+    DEFAULT_MUTATION_ERROR_MESSAGE,
   ],
   [
     "top-level GraphQL error",
     { revokedSnapshotId: "snapshot-1", errors: [] },
     [GRAPHQL_ERROR],
-    DEFAULT_ROUTE_ERROR_MESSAGE,
+    DEFAULT_MUTATION_ERROR_MESSAGE,
   ],
 ] as const)("revoke mutation outcome rejects a %s", (_case, payload, graphQLErrors, error) => {
   expect(

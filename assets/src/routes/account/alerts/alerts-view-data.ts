@@ -1,13 +1,10 @@
+import type { AlertsRoute_watch$data } from "$generated/AlertsRoute_watch.graphql";
 import { graphQLDateTimeLabel } from "../../graphql-datetime";
 
-export type PriceWatchViewSource = {
-  ruleType: string;
-  currency: string;
-  targetAmount: string | null;
-  percentageDrop: string | null;
-  baselineLandedPrice: string | null;
-  enabled: boolean;
-};
+export type PriceWatchViewSource = Pick<
+  AlertsRoute_watch$data,
+  "baselineLandedPrice" | "currency" | "enabled" | "percentageDrop" | "ruleType" | "targetAmount"
+>;
 
 const ALERT_RULE_LABELS: Readonly<Record<string, string>> = {
   TARGET_PRICE: "Target reached",

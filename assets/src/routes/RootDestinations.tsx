@@ -11,7 +11,7 @@ import {
   buildCurrentRoutePathWithCompareSlugs,
   selectedCompareSlugsFromSearch,
 } from "./compare/paths";
-import type { RootViewer } from "./root/viewer-data";
+import type { RootViewer } from "./root/viewer";
 
 type RootDestination = {
   end?: boolean;

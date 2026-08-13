@@ -4,7 +4,11 @@ import { useMutation } from "react-relay";
 import type { ProductCommunityOperationsRemoveCommunityContentMutation } from "$generated/ProductCommunityOperationsRemoveCommunityContentMutation.graphql";
 import { Button } from "$ui/primitives/Button";
 import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, hasRouteGraphQLErrors } from "../../route-errors";
+import {
+  DEFAULT_MUTATION_ERROR_MESSAGE,
+  hasGraphQLErrors,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
 import { resolveCommunityContentRemovalMessage } from "./product-community-data";
 import { productCommunityStyles as styles } from "./product-community-styles";
 import { removeCommunityContentMutation } from "./ProductCommunityOperations";
@@ -39,11 +43,11 @@ export type CommunityItemState = ReturnType<typeof useCommunityItemState>;
 export function applyCommunityUpdate(
   content: object | null | undefined,
   nextMessage: string,
-  graphQLErrors: readonly unknown[] | null | undefined,
+  graphQLErrors: MutationGraphQLErrors,
   ownerView: boolean,
   state: CommunityItemState,
 ) {
-  if (!content || hasRouteGraphQLErrors(graphQLErrors)) {
+  if (!content || hasGraphQLErrors(graphQLErrors)) {
     state.setMessage(nextMessage);
     return;
   }
@@ -137,9 +141,9 @@ function RemoveCommunityControl({
       });
       const payload = response.removeCommunityContent;
       setMessage(resolveCommunityContentRemovalMessage(payload, graphQLErrors));
-      if (payload.removedContentId && !hasRouteGraphQLErrors(graphQLErrors)) onRemoved();
+      if (payload.removedContentId && !hasGraphQLErrors(graphQLErrors)) onRemoved();
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 

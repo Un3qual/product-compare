@@ -21,7 +21,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "../relay-mutations";
 import { normalizeRouteLoaderThrownError } from "../loader-errors";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { CompareShell } from "./CompareShell";
 import {
   compareQueryViewData,
@@ -281,7 +281,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
           }
 
           setSaveFeedback({
-            error: DEFAULT_ROUTE_ERROR_MESSAGE,
+            error: DEFAULT_MUTATION_ERROR_MESSAGE,
             isInFlight: false,
             message: null,
           });
@@ -295,7 +295,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
         }
 
         setSaveFeedback({
-          error: DEFAULT_ROUTE_ERROR_MESSAGE,
+          error: DEFAULT_MUTATION_ERROR_MESSAGE,
           isInFlight: false,
           message: null,
         });

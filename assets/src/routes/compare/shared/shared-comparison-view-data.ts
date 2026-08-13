@@ -102,7 +102,7 @@ function projectProduct(product: SharedComparisonProductInput) {
     }),
     offers: product.offers.map((offer) => {
       const merchantName = nonBlankText(offer.merchantName) ?? "Unknown merchant";
-      const landedPrice = scalarText(offer.landedPrice);
+      const landedPrice = nonBlankText(offer.landedPrice);
       const currency = nonBlankText(offer.currency);
 
       return {
@@ -119,14 +119,4 @@ function projectProduct(product: SharedComparisonProductInput) {
 
 function nonBlankText(value: string | null | undefined) {
   return value?.trim() ? value : null;
-}
-
-function scalarText(value: unknown) {
-  if (typeof value !== "string" && typeof value !== "number") {
-    return null;
-  }
-
-  const text = String(value).trim();
-
-  return text || null;
 }

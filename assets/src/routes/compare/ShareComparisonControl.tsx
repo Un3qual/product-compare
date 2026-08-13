@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primiti
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import type { CompareProductSummary } from "./compare-route-data";
 import {
   comparisonSharingOperationsQuery,
@@ -282,7 +282,7 @@ function useSnapshotPublisher(
       if (outcome.error === null) onPublished(outcome.snapshot);
       else onMessage(outcome.error);
     } catch {
-      onMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      onMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 
@@ -329,7 +329,7 @@ function useSnapshotRevoker(onRevoked: (snapshot: PublishedComparisonSnapshot) =
       }
     } catch {
       setErrorsBySnapshotId((current) =>
-        withSnapshotError(current, snapshot.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+        withSnapshotError(current, snapshot.id, DEFAULT_MUTATION_ERROR_MESSAGE),
       );
     } finally {
       const remaining = new Set(pendingSnapshotIdsRef.current);

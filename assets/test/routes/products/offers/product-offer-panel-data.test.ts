@@ -55,7 +55,7 @@ describe("product offer panel data", () => {
             latestPrice: {
               id: "numeric-price-point",
               observedAt: "2026-07-01T12:00:00Z",
-              price: 19.5,
+              price: "19.50",
             },
             activeCoupons: null,
             priceHistory: null,
@@ -146,7 +146,7 @@ describe("product offer panel data", () => {
                     code: "SAVE10",
                     description: null,
                     discountType: "AMOUNT",
-                    discountValue: 10,
+                    discountValue: "10",
                     currency: "USD",
                     validTo: null,
                     terms: null,
