@@ -30,13 +30,20 @@ export const attributionLedgerRouteQuery = graphql`
 `;
 
 const styles = create({
-  cell: { minWidth: "10rem", textAlign: "start", verticalAlign: "top" },
+  cell: { minWidth: "12rem", textAlign: "start", verticalAlign: "top" },
   code: {
     fontFamily: tokens.fontMono,
     fontSize: "0.78rem",
     overflowWrap: "anywhere",
   },
   conversionList: { display: "grid", gap: "0.5rem", listStyle: "none", margin: 0, padding: 0 },
+  identity: {
+    fontSize: "0.9rem",
+    fontWeight: 700,
+    lineHeight: 1.3,
+    margin: 0,
+    overflowWrap: "anywhere",
+  },
   meta: {
     alignItems: "center",
     display: "flex",
@@ -296,7 +303,7 @@ function AttributionIdentity({ click }: { click: AttributionClick }) {
   if (click.userEmail) {
     return (
       <div {...props(styles.stack)}>
-        <strong {...props(styles.primary)}>{click.userEmail}</strong>
+        <strong {...props(styles.identity)}>{click.userEmail}</strong>
         <span {...props(styles.secondary)}>Known customer</span>
       </div>
     );

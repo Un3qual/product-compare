@@ -2,13 +2,14 @@
 
 ## Snapshot
 
-- Status: active
+- Status: complete
 - Priority: P1
 - Owner: `codex/operator-workspaces`
 - Plan: `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
 - Last verified: 2026-08-13 against affiliate setup, CJ lifecycle/feed, revenue
-  summary/ledger, generated Relay operations, and focused route tests.
+  summary/ledger, generated Relay operations, deterministic browser acceptance,
+  and the complete frontend/backend gates.
 
 ## Target Outcome
 
@@ -50,6 +51,10 @@ diff checks.
 - Revenue reporting renders one main-band control region before its generated
   metric projection and independently preloaded attribution ledger. Conversion
   reconciliation facts use a generated fragment and an accessible disclosure.
+  Ledger cells are composed summaries rather than parameter dumps: click origin
+  and type use badges, identity and commerce lead with their primary facts,
+  diagnostics compact the referrer/browser/IP evidence, and conversion amount
+  and state lead before exact drill-down facts.
 - The former generic `affiliate-setup-data.ts`, `cj-program-data.ts`,
   `RevenueSummaryView.tsx`, and `revenue-summary-view-data.ts` owners were
   removed or renamed by their actual responsibilities.
@@ -73,6 +78,33 @@ diff checks.
 - CJ unmatched-feed and revenue attribution loader catches retain `unknown`
   only at the rejected-promise transport boundary before the shared loader
   error policy handles aborts and unavailable regions.
+
+## Completion Evidence
+
+- Affiliate setup preserves all four generated Relay mutation contracts while
+  guiding network, program, merchant-link, and coupon work in dependency order.
+  Mutation failures remain local and successful identifiers flow into the next
+  required step.
+- CJ renders one TanStack lifecycle ledger with exact reconciliation time,
+  lifecycle mutation controls, separately recoverable program-feed disclosure,
+  and independently recoverable unmatched feeds.
+- Revenue renders controls before metrics and attribution, keeps summary and
+  ledger preload failures independent in both directions, keeps pagination
+  failure local, and exposes exact conversion investigation time only on demand.
+- `assets/tests/e2e/production-ui-operations.spec.ts` passed 7/7 scenarios. Its
+  desktop, tablet, and mobile runs include reduced motion, zero axe violations,
+  document overflow checks, all affiliate mutations, CJ lifecycle/feed recovery,
+  revenue preload/pagination recovery, and inspected full-page captures.
+- `cd assets && pnpm run check` passed Relay validation, TypeScript, lint,
+  formatting, 118 files / 1,527 tests, client and SSR builds, StyleX mangling,
+  and the 227,074-byte gzip initial bundle within the 300,000-byte budget. The
+  host used Node 25.6.0 and emitted the known warning for the pinned Node 24.18.1.
+- `mix format --check-formatted`, `mix typecheck`, and `mix quality` passed;
+  Credo reported no issues, ExDNA stayed at its 3/3 clone budget, and the static
+  analysis gate completed. `mix test` passed 1,489 tests with zero failures.
+- The closeout replenishment audit retained Realistic Development Data as the
+  sole ready outcome under a complete Ready Floor Exception. The residual
+  type/validation/slop audit remains prerequisite-gated until seeds complete.
 
 ## Blocker Rule
 
