@@ -479,6 +479,19 @@ test("revenue route keeps the summary visible when the ledger preload failed", (
   expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
 });
 
+test("revenue route keeps the attribution ledger visible when the summary preload failed", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "error",
+    filters: { currency: "USD" },
+    ledgerQuery: ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR,
+  } as never);
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.getByRole("alert")).toHaveTextContent("Revenue summary unavailable.");
+  expect(screen.getByRole("table", { name: "Attribution ledger" })).toBeVisible();
+});
+
 test("revenue route renders the summary while the ledger preload is pending", async () => {
   const ledgerPreload =
     deferredPromise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery$variables> | null>();
@@ -924,12 +937,14 @@ test("revenue route renders the loader error state", () => {
       currency: "USD",
       network: "impact",
     },
+    ledgerQuery: null,
   } satisfies RevenueSummaryLoaderData);
 
   renderRevenueSummaryRoute();
 
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
-  expect(screen.getByRole("alert")).toHaveTextContent("Revenue summary unavailable.");
+  expect(screen.getByText("Revenue summary unavailable.")).toBeInTheDocument();
+  expect(screen.getByText("Attribution ledger unavailable.")).toBeInTheDocument();
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(mockedUseRoutePreloadedQuery).not.toHaveBeenCalled();

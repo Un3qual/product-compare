@@ -50,19 +50,25 @@ const revenueSummaryRouteQuery = graphql`
   }
 `;
 
+type AttributionLedgerQueryDescriptor =
+  | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
+  | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
+  | null;
+
 export type RevenueSummaryLoaderData =
   | {
       status: "ready";
       filters: RevenueSummaryFilters;
-      ledgerQuery:
-        | Promise<RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]> | null>
-        | RelayRouteQueryDescriptor<AttributionLedgerRouteQuery["variables"]>
-        | null;
+      ledgerQuery: AttributionLedgerQueryDescriptor;
       query: RelayRouteQueryDescriptor<RevenueSummaryRouteQuery["variables"]>;
     }
   | { status: "needsCurrency"; filters: RevenueSummaryFilters }
   | { status: "invalidDateRange"; filters: RevenueSummaryFilters }
-  | { status: "error"; filters: RevenueSummaryFilters };
+  | {
+      status: "error";
+      filters: RevenueSummaryFilters;
+      ledgerQuery: AttributionLedgerQueryDescriptor;
+    };
 
 export async function revenueSummaryLoader({
   context,
@@ -101,7 +107,7 @@ export async function revenueSummaryLoader({
     return recoverRouteLoaderError<RevenueSummaryLoaderData>(
       reason,
       "Failed to preload revenue summary route query.",
-      { status: "error", filters },
+      { status: "error", filters, ledgerQuery },
     );
   }
 }
@@ -138,12 +144,12 @@ export function RevenueSummaryRoute() {
           datePresetLinks={datePresetLinks}
           filters={loaderData.filters}
         />
-        {loaderData.status === "error" ? (
-          <RevenueSummaryUnavailableFallback />
-        ) : loaderData.status === "needsCurrency" ? (
+        {loaderData.status === "needsCurrency" ? (
           <RevenueSummaryCurrencyRequiredFallback />
         ) : loaderData.status === "invalidDateRange" ? (
           <RevenueSummaryInvalidDateRangeFallback />
+        ) : loaderData.status === "error" ? (
+          <RevenueSummaryUnavailableFallback />
         ) : (
           <ResettableErrorBoundary
             fallback={<RevenueSummaryUnavailableFallback />}
@@ -152,20 +158,19 @@ export function RevenueSummaryRoute() {
             <Suspense
               fallback={<FeedbackState kind="loading" title="Loading revenue summary..." />}
             >
-              <RevenueSummaryPanel ledgerQuery={loaderData.ledgerQuery} query={loaderData.query} />
+              <RevenueSummaryPanel query={loaderData.query} />
             </Suspense>
           </ResettableErrorBoundary>
         )}
+        {loaderData.status === "ready" || loaderData.status === "error" ? (
+          <DeferredAttributionLedgerBoundary query={loaderData.ledgerQuery} />
+        ) : null}
       </section>
     </PageShell>
   );
 }
 
-function RevenueSummaryPanel({
-  ledgerQuery,
-  query,
-}: {
-  ledgerQuery: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+function RevenueSummaryPanel({ query }: {
   query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<RevenueSummaryRouteQuery>(
@@ -181,18 +186,13 @@ function RevenueSummaryPanel({
   const currency =
     data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? "";
 
-  return (
-    <>
-      <RevenueMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
-      <DeferredAttributionLedgerBoundary query={ledgerQuery} />
-    </>
-  );
+  return <RevenueMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />;
 }
 
 function DeferredAttributionLedgerBoundary({
   query,
 }: {
-  query: Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"];
+  query: AttributionLedgerQueryDescriptor;
 }) {
   const [isHydrated, setIsHydrated] = useState(false);
 
@@ -217,7 +217,7 @@ function DeferredAttributionLedgerBoundary({
 function AttributionLedgerBoundary({
   query,
 }: {
-  query: Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>;
+  query: Awaited<AttributionLedgerQueryDescriptor>;
 }) {
   if (!query) {
     return <AttributionLedgerUnavailableFallback />;
@@ -236,7 +236,7 @@ function AttributionLedgerPanel({
   query,
 }: {
   query: NonNullable<
-    Awaited<Extract<RevenueSummaryLoaderData, { status: "ready" }>["ledgerQuery"]>
+    Awaited<AttributionLedgerQueryDescriptor>
   >;
 }) {
   const queryRef = useRoutePreloadedQuery<AttributionLedgerRouteQuery>(
