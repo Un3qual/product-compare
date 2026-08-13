@@ -55,7 +55,7 @@ defmodule ProductCompare.Pricing.ProductPriceTrendsTest do
       {beta.id, "80"}
     ])
 
-    assert hd(eur.points).observed_at == ~U[2026-06-01 00:00:00.000000Z]
+    assert DateTime.compare(hd(eur.points).observed_at, ~U[2026-06-01 00:00:00Z]) == :eq
     assert Enum.all?(eur.points, &(&1.currency == "EUR"))
   end
 

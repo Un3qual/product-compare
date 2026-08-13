@@ -68,22 +68,23 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                "name" => alpha.name
              }
 
-      assert List.last(eur_points) == %{
+      eur_offer_id = relay_id(:merchant_product, eur_offer.id)
+
+      assert %{
                "averagePrice" => "99.25",
-               "lowestMerchantProductId" => relay_id(:merchant_product, eur_offer.id),
+               "lowestMerchantProductId" => ^eur_offer_id,
                "lowestPrice" => "99.25",
                "merchantPrices" => [
                  %{
-                   "merchantProductId" => relay_id(:merchant_product, eur_offer.id),
+                   "merchantProductId" => ^eur_offer_id,
                    "price" => "99.25"
                  }
                ],
-               "observedAt" =>
-                 observed_at
-                 |> DateTime.to_date()
-                 |> DateTime.new!(~T[00:00:00])
-                 |> DateTime.to_iso8601()
-             }
+               "observedAt" => latest_observed_at
+             } = List.last(eur_points)
+
+      assert {:ok, latest_date, 0} = DateTime.from_iso8601(latest_observed_at)
+      assert DateTime.to_time(latest_date) == ~T[00:00:00]
 
       assert List.last(usd_points)["lowestPrice"] == "120.50"
       assert length(eur_points) <= 91

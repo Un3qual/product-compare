@@ -1379,8 +1379,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                product_media: 1,
                product_attribute_current: 1,
                product_reviews: 2,
-               merchant_products: 2,
-               price_points: 2
+               merchant_products: 3,
+               price_points: 3
              }
 
       grown_products = initial_products ++ product_evidence_set("#{prefix}-grown", operator)

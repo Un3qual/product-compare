@@ -440,6 +440,31 @@ type ProductOfferTruth {
   currencySummaries: [OfferCurrencySummary!]!
 }
 
+type ProductPriceTrendCurrency {
+  currency: String!
+  merchants: [ProductPriceTrendMerchant!]!
+  points: [ProductPriceTrendPoint!]!
+}
+
+type ProductPriceTrendMerchant {
+  id: ID!
+  name: String!
+  merchantProductId: ID!
+}
+
+type ProductPriceTrendPoint {
+  observedAt: DateTime!
+  lowestPrice: Decimal!
+  averagePrice: Decimal!
+  lowestMerchantProductId: ID!
+  merchantPrices: [ProductPriceTrendMerchantPrice!]!
+}
+
+type ProductPriceTrendMerchantPrice {
+  merchantProductId: ID!
+  price: Decimal!
+}
+
 type OfferCurrencySummary {
   currency: String!
   offerCount: Int!
@@ -1291,6 +1316,8 @@ type Product implements Node {
   currentAttributes: [ProductAttributeValue!]!
 
   offerTruth: ProductOfferTruth!
+
+  priceHistory90d: [ProductPriceTrendCurrency!]!
 
   reviewSummary: ProductReviewSummary!
 
