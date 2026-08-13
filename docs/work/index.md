@@ -45,20 +45,7 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-### Frontend Inferred Type Simplification
-
-Status: active
-Owner: current detached worktree
-Lane: Frontend inferred type simplification
-Batch outcome: The full frontend relies on inference and Relay-generated
-contracts instead of redundant annotations, recreated response schemas, and
-generic route helper files, without weakening real boundary validation.
-Current action: Inventory type declarations, explicit annotations, generated
-Relay duplication, and root-level route helpers before refactoring.
-Owned paths:
-
-- `assets/src/**`, generated Relay artifacts, and focused frontend tests.
-- `docs/work/frontend-inferred-type-simplification.md`.
+None.
 
 ## Ready Work
 

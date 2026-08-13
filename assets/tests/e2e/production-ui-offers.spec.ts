@@ -141,13 +141,11 @@ for (const viewport of OFFER_VIEWPORTS) {
     if (viewport.name === "mobile") {
       await page.getByRole("button", { name: "Refine offers" }).click();
       const dialog = page.getByRole("dialog", { name: "Refine offers" });
-      await dialog.getByRole("button", { name: "Advanced filters" }).click();
       await expect(dialog.getByRole("textbox", { name: "Product ID" })).toHaveValue(
         OFFER_PRODUCT_ID,
       );
       await expect(dialog.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("");
     } else {
-      await page.getByRole("button", { name: "Advanced filters" }).click();
       await expect(page.getByRole("textbox", { name: "Product ID" })).toHaveValue(OFFER_PRODUCT_ID);
       await expect(page.getByRole("textbox", { name: "Merchant ID" })).toHaveValue("");
     }
