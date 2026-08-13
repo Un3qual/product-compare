@@ -2,12 +2,10 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import {
-  AffiliateCouponForm,
-  AffiliateLinkForm,
-  AffiliateNetworkForm,
-  AffiliateProgramForm,
-} from "../../../../src/routes/affiliate/setup/AffiliateSetupForms";
+import { CouponStep } from "../../../../src/routes/affiliate/setup/coupon/CouponStep";
+import { MerchantLinkStep } from "../../../../src/routes/affiliate/setup/merchant-link/MerchantLinkStep";
+import { NetworkStep } from "../../../../src/routes/affiliate/setup/network/NetworkStep";
+import { ProgramStep } from "../../../../src/routes/affiliate/setup/program/ProgramStep";
 import {
   AffiliateSetupRoute,
   type AffiliateSetupLoaderData,
@@ -248,8 +246,8 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
 
   render(
     <>
-      <AffiliateNetworkForm error={null} onSubmit={onNetworkSubmit} pending={false} result={null} />
-      <AffiliateProgramForm
+      <NetworkStep error={null} onSubmit={onNetworkSubmit} pending={false} result={null} />
+      <ProgramStep
         affiliateNetworkId={NETWORK_ID}
         error={null}
         merchantChoices={merchantChoices}
@@ -261,14 +259,14 @@ test("affiliate setup forms preserve submission callbacks and controlled merchan
         selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
         selectedMerchantValue={MERCHANT_ID}
       />
-      <AffiliateLinkForm
+      <MerchantLinkStep
         error={null}
         onSubmit={onLinkSubmit}
         pending={false}
         result={null}
         selectedMerchantCopy="Selected merchant: Acme Market (acme.example)"
       />
-      <AffiliateCouponForm
+      <CouponStep
         error={null}
         merchantChoices={merchantChoices}
         onSelectedMerchantIdChange={onSelectedMerchantIdChange}
