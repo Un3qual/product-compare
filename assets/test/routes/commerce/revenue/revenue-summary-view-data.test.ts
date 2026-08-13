@@ -2,7 +2,7 @@ import {
   buildRevenueSummaryControls,
   buildRevenueSummaryFilterFormData,
   buildRevenueSummaryMetrics,
-} from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+} from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 
 test("buildRevenueSummaryFilterFormData normalizes only nullish form values", () => {
   expect(

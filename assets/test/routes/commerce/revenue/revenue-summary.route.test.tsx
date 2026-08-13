@@ -10,15 +10,13 @@ import {
   useRoutePreloadedQuery,
 } from "../../../../src/relay/route-preload";
 import { RevenueSummaryRoute } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
-import {
-  RevenueSummaryMetrics,
-  RevenueSummaryView,
-} from "../../../../src/routes/commerce/revenue/RevenueSummaryView";
+import { RevenueControls } from "../../../../src/routes/commerce/revenue/summary/RevenueControls";
+import { RevenueMetrics } from "../../../../src/routes/commerce/revenue/summary/RevenueMetrics";
 import type { RevenueSummaryLoaderData } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
 import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
-} from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+} from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 import { mockPreloadedQuery } from "../../../helpers/relay";
 
 const {
@@ -211,18 +209,19 @@ afterEach(() => {
 test("revenue presentation exposes filters, presets, active filters, and metrics", () => {
   render(
     <MemoryRouter>
-      <RevenueSummaryView
-        activeFilters={[{ label: "Network", value: "impact" }]}
-        datePresetLinks={[{ label: "Last 7 days", to: "/commerce/revenue?from=2026-07-05" }]}
-        filters={{
-          currency: "USD",
-          from: "2026-07-05",
-          network: "impact",
-          to: "2026-07-11",
-        }}
-      >
-        <RevenueSummaryMetrics metrics={[{ label: "Clicks", value: "12" }]} />
-      </RevenueSummaryView>
+      <section aria-label="Revenue report">
+        <RevenueControls
+          activeFilters={[{ label: "Network", value: "impact" }]}
+          datePresetLinks={[{ label: "Last 7 days", to: "/commerce/revenue?from=2026-07-05" }]}
+          filters={{
+            currency: "USD",
+            from: "2026-07-05",
+            network: "impact",
+            to: "2026-07-11",
+          }}
+        />
+        <RevenueMetrics metrics={[{ label: "Clicks", value: "12" }]} />
+      </section>
     </MemoryRouter>,
   );
 
@@ -317,16 +316,19 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(screen.getByText("Impact")).toBeInTheDocument();
   expect(screen.getByText("impact-conversion-123")).toBeInTheDocument();
   expect(screen.getByText("Order: 90.00 USD")).toBeInTheDocument();
-  expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
   expect(screen.getByText("Paid")).toBeInTheDocument();
   expect(screen.getByText("Strong match")).toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
+  );
+  expect(screen.getByText("Commission: 9.00 USD")).toBeInTheDocument();
   expect(screen.getByText("Conversion Merchant")).toBeInTheDocument();
   expect(screen.getByText("Conversion Product")).toBeInTheDocument();
   expect(screen.getByText("Conversion Network")).toBeInTheDocument();
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();
-  expect(mockedUseFragment).toHaveBeenCalledTimes(1);
+  expect(mockedUseFragment).toHaveBeenCalled();
 
   fireEvent.click(screen.getByRole("button", { name: "Load more attribution clicks" }));
 
@@ -534,6 +536,12 @@ test("revenue route renders equal conversion references from different networks 
 
   try {
     renderRevenueSummaryRoute();
+
+    for (const button of screen.getAllByRole("button", {
+      name: "Show conversion impact-conversion-123 details",
+    })) {
+      fireEvent.click(button);
+    }
 
     expect(screen.getByText("Conversion Network")).toBeVisible();
     expect(screen.getByText("Second Conversion Network")).toBeVisible();

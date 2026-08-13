@@ -18,7 +18,10 @@ import {
   TableHeader,
   TableRow,
 } from "$ui/primitives/Table";
-import { ATTRIBUTION_LEDGER_PAGE_SIZE, formatCurrencyAmount } from "./revenue-summary-view-data";
+import {
+  ATTRIBUTION_LEDGER_PAGE_SIZE,
+} from "../summary/revenue-summary-data";
+import { ConversionDetails } from "./ConversionDetails";
 
 export const attributionLedgerRouteQuery = graphql`
   query AttributionLedgerRouteQuery($input: RevenueSummaryInput, $first: Int!, $after: String) {
@@ -68,17 +71,8 @@ const attributionLedgerRowFragment = graphql`
     linkType
     matchedConversions {
       affiliateNetworkCode
-      affiliateNetworkName
-      attributionConfidence
-      commissionAmount
-      currency
-      merchantName
       networkConversionRef
-      orderAmount
-      productName
-      purchasedAt
-      reportedAt
-      status
+      ...ConversionDetails_conversion
     }
     merchantName
     merchantProductExternalSku
@@ -300,57 +294,12 @@ function AttributionConversionList({
   return (
     <ul aria-label="Matched conversions" {...props(styles.conversionList)}>
       {conversions.map((conversion) => (
-        <AttributionConversion
+        <ConversionDetails
           conversion={conversion}
           key={`${conversion.affiliateNetworkCode}:${conversion.networkConversionRef}`}
         />
       ))}
     </ul>
-  );
-}
-
-type AttributionConversionData = AttributionClick["matchedConversions"][number];
-
-function AttributionConversion({ conversion }: { conversion: AttributionConversionData }) {
-  return (
-    <li>
-      <dl {...props(styles.details)}>
-        <dt>Conversion reference</dt>
-        <dd>{conversion.networkConversionRef}</dd>
-        <dt>Order</dt>
-        <dd>Order: {formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</dd>
-        <dt>Commission</dt>
-        <dd>
-          Commission: {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
-        </dd>
-        <dt>Status</dt>
-        <dd>{conversionStatusCopy(conversion.status)}</dd>
-        <dt>Attribution</dt>
-        <dd>{attributionConfidenceCopy(conversion.attributionConfidence)}</dd>
-        <dt>Conversion merchant</dt>
-        <dd>{conversion.merchantName ?? "No merchant"}</dd>
-        <dt>Conversion product</dt>
-        <dd>{conversion.productName ?? "No product"}</dd>
-        <dt>Conversion network</dt>
-        <dd>{conversion.affiliateNetworkName ?? "No affiliate network"}</dd>
-        <dt>Purchased</dt>
-        <dd>
-          {conversion.purchasedAt ? (
-            <time dateTime={conversion.purchasedAt}>
-              {formatProductDateTimeLabel(conversion.purchasedAt)}
-            </time>
-          ) : (
-            "Not recorded"
-          )}
-        </dd>
-        <dt>Reported</dt>
-        <dd>
-          <time dateTime={conversion.reportedAt}>
-            {formatProductDateTimeLabel(conversion.reportedAt)}
-          </time>
-        </dd>
-      </dl>
-    </li>
   );
 }
 
@@ -375,33 +324,5 @@ function linkTypeCopy(value: string) {
       return "Direct link";
     default:
       return "Link type unavailable";
-  }
-}
-
-function conversionStatusCopy(value: string) {
-  switch (value.toUpperCase()) {
-    case "APPROVED":
-      return "Approved";
-    case "PAID":
-      return "Paid";
-    case "PENDING":
-      return "Awaiting confirmation";
-    case "REVERSED":
-      return "Reversed";
-    default:
-      return "Status unavailable";
-  }
-}
-
-function attributionConfidenceCopy(value: string) {
-  switch (value.toUpperCase()) {
-    case "HIGH":
-      return "Strong match";
-    case "LOW":
-      return "Possible match";
-    case "UNMATCHED":
-      return "Not matched";
-    default:
-      return "Match unavailable";
   }
 }

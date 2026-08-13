@@ -15,8 +15,9 @@ import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { recoverRouteLoaderError } from "$relay/loader-errors";
-import { AttributionLedger, attributionLedgerRouteQuery } from "./AttributionLedger";
-import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";
+import { AttributionLedger, attributionLedgerRouteQuery } from "./attribution/AttributionLedger";
+import { RevenueControls } from "./summary/RevenueControls";
+import { RevenueMetrics } from "./summary/RevenueMetrics";
 import {
   buildRevenueSummaryControls,
   buildRevenueSummaryMetrics,
@@ -24,7 +25,7 @@ import {
   revenueSummaryFiltersFromUrl,
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   type RevenueSummaryFilters,
-} from "./revenue-summary-view-data";
+} from "./summary/revenue-summary-data";
 
 const revenueSummaryRouteQuery = graphql`
   query RevenueSummaryRouteQuery($input: RevenueSummaryInput) {
@@ -131,11 +132,12 @@ export function RevenueSummaryRoute() {
       eyebrow="Commerce analytics"
       title="Revenue reporting preview"
     >
-      <RevenueSummaryView
-        activeFilters={activeFilters}
-        datePresetLinks={datePresetLinks}
-        filters={loaderData.filters}
-      >
+      <section aria-label="Revenue report">
+        <RevenueControls
+          activeFilters={activeFilters}
+          datePresetLinks={datePresetLinks}
+          filters={loaderData.filters}
+        />
         {loaderData.status === "error" ? (
           <RevenueSummaryUnavailableFallback />
         ) : loaderData.status === "needsCurrency" ? (
@@ -154,7 +156,7 @@ export function RevenueSummaryRoute() {
             </Suspense>
           </ResettableErrorBoundary>
         )}
-      </RevenueSummaryView>
+      </section>
     </PageShell>
   );
 }
@@ -181,7 +183,7 @@ function RevenueSummaryPanel({
 
   return (
     <>
-      <RevenueSummaryMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
+      <RevenueMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />
       <DeferredAttributionLedgerBoundary query={ledgerQuery} />
     </>
   );

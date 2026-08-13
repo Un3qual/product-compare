@@ -5,7 +5,7 @@ import {
   revenueSummaryLoader,
   type RevenueSummaryLoaderData,
 } from "../../../../src/routes/commerce/revenue/RevenueSummaryRoute";
-import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+import { ATTRIBUTION_LEDGER_PAGE_SIZE } from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 
 vi.mock("../../../../src/relay/route-preload", async () => {
   const actual = await vi.importActual<typeof import("../../../../src/relay/route-preload")>(

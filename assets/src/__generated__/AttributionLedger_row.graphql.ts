@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<ca51cdc8e37819df1c17bc1af24e1950>>
+ * @generated SignedSource<<036273673117183010b0bb58cf8c46dd>>
  * @lightSyntaxTransform
  */
 
@@ -8,10 +8,8 @@
 // @ts-nocheck
 
 import { ReaderFragment } from 'relay-runtime';
-export type CommerceAttributionConfidence = "HIGH" | "LOW" | "UNMATCHED" | "%future added value";
 export type CommerceAttributionLinkType = "AFFILIATE" | "NON_AFFILIATE" | "%future added value";
 export type CommerceClickSourceSurface = "API" | "EXTENSION" | "WEB" | "%future added value";
-export type CommerceConversionStatus = "APPROVED" | "PAID" | "PENDING" | "REVERSED" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type AttributionLedger_row$data = ReadonlyArray<{
   readonly affiliateNetworkCode: string | null;
@@ -24,17 +22,8 @@ export type AttributionLedger_row$data = ReadonlyArray<{
   readonly linkType: CommerceAttributionLinkType;
   readonly matchedConversions: ReadonlyArray<{
     readonly affiliateNetworkCode: string | null;
-    readonly affiliateNetworkName: string | null;
-    readonly attributionConfidence: CommerceAttributionConfidence;
-    readonly commissionAmount: string | null;
-    readonly currency: string;
-    readonly merchantName: string | null;
     readonly networkConversionRef: string;
-    readonly orderAmount: string | null;
-    readonly productName: string | null;
-    readonly purchasedAt: string | null;
-    readonly reportedAt: string;
-    readonly status: CommerceConversionStatus;
+    readonly " $fragmentSpreads": FragmentRefs<"ConversionDetails_conversion">;
   }>;
   readonly merchantName: string;
   readonly merchantProductExternalSku: string | null;
@@ -57,27 +46,6 @@ var v0 = {
   "kind": "ScalarField",
   "name": "affiliateNetworkCode",
   "storageKey": null
-},
-v1 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "affiliateNetworkName",
-  "storageKey": null
-},
-v2 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "merchantName",
-  "storageKey": null
-},
-v3 = {
-  "alias": null,
-  "args": null,
-  "kind": "ScalarField",
-  "name": "productName",
-  "storageKey": null
 };
 return {
   "argumentDefinitions": [],
@@ -88,7 +56,13 @@ return {
   "name": "AttributionLedger_row",
   "selections": [
     (v0/*:: as any*/),
-    (v1/*:: as any*/),
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "affiliateNetworkName",
+      "storageKey": null
+    },
     {
       "alias": null,
       "args": null,
@@ -140,29 +114,6 @@ return {
       "plural": true,
       "selections": [
         (v0/*:: as any*/),
-        (v1/*:: as any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "attributionConfidence",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "commissionAmount",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "currency",
-          "storageKey": null
-        },
-        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -171,38 +122,20 @@ return {
           "storageKey": null
         },
         {
-          "alias": null,
           "args": null,
-          "kind": "ScalarField",
-          "name": "orderAmount",
-          "storageKey": null
-        },
-        (v3/*:: as any*/),
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "purchasedAt",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "reportedAt",
-          "storageKey": null
-        },
-        {
-          "alias": null,
-          "args": null,
-          "kind": "ScalarField",
-          "name": "status",
-          "storageKey": null
+          "kind": "FragmentSpread",
+          "name": "ConversionDetails_conversion"
         }
       ],
       "storageKey": null
     },
-    (v2/*:: as any*/),
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "merchantName",
+      "storageKey": null
+    },
     {
       "alias": null,
       "args": null,
@@ -210,7 +143,13 @@ return {
       "name": "merchantProductExternalSku",
       "storageKey": null
     },
-    (v3/*:: as any*/),
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "productName",
+      "storageKey": null
+    },
     {
       "alias": null,
       "args": null,
@@ -245,6 +184,6 @@ return {
 };
 })();
 
-(node as any).hash = "077e1884473aa75ad5a54958a4981005";
+(node as any).hash = "a67cc0085b130a024e7d4d10274b99ff";
 
 export default node;

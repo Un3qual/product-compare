@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<66c4e729d9e31c1121db4aa5345af101>>
+ * @generated SignedSource<<ac16eefbef7fb582332f0123c0cbbebc>>
  * @lightSyntaxTransform
  */
 
@@ -198,6 +198,13 @@ return {
                     "plural": true,
                     "selections": [
                       (v4/*:: as any*/),
+                      {
+                        "alias": null,
+                        "args": null,
+                        "kind": "ScalarField",
+                        "name": "networkConversionRef",
+                        "storageKey": null
+                      },
                       (v5/*:: as any*/),
                       {
                         "alias": null,
@@ -221,13 +228,6 @@ return {
                         "storageKey": null
                       },
                       (v6/*:: as any*/),
-                      {
-                        "alias": null,
-                        "args": null,
-                        "kind": "ScalarField",
-                        "name": "networkConversionRef",
-                        "storageKey": null
-                      },
                       {
                         "alias": null,
                         "args": null,
@@ -359,12 +359,12 @@ return {
     ]
   },
   "params": {
-    "cacheID": "197a49797f130ce542c6d70c8d6d2d0a",
+    "cacheID": "18247182cc6350190a8ff22e7cafc995",
     "id": null,
     "metadata": {},
     "name": "AttributionLedgerRouteQuery",
     "operationKind": "query",
-    "text": "query AttributionLedgerRouteQuery(\n  $input: RevenueSummaryInput\n  $first: Int!\n  $after: String\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        clickId\n        ...AttributionLedger_row\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment AttributionLedger_row on CommerceAttributionClick {\n  affiliateNetworkCode\n  affiliateNetworkName\n  affiliateProgramCode\n  anonymousVisitor\n  clickId\n  insertedAt\n  ipAddress\n  linkType\n  matchedConversions {\n    affiliateNetworkCode\n    affiliateNetworkName\n    attributionConfidence\n    commissionAmount\n    currency\n    merchantName\n    networkConversionRef\n    orderAmount\n    productName\n    purchasedAt\n    reportedAt\n    status\n  }\n  merchantName\n  merchantProductExternalSku\n  productName\n  referrer\n  sourceSurface\n  userAgent\n  userEmail\n}\n"
+    "text": "query AttributionLedgerRouteQuery(\n  $input: RevenueSummaryInput\n  $first: Int!\n  $after: String\n) {\n  ...AttributionLedger_connection_2DAjA4\n}\n\nfragment AttributionLedger_connection_2DAjA4 on RootQueryType {\n  commerceAttributionClicks(input: $input, first: $first, after: $after) {\n    edges {\n      node {\n        clickId\n        ...AttributionLedger_row\n        __typename\n      }\n      cursor\n    }\n    pageInfo {\n      endCursor\n      hasNextPage\n    }\n  }\n}\n\nfragment AttributionLedger_row on CommerceAttributionClick {\n  affiliateNetworkCode\n  affiliateNetworkName\n  affiliateProgramCode\n  anonymousVisitor\n  clickId\n  insertedAt\n  ipAddress\n  linkType\n  matchedConversions {\n    affiliateNetworkCode\n    networkConversionRef\n    ...ConversionDetails_conversion\n  }\n  merchantName\n  merchantProductExternalSku\n  productName\n  referrer\n  sourceSurface\n  userAgent\n  userEmail\n}\n\nfragment ConversionDetails_conversion on CommerceAttributionMatchedConversion {\n  affiliateNetworkName\n  attributionConfidence\n  commissionAmount\n  currency\n  merchantName\n  networkConversionRef\n  orderAmount\n  productName\n  purchasedAt\n  reportedAt\n  status\n}\n"
   }
 };
 })();
