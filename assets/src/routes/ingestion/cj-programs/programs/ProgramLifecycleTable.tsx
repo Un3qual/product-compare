@@ -3,13 +3,7 @@ import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-tab
 import type { CJProgramsRouteQuery } from "$generated/CJProgramsRouteQuery.graphql";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import {
-  Table,
-  TableBody,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "$ui/primitives/Table";
+import { Table, TableBody, TableHead, TableHeader, TableRow } from "$ui/primitives/Table";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { ProgramLifecycleRow } from "./ProgramLifecycleRow";
 import { CJ_PROGRAM_STAGES } from "./lifecycle-policy";
@@ -31,8 +25,7 @@ const columns = columnHelper.columns([
   columnHelper.display({ id: "merchant", header: "Merchant" }),
   columnHelper.display({ id: "lifecycle", header: "Lifecycle" }),
   columnHelper.display({ id: "lastChange", header: "Last change" }),
-  columnHelper.display({ id: "requiredAction", header: "Required action" }),
-  columnHelper.display({ id: "controls", header: "Controls" }),
+  columnHelper.display({ id: "action", header: "Action" }),
 ]);
 
 export function ProgramLifecycleTable({

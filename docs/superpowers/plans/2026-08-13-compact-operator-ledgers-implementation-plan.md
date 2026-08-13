@@ -209,7 +209,7 @@
 - Consumes: the existing `ProgramLifecycleRow_program` fragment, update mutation, `ProgramFeeds`, lifecycle policy, and row-local refresh behavior.
 - Produces: four headers named `Merchant`, `Lifecycle`, `Last change`, and `Action`; `Edit program <name>`/`Close editor <name>` buttons; a conditional `Edit <name>` region in a cell with `colSpan={4}`.
 
-- [ ] **Step 1: Write the failing compact-row and editor tests**
+- [x] **Step 1: Write the failing compact-row and editor tests**
 
   Change the lifecycle header assertion and prove the form is absent from the collapsed summary:
 
@@ -245,7 +245,7 @@
 
   Preserve every existing assertion for advertiser facts, warnings, exact time, future lifecycle values, note trimming, conflict refresh, row-local feedback, deferred feed loading, feed retry, and feed pagination. Add one close assertion proving the editor content is removed while the summary facts remain.
 
-- [ ] **Step 2: Run the CJ route test and verify RED**
+- [x] **Step 2: Run the CJ route test and verify RED**
 
   ```bash
   cd assets
@@ -254,7 +254,7 @@
 
   Expected: FAIL because the current table has five headers, renders every edit form in the summary row, and has no program editor disclosure.
 
-- [ ] **Step 3: Change the TanStack table to four columns**
+- [x] **Step 3: Change the TanStack table to four columns**
 
   Replace `requiredAction` and `controls` with a single display column:
 
@@ -269,7 +269,7 @@
 
   Leave the current `64rem` table minimum in place until Task 3.
 
-- [ ] **Step 4: Split each program into summary and editor rows**
+- [x] **Step 4: Split each program into summary and editor rows**
 
   Add `isEditing` and `useId()` to `ProgramLifecycleRow`. Return a fragment containing the summary row and conditional detail row. Keep advertiser/provider/feed count, lifecycle badge/warnings, exact last-change time, and required action visible in the summary. The Action cell contains only the required action and disclosure button:
 
@@ -350,11 +350,11 @@
 
   Use a route-local responsive grid for stage, note, and save controls. Do not mount `ProgramFeeds` outside the editor, and retain its current lazy query behavior so opening the editor alone does not fetch feeds.
 
-- [ ] **Step 5: Preserve refreshed state and row-local mutation behavior**
+- [x] **Step 5: Preserve refreshed state and row-local mutation behavior**
 
   Keep the existing effect keyed by `lastChanged`, `note`, and `stage`. Keep `feedback` and both disclosure states local to the program component so revalidation does not close the editor or an expanded feed panel. Keep `aria-busy` on the summary row while saving and disable only that program's editor controls.
 
-- [ ] **Step 6: Run focused CJ GREEN and commit**
+- [x] **Step 6: Run focused CJ GREEN and commit**
 
   ```bash
   cd assets

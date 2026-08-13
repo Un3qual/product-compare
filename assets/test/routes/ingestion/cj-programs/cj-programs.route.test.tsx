@@ -179,8 +179,7 @@ test("CJ programs route presents a scannable lifecycle ledger with exact change 
     "Merchant",
     "Lifecycle",
     "Last change",
-    "Required action",
-    "Controls",
+    "Action",
   ]);
 
   const newMerchantRow = within(ledger).getByRole("row", { name: /New Merchant/ });
@@ -190,12 +189,34 @@ test("CJ programs route presents a scannable lifecycle ledger with exact change 
     "datetime",
     "2026-07-20T10:00:00.000000Z",
   );
+  expect(screen.queryByLabelText("Stage for New Merchant")).not.toBeInTheDocument();
+});
+
+test("CJ program rows expand a full-width editor without removing summary facts", () => {
+  renderCJProgramsRoute();
+
+  const editor = openProgramEditor("New Merchant");
+
+  expect(editor.getByLabelText("Stage for New Merchant")).toBeEnabled();
+  expect(editor.getByLabelText("Note for New Merchant")).toBeEnabled();
+  expect(editor.getByRole("button", { name: "Save New Merchant" })).toBeEnabled();
+  expect(editor.getByRole("button", { name: "Show feeds for New Merchant" })).toBeEnabled();
+  expect(screen.getByRole("region", { name: "Edit New Merchant" }).closest("td")).toHaveAttribute(
+    "colspan",
+    "4",
+  );
+
+  fireEvent.click(screen.getByRole("button", { name: "Close editor New Merchant" }));
+
+  expect(screen.queryByRole("region", { name: "Edit New Merchant" })).not.toBeInTheDocument();
+  expect(rowFor("New Merchant").getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
 });
 
 test("CJ program rows expose every lifecycle stage and save a trimmed note", async () => {
   renderCJProgramsRoute();
 
-  const stage = screen.getByRole("combobox", { name: "Stage for New Merchant" });
+  const editor = openProgramEditor("New Merchant");
+  const stage = editor.getByRole("combobox", { name: "Stage for New Merchant" });
   openSelect(stage);
   expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
     "New",
@@ -208,10 +229,10 @@ test("CJ program rows expose every lifecycle stage and save a trimmed note", asy
   ]);
 
   chooseSelectOption(stage, "Declined");
-  fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
+  fireEvent.change(editor.getByLabelText("Note for New Merchant"), {
     target: { value: "  Not a fit now  " },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  fireEvent.click(editor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
     expect(commitUpdateMutationMock).toHaveBeenCalledWith(
@@ -244,16 +265,19 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
   });
 
   const view = renderCJProgramsRoute();
+  const editor = openProgramEditor("New Merchant");
 
-  chooseSelectOption(screen.getByLabelText("Stage for New Merchant"), "Declined");
-  fireEvent.change(screen.getByLabelText("Note for New Merchant"), {
+  chooseSelectOption(editor.getByLabelText("Stage for New Merchant"), "Declined");
+  fireEvent.change(editor.getByLabelText("Note for New Merchant"), {
     target: { value: "Local draft" },
   });
-  fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  fireEvent.click(editor.getByRole("button", { name: "Show feeds for New Merchant" }));
+  fireEvent.click(editor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("New Merchant saved.");
+    expect(programEditorFor("New Merchant").getByRole("status")).toHaveTextContent(
+      "New Merchant saved.",
+    );
   });
 
   const refreshedData = buildCJProgramsData();
@@ -276,31 +300,39 @@ test("CJ program rows adopt refreshed lifecycle fields without discarding row fe
     </MemoryRouter>,
   );
 
-  expect(screen.getByLabelText("Stage for New Merchant")).toHaveValue("APPLIED");
-  expect(screen.getByLabelText("Note for New Merchant")).toHaveValue("Server note");
-  expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("New Merchant saved.");
-  expect(screen.getByRole("button", { name: "Hide feeds for New Merchant" })).toBeInTheDocument();
+  const refreshedEditor = programEditorFor("New Merchant");
+  expect(refreshedEditor.getByLabelText("Stage for New Merchant")).toHaveValue("APPLIED");
+  expect(refreshedEditor.getByLabelText("Note for New Merchant")).toHaveValue("Server note");
+  expect(refreshedEditor.getByRole("status")).toHaveTextContent("New Merchant saved.");
+  expect(
+    refreshedEditor.getByRole("button", { name: "Hide feeds for New Merchant" }),
+  ).toBeInTheDocument();
 });
 
 test("an in-flight CJ program update shows row-local saving state and leaves another row interactive", async () => {
   mockedUseMutation.mockImplementation(useInFlightMutationMock as never);
 
   renderCJProgramsRoute();
+  const newEditor = openProgramEditor("New Merchant");
+  const consideringEditor = openProgramEditor("Considering Merchant");
 
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  fireEvent.click(newEditor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
     expect(commitUpdateMutationMock).toHaveBeenCalledTimes(1);
-    expect(rowFor("New Merchant").getByText("Saving...")).toBeVisible();
+    expect(programEditorFor("New Merchant").getByText("Saving...")).toBeVisible();
     expect(rowElementFor("New Merchant")).toHaveAttribute("aria-busy", "true");
   });
 
-  expect(rowFor("New Merchant").getByLabelText("Stage for New Merchant")).toBeDisabled();
-  expect(rowFor("New Merchant").getByLabelText("Note for New Merchant")).toBeDisabled();
-  expect(rowFor("New Merchant").getByRole("button", { name: "Save New Merchant" })).toBeDisabled();
-  expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
-  expect(screen.getByLabelText("Note for Considering Merchant")).toBeEnabled();
-  expect(screen.getByRole("button", { name: "Save Considering Merchant" })).toBeEnabled();
+  const savingEditor = programEditorFor("New Merchant");
+  expect(savingEditor.getByLabelText("Stage for New Merchant")).toBeDisabled();
+  expect(savingEditor.getByLabelText("Note for New Merchant")).toBeDisabled();
+  expect(savingEditor.getByRole("button", { name: "Save New Merchant" })).toBeDisabled();
+  expect(consideringEditor.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
+  expect(consideringEditor.getByLabelText("Note for Considering Merchant")).toBeEnabled();
+  expect(
+    consideringEditor.getByRole("button", { name: "Save Considering Merchant" }),
+  ).toBeEnabled();
   expect(rowElementFor("Considering Merchant")).not.toHaveAttribute("aria-busy", "true");
 });
 
@@ -317,11 +349,15 @@ test("CJ program mutation feedback remains with the row that saved", async () =>
   });
 
   renderCJProgramsRoute();
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  const newEditor = openProgramEditor("New Merchant");
+  const consideringEditor = openProgramEditor("Considering Merchant");
+  fireEvent.click(newEditor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("New Merchant saved.");
-    expect(rowFor("Considering Merchant").queryByRole("status")).not.toBeInTheDocument();
+    expect(programEditorFor("New Merchant").getByRole("status")).toHaveTextContent(
+      "New Merchant saved.",
+    );
+    expect(consideringEditor.queryByRole("status")).not.toBeInTheDocument();
     expect(revalidateMock).toHaveBeenCalledTimes(1);
   });
 });
@@ -339,11 +375,15 @@ test("CJ program payload errors remain with the row that failed", async () => {
   });
 
   renderCJProgramsRoute();
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  const newEditor = openProgramEditor("New Merchant");
+  const consideringEditor = openProgramEditor("Considering Merchant");
+  fireEvent.click(newEditor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent("stage is unavailable");
-    expect(rowFor("Considering Merchant").queryByRole("status")).not.toBeInTheDocument();
+    expect(programEditorFor("New Merchant").getByRole("status")).toHaveTextContent(
+      "stage is unavailable",
+    );
+    expect(consideringEditor.queryByRole("status")).not.toBeInTheDocument();
   });
 });
 
@@ -366,10 +406,11 @@ test("a stale CJ program response reloads server state", async () => {
   });
 
   renderCJProgramsRoute();
-  fireEvent.click(screen.getByRole("button", { name: "Save New Merchant" }));
+  const editor = openProgramEditor("New Merchant");
+  fireEvent.click(editor.getByRole("button", { name: "Save New Merchant" }));
 
   await waitFor(() => {
-    expect(rowFor("New Merchant").getByRole("status")).toHaveTextContent(
+    expect(programEditorFor("New Merchant").getByRole("status")).toHaveTextContent(
       "program changed since it was loaded",
     );
     expect(revalidateMock).toHaveBeenCalledTimes(1);
@@ -421,15 +462,17 @@ test("CJ program rows display an unknown future lifecycle stage without coercing
   renderCJProgramsRoute();
 
   expect(rowFor("New Merchant").getByText("%future added value")).toBeInTheDocument();
-  expect(screen.getByLabelText("Stage for New Merchant")).toBeDisabled();
+  expect(openProgramEditor("New Merchant").getByLabelText("Stage for New Merchant")).toBeDisabled();
 });
 
 test("CJ program feed details wait for the first expansion before loading", () => {
   renderCJProgramsRoute();
 
   expect(loadFeedQueryMock).not.toHaveBeenCalled();
+  const editor = openProgramEditor("New Merchant");
+  expect(loadFeedQueryMock).not.toHaveBeenCalled();
 
-  fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
+  fireEvent.click(editor.getByRole("button", { name: "Show feeds for New Merchant" }));
 
   expect(loadFeedQueryMock).toHaveBeenCalledWith(
     { id: "program-1", first: 10, after: null },
@@ -453,20 +496,33 @@ test("a failed CJ program feed query stays in its row and retries only that row"
 
   try {
     renderCJProgramsRoute();
-    fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
+    const newEditor = openProgramEditor("New Merchant");
+    const consideringEditor = openProgramEditor("Considering Merchant");
+    fireEvent.click(newEditor.getByRole("button", { name: "Show feeds for New Merchant" }));
 
-    expect(rowFor("New Merchant").getByRole("alert")).toHaveTextContent("Feeds unavailable.");
+    expect(programEditorFor("New Merchant").getByRole("alert")).toHaveTextContent(
+      "Feeds unavailable.",
+    );
     expect(
-      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" }),
+      programEditorFor("New Merchant").getByRole("button", {
+        name: "Retry feeds for New Merchant",
+      }),
     ).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "CJ programs" })).toBeInTheDocument();
     expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
-    expect(screen.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
-    chooseSelectOption(screen.getByLabelText("Stage for Considering Merchant"), "Accepted");
-    expect(screen.getByLabelText("Stage for Considering Merchant")).toHaveValue("ACCEPTED");
+    expect(consideringEditor.getByLabelText("Stage for Considering Merchant")).toBeEnabled();
+    chooseSelectOption(
+      consideringEditor.getByLabelText("Stage for Considering Merchant"),
+      "Accepted",
+    );
+    expect(consideringEditor.getByLabelText("Stage for Considering Merchant")).toHaveValue(
+      "ACCEPTED",
+    );
 
     fireEvent.click(
-      rowFor("New Merchant").getByRole("button", { name: "Retry feeds for New Merchant" }),
+      programEditorFor("New Merchant").getByRole("button", {
+        name: "Retry feeds for New Merchant",
+      }),
     );
 
     expect(loadFeedQueryMock).toHaveBeenNthCalledWith(
@@ -488,7 +544,7 @@ test("an unavailable unmatched-feed region leaves the program lifecycle ledger u
   renderCJProgramsRoute();
 
   expect(screen.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
-  expect(screen.getByLabelText("Stage for New Merchant")).toBeEnabled();
+  expect(openProgramEditor("New Merchant").getByLabelText("Stage for New Merchant")).toBeEnabled();
   expect(screen.getByRole("alert")).toHaveTextContent("Unmatched feeds unavailable.");
   expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
 });
@@ -505,7 +561,8 @@ test("expanded CJ program rows render bounded feed facts and replace only their 
     .mockReturnValueOnce(buildCJProgramFeedsData());
 
   renderCJProgramsRoute();
-  fireEvent.click(screen.getByRole("button", { name: "Show feeds for New Merchant" }));
+  const editor = openProgramEditor("New Merchant");
+  fireEvent.click(editor.getByRole("button", { name: "Show feeds for New Merchant" }));
 
   const feedList = screen.getByRole("list", { name: "Feeds for New Merchant" });
 
@@ -674,6 +731,15 @@ function renderCJProgramsRoute() {
 
 function rowFor(name: string) {
   return within(rowElementFor(name));
+}
+
+function openProgramEditor(name: string) {
+  fireEvent.click(screen.getByRole("button", { name: `Edit program ${name}` }));
+  return programEditorFor(name);
+}
+
+function programEditorFor(name: string) {
+  return within(screen.getByRole("region", { name: `Edit ${name}` }));
 }
 
 function rowElementFor(name: string) {
