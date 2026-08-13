@@ -19,6 +19,7 @@ export type PriceHistoryChartDatum = {
 export type PriceSeriesChartDatum = PriceHistoryChartDatum & {
   observedExact: string;
   pointColor?: string;
+  tooltipLabel: string;
 };
 
 export type PriceSeriesChartSeries = {
@@ -158,6 +159,7 @@ function createPriceSeriesDefinition(series: readonly PreparedPriceSeries[]) {
     tooltip: {
       use: tooltip,
       items: [
+        { channel: "y", label: "Series", text: (point) => point.datum.tooltipLabel },
         { channel: "y", label: "Price", text: (point) => point.datum.priceText },
         { channel: "x", label: "Observed", text: (point) => point.datum.observedExact },
       ],

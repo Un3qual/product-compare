@@ -8,6 +8,7 @@ import { SpecificationFilterDrawer } from "./SpecificationFilterDrawer";
 import {
   catalogPathForSpecSelections,
   readSpecFilterDraft,
+  reconcileSpecFilterSelections,
   writeSpecFilterDraft,
   type SpecFilterSelection,
 } from "./spec-filter-selection";
@@ -85,8 +86,21 @@ export function ProductSpecifications({
 
   useEffect(() => {
     const storage = availableSessionStorage();
-    setSelections(storage ? readSpecFilterDraft(storage, productId) : []);
-  }, [productId]);
+    if (!storage) {
+      setSelections([]);
+      return;
+    }
+
+    const currentSelections = attributes.flatMap((attribute) => {
+      const selection = selectionFromAttribute(attribute);
+      return selection ? [selection] : [];
+    });
+    const restored = readSpecFilterDraft(storage, productId);
+    const reconciled = reconcileSpecFilterSelections(restored, currentSelections);
+
+    setSelections(reconciled);
+    writeSpecFilterDraft(storage, productId, reconciled);
+  }, [attributes, productId]);
 
   const updateSelections = (nextSelections: SpecFilterSelection[]) => {
     setSelections(nextSelections);

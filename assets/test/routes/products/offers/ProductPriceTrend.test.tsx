@@ -54,6 +54,7 @@ test("switches between lowest, average, and merchant trend modes without hiding 
   render(<ProductPriceTrend series={series} />);
 
   expect(screen.getByRole("heading", { name: "Price trend" })).toBeVisible();
+  expect(screen.getByRole("group", { name: "Price trend view" })).toBeVisible();
   expect(screen.getByRole("button", { name: "Lowest" })).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByRole("table", { name: "Lowest USD price trend data" })).toBeInTheDocument();
   expect(screen.getAllByText("Alpha Market")).not.toHaveLength(0);
@@ -122,12 +123,68 @@ test("splits merchant lines when availability is interrupted", () => {
   expect(merchantSeries.filter(({ label }) => label === "Alpha Market")).toEqual([
     expect.objectContaining({
       id: "offer-alpha",
-      rows: [expect.objectContaining({ observedAt: "2026-08-09T23:59:59Z" })],
+      rows: [
+        expect.objectContaining({
+          observedAt: "2026-08-09T23:59:59Z",
+          tooltipLabel: "Alpha Market",
+        }),
+      ],
     }),
     expect.objectContaining({
       id: "offer-alpha-1",
-      rows: [expect.objectContaining({ observedAt: "2026-08-11T23:59:59Z" })],
+      rows: [
+        expect.objectContaining({
+          observedAt: "2026-08-11T23:59:59Z",
+          tooltipLabel: "Alpha Market",
+        }),
+      ],
     }),
   ]);
   expect(merchantSeries.filter(({ label }) => label === "Beta Market")).toHaveLength(1);
+});
+
+test.each(["lowest", "average"] as const)(
+  "splits %s lines when every merchant is unavailable for a day",
+  (mode) => {
+    const chartSeries = productPriceChartSeries(
+      {
+        currency: "USD",
+        merchants: [
+          { id: "merchant-alpha", merchantProductId: "offer-alpha", name: "Alpha Market" },
+        ],
+        points: [
+          {
+            averagePrice: "100",
+            lowestMerchantProductId: "offer-alpha",
+            lowestPrice: "100",
+            merchantPrices: [{ merchantProductId: "offer-alpha", price: "100" }],
+            observedAt: "2026-08-09T23:59:59Z",
+          },
+          {
+            averagePrice: "90",
+            lowestMerchantProductId: "offer-alpha",
+            lowestPrice: "90",
+            merchantPrices: [{ merchantProductId: "offer-alpha", price: "90" }],
+            observedAt: "2026-08-11T23:59:59Z",
+          },
+        ],
+      },
+      mode,
+    );
+
+    expect(chartSeries).toHaveLength(2);
+    expect(chartSeries.map(({ rows }) => rows.map(({ observedAt }) => observedAt))).toEqual([
+      ["2026-08-09T23:59:59Z"],
+      ["2026-08-11T23:59:59Z"],
+    ]);
+  },
+);
+
+test("identifies the winning merchant in lowest-price chart data", () => {
+  const [lowestSeries] = productPriceChartSeries(series[1], "lowest");
+
+  expect(lowestSeries.rows.map(({ tooltipLabel }) => tooltipLabel)).toEqual([
+    "Alpha Market",
+    "Beta Market",
+  ]);
 });

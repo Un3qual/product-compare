@@ -194,6 +194,7 @@ const DETAIL_PRODUCT_WITH_CURRENT_PRICE: DetailProduct = {
           eligible: true,
           freshness: "FRESH",
           landedPrice: "199.99",
+          merchantName: "Acme",
           merchantProductId: "merchant-product-1",
           observedAt: "2026-06-01T00:00:00Z",
         },
@@ -747,7 +748,7 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(screen.getByText("Model DP-100")).toBeInTheDocument();
   const decisionSummary = screen.getByRole("region", { name: "Product decision summary" });
-  expect(within(decisionSummary).getByText("199.99 USD")).toBeInTheDocument();
+  expect(within(decisionSummary).getByText("199.99 USD at Acme")).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
   expect(screen.queryByText("detail-product")).not.toBeInTheDocument();
 
@@ -760,17 +761,71 @@ test("renders product detail and active offers from Relay route queries", () => 
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
-  expect(screen.getAllByText("199.99 USD")).toHaveLength(2);
+  expect(screen.getByText("199.99 USD")).toBeVisible();
   const priceObservedAt = screen.getAllByText("Price observed 2 hours ago", {
     selector: "time",
   })[0];
 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
-  expect(priceObservedAt).toHaveAttribute("title", "Jun 1, 2026, 12:00 AM UTC");
+  expect(priceObservedAt.closest("button")).toHaveAttribute("title", "Jun 1, 2026, 12:00 AM UTC");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     PRODUCT_QUERY_DESCRIPTOR,
   );
+});
+
+test("derives price freshness from the newest eligible offer across currencies", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    offerTruth: {
+      ...DETAIL_PRODUCT.offerTruth,
+      eligibleOfferCount: 2,
+      observedOfferCount: 2,
+      offerCount: 2,
+      currencySummaries: [
+        {
+          currency: "EUR",
+          eligibleOfferCount: 1,
+          bestOffer: {
+            eligible: true,
+            freshness: "FRESH",
+            landedPrice: "180",
+            merchantName: "Euro Shop",
+            merchantProductId: "merchant-product-euro",
+            observedAt: "2026-06-01T00:00:00Z",
+          },
+        },
+        {
+          currency: "USD",
+          eligibleOfferCount: 1,
+          bestOffer: {
+            eligible: true,
+            freshness: "FRESH",
+            landedPrice: "199.99",
+            merchantName: "Acme",
+            merchantProductId: "merchant-product-usd",
+            observedAt: "2026-06-01T01:00:00Z",
+          },
+        },
+      ],
+    },
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>,
+  );
+
+  const decisionSummary = screen.getByRole("region", { name: "Product decision summary" });
+  const freshness = within(decisionSummary).getByText("Observed 1 hour ago", { selector: "time" });
+
+  expect(freshness).toHaveAttribute("datetime", "2026-06-01T01:00:00Z");
 });
 
 test("loads bounded community data only when the Reviews & Q&A tab is opened", () => {

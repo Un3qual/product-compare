@@ -82,7 +82,7 @@ export function ProductDecisionHeader({ product }: { product: Product }) {
     )
     .slice(0, 4);
   const price = currentPrice(product.offerTruth.currencySummaries);
-  const freshestOffer = currentOffer(product.offerTruth.currencySummaries);
+  const freshestObservedAt = freshestOfferObservedAt(product.offerTruth.currencySummaries);
 
   return (
     <div {...props(styles.root)}>
@@ -103,11 +103,11 @@ export function ProductDecisionHeader({ product }: { product: Product }) {
         <div {...props(styles.fact, styles.borderedFact)}>
           <span {...props(styles.factLabel)}>Price freshness</span>
           <strong {...props(styles.factValue)}>
-            {freshestOffer?.observedAt ? (
+            {freshestObservedAt ? (
               <RelativeDateTime
                 prefix="Observed"
                 referenceTime={String(product.offerTruth.asOf)}
-                value={freshestOffer.observedAt}
+                value={freshestObservedAt}
               />
             ) : (
               "Unavailable"
@@ -135,11 +135,20 @@ function currentPrice(currencySummaries: Product["offerTruth"]["currencySummarie
   if (currencySummaries.length > 1) return `Prices in ${currencySummaries.length} currencies`;
 
   const [summary] = currencySummaries;
-  const price = summary.bestOffer?.landedPrice ?? null;
-  return price === null ? "No comparable price" : `${price} ${summary.currency}`;
+  const offer = summary.bestOffer;
+  return offer?.landedPrice
+    ? `${offer.landedPrice} ${summary.currency} at ${offer.merchantName}`
+    : "No comparable price";
 }
 
-function currentOffer(currencySummaries: Product["offerTruth"]["currencySummaries"]) {
-  if (currencySummaries.length !== 1) return null;
-  return currencySummaries[0].bestOffer;
+function freshestOfferObservedAt(currencySummaries: Product["offerTruth"]["currencySummaries"]) {
+  let freshest = "";
+
+  for (const { bestOffer } of currencySummaries) {
+    const observedAt = bestOffer?.observedAt;
+    if (!observedAt || !Number.isFinite(Date.parse(observedAt))) continue;
+    if (!freshest || Date.parse(observedAt) > Date.parse(freshest)) freshest = observedAt;
+  }
+
+  return freshest;
 }

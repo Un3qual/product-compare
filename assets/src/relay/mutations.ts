@@ -1,4 +1,4 @@
-import { useMutation, type UseMutationConfig } from "react-relay";
+import type { useMutation, UseMutationConfig } from "react-relay";
 import type { MutationParameters } from "relay-runtime";
 
 export type RouteMutationCommit<TMutation extends MutationParameters> = ReturnType<

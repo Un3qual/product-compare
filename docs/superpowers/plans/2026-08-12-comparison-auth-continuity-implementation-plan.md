@@ -25,6 +25,7 @@
 ### Task 1: Characterize comparison layout and guest intent continuity
 
 **Files:**
+
 - Modify: `assets/test/routes/compare/compare.route.test.tsx`
 - Modify: `assets/test/routes/compare/compare-save-feedback.test.tsx`
 - Create: `assets/test/routes/products/price-watch-auth-continuity.test.tsx`
@@ -34,6 +35,7 @@
 - Modify: `assets/tests/e2e/auth.spec.ts`
 
 **Interfaces:**
+
 - Produces: RED tests for wide toolbar, mode-tab placement, curated product summaries, no displayed slugs, modal focus/cancel, signed-in direct action, guest draft storage, safe return paths, expiry, login/register restoration, and no automatic submit.
 
 - [ ] **Step 1: Add comparison hierarchy RED assertions**
@@ -61,6 +63,7 @@
 ### Task 2: Implement the minimal pending-intent and modal boundary
 
 **Files:**
+
 - Create: `assets/src/routes/auth/continuity/pending-intent.ts`
 - Create: `assets/src/routes/auth/continuity/AuthRequiredDialog.tsx`
 - Create: `assets/src/routes/auth/continuity/useAuthenticatedIntent.ts`
@@ -70,6 +73,7 @@
 - Modify: `assets/test/routes/auth/continuity/**`
 
 **Interfaces:**
+
 - Produces: `PendingIntent = PriceWatchIntent | SaveComparisonIntent`, discriminated by `kind` and `version: 1` with `expiresAt`.
 - Produces: `writePendingIntent`, `readPendingIntent`, `consumePendingIntent`, and `safeRelativeReturnPath`; only this module reads untyped session storage.
 - Produces: `useAuthenticatedIntent({ viewer, intent, onAuthenticated })` returning `{ request, dialog }`; `request()` opens the modal for guests and calls `onAuthenticated()` for members.
@@ -99,6 +103,7 @@
 ### Task 3: Restore drafts after GraphQL login and registration
 
 **Files:**
+
 - Modify: `assets/src/routes/auth/LoginRoute.tsx`
 - Modify: `assets/src/routes/auth/RegisterRoute.tsx`
 - Modify: `assets/src/routes/auth/CredentialAuthForm.tsx`
@@ -109,6 +114,7 @@
 - Modify: `assets/test/routes/compare/compare-save-feedback.test.tsx`
 
 **Interfaces:**
+
 - Produces: successful auth navigation to `safeRelativeReturnPath(searchParams.get("returnTo")) ?? "/"`.
 - Produces: route-owned restoration notices with explicit `Create watch` or `Save comparison` submit buttons; restoration consumes the stored intent only after the route successfully adopts it.
 
@@ -137,6 +143,7 @@
 ### Task 4: Replace the comparison rail and parameter dump
 
 **Files:**
+
 - Create: `assets/src/routes/compare/live/ComparisonToolbar.tsx`
 - Create: `assets/src/routes/compare/live/ComparisonModeTabs.tsx`
 - Create: `assets/src/routes/compare/live/ProductDecisionSummaries.tsx`
@@ -150,6 +157,7 @@
 - Modify: focused comparison tests
 
 **Interfaces:**
+
 - `ComparisonToolbar` owns save/share/remove/add controls and wraps responsively without squeezing labels.
 - `ComparisonModeTabs` owns URL navigation for `shared | differences | all` and renders immediately above `SpecificationMatrix`.
 - `ProductDecisionSummaries` consumes the existing typed comparison product projection and renders curated identity, comparable price context, freshness, and key specs only.
@@ -179,6 +187,7 @@
 ### Task 5: Reorganize compare/account/auth code and use generated Relay types
 
 **Files:**
+
 - Organize under: `assets/src/routes/compare/live`, `picker`, `sharing`, `saved`, and `shared`
 - Organize API tokens under: `assets/src/routes/account/api-tokens/create`, `rows`, `rotation`, and `revocation`
 - Organize alerts under: `assets/src/routes/account/alerts/watches` and `alert-rows`
@@ -187,6 +196,7 @@
 - Modify generated-type consumers throughout these capabilities
 
 **Interfaces:**
+
 - Retains substantial specification matrix comparison, saved-view state, URL serialization, and pagination algorithms under responsibility names.
 - Removes manual saved-comparison, sharing, alert, and API-token mutation payload/input types; uses indexed generated operation types.
 - Removes `priceWatchRuleTypeFromValue` and the manual price-watch enum/input/payload types in favor of the generated create-watch mutation exports.
@@ -225,12 +235,14 @@
 ### Task 6: Verify and close comparison and auth continuity
 
 **Files:**
+
 - Modify: `assets/tests/e2e/production-ui-compare-return.spec.ts`
 - Modify: `assets/tests/e2e/auth.spec.ts`
 - Update after inspection: corresponding snapshots
 - Modify: `docs/work/comparison-auth-continuity.md`
 
 **Interfaces:**
+
 - Produces: deterministic guest watch and save flows through both login and registration, cancellation/focus evidence, responsive comparison toolbar/matrix evidence, accessibility, and no automatic mutation.
 
 - [ ] **Step 1: Run browser flows at three widths**

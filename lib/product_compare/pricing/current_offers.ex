@@ -28,6 +28,8 @@ defmodule ProductCompare.Pricing.CurrentOffers do
           asc: merchant_product.product_id,
           asc: merchant_product.id
         )
+        |> join(:inner, [merchant_product], merchant in assoc(merchant_product, :merchant))
+        |> preload([_merchant_product, merchant], merchant: merchant)
         |> Repo.all()
 
       price_points_by_merchant_product =
@@ -48,6 +50,7 @@ defmodule ProductCompare.Pricing.CurrentOffers do
               now,
               opts
             )
+            |> Map.put(:merchant_name, merchant_product.merchant.name)
           end)
 
         {product_id, OfferTruth.summarize_product(offers, now, opts)}

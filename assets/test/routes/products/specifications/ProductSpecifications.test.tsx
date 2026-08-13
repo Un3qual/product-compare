@@ -1,6 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { ProductSpecifications } from "../../../../src/routes/products/specifications/ProductSpecifications";
+import {
+  readSpecFilterDraft,
+  writeSpecFilterDraft,
+} from "../../../../src/routes/products/specifications/spec-filter-selection";
 
 const attributes = [
   {
@@ -92,4 +96,49 @@ test("keeps selections in memory when session storage access is blocked", async 
   } finally {
     storage.mockRestore();
   }
+});
+
+test("drops restored filters whose current specification value has changed", async () => {
+  writeSpecFilterDraft(sessionStorage, "product-tv", [
+    {
+      attributeId: "attribute-panel",
+      code: "panel-technology",
+      displayName: "Old panel technology",
+      kind: "enum",
+      mode: "same",
+      value: "enum-lcd",
+    },
+    {
+      attributeId: "attribute-refresh",
+      code: "refresh-rate",
+      displayName: "Old refresh label",
+      kind: "numeric",
+      mode: "at_least",
+      unitSymbol: "Hz",
+      value: "120",
+    },
+  ]);
+
+  render(
+    <ProductSpecifications
+      attributes={attributes}
+      productId="product-tv"
+      selectedCompareSlugs={[]}
+    />,
+  );
+
+  expect(await screen.findByRole("button", { name: "Edit 1 selected spec" })).toBeVisible();
+  expect(screen.getByRole("checkbox", { name: /^Select Panel technology/ })).not.toBeChecked();
+  expect(screen.getByRole("checkbox", { name: /^Select Refresh rate/ })).toBeChecked();
+  expect(readSpecFilterDraft(sessionStorage, "product-tv")).toEqual([
+    {
+      attributeId: "attribute-refresh",
+      code: "refresh-rate",
+      displayName: "Refresh rate",
+      kind: "numeric",
+      mode: "at_least",
+      unitSymbol: "Hz",
+      value: "120",
+    },
+  ]);
 });

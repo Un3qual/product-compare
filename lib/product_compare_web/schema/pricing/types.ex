@@ -185,6 +185,7 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
       end)
     end
 
+    field :merchant_name, non_null(:string)
     field :currency, non_null(:string)
     field :item_price, :decimal
     field :shipping, :decimal

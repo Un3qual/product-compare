@@ -30,6 +30,7 @@ export function productPriceChartSeries(
   series: ProductPriceTrendCurrency,
   mode: ProductPriceTrendMode,
 ): PriceSeriesChartSeries[] {
+  const merchantNames = merchantNameByProductId(series);
   const colors = new Map(
     series.merchants.map((merchant, index) => [
       merchant.merchantProductId,
@@ -49,27 +50,32 @@ export function productPriceChartSeries(
   }
 
   const average = mode === "average";
-  return [
-    {
-      color: tokens.actionAccent,
-      id: mode,
-      label: average ? "Average price" : "Lowest price",
-      rows: series.points.flatMap((point) => {
-        const rows = chartRow(
-          `${mode}-${String(point.observedAt)}`,
-          point.observedAt,
-          average ? point.averagePrice : point.lowestPrice,
-          series.currency,
-        );
+  const label = average ? "Average price" : "Lowest price";
+  const segments = chartRowSegments(series, (point) =>
+    chartRow(
+      `${mode}-${String(point.observedAt)}`,
+      point.observedAt,
+      average ? point.averagePrice : point.lowestPrice,
+      series.currency,
+      average
+        ? "Average across merchants"
+        : (merchantNames.get(point.lowestMerchantProductId) ?? "Unknown merchant"),
+    ).map((row) =>
+      average
+        ? row
+        : {
+            ...row,
+            pointColor: colors.get(point.lowestMerchantProductId) ?? tokens.actionAccent,
+          },
+    ),
+  );
 
-        if (average) return rows;
-        return rows.map((row) => ({
-          ...row,
-          pointColor: colors.get(point.lowestMerchantProductId) ?? tokens.actionAccent,
-        }));
-      }),
-    },
-  ];
+  return segments.map((rows, index) => ({
+    color: tokens.actionAccent,
+    id: index === 0 ? mode : `${mode}-${index}`,
+    label,
+    rows,
+  }));
 }
 
 export function merchantNameByProductId(series: ProductPriceTrendCurrency) {
@@ -82,41 +88,20 @@ function merchantChartSegments(
   label: string,
   color: string,
 ) {
-  const segments: Array<PriceSeriesChartSeries["rows"][number][]> = [];
-  let rows: PriceSeriesChartSeries["rows"][number][] = [];
-  let previousDay: number | null = null;
-
-  const finishSegment = () => {
-    if (rows.length > 0) segments.push(rows);
-    rows = [];
-  };
-
-  for (const point of series.points) {
-    const day = utcDay(point.observedAt);
+  const segments = chartRowSegments(series, (point) => {
     const merchantPrice = point.merchantPrices.find(
       (price) => price.merchantProductId === merchantProductId,
     );
+    if (!merchantPrice) return [];
 
-    if (!merchantPrice || (previousDay !== null && day !== previousDay + 1)) {
-      finishSegment();
-    }
-
-    if (merchantPrice) {
-      const pointRows = chartRow(
-        `${merchantProductId}-${String(point.observedAt)}`,
-        point.observedAt,
-        merchantPrice.price,
-        series.currency,
-      );
-
-      if (pointRows.length === 0) finishSegment();
-      else rows.push(...pointRows);
-    }
-
-    previousDay = day;
-  }
-
-  finishSegment();
+    return chartRow(
+      `${merchantProductId}-${String(point.observedAt)}`,
+      point.observedAt,
+      merchantPrice.price,
+      series.currency,
+      label,
+    );
+  });
 
   return segments.map((segmentRows, index) => ({
     color,
@@ -124,6 +109,33 @@ function merchantChartSegments(
     label,
     rows: segmentRows,
   }));
+}
+
+function chartRowSegments(
+  series: ProductPriceTrendCurrency,
+  rowsForPoint: (
+    point: ProductPriceTrendCurrency["points"][number],
+  ) => PriceSeriesChartSeries["rows"][number][],
+) {
+  const segments: Array<PriceSeriesChartSeries["rows"][number][]> = [];
+  let rows: PriceSeriesChartSeries["rows"][number][] = [];
+  let previousDay: number | null = null;
+
+  for (const point of series.points) {
+    const day = utcDay(point.observedAt);
+    const pointRows = rowsForPoint(point);
+
+    if (pointRows.length === 0 || (previousDay !== null && day !== previousDay + 1)) {
+      if (rows.length > 0) segments.push(rows);
+      rows = [];
+    }
+
+    rows.push(...pointRows);
+    previousDay = day;
+  }
+
+  if (rows.length > 0) segments.push(rows);
+  return segments;
 }
 
 function utcDay(value: string) {
@@ -134,7 +146,13 @@ function utcDay(value: string) {
   return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000;
 }
 
-function chartRow(id: string, observedAtValue: string, priceValue: string, currency: string) {
+function chartRow(
+  id: string,
+  observedAtValue: string,
+  priceValue: string,
+  currency: string,
+  tooltipLabel: string,
+) {
   const observedDate = shortDate(observedAtValue);
   const observedExact = exactDateTime(observedAtValue);
   const price = decimalStringToNumber(priceValue);
@@ -148,6 +166,7 @@ function chartRow(id: string, observedAtValue: string, priceValue: string, curre
       observedExact,
       priceText: `${String(priceValue)} ${currency}`,
       priceValue: price,
+      tooltipLabel,
     },
   ];
 }

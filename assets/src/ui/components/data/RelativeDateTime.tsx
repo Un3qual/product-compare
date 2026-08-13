@@ -8,10 +8,16 @@ const styles = create({
     display: "inline-flex",
     position: "relative",
   },
-  time: {
+  trigger: {
+    backgroundColor: "transparent",
+    borderWidth: 0,
     borderRadius: "0.2rem",
+    color: "inherit",
+    cursor: "help",
+    font: "inherit",
     outline: { ":focus-visible": `2px solid ${tokens.actionAccent}` },
     outlineOffset: "2px",
+    padding: 0,
   },
   tooltip: {
     backgroundColor: tokens.text,
@@ -45,25 +51,25 @@ export function RelativeDateTime({
 
   if (!exact || !relative) return <span>Unavailable</span>;
 
+  const label = prefix ? `${prefix} ${relative}` : relative;
+
   return (
-    <span
-      onBlur={() => setExactVisible(false)}
-      onFocus={() => setExactVisible(true)}
-      onMouseEnter={() => setExactVisible(true)}
-      onMouseLeave={() => setExactVisible(false)}
-      {...props(styles.root)}
-    >
-      <time
+    <span {...props(styles.root)}>
+      <button
         aria-describedby={exactVisible ? tooltipId : undefined}
-        dateTime={value}
-        onClick={() => setExactVisible((visible) => !visible)}
-        tabIndex={0}
+        onBlur={() => setExactVisible(false)}
+        onClick={() => setExactVisible(true)}
+        onFocus={() => setExactVisible(true)}
+        onMouseEnter={() => setExactVisible(true)}
+        onMouseLeave={(event) => {
+          if (document.activeElement !== event.currentTarget) setExactVisible(false);
+        }}
         title={exact}
-        {...props(styles.time)}
+        type="button"
+        {...props(styles.trigger)}
       >
-        {prefix ? `${prefix} ` : null}
-        {relative}
-      </time>
+        <time dateTime={value}>{label}</time>
+      </button>
       {exactVisible ? (
         <span id={tooltipId} role="tooltip" {...props(styles.tooltip)}>
           {exact}

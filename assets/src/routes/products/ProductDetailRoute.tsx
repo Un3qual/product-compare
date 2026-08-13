@@ -82,6 +82,7 @@ const productDetailRouteQuery = graphql`
           eligibleOfferCount
           bestOffer {
             merchantProductId
+            merchantName
             landedPrice
             observedAt
             freshness

@@ -47,6 +47,22 @@ export function writeSpecFilterDraft(
   }
 }
 
+export function reconcileSpecFilterSelections(
+  restored: readonly SpecFilterSelection[],
+  current: readonly SpecFilterSelection[],
+) {
+  const restoredByAttributeId = new Map(
+    restored.map((selection) => [selection.attributeId, selection]),
+  );
+
+  return current.flatMap((selection) => {
+    const stored = restoredByAttributeId.get(selection.attributeId);
+    if (!stored || !sameSelectionValue(stored, selection)) return [];
+
+    return [selection.kind === "numeric" ? { ...selection, mode: stored.mode } : selection];
+  });
+}
+
 export function catalogPathForSpecSelections(
   selections: readonly SpecFilterSelection[],
   selectedCompareSlugs: readonly string[],
@@ -81,6 +97,13 @@ function numericCatalogFilter(selection: SpecFilterSelection) {
         : { attributeId: selection.attributeId, max: bound };
 
   return [filter];
+}
+
+function sameSelectionValue(left: SpecFilterSelection, right: SpecFilterSelection) {
+  if (left.kind === "boolean" && right.kind === "boolean") return left.value === right.value;
+  if (left.kind === "enum" && right.kind === "enum") return left.value === right.value;
+  if (left.kind === "numeric" && right.kind === "numeric") return left.value === right.value;
+  return false;
 }
 
 function validDraft(

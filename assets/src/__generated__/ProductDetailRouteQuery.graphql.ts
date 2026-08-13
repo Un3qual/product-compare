@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<eac455b2f13803e4629125625ac9c391>>
+ * @generated SignedSource<<761b3b7833267b36e167ace569a913ce>>
  * @lightSyntaxTransform
  */
 
@@ -56,6 +56,7 @@ export type ProductDetailRouteQuery$data = {
           readonly eligible: boolean;
           readonly freshness: OfferFreshness;
           readonly landedPrice: string | null;
+          readonly merchantName: string;
           readonly merchantProductId: string;
           readonly observedAt: string | null;
         } | null;
@@ -392,6 +393,13 @@ v18 = {
           "plural": false,
           "selections": [
             (v16/*:: as any*/),
+            {
+              "alias": null,
+              "args": null,
+              "kind": "ScalarField",
+              "name": "merchantName",
+              "storageKey": null
+            },
             {
               "alias": null,
               "args": null,
@@ -843,16 +851,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "d71c393d3757c8b12edd059ef07753ee",
+    "cacheID": "d053debaa539349d7212017901d354e1",
     "id": null,
     "metadata": {},
     "name": "ProductDetailRouteQuery",
     "operationKind": "query",
-    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    modelNumber\n    description\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    offerTruth {\n      asOf\n      offerCount\n      observedOfferCount\n      eligibleOfferCount\n      currencySummaries {\n        currency\n        eligibleOfferCount\n        bestOffer {\n          merchantProductId\n          landedPrice\n          observedAt\n          freshness\n          eligible\n        }\n      }\n    }\n    priceHistory90d {\n      currency\n      merchants {\n        id\n        name\n        merchantProductId\n      }\n      points {\n        observedAt\n        lowestPrice\n        averagePrice\n        lowestMerchantProductId\n        merchantPrices {\n          merchantProductId\n          price\n        }\n      }\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n      ...ProductOfferPanel_connection\n    }\n  }\n}\n\nfragment ProductOfferPanel_connection on MerchantProductConnection {\n  edges {\n    node {\n      id\n      url\n      currency\n      merchant {\n        id\n        name\n      }\n      latestPrice {\n        id\n        price\n        observedAt\n      }\n      activeCoupons(first: 2) {\n        edges {\n          cursor\n          node {\n            code\n            description\n            discountType\n            discountValue\n            currency\n            validTo\n            terms\n          }\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n      priceHistory(first: 12) {\n        edges {\n          node {\n            id\n            price\n            observedAt\n          }\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n    }\n  }\n  pageInfo {\n    endCursor\n    hasNextPage\n  }\n}\n"
+    "text": "query ProductDetailRouteQuery(\n  $slug: String!\n  $offerFirst: Int!\n  $offersAfter: String\n) {\n  product(slug: $slug) {\n    id\n    name\n    slug\n    modelNumber\n    description\n    seo {\n      title\n      description\n      canonicalPath\n      indexable\n      imageUrl\n      structuredData\n    }\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    offerTruth {\n      asOf\n      offerCount\n      observedOfferCount\n      eligibleOfferCount\n      currencySummaries {\n        currency\n        eligibleOfferCount\n        bestOffer {\n          merchantProductId\n          merchantName\n          landedPrice\n          observedAt\n          freshness\n          eligible\n        }\n      }\n    }\n    priceHistory90d {\n      currency\n      merchants {\n        id\n        name\n        merchantProductId\n      }\n      points {\n        observedAt\n        lowestPrice\n        averagePrice\n        lowestMerchantProductId\n        merchantPrices {\n          merchantProductId\n          price\n        }\n      }\n    }\n    merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {\n      edges {\n        cursor\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n      ...ProductOfferPanel_connection\n    }\n  }\n}\n\nfragment ProductOfferPanel_connection on MerchantProductConnection {\n  edges {\n    node {\n      id\n      url\n      currency\n      merchant {\n        id\n        name\n      }\n      latestPrice {\n        id\n        price\n        observedAt\n      }\n      activeCoupons(first: 2) {\n        edges {\n          cursor\n          node {\n            code\n            description\n            discountType\n            discountValue\n            currency\n            validTo\n            terms\n          }\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n      priceHistory(first: 12) {\n        edges {\n          node {\n            id\n            price\n            observedAt\n          }\n        }\n        pageInfo {\n          hasNextPage\n        }\n      }\n    }\n  }\n  pageInfo {\n    endCursor\n    hasNextPage\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "d9ab7aeea5977bf4abdcc005bb52ef1f";
+(node as any).hash = "c2e7b4cfa63902f4f7a73d59c0ad3caa";
 
 export default node;

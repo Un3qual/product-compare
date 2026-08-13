@@ -22,6 +22,7 @@
 ### Task 1: Characterize metadata, sitemap, router, and redirect behavior
 
 **Files:**
+
 - Modify: `assets/test/entry.server.test.tsx`
 - Modify: `assets/test/entry.server.error-handling.test.tsx`
 - Modify: `assets/test/router.test.tsx`
@@ -30,6 +31,7 @@
 - Modify: `test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
 
 **Interfaces:**
+
 - Produces: characterization for one title, one canonical link, one robots tag, deduplicated Open Graph/Twitter tags, safe JSON-LD, unchanged SSR response propagation, parseable sitemap documents, and both redirect lifecycles.
 
 - [x] **Step 1: Add failing metadata and hydration assertions**
@@ -61,6 +63,7 @@
 ### Task 2: Make Unhead the SSR and hydration metadata owner
 
 **Files:**
+
 - Modify: `assets/package.json`
 - Modify: `assets/pnpm-lock.yaml`
 - Create: `assets/src/frontend/head/RouteHead.tsx`
@@ -76,6 +79,7 @@
 - Delete: `assets/test/routes/route-metadata-data.test.ts`
 
 **Interfaces:**
+
 - Produces: `RouteHeadInput` with `title`, `description`, optional `canonicalUrl`, `imageUrl`, `indexable`, and `structuredData: Record<string, unknown> | readonly Record<string, unknown>[]`.
 - Produces: `RouteHead({ metadata }: { metadata: RouteHeadInput }): null`, implemented with `useSeoMeta` plus a safe JSON-LD head entry.
 - Produces: one client `createHead()` and one request-scoped server `createHead()` supplied through `UnheadProvider`; the server returns `head.render()` output for document insertion.
@@ -116,6 +120,7 @@
 ### Task 3: Encode sitemap XML with Saxy
 
 **Files:**
+
 - Modify: `mix.exs`
 - Modify: `mix.lock`
 - Create: `lib/product_compare_web/seo/sitemap_xml.ex`
@@ -123,6 +128,7 @@
 - Modify: `test/product_compare_web/controllers/seo_controller_test.exs`
 
 **Interfaces:**
+
 - Produces: `ProductCompareWeb.Seo.SitemapXml.index([String.t()]) :: iodata()`.
 - Produces: `ProductCompareWeb.Seo.SitemapXml.url_set([%{path: String.t(), last_modified: DateTime.t() | NaiveDateTime.t()}], String.t()) :: iodata()`.
 - Consumes: absolute URLs assembled by the controller and existing `Seo.sitemap_entries/1`; Saxy alone performs XML escaping/encoding.
@@ -158,6 +164,7 @@
 ### Task 4: Split router and SSR responsibilities and simplify root fallback
 
 **Files:**
+
 - Create: `assets/src/frontend/ssr/request.ts`
 - Create: `assets/src/frontend/ssr/stream.ts`
 - Create: `assets/src/frontend/ssr/response.ts`
@@ -176,6 +183,7 @@
 - Modify: `assets/test/router.test.tsx`
 
 **Interfaces:**
+
 - Produces: `shopperRoutes`, `accountRoutes`, and `operatorRoutes` as explicit `RouteObject[]`; no group barrel.
 - Produces: `withLazyRouteImportRecovery(load)` in `routing/lazy-route.tsx`.
 - Produces: `createServerRequest`, `waitForAllReady`, `responseHeadersFromContext`, and `insertDocumentBootstrap` under the SSR leaf barrel.
@@ -215,11 +223,13 @@
 ### Task 5: Rename redirect actions after their behavior
 
 **Files:**
+
 - Modify: `lib/product_compare_web/controllers/commerce_redirect_controller.ex`
 - Modify: `lib/product_compare_web/router.ex`
 - Modify: `test/product_compare_web/controllers/commerce_redirect_controller_test.exs`
 
 **Interfaces:**
+
 - Renames: controller `show/2` to `redirect_tracked_click/2`; `merchant_product/2` to `track_merchant_product_click/2`. Paths stay `/r/:click_id` and `/r/merchant-product`.
 
 - [x] **Step 1: Rename controller actions and routes**
@@ -244,11 +254,13 @@
 ### Task 6: Verify and close the foundation outcome
 
 **Files:**
+
 - Create: `assets/tests/e2e/product-experience-foundations.spec.ts`
 - Create/update after inspection: `assets/tests/e2e/product-experience-foundations.spec.ts-snapshots/**`
 - Modify: `docs/work/product-experience-foundations.md`
 
 **Interfaces:**
+
 - Produces: deterministic SSR/hydration, metadata, navigation, and no-overflow evidence at 1440×1000, 900×1100, and 390×844.
 
 - [x] **Step 1: Run browser acceptance without snapshot updates**

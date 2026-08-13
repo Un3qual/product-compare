@@ -1,6 +1,7 @@
 import {
   catalogPathForSpecSelections,
   readSpecFilterDraft,
+  reconcileSpecFilterSelections,
   writeSpecFilterDraft,
   type SpecFilterSelection,
 } from "../../../../src/routes/products/specifications/spec-filter-selection";
@@ -115,4 +116,51 @@ test("maps Same numeric selection to both inclusive bounds", () => {
 
   expect(search.get("numeric.attribute-weight.min")).toBe("2.5");
   expect(search.get("numeric.attribute-weight.max")).toBe("2.5");
+});
+
+test("reconciles restored filters with current attribute values and metadata", () => {
+  expect(
+    reconcileSpecFilterSelections(
+      [
+        ...selections,
+        {
+          attributeId: "attribute-removed",
+          code: "removed",
+          displayName: "Removed attribute",
+          kind: "boolean",
+          mode: "same",
+          value: true,
+        },
+      ],
+      [
+        {
+          attributeId: "attribute-panel",
+          code: "panel-technology",
+          displayName: "Panel technology",
+          kind: "enum",
+          mode: "same",
+          value: "enum-mini-led",
+        },
+        {
+          attributeId: "attribute-refresh",
+          code: "refresh-rate",
+          displayName: "Native refresh rate",
+          kind: "numeric",
+          mode: "same",
+          unitSymbol: "Hz",
+          value: "120",
+        },
+      ],
+    ),
+  ).toEqual([
+    {
+      attributeId: "attribute-refresh",
+      code: "refresh-rate",
+      displayName: "Native refresh rate",
+      kind: "numeric",
+      mode: "at_least",
+      unitSymbol: "Hz",
+      value: "120",
+    },
+  ]);
 });

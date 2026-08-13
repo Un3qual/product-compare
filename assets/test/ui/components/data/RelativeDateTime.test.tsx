@@ -1,7 +1,10 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { RelativeDateTime } from "../../../../src/ui/components/data/RelativeDateTime";
 
-test("shows relative copy while exposing the exact timestamp", () => {
+test("shows relative copy and exposes the exact timestamp to keyboard focus", async () => {
+  const user = userEvent.setup();
+
   render(
     <RelativeDateTime
       prefix="Checked"
@@ -11,10 +14,16 @@ test("shows relative copy while exposing the exact timestamp", () => {
   );
 
   const time = screen.getByText("Checked 2 hours ago", { selector: "time" });
+  const trigger = screen.getByRole("button", { name: "Checked 2 hours ago" });
 
   expect(time).toHaveAttribute("datetime", "2026-08-12T10:00:00Z");
-  expect(time).toHaveAttribute("title", "Aug 12, 2026, 10:00 AM UTC");
-  expect(time).toHaveAttribute("tabindex", "0");
+  expect(trigger).toHaveAttribute("title", "Aug 12, 2026, 10:00 AM UTC");
+  expect(time).not.toHaveAttribute("tabindex");
+
+  await user.tab();
+
+  expect(trigger).toHaveFocus();
+  expect(screen.getByRole("tooltip")).toHaveTextContent("Aug 12, 2026, 10:00 AM UTC");
 });
 
 test("uses a truthful fallback for invalid values", () => {

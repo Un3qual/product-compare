@@ -1120,6 +1120,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                          "eligibleOfferCount" => 2,
                          "bestOffer" => %{
                            "merchantProductId" => best_offer_id,
+                           "merchantName" => best_offer_merchant_name,
                            "itemPrice" => "60",
                            "shipping" => "0",
                            "landedPrice" => "60",
@@ -1166,6 +1167,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                })
 
       assert best_offer_id == relay_id(:merchant_product, higher_item_offer.id)
+      assert best_offer_merchant_name == higher_item_merchant.name
       assert latest_price_id == relay_id(:price_point, higher_item_price.id)
       assert source_artifact_id == relay_id(:source_artifact, artifact.id)
       assert latest_source_artifact_id == relay_id(:source_artifact, artifact.id)
@@ -1481,6 +1483,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
             eligibleOfferCount
             bestOffer {
               merchantProductId
+              merchantName
               itemPrice
               shipping
               landedPrice

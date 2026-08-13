@@ -103,7 +103,7 @@ export function ProductPriceTrend({ series }: { series: readonly ProductPriceTre
         </div>
         {selectedSeries ? (
           <div {...props(styles.controls)}>
-            <div aria-label="Price trend view" {...props(styles.modes)}>
+            <div aria-label="Price trend view" role="group" {...props(styles.modes)}>
               {PRODUCT_PRICE_TREND_MODES.map((item) => (
                 <Button
                   aria-pressed={mode === item.value}
