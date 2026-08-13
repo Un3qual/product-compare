@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<b3445053c63deb5ef034fcfc9c65f711>>
+ * @generated SignedSource<<ccafd95645eeda48855c4bcd084955a5>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -95,20 +94,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ComparisonSharingOperationsRevokeComparisonSnapshotMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ComparisonSharingOperationsRevokeComparisonSnapshotMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "3e8973de5a4b64cf97fcfd1788710a6c",

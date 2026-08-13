@@ -38,7 +38,7 @@ export function getMerchantDetailViewData(
       { label: "Recently checked offers", value: detailSummary.freshOfferCount },
     ],
     observation: {
-      lastObservedAt: detailSummary.lastObservedAt ?? null,
+      lastObservedAt: detailSummary.lastObservedAt,
       leadCopy: detailSummary.lastObservedAt
         ? "Prices last checked"
         : "No offer prices have been checked yet.",

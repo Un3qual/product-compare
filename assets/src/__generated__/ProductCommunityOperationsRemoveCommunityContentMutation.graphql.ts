@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<2b4c0f63502f403350cf7717583787fe>>
+ * @generated SignedSource<<799513778257a72b978ed01e2e48dcd3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -100,20 +99,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityOperationsRemoveCommunityContentMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductCommunityOperationsRemoveCommunityContentMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "aac879b07bd8cc534a2d32d8adfb6306",

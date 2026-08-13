@@ -1,11 +1,10 @@
 import { useMatches } from "react-router-dom";
-import { resolveRouteDocumentMetadata, RouteHead, type RouteMetadataMatch } from "../frontend/head";
+import { resolveRouteDocumentMetadata, RouteHead } from "../frontend/head";
 
 export type { RouteDocumentMetadata, RouteMetadataHandle } from "../frontend/head";
 
 export function RouteMetadata() {
-  const matches = useMatches() as ReadonlyArray<RouteMetadataMatch>;
-  const metadata = resolveRouteDocumentMetadata(matches);
+  const metadata = resolveRouteDocumentMetadata(useMatches());
 
   return metadata ? <RouteHead metadata={metadata} /> : null;
 }

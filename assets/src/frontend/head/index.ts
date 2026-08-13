@@ -6,7 +6,6 @@ export {
   routeMetadata,
   type RouteDocumentMetadata,
   type RouteMetadataHandle,
-  type RouteMetadataMatch,
   type RouteMetadataTagPolicy,
   type StructuredData,
 } from "./route-head";

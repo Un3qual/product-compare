@@ -64,7 +64,7 @@ export function offerDiscoverySelectedProductContext(
   }
 
   return {
-    brand: node.brand ?? null,
+    brand: node.brand,
     id: node.id,
     name: node.name,
     slug: node.slug,

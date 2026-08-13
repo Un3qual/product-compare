@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<3ecda5c18fa0a056e44bb1eb0519174c>>
+ * @generated SignedSource<<d6776727da27511517c0971675350eb3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -116,20 +115,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertOperationsMarkAlertReadMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertOperationsMarkAlertReadMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "48bf899b13001c9e21dc4e8fbf098a7b",

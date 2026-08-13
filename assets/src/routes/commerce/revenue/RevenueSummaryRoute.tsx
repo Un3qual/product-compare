@@ -119,7 +119,7 @@ function preloadAttributionLedger(
 }
 
 export function RevenueSummaryRoute() {
-  const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
+  const loaderData = useLoaderData<typeof revenueSummaryLoader>();
   const { activeFilters, datePresetLinks } = buildRevenueSummaryControls(
     loaderData.filters,
     useHydratedLocalDate(),

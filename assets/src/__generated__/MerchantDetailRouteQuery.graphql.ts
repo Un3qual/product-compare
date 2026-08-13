@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<78102406e399f6d17994f532f891ddc0>>
+ * @generated SignedSource<<a30a22fbcb16864f930196f5a04ef04c>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -122,9 +121,9 @@ v6 = [
     "name": "merchant",
     "plural": false,
     "selections": [
-      (v3/*: any*/),
-      (v4/*: any*/),
-      (v5/*: any*/),
+      (v3/*:: as any*/),
+      (v4/*:: as any*/),
+      (v5/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -294,7 +293,7 @@ v6 = [
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
+                  (v3/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -310,9 +309,9 @@ v6 = [
                     "name": "product",
                     "plural": false,
                     "selections": [
-                      (v3/*: any*/),
-                      (v4/*: any*/),
-                      (v5/*: any*/)
+                      (v3/*:: as any*/),
+                      (v4/*:: as any*/),
+                      (v5/*:: as any*/)
                     ],
                     "storageKey": null
                   },
@@ -324,7 +323,7 @@ v6 = [
                     "name": "latestPrice",
                     "plural": false,
                     "selections": [
-                      (v3/*: any*/),
+                      (v3/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -397,27 +396,27 @@ v6 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "MerchantDetailRouteQuery",
-    "selections": (v6/*: any*/),
+    "selections": (v6/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "MerchantDetailRouteQuery",
-    "selections": (v6/*: any*/)
+    "selections": (v6/*:: as any*/)
   },
   "params": {
     "cacheID": "0780d52cc5fe3d954708358c67068533",

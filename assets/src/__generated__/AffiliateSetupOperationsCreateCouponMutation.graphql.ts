@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<c4cf38ba7dbe4949d2e0f70ffeb5dad6>>
+ * @generated SignedSource<<fdec83099eaa979188a7b872df92fd79>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -110,7 +109,7 @@ v2 = [
             "name": "affiliateNetworkId",
             "storageKey": null
           },
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -157,7 +156,7 @@ v2 = [
         "name": "errors",
         "plural": true,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -181,20 +180,20 @@ v2 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AffiliateSetupOperationsCreateCouponMutation",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AffiliateSetupOperationsCreateCouponMutation",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "f2595db97ee5383769c3da4b3f6130cf",

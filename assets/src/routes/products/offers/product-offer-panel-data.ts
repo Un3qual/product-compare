@@ -11,6 +11,7 @@ import {
   type OfferSnapshotSelectors,
 } from "$routes/offers/offer-snapshot";
 import { nextPageCursor } from "$relay/pagination";
+import type { PriceHistoryChartDatum } from "$ui/components/data/PriceHistoryChart";
 import { productDetailPath } from "../product-detail-route-data";
 
 export type ProductOfferCouponRow = {
@@ -22,20 +23,12 @@ export type ProductOfferCouponRow = {
   validToText: string | null;
 };
 
-export type ProductOfferPriceHistoryRow = {
-  id: string;
-  observedAt: string;
-  observedDate: string;
-  priceText: string;
-  priceValue: number;
-};
-
 export type ProductOfferListItem = {
   coupons: ReadonlyArray<ProductOfferCouponRow>;
   couponsHasMore: boolean;
   id: string;
   merchantName: string;
-  priceHistory: ReadonlyArray<ProductOfferPriceHistoryRow>;
+  priceHistory: ReadonlyArray<PriceHistoryChartDatum>;
   priceHistoryHasMore: boolean;
   priceObservation: GraphQLDateTimeContext | null;
   priceText: string | null;
@@ -216,7 +209,7 @@ function buildCouponRows(edges: ProductOfferCouponConnection["edges"]): ProductO
 function buildPriceHistoryRows(
   edges: ProductOfferPriceHistoryConnection["edges"],
   currency: string,
-): ProductOfferPriceHistoryRow[] {
+): PriceHistoryChartDatum[] {
   return edges.flatMap(({ node }) => {
     const observedDate = graphQLDateTimeLabel(node.observedAt);
     const priceText = formatPriceText(node.price, currency);

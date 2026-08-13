@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<3aada89b2473b8592b7d9ae835143143>>
+ * @generated SignedSource<<10534bb4117589dc55d875cc92ae6e0b>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -95,20 +94,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertOperationsDeletePriceWatchMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertOperationsDeletePriceWatchMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "7ce7dd9bf5777b6a078cacddd007f1a8",

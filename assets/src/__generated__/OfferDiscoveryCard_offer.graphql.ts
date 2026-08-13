@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<6e93a172e3b608835aa32de48347d8a2>>
+ * @generated SignedSource<<b15e4fce4d92b17b814347b60c01c2a0>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -91,7 +90,7 @@ v2 = {
   "storageKey": null
 },
 v3 = [
-  (v0/*: any*/),
+  (v0/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -131,7 +130,7 @@ return {
   "metadata": null,
   "name": "OfferDiscoveryCard_offer",
   "selections": [
-    (v0/*: any*/),
+    (v0/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -139,7 +138,7 @@ return {
       "name": "url",
       "storageKey": null
     },
-    (v1/*: any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -162,8 +161,8 @@ return {
       "name": "merchant",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v2/*: any*/),
+        (v0/*:: as any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -182,8 +181,8 @@ return {
       "name": "product",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v2/*: any*/),
+        (v0/*:: as any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -201,7 +200,7 @@ return {
       "kind": "LinkedField",
       "name": "latestPrice",
       "plural": false,
-      "selections": (v3/*: any*/),
+      "selections": (v3/*:: as any*/),
       "storageKey": null
     },
     {
@@ -269,7 +268,7 @@ return {
                   "name": "discountValue",
                   "storageKey": null
                 },
-                (v1/*: any*/),
+                (v1/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -290,7 +289,7 @@ return {
           ],
           "storageKey": null
         },
-        (v4/*: any*/)
+        (v4/*:: as any*/)
       ],
       "storageKey": "activeCoupons(first:2)"
     },
@@ -323,13 +322,13 @@ return {
               "kind": "LinkedField",
               "name": "node",
               "plural": false,
-              "selections": (v3/*: any*/),
+              "selections": (v3/*:: as any*/),
               "storageKey": null
             }
           ],
           "storageKey": null
         },
-        (v4/*: any*/)
+        (v4/*:: as any*/)
       ],
       "storageKey": "priceHistory(first:12)"
     }

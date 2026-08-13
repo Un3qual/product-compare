@@ -114,13 +114,6 @@ export type BrowseProductsLoaderData =
     }
   | { status: "error" };
 
-const EMPTY_CATALOG_FILTERS = {
-  useCaseTaxonIds: [],
-  numeric: [],
-  booleans: [],
-  enums: [],
-} satisfies CatalogFilters;
-
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
 
@@ -179,7 +172,7 @@ function BrowseProducts({
   }
 
   const filterMetadata = data.productFilterMetadata;
-  const activeFilters = filters ?? EMPTY_CATALOG_FILTERS;
+  const activeFilters = filters;
   const products = productConnection.edges.map(({ node }) => node);
   const currentCompareSearch = catalogBrowseSearchWithNormalizedSort(
     location.search,
@@ -192,7 +185,7 @@ function BrowseProducts({
   });
   const selectedCompareSlugs = browseRouteData.selectedCompareSlugs;
   const currentAfter = query.__relayQuery.variables.after;
-  const currentPageSize = pageSize ?? query.__relayQuery.variables.first;
+  const currentPageSize = pageSize;
   const hasActiveFilters = hasActiveCatalogFilters(activeFilters);
   const resultStatus = catalogResultStatus({
     hasActiveFilters,
@@ -202,7 +195,7 @@ function BrowseProducts({
   const filterFormKey = catalogBrowseFirstPagePath(activeFilters, currentPageSize);
   const paginationData = buildCatalogBrowsePaginationData({
     currentAfter: currentAfter ?? null,
-    endCursor: productConnection.pageInfo.endCursor ?? null,
+    endCursor: productConnection.pageInfo.endCursor,
     filters: activeFilters,
     first: currentPageSize,
     hasNextPage: productConnection.pageInfo.hasNextPage,

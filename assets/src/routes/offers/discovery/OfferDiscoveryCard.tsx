@@ -1,7 +1,10 @@
 import { create, props } from "@stylexjs/stylex";
 import { graphql, useFragment } from "react-relay";
 import type { OfferDiscoveryCard_offer$key } from "$generated/OfferDiscoveryCard_offer.graphql";
-import { PriceHistoryChart } from "$ui/components/data/PriceHistoryChart";
+import {
+  PriceHistoryChart,
+  type PriceHistoryChartDatum,
+} from "$ui/components/data/PriceHistoryChart";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
@@ -18,7 +21,6 @@ import {
   type CouponNode,
   type OfferNode,
   type PriceHistoryConnection,
-  type PriceHistoryRow,
 } from "./offer-discovery-data";
 import { TrackedCommerceClickAction } from "../commerce-click/TrackedCommerceClickAction";
 
@@ -471,7 +473,7 @@ function PriceHistorySummary({
 }: {
   hasMore: boolean;
   merchantName: string;
-  rows: PriceHistoryRow[];
+  rows: PriceHistoryChartDatum[];
 }) {
   if (rows.length === 0) {
     return <p>No price history for this offer yet.</p>;

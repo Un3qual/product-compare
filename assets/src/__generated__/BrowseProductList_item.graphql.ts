@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<43d8ba2f84b2d79266510da9e36d0ea3>>
+ * @generated SignedSource<<9be1a8a8c849a0a0bd8f90326b17b12d>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -52,8 +51,8 @@ return {
   "metadata": null,
   "name": "BrowseProductList_item",
   "selections": [
-    (v0/*: any*/),
-    (v1/*: any*/),
+    (v0/*:: as any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -69,8 +68,8 @@ return {
       "name": "brand",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v1/*: any*/)
+        (v0/*:: as any*/),
+        (v1/*:: as any*/)
       ],
       "storageKey": null
     },

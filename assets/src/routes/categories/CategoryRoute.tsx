@@ -91,7 +91,7 @@ const styles = create({
 });
 
 export function CategoryRoute() {
-  const loaderData = useLoaderData() as CategoryLoaderData;
+  const loaderData = useLoaderData<typeof categoryLoader>();
   if (loaderData.status !== "ready") {
     return (
       <PageShell eyebrow="Product category" title="Category not found">

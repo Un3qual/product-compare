@@ -4,6 +4,7 @@ import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "r
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   commitMutationMock,
@@ -102,15 +103,9 @@ const deskChairQueryDescriptor = {
   },
 };
 
-const deskLampQueryRef = {
-  dispose: vi.fn(),
-  variables: deskLampQueryDescriptor.__relayQuery.variables,
-};
+const deskLampQueryRef = mockPreloadedQuery(deskLampQueryDescriptor.__relayQuery.variables);
 
-const deskChairQueryRef = {
-  dispose: vi.fn(),
-  variables: deskChairQueryDescriptor.__relayQuery.variables,
-};
+const deskChairQueryRef = mockPreloadedQuery(deskChairQueryDescriptor.__relayQuery.variables);
 
 const deskLampCompareQueryDescriptor = {
   __relayQuery: {
@@ -128,15 +123,13 @@ const deskChairCompareQueryDescriptor = {
   },
 };
 
-const deskLampCompareQueryRef = {
-  dispose: vi.fn(),
-  variables: deskLampCompareQueryDescriptor.__relayQuery.variables,
-};
+const deskLampCompareQueryRef = mockPreloadedQuery(
+  deskLampCompareQueryDescriptor.__relayQuery.variables,
+);
 
-const deskChairCompareQueryRef = {
-  dispose: vi.fn(),
-  variables: deskChairCompareQueryDescriptor.__relayQuery.variables,
-};
+const deskChairCompareQueryRef = mockPreloadedQuery(
+  deskChairCompareQueryDescriptor.__relayQuery.variables,
+);
 
 const READY_LOADER_DATA = {
   status: "ready",

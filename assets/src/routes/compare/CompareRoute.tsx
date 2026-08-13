@@ -215,7 +215,7 @@ export async function compareLoader({
 }
 
 export function CompareRoute() {
-  const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
+  const loaderData = useLoaderData<typeof compareLoader>();
   const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
 
   return <CompareSelectionRoute key={selectionKey} loaderData={loaderData} />;

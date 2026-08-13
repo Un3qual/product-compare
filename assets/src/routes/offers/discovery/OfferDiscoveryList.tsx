@@ -209,7 +209,7 @@ function OfferPagination({
   filters: OfferDiscoveryFilters;
 }) {
   const paginationData = buildOfferDiscoveryPaginationData({
-    endCursor: connection.pageInfo.endCursor ?? null,
+    endCursor: connection.pageInfo.endCursor,
     filters,
     hasNextPage: connection.pageInfo.hasNextPage,
     hasPreviousPage: connection.pageInfo.hasPreviousPage,

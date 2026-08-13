@@ -125,7 +125,7 @@ const styles = create({
 type HomeOutletContext = { viewer: RootViewer | null };
 
 export function HomeRoute() {
-  const loaderData = useLoaderData<typeof homeLoader>() as HomeLoaderData;
+  const loaderData = useLoaderData<typeof homeLoader>();
   const outletContext = useOutletContext<HomeOutletContext | null>();
   const viewer = outletContext?.viewer ?? null;
 

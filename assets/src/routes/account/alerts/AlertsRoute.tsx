@@ -142,7 +142,7 @@ const styles = create({
 });
 
 export function AlertsRoute() {
-  const loaderData = useLoaderData() as AlertsRouteLoaderData;
+  const loaderData = useLoaderData<typeof alertsLoader>();
 
   if (loaderData.status === "unauthorized") {
     return (

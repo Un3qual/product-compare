@@ -116,11 +116,9 @@ export function CompareSpecificationMatrix({
 }
 
 function specificationMatrixTitle(specMode: CompareSpecMode) {
-  return SPECIFICATION_MATRIX_TITLES[specMode] ?? SPECIFICATION_MATRIX_TITLES.shared;
+  return SPECIFICATION_MATRIX_TITLES[specMode];
 }
 
 function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
-  return (
-    EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode] ?? EMPTY_SPECIFICATION_MATRIX_MESSAGES.shared
-  );
+  return EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode];
 }

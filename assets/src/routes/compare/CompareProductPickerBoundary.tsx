@@ -14,10 +14,7 @@ import {
   type ComparePickerProduct,
 } from "./compare-picker-data";
 import type { CompareSpecMode } from "./paths";
-import {
-  CompareProductPickerView,
-  type CompareProductPickerOption,
-} from "./CompareProductPickerView";
+import { CompareProductPickerView } from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 const compareProductPickerQuery = graphql`
@@ -95,11 +92,7 @@ function CompareProductPicker({
   const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
   const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo ?? null, after);
-  const options = buildComparePickerOptions(
-    availableProducts,
-    selectedSlugs,
-    specMode,
-  ) satisfies CompareProductPickerOption[];
+  const options = buildComparePickerOptions(availableProducts, selectedSlugs, specMode);
 
   useEffect(() => {
     setLoadedProducts((products) => appendUniqueComparePickerProducts(products, pageProducts));

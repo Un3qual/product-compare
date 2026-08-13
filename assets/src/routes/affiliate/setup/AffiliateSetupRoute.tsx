@@ -119,7 +119,7 @@ export async function affiliateSetupLoader({
 }
 
 export function AffiliateSetupRoute() {
-  const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
+  const loaderData = useLoaderData<typeof affiliateSetupLoader>();
 
   return (
     <PageShell
@@ -342,7 +342,7 @@ function AffiliateSetupPanel({
   }
 
   const paginationData = buildAffiliateSetupPaginationData({
-    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    endCursor: data.merchants.pageInfo.endCursor,
     hasNextPage: data.merchants.pageInfo.hasNextPage,
     hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
     pagination: merchantPagination,

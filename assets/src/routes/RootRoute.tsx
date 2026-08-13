@@ -42,7 +42,7 @@ type RootOutletContext = {
 };
 
 export function RootLayout() {
-  const loaderData = useLoaderData() as RootLoaderData;
+  const loaderData = useLoaderData<typeof rootLoader>();
 
   if (!loaderData.viewerQuery) {
     return <RootLayoutShell viewer={loaderData.viewer} />;
@@ -69,7 +69,7 @@ function ReadyRootLayout({ viewerQuery }: { viewerQuery: RootViewerQueryDescript
   const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, viewerQuery);
   const data = usePreloadedQuery<RootRouteQuery>(rootRouteQuery, queryRef);
 
-  return <RootLayoutShell viewer={data.viewer ?? null} />;
+  return <RootLayoutShell viewer={data.viewer} />;
 }
 
 function RootLayoutShell({ viewer }: RootOutletContext) {
@@ -100,7 +100,7 @@ export async function rootLoader({
     );
 
     return {
-      viewer: fetchedViewer.data.viewer ?? null,
+      viewer: fetchedViewer.data.viewer,
       viewerQuery: fetchedViewer.descriptor,
     };
   } catch {

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<ce2bcae96263019369d638569e2f518c>>
+ * @generated SignedSource<<e1d8a9a010b6cb16f9b3ecf612d6fb80>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -84,7 +83,7 @@ v1 = {
   "storageKey": null
 },
 v2 = [
-  (v0/*: any*/),
+  (v0/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -115,7 +114,7 @@ v4 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v3/*: any*/)
+    (v3/*:: as any*/)
   ],
   "storageKey": null
 };
@@ -141,7 +140,7 @@ return {
           "name": "node",
           "plural": false,
           "selections": [
-            (v0/*: any*/),
+            (v0/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -149,7 +148,7 @@ return {
               "name": "url",
               "storageKey": null
             },
-            (v1/*: any*/),
+            (v1/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -158,7 +157,7 @@ return {
               "name": "merchant",
               "plural": false,
               "selections": [
-                (v0/*: any*/),
+                (v0/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -176,7 +175,7 @@ return {
               "kind": "LinkedField",
               "name": "latestPrice",
               "plural": false,
-              "selections": (v2/*: any*/),
+              "selections": (v2/*:: as any*/),
               "storageKey": null
             },
             {
@@ -244,7 +243,7 @@ return {
                           "name": "discountValue",
                           "storageKey": null
                         },
-                        (v1/*: any*/),
+                        (v1/*:: as any*/),
                         {
                           "alias": null,
                           "args": null,
@@ -265,7 +264,7 @@ return {
                   ],
                   "storageKey": null
                 },
-                (v4/*: any*/)
+                (v4/*:: as any*/)
               ],
               "storageKey": "activeCoupons(first:2)"
             },
@@ -298,13 +297,13 @@ return {
                       "kind": "LinkedField",
                       "name": "node",
                       "plural": false,
-                      "selections": (v2/*: any*/),
+                      "selections": (v2/*:: as any*/),
                       "storageKey": null
                     }
                   ],
                   "storageKey": null
                 },
-                (v4/*: any*/)
+                (v4/*:: as any*/)
               ],
               "storageKey": "priceHistory(first:12)"
             }
@@ -329,7 +328,7 @@ return {
           "name": "endCursor",
           "storageKey": null
         },
-        (v3/*: any*/)
+        (v3/*:: as any*/)
       ],
       "storageKey": null
     }

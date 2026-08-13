@@ -24,6 +24,7 @@ import {
   type ProductOfferListItem,
 } from "../../../src/routes/products/offers/ProductOfferList";
 import type { ProductSpecification } from "../../../src/routes/products/specifications";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   fetchRouteQueryMock,
@@ -176,10 +177,7 @@ const DETAIL_PRODUCT: DetailProduct = {
   priceHistory90d: [],
 };
 
-const productQueryRef = {
-  dispose: vi.fn(),
-  variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const productQueryRef = mockPreloadedQuery(PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables);
 
 const DETAIL_PRODUCT_WITH_CURRENT_PRICE: DetailProduct = {
   ...DETAIL_PRODUCT,
@@ -203,10 +201,7 @@ const DETAIL_PRODUCT_WITH_CURRENT_PRICE: DetailProduct = {
     ],
   },
 };
-const offersQueryRef = {
-  dispose: vi.fn(),
-  variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const offersQueryRef = mockPreloadedQuery(OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables);
 
 const buildProductDetailLoaderArgs = ({
   environment = createRelayEnvironment(),

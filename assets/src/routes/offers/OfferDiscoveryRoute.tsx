@@ -69,7 +69,7 @@ export type OfferDiscoveryLoaderData =
   | { status: "error"; filters: OfferDiscoveryFilters };
 
 export function OfferDiscoveryRoute() {
-  const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
+  const loaderData = useLoaderData<typeof offerDiscoveryLoader>();
 
   return (
     <PageShell

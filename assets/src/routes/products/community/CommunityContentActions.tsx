@@ -13,7 +13,8 @@ import { resolveCommunityContentRemovalMessage } from "./product-community-data"
 import { productCommunityStyles as styles } from "./product-community-styles";
 import { removeCommunityContentMutation } from "./ProductCommunityOperations";
 
-type CommunityContentType = "REVIEW" | "QUESTION" | "ANSWER";
+type CommunityContentType =
+  ProductCommunityOperationsRemoveCommunityContentMutation["variables"]["input"]["contentType"];
 export type CommunityContentLabel = "review" | "question" | "answer";
 
 export function useCommunityItemState() {

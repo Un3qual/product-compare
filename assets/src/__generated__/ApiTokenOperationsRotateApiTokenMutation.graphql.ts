@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<77b227b7b4620e1d3813f48ad9147bd1>>
+ * @generated SignedSource<<9f2bb7b05a83980269e0ce2212c8e016>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -185,27 +184,27 @@ v3 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "ApiTokenOperationsRotateApiTokenMutation",
-    "selections": (v3/*: any*/),
+    "selections": (v3/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ApiTokenOperationsRotateApiTokenMutation",
-    "selections": (v3/*: any*/)
+    "selections": (v3/*:: as any*/)
   },
   "params": {
     "cacheID": "985190f5d580f33cdf6b53571fbcbbb2",

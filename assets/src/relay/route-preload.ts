@@ -1,6 +1,10 @@
 import { useEffect, useMemo } from "react";
-import type { GraphQLTaggedNode } from "react-relay";
-import { useRelayEnvironment, type PreloadedQuery } from "react-relay";
+import {
+  loadQuery,
+  useRelayEnvironment,
+  type GraphQLTaggedNode,
+  type PreloadedQuery,
+} from "react-relay";
 import { createContext, RouterContextProvider } from "react-router-dom";
 import {
   createOperationDescriptor,
@@ -10,7 +14,7 @@ import {
   type OperationType,
   type PayloadData,
 } from "relay-runtime";
-import { fetchAppQuery, loadAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
+import { fetchAppQuery, RELAY_ROUTE_LOADER_SIGNAL_METADATA_KEY } from "./load-query";
 
 const ROUTE_QUERY_REF_CACHE_LIMIT = 50;
 
@@ -58,7 +62,7 @@ export async function fetchRouteQuery<TQuery extends OperationType>(
     ...routeLoaderNetworkOptions(options.signal),
   });
 
-  const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
+  const queryRef = loadQuery<TQuery>(environment, query, variables, {
     fetchPolicy: "store-only",
   });
 
@@ -92,7 +96,7 @@ export function cacheRouteQueryData<TQuery extends OperationType>(
   environment.commitPayload(operation, data as PayloadData);
 
   const descriptor = createRouteQueryDescriptor<TQuery>(query, variables);
-  const queryRef = loadAppQuery<TQuery>(environment, query, variables, {
+  const queryRef = loadQuery<TQuery>(environment, query, variables, {
     fetchPolicy: "store-only",
   });
 
@@ -110,7 +114,7 @@ export function getRoutePreloadedQuery<TQuery extends OperationType>(
   let routeQueryRefEntry = getRouteQueryRefEntry(environment, descriptorKey);
 
   if (!routeQueryRefEntry) {
-    const queryRef = loadAppQuery<TQuery>(environment, query, descriptor.__relayQuery.variables, {
+    const queryRef = loadQuery<TQuery>(environment, query, descriptor.__relayQuery.variables, {
       fetchPolicy: "store-only",
     });
 

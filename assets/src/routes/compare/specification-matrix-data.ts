@@ -1,11 +1,9 @@
 import { compareProductText } from "$frontend/formatting";
-import type { CompareProductSummary } from "./compare-route-data";
+import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
 const DECIMAL_COMPARISON_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 const MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT = 1_000;
-
-export type SpecificationMatrixMode = "shared" | "differences" | "all";
 
 export type SpecificationMatrixProduct = Pick<
   CompareProductSummary,
@@ -31,7 +29,7 @@ interface ParsedDecimalComparisonValue {
 
 export function buildSpecificationMatrixRows(
   products: readonly SpecificationMatrixProduct[],
-  specMode: SpecificationMatrixMode,
+  specMode: CompareSpecMode,
 ): SpecificationMatrixRow[] {
   const rows = buildAllSpecificationRows(products);
 

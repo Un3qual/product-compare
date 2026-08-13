@@ -183,14 +183,14 @@ function shiftDate(baseDate: Date, days: number) {
 }
 
 function formatCount(value: RevenueSummaryMetrics["clicks"]) {
-  return value === null || value === undefined ? "Not available" : String(value);
+  return value === null ? "Not available" : String(value);
 }
 
 export function formatCurrencyAmount(
   value: RevenueSummaryMetrics["commissionRevenue"],
   currency: string,
 ) {
-  if (value === null || value === undefined) {
+  if (value === null) {
     return "Not available";
   }
 
@@ -198,16 +198,17 @@ export function formatCurrencyAmount(
 }
 
 export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
-  const filters = {
-    currency: normalizeCurrencyFilter(url.searchParams.get("currency")),
-    from: normalizeDateFilter(url.searchParams.get("from")),
-    network: normalizeNetworkFilter(url.searchParams.get("network")),
-    to: normalizeDateFilter(url.searchParams.get("to")),
-  };
+  const currency = normalizeCurrencyFilter(url.searchParams.get("currency"));
+  const from = normalizeDateFilter(url.searchParams.get("from"));
+  const network = normalizeNetworkFilter(url.searchParams.get("network"));
+  const to = normalizeDateFilter(url.searchParams.get("to"));
 
-  return Object.fromEntries(
-    Object.entries(filters).filter(([, value]) => value !== undefined),
-  ) as RevenueSummaryFilters;
+  return {
+    ...(currency ? { currency } : {}),
+    ...(from ? { from } : {}),
+    ...(network ? { network } : {}),
+    ...(to ? { to } : {}),
+  };
 }
 
 export function hasInvertedRevenueDateRange(filters: RevenueSummaryFilters) {

@@ -80,7 +80,7 @@ export function resolveSessionMutationResult(
     return { viewer: null, errors: [graphQLError] };
   }
 
-  const viewer = payload.viewer ?? null;
+  const viewer = payload.viewer;
   const errors = [...payload.errors];
 
   return {

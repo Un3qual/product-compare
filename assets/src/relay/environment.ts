@@ -36,9 +36,7 @@ export function createRelayEnvironment(options: CreateRelayEnvironmentOptions = 
     network: Network.create(
       (params: RequestParameters, variables: Variables, cacheConfig: CacheConfig) => {
         if (!params.text) {
-          throw new Error(
-            `Relay operation text is missing for request: ${params.name ?? "unknown"}`,
-          );
+          throw new Error(`Relay operation text is missing for request: ${params.name}`);
         }
 
         const routeSignal = routeLoaderSignal(cacheConfig);

@@ -265,18 +265,18 @@ export function summarizeApiTokensPage(data: ApiTokensRouteQuery["response"]) {
   return {
     tokens: edges.map(({ node }) => normalizeApiToken(node)),
     hasNextPage: pageInfo.hasNextPage,
-    endCursor: pageInfo.endCursor ?? null,
+    endCursor: pageInfo.endCursor,
   };
 }
 
 function normalizeApiToken(node: ApiTokenQueryNode | MutationApiToken) {
   return {
     id: node.id,
-    label: node.label ?? null,
+    label: node.label,
     tokenPrefix: node.tokenPrefix,
-    lastUsedAt: node.lastUsedAt ?? null,
-    expiresAt: node.expiresAt ?? null,
-    revokedAt: node.revokedAt ?? null,
+    lastUsedAt: node.lastUsedAt,
+    expiresAt: node.expiresAt,
+    revokedAt: node.revokedAt,
     insertedAt: node.insertedAt,
   };
 }

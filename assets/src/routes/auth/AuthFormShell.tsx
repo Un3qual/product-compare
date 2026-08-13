@@ -112,7 +112,8 @@ interface FooterLink {
   to: string;
 }
 
-interface AuthFormShellProps extends PropsWithChildren {
+interface AuthFormShellProps {
+  children: ReactElement;
   description: string;
   errors?: MutationError[];
   footerLinks?: FooterLink[];
@@ -166,7 +167,7 @@ export function AuthFormShell({
 
         {useRender({
           props: props(styles.form),
-          render: children as ReactElement,
+          render: children,
         })}
 
         <AuthFooterLinks footerLinks={footerLinks} />

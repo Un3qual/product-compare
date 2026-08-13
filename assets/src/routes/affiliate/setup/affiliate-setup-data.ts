@@ -160,7 +160,7 @@ export function buildCouponVariables(formValues: AffiliateSetupFormValues) {
       artifactId: null,
       code: requiredFormString(formValues, "couponCode"),
       description: optionalFormString(formValues, "couponDescription"),
-      discountType: requiredFormString(formValues, "discountType") as CouponDiscountType,
+      discountType: couponDiscountType(requiredFormString(formValues, "discountType")),
       discountValue: optionalFormString(formValues, "discountValue"),
       currency: optionalCurrencyString(formValues, "currency"),
       validFrom: optionalDateTimeString(formValues, "validFrom"),
@@ -188,7 +188,7 @@ export function couponDiscountText(coupon: AffiliateCouponResultCopyFact) {
 }
 
 function couponDiscountValue(discountValue: Coupon["discountValue"]) {
-  return discountValue ?? null;
+  return discountValue;
 }
 
 function amountCouponDiscountText(value: string | null, currency: Coupon["currency"]) {
@@ -219,6 +219,17 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
   const date = new Date(value);
 
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function couponDiscountType(value: string): CouponDiscountType {
+  switch (value) {
+    case "AMOUNT":
+    case "FREE_SHIPPING":
+    case "PERCENT":
+      return value;
+    default:
+      return "OTHER";
+  }
 }
 
 function resolveAffiliateSetupMutationOutcome<T extends object>(

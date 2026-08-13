@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<d2c79965a70c8061705759943d3e1780>>
+ * @generated SignedSource<<d669ab374ecde06861c0e0c4ac24076a>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -68,7 +67,7 @@ return {
               "name": "id",
               "storageKey": null
             },
-            (v0/*: any*/),
+            (v0/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -92,7 +91,7 @@ return {
                   "name": "product",
                   "plural": false,
                   "selections": [
-                    (v0/*: any*/),
+                    (v0/*:: as any*/),
                     {
                       "alias": null,
                       "args": null,

@@ -106,7 +106,7 @@ export function resolveRevokeComparisonSnapshotMutationOutcome(
 }
 
 export function snapshotFromNode(node: ComparisonSnapshotSourceNode): PublishedComparisonSnapshot {
-  return { id: node.id, path: node.sharePath, title: node.title ?? null };
+  return { id: node.id, path: node.sharePath, title: node.title };
 }
 
 export function publishComparisonSnapshotState(

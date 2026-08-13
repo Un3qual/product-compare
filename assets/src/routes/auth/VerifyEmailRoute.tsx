@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { graphql, useMutation, type MutationCommitFn } from "react-relay";
+import { graphql, useMutation } from "react-relay";
 import { useSearchParams } from "react-router-dom";
 import type { VerifyEmailRouteMutation } from "$generated/VerifyEmailRouteMutation.graphql";
-import { commitRouteMutationPromise } from "$relay/mutations";
+import { commitRouteMutationPromise, type RouteMutationCommit } from "$relay/mutations";
 import {
   type AuthActionResult,
   isSuccessfulActionResult,
@@ -31,7 +31,7 @@ const verifyEmailMutation = graphql`
 `;
 
 const verificationRequests = new Map<string, Promise<AuthActionResult>>();
-type VerifyEmailCommit = MutationCommitFn<VerifyEmailRouteMutation>;
+type VerifyEmailCommit = RouteMutationCommit<VerifyEmailRouteMutation>;
 
 export function VerifyEmailRoute() {
   const [searchParams] = useSearchParams();

@@ -118,7 +118,7 @@ export function ProductDecisionHeader({ product }: { product: Product }) {
       {keySpecifications.length > 0 ? (
         <ul aria-label="Key specifications" {...props(styles.keySpecs)}>
           {keySpecifications.map((attribute) => (
-            <li key={attribute.attributeId ?? attribute.code} {...props(styles.keySpec)}>
+            <li key={attribute.attributeId} {...props(styles.keySpec)}>
               <span {...props(styles.keySpecLabel)}>{attribute.displayName}</span>
               <span aria-hidden>·</span>
               <strong {...props(styles.keySpecValue)}>{attribute.valueText}</strong>
@@ -141,5 +141,5 @@ function currentPrice(currencySummaries: Product["offerTruth"]["currencySummarie
 
 function currentOffer(currencySummaries: Product["offerTruth"]["currencySummaries"]) {
   if (currencySummaries.length !== 1) return null;
-  return currencySummaries[0].bestOffer ?? null;
+  return currencySummaries[0].bestOffer;
 }

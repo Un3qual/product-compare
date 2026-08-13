@@ -5,6 +5,7 @@ import { fetchGraphQL } from "../../../src/relay/fetch-graphql";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
+import { mockPreloadedQuery } from "../../helpers/relay";
 import { buildCompareLoaderArgs } from "./saved-comparisons-test-helpers";
 
 const {
@@ -113,15 +114,13 @@ const secondProductQueryDescriptor = {
   },
 };
 
-const detailProductQueryRef = {
-  dispose: vi.fn(),
-  variables: detailProductQueryDescriptor.__relayQuery.variables,
-};
+const detailProductQueryRef = mockPreloadedQuery(
+  detailProductQueryDescriptor.__relayQuery.variables,
+);
 
-const secondProductQueryRef = {
-  dispose: vi.fn(),
-  variables: secondProductQueryDescriptor.__relayQuery.variables,
-};
+const secondProductQueryRef = mockPreloadedQuery(
+  secondProductQueryDescriptor.__relayQuery.variables,
+);
 
 const compareRouteQueryDescriptor = {
   __relayQuery: {
@@ -134,10 +133,9 @@ const compareRouteQueryDescriptor = {
   },
 };
 
-const compareRouteQueryRef = {
-  dispose: vi.fn(),
-  variables: compareRouteQueryDescriptor.__relayQuery.variables,
-};
+const compareRouteQueryRef = mockPreloadedQuery(
+  compareRouteQueryDescriptor.__relayQuery.variables,
+);
 
 function buildCombinedCompareQuery() {
   return {

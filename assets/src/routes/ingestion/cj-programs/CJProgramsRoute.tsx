@@ -141,7 +141,7 @@ const styles = create({
 });
 
 export function CJProgramsRoute() {
-  const loaderData = useLoaderData<typeof cjProgramsLoader>() as CJProgramsLoaderData;
+  const loaderData = useLoaderData<typeof cjProgramsLoader>();
 
   return (
     <PageShell

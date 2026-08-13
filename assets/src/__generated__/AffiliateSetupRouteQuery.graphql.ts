@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<b4d9c4ec7a41571d4a4056fc666dbb59>>
+ * @generated SignedSource<<033236438c236e18276497b73d43b4e3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -131,8 +130,8 @@ v7 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -140,7 +139,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -154,7 +153,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v3/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -163,9 +162,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
-                  (v5/*: any*/),
-                  (v6/*: any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
@@ -177,7 +176,7 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*: any*/)
+          (v7/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -188,15 +187,15 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "AffiliateSetupRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -210,7 +209,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v3/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -219,9 +218,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
-                  (v5/*: any*/),
-                  (v6/*: any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -235,7 +234,7 @@ return {
             ],
             "storageKey": null
           },
-          (v7/*: any*/)
+          (v7/*:: as any*/)
         ],
         "storageKey": null
       }

@@ -19,6 +19,7 @@ import {
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   buildRevenueDatePresetLinks,
 } from "../../../../src/routes/commerce/revenue/revenue-summary-view-data";
+import { mockPreloadedQuery } from "../../../helpers/relay";
 
 const {
   useLoaderDataMock,
@@ -94,15 +95,11 @@ const ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR: RelayRouteQueryDescriptor<Attribution
     },
   };
 
-const REVENUE_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const REVENUE_QUERY_REF = mockPreloadedQuery(REVENUE_QUERY_DESCRIPTOR.__relayQuery.variables);
 
-const ATTRIBUTION_LEDGER_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const ATTRIBUTION_LEDGER_QUERY_REF = mockPreloadedQuery(
+  ATTRIBUTION_LEDGER_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
 const UNSUPPRESSED_REVENUE_SUMMARY = {
   revenueSummary: {

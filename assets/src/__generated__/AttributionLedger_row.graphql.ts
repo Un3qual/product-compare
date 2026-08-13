@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<9d125c66775847c800d29cdebc7de574>>
+ * @generated SignedSource<<9e9df19404296fce9d2415c8a8f802a0>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -86,8 +85,8 @@ return {
   "metadata": null,
   "name": "AttributionLedger_row",
   "selections": [
-    (v0/*: any*/),
-    (v1/*: any*/),
+    (v0/*:: as any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -138,8 +137,8 @@ return {
       "name": "matchedConversions",
       "plural": true,
       "selections": [
-        (v0/*: any*/),
-        (v1/*: any*/),
+        (v0/*:: as any*/),
+        (v1/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -161,7 +160,7 @@ return {
           "name": "currency",
           "storageKey": null
         },
-        (v2/*: any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -176,7 +175,7 @@ return {
           "name": "orderAmount",
           "storageKey": null
         },
-        (v3/*: any*/),
+        (v3/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -201,7 +200,7 @@ return {
       ],
       "storageKey": null
     },
-    (v2/*: any*/),
+    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -209,7 +208,7 @@ return {
       "name": "merchantProductExternalSku",
       "storageKey": null
     },
-    (v3/*: any*/),
+    (v3/*:: as any*/),
     {
       "alias": null,
       "args": null,

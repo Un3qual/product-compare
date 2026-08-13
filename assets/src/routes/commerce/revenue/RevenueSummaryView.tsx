@@ -14,7 +14,6 @@ import {
   type RevenueSummaryFilters,
 } from "./revenue-summary-view-data";
 
-type RevenueFilters = RevenueSummaryFilters;
 type RevenueControls = ReturnType<typeof buildRevenueSummaryControls>;
 type RevenueFilterFormValues = ReturnType<typeof buildRevenueSummaryFilterFormData>["values"];
 type RevenueMetrics = ReturnType<typeof buildRevenueSummaryMetrics>;
@@ -51,7 +50,7 @@ export function RevenueSummaryView({
   activeFilters: RevenueControls["activeFilters"];
   children: ReactNode;
   datePresetLinks: RevenueControls["datePresetLinks"];
-  filters: RevenueFilters;
+  filters: RevenueSummaryFilters;
 }) {
   return (
     <WorkspaceLayout
@@ -76,7 +75,7 @@ function RevenueSummaryControls({
 }: {
   activeFilters: RevenueControls["activeFilters"];
   datePresetLinks: RevenueControls["datePresetLinks"];
-  filters: RevenueFilters;
+  filters: RevenueSummaryFilters;
 }) {
   const filterFormData = buildRevenueSummaryFilterFormData(filters);
 

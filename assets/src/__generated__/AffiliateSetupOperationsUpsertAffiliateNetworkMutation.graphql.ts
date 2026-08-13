@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<adb73f22dab9e741016fc5a8c747aa07>>
+ * @generated SignedSource<<43ceff4e04f5c6ab8a2e7cb64298a326>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -119,20 +118,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AffiliateSetupOperationsUpsertAffiliateNetworkMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AffiliateSetupOperationsUpsertAffiliateNetworkMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "36ae2c53155c533b00c032cfda51249f",

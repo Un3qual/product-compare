@@ -222,6 +222,16 @@ test("buildCouponVariables preserves the full mutation shape and normalizes opti
   });
 });
 
+test("buildCouponVariables falls back to OTHER for an invalid discount type", () => {
+  expect(
+    buildCouponVariables({
+      couponMerchantId: "merchant-1",
+      couponCode: "SAVE-20",
+      discountType: "NOT_A_DISCOUNT_TYPE",
+    }).input.discountType,
+  ).toBe("OTHER");
+});
+
 test("affiliate setup mutation outcomes preserve each complete fact and its identity", () => {
   const network = Object.freeze({ id: "network-1", name: "Impact" });
   const program = Object.freeze({

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<a9b98e3be502658a32ff5352a5d48094>>
+ * @generated SignedSource<<654a20790cad2e79d6452584a13a04d8>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -82,7 +81,7 @@ v5 = [
     "name": "edges",
     "plural": true,
     "selections": [
-      (v4/*: any*/),
+      (v4/*:: as any*/),
       {
         "args": null,
         "kind": "FragmentSpread",
@@ -101,7 +100,7 @@ v6 = [
     "name": "edges",
     "plural": true,
     "selections": [
-      (v4/*: any*/),
+      (v4/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -205,8 +204,8 @@ v6 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -214,7 +213,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "HomeDeals",
         "kind": "LinkedField",
         "name": "homeDeals",
@@ -222,32 +221,32 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "new",
             "plural": false,
-            "selections": (v5/*: any*/),
+            "selections": (v5/*:: as any*/),
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "trending",
             "plural": false,
-            "selections": (v5/*: any*/),
+            "selections": (v5/*:: as any*/),
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "forYou",
             "plural": false,
-            "selections": (v5/*: any*/),
+            "selections": (v5/*:: as any*/),
             "storageKey": null
           }
         ],
@@ -260,15 +259,15 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "HomeDealsQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "HomeDeals",
         "kind": "LinkedField",
         "name": "homeDeals",
@@ -276,32 +275,32 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "new",
             "plural": false,
-            "selections": (v6/*: any*/),
+            "selections": (v6/*:: as any*/),
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "trending",
             "plural": false,
-            "selections": (v6/*: any*/),
+            "selections": (v6/*:: as any*/),
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeDealsConnection",
             "kind": "LinkedField",
             "name": "forYou",
             "plural": false,
-            "selections": (v6/*: any*/),
+            "selections": (v6/*:: as any*/),
             "storageKey": null
           }
         ],

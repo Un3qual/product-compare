@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<d8bd18699575c4a3c1446150235aca4b>>
+ * @generated SignedSource<<810f0e06801657c3db71a4ebcb2f58b4>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -92,7 +91,7 @@ v6 = {
 },
 v7 = {
   "alias": null,
-  "args": (v3/*: any*/),
+  "args": (v3/*:: as any*/),
   "concreteType": "HomeCategoryShortcutsConnection",
   "kind": "LinkedField",
   "name": "categories",
@@ -114,9 +113,9 @@ v7 = {
           "name": "node",
           "plural": false,
           "selections": [
-            (v4/*: any*/),
-            (v5/*: any*/),
-            (v6/*: any*/),
+            (v4/*:: as any*/),
+            (v5/*:: as any*/),
+            (v6/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -134,9 +133,9 @@ v7 = {
   "storageKey": null
 },
 v8 = [
-  (v4/*: any*/),
-  (v5/*: any*/),
-  (v6/*: any*/)
+  (v4/*:: as any*/),
+  (v5/*:: as any*/),
+  (v6/*:: as any*/)
 ],
 v9 = {
   "alias": null,
@@ -145,7 +144,7 @@ v9 = {
   "kind": "LinkedField",
   "name": "selectedProducts",
   "plural": true,
-  "selections": (v8/*: any*/),
+  "selections": (v8/*:: as any*/),
   "storageKey": null
 },
 v10 = {
@@ -158,8 +157,8 @@ v10 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -167,17 +166,17 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "HomeWorkspace",
         "kind": "LinkedField",
         "name": "homeWorkspace",
         "plural": false,
         "selections": [
-          (v7/*: any*/),
-          (v9/*: any*/),
+          (v7/*:: as any*/),
+          (v9/*:: as any*/),
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeWorkspaceProductsConnection",
             "kind": "LinkedField",
             "name": "products",
@@ -191,7 +190,7 @@ return {
                 "name": "edges",
                 "plural": true,
                 "selections": [
-                  (v10/*: any*/)
+                  (v10/*:: as any*/)
                 ],
                 "storageKey": null
               },
@@ -213,25 +212,25 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "HomeRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "HomeWorkspace",
         "kind": "LinkedField",
         "name": "homeWorkspace",
         "plural": false,
         "selections": [
-          (v7/*: any*/),
-          (v9/*: any*/),
+          (v7/*:: as any*/),
+          (v9/*:: as any*/),
           {
             "alias": null,
-            "args": (v3/*: any*/),
+            "args": (v3/*:: as any*/),
             "concreteType": "HomeWorkspaceProductsConnection",
             "kind": "LinkedField",
             "name": "products",
@@ -245,7 +244,7 @@ return {
                 "name": "edges",
                 "plural": true,
                 "selections": [
-                  (v10/*: any*/),
+                  (v10/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -253,7 +252,7 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v8/*: any*/),
+                    "selections": (v8/*:: as any*/),
                     "storageKey": null
                   },
                   {

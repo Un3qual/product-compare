@@ -165,7 +165,7 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
   const revalidator = useRevalidator();
   const [commitUpdate, isUpdateInFlight] =
     useMutation<CJProgramRowUpdateCJProgramMutation>(updateCJProgramMutation);
-  const stageLabel = cjProgramStageLabel(program.stage) ?? program.stage ?? null;
+  const stageLabel = cjProgramStageLabel(program.stage) ?? program.stage;
   const warnings = program.warningCodes
     .map(cjProgramWarningCopy)
     .filter((warning) => warning !== null);
@@ -197,7 +197,7 @@ export function CJProgramRow({ program: programRef }: { program: CJProgramRow_pr
       },
       onCompleted(response) {
         const payload = response.updateCjProgram;
-        const errors = payload.errors ?? [];
+        const errors = payload.errors;
 
         if (errors.length > 0) {
           if (errors.some((error) => error.code === "CONFLICT")) {
@@ -430,7 +430,7 @@ function CJProgramFeeds({
           {feeds.pageInfo.hasNextPage && feeds.pageInfo.endCursor ? (
             <Button
               aria-label={`Next feeds for ${programName}`}
-              onClick={() => onPage(feeds.pageInfo.endCursor ?? null)}
+              onClick={() => onPage(feeds.pageInfo.endCursor)}
               type="button"
               variant="link"
             >

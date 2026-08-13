@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<81368c83fe711be4ebcd52ec0e797b29>>
+ * @generated SignedSource<<470867b98ed361ba2c0a3d4e87ccbe9a>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -93,8 +92,8 @@ v5 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -102,7 +101,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "SavedComparisonSetConnection",
         "kind": "LinkedField",
         "name": "mySavedComparisonSets",
@@ -113,7 +112,7 @@ return {
             "kind": "FragmentSpread",
             "name": "SavedComparisonSetList_savedSets"
           },
-          (v3/*: any*/)
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -124,15 +123,15 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "SavedComparisonsRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "SavedComparisonSetConnection",
         "kind": "LinkedField",
         "name": "mySavedComparisonSets",
@@ -154,8 +153,8 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
-                  (v5/*: any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -179,7 +178,7 @@ return {
                         "name": "product",
                         "plural": false,
                         "selections": [
-                          (v5/*: any*/),
+                          (v5/*:: as any*/),
                           {
                             "alias": null,
                             "args": null,
@@ -187,7 +186,7 @@ return {
                             "name": "slug",
                             "storageKey": null
                           },
-                          (v4/*: any*/)
+                          (v4/*:: as any*/)
                         ],
                         "storageKey": null
                       }
@@ -200,7 +199,7 @@ return {
             ],
             "storageKey": null
           },
-          (v3/*: any*/)
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }

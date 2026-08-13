@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<496d6abd8380fe225b0a5aa2a30aee47>>
+ * @generated SignedSource<<4c9485131a7b88b02b429897e808a090>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -122,25 +121,25 @@ v2 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "RecommendationPanelQuery",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "RecommendationPanelQuery",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "24fc2311008e2cf794ae7c78c437b1f5",

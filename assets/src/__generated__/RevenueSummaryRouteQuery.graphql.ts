@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<75b3efb6b0d6b7a17f7c53f4d64d47ee>>
+ * @generated SignedSource<<34f1083da4aa4a95f35fddf549429876>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -83,7 +82,7 @@ v2 = [
         "name": "filters",
         "plural": false,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -158,7 +157,7 @@ v2 = [
             "name": "conversions",
             "storageKey": null
           },
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -175,20 +174,20 @@ v2 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "RevenueSummaryRouteQuery",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "RevenueSummaryRouteQuery",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "73aaa913d38fe428bfc197e5595d7ee7",

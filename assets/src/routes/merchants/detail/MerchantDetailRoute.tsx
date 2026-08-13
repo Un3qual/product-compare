@@ -92,7 +92,7 @@ const styles = create({
 });
 
 export function MerchantDetailRoute() {
-  const loaderData = useLoaderData() as MerchantDetailLoaderData;
+  const loaderData = useLoaderData<typeof merchantDetailLoader>();
   if (loaderData.status !== "ready")
     return (
       <PageShell eyebrow="Seller detail" title="Merchant not found">

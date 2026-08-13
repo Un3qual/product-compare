@@ -32,6 +32,7 @@ import {
   buildSavedComparisonsLoaderArgs,
 } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   commitMutationMock,
@@ -228,20 +229,17 @@ const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   },
 };
 
-const DETAIL_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const DETAIL_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
-const SECOND_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const SECOND_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
-const THIRD_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const THIRD_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -254,10 +252,9 @@ const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   },
 };
 
-const COMPARE_ROUTE_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const COMPARE_ROUTE_QUERY_REF = mockPreloadedQuery(
+  COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {

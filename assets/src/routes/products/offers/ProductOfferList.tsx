@@ -9,14 +9,9 @@ import { TrackedCommerceClickAction } from "../../offers/commerce-click";
 import type {
   ProductOfferCouponRow,
   ProductOfferListItem,
-  ProductOfferPriceHistoryRow,
 } from "./product-offer-panel-data";
 
-export type {
-  ProductOfferCouponRow,
-  ProductOfferListItem,
-  ProductOfferPriceHistoryRow,
-} from "./product-offer-panel-data";
+export type { ProductOfferCouponRow, ProductOfferListItem } from "./product-offer-panel-data";
 
 const styles = create({
   offer: {
@@ -257,7 +252,7 @@ function OfferPriceHistory({
   hasMore,
 }: {
   merchantName: string;
-  historyRows: ReadonlyArray<ProductOfferPriceHistoryRow>;
+  historyRows: ProductOfferListItem["priceHistory"];
   hasMore: boolean;
 }) {
   const titleId = useId();

@@ -39,14 +39,14 @@ importers:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
       react-relay:
-        specifier: 20.1.1
-        version: 20.1.1(react@19.2.4)
+        specifier: 21.0.1
+        version: 21.0.1(react@19.2.4)
       react-router-dom:
         specifier: 7.18.2
         version: 7.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       relay-runtime:
-        specifier: 20.1.1
-        version: 20.1.1
+        specifier: 21.0.1
+        version: 21.0.1
     devDependencies:
       '@axe-core/playwright':
         specifier: ^4.12.1
@@ -90,15 +90,12 @@ importers:
       '@types/react-dom':
         specifier: 19.2.3
         version: 19.2.3(@types/react@19.2.14)
-      '@types/relay-runtime':
-        specifier: 20.1.1
-        version: 20.1.1
       '@vitejs/plugin-react':
         specifier: 6.0.5
         version: 6.0.5(@rolldown/plugin-babel@0.2.3(@babel/core@7.29.7)(@babel/plugin-transform-runtime@7.29.7(@babel/core@7.29.7))(@babel/runtime@7.29.7)(rolldown@1.2.1)(vite@8.2.0(@types/node@22.19.13)))(vite@8.2.0(@types/node@22.19.13))
       babel-plugin-relay:
-        specifier: 20.1.1
-        version: 20.1.1
+        specifier: 21.0.1
+        version: 21.0.1
       jsdom:
         specifier: 26.1.0
         version: 26.1.0
@@ -109,8 +106,8 @@ importers:
         specifier: 1.76.0
         version: 1.76.0
       relay-compiler:
-        specifier: 20.1.1
-        version: 20.1.1
+        specifier: 21.0.1
+        version: 21.0.1
       stylex-mangle-classnames:
         specifier: github:Un3qual/stylex-mangle-classnames#168dbc31dbea3543f4c8d1ec3039091fc75d65e9
         version: https://codeload.github.com/Un3qual/stylex-mangle-classnames/tar.gz/168dbc31dbea3543f4c8d1ec3039091fc75d65e9(vite@8.2.0(@types/node@22.19.13))
@@ -1030,9 +1027,6 @@ packages:
   '@types/react@19.2.14':
     resolution: {integrity: sha512-ilcTH/UniCkMdtexkoCN0bI7pMcJDvmQFPvuPvmEaYA/NSfFTAgdUSLAoVjaRJm7+6PvcM+q1zYOwS4wTYMF9w==}
 
-  '@types/relay-runtime@20.1.1':
-    resolution: {integrity: sha512-loM2iJteknnJcsxrynmBVb7pIDkSkJUuCMnAa/oDFcrvaxkDvq8iy0J2UshMdDy14iJJocDblXeAu7c6Q1+Ucw==}
-
   '@unhead/bundler@3.2.3':
     resolution: {integrity: sha512-fL1LRdTyPYe9dzenElL96yaFW0LcXTUl1RSa5a2ni0n/GxMtvioPwz9y/fD4JnbVG//Kwn3YCv1jfUmlhcoW4g==}
     peerDependencies:
@@ -1172,8 +1166,8 @@ packages:
     peerDependencies:
       '@babel/core': ^7.4.0 || ^8.0.0-0 <8.0.0
 
-  babel-plugin-relay@20.1.1:
-    resolution: {integrity: sha512-BWlqLPiHbxZTxlyng2rVgsZCwztHNje7H8FR4c+UKy3ErQJBG6BKLr9vUdeR7mAZCH2v0sOAxNhG6zR1FrWjAg==}
+  babel-plugin-relay@21.0.1:
+    resolution: {integrity: sha512-/eswQ+KRhZApdgCzORcBHQ6xVtiIQvOseAEO7XbvcufQ7r8/IKd5NmuwBIjKH2w3kpLKYjw77o4xOjAAqjdQ7Q==}
 
   baseline-browser-mapping@2.11.7:
     resolution: {integrity: sha512-APw5YuIQAg6L9w4sHDI6j26DGFJI6RpYOhnkMPdC9lWbkKvsyPHzDsve1yd73lk21yz7Y09Kci8B2Pp9FonzWA==}
@@ -1882,8 +1876,8 @@ packages:
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
 
-  react-relay@20.1.1:
-    resolution: {integrity: sha512-pwl7wHHXCOx32dOg4TVNkhVojgGVvOBMo9pcMGeM1BIFYvmwGauKTtBB+qr5buXHGooCL8TXjMVg+ZLizIsbeQ==}
+  react-relay@21.0.1:
+    resolution: {integrity: sha512-08BBmpdolP8vslClnszG+g4vkcbVHvaoR0BDHyhicwpCfbtnVGe73/MfPja/xj30eLWSP5WPYNqZupTdEPZvtw==}
     peerDependencies:
       react: ^16.9.0 || ^17 || ^18 || ^19
 
@@ -1912,12 +1906,12 @@ packages:
     resolution: {integrity: sha512-6tDA8g98We0zd0GvVeMT9arEOnTw9qM03L9cJXaCjrip1OO764RDBLBfrB4cwzNGDj5OA5ioymC9GkizgWJDUg==}
     engines: {node: '>=8'}
 
-  relay-compiler@20.1.1:
-    resolution: {integrity: sha512-J/FFFLS/3vnbDkyQMw8l3Ev7dNHXMgC1RAs0fITz4Q63TFPOw142knKxY1Mm5ZZBABkAs9g2JghXaqM+phwTxw==}
+  relay-compiler@21.0.1:
+    resolution: {integrity: sha512-Wqlg3MtHyBlAYByVo24Wy9H3n2bAw991gPmzdo3XfNv+TzhI8zuGogtiae+7NORI7zhghgZaHC7Sp8S8ZPRYEA==}
     hasBin: true
 
-  relay-runtime@20.1.1:
-    resolution: {integrity: sha512-N98ZkkyuIHdXmHaPuljihM1QbFYXATF0gxA0CESFphszsQzXs9A/zZloVfzdOI/xg3B3CfM/5nozvIoeTDIcfw==}
+  relay-runtime@21.0.1:
+    resolution: {integrity: sha512-OS+We56sp6gkGVEcce9VCNOeg/sMbxT9unEoerQPgNAICHowSWrXNc6LJxF2OqjypxYF7kaLDSPPiaPii2Pw1g==}
 
   reselect@5.2.0:
     resolution: {integrity: sha512-AgZ3UOZm3YndfrJ4OYjgrT7bmCm/1iqkjvEfH/oYjzh6PD2qw4QuT3jjnXIrpdt4MTpMXclMT3lXbmRY+XRakw==}
@@ -2999,8 +2993,6 @@ snapshots:
     dependencies:
       csstype: 3.2.3
 
-  '@types/relay-runtime@20.1.1': {}
-
   '@unhead/bundler@3.2.3(@oxc-project/types@0.142.0)(lightningcss@1.33.0)(rolldown@1.2.1)(srvx@0.12.5)(unhead@3.2.3(rolldown@1.2.1)(vite@8.2.0(@types/node@22.19.13)))(vite@8.2.0(@types/node@22.19.13))':
     dependencies:
       '@vitejs/devtools-kit': 0.4.12(srvx@0.12.5)(vite@8.2.0(@types/node@22.19.13))
@@ -3171,7 +3163,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  babel-plugin-relay@20.1.1:
+  babel-plugin-relay@21.0.1:
     dependencies:
       babel-plugin-macros: 2.8.0
       cosmiconfig: 5.2.1
@@ -3844,14 +3836,14 @@ snapshots:
 
   react-is@17.0.2: {}
 
-  react-relay@20.1.1(react@19.2.4):
+  react-relay@21.0.1(react@19.2.4):
     dependencies:
       '@babel/runtime': 7.29.7
       fbjs: 3.0.5
       invariant: 2.2.4
       nullthrows: 1.1.1
       react: 19.2.4
-      relay-runtime: 20.1.1
+      relay-runtime: 21.0.1
     transitivePeerDependencies:
       - encoding
 
@@ -3876,9 +3868,9 @@ snapshots:
       indent-string: 4.0.0
       strip-indent: 3.0.0
 
-  relay-compiler@20.1.1: {}
+  relay-compiler@21.0.1: {}
 
-  relay-runtime@20.1.1:
+  relay-runtime@21.0.1:
     dependencies:
       '@babel/runtime': 7.29.7
       fbjs: 3.0.5

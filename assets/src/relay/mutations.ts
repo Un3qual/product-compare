@@ -1,9 +1,13 @@
-import type { MutationCommitFn } from "react-relay";
-import type { MutationConfig, MutationParameters } from "relay-runtime";
+import { useMutation, type UseMutationConfig } from "react-relay";
+import type { MutationParameters } from "relay-runtime";
+
+export type RouteMutationCommit<TMutation extends MutationParameters> = ReturnType<
+  typeof useMutation<TMutation>
+>[0];
 
 export function commitRouteMutation<TMutation extends MutationParameters>(
-  commitMutation: MutationCommitFn<TMutation>,
-  config: Omit<MutationConfig<TMutation>, "mutation">,
+  commitMutation: RouteMutationCommit<TMutation>,
+  config: UseMutationConfig<TMutation>,
   onCommitError: (error: unknown) => void,
 ) {
   try {
@@ -15,12 +19,12 @@ export function commitRouteMutation<TMutation extends MutationParameters>(
 }
 
 export function commitRouteMutationPromise<TMutation extends MutationParameters>(
-  commitMutation: MutationCommitFn<TMutation>,
-  config: Omit<MutationConfig<TMutation>, "mutation" | "onCompleted" | "onError">,
+  commitMutation: RouteMutationCommit<TMutation>,
+  config: Omit<UseMutationConfig<TMutation>, "onCompleted" | "onError">,
 ) {
   return new Promise<{
     response: TMutation["response"];
-    graphQLErrors: Parameters<NonNullable<MutationConfig<TMutation>["onCompleted"]>>[1];
+    graphQLErrors: Parameters<NonNullable<UseMutationConfig<TMutation>["onCompleted"]>>[1];
   }>((resolve, reject) => {
     commitRouteMutation(
       commitMutation,

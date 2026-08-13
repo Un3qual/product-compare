@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<1baa04fef18ec09f9462aad6619fc5bc>>
+ * @generated SignedSource<<bba6090bd93f6f26d6e5ec2c37e98506>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -94,20 +93,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "CJProgramRowUpdateCJProgramMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "CJProgramRowUpdateCJProgramMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "53a9de2f70ed5ad98ee90851479f2a86",

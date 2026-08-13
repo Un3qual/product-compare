@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<4660c02daeee741a0fdbc3e08d37c09a>>
+ * @generated SignedSource<<bfc6fb7f7e09668624e72bddd170bb7e>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -88,7 +87,7 @@ v3 = {
           "name": "node",
           "plural": false,
           "selections": [
-            (v2/*: any*/),
+            (v2/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -140,8 +139,8 @@ v3 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -155,7 +154,7 @@ return {
         "name": "viewer",
         "plural": false,
         "selections": [
-          (v3/*: any*/)
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -166,8 +165,8 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ComparisonSharingOperationsQuery",
@@ -180,8 +179,8 @@ return {
         "name": "viewer",
         "plural": false,
         "selections": [
-          (v3/*: any*/),
-          (v2/*: any*/)
+          (v3/*:: as any*/),
+          (v2/*:: as any*/)
         ],
         "storageKey": null
       }

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<fb0114768f2a671e67cba07605c0af0a>>
+ * @generated SignedSource<<eac455b2f13803e4629125625ac9c391>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -174,7 +173,7 @@ v9 = {
       "name": "title",
       "storageKey": null
     },
-    (v8/*: any*/),
+    (v8/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -207,8 +206,8 @@ v9 = {
   "storageKey": null
 },
 v10 = [
-  (v4/*: any*/),
-  (v5/*: any*/)
+  (v4/*:: as any*/),
+  (v5/*:: as any*/)
 ],
 v11 = {
   "alias": null,
@@ -217,7 +216,7 @@ v11 = {
   "kind": "LinkedField",
   "name": "brand",
   "plural": false,
-  "selections": (v10/*: any*/),
+  "selections": (v10/*:: as any*/),
   "storageKey": null
 },
 v12 = {
@@ -242,7 +241,7 @@ v13 = {
       "name": "attributeId",
       "storageKey": null
     },
-    (v12/*: any*/),
+    (v12/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -373,7 +372,7 @@ v18 = {
       "name": "observedOfferCount",
       "storageKey": null
     },
-    (v14/*: any*/),
+    (v14/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -382,8 +381,8 @@ v18 = {
       "name": "currencySummaries",
       "plural": true,
       "selections": [
-        (v15/*: any*/),
-        (v14/*: any*/),
+        (v15/*:: as any*/),
+        (v14/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -392,7 +391,7 @@ v18 = {
           "name": "bestOffer",
           "plural": false,
           "selections": [
-            (v16/*: any*/),
+            (v16/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -400,7 +399,7 @@ v18 = {
               "name": "landedPrice",
               "storageKey": null
             },
-            (v17/*: any*/),
+            (v17/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -439,7 +438,7 @@ v20 = {
   "name": "priceHistory90d",
   "plural": true,
   "selections": [
-    (v15/*: any*/),
+    (v15/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -448,9 +447,9 @@ v20 = {
       "name": "merchants",
       "plural": true,
       "selections": [
-        (v4/*: any*/),
-        (v5/*: any*/),
-        (v16/*: any*/)
+        (v4/*:: as any*/),
+        (v5/*:: as any*/),
+        (v16/*:: as any*/)
       ],
       "storageKey": null
     },
@@ -462,7 +461,7 @@ v20 = {
       "name": "points",
       "plural": true,
       "selections": [
-        (v17/*: any*/),
+        (v17/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -492,8 +491,8 @@ v20 = {
           "name": "merchantPrices",
           "plural": true,
           "selections": [
-            (v16/*: any*/),
-            (v19/*: any*/)
+            (v16/*:: as any*/),
+            (v19/*:: as any*/)
           ],
           "storageKey": null
         }
@@ -549,14 +548,14 @@ v24 = {
       "name": "endCursor",
       "storageKey": null
     },
-    (v23/*: any*/)
+    (v23/*:: as any*/)
   ],
   "storageKey": null
 },
 v25 = [
-  (v4/*: any*/),
-  (v19/*: any*/),
-  (v17/*: any*/)
+  (v4/*:: as any*/),
+  (v19/*:: as any*/),
+  (v17/*:: as any*/)
 ],
 v26 = {
   "alias": null,
@@ -566,16 +565,16 @@ v26 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v23/*: any*/)
+    (v23/*:: as any*/)
   ],
   "storageKey": null
 };
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -583,25 +582,25 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "concreteType": "Product",
         "kind": "LinkedField",
         "name": "product",
         "plural": false,
         "selections": [
-          (v4/*: any*/),
-          (v5/*: any*/),
-          (v6/*: any*/),
-          (v7/*: any*/),
-          (v8/*: any*/),
-          (v9/*: any*/),
-          (v11/*: any*/),
-          (v13/*: any*/),
-          (v18/*: any*/),
-          (v20/*: any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
+          (v6/*:: as any*/),
+          (v7/*:: as any*/),
+          (v8/*:: as any*/),
+          (v9/*:: as any*/),
+          (v11/*:: as any*/),
+          (v13/*:: as any*/),
+          (v18/*:: as any*/),
+          (v20/*:: as any*/),
           {
             "alias": null,
-            "args": (v21/*: any*/),
+            "args": (v21/*:: as any*/),
             "concreteType": "MerchantProductConnection",
             "kind": "LinkedField",
             "name": "merchantProducts",
@@ -615,11 +614,11 @@ return {
                 "name": "edges",
                 "plural": true,
                 "selections": [
-                  (v22/*: any*/)
+                  (v22/*:: as any*/)
                 ],
                 "storageKey": null
               },
-              (v24/*: any*/),
+              (v24/*:: as any*/),
               {
                 "args": null,
                 "kind": "FragmentSpread",
@@ -638,34 +637,34 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v2/*:: as any*/),
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ProductDetailRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "concreteType": "Product",
         "kind": "LinkedField",
         "name": "product",
         "plural": false,
         "selections": [
-          (v4/*: any*/),
-          (v5/*: any*/),
-          (v6/*: any*/),
-          (v7/*: any*/),
-          (v8/*: any*/),
-          (v9/*: any*/),
-          (v11/*: any*/),
-          (v13/*: any*/),
-          (v18/*: any*/),
-          (v20/*: any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
+          (v6/*:: as any*/),
+          (v7/*:: as any*/),
+          (v8/*:: as any*/),
+          (v9/*:: as any*/),
+          (v11/*:: as any*/),
+          (v13/*:: as any*/),
+          (v18/*:: as any*/),
+          (v20/*:: as any*/),
           {
             "alias": null,
-            "args": (v21/*: any*/),
+            "args": (v21/*:: as any*/),
             "concreteType": "MerchantProductConnection",
             "kind": "LinkedField",
             "name": "merchantProducts",
@@ -679,7 +678,7 @@ return {
                 "name": "edges",
                 "plural": true,
                 "selections": [
-                  (v22/*: any*/),
+                  (v22/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -688,7 +687,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v4/*: any*/),
+                      (v4/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -696,7 +695,7 @@ return {
                         "name": "url",
                         "storageKey": null
                       },
-                      (v15/*: any*/),
+                      (v15/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -704,7 +703,7 @@ return {
                         "kind": "LinkedField",
                         "name": "merchant",
                         "plural": false,
-                        "selections": (v10/*: any*/),
+                        "selections": (v10/*:: as any*/),
                         "storageKey": null
                       },
                       {
@@ -714,7 +713,7 @@ return {
                         "kind": "LinkedField",
                         "name": "latestPrice",
                         "plural": false,
-                        "selections": (v25/*: any*/),
+                        "selections": (v25/*:: as any*/),
                         "storageKey": null
                       },
                       {
@@ -739,7 +738,7 @@ return {
                             "name": "edges",
                             "plural": true,
                             "selections": [
-                              (v22/*: any*/),
+                              (v22/*:: as any*/),
                               {
                                 "alias": null,
                                 "args": null,
@@ -748,8 +747,8 @@ return {
                                 "name": "node",
                                 "plural": false,
                                 "selections": [
-                                  (v12/*: any*/),
-                                  (v8/*: any*/),
+                                  (v12/*:: as any*/),
+                                  (v8/*:: as any*/),
                                   {
                                     "alias": null,
                                     "args": null,
@@ -764,7 +763,7 @@ return {
                                     "name": "discountValue",
                                     "storageKey": null
                                   },
-                                  (v15/*: any*/),
+                                  (v15/*:: as any*/),
                                   {
                                     "alias": null,
                                     "args": null,
@@ -785,7 +784,7 @@ return {
                             ],
                             "storageKey": null
                           },
-                          (v26/*: any*/)
+                          (v26/*:: as any*/)
                         ],
                         "storageKey": "activeCoupons(first:2)"
                       },
@@ -818,13 +817,13 @@ return {
                                 "kind": "LinkedField",
                                 "name": "node",
                                 "plural": false,
-                                "selections": (v25/*: any*/),
+                                "selections": (v25/*:: as any*/),
                                 "storageKey": null
                               }
                             ],
                             "storageKey": null
                           },
-                          (v26/*: any*/)
+                          (v26/*:: as any*/)
                         ],
                         "storageKey": "priceHistory(first:12)"
                       }
@@ -834,7 +833,7 @@ return {
                 ],
                 "storageKey": null
               },
-              (v24/*: any*/)
+              (v24/*:: as any*/)
             ],
             "storageKey": null
           }

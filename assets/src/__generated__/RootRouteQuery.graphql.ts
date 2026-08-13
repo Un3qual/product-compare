@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<6df044a80b79de4525120a8b626bf258>>
+ * @generated SignedSource<<d8ed1dffd51bb6bdc78333566d4a365f>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -63,7 +62,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "RootRouteQuery",
-    "selections": (v0/*: any*/),
+    "selections": (v0/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -72,7 +71,7 @@ return {
     "argumentDefinitions": [],
     "kind": "Operation",
     "name": "RootRouteQuery",
-    "selections": (v0/*: any*/)
+    "selections": (v0/*:: as any*/)
   },
   "params": {
     "cacheID": "9ee512622d83fbf8088e5bf97a78269c",

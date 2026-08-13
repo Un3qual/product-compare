@@ -133,7 +133,7 @@ type SharedRecommendationViewData = ReturnType<
 >["recommendation"];
 
 export function SharedComparisonRoute() {
-  const loaderData = useLoaderData() as SharedComparisonLoaderData;
+  const loaderData = useLoaderData<typeof sharedComparisonLoader>();
 
   if (loaderData.status !== "ready") {
     return (

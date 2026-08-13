@@ -174,7 +174,10 @@ function SelectedSpecRow({
       {selection.kind === "numeric" ? (
         <RadioGroup
           aria-label={`${selection.displayName} matching rule`}
-          onValueChange={(value) => onModeChange(value as SpecFilterMode)}
+          onValueChange={(value) => {
+            const mode = specFilterModeFromValue(value);
+            if (mode) onModeChange(mode);
+          }}
           style={styles.modes}
           value={selection.mode}
         >
@@ -199,6 +202,17 @@ function SelectedSpecRow({
       </Button>
     </div>
   );
+}
+
+function specFilterModeFromValue(value: unknown): SpecFilterMode | null {
+  switch (value) {
+    case "same":
+    case "at_least":
+    case "at_most":
+      return value;
+    default:
+      return null;
+  }
 }
 
 function selectionCountLabel(count: number) {

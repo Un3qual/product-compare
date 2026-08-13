@@ -5,6 +5,7 @@ import { externalHttpUrlHref } from "$frontend/navigation/external-links";
 import { graphQLDateTimeLabel } from "$relay/scalars";
 import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "$routes/offers/offer-snapshot";
 import { compareProductText } from "$frontend/formatting";
+import type { PriceHistoryChartDatum } from "$ui/components/data/PriceHistoryChart";
 import type { OfferDiscoverySort } from "./offer-discovery-filter-data";
 
 export type OfferConnection = OfferDiscoveryList_connection$data;
@@ -24,14 +25,6 @@ export type VisibleMerchant = {
   id: string;
   name: string;
 };
-export type PriceHistoryRow = {
-  id: string;
-  observedAt: string;
-  observedDate: string;
-  priceText: string;
-  priceValue: number;
-};
-
 type RenderableOfferSort = Exclude<OfferDiscoverySort, "default">;
 
 export const OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<RenderableOffer> = {
@@ -220,7 +213,7 @@ function hasVisibleCoupons(offer: OfferListNode) {
 export function priceHistoryRow(
   pricePoint: PriceHistoryNode,
   currency: string,
-): PriceHistoryRow | null {
+): PriceHistoryChartDatum | null {
   const priceText = priceLabel(pricePoint.price, currency);
   const priceValue = decimalStringToNumber(pricePoint.price);
   const observedDate = graphQLDateTimeLabel(pricePoint.observedAt);

@@ -5,6 +5,7 @@ import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
+import type { ComparePickerOption } from "./compare-picker-data";
 
 const styles = create({
   picker: {
@@ -43,13 +44,6 @@ const styles = create({
   },
 });
 
-export type CompareProductPickerOption = {
-  brandName: string;
-  href: string;
-  id: string;
-  name: string;
-};
-
 export function CompareProductPickerView({
   heading,
   onShowMore,
@@ -57,7 +51,7 @@ export function CompareProductPickerView({
 }: {
   heading: string;
   onShowMore: (() => void) | null;
-  options: readonly CompareProductPickerOption[];
+  options: readonly ComparePickerOption[];
 }) {
   const [filterText, setFilterText] = useState("");
   const filterInputId = useId();

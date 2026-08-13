@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<045a068970a917b52c2472b3a3d53fda>>
+ * @generated SignedSource<<533c8b113c7c5752a58c2287a48753df>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -83,7 +82,7 @@ return {
           "name": "node",
           "plural": false,
           "selections": [
-            (v0/*: any*/),
+            (v0/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -106,7 +105,7 @@ return {
               "name": "merchant",
               "plural": false,
               "selections": [
-                (v0/*: any*/),
+                (v0/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -175,7 +174,7 @@ return {
                   "name": "pageInfo",
                   "plural": false,
                   "selections": [
-                    (v1/*: any*/)
+                    (v1/*:: as any*/)
                   ],
                   "storageKey": null
                 }
@@ -208,7 +207,7 @@ return {
           "name": "endCursor",
           "storageKey": null
         },
-        (v1/*: any*/),
+        (v1/*:: as any*/),
         {
           "alias": null,
           "args": null,

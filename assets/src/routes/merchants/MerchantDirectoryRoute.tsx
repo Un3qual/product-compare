@@ -44,7 +44,7 @@ export type MerchantDirectoryLoaderData =
   | { status: "error"; pagination: MerchantPagination };
 
 export function MerchantDirectoryRoute() {
-  const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
+  const loaderData = useLoaderData<typeof merchantDirectoryLoader>();
 
   return (
     <PageShell
@@ -110,7 +110,7 @@ function MerchantDirectoryPanel({
   }
 
   const paginationData = buildMerchantDirectoryPaginationData({
-    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    endCursor: data.merchants.pageInfo.endCursor,
     hasNextPage: data.merchants.pageInfo.hasNextPage,
     hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
     pagination,
