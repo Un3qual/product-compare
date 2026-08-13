@@ -4,17 +4,17 @@
 
 **Goal:** Make the revenue attribution and CJ program ledgers materially denser, preserve every existing fact and action, and keep all table content contained beside the operator sidebar.
 
-**Architecture:** Revenue becomes a four-column native table with inline scan summaries and one structured conversion investigation disclosure. CJ becomes a four-column native table whose compact summary row opens a full-width editor row. Shared table containment remains generic, while operator tables remove their desktop minimum widths and comparison matrices retain intentional internal scrolling.
+**Architecture:** Revenue uses a four-column native table whose cells explicitly separate primary, supporting, and diagnostic facts; every conversion fact remains visible without a disclosure. CJ uses a four-column native table whose heading-free summary row opens a full-width task editor. Shared table containment and a modestly tighter cell rhythm remain generic, while comparison matrices retain intentional internal scrolling.
 
 **Tech Stack:** React 19, Relay 21, Base UI Collapsible, TanStack Table 9, StyleX, Vitest, Testing Library, Playwright
 
 ## Global Constraints
 
 - Preserve every revenue click, identity, diagnostic, commerce, conversion, CJ lifecycle, warning, edit, feedback, and feed fact or action listed in `docs/superpowers/specs/2026-08-13-compact-operator-ledgers-design.md`.
-- Information may move into an accessible disclosure only when it remains available without navigation or a separate page.
+- Record information must not move into a disclosure merely to make a row appear smaller; disclosures remain for task interfaces such as CJ editing and feed inspection.
 - Keep native table semantics, keyboard operation, focus visibility, reduced-motion behavior, and independent loader, mutation, pagination, and error boundaries.
 - Do not change GraphQL operations, generated Relay ownership, URL filters, pagination cursors, backend behavior, the workspace/context-rail breakpoint, or comparison-matrix behavior.
-- Do not solve density by reducing typography, widening ordinary ledgers, hiding columns, converting ledgers to cards, or adding dependencies.
+- Do not solve density by reducing typography, widening ordinary ledgers, hiding columns, imposing row-height limits, converting ledgers to cards, or adding dependencies.
 - Write each behavior test first, run it against the prior production implementation, and confirm the expected failure before changing source.
 
 ---
@@ -22,11 +22,11 @@
 ## File Responsibility Map
 
 - `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx` owns the four-column click ledger and compact scan hierarchy.
-- `assets/src/routes/commerce/revenue/attribution/ConversionDetails.tsx` owns collapsed conversion facts and the structured investigation disclosure.
+- `assets/src/routes/commerce/revenue/attribution/ConversionDetails.tsx` owns the always-visible primary, supporting, and diagnostic conversion hierarchy.
 - `assets/src/routes/ingestion/cj-programs/programs/ProgramLifecycleTable.tsx` owns the four-column CJ table model and headers.
 - `assets/src/routes/ingestion/cj-programs/programs/ProgramLifecycleRow.tsx` owns one program summary row, its full-width editor row, and row-local mutation state.
-- `assets/src/ui/primitives/Table.tsx` owns generic table-container shrink and overflow containment, not route density decisions.
-- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx` proves revenue information preservation and disclosure semantics.
+- `assets/src/ui/primitives/Table.tsx` owns generic table-container shrink, overflow containment, and the shared compact cell rhythm, not route information priority.
+- `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx` proves revenue information preservation and always-visible conversion semantics.
 - `assets/test/routes/ingestion/cj-programs/cj-programs.route.test.tsx` proves compact CJ scanning, editor behavior, mutation locality, and feed preservation.
 - `assets/tests/e2e/production-ui-operations.spec.ts` proves operator density, interactions, accessibility, and table containment at three widths.
 - `assets/tests/e2e/production-ui-compare-return.spec.ts` proves deliberately wide comparison tables remain contained after the shared wrapper change.
@@ -492,36 +492,329 @@
 
 ---
 
-### Task 4: Audit all table consumers and close the refinement
+### Task 4: Recompose every table around information priority
+
+Task 4 supersedes Task 1's intermediate conversion disclosure while retaining
+its four-column table and non-loss contract.
 
 **Files:**
+- Modify: `assets/test/routes/commerce/revenue/revenue-summary.route.test.tsx`
+- Modify: `assets/test/routes/ingestion/cj-programs/cj-programs.route.test.tsx`
+- Modify: `assets/src/routes/commerce/revenue/attribution/AttributionLedger.tsx`
+- Modify: `assets/src/routes/commerce/revenue/attribution/ConversionDetails.tsx`
+- Modify: `assets/src/routes/ingestion/cj-programs/programs/ProgramLifecycleRow.tsx`
+- Modify: `assets/src/ui/primitives/Table.tsx`
+
+**Interfaces:**
+- Consumes: unchanged generated revenue/CJ Relay fragments, mutations, pagination, and route loaders.
+- Produces: `ConversionDetails` with no local disclosure state; a semantic CJ row header with no heading element; modestly tighter shared table cell padding; unchanged editor/feed task disclosures.
+
+- [ ] **Step 1: Write the failing always-visible conversion test**
+
+  Replace the on-demand conversion test with assertions that require all facts
+  before any interaction and prohibit a details trigger:
+
+  ```tsx
+  test("revenue route keeps conversion decisions and diagnostics visible in the ledger", () => {
+    mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+    renderRevenueSummaryRoute();
+
+    const ledger = screen.getByRole("table", { name: "Attribution ledger" });
+    const conversion = within(ledger).getByRole("group", {
+      name: "Conversion impact-conversion-123",
+    });
+
+    expect(
+      within(ledger).queryByRole("button", {
+        name: "Show conversion impact-conversion-123 details",
+      }),
+    ).not.toBeInTheDocument();
+    expect(within(conversion).getByText("Order value")).toBeInTheDocument();
+    expect(within(conversion).getByText("Commission")).toBeInTheDocument();
+    expect(within(conversion).getByText("90.00 USD")).toBeInTheDocument();
+    expect(within(conversion).getByText("9.00 USD")).toBeInTheDocument();
+    expect(within(conversion).getByText("Paid")).toBeInTheDocument();
+    expect(within(conversion).getByText("Strong match")).toBeInTheDocument();
+    expect(within(conversion).getByText("Conversion Merchant")).toBeInTheDocument();
+    expect(within(conversion).getByText("Conversion Product")).toBeInTheDocument();
+    expect(within(conversion).getByText("Conversion Network")).toBeInTheDocument();
+    expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
+    expect(within(conversion).getByText("Reported")).toBeInTheDocument();
+    expect(within(conversion).getByText("impact-conversion-123")).toBeInTheDocument();
+  });
+  ```
+
+  Retain the existing exact `datetime` assertions, missing-purchase fallback,
+  duplicate-reference rendering, pagination, anonymous identity, and absence of
+  internal database IDs.
+
+- [ ] **Step 2: Write the failing heading-free CJ table test**
+
+  Add semantic assertions to the existing compact-row test:
+
+  ```tsx
+  const ledger = screen.getByRole("table", { name: "CJ program lifecycle ledger" });
+  expect(within(ledger).queryByRole("heading")).not.toBeInTheDocument();
+  expect(within(ledger).getByRole("rowheader", { name: /New Merchant/ })).toBeInTheDocument();
+
+  const row = rowFor("New Merchant");
+  expect(row.getByText("CJ Affiliate")).toBeInTheDocument();
+  expect(row.getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(row.getByText("1 feed")).toBeInTheDocument();
+  expect(row.getByText("Decide whether to pursue")).toBeInTheDocument();
+  expect(row.getByRole("button", { name: "Edit program New Merchant" })).toBeInTheDocument();
+  ```
+
+  Keep every existing editor, mutation, warning, conflict refresh, feedback,
+  feed lazy-load/retry/pagination, unmatched-feed, and future-stage assertion.
+
+- [ ] **Step 3: Run the focused route tests and verify RED**
+
+  ```bash
+  cd assets
+  pnpm exec vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/ingestion/cj-programs/cj-programs.route.test.tsx
+  ```
+
+  Expected: FAIL because conversion facts still require the Details trigger and
+  the CJ merchant cell still exposes `New Merchant` as a heading instead of a
+  row header.
+
+- [ ] **Step 4: Recompose revenue cells into two or three meaningful bands**
+
+  In `AttributionLedger.tsx`, retain the four columns and every Relay field but
+  replace generic stacks with priority-specific inline groups:
+
+  ```tsx
+  function AttributionVisit({ click }: { click: AttributionClick }) {
+    return (
+      <div {...props(styles.factGroup)}>
+        <div {...props(styles.primaryLine)}>
+          <time dateTime={click.insertedAt}>{formatProductDateTimeLabel(click.insertedAt)}</time>
+          <AttributionIdentity click={click} />
+        </div>
+        <div {...props(styles.supportingLine)}>
+          <StatusBadge tone="accent">{sourceSurfaceCopy(click.sourceSurface)}</StatusBadge>
+          <StatusBadge>{linkTypeCopy(click.linkType)}</StatusBadge>
+        </div>
+      </div>
+    );
+  }
+  ```
+
+  Use the same hierarchy in the other cells:
+
+  - Request: referrer on the primary line; browser and IP on one supporting line.
+  - Commerce: merchant and product on the primary line; network, SKU, and
+    affiliate program on one supporting/diagnostic line.
+  - Visit identity: email or anonymous state shares the primary band; `Known
+    customer` or `No account linked` is supporting copy, not a third stack.
+
+  Keep existing `title` attributes on long referrer and user-agent values and
+  retain `overflowWrap: "anywhere"` for identifiers.
+
+- [ ] **Step 5: Render every conversion fact without disclosure state**
+
+  Remove `useState`, `Button`, and `Collapsible` imports from
+  `ConversionDetails.tsx`. Render one labeled group per list item:
+
+  ```tsx
+  <li {...props(styles.item)}>
+    <div
+      aria-label={`Conversion ${conversion.networkConversionRef}`}
+      role="group"
+      {...props(styles.conversion)}
+    >
+      <div {...props(styles.primaryLine)}>
+        <span {...props(styles.labeledFact)}>
+          <span {...props(styles.label)}>Order value</span>
+          <strong>{formatCurrencyAmount(conversion.orderAmount, conversion.currency)}</strong>
+        </span>
+        <StatusBadge tone={conversionStatusTone(conversion.status)}>
+          {conversionStatusCopy(conversion.status)}
+        </StatusBadge>
+        <span {...props(styles.labeledFact)}>
+          <span {...props(styles.label)}>Commission</span>
+          <strong>
+            {formatCurrencyAmount(conversion.commissionAmount, conversion.currency)}
+          </strong>
+        </span>
+        <StatusBadge tone={attributionConfidenceTone(conversion.attributionConfidence)}>
+          {attributionConfidenceCopy(conversion.attributionConfidence)}
+        </StatusBadge>
+      </div>
+      <div {...props(styles.supportingLine)}>
+        <strong>{conversion.merchantName ?? "No merchant"}</strong>
+        <span>{conversion.productName ?? "No product"}</span>
+        <span>{conversion.affiliateNetworkName ?? "No affiliate network"}</span>
+      </div>
+      <div {...props(styles.diagnosticLine)}>
+        <span>
+          <span {...props(styles.label)}>Purchased</span>{" "}
+          {conversion.purchasedAt ? (
+            <time dateTime={conversion.purchasedAt}>
+              {formatProductDateTimeLabel(conversion.purchasedAt)}
+            </time>
+          ) : (
+            "Not recorded"
+          )}
+        </span>
+        <span aria-hidden="true">→</span>
+        <span>
+          <span {...props(styles.label)}>Reported</span>{" "}
+          <time dateTime={conversion.reportedAt}>
+            {formatProductDateTimeLabel(conversion.reportedAt)}
+          </time>
+        </span>
+        <code title="Conversion reference">{conversion.networkConversionRef}</code>
+      </div>
+    </div>
+  </li>
+  ```
+
+  Use wrapping flex lines and small route-local gaps. Separate multiple
+  conversions with a quiet border rather than a raised nested card.
+
+- [ ] **Step 6: Make the CJ summary semantic and task-oriented**
+
+  Import `TableHead` in `ProgramLifecycleRow.tsx` and replace the merchant
+  `TableCell`/`h2` pair with a scoped row header:
+
+  ```tsx
+  <TableHead scope="row" style={styles.cell}>
+    <strong {...props(styles.programName)}>{programName}</strong>
+    <p {...props(styles.facts)}>
+      <span>CJ Affiliate</span>
+      <span>Advertiser ID {program.advertiserId}</span>
+      <span>{formatFeedCount(program.feedCount)}</span>
+    </p>
+  </TableHead>
+  ```
+
+  Keep lifecycle stage and warnings together, keep the exact last-change time
+  visible, and render required action plus the edit trigger on one wrapping
+  action line. Use `variant="link"` for the trigger while retaining
+  `aria-controls`, `aria-expanded`, its program-specific label, and the
+  full-width editor row. Do not move summary facts into the editor.
+
+- [ ] **Step 7: Tighten the shared table rhythm without shrinking typography**
+
+  In `Table.tsx`, replace the single all-axis token with modest block/inline
+  padding while leaving typography and overflow behavior unchanged:
+
+  ```tsx
+  cell: {
+    paddingBlock: "0.55rem",
+    paddingInline: "0.65rem",
+    verticalAlign: "middle",
+  },
+  head: {
+    color: tokens.textSecondary,
+    fontWeight: 700,
+    paddingBlock: "0.55rem",
+    paddingInline: "0.65rem",
+    textAlign: "start",
+    verticalAlign: "middle",
+  },
+  ```
+
+  This is the only global density change. Do not add compact props, table
+  variants, row-height limits, or comparison-specific exceptions.
+
+- [ ] **Step 8: Run focused GREEN and commit the hierarchy refinement**
+
+  ```bash
+  cd assets
+  pnpm run relay:check
+  pnpm exec vitest run test/routes/commerce/revenue/revenue-summary.route.test.tsx test/routes/commerce/revenue/revenue-summary-view-data.test.ts test/routes/ingestion/cj-programs/cj-programs.route.test.tsx test/routes/ingestion/cj-programs/cj-program-data.test.ts
+  pnpm run typecheck
+  pnpm run format:check
+  cd ..
+  git add assets/src/routes/commerce/revenue/attribution assets/src/routes/ingestion/cj-programs/programs/ProgramLifecycleRow.tsx assets/src/ui/primitives/Table.tsx assets/test/routes/commerce/revenue assets/test/routes/ingestion/cj-programs
+  git commit -m "refactor: prioritize operator ledger facts"
+  ```
+
+  Expected: every focused route/data test passes; conversion details have no
+  local disclosure state; CJ editing/feed behavior remains unchanged.
+
+---
+
+### Task 5: Audit every table visually and close the refinement
+
+**Files:**
+- Modify: `assets/tests/e2e/production-ui-operations.spec.ts`
 - Inspect: `assets/src/routes/compare/live/SpecificationMatrix.tsx`
 - Inspect: `assets/src/routes/compare/live/DecisionSummary.tsx`
 - Inspect: every path returned by `rg -l '<Table' assets/src -g '*.tsx'`
 - Modify: `docs/work/operator-workspaces.md`
 
 **Interfaces:**
-- Produces: a complete shared-table consumer inventory, preserved intentional comparison scrolling, updated operator lane evidence, and a clean verified branch.
+- Produces: browser proof of preserved hierarchy and containment, a complete shared-table consumer inventory, updated lane evidence, and a clean verified branch.
 
-- [ ] **Step 1: Audit the complete shared-table inventory**
+- [ ] **Step 1: Update browser acceptance for always-visible facts**
+
+  Remove the conversion Details click/open/close sequence. Assert its labeled
+  group and all decision/diagnostic facts immediately after the ledger renders:
+
+  ```ts
+  const conversion = ledger.getByRole("group", {
+    name: "Conversion impact-conversion-123",
+  });
+  await expect(conversion.getByText("Order value")).toBeVisible();
+  await expect(conversion.getByText("Commission")).toBeVisible();
+  await expect(conversion.getByText("180.00 USD")).toBeVisible();
+  await expect(conversion.getByText("18.00 USD")).toBeVisible();
+  await expect(conversion.getByText("Northwind Supply")).toBeVisible();
+  await expect(conversion.getByText("Field Camera")).toBeVisible();
+  await expect(conversion.getByText("Impact")).toBeVisible();
+  await expect(conversion.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
+  await expect(conversion.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
+  await expect(ledger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
+  ```
+
+  Keep CJ editor/feed interaction, axe, reduced-motion, document-overflow,
+  table-container bounds, and screenshot assertions. Add the same heading count
+  assertion to the CJ table. Do not add pixel or row-height assertions.
+
+- [ ] **Step 2: Run the operator browser scenario and inspect hierarchy**
+
+  ```bash
+  cd assets
+  PLAYWRIGHT_PORT=4187 pnpm exec playwright test tests/e2e/production-ui-operations.spec.ts --reporter=line
+  ```
+
+  Expected: 7/7 scenarios pass. Inspect desktop, tablet, and mobile CJ/revenue
+  screenshots for clear first-line identity/state, compact supporting metadata,
+  subdued diagnostics, sensible wrapping, and no wasted nested shells. Inspect
+  the open desktop CJ editor capture for a compact task layout.
+
+- [ ] **Step 3: Audit the complete shared-table inventory**
 
   ```bash
   rg -l '<Table' assets/src -g '*.tsx' | sort
-  rg -n 'minWidth|overflowX|overflow: "hidden"|tableLayout' assets/src/routes/compare assets/src/routes/commerce/revenue assets/src/routes/ingestion/cj-programs assets/src/ui/primitives/Table.tsx -g '*.tsx'
+  rg -n '<h[1-6]|minWidth|overflowX|overflow: "hidden"|tableLayout' assets/src/routes/compare assets/src/routes/commerce/revenue assets/src/routes/ingestion/cj-programs assets/src/ui/primitives/Table.tsx -g '*.tsx'
   ```
 
-  Expected inventory: revenue attribution, CJ lifecycle, specification matrix, and decision summary. Confirm only the comparison matrices retain `48rem` minimum widths and that their horizontal overflow is contained inside `[data-slot="table-container"]`.
+  Expected consumers: revenue attribution, CJ lifecycle, specification matrix,
+  and decision summary. Confirm the comparison section headings remain outside
+  their tables, only comparison matrices retain `48rem` minimum widths, and all
+  horizontal overflow stays inside `[data-slot="table-container"]`.
 
-- [ ] **Step 2: Update lane evidence**
+- [ ] **Step 4: Update lane evidence**
 
-  Add a compact-ledger refinement section to `docs/work/operator-workspaces.md` recording:
+  Add a compact-ledger hierarchy section to `docs/work/operator-workspaces.md`
+  recording:
 
-  - Four revenue columns and the full non-loss fact inventory.
-  - Structured earnings/context/timeline conversion disclosure.
-  - Four CJ columns and the full-width editor row with unchanged mutation/feed behavior.
-  - Desktop/tablet no-scroll operator proof, mobile contained-scroll proof, comparison containment proof, accessibility results, and inspected screenshots.
+  - Primary/supporting/diagnostic ownership for every revenue column.
+  - Always-visible conversion amount, status, commission, confidence, context,
+    timeline, and reference facts.
+  - Heading-free CJ summary rows and the full-width task editor with unchanged
+    mutation/feed behavior.
+  - Tighter shared cell rhythm across the two comparison matrices and two
+    operator ledgers.
+  - Desktop/tablet no-scroll operator proof, mobile contained-scroll proof,
+    comparison containment, accessibility results, and inspected screenshots.
 
-- [ ] **Step 3: Run the complete frontend and repository gates**
+- [ ] **Step 5: Run the complete frontend and repository gates**
 
   ```bash
   cd assets
@@ -533,14 +826,18 @@
   git status --short
   ```
 
-  Expected: Relay validation, TypeScript, lint, formatting, all unit tests, both builds, StyleX mangling, bundle budget, operator/comparison browser scenarios, queue validation, and whitespace checks pass. The status output contains only the intended lane-doc change before commit.
+  Expected: Relay validation, TypeScript, lint, formatting, all unit tests, both
+  builds, StyleX mangling, bundle budget, 11 browser scenarios, queue
+  validation, and whitespace checks pass. The status output contains only the
+  intended lane-doc and plan-checklist changes before the closeout commit.
 
-- [ ] **Step 4: Commit the verified closeout**
+- [ ] **Step 6: Commit the verified closeout**
 
   ```bash
-  git add docs/work/operator-workspaces.md
+  git add docs/work/operator-workspaces.md docs/superpowers/plans/2026-08-13-compact-operator-ledgers-implementation-plan.md assets/tests/e2e/production-ui-operations.spec.ts
   git commit -m "docs: verify compact operator ledgers"
   git status --short --branch
   ```
 
-  Expected: clean `codex/operator-workspaces` worktree with the compact-ledger commits ahead of its prior closeout.
+  Expected: clean `codex/operator-workspaces` worktree with the hierarchy
+  refinement commits ahead of its prior closeout.
