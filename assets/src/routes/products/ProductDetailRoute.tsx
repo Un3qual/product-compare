@@ -22,7 +22,6 @@ import {
 import { recoverRouteLoaderError } from "$routes/loader-errors";
 import { routeMetadataFromSeo } from "$routes/seo";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";
@@ -32,16 +31,12 @@ import { tokens } from "$ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
-import { ProductAttributeList, type ProductAttributeListItem } from "./ProductAttributeList";
 import { ProductDecisionActions } from "./ProductDecisionActions";
 import { ProductOfferPanel } from "./ProductOfferPanel";
 import { PriceWatchControl } from "./PriceWatchControl";
 import { ProductCommunityPanel } from "./ProductCommunityPanel";
-import {
-  createProductDetailRouteData,
-  overviewSummaryItems,
-  type ProductOverviewSummaryItem,
-} from "./product-detail-route-data";
+import { createProductDetailRouteData } from "./product-detail-route-data";
+import { ProductSpecifications } from "./specifications";
 
 const productDetailRouteQuery = graphql`
   query ProductDetailRouteQuery($slug: String!, $offerFirst: Int!, $offersAfter: String) {
@@ -125,16 +120,6 @@ const styles = create({
     fontSize: "1.4rem",
     letterSpacing: "-0.025em",
     margin: 0,
-  },
-  overview: {
-    display: "grid",
-    gap: "1.25rem",
-  },
-  overviewCopy: {
-    color: tokens.textSecondary,
-    lineHeight: 1.65,
-    margin: 0,
-    maxWidth: "42rem",
   },
 });
 
@@ -247,19 +232,11 @@ function ProductDetail({
           items={[
             {
               content: (
-                <ProductOverview
-                  summaryItems={overviewSummaryItems({
-                    attributeCount: product.currentAttributes.length,
-                    loadedOfferCount: product.merchantProducts?.edges.length ?? 0,
-                    hasMoreOffers: product.merchantProducts?.pageInfo.hasNextPage ?? false,
-                  })}
+                <ProductSpecifications
+                  attributes={product.currentAttributes}
+                  productId={product.id}
                 />
               ),
-              label: "Overview",
-              value: "overview",
-            },
-            {
-              content: <ProductSpecifications attributes={product.currentAttributes} />,
               label: "Specifications",
               value: "specifications",
             },
@@ -300,42 +277,6 @@ function ProductDetail({
         />
       </WorkspaceLayout>
     </PageShell>
-  );
-}
-
-function ProductOverview({
-  summaryItems,
-}: {
-  summaryItems: readonly ProductOverviewSummaryItem[];
-}) {
-  return (
-    <section aria-label="Product overview" {...props(styles.overview)}>
-      <SummaryStrip items={summaryItems} label="At a glance" />
-      <p {...props(styles.overviewCopy)}>
-        Start with the available decision signals, then move into specifications or merchant offers
-        when you need the supporting detail.
-      </p>
-    </section>
-  );
-}
-
-function ProductSpecifications({
-  attributes,
-}: {
-  attributes: ReadonlyArray<ProductAttributeListItem>;
-}) {
-  const titleId = useId();
-
-  return (
-    <section aria-labelledby={titleId} {...props(styles.section)}>
-      <h2 id={titleId} {...props(styles.sectionTitle)}>
-        Specifications
-      </h2>
-      <ProductAttributeList
-        attributes={attributes}
-        emptyMessage="No product attributes available yet."
-      />
-    </section>
   );
 }
 

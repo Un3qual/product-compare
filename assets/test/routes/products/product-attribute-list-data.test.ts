@@ -1,9 +1,9 @@
 import {
-  buildProductAttributeListData,
-  type ProductAttributeListItem,
-} from "../../../src/routes/products/product-attribute-list-data";
+  groupProductSpecifications,
+  type ProductSpecification,
+} from "../../../src/routes/products/specifications/ProductSpecifications";
 
-function attribute(code: string, groupLabel?: string | null): ProductAttributeListItem {
+function attribute(code: string, groupLabel?: string | null): ProductSpecification {
   return {
     code,
     displayName: code,
@@ -12,8 +12,8 @@ function attribute(code: string, groupLabel?: string | null): ProductAttributeLi
   };
 }
 
-test("buildProductAttributeListData returns empty partitions for empty input", () => {
-  expect(buildProductAttributeListData([])).toEqual({
+test("groupProductSpecifications returns empty partitions for empty input", () => {
+  expect(groupProductSpecifications([])).toEqual({
     groupedAttributes: [],
     ungroupedAttributes: [],
   });
@@ -27,7 +27,7 @@ test("buildProductAttributeListData preserves every ungrouped attribute", () => 
     attribute("blank", "   "),
   ];
 
-  const result = buildProductAttributeListData(attributes);
+  const result = groupProductSpecifications(attributes);
 
   expect(result.groupedAttributes).toEqual([]);
   expect(result.ungroupedAttributes).toEqual(attributes);
@@ -38,9 +38,10 @@ test("buildProductAttributeListData trims labels and groups case-insensitively",
   const second = attribute("response-time", "performance");
   const third = attribute("hdr", "PERFORMANCE");
 
-  expect(buildProductAttributeListData([first, second, third])).toEqual({
+  expect(groupProductSpecifications([first, second, third])).toEqual({
     groupedAttributes: [
       {
+        key: "performance",
         label: "Performance",
         attributes: [first, second, third],
       },
@@ -56,7 +57,7 @@ test("buildProductAttributeListData preserves first-seen group and attribute ord
   const performanceSecond = attribute("response-time", "performance");
 
   expect(
-    buildProductAttributeListData([
+    groupProductSpecifications([
       capabilityFirst,
       performanceFirst,
       capabilitySecond,
@@ -64,10 +65,12 @@ test("buildProductAttributeListData preserves first-seen group and attribute ord
     ]).groupedAttributes,
   ).toEqual([
     {
+      key: "capabilities",
       label: "Capabilities",
       attributes: [capabilityFirst, capabilitySecond],
     },
     {
+      key: "performance",
       label: "Performance",
       attributes: [performanceFirst, performanceSecond],
     },
@@ -79,8 +82,10 @@ test("buildProductAttributeListData retains ungrouped attributes as an ordered t
   const grouped = attribute("refresh-rate", "Performance");
   const ungroupedSecond = attribute("model", " ");
 
-  const result = buildProductAttributeListData([ungroupedFirst, grouped, ungroupedSecond]);
+  const result = groupProductSpecifications([ungroupedFirst, grouped, ungroupedSecond]);
 
-  expect(result.groupedAttributes).toEqual([{ label: "Performance", attributes: [grouped] }]);
+  expect(result.groupedAttributes).toEqual([
+    { key: "performance", label: "Performance", attributes: [grouped] },
+  ]);
   expect(result.ungroupedAttributes).toEqual([ungroupedFirst, ungroupedSecond]);
 });

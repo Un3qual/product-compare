@@ -1,3 +1,11 @@
+import type {
+  ProductBooleanFilterInput,
+  ProductEnumFilterInput,
+  ProductFiltersInput,
+  ProductNumericFilterInput,
+  ProductSort,
+} from "$generated/BrowseRouteQuery.graphql";
+
 export interface CatalogFilters {
   query?: string;
   sort?: CatalogProductSort;
@@ -17,34 +25,11 @@ export const CATALOG_PRODUCT_SORTS = [
   "NEWEST",
 ] as const;
 
-export type CatalogProductSort = (typeof CATALOG_PRODUCT_SORTS)[number];
+export type CatalogProductSort = Exclude<ProductSort, "%future added value">;
 
-export interface CatalogNumericFilter {
-  attributeId: string;
-  min?: string;
-  max?: string;
-}
-
-export interface CatalogBooleanFilter {
-  attributeId: string;
-  value: boolean;
-}
-
-export interface CatalogEnumFilter {
-  attributeId: string;
-  enumOptionId: string;
-}
-
-export interface ProductFiltersInput {
-  query?: string;
-  sort?: CatalogProductSort;
-  primaryTypeTaxonId?: string;
-  includeTypeDescendants?: boolean;
-  useCaseTaxonIds?: string[];
-  numeric?: CatalogNumericFilter[];
-  booleans?: CatalogBooleanFilter[];
-  enums?: CatalogEnumFilter[];
-}
+export type CatalogNumericFilter = ProductNumericFilterInput;
+export type CatalogBooleanFilter = ProductBooleanFilterInput;
+export type CatalogEnumFilter = ProductEnumFilterInput;
 
 export interface CatalogFilterOptionMetadata {
   id: string;
