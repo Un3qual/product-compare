@@ -45,59 +45,10 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
+### 1. Operator Workspaces
 
-## Ready Work
-
-### 1. Comparison And Authentication Continuity
-
-Status: ready
-Lane: Comparison and authentication continuity
-Plan: `docs/superpowers/plans/2026-08-12-comparison-auth-continuity-implementation-plan.md`
-Batch outcome: Comparison uses a readable toolbar/matrix hierarchy and guest
-watch/save actions restore minimal drafts after modal GraphQL authentication
-without losing work or submitting automatically.
-Next action: Run Task 1's RED comparison hierarchy, guest modal, focus,
-same-origin return, expiry, restoration, and zero-auto-submit characterization.
-Owned paths:
-
-- Compare, auth, account alerts/API-token capabilities and focused tests named
-  by the plan.
-- `assets/src/routes/products/PriceWatchControl.tsx`,
-  `assets/src/routes/products/price-watch-data.ts`, and the dedicated
-  price-watch auth-continuity test only; no other product route path.
-- Auth and compare-return Playwright specs and snapshots.
-- `docs/work/comparison-auth-continuity.md`.
-
-Internal slices:
-
-- Layout and guest-intent characterization.
-- Versioned pending-intent/modal boundary.
-- GraphQL login/register restoration for review.
-- Wide comparison toolbar, adjacent mode tabs, and curated summaries.
-- Compare/auth/account organization and generated Relay types.
-- Browser, accessibility, visual, and full verification.
-
-Prerequisites:
-
-- The approved design and existing GraphQL/Phoenix auth contract are stable.
-- Existing Base UI dialogs and root viewer outlet context are available.
-- Owned paths do not overlap the other four ready outcomes.
-
-Verification:
-
-- Focused compare/auth/account/price-watch suites and generated Relay checks.
-- Deterministic login/register/cancel/restore browser paths, axe, visuals, and
-  no-overflow checks at three widths.
-- Complete frontend/backend gates, queue validation, and diff checks.
-
-Exit condition: Guest protected actions never fail as raw Unauthorized or lose
-their safe draft, no restored intent auto-submits, comparison remains truthful
-and readable, and no server authorization/session contract is weakened.
-
-### 2. Operator Workspaces
-
-Status: ready
+Status: active
+Owner: `codex/operator-workspaces`
 Lane: Operator workspaces
 Plan: `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
 Batch outcome: Affiliate setup, CJ program lifecycle, and revenue reporting are
@@ -125,7 +76,7 @@ Prerequisites:
 
 - The approved design and existing operator GraphQL contracts are stable.
 - Existing Base UI/StyleX/TanStack foundations are complete.
-- Owned paths do not overlap the other four ready outcomes.
+- Owned paths do not overlap the remaining ready outcome.
 
 Verification:
 
@@ -137,7 +88,9 @@ Exit condition: All operator actions and independently recoverable regions pass,
 no investigation fact is hidden, and no manual successful-Relay data schema or
 generic workflow file remains without a named boundary.
 
-### 3. Realistic Development Data
+## Ready Work
+
+### 1. Realistic Development Data
 
 Status: ready
 Lane: Realistic development data
@@ -179,6 +132,18 @@ Verification:
 Exit condition: The authored dataset meets the approved volume/scenario ranges,
 reruns reconcile only owned rows, all local journeys are demonstrable offline,
 and complete gates pass.
+
+## Ready Floor Exception
+
+Reason: Comparison And Authentication Continuity was already complete and
+merged, and selecting Operator Workspaces leaves Realistic Development Data as
+the only other currently validated independently shippable outcome.
+Rejected split: Operator route slices and development seed-domain slices remain
+internal milestones because neither decomposition creates an independent
+reviewer decision or acceptance boundary.
+Replenishment action: At Operator Workspaces closeout, audit current product
+behavior, code, tests, architecture gaps, and the candidate catalog to promote
+every newly validated coherent outcome before the next worker claim.
 
 ## Superseded Work
 

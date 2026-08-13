@@ -151,6 +151,26 @@ test("affiliate setup route renders merchant choices and setup forms", () => {
   );
 });
 
+test("affiliate setup presents four numbered lifecycle steps in dependency order", () => {
+  renderAffiliateSetupRoute();
+
+  const workflow = screen.getByRole("region", { name: "Affiliate configuration workflow" });
+  const steps = within(workflow).getAllByRole("region", { name: /step/i });
+
+  expect(steps.map((step) => within(step).getByRole("heading", { level: 2 }).textContent)).toEqual([
+    "1. Network",
+    "2. Program",
+    "3. Merchant link",
+    "4. Coupon",
+  ]);
+  expect(within(steps[1]).getByText("Selected merchant: Acme Market (acme.example)"))
+    .toBeInTheDocument();
+  expect(within(steps[2]).getByText("Selected merchant: Acme Market (acme.example)"))
+    .toBeInTheDocument();
+  expect(within(steps[3]).getByText("Selected merchant: Acme Market (acme.example)"))
+    .toBeInTheDocument();
+});
+
 test("affiliate setup route renders merchant-choice pagination from loaded cursors", () => {
   mockedUseLoaderData.mockReturnValue(
     buildReadyLoaderData(AFFILIATE_SETUP_QUERY_DESCRIPTOR, {

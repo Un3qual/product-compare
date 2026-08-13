@@ -254,6 +254,41 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
 
+test("revenue route keeps one control band ahead of metrics and the attribution ledger", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData());
+
+  renderRevenueSummaryRoute();
+
+  const controls = screen.getByRole("region", { name: "Revenue controls" });
+  const summary = screen.getByRole("region", { name: "Summary" });
+  const ledger = screen.getByRole("table", { name: "Attribution ledger" });
+
+  expect(controls.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(summary.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+});
+
+test("revenue route expands exact conversion investigation facts on demand", () => {
+  mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
+
+  renderRevenueSummaryRoute();
+
+  expect(screen.queryByText("Purchased")).not.toBeInTheDocument();
+  expect(screen.queryByText("Reported")).not.toBeInTheDocument();
+
+  fireEvent.click(
+    screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
+  );
+
+  expect(screen.getByText("May 31, 2026, 1:00 PM")).toHaveAttribute(
+    "datetime",
+    "2026-05-31T13:00:00Z",
+  );
+  expect(screen.getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-06-01T09:00:00Z",
+  );
+});
+
 test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
   const loadNext = vi.fn();
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD", network: "impact" }));

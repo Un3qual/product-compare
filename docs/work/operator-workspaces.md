@@ -2,8 +2,9 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
+- Owner: `codex/operator-workspaces`
 - Plan: `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
 - Last verified: 2026-08-12 against affiliate setup, CJ lifecycle/feed, revenue

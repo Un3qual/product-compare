@@ -160,6 +160,29 @@ test("CJ programs route renders full-dataset stage counts and lifecycle controls
   expect(screen.getByRole("option", { name: "Last changed" })).toBeInTheDocument();
 });
 
+test("CJ programs route presents a scannable lifecycle ledger with exact change times", () => {
+  renderCJProgramsRoute();
+
+  const ledger = screen.getByRole("table", { name: "CJ program lifecycle ledger" });
+  const headers = within(ledger).getAllByRole("columnheader");
+
+  expect(headers.map((header) => header.textContent)).toEqual([
+    "Merchant",
+    "Lifecycle",
+    "Last change",
+    "Required action",
+    "Controls",
+  ]);
+
+  const newMerchantRow = within(ledger).getByRole("row", { name: /New Merchant/ });
+  expect(within(newMerchantRow).getByText("CJ Affiliate")).toBeInTheDocument();
+  expect(within(newMerchantRow).getByText("Review feed warnings")).toBeInTheDocument();
+  expect(within(newMerchantRow).getByText("Jul 20, 2026, 10:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-07-20T10:00:00.000000Z",
+  );
+});
+
 test("CJ program rows expose every lifecycle stage and save a trimmed note", async () => {
   renderCJProgramsRoute();
 
