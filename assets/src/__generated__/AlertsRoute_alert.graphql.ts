@@ -8,13 +8,8 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { ReaderFragment } from "relay-runtime";
-export type PriceWatchRuleType =
-  | "BACK_IN_STOCK"
-  | "NEWLY_AVAILABLE"
-  | "PERCENTAGE_DROP"
-  | "TARGET_PRICE"
-  | "%future added value";
+import { ReaderFragment } from 'relay-runtime';
+export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
 export type AlertsRoute_alert$data = {
   readonly currency: string;
@@ -34,77 +29,77 @@ export type AlertsRoute_alert$key = {
 };
 
 const node: ReaderFragment = {
-  argumentDefinitions: [],
-  kind: "Fragment",
-  metadata: null,
-  name: "AlertsRoute_alert",
-  selections: [
+  "argumentDefinitions": [],
+  "kind": "Fragment",
+  "metadata": null,
+  "name": "AlertsRoute_alert",
+  "selections": [
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "id",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "id",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "productName",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "productName",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "productSlug",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "productSlug",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "merchantName",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "merchantName",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "ruleType",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "ruleType",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "currency",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "currency",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "landedPrice",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "landedPrice",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "observedAt",
-      storageKey: null,
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "observedAt",
+      "storageKey": null
     },
     {
-      alias: null,
-      args: null,
-      kind: "ScalarField",
-      name: "readAt",
-      storageKey: null,
-    },
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "readAt",
+      "storageKey": null
+    }
   ],
-  type: "AlertEvent",
-  abstractKey: null,
+  "type": "AlertEvent",
+  "abstractKey": null
 };
 
 (node as any).hash = "09b0c4e729304ca7c1ebf7787724d7ea";
