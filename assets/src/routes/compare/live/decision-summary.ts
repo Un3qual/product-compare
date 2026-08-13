@@ -1,6 +1,6 @@
 import { compareDecimalStrings } from "$relay/scalars";
 import { graphQLDateTimeLabel } from "$relay/scalars";
-import type { CompareOfferContextSummary } from "./compare-route-data";
+import type { CompareOfferContextSummary } from "../compare-route-data";
 
 export type DecisionSummaryMetricKey =
   | "relative-loaded-price"

@@ -1,4 +1,4 @@
-import { buildDecisionSummaryMetricRows } from "../../../src/routes/compare/decision-summary-data";
+import { buildDecisionSummaryMetricRows } from "../../../src/routes/compare/live/decision-summary";
 
 type AvailableOfferContext = {
   status: "available";

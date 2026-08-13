@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildCompareSpecModeNavigationData } from "../../../src/routes/compare/compare-spec-mode-data";
+import { buildCompareSpecModeNavigationData } from "../../../src/routes/compare/live/ComparisonModeTabs";
 
 describe("compare specification-mode navigation data", () => {
   test("projects stable ordered labels, canonical destinations, and one current mode", () => {

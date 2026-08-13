@@ -133,9 +133,7 @@ const compareRouteQueryDescriptor = {
   },
 };
 
-const compareRouteQueryRef = mockPreloadedQuery(
-  compareRouteQueryDescriptor.__relayQuery.variables,
-);
+const compareRouteQueryRef = mockPreloadedQuery(compareRouteQueryDescriptor.__relayQuery.variables);
 
 function buildCombinedCompareQuery() {
   return {
@@ -262,7 +260,6 @@ test("compare route renders compared product cards from batched loader summaries
     </MemoryRouter>,
   );
 
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
@@ -291,7 +288,6 @@ test("compare route does not require per-product Relay detail reads", () => {
   );
 
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), compareRouteQueryRef);

@@ -9,22 +9,8 @@ import {
   TableHeader,
   TableRow,
 } from "$ui/primitives/Table";
-import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
-import {
-  buildSpecificationMatrixRows,
-  type SpecificationMatrixRow,
-} from "./specification-matrix-data";
-
-const SPECIFICATION_MATRIX_TITLES = {
-  all: "All specifications",
-  differences: "Different specifications",
-  shared: "Shared specifications",
-} satisfies Record<CompareSpecMode, string>;
-const EMPTY_SPECIFICATION_MATRIX_MESSAGES = {
-  all: "No specifications are available for these products yet.",
-  differences: "No specification differences across these products yet.",
-  shared: "No shared specifications across these products yet.",
-} satisfies Record<CompareSpecMode, string>;
+import type { CompareProductSummary, CompareSpecMode } from "../compare-route-data";
+import { specificationMatrixView, type SpecificationMatrixRow } from "./specification-matrix";
 
 const tableModel = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableModel, SpecificationMatrixRow>();
@@ -33,17 +19,14 @@ const styles = create({
   table: { minWidth: "48rem" },
 });
 
-export function CompareSpecificationMatrix({
+export function SpecificationMatrix({
   products,
   specMode,
 }: {
   products: CompareProductSummary[];
   specMode: CompareSpecMode;
 }) {
-  const rows = useMemo(
-    () => buildSpecificationMatrixRows(products, specMode),
-    [products, specMode],
-  );
+  const view = useMemo(() => specificationMatrixView(products, specMode), [products, specMode]);
   const columns = useMemo(
     () =>
       columnHelper.columns([
@@ -63,24 +46,20 @@ export function CompareSpecificationMatrix({
   );
   const table = useTable({
     columns,
-    data: rows,
+    data: view.rows,
     features: tableModel,
     getRowId: (row) => row.code,
   });
 
-  if (products.length < 2) {
-    return null;
-  }
-
-  const title = specificationMatrixTitle(specMode);
+  if (products.length < 2) return null;
 
   return (
-    <section aria-label="Specification comparison">
-      <h2>{title}</h2>
-      {rows.length === 0 ? (
-        <p>{emptySpecificationMatrixMessage(specMode)}</p>
+    <div>
+      <h2>{view.title}</h2>
+      {view.rows.length === 0 ? (
+        <p>{view.emptyMessage}</p>
       ) : (
-        <Table aria-label={title} style={styles.table}>
+        <Table aria-label={view.title} style={styles.table}>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
@@ -111,14 +90,6 @@ export function CompareSpecificationMatrix({
           </TableBody>
         </Table>
       )}
-    </section>
+    </div>
   );
-}
-
-function specificationMatrixTitle(specMode: CompareSpecMode) {
-  return SPECIFICATION_MATRIX_TITLES[specMode];
-}
-
-function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
-  return EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode];
 }

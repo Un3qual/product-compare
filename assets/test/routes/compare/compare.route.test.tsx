@@ -17,7 +17,7 @@ import {
 import { RouteErrorBoundary } from "../../../src/routes/compare/RouteErrorBoundary";
 import { CompareRoute, compareLoader } from "../../../src/routes/compare/CompareRoute";
 import { CompareProductPickerView } from "../../../src/routes/compare/CompareProductPickerView";
-import { CompareSpecificationMatrix } from "../../../src/routes/compare/CompareSpecificationMatrix";
+import { SpecificationMatrix } from "../../../src/routes/compare/live/SpecificationMatrix";
 import {
   buildComparePathFromSlugs,
   buildCurrentRoutePathWithCompareSlugs,
@@ -525,7 +525,7 @@ beforeEach(() => {
 
 test("comparison matrix directly renders ordered rows, missing values, and the selected mode", () => {
   render(
-    <CompareSpecificationMatrix
+    <SpecificationMatrix
       products={completeProductSummaries([
         {
           ...buildProductSummary(DETAIL_PRODUCT),
@@ -587,7 +587,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
 
   try {
     render(
-      <CompareSpecificationMatrix
+      <SpecificationMatrix
         products={completeProductSummaries([
           {
             ...buildProductSummary(DETAIL_PRODUCT),
@@ -1952,7 +1952,6 @@ test("renders compared product cards returned by the route loader", () => {
   renderCompareRoute();
 
   expect(screen.getByRole("heading", { name: "Compare products" })).toBeInTheDocument();
-  openIndividualProductDetails();
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: "Second Product" })).toBeInTheDocument();
 });
@@ -2217,8 +2216,6 @@ test("ready compare cards render product attributes", () => {
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
   expect(screen.getAllByText("144 Hz")).toHaveLength(2);
   expect(screen.getAllByText("165 Hz")).toHaveLength(2);
   expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
@@ -2317,8 +2314,6 @@ test("ready compare cards render from batched loader data without synthetic prod
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
   expect(screen.getByRole("heading", { name: DETAIL_PRODUCT.name })).toBeInTheDocument();
   expect(screen.getByText(DETAIL_PRODUCT.description)).toBeInTheDocument();
   expect(screen.getByText("Refresh rate")).toBeInTheDocument();
@@ -2415,8 +2410,7 @@ test("ready compare page aligns shared product attributes in a matrix", () => {
   expect(rows[2]).toHaveTextContent("144 Hz");
   expect(rows[2]).toHaveTextContent("165 Hz");
   expect(within(matrix).queryByText("Brightness")).not.toBeInTheDocument();
-  openIndividualProductDetails();
-  expect(screen.getByText("350 nits")).toBeVisible();
+  expect(screen.queryByText("350 nits")).not.toBeInTheDocument();
 });
 
 test("ready compare matrix orders specification rows by sort order before display name", () => {
@@ -2724,8 +2718,6 @@ test("ready compare page preserves specification mode in remove links", () => {
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
   const selectionTray = screen.getByRole("region", { name: "Selected products" });
 
   expect(
@@ -2733,10 +2725,6 @@ test("ready compare page preserves specification mode in remove links", () => {
       name: "Remove Detail Product from selection",
     }),
   ).toHaveAttribute("href", "/compare?slug=second-product&slug=third-product&specs=differences");
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=second-product&slug=third-product&specs=differences",
-  );
 });
 
 test("ready compare page renders all specification rows with missing cells", () => {
@@ -3205,94 +3193,6 @@ test("ready compare page labels the picker as an add-another-product path", () =
   );
 });
 
-test("ready compare cards include a remove link for the first selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=second-product&slug=third-product",
-  );
-});
-
-test("ready compare cards include a remove link for a middle selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Second Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=detail-product&slug=third-product",
-  );
-});
-
-test("ready compare cards include a remove link for the last selected product", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug, THIRD_PRODUCT.slug],
-      products: [
-        buildProductSummary(DETAIL_PRODUCT),
-        buildProductSummary(SECOND_PRODUCT),
-        buildProductSummary(THIRD_PRODUCT),
-      ],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT, SECOND_PRODUCT, THIRD_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Third Product" })).toHaveAttribute(
-    "href",
-    "/compare?slug=detail-product&slug=second-product",
-  );
-});
-
-test("ready compare card remove link clears all selected slugs when only one is selected", () => {
-  mockedUseLoaderData.mockReturnValue(
-    buildReadyCompareLoaderData({
-      slugs: [DETAIL_PRODUCT.slug],
-      products: [buildProductSummary(DETAIL_PRODUCT)],
-    }),
-  );
-  mockBatchedCompareProducts([DETAIL_PRODUCT]);
-
-  renderCompareRoute();
-
-  openIndividualProductDetails();
-
-  expect(screen.getByRole("link", { name: "Remove Detail Product" })).toHaveAttribute(
-    "href",
-    "/compare",
-  );
-});
-
 test("compare route renders the compare error boundary when the loader throws", () => {
   mockedUseRouteError.mockReturnValue(new Error("Network request failed: boom"));
 
@@ -3594,24 +3494,21 @@ test("comparison matrix keeps its selected view inside a named workspace", () =>
   ).toBeInTheDocument();
 });
 
-test("compared product actions use named navigation landmarks", () => {
+test("compared product summaries expose direct product navigation", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData());
 
   renderCompareRoute();
 
-  openIndividualProductDetails();
-
-  expect(
-    screen.getByRole("navigation", { name: "Actions for Detail Product" }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByRole("navigation", { name: "Actions for Second Product" }),
-  ).toBeInTheDocument();
+  const summaries = screen.getByRole("region", { name: "Product decision summaries" });
+  expect(within(summaries).getByRole("link", { name: "View Detail Product" })).toHaveAttribute(
+    "href",
+    "/products/detail-product",
+  );
+  expect(within(summaries).getByRole("link", { name: "View Second Product" })).toHaveAttribute(
+    "href",
+    "/products/second-product",
+  );
 });
-
-function openIndividualProductDetails() {
-  fireEvent.click(screen.getByRole("button", { name: "Individual product details" }));
-}
 
 test("saved comparisons route prompts the user to sign in when the saved-set query is unauthorized", () => {
   mockedUseLoaderData.mockReturnValue({

@@ -1,5 +1,17 @@
 import { compareProductText } from "$frontend/formatting";
-import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
+import type { CompareProductSummary, CompareSpecMode } from "../compare-route-data";
+
+const TITLES = {
+  all: "All specifications",
+  differences: "Different specifications",
+  shared: "Shared specifications",
+} satisfies Record<CompareSpecMode, string>;
+
+const EMPTY_MESSAGES = {
+  all: "No specifications are available for these products yet.",
+  differences: "No specification differences across these products yet.",
+  shared: "No shared specifications across these products yet.",
+} satisfies Record<CompareSpecMode, string>;
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
 const DECIMAL_COMPARISON_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
@@ -42,6 +54,17 @@ export function buildSpecificationMatrixRows(
   }
 
   return rows.filter((row) => row.missingValues.every((isMissing) => !isMissing));
+}
+
+export function specificationMatrixView(
+  products: readonly CompareProductSummary[],
+  specMode: CompareSpecMode,
+) {
+  return {
+    emptyMessage: EMPTY_MESSAGES[specMode],
+    rows: buildSpecificationMatrixRows(products, specMode),
+    title: TITLES[specMode],
+  };
 }
 
 function buildAllSpecificationRows(

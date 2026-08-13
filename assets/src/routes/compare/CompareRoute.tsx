@@ -1,9 +1,8 @@
-import { Suspense, type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import {
   useLoaderData,
   useLocation,
-  useNavigate,
   useOutletContext,
   type LoaderFunctionArgs,
 } from "react-router-dom";
@@ -20,10 +19,6 @@ import {
   useRoutePreloadedQuery,
 } from "$relay/route-preload";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
-import { ContextRail } from "$ui/components/layout/ContextRail";
-import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
-import { Button } from "$ui/primitives/Button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { commitRouteMutation } from "$relay/mutations";
 import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
@@ -43,19 +38,13 @@ import {
   compareSpecModeFromUrl,
   COMPARE_OFFER_CONTEXT_PAGE_SIZE,
   MAX_COMPARE_PRODUCTS,
-  type CompareSpecMode,
   type CompareRouteLoaderData,
 } from "./compare-route-data";
-import { CompareProductList, CompareProductSummaryList } from "./CompareProductList";
+import { CompareProductList } from "./CompareProductList";
 import { CompareProductPickerBoundary } from "./CompareProductPickerBoundary";
-import { buildCompareSpecModeNavigationData } from "./compare-spec-mode-data";
-import {
-  buildComparePathAfterRemovingSlugIndex,
-  buildComparePathFromSlugs,
-  selectedCompareSlugsFromSearch,
-} from "./paths";
-import { CompareSelectionTray } from "./CompareSelectionTray";
-import { ShareComparisonControl } from "./ShareComparisonControl";
+import { selectedCompareSlugsFromSearch } from "./paths";
+import { ComparisonToolbar } from "./live/ComparisonToolbar";
+import { ProductDecisionSummaries } from "./live/ProductDecisionSummaries";
 import {
   buildSavedComparisonSetMutationInput,
   resolveSavedComparisonSetMutationOutcome,
@@ -161,27 +150,10 @@ const createSavedComparisonSetMutation = graphql`
 `;
 
 const styles = create({
-  tabList: {
-    borderBlockEndColor: tokens.borderQuiet,
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "1px",
-    display: "flex",
-    gap: "0.25rem",
-    overflowX: "auto",
-  },
-  tab: {
-    borderBlockEndColor: "transparent",
-    borderBlockEndStyle: "solid",
-    borderBlockEndWidth: "2px",
-    color: tokens.textSecondary,
-    fontWeight: 650,
-    paddingBlock: "0.65rem",
-    paddingInline: "0.9rem",
-    textDecoration: "none",
-  },
-  tabActive: {
-    borderBlockEndColor: tokens.actionAccent,
-    color: tokens.text,
+  workspace: {
+    display: "grid",
+    gap: tokens.workspaceGap,
+    minWidth: 0,
   },
 });
 
@@ -403,55 +375,23 @@ function ReadyCompareSelectionRoute({
 
   return (
     <CompareShell title="Compare products">
-      <WorkspaceLayout
-        context={
-          <ContextRail
-            description="Save this set, remove selected products, or add another product."
-            label="Comparison controls"
-          >
-            <Button disabled={saveInFlight} onClick={authenticatedIntent.request} type="button">
-              {saveInFlight ? "Saving comparison..." : "Save comparison"}
-            </Button>
-            {authenticatedIntent.dialog}
-            <ShareComparisonControl products={loaderData.products} />
-            <p aria-label="Save comparison status" aria-live="polite" role="status">
-              {saveFeedback.message ?? ""}
-            </p>
-            <CompareSelectionTray
-              items={loaderData.products.map((product) => ({
-                label: product.name,
-                slug: product.slug,
-              }))}
-              maxProducts={MAX_COMPARE_PRODUCTS}
-              openComparePath={buildComparePathFromSlugs(loaderData.slugs, {
-                specMode: loaderData.specMode,
-              })}
-              removePathForIndex={(index) =>
-                buildComparePathAfterRemovingSlugIndex(loaderData.slugs, index, {
-                  specMode: loaderData.specMode,
-                })
-              }
-              selectedSlugs={loaderData.slugs}
-            />
-            {loaderData.slugs.length < MAX_COMPARE_PRODUCTS ? (
-              <CompareProductPickerBoundary
-                heading="Add another product"
-                specMode={loaderData.specMode}
-                selectedSlugs={loaderData.slugs}
-              />
-            ) : null}
-          </ContextRail>
-        }
-        label="Comparison workspace"
-      >
+      <section aria-label="Comparison workspace" {...props(styles.workspace)}>
+        <ComparisonToolbar
+          authDialog={authenticatedIntent.dialog}
+          maxProducts={MAX_COMPARE_PRODUCTS}
+          onSave={authenticatedIntent.request}
+          products={loaderData.products}
+          saveInFlight={saveInFlight}
+          saveMessage={saveFeedback.message}
+          selectedSlugs={loaderData.slugs}
+          specMode={loaderData.specMode}
+        />
         {saveFeedback.error ? <FeedbackState kind="error" title={saveFeedback.error} /> : null}
-        <CompareSpecModeControls selectedSlugs={loaderData.slugs} specMode={loaderData.specMode}>
-          <CompareProductDetailsBoundary
-            fragmentProducts={data.comparisonProducts}
-            loaderData={loaderData}
-          />
-        </CompareSpecModeControls>
-      </WorkspaceLayout>
+        <CompareProductDetailsBoundary
+          fragmentProducts={data.comparisonProducts}
+          loaderData={loaderData}
+        />
+      </section>
     </CompareShell>
   );
 }
@@ -469,7 +409,7 @@ function CompareProductDetailsBoundary({
       fallback={
         <>
           <FeedbackState kind="error" title="Comparison details unavailable." />
-          <CompareProductSummaryList products={loaderData.products} />
+          <ProductDecisionSummaries fragmentProducts={[]} loaderData={loaderData} />
         </>
       }
     >
@@ -477,62 +417,6 @@ function CompareProductDetailsBoundary({
         <CompareProductList fragmentProducts={fragmentProducts} loaderData={loaderData} />
       </Suspense>
     </ResettableErrorBoundary>
-  );
-}
-
-function CompareSpecModeControls({
-  children,
-  selectedSlugs,
-  specMode,
-}: {
-  children: ReactNode;
-  selectedSlugs: readonly string[];
-  specMode: CompareSpecMode;
-}) {
-  const navigation = buildCompareSpecModeNavigationData({ selectedSlugs, specMode });
-  const navigate = useNavigate();
-
-  return (
-    <Tabs value={specMode}>
-      <TabsList aria-label="Specification views" variant="line" style={styles.tabList}>
-        {navigation.modes.map((item) => (
-          <TabsTrigger
-            key={item.mode}
-            nativeButton={false}
-            render={
-              <a
-                aria-current={item.isCurrent ? "page" : undefined}
-                href={item.path}
-                onClick={(event) => {
-                  if (
-                    event.defaultPrevented ||
-                    event.button !== 0 ||
-                    event.altKey ||
-                    event.ctrlKey ||
-                    event.metaKey ||
-                    event.shiftKey
-                  ) {
-                    return;
-                  }
-
-                  event.preventDefault();
-                  navigate(item.path);
-                }}
-                {...props(styles.tab, item.isCurrent ? styles.tabActive : null)}
-              />
-            }
-            value={item.mode}
-          >
-            {item.label}
-          </TabsTrigger>
-        ))}
-      </TabsList>
-      {navigation.modes.map((item) => (
-        <TabsContent keepMounted hidden={!item.isCurrent} key={item.mode} value={item.mode}>
-          {item.isCurrent ? children : null}
-        </TabsContent>
-      ))}
-    </Tabs>
   );
 }
 
