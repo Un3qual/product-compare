@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 const dataTables = [
   "src/routes/commerce/revenue/attribution/AttributionLedger.tsx",
   "src/routes/ingestion/cj-programs/programs/ProgramLifecycleTable.tsx",
+  "src/routes/ingestion/cj-programs/feeds/UnmatchedFeeds.tsx",
   "src/routes/compare/live/SpecificationMatrix.tsx",
   "src/routes/compare/live/DecisionSummary.tsx",
 ] as const;

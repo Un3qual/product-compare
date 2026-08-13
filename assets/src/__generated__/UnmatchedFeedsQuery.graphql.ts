@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<9fe26e9b9cd526e6f485a86149770747>>
+ * @generated SignedSource<<15ad216a80cef8595b5e1ad7e5b528f3>>
  * @lightSyntaxTransform
  */
 
@@ -17,8 +17,10 @@ export type UnmatchedFeedsQuery$data = {
   readonly unmatchedCjFeeds: {
     readonly edges: ReadonlyArray<{
       readonly node: {
+        readonly feedName: string | null;
         readonly id: string;
-        readonly " $fragmentSpreads": FragmentRefs<"FeedFactsRow_feed">;
+        readonly productCount: number | null;
+        readonly " $fragmentSpreads": FragmentRefs<"UnmatchedFeedRow_feed">;
       };
     }>;
     readonly pageInfo: {
@@ -64,6 +66,20 @@ v3 = {
   "storageKey": null
 },
 v4 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "feedName",
+  "storageKey": null
+},
+v5 = {
+  "alias": null,
+  "args": null,
+  "kind": "ScalarField",
+  "name": "productCount",
+  "storageKey": null
+},
+v6 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -130,10 +146,12 @@ return {
                 "plural": false,
                 "selections": [
                   (v3/*:: as any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
-                    "name": "FeedFactsRow_feed"
+                    "name": "UnmatchedFeedRow_feed"
                   }
                 ],
                 "storageKey": null
@@ -141,7 +159,7 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*:: as any*/)
+          (v6/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -183,6 +201,8 @@ return {
                 "plural": false,
                 "selections": [
                   (v3/*:: as any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -229,20 +249,6 @@ return {
                     "alias": null,
                     "args": null,
                     "kind": "ScalarField",
-                    "name": "feedName",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "productCount",
-                    "storageKey": null
-                  },
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
                     "name": "lastSeenAt",
                     "storageKey": null
                   }
@@ -252,23 +258,23 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*:: as any*/)
+          (v6/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "f1b898906df8c81d69a48fdd1512ec14",
+    "cacheID": "9e584dd8173b0025dd72a57213c85301",
     "id": null,
     "metadata": {},
     "name": "UnmatchedFeedsQuery",
     "operationKind": "query",
-    "text": "query UnmatchedFeedsQuery(\n  $first: Int!\n  $after: String\n) {\n  unmatchedCjFeeds(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        ...FeedFactsRow_feed\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment FeedFactsRow_feed on MerchantFeedCandidate {\n  id\n  providerFeedId\n  advertiserName\n  advertiserCountry\n  sourceFeedType\n  currency\n  language\n  feedName\n  productCount\n  lastSeenAt\n}\n"
+    "text": "query UnmatchedFeedsQuery(\n  $first: Int!\n  $after: String\n) {\n  unmatchedCjFeeds(first: $first, after: $after) {\n    edges {\n      node {\n        id\n        feedName\n        productCount\n        ...UnmatchedFeedRow_feed\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      endCursor\n    }\n  }\n}\n\nfragment UnmatchedFeedRow_feed on MerchantFeedCandidate {\n  providerFeedId\n  advertiserName\n  advertiserCountry\n  sourceFeedType\n  currency\n  language\n  feedName\n  productCount\n  lastSeenAt\n}\n"
   }
 };
 })();
 
-(node as any).hash = "ad945a454b0904f1fe94cacc09a9e0e5";
+(node as any).hash = "90d12c9b35b49043937f21d24fcb3186";
 
 export default node;

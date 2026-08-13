@@ -42,10 +42,8 @@ const styles = create({
 
 export function FeedFactsRow({
   feed: feedRef,
-  showAdvertiserName = false,
 }: {
   feed: FeedFactsRow_feed$key;
-  showAdvertiserName?: boolean;
 }) {
   const feed = useFragment(cjFeedFragment, feedRef);
 
@@ -56,7 +54,6 @@ export function FeedFactsRow({
         <span>Provider feed ID {feed.providerFeedId}</span>
         <span>Last seen {formatCJDateTime(feed.lastSeenAt)}</span>
         <span>{formatFeedProductCount(feed.productCount)}</span>
-        {showAdvertiserName && feed.advertiserName ? <span>{feed.advertiserName}</span> : null}
         {feed.advertiserCountry ? <span>{feed.advertiserCountry}</span> : null}
         {feed.currency ? <span>{feed.currency}</span> : null}
         {feed.language ? <span>{feed.language}</span> : null}

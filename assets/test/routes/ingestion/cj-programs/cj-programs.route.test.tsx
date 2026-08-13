@@ -565,7 +565,9 @@ test("an unavailable unmatched-feed region leaves the program lifecycle ledger u
 
   expect(screen.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
   expect(openProgramEditor("New Merchant").getByLabelText("Stage for New Merchant")).toBeEnabled();
-  expect(screen.getByRole("alert")).toHaveTextContent("Unmatched feeds unavailable.");
+  expect(screen.getAllByRole("alert")).toHaveLength(2);
+  expect(screen.getByText("Feed health unavailable.")).toBeVisible();
+  expect(screen.getByText("Unmatched feeds unavailable.")).toBeVisible();
   expect(screen.queryByText("CJ programs unavailable.")).not.toBeInTheDocument();
 });
 
@@ -632,12 +634,36 @@ test("program and unmatched feed pagination keep their independent cursors", () 
     "href",
     "/ingestion/cj-programs?first=25&after=program-cursor-7&stage=applied&sort=feed_count_desc&unmatchedFirst=13&unmatchedAfter=unmatched-current",
   );
-  expect(screen.getByRole("heading", { name: "Unmatched feeds" })).toBeInTheDocument();
-  const unmatchedFeed = rowElementFor("Unmatched Outlet Feed");
+  const feedHealth = screen.getByRole("region", { name: "Feed health" });
+  expect(feedHealth).toHaveTextContent("1 unmatched feed on this loaded page");
+  expect(feedHealth).toHaveTextContent("Unmatched Outlet Feed");
+  expect(feedHealth).toHaveTextContent("250 products");
 
-  expect(within(unmatchedFeed).getByText("Provider feed ID unmatched-outlet")).toBeInTheDocument();
-  expect(within(unmatchedFeed).getByText("Last seen Jul 20, 2026, 10:00 AM")).toBeInTheDocument();
+  const feeds = screen.getByRole("table", { name: "Unmatched CJ feeds" });
+  expect(within(feeds).getAllByRole("columnheader").map((header) => header.textContent)).toEqual([
+    "Provider feed",
+    "Last seen",
+    "Products",
+    "Advertiser",
+    "Feed type",
+    "Country",
+    "Currency",
+    "Language",
+  ]);
+  expect(within(feeds).queryByRole("heading")).not.toBeInTheDocument();
+  const unmatchedFeed = within(feeds).getByRole("row", { name: /Unmatched Outlet Feed/ });
+
+  expect(within(unmatchedFeed).getByText("unmatched-outlet")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("Jul 20, 2026, 10:00 AM")).toHaveAttribute(
+    "datetime",
+    "2026-07-20T10:00:00.000000Z",
+  );
   expect(within(unmatchedFeed).getByText("250 products")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("Unmatched Outlet")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("PRODUCT")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("US")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("USD")).toBeInTheDocument();
+  expect(within(unmatchedFeed).getByText("EN")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "First unmatched feeds" })).toHaveAttribute(
     "href",
     "/ingestion/cj-programs?first=25&after=program-current&stage=applied&sort=feed_count_desc&unmatchedFirst=13",
@@ -724,6 +750,9 @@ test("CJ programs route keeps an empty program and unmatched feed state factual"
 
   expect(screen.getByText("No CJ programs captured yet.")).toBeInTheDocument();
   expect(screen.getByText("No unmatched CJ feeds captured yet.")).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Feed health" })).toHaveTextContent(
+    "No unmatched feeds on this loaded page",
+  );
 });
 
 test("CJ programs route renders unavailable feedback for GraphQL payload failures", () => {

@@ -176,6 +176,8 @@ const styles = create({
     },
     minWidth: 0,
   },
+  feedHealthSlot: { gridArea: "feedHealth", minWidth: 0 },
+  unmatchedSlot: { gridArea: "unmatched", minWidth: 0 },
 });
 
 export function CJProgramsRoute() {
@@ -244,7 +246,7 @@ function DeferredUnmatchedFeedsBoundary({
   query: Extract<CJProgramsLoaderData, { status: "ready" }>["unmatchedQuery"];
 }) {
   return (
-    <Suspense fallback={<FeedbackState kind="loading" title="Loading unmatched feeds..." />}>
+    <Suspense fallback={<UnmatchedFeedsLoadingFallback />}>
       <Await resolve={query} errorElement={<UnmatchedFeedsUnavailableFallback />}>
         {(resolvedQuery) => (
           <UnmatchedFeedsBoundary pagination={pagination} query={resolvedQuery} />
@@ -267,7 +269,7 @@ function UnmatchedFeedsBoundary({
 
   return (
     <ResettableErrorBoundary fallback={<UnmatchedFeedsUnavailableFallback />} resetToken={query}>
-      <Suspense fallback={<FeedbackState kind="loading" title="Loading unmatched feeds..." />}>
+      <Suspense fallback={<UnmatchedFeedsLoadingFallback />}>
         <UnmatchedFeeds pagination={pagination} query={query} />
       </Suspense>
     </ResettableErrorBoundary>
@@ -346,8 +348,26 @@ function CJProgramsUnavailableFallback() {
 
 function UnmatchedFeedsUnavailableFallback() {
   return (
-    <section role="alert">
-      <p>Unmatched feeds unavailable.</p>
-    </section>
+    <>
+      <div {...props(styles.feedHealthSlot)}>
+        <FeedbackState kind="error" title="Feed health unavailable." />
+      </div>
+      <div {...props(styles.unmatchedSlot)}>
+        <FeedbackState kind="error" title="Unmatched feeds unavailable." />
+      </div>
+    </>
+  );
+}
+
+function UnmatchedFeedsLoadingFallback() {
+  return (
+    <>
+      <div {...props(styles.feedHealthSlot)}>
+        <FeedbackState kind="loading" title="Loading feed health..." />
+      </div>
+      <div {...props(styles.unmatchedSlot)}>
+        <FeedbackState kind="loading" title="Loading unmatched feeds..." />
+      </div>
+    </>
   );
 }
