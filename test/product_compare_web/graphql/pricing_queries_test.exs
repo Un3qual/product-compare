@@ -14,6 +14,82 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "/api/graphql pricing discovery queries" do
+    test "product priceHistory90d exposes currency-separated merchant trends with global ids", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-trend"})
+      alpha = merchant_fixture(%{name: unique_name("Alpha Trend")})
+      euro = merchant_fixture(%{name: unique_name("Euro Trend")})
+      usd_offer = merchant_product_fixture(%{merchant: alpha, product: product, currency: "USD"})
+      eur_offer = merchant_product_fixture(%{merchant: euro, product: product, currency: "EUR"})
+      observed_at = DateTime.utc_now() |> DateTime.add(-3_600, :second)
+
+      {:ok, _usd_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: usd_offer.id,
+          observed_at: observed_at,
+          price: Decimal.new("120.50"),
+          in_stock: true
+        })
+
+      {:ok, _eur_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: eur_offer.id,
+          observed_at: observed_at,
+          price: Decimal.new("99.25"),
+          in_stock: true
+        })
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "priceHistory90d" => [
+                     %{
+                       "currency" => "EUR",
+                       "merchants" => [eur_merchant],
+                       "points" => eur_points
+                     },
+                     %{"currency" => "USD", "merchants" => [usd_merchant], "points" => usd_points}
+                   ]
+                 }
+               }
+             } = graphql(conn, product_price_history_query(), %{"slug" => product.slug})
+
+      assert eur_merchant == %{
+               "id" => relay_id(:merchant, euro.id),
+               "merchantProductId" => relay_id(:merchant_product, eur_offer.id),
+               "name" => euro.name
+             }
+
+      assert usd_merchant == %{
+               "id" => relay_id(:merchant, alpha.id),
+               "merchantProductId" => relay_id(:merchant_product, usd_offer.id),
+               "name" => alpha.name
+             }
+
+      assert List.last(eur_points) == %{
+               "averagePrice" => "99.25",
+               "lowestMerchantProductId" => relay_id(:merchant_product, eur_offer.id),
+               "lowestPrice" => "99.25",
+               "merchantPrices" => [
+                 %{
+                   "merchantProductId" => relay_id(:merchant_product, eur_offer.id),
+                   "price" => "99.25"
+                 }
+               ],
+               "observedAt" =>
+                 observed_at
+                 |> DateTime.to_date()
+                 |> DateTime.new!(~T[00:00:00])
+                 |> DateTime.to_iso8601()
+             }
+
+      assert List.last(usd_points)["lowestPrice"] == "120.50"
+      assert length(eur_points) <= 91
+      assert length(usd_points) <= 91
+    end
+
     test "merchants returns a paginated connection with stable ordering", %{conn: conn} do
       merchant_a =
         merchant_fixture(%{name: unique_name("Merchant A"), domain: unique_domain("a")})
@@ -1174,6 +1250,33 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           hasPreviousPage
           startCursor
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp product_price_history_query do
+    """
+    query ProductPriceHistory($slug: String!) {
+      product(slug: $slug) {
+        priceHistory90d {
+          currency
+          merchants {
+            id
+            name
+            merchantProductId
+          }
+          points {
+            observedAt
+            lowestPrice
+            averagePrice
+            lowestMerchantProductId
+            merchantPrices {
+              merchantProductId
+              price
+            }
+          }
         }
       }
     }

@@ -2,13 +2,14 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: active
 - Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-12-product-discovery-evaluation-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
 - Last verified: 2026-08-12 against product/catalog/offer route structure,
   pricing history, GraphQL pricing types, generated Relay inputs, and current
   route tests.
+- Claimed: 2026-08-12 by the current detached worktree.
 
 ## Target Outcome
 

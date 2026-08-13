@@ -717,20 +717,19 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Detail Product" })).toBeInTheDocument();
   const detailTabs = screen.getByRole("tablist", { name: "Product details" });
-  expect(within(detailTabs).getByRole("tab", { name: "Overview" })).toHaveAttribute(
+  expect(within(detailTabs).queryByRole("tab", { name: "Overview" })).not.toBeInTheDocument();
+  expect(within(detailTabs).getByRole("tab", { name: "Specifications" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  expect(screen.getByRole("region", { name: "Product overview" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
   expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
   expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
   expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
-
-  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Specifications" }));
-  expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
-  expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
+  expect(screen.queryByText("detail-product")).not.toBeInTheDocument();
 
   fireEvent.click(within(detailTabs).getByRole("tab", { name: "Offers" }));
+  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
@@ -1247,11 +1246,7 @@ test("renders product decision actions with compare, offer review, and browse de
   });
 
   render(
-    <MemoryRouter
-      initialEntries={[
-        "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta",
-      ]}
-    >
+    <MemoryRouter initialEntries={["/products/detail%2Fproduct%20slug?slug=alpha&slug=beta"]}>
       <ProductDetailRoute />
     </MemoryRouter>,
   );

@@ -45,20 +45,17 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 
 ## Active Work
 
-None.
+### Product Discovery And Evaluation
 
-## Ready Work
-
-### 1. Product Discovery And Evaluation
-
-Status: ready
+Status: active
+Owner: current detached worktree
 Lane: Product discovery and evaluation
 Plan: `docs/superpowers/plans/2026-08-12-product-discovery-evaluation-implementation-plan.md`
 Batch outcome: Product detail becomes a persistent decision workspace with a
 multi-spec filter drawer and bounded product-wide merchant chart while touched
 product/catalog/offer code adopts capability and Relay-generated ownership.
-Next action: Run Task 1's RED product hierarchy, drawer, Decimal trend, currency,
-stock, and query-bound characterization.
+Current action: Task 1 RED characterization for product hierarchy, multi-spec
+selection, currency-separated Decimal trends, and constant query counts.
 Owned paths:
 
 - Product detail/specification/offer/community, catalog, and offer-discovery
@@ -70,34 +67,9 @@ Owned paths:
 - Production discovery Playwright spec and snapshots.
 - `docs/work/product-discovery-evaluation.md`.
 
-Internal slices:
+## Ready Work
 
-- Product/filter/chart characterization.
-- Batched bounded Decimal price projection.
-- Multi-spec selection drawer and catalog URL mapping.
-- Decision header, three tabs, relative freshness, and chart modes.
-- Product/catalog/offer capability and generated-type simplification.
-- Browser, accessibility, visual, query-count, and full verification.
-
-Prerequisites:
-
-- The approved design and existing Base UI/StyleX/TanStack foundations are
-  complete.
-- The existing catalog filter URL and Relay GraphQL contracts are stable.
-- Owned paths do not overlap the other four ready outcomes.
-
-Verification:
-
-- Focused pricing, GraphQL, product, catalog, offer, Relay, and TypeScript tests.
-- Deterministic Playwright/axe/visual checks at three widths and query-count
-  coverage.
-- Complete frontend/backend gates, queue validation, and diff checks.
-
-Exit condition: Overview and displayed slugs are gone, multi-spec AND filtering
-and all truthful chart modes pass, touched Relay/type guards are simplified, and
-the result remains bounded, accessible, responsive, and currency-safe.
-
-### 2. Comparison And Authentication Continuity
+### 1. Comparison And Authentication Continuity
 
 Status: ready
 Lane: Comparison and authentication continuity
@@ -143,7 +115,7 @@ Exit condition: Guest protected actions never fail as raw Unauthorized or lose
 their safe draft, no restored intent auto-submits, comparison remains truthful
 and readable, and no server authorization/session contract is weakened.
 
-### 3. Operator Workspaces
+### 2. Operator Workspaces
 
 Status: ready
 Lane: Operator workspaces
@@ -185,7 +157,7 @@ Exit condition: All operator actions and independently recoverable regions pass,
 no investigation fact is hidden, and no manual successful-Relay data schema or
 generic workflow file remains without a named boundary.
 
-### 4. Realistic Development Data
+### 3. Realistic Development Data
 
 Status: ready
 Lane: Realistic development data
