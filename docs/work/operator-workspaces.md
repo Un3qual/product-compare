@@ -7,6 +7,10 @@
 - Owner: `codex/operator-workspaces`
 - Plan: `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
+- Ledger refinement plan:
+  `docs/superpowers/plans/2026-08-13-compact-operator-ledgers-implementation-plan.md`
+- Ledger refinement design:
+  `docs/superpowers/specs/2026-08-13-compact-operator-ledgers-design.md`
 - Last verified: 2026-08-13 against affiliate setup, CJ lifecycle/feed, revenue
   summary/ledger, generated Relay operations, deterministic browser acceptance,
   and the complete frontend/backend gates.
@@ -50,14 +54,38 @@ diff checks.
   lifecycle policy each have separate owners and failure boundaries.
 - Revenue reporting renders one main-band control region before its generated
   metric projection and independently preloaded attribution ledger. Conversion
-  reconciliation facts use a generated fragment and an accessible disclosure.
-  Ledger cells are composed summaries rather than parameter dumps: click origin
-  and type use badges, identity and commerce lead with their primary facts,
-  diagnostics compact the referrer/browser/IP evidence, and conversion amount
-  and state lead before exact drill-down facts.
+  reconciliation facts use a generated fragment and remain visible in the
+  ledger without a details disclosure. Ledger cells are composed summaries
+  rather than parameter dumps: click origin and type use badges, identity and
+  commerce lead with their primary facts, diagnostics compact the
+  referrer/browser/IP evidence, and conversion amount and state lead before
+  exact diagnostic facts.
 - The former generic `affiliate-setup-data.ts`, `cj-program-data.ts`,
   `RevenueSummaryView.tsx`, and `revenue-summary-view-data.ts` owners were
   removed or renamed by their actual responsibilities.
+
+## Compact Ledger Hierarchy
+
+- Revenue keeps four scan columns with explicit priority. Visit leads with time
+  and customer identity, then source/link badges. Request leads with referrer,
+  then browser and IP diagnostics. Commerce leads with merchant and product,
+  then network, SKU, and affiliate program. Conversion leads with order value,
+  status, commission, and confidence, followed by merchant/product/network and
+  the exact purchased/reported timeline plus network reference.
+- Every revenue fact remains visible. Multiple conversions use quiet dividers,
+  while identifiers retain wrapping and full-value titles where needed; no
+  record data is hidden behind a disclosure or clipped to a row-height limit.
+- CJ merchant cells are semantic row headers rather than nested page headings.
+  Program name is primary, lifecycle state and required action are the next
+  scan targets, and provider, advertiser ID, feed count, warnings, and exact
+  change time remain supporting facts. Editing stays a full-width task row with
+  unchanged mutation, feedback, and lazy feed behavior.
+- Column widths follow information density: conversion and CJ action receive
+  the most space, while lifecycle and request diagnostics receive less. Shared
+  cell padding is modestly tighter without reducing typography. Ordinary
+  operator ledgers fit at desktop/tablet widths and use contained scrolling on
+  mobile; the two comparison matrices retain their deliberate internal 48rem
+  scrolling contract.
 
 ## Retained Manual Boundary Inventory
 
@@ -90,15 +118,21 @@ diff checks.
   and independently recoverable unmatched feeds.
 - Revenue renders controls before metrics and attribution, keeps summary and
   ledger preload failures independent in both directions, keeps pagination
-  failure local, and exposes exact conversion investigation time only on demand.
-- `assets/tests/e2e/production-ui-operations.spec.ts` passed 7/7 scenarios. Its
-  desktop, tablet, and mobile runs include reduced motion, zero axe violations,
-  document overflow checks, all affiliate mutations, CJ lifecycle/feed recovery,
-  revenue preload/pagination recovery, and inspected full-page captures.
+  failure local, and keeps exact conversion investigation facts visible in the
+  ledger.
+- The combined production browser matrix passed 11/11 scenarios. Its desktop,
+  tablet, and mobile runs cover both operator ledgers and both comparison
+  matrices with reduced motion, zero axe violations, document/table-container
+  bounds, contained mobile scrolling, affiliate mutations, CJ lifecycle/feed
+  recovery, revenue preload/pagination recovery, and inspected full-page CJ,
+  revenue, and editor captures.
 - `cd assets && pnpm run check` passed Relay validation, TypeScript, lint,
-  formatting, 118 files / 1,527 tests, client and SSR builds, StyleX mangling,
-  and the 227,074-byte gzip initial bundle within the 300,000-byte budget. The
+  formatting, 118 files / 1,528 tests, client and SSR builds, StyleX mangling,
+  and the 226,357-byte gzip initial bundle within the 300,000-byte budget. The
   host used Node 25.6.0 and emitted the known warning for the pinned Node 24.18.1.
+- `mix work_queue.validate` passed with the committed one-row Ready Floor
+  Exception, and the final whitespace/status checks covered only the intended
+  refinement evidence before closeout.
 - `mix format --check-formatted`, `mix typecheck`, and `mix quality` passed;
   Credo reported no issues, ExDNA stayed at its 3/3 clone budget, and the static
   analysis gate completed. `mix test` passed 1,489 tests with zero failures.

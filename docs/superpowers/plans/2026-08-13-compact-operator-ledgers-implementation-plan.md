@@ -799,7 +799,7 @@ its four-column table and non-loss contract.
   their tables, only comparison matrices retain `48rem` minimum widths, and all
   horizontal overflow stays inside `[data-slot="table-container"]`.
 
-- [ ] **Step 4: Update lane evidence**
+- [x] **Step 4: Update lane evidence**
 
   Add a compact-ledger hierarchy section to `docs/work/operator-workspaces.md`
   recording:
@@ -814,7 +814,7 @@ its four-column table and non-loss contract.
   - Desktop/tablet no-scroll operator proof, mobile contained-scroll proof,
     comparison containment, accessibility results, and inspected screenshots.
 
-- [ ] **Step 5: Run the complete frontend and repository gates**
+- [x] **Step 5: Run the complete frontend and repository gates**
 
   ```bash
   cd assets
@@ -831,7 +831,7 @@ its four-column table and non-loss contract.
   validation, and whitespace checks pass. The status output contains only the
   intended lane-doc and plan-checklist changes before the closeout commit.
 
-- [ ] **Step 6: Commit the verified closeout**
+- [x] **Step 6: Commit the verified closeout**
 
   ```bash
   git add docs/work/operator-workspaces.md docs/superpowers/plans/2026-08-13-compact-operator-ledgers-implementation-plan.md assets/tests/e2e/production-ui-operations.spec.ts
