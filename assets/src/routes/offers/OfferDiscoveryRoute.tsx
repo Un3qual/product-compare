@@ -17,18 +17,16 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
-import type { OfferDiscoveryFilters } from "./offer-discovery-filter-data";
-import {
-  offerDiscoveryFiltersFromUrl,
-  offerDiscoveryInputFromFilters,
-} from "./offer-discovery-filters";
 import {
   MobileOfferDiscoveryFilters,
   OfferDiscoveryFilterForm,
   OfferDiscoveryFilterSummary,
-} from "./OfferDiscoveryFilterForm";
-import { offerDiscoverySelectedProductContext } from "./offer-discovery-filter-data";
-import { OfferDiscoveryList } from "./OfferDiscoveryList";
+  OfferDiscoveryList,
+  offerDiscoveryFiltersFromUrl,
+  offerDiscoveryInputFromFilters,
+  offerDiscoverySelectedProductContext,
+  type OfferDiscoveryFilters,
+} from "./discovery";
 
 const styles = create({
   desktopFilters: {

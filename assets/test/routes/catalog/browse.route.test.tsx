@@ -14,11 +14,11 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import { BrowseRoute, browseLoader } from "../../../src/routes/catalog/BrowseRoute";
-import { CatalogAdvancedFilters } from "../../../src/routes/catalog/CatalogAdvancedFilters";
+import { CatalogAdvancedFilters } from "../../../src/routes/catalog/filters/CatalogAdvancedFilters";
 import {
   BrowseProductList,
   type BrowseProductNode,
-} from "../../../src/routes/catalog/BrowseProductList";
+} from "../../../src/routes/catalog/results/BrowseProductList";
 import {
   buildCatalogBrowsePaginationData,
   catalogBrowseNextPagePath,

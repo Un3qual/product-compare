@@ -1,11 +1,8 @@
 import { create, props } from "@stylexjs/stylex";
 import { tokens } from "$ui/theme/tokens.stylex";
-import {
-  buildProductAttributeListData,
-  type ProductAttributeListItem,
-} from "./product-attribute-list-data";
+import { groupProductSpecifications, type ProductSpecification } from "./specifications";
 
-export type { ProductAttributeListItem } from "./product-attribute-list-data";
+export type ProductAttributeListItem = ProductSpecification;
 
 const styles = create({
   groups: {
@@ -58,7 +55,7 @@ export function ProductAttributeList({
     return <p>{emptyMessage}</p>;
   }
 
-  const { groupedAttributes, ungroupedAttributes } = buildProductAttributeListData(attributes);
+  const { groupedAttributes, ungroupedAttributes } = groupProductSpecifications(attributes);
 
   if (groupedAttributes.length === 0) {
     return <AttributeDefinitionList attributes={attributes} />;

@@ -19,7 +19,6 @@ import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
 import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
-  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType,
 } from "./price-watch-data";
@@ -146,10 +145,12 @@ function PriceWatchRuleField({
   return (
     <Label htmlFor={id} style={styles.field}>
       Alert when
-      <Select
+      <Select<PriceWatchRuleType>
         items={PRICE_WATCH_RULE_OPTIONS}
         name="ruleType"
-        onValueChange={(nextValue) => onChange(priceWatchRuleTypeFromValue(nextValue ?? ""))}
+        onValueChange={(nextValue) => {
+          if (nextValue) onChange(nextValue);
+        }}
         value={value}
       >
         <SelectTrigger id={id} style={styles.input}>

@@ -23,16 +23,16 @@ import {
   catalogFiltersFromUrl,
   catalogFiltersToProductFiltersInput,
   hasActiveCatalogFilters,
+  CatalogActiveFilterSummary,
+  CatalogFilterForm,
   type CatalogFilters,
 } from "./filters";
-import { CatalogActiveFilterSummary, CatalogFilterForm } from "./CatalogFilterForm";
-import { BrowseProductList } from "./BrowseProductList";
+import { BrowseProductList, catalogResultStatus } from "./results";
 import {
   buildCatalogBrowsePaginationData,
   catalogBrowseFirstPagePath,
   catalogBrowseSearchWithNormalizedSort,
 } from "./paths";
-import { catalogResultStatus } from "./result-status";
 
 const browseRouteQuery = graphql`
   query BrowseRouteQuery($first: Int!, $after: String, $filters: ProductFiltersInput) {

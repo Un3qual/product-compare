@@ -22,7 +22,7 @@ import {
 import {
   ProductOfferList,
   type ProductOfferListItem,
-} from "../../../src/routes/products/ProductOfferList";
+} from "../../../src/routes/products/offers/ProductOfferList";
 import type { ProductSpecification } from "../../../src/routes/products/specifications";
 
 const {

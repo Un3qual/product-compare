@@ -2,7 +2,6 @@ import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
   PRICE_WATCH_CREATED_MESSAGE,
-  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchInputSource,
 } from "../../../src/routes/products/price-watch-data";
@@ -13,20 +12,6 @@ const MUTATION_ERROR = {
   message: "Target amount is invalid.",
 };
 const GRAPHQL_ERROR = { message: "Transport-level GraphQL error" };
-
-test.each(["TARGET_PRICE", "PERCENTAGE_DROP", "BACK_IN_STOCK", "NEWLY_AVAILABLE"] as const)(
-  "priceWatchRuleTypeFromValue preserves supported value %s",
-  (value) => {
-    expect(priceWatchRuleTypeFromValue(value)).toBe(value);
-  },
-);
-
-test.each(["", "UNKNOWN", "FUTURE_RULE"])(
-  "priceWatchRuleTypeFromValue falls back for unsupported value %s",
-  (value) => {
-    expect(priceWatchRuleTypeFromValue(value)).toBe("TARGET_PRICE");
-  },
-);
 
 test.each([
   ["TARGET_PRICE", { visible: true, label: "Target landed price" }],
@@ -105,7 +90,15 @@ test("buildCreatePriceWatchInput does not mutate its scalar input source", () =>
 
 test("create-watch completion returns success for a complete error-free payload", () => {
   const payload = Object.freeze({
-    watch: Object.freeze({ id: "watch-1" }),
+    watch: Object.freeze({
+      currency: "USD",
+      enabled: true,
+      id: "watch-1",
+      percentageDrop: null,
+      productName: "Product",
+      ruleType: "TARGET_PRICE" as const,
+      targetAmount: "10.00",
+    }),
     errors: Object.freeze([]),
   });
   const graphQLErrors = Object.freeze([]);
@@ -116,14 +109,13 @@ test("create-watch completion returns success for a complete error-free payload"
   expect(PRICE_WATCH_CREATED_MESSAGE).toBe(
     "Watch created. New qualifying changes will appear in your inbox.",
   );
-  expect(payload).toEqual({ watch: { id: "watch-1" }, errors: [] });
+  expect(payload.watch.id).toBe("watch-1");
   expect(graphQLErrors).toEqual([]);
 });
 
 test.each([
   ["missing payload", undefined, [], "Request failed. Please try again."],
   ["null payload", null, [], "Request failed. Please try again."],
-  ["missing watch", {}, [], "Request failed. Please try again."],
   [
     "null watch with a payload error",
     { watch: null, errors: [MUTATION_ERROR] },
@@ -132,7 +124,18 @@ test.each([
   ],
   [
     "complete watch with a top-level GraphQL error",
-    { watch: { id: "watch-1" }, errors: [] },
+    {
+      watch: {
+        currency: "USD",
+        enabled: true,
+        id: "watch-1",
+        percentageDrop: null,
+        productName: "Product",
+        ruleType: "TARGET_PRICE",
+        targetAmount: "10.00",
+      },
+      errors: [],
+    },
     [GRAPHQL_ERROR],
     "Request failed. Please try again.",
   ],

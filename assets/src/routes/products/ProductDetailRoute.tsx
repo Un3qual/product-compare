@@ -32,9 +32,9 @@ import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
 import { ProductDecisionActions } from "./ProductDecisionActions";
 import { ProductDecisionHeader } from "./ProductDecisionHeader";
-import { ProductOfferPanel } from "./ProductOfferPanel";
+import { ProductOfferPanel } from "./offers";
 import { PriceWatchControl } from "./PriceWatchControl";
-import { ProductCommunityPanel } from "./ProductCommunityPanel";
+import { ProductCommunityPanel } from "./community";
 import { createProductDetailRouteData } from "./product-detail-route-data";
 import { ProductSpecifications } from "./specifications";
 

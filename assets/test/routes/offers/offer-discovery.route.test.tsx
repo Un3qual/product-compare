@@ -6,13 +6,13 @@ import {
   OfferDiscoveryRoute,
   type OfferDiscoveryLoaderData,
 } from "../../../src/routes/offers/OfferDiscoveryRoute";
-import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
+import { OfferDiscoveryCard } from "../../../src/routes/offers/discovery/OfferDiscoveryCard";
 import type {
   ActiveCouponsConnection,
   OfferNode,
   PriceHistoryConnection,
-} from "../../../src/routes/offers/offer-discovery-data";
-import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
+} from "../../../src/routes/offers/discovery/offer-discovery-data";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/commerce-click/TrackedCommerceClickAction";
 import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
 
 const {
@@ -1005,7 +1005,7 @@ test("offer discovery uses product merchant ordering rather than the environment
   try {
     vi.resetModules();
     const { sortedRenderableOffers: sortedWithContrastingDefault } =
-      await import("../../../src/routes/offers/offer-discovery-data");
+      await import("../../../src/routes/offers/discovery/offer-discovery-data");
     const offers = [
       buildOffer({
         id: "merchant-product-zebra",
