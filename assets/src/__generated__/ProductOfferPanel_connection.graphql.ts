@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<9a5603877dace6cd626fd83bb0fec6d8>>
+ * @generated SignedSource<<e1d8a9a010b6cb16f9b3ecf612d6fb80>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -19,46 +18,46 @@ export type ProductOfferPanel_connection$data = {
           readonly cursor: string;
           readonly node: {
             readonly code: string;
-            readonly currency: string | null | undefined;
-            readonly description: string | null | undefined;
+            readonly currency: string | null;
+            readonly description: string | null;
             readonly discountType: CouponDiscountType;
-            readonly discountValue: any | null | undefined;
-            readonly terms: string | null | undefined;
-            readonly validTo: any | null | undefined;
+            readonly discountValue: string | null;
+            readonly terms: string | null;
+            readonly validTo: string | null;
           };
         }>;
         readonly pageInfo: {
           readonly hasNextPage: boolean;
         };
-      } | null | undefined;
+      } | null;
       readonly currency: string;
       readonly id: string;
       readonly latestPrice: {
         readonly id: string;
-        readonly observedAt: any;
-        readonly price: any;
-      } | null | undefined;
+        readonly observedAt: string;
+        readonly price: string;
+      } | null;
       readonly merchant: {
         readonly id: string;
         readonly name: string;
-      } | null | undefined;
+      } | null;
       readonly priceHistory: {
         readonly edges: ReadonlyArray<{
           readonly node: {
             readonly id: string;
-            readonly observedAt: any;
-            readonly price: any;
+            readonly observedAt: string;
+            readonly price: string;
           };
         }>;
         readonly pageInfo: {
           readonly hasNextPage: boolean;
         };
-      } | null | undefined;
+      } | null;
       readonly url: string;
     };
   }>;
   readonly pageInfo: {
-    readonly endCursor: string | null | undefined;
+    readonly endCursor: string | null;
     readonly hasNextPage: boolean;
   };
   readonly " $fragmentType": "ProductOfferPanel_connection";
@@ -84,7 +83,7 @@ v1 = {
   "storageKey": null
 },
 v2 = [
-  (v0/*: any*/),
+  (v0/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -115,7 +114,7 @@ v4 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v3/*: any*/)
+    (v3/*:: as any*/)
   ],
   "storageKey": null
 };
@@ -141,7 +140,7 @@ return {
           "name": "node",
           "plural": false,
           "selections": [
-            (v0/*: any*/),
+            (v0/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -149,7 +148,7 @@ return {
               "name": "url",
               "storageKey": null
             },
-            (v1/*: any*/),
+            (v1/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -158,7 +157,7 @@ return {
               "name": "merchant",
               "plural": false,
               "selections": [
-                (v0/*: any*/),
+                (v0/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -176,7 +175,7 @@ return {
               "kind": "LinkedField",
               "name": "latestPrice",
               "plural": false,
-              "selections": (v2/*: any*/),
+              "selections": (v2/*:: as any*/),
               "storageKey": null
             },
             {
@@ -244,7 +243,7 @@ return {
                           "name": "discountValue",
                           "storageKey": null
                         },
-                        (v1/*: any*/),
+                        (v1/*:: as any*/),
                         {
                           "alias": null,
                           "args": null,
@@ -265,7 +264,7 @@ return {
                   ],
                   "storageKey": null
                 },
-                (v4/*: any*/)
+                (v4/*:: as any*/)
               ],
               "storageKey": "activeCoupons(first:2)"
             },
@@ -298,13 +297,13 @@ return {
                       "kind": "LinkedField",
                       "name": "node",
                       "plural": false,
-                      "selections": (v2/*: any*/),
+                      "selections": (v2/*:: as any*/),
                       "storageKey": null
                     }
                   ],
                   "storageKey": null
                 },
-                (v4/*: any*/)
+                (v4/*:: as any*/)
               ],
               "storageKey": "priceHistory(first:12)"
             }
@@ -329,7 +328,7 @@ return {
           "name": "endCursor",
           "storageKey": null
         },
-        (v3/*: any*/)
+        (v3/*:: as any*/)
       ],
       "storageKey": null
     }

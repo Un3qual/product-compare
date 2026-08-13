@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<2cb58321408f4ccb82cee494efd48601>>
+ * @generated SignedSource<<eaeaa72811f2e06370a0fa524f8e8193>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,9 +10,9 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type UpdateProductQuestionInput = {
-  body?: string | null | undefined;
+  body?: string | null;
   id: string;
-  title?: string | null | undefined;
+  title?: string | null;
 };
 export type ProductCommunityOperationsUpdateProductQuestionMutation$variables = {
   input: UpdateProductQuestionInput;
@@ -22,15 +21,15 @@ export type ProductCommunityOperationsUpdateProductQuestionMutation$data = {
   readonly updateProductQuestion: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly question: {
-      readonly body: string | null | undefined;
+      readonly body: string | null;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
       readonly title: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type ProductCommunityOperationsUpdateProductQuestionMutation = {
@@ -138,20 +137,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityOperationsUpdateProductQuestionMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductCommunityOperationsUpdateProductQuestionMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "74535e4029c94925fb8ae133932cdcb7",

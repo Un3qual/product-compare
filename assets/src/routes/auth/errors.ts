@@ -1,16 +1,18 @@
 import {
-  DEFAULT_ROUTE_ERROR_MESSAGE,
-  hasRouteGraphQLErrors,
-  isRouteRecord,
-  isRouteMutationError,
-  type RouteMutationError,
-} from "../route-errors";
-import type { RootViewer } from "../root/viewer-data";
+  DEFAULT_MUTATION_ERROR_MESSAGE,
+  hasGraphQLErrors,
+  type MutationGraphQLErrors,
+} from "$relay/mutation-errors";
+import type { ForgotPasswordRouteMutation } from "$generated/ForgotPasswordRouteMutation.graphql";
+import type { LoginRouteMutation } from "$generated/LoginRouteMutation.graphql";
 
-export type MutationError = RouteMutationError;
+type SessionPayload = LoginRouteMutation["response"]["login"];
+type ActionPayload = ForgotPasswordRouteMutation["response"]["forgotPassword"];
+
+export type MutationError = SessionPayload["errors"][number];
 
 export interface AuthSessionResult {
-  viewer: RootViewer | null;
+  viewer: SessionPayload["viewer"];
   errors: MutationError[];
 }
 
@@ -32,12 +34,12 @@ export function selectGlobalMutationErrors(
   return errors.filter((error) => {
     const field = error.field;
 
-    return field === undefined || field === null || field === "" || !renderedFields.has(field);
+    return field === null || field === "" || !renderedFields.has(field);
   });
 }
 
 export function sanitizeTransportError(_error: unknown) {
-  return DEFAULT_ROUTE_ERROR_MESSAGE;
+  return DEFAULT_MUTATION_ERROR_MESSAGE;
 }
 
 export function transportMutationError(error: unknown): MutationError {
@@ -60,8 +62,8 @@ export function invalidTokenMutationError(message: string): MutationError {
   };
 }
 
-function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
-  if (hasRouteGraphQLErrors(errors)) {
+function relayGraphQLError(errors: MutationGraphQLErrors) {
+  if (hasGraphQLErrors(errors)) {
     return transportMutationError(errors);
   }
 
@@ -69,8 +71,8 @@ function relayGraphQLError(errors: readonly unknown[] | null | undefined) {
 }
 
 export function resolveSessionMutationResult(
-  payload: unknown,
-  graphQLErrors: readonly unknown[] | null | undefined,
+  payload: SessionPayload,
+  graphQLErrors: MutationGraphQLErrors,
 ): AuthSessionResult {
   const graphQLError = relayGraphQLError(graphQLErrors);
 
@@ -78,30 +80,8 @@ export function resolveSessionMutationResult(
     return { viewer: null, errors: [graphQLError] };
   }
 
-  return normalizeSessionPayload(payload);
-}
-
-export function resolveActionMutationResult(
-  payload: unknown,
-  graphQLErrors: readonly unknown[] | null | undefined,
-): AuthActionResult {
-  const graphQLError = relayGraphQLError(graphQLErrors);
-
-  if (graphQLError) {
-    return { ok: false, errors: [graphQLError] };
-  }
-
-  return normalizeActionPayload(payload);
-}
-
-export function isSuccessfulActionResult(result: AuthActionResult) {
-  return result.ok && result.errors.length === 0;
-}
-
-export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
-  const sessionPayload = isRouteRecord(payload) ? payload : {};
-  const viewer = isViewer(sessionPayload.viewer) ? sessionPayload.viewer : null;
-  const errors = normalizeErrors(sessionPayload.errors);
+  const viewer = payload.viewer;
+  const errors = [...payload.errors];
 
   return {
     viewer,
@@ -109,10 +89,18 @@ export function normalizeSessionPayload(payload: unknown): AuthSessionResult {
   };
 }
 
-export function normalizeActionPayload(payload: unknown): AuthActionResult {
-  const actionPayload = isRouteRecord(payload) ? payload : {};
-  const ok = actionPayload.ok === true;
-  const errors = normalizeErrors(actionPayload.errors);
+export function resolveActionMutationResult(
+  payload: ActionPayload,
+  graphQLErrors: MutationGraphQLErrors,
+): AuthActionResult {
+  const graphQLError = relayGraphQLError(graphQLErrors);
+
+  if (graphQLError) {
+    return { ok: false, errors: [graphQLError] };
+  }
+
+  const ok = payload.ok;
+  const errors = [...payload.errors];
 
   return {
     ok,
@@ -120,16 +108,8 @@ export function normalizeActionPayload(payload: unknown): AuthActionResult {
   };
 }
 
-function normalizeErrors(payloadErrors: unknown): MutationError[] {
-  if (Array.isArray(payloadErrors)) {
-    const typedErrors = payloadErrors.filter(isRouteMutationError);
-
-    if (typedErrors.length > 0) {
-      return typedErrors;
-    }
-  }
-
-  return [];
+export function isSuccessfulActionResult(result: AuthActionResult) {
+  return result.ok && result.errors.length === 0;
 }
 
 function ensureFailureErrors(errors: MutationError[]) {
@@ -141,16 +121,7 @@ function ensureFailureErrors(errors: MutationError[]) {
     {
       code: "UNKNOWN_ERROR",
       field: null,
-      message: DEFAULT_ROUTE_ERROR_MESSAGE,
+      message: DEFAULT_MUTATION_ERROR_MESSAGE,
     },
   ];
-}
-
-function isViewer(value: unknown): value is RootViewer {
-  return Boolean(
-    isRouteRecord(value) &&
-    typeof value.id === "string" &&
-    typeof value.email === "string" &&
-    typeof value.isOperator === "boolean",
-  );
 }

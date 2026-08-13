@@ -14,16 +14,17 @@ import {
 } from "../../../src/relay/route-preload";
 import { MAX_COMPARE_PRODUCTS } from "../../../src/routes/compare/compare-route-data";
 import { BrowseRoute, browseLoader } from "../../../src/routes/catalog/BrowseRoute";
-import { CatalogAdvancedFilters } from "../../../src/routes/catalog/CatalogAdvancedFilters";
+import { CatalogAdvancedFilters } from "../../../src/routes/catalog/filters/CatalogAdvancedFilters";
 import {
   BrowseProductList,
   type BrowseProductNode,
-} from "../../../src/routes/catalog/BrowseProductList";
+} from "../../../src/routes/catalog/results/BrowseProductList";
 import {
   buildCatalogBrowsePaginationData,
   catalogBrowseNextPagePath,
 } from "../../../src/routes/catalog/paths";
 import { chooseSelectOption, openSelect } from "../../helpers/base-select";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   fetchRouteQueryMock,
@@ -98,7 +99,7 @@ test("catalog pagination rejects blank and repeated next cursors", () => {
   ).toBeNull();
   expect(buildCatalogBrowsePaginationData({ ...base, endCursor: "  " }).nextHref).toBeNull();
 });
-type MockRouteQueryRef = { dispose: () => void; variables: Variables };
+type MockRouteQueryRef = ReturnType<typeof mockPreloadedQuery<Variables>>;
 type BrowseProductAttributeFixture = {
   code: string;
   displayName: string;
@@ -372,10 +373,8 @@ function mockBrowseRouteRelayData({
   productData?: Record<string, unknown>;
   productQueryRef?: MockRouteQueryRef;
 } = {}) {
-  const resolvedProductQueryRef = productQueryRef ?? {
-    dispose: vi.fn(),
-    variables: loaderData.query.__relayQuery.variables,
-  };
+  const resolvedProductQueryRef =
+    productQueryRef ?? mockPreloadedQuery(loaderData.query.__relayQuery.variables);
   mockedUseLoaderData.mockReturnValue(loaderData);
   mockedUseRoutePreloadedQuery.mockReturnValueOnce(resolvedProductQueryRef);
   mockedUsePreloadedQuery.mockReturnValueOnce({ ...productData, ...metadataData } as never);
@@ -1197,7 +1196,7 @@ test("catalog product presentation renders selected and full compare states", ()
 });
 
 test("renders browse products from the Relay route query", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const queryRef = mockPreloadedQuery({ first: 12 });
 
   mockBrowseRouteRelayData({
     productQueryRef: queryRef,
@@ -1277,7 +1276,7 @@ test("renders browse products from the Relay route query", () => {
     "/offers?productId=product-2",
   );
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
-  expect(screen.getByText("catalog-first")).toBeInTheDocument();
+  expect(screen.queryByText("catalog-first")).not.toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(
     within(screen.getByRole("article", { name: "Catalog First" })).getByRole("list", {
@@ -1912,10 +1911,9 @@ test("preserves in-progress filter control state when compare selection changes"
   const typeSelect = within(filterForm).getByRole("combobox", { name: "Product type" });
 
   chooseSelectOption(typeSelect, "Laptops (6)");
-  mockedUseRoutePreloadedQuery.mockReturnValueOnce({
-    dispose: vi.fn(),
-    variables: loaderData.query.__relayQuery.variables,
-  });
+  mockedUseRoutePreloadedQuery.mockReturnValueOnce(
+    mockPreloadedQuery(loaderData.query.__relayQuery.variables),
+  );
   mockedUsePreloadedQuery.mockReturnValueOnce({
     ...productData,
     ...metadataData,
@@ -2090,14 +2088,8 @@ test("refreshes filter controls when loader filters clear on the same browse rou
 
   mockedUseLoaderData.mockReturnValueOnce(activeLoaderData).mockReturnValueOnce(clearedLoaderData);
   mockedUseRoutePreloadedQuery
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
-      variables: activeLoaderData.query.__relayQuery.variables,
-    })
-    .mockReturnValueOnce({
-      dispose: vi.fn(),
-      variables: clearedLoaderData.query.__relayQuery.variables,
-    });
+    .mockReturnValueOnce(mockPreloadedQuery(activeLoaderData.query.__relayQuery.variables))
+    .mockReturnValueOnce(mockPreloadedQuery(clearedLoaderData.query.__relayQuery.variables));
   mockedUsePreloadedQuery
     .mockReturnValueOnce({
       ...buildBrowseProductsResponse(),
@@ -2548,7 +2540,7 @@ test("renders selected page size and preserves first in pagination links", () =>
       variables: { first: 24, after: "cursor-current-page" },
     },
   };
-  const queryRef = { dispose: vi.fn(), variables: { first: 24, after: "cursor-current-page" } };
+  const queryRef = mockPreloadedQuery({ first: 24, after: "cursor-current-page" });
 
   mockBrowseRouteRelayData({
     loaderData: readyBrowseLoaderData({
@@ -2598,7 +2590,7 @@ test("renders next and first-page pagination links from the browse query", () =>
       variables: { first: 12, after: "cursor-current-page" },
     },
   };
-  const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "cursor-current-page" } };
+  const queryRef = mockPreloadedQuery({ first: 12, after: "cursor-current-page" });
 
   mockBrowseRouteRelayData({
     loaderData: readyBrowseLoaderData({
@@ -2666,7 +2658,7 @@ test("omits browse pagination links on the first page when there is no next page
 });
 
 test("renders a local loading state while the Relay route query suspends", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const queryRef = mockPreloadedQuery({ first: 12 });
 
   mockedUseLoaderData.mockReturnValue({
     status: "ready",
@@ -2687,7 +2679,7 @@ test("renders a local loading state while the Relay route query suspends", () =>
 });
 
 test("renders a local unavailable state when the Relay route query errors", () => {
-  const queryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const queryRef = mockPreloadedQuery({ first: 12 });
   const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
   mockedUseLoaderData.mockReturnValue({
@@ -2732,8 +2724,8 @@ test("renders a local unavailable state when filter metadata is missing", () => 
 });
 
 test("resets the local unavailable state when fresh loader data arrives", async () => {
-  const failedQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
-  const recoveredQueryRef = { dispose: vi.fn(), variables: { first: 12 } };
+  const failedQueryRef = mockPreloadedQuery({ first: 12 });
+  const recoveredQueryRef = mockPreloadedQuery({ first: 12 });
   const retryDescriptor = {
     __relayQuery: {
       ...browseQueryDescriptor.__relayQuery,
@@ -2954,7 +2946,7 @@ test("keeps a first-page recovery link when a cursor page returns no products", 
       variables: { first: 12, after: "stale-cursor" },
     },
   };
-  const queryRef = { dispose: vi.fn(), variables: { first: 12, after: "stale-cursor" } };
+  const queryRef = mockPreloadedQuery({ first: 12, after: "stale-cursor" });
 
   mockBrowseRouteRelayData({
     loaderData: readyBrowseLoaderData({

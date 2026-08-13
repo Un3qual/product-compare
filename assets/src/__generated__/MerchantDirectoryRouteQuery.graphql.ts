@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<67ad383411744857025a11f163e346ec>>
+ * @generated SignedSource<<bb7016d913a3be866cda83b8d8785b0f>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,19 +10,19 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type MerchantDirectoryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type MerchantDirectoryRouteQuery$data = {
   readonly merchants: {
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
+      readonly startCursor: string | null;
     };
     readonly " $fragmentSpreads": FragmentRefs<"MerchantDirectoryView_merchants">;
-  } | null | undefined;
+  } | null;
 };
 export type MerchantDirectoryRouteQuery = {
   response: MerchantDirectoryRouteQuery$data;
@@ -95,8 +94,8 @@ v3 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -104,7 +103,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -115,7 +114,7 @@ return {
             "kind": "FragmentSpread",
             "name": "MerchantDirectoryView_merchants"
           },
-          (v3/*: any*/)
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -126,15 +125,15 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "MerchantDirectoryRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -190,7 +189,7 @@ return {
             ],
             "storageKey": null
           },
-          (v3/*: any*/)
+          (v3/*:: as any*/)
         ],
         "storageKey": null
       }

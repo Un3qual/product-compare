@@ -2,8 +2,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import { MemoryRouter, useLoaderData } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   commitMutationMock,
@@ -102,15 +103,9 @@ const deskChairQueryDescriptor = {
   },
 };
 
-const deskLampQueryRef = {
-  dispose: vi.fn(),
-  variables: deskLampQueryDescriptor.__relayQuery.variables,
-};
+const deskLampQueryRef = mockPreloadedQuery(deskLampQueryDescriptor.__relayQuery.variables);
 
-const deskChairQueryRef = {
-  dispose: vi.fn(),
-  variables: deskChairQueryDescriptor.__relayQuery.variables,
-};
+const deskChairQueryRef = mockPreloadedQuery(deskChairQueryDescriptor.__relayQuery.variables);
 
 const deskLampCompareQueryDescriptor = {
   __relayQuery: {
@@ -128,22 +123,22 @@ const deskChairCompareQueryDescriptor = {
   },
 };
 
-const deskLampCompareQueryRef = {
-  dispose: vi.fn(),
-  variables: deskLampCompareQueryDescriptor.__relayQuery.variables,
-};
+const deskLampCompareQueryRef = mockPreloadedQuery(
+  deskLampCompareQueryDescriptor.__relayQuery.variables,
+);
 
-const deskChairCompareQueryRef = {
-  dispose: vi.fn(),
-  variables: deskChairCompareQueryDescriptor.__relayQuery.variables,
-};
+const deskChairCompareQueryRef = mockPreloadedQuery(
+  deskChairCompareQueryDescriptor.__relayQuery.variables,
+);
 
 const READY_LOADER_DATA = {
   status: "ready",
   specMode: "shared",
   slugs: [DESK_LAMP.slug],
   query: deskLampCompareQueryDescriptor,
-  offerContexts: {},
+  offerContexts: {
+    [DESK_LAMP.id]: { productId: DESK_LAMP.id, status: "unavailable" },
+  },
   products: [
     {
       id: DESK_LAMP.id,
@@ -161,7 +156,9 @@ const SECOND_READY_LOADER_DATA = {
   specMode: "shared",
   slugs: [DESK_CHAIR.slug],
   query: deskChairCompareQueryDescriptor,
-  offerContexts: {},
+  offerContexts: {
+    [DESK_CHAIR.id]: { productId: DESK_CHAIR.id, status: "unavailable" },
+  },
   products: [
     {
       id: DESK_CHAIR.id,
@@ -297,7 +294,7 @@ test("compare route reports a generic error when save completes with top-level G
 
   fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(saveComparisonStatus()).toBeEmptyDOMElement();
 });
 

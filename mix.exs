@@ -56,6 +56,7 @@ defmodule ProductCompare.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 1.0"},
       {:jason, "~> 1.2"},
+      {:saxy, "~> 1.6"},
       {:req, "~> 0.7"},
       {:idna, "~> 7.1"},
       {:ex_cldr, "~> 2.47"},

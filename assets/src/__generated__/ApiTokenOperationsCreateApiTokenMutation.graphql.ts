@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<03c9a63c764156c3b5e10715508aeef8>>
+ * @generated SignedSource<<0c2282c1dbc087101094fc1b8e4f9e79>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,26 +9,26 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type ApiTokenOperationsCreateApiTokenMutation$variables = {
-  expiresAt?: any | null | undefined;
-  label?: string | null | undefined;
+  expiresAt?: string | null;
+  label?: string | null;
 };
 export type ApiTokenOperationsCreateApiTokenMutation$data = {
   readonly createApiToken: {
     readonly apiToken: {
-      readonly expiresAt: any | null | undefined;
+      readonly expiresAt: string | null;
       readonly id: string;
-      readonly insertedAt: any;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: any | null | undefined;
-      readonly revokedAt: any | null | undefined;
+      readonly insertedAt: string;
+      readonly label: string | null;
+      readonly lastUsedAt: string | null;
+      readonly revokedAt: string | null;
       readonly tokenPrefix: string;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly plainTextToken: string | null | undefined;
+    readonly plainTextToken: string | null;
   };
 };
 export type ApiTokenOperationsCreateApiTokenMutation = {
@@ -174,25 +173,25 @@ v2 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "ApiTokenOperationsCreateApiTokenMutation",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ApiTokenOperationsCreateApiTokenMutation",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "05c62eea1dbe7c021e02b2434b2f40cb",

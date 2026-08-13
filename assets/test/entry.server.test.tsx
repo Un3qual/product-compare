@@ -15,9 +15,11 @@ test("server render emits route document metadata", async () => {
   const html = await render("/auth/login");
 
   expect(typeof html).toBe("string");
-  expect(html).toContain("<title>Sign in | Product Compare</title>");
-  expect(html).toContain(
-    '<meta name="description" content="Sign in to manage saved comparisons and account tools."/>',
+  const documentRef = parseRenderedDocument(html);
+
+  expect(documentRef.title).toBe("Sign in | Product Compare");
+  expect(documentRef.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
+    "Sign in to manage saved comparisons and account tools.",
   );
 });
 
@@ -40,8 +42,12 @@ test("server render emits qualified product canonical, robots, social, and safe 
                 canonicalPath: "/products/field-camera",
                 indexable: true,
                 imageUrl: null,
-                structuredData:
-                  '{"@context":"https://schema.org","@type":"Product","name":"Field Camera","url":"/products/field-camera"}',
+                structuredData: JSON.stringify({
+                  "@context": "https://schema.org",
+                  "@type": "Product",
+                  name: 'Field Camera </script><script>alert("metadata injection")</script>',
+                  url: "/products/field-camera",
+                }),
               },
               brand: { id: "brand-1", name: "Acme" },
               currentAttributes: [],
@@ -68,15 +74,26 @@ test("server render emits qualified product canonical, robots, social, and safe 
     });
 
     expect(typeof html).toBe("string");
-    expect(html).toContain(
-      "<title>Field Camera specifications and prices | Product Compare</title>",
+    const documentRef = parseRenderedDocument(html);
+
+    expect(documentRef.title).toBe("Field Camera specifications and prices | Product Compare");
+    expect(documentRef.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe(
+      "https://app.example/products/field-camera",
     );
-    expect(html).toContain(
-      '<link rel="canonical" href="https://app.example/products/field-camera"/>',
+    expect(documentRef.querySelector('meta[name="robots"]')?.getAttribute("content")).toBe(
+      "index,follow",
     );
-    expect(html).toContain('<meta name="robots" content="index,follow"/>');
-    expect(html).toContain("https://app.example/products/field-camera");
-    expect(html).toContain('type="application/ld+json"');
+
+    const jsonLdScripts = documentRef.querySelectorAll('script[type="application/ld+json"]');
+
+    expect(jsonLdScripts).toHaveLength(1);
+    expect(JSON.parse(jsonLdScripts[0]?.textContent ?? "")).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: 'Field Camera </script><script>alert("metadata injection")</script>',
+      url: "https://app.example/products/field-camera",
+    });
+    expect(html).not.toContain('</script><script>alert("metadata injection")');
   } finally {
     globalThis.fetch = originalFetch;
   }
@@ -92,9 +109,11 @@ test("server render returns a 404 response for unknown application paths", async
   expect(response.status).toBe(404);
   const body = await response.text();
 
-  expect(body).toContain("<title>Page not found | Product Compare</title>");
-  expect(body).toContain(
-    '<meta name="description" content="The requested Product Compare page could not be found."/>',
+  const documentRef = parseRenderedDocument(body);
+
+  expect(documentRef.title).toBe("Page not found | Product Compare");
+  expect(documentRef.querySelector('meta[name="description"]')?.getAttribute("content")).toBe(
+    "The requested Product Compare page could not be found.",
   );
   expect(body).toContain("The requested page could not be found.");
   expect(body).toContain("__relayRecords");
@@ -360,6 +379,11 @@ function parseRelayRecords(html: Response | string) {
   };
 
   return payload.records ?? {};
+}
+
+function parseRenderedDocument(html: Response | string) {
+  expect(typeof html).toBe("string");
+  return new DOMParser().parseFromString(String(html), "text/html");
 }
 
 function jsonResponse(payload: unknown) {

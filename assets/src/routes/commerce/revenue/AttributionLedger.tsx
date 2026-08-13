@@ -1,21 +1,14 @@
 import { create, props } from "@stylexjs/stylex";
-import { Fragment, useMemo, useState } from "react";
-import {
-  createColumnHelper,
-  tableFeatures,
-  useTable,
-  type Row as TanStackRow,
-} from "@tanstack/react-table";
+import { createColumnHelper, tableFeatures, useTable } from "@tanstack/react-table";
+import { Fragment, useState } from "react";
 import { graphql, useFragment, usePaginationFragment } from "react-relay";
-import type {
-  AttributionLedger_connection$data,
-  AttributionLedger_connection$key,
-} from "$generated/AttributionLedger_connection.graphql";
+import type { AttributionLedger_connection$key } from "$generated/AttributionLedger_connection.graphql";
+import type { AttributionLedgerPaginationQuery } from "$generated/AttributionLedgerPaginationQuery.graphql";
 import type {
   AttributionLedger_row$data,
   AttributionLedger_row$key,
 } from "$generated/AttributionLedger_row.graphql";
-import { formatProductDateTimeLabel } from "../../product-formatting";
+import { formatProductDateTimeLabel } from "$frontend/formatting";
 import { Button } from "$ui/primitives/Button";
 import {
   Table,
@@ -38,7 +31,6 @@ const styles = create({
   conversionList: { display: "grid", gap: "0.5rem", listStyle: "none", margin: 0, padding: 0 },
   details: { display: "grid", gap: "0.2rem", margin: 0 },
   row: { borderBlockStart: "1px solid var(--pc-border-quiet)" },
-  scroll: { overflowX: "auto" },
   table: { borderCollapse: "collapse", minWidth: "68rem", width: "100%" },
   title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
   wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
@@ -65,7 +57,7 @@ const attributionLedgerFragment = graphql`
 `;
 
 const attributionLedgerRowFragment = graphql`
-  fragment AttributionLedger_row on CommerceAttributionClick {
+  fragment AttributionLedger_row on CommerceAttributionClick @relay(plural: true) {
     affiliateNetworkCode
     affiliateNetworkName
     affiliateProgramCode
@@ -98,33 +90,37 @@ const attributionLedgerRowFragment = graphql`
   }
 `;
 
-type AttributionClickRef =
-  AttributionLedger_connection$data["commerceAttributionClicks"]["edges"][number]["node"];
-
-type AttributionColumn = "click" | "identity" | "diagnostics" | "commerce" | "conversions";
+type AttributionClick = AttributionLedger_row$data[number];
 
 const tableModel = tableFeatures({});
-const columnHelper = createColumnHelper<typeof tableModel, AttributionClickRef>();
+const columnHelper = createColumnHelper<typeof tableModel, AttributionClick>();
 const columns = columnHelper.columns([
   columnHelper.display({
     id: "click",
     header: "Click",
+    cell: ({ row }) => <AttributionClickDetails click={row.original} />,
   }),
   columnHelper.display({
     id: "identity",
     header: "Identity",
+    cell: ({ row }) => <AttributionIdentity click={row.original} />,
   }),
   columnHelper.display({
     id: "diagnostics",
     header: "Request diagnostics",
+    cell: ({ row }) => <AttributionDiagnostics click={row.original} />,
   }),
   columnHelper.display({
     id: "commerce",
     header: "Commerce",
+    cell: ({ row }) => <AttributionCommerce click={row.original} />,
   }),
   columnHelper.display({
     id: "conversions",
     header: "Matched conversions",
+    cell: ({ row }) => (
+      <AttributionConversionList conversions={row.original.matchedConversions} />
+    ),
   }),
 ]);
 
@@ -134,13 +130,13 @@ export function AttributionLedger({
   fragmentRef: AttributionLedger_connection$key;
 }) {
   const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
-    AttributionLedger_connection$data,
+    AttributionLedgerPaginationQuery,
     AttributionLedger_connection$key
   >(attributionLedgerFragment, fragmentRef);
-  const clicks = useMemo(
-    () => data.commerceAttributionClicks.edges.map(({ node }) => node),
-    [data.commerceAttributionClicks.edges],
+  const rowFragmentRefs: AttributionLedger_row$key = data.commerceAttributionClicks.edges.map(
+    ({ node }) => node,
   );
+  const clicks = useFragment(attributionLedgerRowFragment, rowFragmentRefs);
   const [paginationFailed, setPaginationFailed] = useState(false);
   const loadMore = () => {
     setPaginationFailed(false);
@@ -180,7 +176,13 @@ export function AttributionLedger({
           </TableHeader>
           <TableBody>
             {table.getRowModel().rows.map((row) => (
-              <AttributionLedgerRow key={row.id} row={row} />
+              <TableRow key={row.id} style={styles.row}>
+                {row.getAllCells().map((cell) => (
+                  <TableCell key={cell.id} style={styles.cell}>
+                    <table.FlexRender cell={cell} />
+                  </TableCell>
+                ))}
+              </TableRow>
             ))}
           </TableBody>
         </Table>
@@ -224,50 +226,6 @@ function AttributionPaginationControl({
   ) : null;
 }
 
-type AttributionClick = AttributionLedger_row$data;
-
-function AttributionLedgerRow({
-  row,
-}: {
-  row: TanStackRow<typeof tableModel, AttributionClickRef>;
-}) {
-  const fragmentRef: AttributionLedger_row$key = row.original;
-  const click = useFragment(attributionLedgerRowFragment, fragmentRef);
-
-  return (
-    <TableRow style={styles.row}>
-      {row.getAllCells().map((cell) => (
-        <TableCell key={cell.id} style={styles.cell}>
-          <AttributionLedgerCell click={click} column={cell.column.id as AttributionColumn} />
-        </TableCell>
-      ))}
-    </TableRow>
-  );
-}
-
-function AttributionLedgerCell({
-  click,
-  column,
-}: {
-  click: AttributionClick;
-  column: AttributionColumn;
-}) {
-  switch (column) {
-    case "click":
-      return <AttributionClickDetails click={click} />;
-    case "identity":
-      return <AttributionIdentity click={click} />;
-    case "diagnostics":
-      return <AttributionDiagnostics click={click} />;
-    case "commerce":
-      return <AttributionCommerce click={click} />;
-    case "conversions":
-      return <AttributionConversionList conversions={click.matchedConversions} />;
-    default:
-      return assertNever(column);
-  }
-}
-
 function AttributionDiagnostics({ click }: { click: AttributionClick }) {
   return (
     <dl {...props(styles.details)}>
@@ -302,10 +260,6 @@ function AttributionCommerce({ click }: { click: AttributionClick }) {
   );
 }
 
-function assertNever(value: never): never {
-  throw new Error(`Unsupported attribution ledger column: ${String(value)}`);
-}
-
 function AttributionClickDetails({ click }: { click: AttributionClick }) {
   return (
     <dl {...props(styles.details)}>
@@ -326,7 +280,7 @@ function AttributionIdentity({ click }: { click: AttributionClick }) {
     return (
       <dl {...props(styles.details)}>
         <dt>User</dt>
-        <dd>{click.userEmail ?? "No email"}</dd>
+        <dd>{click.userEmail}</dd>
       </dl>
     );
   }

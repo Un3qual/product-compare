@@ -1,4 +1,4 @@
-import { type FormEventHandler, type ReactElement } from "react";
+import type { FormEventHandler } from "react";
 import { create, props } from "@stylexjs/stylex";
 import type { AffiliateSetupOperationsCreateCouponMutation } from "$generated/AffiliateSetupOperationsCreateCouponMutation.graphql";
 import type { AffiliateSetupOperationsUpsertAffiliateLinkMutation } from "$generated/AffiliateSetupOperationsUpsertAffiliateLinkMutation.graphql";
@@ -15,13 +15,9 @@ import {
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { couponDiscountText } from "./affiliate-setup-data";
+import { couponDiscountText, type MerchantChoice } from "./affiliate-setup-data";
 
-export type MerchantChoice = {
-  domain: string;
-  id: string;
-  name: string;
-};
+export type { MerchantChoice } from "./affiliate-setup-data";
 
 export type NetworkResult = NonNullable<
   NonNullable<
@@ -69,7 +65,7 @@ export function AffiliateNetworkForm({
   onSubmit: FormEventHandler<HTMLFormElement>;
   pending: boolean;
   result: NetworkResult | null;
-}): ReactElement {
+}) {
   return (
     <form
       aria-label="Save affiliate network"
@@ -118,7 +114,7 @@ export function AffiliateProgramForm({
   result: ProgramResult | null;
   selectedMerchantCopy: string | null;
   selectedMerchantValue: string;
-}): ReactElement {
+}) {
   return (
     <form
       aria-label="Save affiliate program"
@@ -178,7 +174,7 @@ export function AffiliateLinkForm({
   pending: boolean;
   result: LinkResult | null;
   selectedMerchantCopy: string | null;
-}): ReactElement {
+}) {
   return (
     <form
       aria-label="Save affiliate link"
@@ -240,7 +236,7 @@ export function AffiliateCouponForm({
   result: CouponResult | null;
   selectedMerchantCopy: string | null;
   selectedMerchantValue: string;
-}): ReactElement {
+}) {
   return (
     <form
       aria-label="Create affiliate coupon"

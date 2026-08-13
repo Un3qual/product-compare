@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<cc5fbb72f8421f3be102a35834035849>>
+ * @generated SignedSource<<167ff8fd15e3e0fa8162d2c2104465e9>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -16,12 +15,12 @@ export type SavedComparisonSetListDeleteSavedComparisonSetMutation$data = {
   readonly deleteSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly savedComparisonSet: {
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type SavedComparisonSetListDeleteSavedComparisonSetMutation = {
@@ -108,20 +107,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "SavedComparisonSetListDeleteSavedComparisonSetMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "SavedComparisonSetListDeleteSavedComparisonSetMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "00ad523b64b325838e4be1a3be74a3d7",

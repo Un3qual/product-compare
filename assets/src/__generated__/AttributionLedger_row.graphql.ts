@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<3a36258552526a49691f65272d417de8>>
+ * @generated SignedSource<<ca51cdc8e37819df1c17bc1af24e1950>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -14,42 +13,42 @@ export type CommerceAttributionLinkType = "AFFILIATE" | "NON_AFFILIATE" | "%futu
 export type CommerceClickSourceSurface = "API" | "EXTENSION" | "WEB" | "%future added value";
 export type CommerceConversionStatus = "APPROVED" | "PAID" | "PENDING" | "REVERSED" | "%future added value";
 import { FragmentRefs } from "relay-runtime";
-export type AttributionLedger_row$data = {
-  readonly affiliateNetworkCode: string | null | undefined;
-  readonly affiliateNetworkName: string | null | undefined;
-  readonly affiliateProgramCode: string | null | undefined;
+export type AttributionLedger_row$data = ReadonlyArray<{
+  readonly affiliateNetworkCode: string | null;
+  readonly affiliateNetworkName: string | null;
+  readonly affiliateProgramCode: string | null;
   readonly anonymousVisitor: boolean;
   readonly clickId: string;
-  readonly insertedAt: any;
-  readonly ipAddress: string | null | undefined;
+  readonly insertedAt: string;
+  readonly ipAddress: string | null;
   readonly linkType: CommerceAttributionLinkType;
   readonly matchedConversions: ReadonlyArray<{
-    readonly affiliateNetworkCode: string | null | undefined;
-    readonly affiliateNetworkName: string | null | undefined;
+    readonly affiliateNetworkCode: string | null;
+    readonly affiliateNetworkName: string | null;
     readonly attributionConfidence: CommerceAttributionConfidence;
-    readonly commissionAmount: any | null | undefined;
+    readonly commissionAmount: string | null;
     readonly currency: string;
-    readonly merchantName: string | null | undefined;
+    readonly merchantName: string | null;
     readonly networkConversionRef: string;
-    readonly orderAmount: any | null | undefined;
-    readonly productName: string | null | undefined;
-    readonly purchasedAt: any | null | undefined;
-    readonly reportedAt: any;
+    readonly orderAmount: string | null;
+    readonly productName: string | null;
+    readonly purchasedAt: string | null;
+    readonly reportedAt: string;
     readonly status: CommerceConversionStatus;
   }>;
   readonly merchantName: string;
-  readonly merchantProductExternalSku: string | null | undefined;
-  readonly productName: string | null | undefined;
-  readonly referrer: string | null | undefined;
+  readonly merchantProductExternalSku: string | null;
+  readonly productName: string | null;
+  readonly referrer: string | null;
   readonly sourceSurface: CommerceClickSourceSurface;
-  readonly userAgent: string | null | undefined;
-  readonly userEmail: string | null | undefined;
+  readonly userAgent: string | null;
+  readonly userEmail: string | null;
   readonly " $fragmentType": "AttributionLedger_row";
-};
-export type AttributionLedger_row$key = {
+}>;
+export type AttributionLedger_row$key = ReadonlyArray<{
   readonly " $data"?: AttributionLedger_row$data;
   readonly " $fragmentSpreads": FragmentRefs<"AttributionLedger_row">;
-};
+}>;
 
 const node: ReaderFragment = (function(){
 var v0 = {
@@ -83,11 +82,13 @@ v3 = {
 return {
   "argumentDefinitions": [],
   "kind": "Fragment",
-  "metadata": null,
+  "metadata": {
+    "plural": true
+  },
   "name": "AttributionLedger_row",
   "selections": [
-    (v0/*: any*/),
-    (v1/*: any*/),
+    (v0/*:: as any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -138,8 +139,8 @@ return {
       "name": "matchedConversions",
       "plural": true,
       "selections": [
-        (v0/*: any*/),
-        (v1/*: any*/),
+        (v0/*:: as any*/),
+        (v1/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -161,7 +162,7 @@ return {
           "name": "currency",
           "storageKey": null
         },
-        (v2/*: any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -176,7 +177,7 @@ return {
           "name": "orderAmount",
           "storageKey": null
         },
-        (v3/*: any*/),
+        (v3/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -201,7 +202,7 @@ return {
       ],
       "storageKey": null
     },
-    (v2/*: any*/),
+    (v2/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -209,7 +210,7 @@ return {
       "name": "merchantProductExternalSku",
       "storageKey": null
     },
-    (v3/*: any*/),
+    (v3/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -244,6 +245,6 @@ return {
 };
 })();
 
-(node as any).hash = "3f6ebc21599247f0c656e6b01f1cc81d";
+(node as any).hash = "077e1884473aa75ad5a54958a4981005";
 
 export default node;

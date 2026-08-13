@@ -1379,8 +1379,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                product_media: 1,
                product_attribute_current: 1,
                product_reviews: 2,
-               merchant_products: 2,
-               price_points: 2
+               merchant_products: 3,
+               price_points: 3
              }
 
       grown_products = initial_products ++ product_evidence_set("#{prefix}-grown", operator)
@@ -2533,6 +2533,17 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
                   freshness
                   eligible
                 }
+              }
+            }
+            priceHistory90d {
+              currency
+              merchants { id name merchantProductId }
+              points {
+                observedAt
+                lowestPrice
+                averagePrice
+                lowestMerchantProductId
+                merchantPrices { merchantProductId price }
               }
             }
             reviewSummary { count averageRating }
@@ -4375,6 +4386,9 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
 
     assert reviewed_node["reviewSummary"] == %{"count" => 1, "averageRating" => "4.00"}
 
+    assert [%{"currency" => "USD", "merchants" => [_], "points" => [_ | _]}] =
+             reviewed_node["priceHistory90d"]
+
     assert reviewed_node["seo"] == %{
              "title" => "#{reviewed.name} specifications and prices | Product Compare",
              "description" => @evidence_description,
@@ -4427,6 +4441,8 @@ defmodule ProductCompareWeb.GraphQL.DataloaderBatchingTest do
              "count" => 0,
              "averageRating" => nil
            }
+
+    assert node_for(nodes, missing.slug)["priceHistory90d"] == []
 
     assert node_for(nodes, missing.slug)["seo"] == %{
              "title" => "#{missing.name} specifications and prices | Product Compare",

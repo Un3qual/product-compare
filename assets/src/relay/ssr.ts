@@ -10,16 +10,12 @@ const JSON_HTML_ESCAPES: Record<string, string> = {
   "\u2029": "\\u2029",
 };
 
-interface RelayRecordsBootstrap {
-  records: RelayRecordMap;
-}
-
 export function dehydrateRelayEnvironment(environment: Environment): RelayRecordMap {
   return environment.getStore().getSource().toJSON();
 }
 
 export function renderRelayRecordsScript(records: RelayRecordMap) {
-  const payload: RelayRecordsBootstrap = { records };
+  const payload = { records };
 
   return `<script id="${RELAY_RECORDS_SCRIPT_ID}" type="application/json">${escapeJsonForHtml(
     JSON.stringify(payload),
@@ -34,7 +30,8 @@ export function readRelayRecordsFromDocument(documentRef: Document = document): 
   }
 
   try {
-    const parsed = JSON.parse(element.textContent) as Partial<RelayRecordsBootstrap>;
+    const parsed: unknown = JSON.parse(element.textContent);
+    if (!parsed || typeof parsed !== "object" || !("records" in parsed)) return {};
 
     return isRelayRecordMap(parsed.records) ? parsed.records : {};
   } catch {

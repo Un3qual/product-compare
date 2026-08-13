@@ -34,6 +34,18 @@ test("root route preloads viewer state", () => {
   );
 });
 
+test("root route provides accessible feedback while client loaders initialize", () => {
+  const HydrateFallback = routes[0]?.HydrateFallback;
+
+  expect(HydrateFallback).toEqual(expect.any(Function));
+  if (!HydrateFallback) return;
+
+  render(<HydrateFallback />);
+
+  expect(screen.getByRole("heading", { name: "Product Compare" })).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("Loading Product Compare");
+});
+
 test("root route revalidates viewer state only around auth route navigations", () => {
   expect(shouldRevalidateRootLoader(buildShouldRevalidateArgs("/products", "/compare"))).toBe(
     false,

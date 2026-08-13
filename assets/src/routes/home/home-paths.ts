@@ -10,12 +10,12 @@ import type { CatalogFilters } from "../catalog/filters";
 const HOME_CATALOG_PAGE_SIZE = 12;
 const HOME_SEARCH_QUERY_LIMIT = 100;
 
-const EMPTY_CATALOG_FILTERS: CatalogFilters = {
+const EMPTY_CATALOG_FILTERS = {
   booleans: [],
   enums: [],
   numeric: [],
   useCaseTaxonIds: [],
-};
+} satisfies CatalogFilters;
 
 export function selectedHomeCompareSlugs(search: string) {
   return selectedCompareSlugsFromSearch(search, { maxProducts: MAX_COMPARE_PRODUCTS });

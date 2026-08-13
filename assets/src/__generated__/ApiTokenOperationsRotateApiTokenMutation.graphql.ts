@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<48689b8197176d4f36d240e385dec6df>>
+ * @generated SignedSource<<9f2bb7b05a83980269e0ce2212c8e016>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,27 +9,27 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type ApiTokenOperationsRotateApiTokenMutation$variables = {
-  expiresAt?: any | null | undefined;
-  label?: string | null | undefined;
+  expiresAt?: string | null;
+  label?: string | null;
   tokenId: string;
 };
 export type ApiTokenOperationsRotateApiTokenMutation$data = {
   readonly rotateApiToken: {
     readonly apiToken: {
-      readonly expiresAt: any | null | undefined;
+      readonly expiresAt: string | null;
       readonly id: string;
-      readonly insertedAt: any;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: any | null | undefined;
-      readonly revokedAt: any | null | undefined;
+      readonly insertedAt: string;
+      readonly label: string | null;
+      readonly lastUsedAt: string | null;
+      readonly revokedAt: string | null;
       readonly tokenPrefix: string;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly plainTextToken: string | null | undefined;
+    readonly plainTextToken: string | null;
   };
 };
 export type ApiTokenOperationsRotateApiTokenMutation = {
@@ -185,27 +184,27 @@ v3 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "ApiTokenOperationsRotateApiTokenMutation",
-    "selections": (v3/*: any*/),
+    "selections": (v3/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ApiTokenOperationsRotateApiTokenMutation",
-    "selections": (v3/*: any*/)
+    "selections": (v3/*:: as any*/)
   },
   "params": {
     "cacheID": "985190f5d580f33cdf6b53571fbcbbb2",

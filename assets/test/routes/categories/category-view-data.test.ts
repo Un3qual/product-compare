@@ -54,7 +54,7 @@ test("uses an unknown-brand fallback only for nullish brand names", () => {
   const data = getCategoryViewData(
     buildCategory({
       products: buildProducts([
-        buildProduct({ id: "empty", brand: { name: "" } }),
+        buildProduct({ id: "empty", brand: { id: "brand-empty", name: "" } }),
         buildProduct({ id: "null", brand: null }),
         buildProduct({ id: "undefined", brand: undefined }),
       ]),
@@ -138,12 +138,12 @@ function buildProduct(
     id: "product-1",
     name: "Field Camera",
     slug: "field-camera",
-    brand: { name: "Acme" },
+    brand: { id: "brand-1", name: "Acme" },
     currentAttributes: [buildAttribute("resolution", "Resolution", "24 MP")],
     ...overrides,
   };
 }
 
 function buildAttribute(attributeId: string, displayName: string, valueText: string) {
-  return { attributeId, displayName, valueText };
+  return { attributeId, displayName, sortOrder: null, valueText };
 }

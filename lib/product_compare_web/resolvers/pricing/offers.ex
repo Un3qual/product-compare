@@ -81,6 +81,21 @@ defmodule ProductCompareWeb.Resolvers.Pricing.Offers do
     end)
   end
 
+  @spec product_price_history(map(), map(), Absinthe.Resolution.t()) ::
+          {:ok, [map()]} | Absinthe.Resolution.Helpers.dataloader_tuple()
+  def product_price_history(%{id: product_id}, _args, %{context: %{loader: loader}})
+      when is_integer(product_id) do
+    source = Loader.product_evidence_source()
+    batch = {:one, Product}
+    item = [price_history_90d: product_id]
+
+    loader
+    |> Dataloader.load(source, batch, item)
+    |> on_load(fn loader ->
+      {:ok, Dataloader.get(loader, source, batch, item)}
+    end)
+  end
+
   @spec price_history(map(), map(), Absinthe.Resolution.t()) ::
           {:ok, map()} | {:error, String.t()}
   def price_history(

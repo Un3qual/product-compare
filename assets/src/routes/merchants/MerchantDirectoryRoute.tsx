@@ -9,7 +9,7 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
@@ -35,18 +35,16 @@ const merchantDirectoryRouteQuery = graphql`
   }
 `;
 
-export type MerchantDirectoryPagination = MerchantPagination;
-
 export type MerchantDirectoryLoaderData =
   | {
       status: "ready";
-      pagination: MerchantDirectoryPagination;
+      pagination: MerchantPagination;
       query: RelayRouteQueryDescriptor<MerchantDirectoryRouteQuery["variables"]>;
     }
-  | { status: "error"; pagination: MerchantDirectoryPagination };
+  | { status: "error"; pagination: MerchantPagination };
 
 export function MerchantDirectoryRoute() {
-  const loaderData = useLoaderData<typeof merchantDirectoryLoader>() as MerchantDirectoryLoaderData;
+  const loaderData = useLoaderData<typeof merchantDirectoryLoader>();
 
   return (
     <PageShell
@@ -95,7 +93,7 @@ function MerchantDirectoryPanel({
   pagination,
   query,
 }: {
-  pagination: MerchantDirectoryPagination;
+  pagination: MerchantPagination;
   query: Extract<MerchantDirectoryLoaderData, { status: "ready" }>["query"];
 }) {
   const queryRef = useRoutePreloadedQuery<MerchantDirectoryRouteQuery>(
@@ -112,7 +110,7 @@ function MerchantDirectoryPanel({
   }
 
   const paginationData = buildMerchantDirectoryPaginationData({
-    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    endCursor: data.merchants.pageInfo.endCursor,
     hasNextPage: data.merchants.pageInfo.hasNextPage,
     hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
     pagination,

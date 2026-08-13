@@ -124,6 +124,52 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
     field :currency_summaries, non_null(list_of(non_null(:offer_currency_summary)))
   end
 
+  object :product_price_trend_currency do
+    field :currency, non_null(:string)
+    field :merchants, non_null(list_of(non_null(:product_price_trend_merchant)))
+    field :points, non_null(list_of(non_null(:product_price_trend_point)))
+  end
+
+  object :product_price_trend_merchant do
+    field :id, non_null(:id) do
+      resolve(fn merchant, _, _ ->
+        GlobalId.encode_required(:merchant, merchant.merchant_id)
+      end)
+    end
+
+    field :name, non_null(:string)
+
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn merchant, _, _ ->
+        GlobalId.encode_required(:merchant_product, merchant.merchant_product_id)
+      end)
+    end
+  end
+
+  object :product_price_trend_point do
+    field :observed_at, non_null(:datetime)
+    field :lowest_price, non_null(:decimal)
+    field :average_price, non_null(:decimal)
+
+    field :lowest_merchant_product_id, non_null(:id) do
+      resolve(fn point, _, _ ->
+        GlobalId.encode_required(:merchant_product, point.lowest_merchant_product_id)
+      end)
+    end
+
+    field :merchant_prices, non_null(list_of(non_null(:product_price_trend_merchant_price)))
+  end
+
+  object :product_price_trend_merchant_price do
+    field :merchant_product_id, non_null(:id) do
+      resolve(fn price, _, _ ->
+        GlobalId.encode_required(:merchant_product, price.merchant_product_id)
+      end)
+    end
+
+    field :price, non_null(:decimal)
+  end
+
   object :offer_currency_summary do
     field :currency, non_null(:string)
     field :offer_count, non_null(:integer)
@@ -139,6 +185,7 @@ defmodule ProductCompareWeb.Schema.Pricing.Types do
       end)
     end
 
+    field :merchant_name, non_null(:string)
     field :currency, non_null(:string)
     field :item_price, :decimal
     field :shipping, :decimal

@@ -1,8 +1,14 @@
 import { render, screen, waitFor } from "@testing-library/react";
+import { createHead, UnheadProvider } from "@unhead/react/client";
 import { createMemoryRouter, RouterProvider } from "react-router-dom";
 import { RouteMetadata } from "../../src/routes/RouteMetadata";
 
 test("RouteMetadata updates canonical, robots, social, and structured metadata from route loader data", async () => {
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: 'Field Camera </script><script>alert("metadata injection")</script>',
+  };
   const router = createMemoryRouter(
     [
       {
@@ -13,7 +19,7 @@ test("RouteMetadata updates canonical, robots, social, and structured metadata f
             description: "A factual product description.",
             imageUrl: "https://app.example/product.jpg",
             indexable: true,
-            structuredData: '{"@type":"Product"}',
+            structuredData,
             title: "Factual product | Product Compare",
           },
         }),
@@ -28,7 +34,11 @@ test("RouteMetadata updates canonical, robots, social, and structured metadata f
     { initialEntries: ["/product"] },
   );
 
-  render(<RouterProvider router={router} />);
+  render(
+    <UnheadProvider head={createHead()}>
+      <RouterProvider router={router} />
+    </UnheadProvider>,
+  );
   expect(await screen.findByText("Product body")).toBeVisible();
 
   await waitFor(() => expect(document.title).toBe("Factual product | Product Compare"));
@@ -52,9 +62,11 @@ test("RouteMetadata updates canonical, robots, social, and structured metadata f
     "content",
     "https://app.example/product.jpg",
   );
-  expect(document.querySelector('script[type="application/ld+json"]')?.textContent).toBe(
-    '{"@type":"Product"}',
-  );
+  const jsonLdScripts = document.querySelectorAll('script[type="application/ld+json"]');
+
+  expect(jsonLdScripts).toHaveLength(1);
+  expect(JSON.parse(jsonLdScripts[0]?.textContent ?? "")).toEqual(structuredData);
+  expect(document.querySelectorAll("script")).toHaveLength(1);
 });
 
 test("RouteMetadata defaults non-public static routes to noindex", async () => {
@@ -74,7 +86,11 @@ test("RouteMetadata defaults non-public static routes to noindex", async () => {
     { initialEntries: ["/account"] },
   );
 
-  render(<RouterProvider router={router} />);
+  render(
+    <UnheadProvider head={createHead()}>
+      <RouterProvider router={router} />
+    </UnheadProvider>,
+  );
   expect(await screen.findByText("Account body")).toBeVisible();
   expect(document.head.querySelector('meta[name="robots"]')).toHaveAttribute(
     "content",

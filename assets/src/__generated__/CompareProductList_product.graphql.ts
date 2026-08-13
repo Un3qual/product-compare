@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<43c3ca06bc3bfd1433f1757a2f2331c2>>
+ * @generated SignedSource<<374007cfa3d34ffd22f1357d0935bd92>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -13,22 +12,22 @@ import { FragmentRefs } from "relay-runtime";
 export type CompareProductList_product$data = {
   readonly brand: {
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly currentAttributes: ReadonlyArray<{
     readonly attributeId: string;
-    readonly booleanValue: boolean | null | undefined;
+    readonly booleanValue: boolean | null;
     readonly code: string;
     readonly dataType: string;
     readonly displayName: string;
-    readonly enumOptionId: string | null | undefined;
-    readonly groupLabel: string | null | undefined;
+    readonly enumOptionId: string | null;
+    readonly groupLabel: string | null;
     readonly isRequired: boolean;
-    readonly numericValue: any | null | undefined;
-    readonly sortOrder: number | null | undefined;
-    readonly unitSymbol: string | null | undefined;
+    readonly numericValue: string | null;
+    readonly sortOrder: number | null;
+    readonly unitSymbol: string | null;
     readonly valueText: string;
   }>;
-  readonly description: string | null | undefined;
+  readonly description: string | null;
   readonly id: string;
   readonly name: string;
   readonly slug: string;
@@ -60,7 +59,7 @@ return {
       "name": "id",
       "storageKey": null
     },
-    (v0/*: any*/),
+    (v0/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -83,7 +82,7 @@ return {
       "name": "brand",
       "plural": false,
       "selections": [
-        (v0/*: any*/)
+        (v0/*:: as any*/)
       ],
       "storageKey": null
     },

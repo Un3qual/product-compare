@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<8f9c2606403b6c41cf3a116f61c3f73c>>
+ * @generated SignedSource<<7ca0371a9cf3644ecc6e9b8445ce3415>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -19,13 +18,13 @@ export type HomeDeals_deal$data = {
   };
   readonly offer: {
     readonly currency: string;
-    readonly landedPrice: any;
+    readonly landedPrice: string;
     readonly merchantName: string;
-    readonly observedAt: any;
+    readonly observedAt: string;
   };
   readonly reasons: ReadonlyArray<{
     readonly code: HomeDealReasonCode;
-    readonly watchTarget: any | null | undefined;
+    readonly watchTarget: string | null;
   }>;
   readonly " $fragmentType": "HomeDeals_deal";
 };

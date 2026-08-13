@@ -14,12 +14,11 @@ import {
 } from "$ui/primitives/Select";
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
-import { commitRouteMutationPromise } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { commitRouteMutationPromise } from "$relay/mutations";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   buildCreatePriceWatchInput,
   getPriceWatchAmountFieldData,
-  priceWatchRuleTypeFromValue,
   resolveCreatePriceWatchMutationMessage,
   type PriceWatchRuleType,
 } from "./price-watch-data";
@@ -93,7 +92,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
       const payload = response.createPriceWatch;
       setMessage(resolveCreatePriceWatchMutationMessage(payload, graphQLErrors));
     } catch {
-      setMessage(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setMessage(DEFAULT_MUTATION_ERROR_MESSAGE);
     }
   }
 
@@ -146,10 +145,12 @@ function PriceWatchRuleField({
   return (
     <Label htmlFor={id} style={styles.field}>
       Alert when
-      <Select
+      <Select<PriceWatchRuleType>
         items={PRICE_WATCH_RULE_OPTIONS}
         name="ruleType"
-        onValueChange={(nextValue) => onChange(priceWatchRuleTypeFromValue(nextValue ?? ""))}
+        onValueChange={(nextValue) => {
+          if (nextValue) onChange(nextValue);
+        }}
         value={value}
       >
         <SelectTrigger id={id} style={styles.input}>

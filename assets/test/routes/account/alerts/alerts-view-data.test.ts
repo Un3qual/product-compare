@@ -30,7 +30,7 @@ const watches = [
     baselineLandedPrice: "200",
     enabled: false,
   },
-];
+] as const;
 
 test("buildAlertsViewData keeps alert order and partitions watches without changing their values", () => {
   const result = buildAlertsViewData(alerts, watches);
@@ -74,7 +74,7 @@ test("priceWatchLabel describes threshold watches and preserves useful fallbacks
 test("priceWatchLabel reuses rule labels for availability and unknown watches", () => {
   expect(priceWatchLabel({ ...watches[0], ruleType: "BACK_IN_STOCK" })).toBe("Back in stock");
   expect(priceWatchLabel({ ...watches[0], ruleType: "NEWLY_AVAILABLE" })).toBe("Newly available");
-  expect(priceWatchLabel({ ...watches[0], ruleType: "SOMETHING_NEW" })).toBe("Watch matched");
+  expect(priceWatchLabel({ ...watches[0], ruleType: "%future added value" })).toBe("Watch matched");
 });
 
 test.each([

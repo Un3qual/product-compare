@@ -1,4 +1,4 @@
-import type { ReactElement, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
@@ -9,14 +9,14 @@ import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
 import {
   buildRevenueSummaryFilterFormData,
-  type RevenueActiveFilter,
-  type RevenueDatePresetLink,
-  type RevenueSummaryFilterFormValues,
+  buildRevenueSummaryMetrics,
+  buildRevenueSummaryControls,
   type RevenueSummaryFilters,
-  type RevenueSummaryMetric,
 } from "./revenue-summary-view-data";
 
-type RevenueFilters = RevenueSummaryFilters;
+type RevenueControls = ReturnType<typeof buildRevenueSummaryControls>;
+type RevenueFilterFormValues = ReturnType<typeof buildRevenueSummaryFilterFormData>["values"];
+type RevenueMetrics = ReturnType<typeof buildRevenueSummaryMetrics>;
 
 const REVENUE_FILTER_LABEL_IDS = {
   currency: "revenue-filter-currency-label",
@@ -47,11 +47,11 @@ export function RevenueSummaryView({
   datePresetLinks,
   filters,
 }: {
-  activeFilters: readonly RevenueActiveFilter[];
+  activeFilters: RevenueControls["activeFilters"];
   children: ReactNode;
-  datePresetLinks: readonly RevenueDatePresetLink[];
-  filters: RevenueFilters;
-}): ReactElement {
+  datePresetLinks: RevenueControls["datePresetLinks"];
+  filters: RevenueSummaryFilters;
+}) {
   return (
     <WorkspaceLayout
       context={
@@ -73,10 +73,10 @@ function RevenueSummaryControls({
   datePresetLinks,
   filters,
 }: {
-  activeFilters: readonly RevenueActiveFilter[];
-  datePresetLinks: readonly RevenueDatePresetLink[];
-  filters: RevenueFilters;
-}): ReactElement {
+  activeFilters: RevenueControls["activeFilters"];
+  datePresetLinks: RevenueControls["datePresetLinks"];
+  filters: RevenueSummaryFilters;
+}) {
   const filterFormData = buildRevenueSummaryFilterFormData(filters);
 
   return (
@@ -94,8 +94,8 @@ function RevenueSummaryControls({
 function RevenueSummaryFilterForm({
   values,
 }: {
-  values: RevenueSummaryFilterFormValues;
-}): ReactElement {
+  values: RevenueFilterFormValues;
+}) {
   return (
     <form method="get" aria-label="Revenue filters" {...props(styles.filters)}>
       <div {...props(styles.filterField)}>
@@ -146,8 +146,8 @@ function RevenueSummaryFilterForm({
 function RevenueDatePresetList({
   links,
 }: {
-  links: readonly RevenueDatePresetLink[];
-}): ReactElement | null {
+  links: RevenueControls["datePresetLinks"];
+}) {
   if (links.length === 0) {
     return null;
   }
@@ -166,8 +166,8 @@ function RevenueDatePresetList({
 function RevenueActiveFilterList({
   filters,
 }: {
-  filters: readonly RevenueActiveFilter[];
-}): ReactElement {
+  filters: RevenueControls["activeFilters"];
+}) {
   if (filters.length === 0) {
     return <p>Aggregate revenue summary</p>;
   }
@@ -187,7 +187,7 @@ function RevenueActiveFilterList({
 export function RevenueSummaryMetrics({
   metrics,
 }: {
-  metrics: readonly RevenueSummaryMetric[];
-}): ReactElement {
+  metrics: RevenueMetrics;
+}) {
   return <SummaryStrip items={metrics} label="Summary" />;
 }

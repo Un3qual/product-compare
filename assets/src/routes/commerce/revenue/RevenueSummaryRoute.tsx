@@ -14,7 +14,7 @@ import {
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { recoverRouteLoaderError } from "../../loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { AttributionLedger, attributionLedgerRouteQuery } from "./AttributionLedger";
 import { RevenueSummaryMetrics, RevenueSummaryView } from "./RevenueSummaryView";
 import {
@@ -119,7 +119,7 @@ function preloadAttributionLedger(
 }
 
 export function RevenueSummaryRoute() {
-  const loaderData = useLoaderData<typeof revenueSummaryLoader>() as RevenueSummaryLoaderData;
+  const loaderData = useLoaderData<typeof revenueSummaryLoader>();
   const { activeFilters, datePresetLinks } = buildRevenueSummaryControls(
     loaderData.filters,
     useHydratedLocalDate(),

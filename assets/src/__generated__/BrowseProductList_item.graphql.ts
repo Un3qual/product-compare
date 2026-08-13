@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<6ed214fb9673bbd5932138106e3d8b28>>
+ * @generated SignedSource<<9be1a8a8c849a0a0bd8f90326b17b12d>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -14,11 +13,11 @@ export type BrowseProductList_item$data = {
   readonly brand: {
     readonly id: string;
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly currentAttributes: ReadonlyArray<{
     readonly code: string;
     readonly displayName: string;
-    readonly sortOrder: number | null | undefined;
+    readonly sortOrder: number | null;
     readonly valueText: string;
   }>;
   readonly id: string;
@@ -52,8 +51,8 @@ return {
   "metadata": null,
   "name": "BrowseProductList_item",
   "selections": [
-    (v0/*: any*/),
-    (v1/*: any*/),
+    (v0/*:: as any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -69,8 +68,8 @@ return {
       "name": "brand",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v1/*: any*/)
+        (v0/*:: as any*/),
+        (v1/*:: as any*/)
       ],
       "storageKey": null
     },

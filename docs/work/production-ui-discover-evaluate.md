@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- Status: ready
+- Status: superseded on 2026-08-12 by `docs/work/product-discovery-evaluation.md`
 - Priority: P1
 - Plan: `docs/superpowers/plans/2026-08-10-production-ui-discover-evaluate-implementation-plan.md`
 - Design: `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`

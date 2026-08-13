@@ -3,11 +3,17 @@ import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { Button } from "$ui/primitives/Button";
 import { tokens } from "$ui/theme/tokens.stylex";
-import {
-  buildCompareSelectionTrayViewData,
-  type CompareSelectionTrayItem,
-  type CompareSelectionTrayRow,
-} from "./compare-selection-tray-data";
+
+export interface CompareSelectionTrayItem {
+  readonly label: string;
+  readonly slug: string;
+}
+
+interface CompareSelectionTrayRow extends CompareSelectionTrayItem {
+  readonly removePath: string;
+}
+
+const EMPTY_SELECTION_ROWS: readonly CompareSelectionTrayRow[] = Object.freeze([]);
 
 const styles = create({
   tray: {
@@ -120,4 +126,31 @@ function SelectionItems({ rows }: { rows: readonly CompareSelectionTrayRow[] }) 
       ))}
     </ul>
   );
+}
+
+function buildCompareSelectionTrayViewData({
+  items,
+  maxProducts,
+  removePathForIndex,
+  selectedSlugs,
+}: {
+  items: readonly CompareSelectionTrayItem[];
+  maxProducts: number;
+  removePathForIndex: (index: number) => string;
+  selectedSlugs: readonly string[];
+}) {
+  const rows =
+    selectedSlugs.length === 0
+      ? EMPTY_SELECTION_ROWS
+      : selectedSlugs.map((slug, index) => ({
+          label: items.find((item) => item.slug === slug)?.label ?? slug,
+          removePath: removePathForIndex(index),
+          slug,
+        }));
+
+  return {
+    rows,
+    selectionCountCopy: `${selectedSlugs.length} of ${maxProducts} products selected.`,
+    showOpenAction: selectedSlugs.length > 0,
+  };
 }

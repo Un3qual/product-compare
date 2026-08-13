@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<520b7a9271f8ef16dd61ada44e227384>>
+ * @generated SignedSource<<4c9485131a7b88b02b429897e808a090>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -23,7 +22,7 @@ export type RecommendationPanelQuery$data = {
       readonly productName: string;
       readonly reasons: ReadonlyArray<string>;
     }>;
-    readonly winnerProductId: string | null | undefined;
+    readonly winnerProductId: string | null;
   };
 };
 export type RecommendationPanelQuery = {
@@ -122,25 +121,25 @@ v2 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "RecommendationPanelQuery",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "RecommendationPanelQuery",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "24fc2311008e2cf794ae7c78c437b1f5",

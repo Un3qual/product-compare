@@ -2,6 +2,7 @@ node_modules/
 dist/
 test-results/
 playwright-report/
+output/
 tests/e2e/*.spec.ts-snapshots/
 
 src/__generated__/*

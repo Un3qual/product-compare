@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<6d11535d7ed997b1bd7e2d2029deca14>>
+ * @generated SignedSource<<66c4e729d9e31c1121db4aa5345af101>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,17 +10,17 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type RevenueSummaryInput = {
-  currency?: string | null | undefined;
-  from?: string | null | undefined;
-  merchantId?: string | null | undefined;
-  network?: string | null | undefined;
-  productId?: string | null | undefined;
-  to?: string | null | undefined;
+  currency?: string | null;
+  from?: string | null;
+  merchantId?: string | null;
+  network?: string | null;
+  productId?: string | null;
+  to?: string | null;
 };
 export type AttributionLedgerRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
-  input?: RevenueSummaryInput | null | undefined;
+  input?: RevenueSummaryInput | null;
 };
 export type AttributionLedgerRouteQuery$data = {
   readonly " $fragmentSpreads": FragmentRefs<"AttributionLedger_connection">;
@@ -95,16 +94,16 @@ v7 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "AttributionLedgerRouteQuery",
     "selections": [
       {
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "kind": "FragmentSpread",
         "name": "AttributionLedger_connection"
       }
@@ -115,16 +114,16 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "AttributionLedgerRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "concreteType": "CommerceAttributionClickConnection",
         "kind": "LinkedField",
         "name": "commerceAttributionClicks",
@@ -153,8 +152,8 @@ return {
                     "name": "clickId",
                     "storageKey": null
                   },
-                  (v4/*: any*/),
-                  (v5/*: any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -198,8 +197,8 @@ return {
                     "name": "matchedConversions",
                     "plural": true,
                     "selections": [
-                      (v4/*: any*/),
-                      (v5/*: any*/),
+                      (v4/*:: as any*/),
+                      (v5/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -221,7 +220,7 @@ return {
                         "name": "currency",
                         "storageKey": null
                       },
-                      (v6/*: any*/),
+                      (v6/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -236,7 +235,7 @@ return {
                         "name": "orderAmount",
                         "storageKey": null
                       },
-                      (v7/*: any*/),
+                      (v7/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -261,7 +260,7 @@ return {
                     ],
                     "storageKey": null
                   },
-                  (v6/*: any*/),
+                  (v6/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -269,7 +268,7 @@ return {
                     "name": "merchantProductExternalSku",
                     "storageKey": null
                   },
-                  (v7/*: any*/),
+                  (v7/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -348,7 +347,7 @@ return {
       },
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "filters": [
           "input"
         ],

@@ -10,25 +10,23 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { buildCurrentRoutePathWithCompareSlugs } from "../compare/paths";
-import type { OfferDiscoveryFilters } from "./offer-discovery-filter-data";
-import {
-  offerDiscoveryFiltersFromUrl,
-  offerDiscoveryInputFromFilters,
-} from "./offer-discovery-filters";
 import {
   MobileOfferDiscoveryFilters,
   OfferDiscoveryFilterForm,
   OfferDiscoveryFilterSummary,
-} from "./OfferDiscoveryFilterForm";
-import { offerDiscoverySelectedProductContext } from "./offer-discovery-filter-data";
-import { OfferDiscoveryList } from "./OfferDiscoveryList";
+  OfferDiscoveryList,
+  offerDiscoveryFiltersFromUrl,
+  offerDiscoveryInputFromFilters,
+  offerDiscoverySelectedProductContext,
+  type OfferDiscoveryFilters,
+} from "./discovery";
 
 const styles = create({
   desktopFilters: {
@@ -71,7 +69,7 @@ export type OfferDiscoveryLoaderData =
   | { status: "error"; filters: OfferDiscoveryFilters };
 
 export function OfferDiscoveryRoute() {
-  const loaderData = useLoaderData<typeof offerDiscoveryLoader>() as OfferDiscoveryLoaderData;
+  const loaderData = useLoaderData<typeof offerDiscoveryLoader>();
 
   return (
     <PageShell

@@ -2,7 +2,7 @@ import {
   isAbortError,
   normalizeRouteLoaderThrownError,
   recoverRouteLoaderError,
-} from "../../src/routes/loader-errors";
+} from "../../src/relay/loader-errors";
 
 test("isAbortError detects DOM and object-shaped abort errors", () => {
   expect(isAbortError(new DOMException("The operation was aborted.", "AbortError"))).toBe(true);

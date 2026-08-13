@@ -9,10 +9,12 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { AppShell } from "$ui/components/layout/AppShell";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { AppProviders } from "$ui/providers/AppProviders";
 import { RootPrimaryNavigation } from "./RootDestinations";
 import { RouteMetadata } from "./RouteMetadata";
-import { projectRootViewer, type RootViewer } from "./root/viewer-data";
+import { rootViewerFromRelayRecord, type RootViewer } from "./root/viewer";
 
 const rootRouteQuery = graphql`
   query RootRouteQuery {
@@ -30,41 +32,44 @@ const RELAY_LINKED_RECORD_REF_KEY = "__ref";
 
 export type RootViewerQueryDescriptor = RelayRouteQueryDescriptor<RootRouteQuery["variables"]>;
 
-export type RootLoaderData =
-  | {
-      status: "ready";
-      viewer: RootViewer | null;
-      viewerQuery: RootViewerQueryDescriptor;
-    }
-  | {
-      status: "degraded";
-      viewer: RootViewer | null;
-      viewerQuery: null;
-    };
+export type RootLoaderData = {
+  viewer: RootViewer | null;
+  viewerQuery: RootViewerQueryDescriptor | null;
+};
 
 type RootOutletContext = {
   viewer: RootViewer | null;
 };
 
 export function RootLayout() {
-  const loaderData = useLoaderData() as RootLoaderData;
+  const loaderData = useLoaderData<typeof rootLoader>();
 
-  if (loaderData.status === "degraded") {
+  if (!loaderData.viewerQuery) {
     return <RootLayoutShell viewer={loaderData.viewer} />;
   }
 
-  return <ReadyRootLayout loaderData={loaderData} />;
+  return <ReadyRootLayout viewerQuery={loaderData.viewerQuery} />;
 }
 
-function ReadyRootLayout({
-  loaderData,
-}: {
-  loaderData: Extract<RootLoaderData, { status: "ready" }>;
-}) {
-  const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, loaderData.viewerQuery);
+export function RootHydrateFallback() {
+  return (
+    <AppShell>
+      <PageShell
+        description="Preparing current products, offers, and account details."
+        title="Product Compare"
+        width="reading"
+      >
+        <FeedbackState kind="loading" title="Loading Product Compare..." />
+      </PageShell>
+    </AppShell>
+  );
+}
+
+function ReadyRootLayout({ viewerQuery }: { viewerQuery: RootViewerQueryDescriptor }) {
+  const queryRef = useRoutePreloadedQuery<RootRouteQuery>(rootRouteQuery, viewerQuery);
   const data = usePreloadedQuery<RootRouteQuery>(rootRouteQuery, queryRef);
 
-  return <RootLayoutShell viewer={projectRootViewer(data.viewer)} />;
+  return <RootLayoutShell viewer={data.viewer} />;
 }
 
 function RootLayoutShell({ viewer }: RootOutletContext) {
@@ -95,14 +100,12 @@ export async function rootLoader({
     );
 
     return {
-      status: "ready",
-      viewer: projectRootViewer(fetchedViewer.data.viewer),
+      viewer: fetchedViewer.data.viewer,
       viewerQuery: fetchedViewer.descriptor,
     };
   } catch {
     throwIfAborted(request.signal);
     return {
-      status: "degraded",
       viewer: readCachedRootViewer(environment),
       viewerQuery: null,
     };
@@ -113,15 +116,14 @@ function readCachedRootViewer(environment: Environment): RootViewer | null {
   const source = environment.getStore().getSource();
   const rootRecord = source.get(RELAY_ROOT_ID);
   const viewerRecordId = linkedRecordId(rootRecord?.viewer);
-  return viewerRecordId ? projectRootViewer(source.get(viewerRecordId)) : null;
+  return viewerRecordId ? rootViewerFromRelayRecord(source.get(viewerRecordId)) : null;
 }
 
 function linkedRecordId(value: unknown) {
   if (!value || typeof value !== "object") return null;
+  if (!(RELAY_LINKED_RECORD_REF_KEY in value)) return null;
 
-  const recordId = (value as { [RELAY_LINKED_RECORD_REF_KEY]?: unknown })[
-    RELAY_LINKED_RECORD_REF_KEY
-  ];
+  const recordId = value[RELAY_LINKED_RECORD_REF_KEY];
   return typeof recordId === "string" ? recordId : null;
 }
 

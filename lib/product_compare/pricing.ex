@@ -8,6 +8,7 @@ defmodule ProductCompare.Pricing do
   alias ProductCompare.Pricing.HomeOffers
   alias ProductCompare.Pricing.Offers
   alias ProductCompare.Pricing.PriceHistory
+  alias ProductCompare.Pricing.ProductPriceTrends
   alias ProductCompareSchemas.Pricing.Merchant
   alias ProductCompareSchemas.Pricing.MerchantProduct
   alias ProductCompareSchemas.Pricing.PricePoint
@@ -144,6 +145,13 @@ defmodule ProductCompare.Pricing do
       offset: offset,
       fetch_limit: fetch_limit
     })
+  end
+
+  @spec product_price_trends([pos_integer()], keyword()) :: %{
+          optional(pos_integer()) => [map()]
+        }
+  def product_price_trends(product_ids, opts \\ []) when is_list(product_ids) do
+    ProductPriceTrends.project(product_ids, Keyword.get(opts, :as_of, DateTime.utc_now()))
   end
 
   @spec current_offer_truths([pos_integer()], keyword()) :: %{optional(pos_integer()) => map()}

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<9f6fdc85c411a42198752a0a02ca02fa>>
+ * @generated SignedSource<<7e8d317e639a30f623bde8579dca7eeb>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -17,14 +16,14 @@ export type RegisterRouteMutation$data = {
   readonly register: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly viewer: {
       readonly email: string;
       readonly id: string;
       readonly isOperator: boolean;
-    } | null | undefined;
+    } | null;
   };
 };
 export type RegisterRouteMutation = {
@@ -135,20 +134,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "RegisterRouteMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "RegisterRouteMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "6c49d21bf112b1c8526c02cb20f01290",

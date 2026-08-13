@@ -1,0 +1,1 @@
+export { TrackedCommerceClickAction } from "./TrackedCommerceClickAction";

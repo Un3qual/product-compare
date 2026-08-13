@@ -16,6 +16,19 @@ export type PriceHistoryChartDatum = {
   priceValue: number;
 };
 
+export type PriceSeriesChartDatum = PriceHistoryChartDatum & {
+  observedExact: string;
+  pointColor?: string;
+  tooltipLabel: string;
+};
+
+export type PriceSeriesChartSeries = {
+  color: string;
+  id: string;
+  label: string;
+  rows: readonly PriceSeriesChartDatum[];
+};
+
 type PriceHistoryChartPoint = PriceHistoryChartDatum & {
   observedTimestamp: number;
 };
@@ -79,6 +92,126 @@ export function PriceHistoryChart({
       <PriceHistoryDataTable label={label} points={points} />
     </figure>
   );
+}
+
+export function PriceSeriesChart({
+  label,
+  series,
+}: {
+  label: string;
+  series: readonly PriceSeriesChartSeries[];
+}) {
+  const preparedSeries = useMemo(
+    () =>
+      series.map((item) => ({
+        ...item,
+        points: prepareSeriesChartPoints(item),
+      })),
+    [series],
+  );
+  const definition = useMemo(() => createPriceSeriesDefinition(preparedSeries), [preparedSeries]);
+  const observationCount = preparedSeries.reduce((count, item) => count + item.points.length, 0);
+
+  return (
+    <figure data-slot="price-series-chart" {...props(styles.root)}>
+      <div {...props(styles.chart)}>
+        <Chart
+          ariaDescription={`${observationCount} price observations shown from oldest to newest.`}
+          ariaLabel={`${label} chart`}
+          definition={definition}
+          height={260}
+          initialWidth={720}
+        />
+      </div>
+    </figure>
+  );
+}
+
+type PreparedPriceSeries = Omit<PriceSeriesChartSeries, "rows"> & {
+  points: Array<PriceSeriesChartDatum & { observedTimestamp: number }>;
+};
+
+function prepareSeriesChartPoints(series: PriceSeriesChartSeries) {
+  return series.rows
+    .flatMap((row) => {
+      const observedTimestamp = Date.parse(row.observedAt);
+      return Number.isFinite(observedTimestamp) && Number.isFinite(row.priceValue)
+        ? [{ ...row, observedTimestamp }]
+        : [];
+    })
+    .sort((left, right) => left.observedTimestamp - right.observedTimestamp);
+}
+
+function createPriceSeriesDefinition(series: readonly PreparedPriceSeries[]) {
+  const points = series.flatMap(({ points: itemPoints }) => itemPoints);
+
+  return defineChart({
+    focus: "group-x",
+    marks: createPriceSeriesMarks(series),
+    svgAnimation: false,
+    theme: {
+      background: "transparent",
+      foreground: tokens.textSecondary,
+      grid: tokens.borderQuiet,
+      muted: tokens.textSubtle,
+      palette: series.map(({ color }) => color),
+    },
+    tooltip: {
+      use: tooltip,
+      items: [
+        { channel: "y", label: "Series", text: (point) => point.datum.tooltipLabel },
+        { channel: "y", label: "Price", text: (point) => point.datum.priceText },
+        { channel: "x", label: "Observed", text: (point) => point.datum.observedExact },
+      ],
+      sticky: true,
+    },
+    x: createPriceHistoryXAxis(points),
+    y: {
+      axis: {
+        tickLabels: { thin: true },
+        ticks: { count: 4, format: (value) => priceFormatter.format(value) },
+      },
+      grid: true,
+      nice: true,
+      scale: scaleLinear,
+    },
+  });
+}
+
+function createPriceSeriesMarks(series: readonly PreparedPriceSeries[]) {
+  return series.flatMap((item) => {
+    const dotsByColor = item.points.reduce((groups, point) => {
+      const color = point.pointColor ?? item.color;
+      const points = groups.get(color) ?? [];
+      points.push(point);
+      groups.set(color, points);
+      return groups;
+    }, new Map<string, PreparedPriceSeries["points"]>());
+
+    return [
+      lineY(item.points, {
+        id: `${item.id}-line`,
+        key: "id",
+        points: false,
+        stroke: item.color,
+        strokeWidth: 2,
+        x: "observedTimestamp",
+        y: "priceValue",
+      }),
+      ...Array.from(dotsByColor, ([color, points], index) =>
+        dot(points, {
+          fill: tokens.surfaceRaised,
+          id: `${item.id}-${index}-points`,
+          key: "id",
+          r: 4,
+          stroke: color,
+          strokeWidth: 2,
+          x: "observedTimestamp",
+          y: "priceValue",
+        }),
+      ),
+    ];
+  });
 }
 
 function createPriceHistoryDefinition(points: ReadonlyArray<PriceHistoryChartPoint>) {

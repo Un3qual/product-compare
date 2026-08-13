@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<a6e9cbcb8a5209f24fcebb7785f7d9fe>>
+ * @generated SignedSource<<bc3264efc8362ef13f3ea3e24ae8d4bc>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,10 +10,10 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type UpdateProductReviewInput = {
-  body?: string | null | undefined;
+  body?: string | null;
   id: string;
-  rating?: number | null | undefined;
-  title?: string | null | undefined;
+  rating?: number | null;
+  title?: string | null;
 };
 export type ProductCommunityOperationsUpdateProductReviewMutation$variables = {
   input: UpdateProductReviewInput;
@@ -23,16 +22,16 @@ export type ProductCommunityOperationsUpdateProductReviewMutation$data = {
   readonly updateProductReview: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly review: {
-      readonly body: string | null | undefined;
+      readonly body: string | null;
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
       readonly rating: number;
-      readonly title: string | null | undefined;
-    } | null | undefined;
+      readonly title: string | null;
+    } | null;
   };
 };
 export type ProductCommunityOperationsUpdateProductReviewMutation = {
@@ -147,20 +146,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityOperationsUpdateProductReviewMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductCommunityOperationsUpdateProductReviewMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "f2ea5f0918813c49b6bf9ef835692c35",

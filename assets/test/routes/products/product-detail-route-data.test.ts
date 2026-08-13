@@ -1,16 +1,13 @@
 import { describe, expect, test } from "vitest";
-import {
-  createProductDetailRouteData,
-  overviewSummaryItems,
-} from "../../../src/routes/products/product-detail-route-data";
+import { createProductDetailRouteData } from "../../../src/routes/products/product-detail-route-data";
 
 describe("createProductDetailRouteData", () => {
   test.each([
-    ["#overview", "", "overview"],
+    ["#overview", "", "specifications"],
     ["#specifications", "", "specifications"],
     ["#offers", "", "offers"],
     ["#community", "", "community"],
-    ["#unknown", "", "overview"],
+    ["#unknown", "", "specifications"],
     ["", "?offersAfter=next-page", "offers"],
   ])(
     "uses explicit tabs and falls back to offers for an offer cursor",
@@ -24,19 +21,6 @@ describe("createProductDetailRouteData", () => {
       ).toBe(detailView);
     },
   );
-
-  test("builds overview counts", () => {
-    expect(
-      overviewSummaryItems({
-        attributeCount: 8,
-        hasMoreOffers: true,
-        loadedOfferCount: 6,
-      }),
-    ).toEqual([
-      { label: "Specifications available", value: 8 },
-      { label: "Active offers loaded", value: "6+" },
-    ]);
-  });
 
   test("builds encoded product paths and preserves compare selections", () => {
     const routeData = createProductDetailRouteData({

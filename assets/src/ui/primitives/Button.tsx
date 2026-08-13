@@ -112,23 +112,23 @@ const styles = stylex.create({
 export type ButtonVariant = "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
 export type ButtonSize = "default" | "sm" | "lg" | "icon" | "icon-sm" | "icon-lg";
 
-const variantStyles: Record<ButtonVariant, StyleXStyles> = {
+const variantStyles = {
   default: styles.default,
   destructive: styles.destructive,
   ghost: styles.ghost,
   link: styles.link,
   outline: styles.outline,
   secondary: styles.secondary,
-};
+} satisfies Record<ButtonVariant, StyleXStyles>;
 
-const sizeStyles: Record<ButtonSize, StyleXStyles> = {
+const sizeStyles = {
   default: styles.sizeDefault,
   icon: styles.sizeIcon,
   "icon-lg": styles.sizeIconLg,
   "icon-sm": styles.sizeIconSm,
   lg: styles.sizeLg,
   sm: styles.sizeSm,
-};
+} satisfies Record<ButtonSize, StyleXStyles>;
 
 export type ButtonProps = StyleXPrimitiveProps<ComponentProps<"button">> & {
   render?: useRender.RenderProp;

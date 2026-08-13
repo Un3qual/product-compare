@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<73b6625c4cd3ed4bcedf230d00e205c5>>
+ * @generated SignedSource<<238a39558d409ca509f50b676e875939>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -24,9 +23,9 @@ export type HomeProductLedger_products$data = {
     };
     readonly offer: {
       readonly currency: string;
-      readonly landedPrice: any;
+      readonly landedPrice: string;
       readonly merchantName: string;
-      readonly observedAt: any;
+      readonly observedAt: string;
       readonly priceSignal: HomePriceSignalCode;
     };
   }>;

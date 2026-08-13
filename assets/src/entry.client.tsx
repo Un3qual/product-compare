@@ -1,5 +1,6 @@
 import { StrictMode } from "react";
 import { createRoot, hydrateRoot } from "react-dom/client";
+import { createHead, UnheadProvider } from "@unhead/react/client";
 import { RouterProvider } from "react-router-dom";
 import { RelayEnvironmentProvider } from "react-relay";
 import "./ui/theme/tokens.stylex";
@@ -16,12 +17,15 @@ if (!root) {
 const relayEnvironment = createRelayEnvironment({
   records: readRelayRecordsFromDocument(),
 });
+const head = createHead();
 
 const app = (
   <StrictMode>
-    <RelayEnvironmentProvider environment={relayEnvironment}>
-      <RouterProvider router={createClientRouter(relayEnvironment)} />
-    </RelayEnvironmentProvider>
+    <UnheadProvider head={head}>
+      <RelayEnvironmentProvider environment={relayEnvironment}>
+        <RouterProvider router={createClientRouter(relayEnvironment)} />
+      </RelayEnvironmentProvider>
+    </UnheadProvider>
   </StrictMode>
 );
 

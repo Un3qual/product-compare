@@ -3,7 +3,7 @@ import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import type { LogoutRouteMutation } from "$generated/LogoutRouteMutation.graphql";
-import { commitRouteMutation } from "../relay-mutations";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   isSuccessfulActionResult,
   type MutationError,
@@ -41,7 +41,7 @@ export function LogoutRoute() {
       {
         variables: {},
         onCompleted(response, graphQLErrors) {
-          const result = resolveActionMutationResult(response?.logout, graphQLErrors);
+          const result = resolveActionMutationResult(response.logout, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             clearRootViewer(relayEnvironment);
@@ -69,6 +69,7 @@ export function LogoutRoute() {
         { label: "Back to sign in", to: "/auth/login" },
         { label: "Browse products", to: "/products" },
       ]}
+      successMessage={null}
       title="Sign out"
     >
       <form onSubmit={handleSubmit}>

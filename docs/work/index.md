@@ -49,6 +49,139 @@ None.
 
 ## Ready Work
 
+### 1. Comparison And Authentication Continuity
+
+Status: ready
+Lane: Comparison and authentication continuity
+Plan: `docs/superpowers/plans/2026-08-12-comparison-auth-continuity-implementation-plan.md`
+Batch outcome: Comparison uses a readable toolbar/matrix hierarchy and guest
+watch/save actions restore minimal drafts after modal GraphQL authentication
+without losing work or submitting automatically.
+Next action: Run Task 1's RED comparison hierarchy, guest modal, focus,
+same-origin return, expiry, restoration, and zero-auto-submit characterization.
+Owned paths:
+
+- Compare, auth, account alerts/API-token capabilities and focused tests named
+  by the plan.
+- `assets/src/routes/products/PriceWatchControl.tsx`,
+  `assets/src/routes/products/price-watch-data.ts`, and the dedicated
+  price-watch auth-continuity test only; no other product route path.
+- Auth and compare-return Playwright specs and snapshots.
+- `docs/work/comparison-auth-continuity.md`.
+
+Internal slices:
+
+- Layout and guest-intent characterization.
+- Versioned pending-intent/modal boundary.
+- GraphQL login/register restoration for review.
+- Wide comparison toolbar, adjacent mode tabs, and curated summaries.
+- Compare/auth/account organization and generated Relay types.
+- Browser, accessibility, visual, and full verification.
+
+Prerequisites:
+
+- The approved design and existing GraphQL/Phoenix auth contract are stable.
+- Existing Base UI dialogs and root viewer outlet context are available.
+- Owned paths do not overlap the other four ready outcomes.
+
+Verification:
+
+- Focused compare/auth/account/price-watch suites and generated Relay checks.
+- Deterministic login/register/cancel/restore browser paths, axe, visuals, and
+  no-overflow checks at three widths.
+- Complete frontend/backend gates, queue validation, and diff checks.
+
+Exit condition: Guest protected actions never fail as raw Unauthorized or lose
+their safe draft, no restored intent auto-submits, comparison remains truthful
+and readable, and no server authorization/session contract is weakened.
+
+### 2. Operator Workspaces
+
+Status: ready
+Lane: Operator workspaces
+Plan: `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
+Batch outcome: Affiliate setup, CJ program lifecycle, and revenue reporting are
+dense operator workspaces with generated type ownership and unchanged
+independent lifecycle, pagination, mutation, and failure boundaries.
+Next action: Run Task 1's RED workflow ordering, density, lifecycle, exact-time,
+pagination, and partial-failure characterization.
+Owned paths:
+
+- Affiliate setup, CJ programs, and commerce revenue route capabilities and
+  focused tests named by the plan.
+- Production operations Playwright spec and snapshots.
+- `docs/work/operator-workspaces.md`.
+
+Internal slices:
+
+- Operator behavior characterization.
+- Guided network/program/merchant-link/coupon setup.
+- CJ lifecycle ledger and independent feed inspection.
+- Revenue controls, metric strip, attribution, and conversion details.
+- Generated-type/overvalidation/file-ownership audit.
+- Browser, accessibility, visual, and full verification.
+
+Prerequisites:
+
+- The approved design and existing operator GraphQL contracts are stable.
+- Existing Base UI/StyleX/TanStack foundations are complete.
+- Owned paths do not overlap the other four ready outcomes.
+
+Verification:
+
+- Complete affiliate/CJ/revenue suites and generated Relay checks.
+- Deterministic Playwright/axe/visual/no-overflow checks at three widths.
+- Complete frontend/backend gates, queue validation, and diff checks.
+
+Exit condition: All operator actions and independently recoverable regions pass,
+no investigation fact is hidden, and no manual successful-Relay data schema or
+generic workflow file remains without a named boundary.
+
+### 3. Realistic Development Data
+
+Status: ready
+Lane: Realistic development data
+Plan: `docs/superpowers/plans/2026-08-12-realistic-development-data-implementation-plan.md`
+Batch outcome: Deterministic offline development data exercises realistic
+catalog, marketplace, comparison, account, community, attribution, and
+operator states at useful pagination depth without adopting unrelated rows or
+causing external effects.
+Next action: Run Task 1's RED scale, scenario, rerun, pagination, ownership, and
+zero-external-side-effect characterization.
+Owned paths:
+
+- `priv/repo/seeds/**`, `priv/repo/seeds.exs` only if orchestration changes,
+  focused seed/development-GraphQL tests, optional checked-in development media,
+  and `docs/work/realistic-development-data.md`.
+
+Internal slices:
+
+- Dataset contract characterization.
+- Catalog/specification expansion.
+- Merchant/offer/coupon/history expansion.
+- Account/community/correction/comparison expansion.
+- Attribution/operator expansion and local guide.
+- Two-run, local-page, and full verification.
+
+Prerequisites:
+
+- Existing immutable seed ownership and domain-oriented seed modules are stable.
+- The approved product scenarios map to shipped production schemas and APIs.
+- Owned paths do not overlap the other four ready outcomes.
+
+Verification:
+
+- Focused seed/GraphQL/domain suites and two deterministic development reruns.
+- Unrelated-row preservation, pending-correction baseline, pagination-depth, and
+  zero-external-effect proofs plus representative local page inspection.
+- Complete frontend/backend gates, queue validation, and diff checks.
+
+Exit condition: The authored dataset meets the approved volume/scenario ranges,
+reruns reconcile only owned rows, all local journeys are demonstrable offline,
+and complete gates pass.
+
+## Superseded Work
+
 ### 2. Production UI Discover And Evaluate
 
 Status: ready

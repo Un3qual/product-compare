@@ -1,26 +1,15 @@
-import { compareProductText } from "../product-formatting";
+import { compareProductText } from "$frontend/formatting";
+import type { CompareProductSummary, CompareSpecMode } from "./compare-route-data";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
 const DECIMAL_COMPARISON_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
 const MAX_DECIMAL_COMPARISON_EXPONENT_SHIFT = 1_000;
 
-export type SpecificationMatrixMode = "shared" | "differences" | "all";
-
-export interface SpecificationMatrixProduct {
-  id: string;
-  name: string;
-  currentAttributes: readonly SpecificationMatrixAttribute[];
-}
-
-export interface SpecificationMatrixAttribute {
-  code: string;
-  displayName: string;
-  valueText: string;
-  sortOrder?: number | null;
-  numericValue?: string | null;
-  booleanValue?: boolean | null;
-  unitSymbol?: string | null;
-}
+export type SpecificationMatrixProduct = Pick<
+  CompareProductSummary,
+  "currentAttributes" | "id" | "name"
+>;
+type SpecificationMatrixAttribute = SpecificationMatrixProduct["currentAttributes"][number];
 
 export interface SpecificationMatrixRow {
   code: string;
@@ -40,7 +29,7 @@ interface ParsedDecimalComparisonValue {
 
 export function buildSpecificationMatrixRows(
   products: readonly SpecificationMatrixProduct[],
-  specMode: SpecificationMatrixMode,
+  specMode: CompareSpecMode,
 ): SpecificationMatrixRow[] {
   const rows = buildAllSpecificationRows(products);
 
@@ -155,15 +144,15 @@ function compareSpecificationSortOrders(
   firstSortOrder: number | null,
   secondSortOrder: number | null,
 ) {
-  if (typeof firstSortOrder === "number" && typeof secondSortOrder === "number") {
+  if (firstSortOrder !== null && secondSortOrder !== null) {
     return firstSortOrder - secondSortOrder;
   }
 
-  if (typeof firstSortOrder === "number") {
+  if (firstSortOrder !== null) {
     return -1;
   }
 
-  if (typeof secondSortOrder === "number") {
+  if (secondSortOrder !== null) {
     return 1;
   }
 
@@ -172,7 +161,7 @@ function compareSpecificationSortOrders(
 
 function firstPresentSortOrder(attributes: Array<SpecificationMatrixAttribute | undefined>) {
   return (
-    attributes.find((attribute) => typeof attribute?.sortOrder === "number")?.sortOrder ?? null
+    attributes.find((attribute) => attribute && attribute.sortOrder !== null)?.sortOrder ?? null
   );
 }
 
@@ -181,14 +170,14 @@ function buildAttributeComparisonValue(attribute: SpecificationMatrixAttribute |
     return "missing";
   }
 
-  if (typeof attribute.numericValue === "string" && attribute.numericValue.trim() !== "") {
+  if (attribute.numericValue?.trim()) {
     const normalizedNumericValue = normalizeDecimalComparisonValue(attribute.numericValue);
     const normalizedUnitSymbol = normalizeUnitComparisonValue(attribute.unitSymbol);
 
     return `numeric:${normalizedNumericValue}:${normalizedUnitSymbol}`;
   }
 
-  if (typeof attribute.booleanValue === "boolean") {
+  if (attribute.booleanValue !== null) {
     return `boolean:${attribute.booleanValue}`;
   }
 
@@ -225,7 +214,7 @@ function parseDecimalComparisonValue(value: string): ParsedDecimalComparisonValu
     return null;
   }
 
-  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const sign = value.startsWith("-") ? -1 : 1;
   const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
   const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
   const exponent = Number.parseInt(rawExponent, 10);
@@ -254,14 +243,14 @@ function splitDecimalComparisonDigits(digits: string, decimalPoint: number) {
   return [digits.slice(0, decimalPoint), digits.slice(decimalPoint)];
 }
 
-function normalizeUnitComparisonValue(unitSymbol: string | null | undefined) {
+function normalizeUnitComparisonValue(unitSymbol: string | null) {
   return unitSymbol?.trim() ?? "";
 }
 
 function buildFirstAttributeByCode(attributes: readonly SpecificationMatrixAttribute[]) {
   const attributesByCode = new Map<string, SpecificationMatrixAttribute>();
 
-  for (const attribute of attributes ?? []) {
+  for (const attribute of attributes) {
     if (!attributesByCode.has(attribute.code)) {
       attributesByCode.set(attribute.code, attribute);
     }

@@ -1,5 +1,8 @@
-import type { MutationCommitFn } from "react-relay";
-import { commitRouteMutation, commitRouteMutationPromise } from "../../src/routes/relay-mutations";
+import {
+  commitRouteMutation,
+  commitRouteMutationPromise,
+  type RouteMutationCommit,
+} from "../../src/relay/mutations";
 
 type TestMutation = {
   variables: {
@@ -12,7 +15,7 @@ type TestMutation = {
 
 test("commitRouteMutation returns the Relay disposable when commit succeeds", () => {
   const disposable = { dispose: vi.fn() };
-  const commitMutation = vi.fn(() => disposable) as unknown as MutationCommitFn<TestMutation>;
+  const commitMutation = vi.fn(() => disposable) as unknown as RouteMutationCommit<TestMutation>;
   const onCommitError = vi.fn();
 
   expect(
@@ -31,7 +34,7 @@ test("commitRouteMutation handles synchronous commit failures", () => {
   const commitError = new Error("commit failed");
   const commitMutation = vi.fn(() => {
     throw commitError;
-  }) as unknown as MutationCommitFn<TestMutation>;
+  }) as unknown as RouteMutationCommit<TestMutation>;
   const onCommitError = vi.fn();
 
   expect(
@@ -48,10 +51,10 @@ test("commitRouteMutation handles synchronous commit failures", () => {
 
 test("commitRouteMutationPromise resolves completed Relay responses", async () => {
   const graphQLErrors = [{ message: "GraphQL warning" }];
-  const commitMutation = vi.fn((config: Parameters<MutationCommitFn<TestMutation>>[0]) => {
+  const commitMutation = vi.fn((config: Parameters<RouteMutationCommit<TestMutation>>[0]) => {
     config.onCompleted?.({ ok: true }, graphQLErrors);
     return { dispose: vi.fn() };
-  }) as unknown as MutationCommitFn<TestMutation>;
+  }) as unknown as RouteMutationCommit<TestMutation>;
 
   await expect(
     commitRouteMutationPromise(commitMutation, {
@@ -65,10 +68,10 @@ test("commitRouteMutationPromise resolves completed Relay responses", async () =
 
 test("commitRouteMutationPromise rejects Relay async failures", async () => {
   const relayError = new Error("Relay failed");
-  const commitMutation = vi.fn((config: Parameters<MutationCommitFn<TestMutation>>[0]) => {
+  const commitMutation = vi.fn((config: Parameters<RouteMutationCommit<TestMutation>>[0]) => {
     config.onError?.(relayError);
     return { dispose: vi.fn() };
-  }) as unknown as MutationCommitFn<TestMutation>;
+  }) as unknown as RouteMutationCommit<TestMutation>;
 
   await expect(
     commitRouteMutationPromise(commitMutation, {
@@ -81,7 +84,7 @@ test("commitRouteMutationPromise rejects synchronous commit failures", async () 
   const commitError = new Error("commit failed");
   const commitMutation = vi.fn(() => {
     throw commitError;
-  }) as unknown as MutationCommitFn<TestMutation>;
+  }) as unknown as RouteMutationCommit<TestMutation>;
 
   await expect(
     commitRouteMutationPromise(commitMutation, {

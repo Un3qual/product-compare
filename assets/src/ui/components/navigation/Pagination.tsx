@@ -23,10 +23,10 @@ const styles = create({
 });
 
 export type PaginationProps = {
-  firstHref?: string | null;
+  firstHref: string | null;
   firstLabel?: string;
   label: string;
-  nextHref?: string | null;
+  nextHref: string | null;
   nextLabel?: string;
 };
 

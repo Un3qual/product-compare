@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<516b0834c1162a6e0c43ca54635adfab>>
+ * @generated SignedSource<<cca8c0986feb0e1e5e785b50b5921fff>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -12,19 +11,19 @@ import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type ProductSort = "BRAND_NAME_ASC" | "ID_ASC" | "NAME_ASC" | "NEWEST" | "RELEVANCE" | "%future added value";
 export type ProductFiltersInput = {
-  booleans?: ReadonlyArray<ProductBooleanFilterInput> | null | undefined;
-  enums?: ReadonlyArray<ProductEnumFilterInput> | null | undefined;
-  includeTypeDescendants?: boolean | null | undefined;
-  numeric?: ReadonlyArray<ProductNumericFilterInput> | null | undefined;
-  primaryTypeTaxonId?: string | null | undefined;
-  query?: string | null | undefined;
-  sort?: ProductSort | null | undefined;
-  useCaseTaxonIds?: ReadonlyArray<string> | null | undefined;
+  booleans?: ReadonlyArray<ProductBooleanFilterInput> | null;
+  enums?: ReadonlyArray<ProductEnumFilterInput> | null;
+  includeTypeDescendants?: boolean | null;
+  numeric?: ReadonlyArray<ProductNumericFilterInput> | null;
+  primaryTypeTaxonId?: string | null;
+  query?: string | null;
+  sort?: ProductSort | null;
+  useCaseTaxonIds?: ReadonlyArray<string> | null;
 };
 export type ProductNumericFilterInput = {
   attributeId: string;
-  max?: any | null | undefined;
-  min?: any | null | undefined;
+  max?: string | null;
+  min?: string | null;
 };
 export type ProductBooleanFilterInput = {
   attributeId: string;
@@ -35,8 +34,8 @@ export type ProductEnumFilterInput = {
   enumOptionId: string;
 };
 export type BrowseRouteQuery$variables = {
-  after?: string | null | undefined;
-  filters?: ProductFiltersInput | null | undefined;
+  after?: string | null;
+  filters?: ProductFiltersInput | null;
   first: number;
 };
 export type BrowseRouteQuery$data = {
@@ -46,7 +45,7 @@ export type BrowseRouteQuery$data = {
       readonly code: string;
       readonly displayName: string;
       readonly falseCount: number;
-      readonly selectedValue: boolean | null | undefined;
+      readonly selectedValue: boolean | null;
       readonly trueCount: number;
     }>;
     readonly enumFilters: ReadonlyArray<{
@@ -65,11 +64,11 @@ export type BrowseRouteQuery$data = {
       readonly attributeId: string;
       readonly code: string;
       readonly displayName: string;
-      readonly max: any | null | undefined;
-      readonly min: any | null | undefined;
-      readonly selectedMax: any | null | undefined;
-      readonly selectedMin: any | null | undefined;
-      readonly unitSymbol: string | null | undefined;
+      readonly max: string | null;
+      readonly min: string | null;
+      readonly selectedMax: string | null;
+      readonly selectedMin: string | null;
+      readonly unitSymbol: string | null;
     }>;
     readonly resultCount: number;
     readonly typeOptions: ReadonlyArray<{
@@ -97,11 +96,11 @@ export type BrowseRouteQuery$data = {
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
     readonly " $fragmentSpreads": FragmentRefs<"BrowseProductList_products">;
-  } | null | undefined;
+  } | null;
 };
 export type BrowseRouteQuery = {
   response: BrowseRouteQuery$data;
@@ -135,7 +134,7 @@ v4 = [
     "name": "after",
     "variableName": "after"
   },
-  (v3/*: any*/),
+  (v3/*:: as any*/),
   {
     "kind": "Variable",
     "name": "first",
@@ -196,7 +195,7 @@ v9 = {
   "storageKey": null
 },
 v10 = [
-  (v6/*: any*/),
+  (v6/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -250,7 +249,7 @@ v13 = {
 v14 = {
   "alias": null,
   "args": [
-    (v3/*: any*/)
+    (v3/*:: as any*/)
   ],
   "concreteType": "ProductFilterMetadata",
   "kind": "LinkedField",
@@ -271,7 +270,7 @@ v14 = {
       "kind": "LinkedField",
       "name": "typeOptions",
       "plural": true,
-      "selections": (v10/*: any*/),
+      "selections": (v10/*:: as any*/),
       "storageKey": null
     },
     {
@@ -281,7 +280,7 @@ v14 = {
       "kind": "LinkedField",
       "name": "useCaseOptions",
       "plural": true,
-      "selections": (v10/*: any*/),
+      "selections": (v10/*:: as any*/),
       "storageKey": null
     },
     {
@@ -292,9 +291,9 @@ v14 = {
       "name": "numericFilters",
       "plural": true,
       "selections": [
-        (v11/*: any*/),
-        (v12/*: any*/),
-        (v13/*: any*/),
+        (v11/*:: as any*/),
+        (v12/*:: as any*/),
+        (v13/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -341,9 +340,9 @@ v14 = {
       "name": "booleanFilters",
       "plural": true,
       "selections": [
-        (v11/*: any*/),
-        (v12/*: any*/),
-        (v13/*: any*/),
+        (v11/*:: as any*/),
+        (v12/*:: as any*/),
+        (v13/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -376,9 +375,9 @@ v14 = {
       "name": "enumFilters",
       "plural": true,
       "selections": [
-        (v11/*: any*/),
-        (v12/*: any*/),
-        (v13/*: any*/),
+        (v11/*:: as any*/),
+        (v12/*:: as any*/),
+        (v13/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -386,7 +385,7 @@ v14 = {
           "kind": "LinkedField",
           "name": "options",
           "plural": true,
-          "selections": (v10/*: any*/),
+          "selections": (v10/*:: as any*/),
           "storageKey": null
         }
       ],
@@ -398,9 +397,9 @@ v14 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -408,7 +407,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v4/*: any*/),
+        "args": (v4/*:: as any*/),
         "concreteType": "ProductConnection",
         "kind": "LinkedField",
         "name": "products",
@@ -422,7 +421,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v5/*: any*/),
+              (v5/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -431,9 +430,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v6/*: any*/),
-                  (v7/*: any*/),
-                  (v8/*: any*/)
+                  (v6/*:: as any*/),
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/)
                 ],
                 "storageKey": null
               }
@@ -445,11 +444,11 @@ return {
             "kind": "FragmentSpread",
             "name": "BrowseProductList_products"
           },
-          (v9/*: any*/)
+          (v9/*:: as any*/)
         ],
         "storageKey": null
       },
-      (v14/*: any*/)
+      (v14/*:: as any*/)
     ],
     "type": "RootQueryType",
     "abstractKey": null
@@ -457,16 +456,16 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v2/*:: as any*/),
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "BrowseRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v4/*: any*/),
+        "args": (v4/*:: as any*/),
         "concreteType": "ProductConnection",
         "kind": "LinkedField",
         "name": "products",
@@ -480,7 +479,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v5/*: any*/),
+              (v5/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -489,9 +488,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v6/*: any*/),
-                  (v7/*: any*/),
-                  (v8/*: any*/),
+                  (v6/*:: as any*/),
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -500,8 +499,8 @@ return {
                     "name": "brand",
                     "plural": false,
                     "selections": [
-                      (v6/*: any*/),
-                      (v7/*: any*/)
+                      (v6/*:: as any*/),
+                      (v7/*:: as any*/)
                     ],
                     "storageKey": null
                   },
@@ -513,8 +512,8 @@ return {
                     "name": "currentAttributes",
                     "plural": true,
                     "selections": [
-                      (v12/*: any*/),
-                      (v13/*: any*/),
+                      (v12/*:: as any*/),
+                      (v13/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -538,11 +537,11 @@ return {
             ],
             "storageKey": null
           },
-          (v9/*: any*/)
+          (v9/*:: as any*/)
         ],
         "storageKey": null
       },
-      (v14/*: any*/)
+      (v14/*:: as any*/)
     ]
   },
   "params": {

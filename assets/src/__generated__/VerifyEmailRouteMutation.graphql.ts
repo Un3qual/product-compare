@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<cddebfb7478d8cf580ef1f249dd95901>>
+ * @generated SignedSource<<0668bb8dc77028b831e6313f19acfcb7>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -16,7 +15,7 @@ export type VerifyEmailRouteMutation$data = {
   readonly verifyEmail: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;
@@ -95,20 +94,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "VerifyEmailRouteMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "VerifyEmailRouteMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "9b8bc1e5536976fd8865b42f71018208",

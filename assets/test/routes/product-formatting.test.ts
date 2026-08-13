@@ -2,7 +2,7 @@ import {
   formatProductDateLabel,
   formatProductDateTime,
   formatProductDateTimeLabel,
-} from "../../src/routes/product-formatting";
+} from "../../src/frontend/formatting";
 
 test("formatProductDateTime keeps the existing Date-input UTC label", () => {
   expect(formatProductDateTime(new Date("2026-07-14T01:00:00Z"))).toBe("Jul 14, 2026, 1:00 AM");

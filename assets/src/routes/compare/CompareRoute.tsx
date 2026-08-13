@@ -19,9 +19,9 @@ import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { commitRouteMutation } from "../relay-mutations";
-import { normalizeRouteLoaderThrownError } from "../loader-errors";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { commitRouteMutation } from "$relay/mutations";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { CompareShell } from "./CompareShell";
 import {
   compareQueryViewData,
@@ -215,7 +215,7 @@ export async function compareLoader({
 }
 
 export function CompareRoute() {
-  const loaderData = useLoaderData<typeof compareLoader>() as CompareRouteLoaderData;
+  const loaderData = useLoaderData<typeof compareLoader>();
   const selectionKey = JSON.stringify([loaderData.status, loaderData.slugs]);
 
   return <CompareSelectionRoute key={selectionKey} loaderData={loaderData} />;
@@ -281,7 +281,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
           }
 
           setSaveFeedback({
-            error: DEFAULT_ROUTE_ERROR_MESSAGE,
+            error: DEFAULT_MUTATION_ERROR_MESSAGE,
             isInFlight: false,
             message: null,
           });
@@ -295,7 +295,7 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
         }
 
         setSaveFeedback({
-          error: DEFAULT_ROUTE_ERROR_MESSAGE,
+          error: DEFAULT_MUTATION_ERROR_MESSAGE,
           isInFlight: false,
           message: null,
         });

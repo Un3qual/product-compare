@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<15fc108eeed561a16b6bb78b3c309abf>>
+ * @generated SignedSource<<e9bf41962b31481a69b0dd3002e5fdae>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,9 +9,9 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type UpsertAffiliateLinkInput = {
-  affiliateNetworkId?: string | null | undefined;
+  affiliateNetworkId?: string | null;
   affiliateUrl: string;
-  lastVerifiedAt?: any | null | undefined;
+  lastVerifiedAt?: string | null;
   merchantProductId: string;
   originalUrl: string;
 };
@@ -23,18 +22,18 @@ export type AffiliateSetupOperationsUpsertAffiliateLinkMutation$data = {
   readonly upsertAffiliateLink: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly link: {
-      readonly affiliateNetworkId: string | null | undefined;
+      readonly affiliateNetworkId: string | null;
       readonly affiliateUrl: string;
       readonly id: string;
-      readonly lastVerifiedAt: any | null | undefined;
+      readonly lastVerifiedAt: string | null;
       readonly merchantProductId: string;
       readonly originalUrl: string;
-    } | null | undefined;
-  } | null | undefined;
+    } | null;
+  } | null;
 };
 export type AffiliateSetupOperationsUpsertAffiliateLinkMutation = {
   response: AffiliateSetupOperationsUpsertAffiliateLinkMutation$data;
@@ -155,20 +154,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AffiliateSetupOperationsUpsertAffiliateLinkMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AffiliateSetupOperationsUpsertAffiliateLinkMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "f59be7c2ae216cc7a8e33b2704b57ed7",

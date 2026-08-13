@@ -1,34 +1,26 @@
-import { nextRelayPageCursor } from "../../relay-pagination";
+import type { MerchantDetailRouteQuery } from "$generated/MerchantDetailRouteQuery.graphql";
+import { nextPageCursor } from "$relay/pagination";
 
-export type MerchantDetailViewDataInput = {
-  slug: string;
-  detailSummary: {
-    activeOfferCount: number;
-    distinctProductCount: number;
-    eligibleOfferCount: number;
-    freshOfferCount: number;
-    agingOfferCount: number;
-    staleOfferCount: number;
-    unobservedOfferCount: number;
-    lastObservedAt?: string | null;
-  };
-  merchantProducts: {
-    edges: ReadonlyArray<{
-      node: {
-        id: string;
-        currency: string;
-        product?: { name: string; slug: string } | null;
-        latestPrice?: {
-          price: string;
-          shipping?: string | null;
-          inStock?: boolean | null;
-        } | null;
-      };
+type Merchant = NonNullable<MerchantDetailRouteQuery["response"]["merchant"]>;
+type MerchantProduct = Merchant["merchantProducts"]["edges"][number]["node"];
+
+export type MerchantDetailViewDataInput = Pick<Merchant, "slug"> & {
+  readonly detailSummary: Pick<
+    Merchant["detailSummary"],
+    | "activeOfferCount"
+    | "agingOfferCount"
+    | "distinctProductCount"
+    | "eligibleOfferCount"
+    | "freshOfferCount"
+    | "lastObservedAt"
+    | "staleOfferCount"
+    | "unobservedOfferCount"
+  >;
+  readonly merchantProducts: {
+    readonly edges: ReadonlyArray<{
+      readonly node: Pick<MerchantProduct, "currency" | "id" | "latestPrice" | "product">;
     }>;
-    pageInfo: {
-      hasNextPage: boolean;
-      endCursor?: string | null;
-    };
+    readonly pageInfo: Pick<Merchant["merchantProducts"]["pageInfo"], "endCursor" | "hasNextPage">;
   };
 };
 
@@ -46,7 +38,7 @@ export function getMerchantDetailViewData(
       { label: "Recently checked offers", value: detailSummary.freshOfferCount },
     ],
     observation: {
-      lastObservedAt: detailSummary.lastObservedAt ?? null,
+      lastObservedAt: detailSummary.lastObservedAt,
       leadCopy: detailSummary.lastObservedAt
         ? "Prices last checked"
         : "No offer prices have been checked yet.",
@@ -86,7 +78,7 @@ function merchantProductPath(slug: string) {
 }
 
 function merchantNextPagePath(merchant: MerchantDetailViewDataInput, currentAfter: string | null) {
-  const nextCursor = nextRelayPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
+  const nextCursor = nextPageCursor(merchant.merchantProducts.pageInfo, currentAfter);
 
   return nextCursor
     ? `/merchants/${encodeURIComponent(merchant.slug)}?after=${encodeURIComponent(nextCursor)}`

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<f60b3e3f4b39f774834e5a5816cc9fca>>
+ * @generated SignedSource<<9842c31ee6c010e3d7872fa8d157c7c6>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -14,7 +13,7 @@ export type SharedComparisonRouteQuery$variables = {
 };
 export type SharedComparisonRouteQuery$data = {
   readonly comparisonSnapshot: {
-    readonly capturedAt: any;
+    readonly capturedAt: string;
     readonly disclaimer: string;
     readonly products: ReadonlyArray<{
       readonly attributes: ReadonlyArray<{
@@ -25,40 +24,40 @@ export type SharedComparisonRouteQuery$data = {
         }>;
         readonly valueText: string;
       }>;
-      readonly brandName: string | null | undefined;
-      readonly description: string | null | undefined;
+      readonly brandName: string | null;
+      readonly description: string | null;
       readonly id: string;
-      readonly modelNumber: string | null | undefined;
+      readonly modelNumber: string | null;
       readonly name: string;
       readonly offers: ReadonlyArray<{
         readonly currency: string;
-        readonly landedPrice: any;
+        readonly landedPrice: string;
         readonly merchantName: string;
-        readonly observedAt: any;
+        readonly observedAt: string;
         readonly pricePointId: string;
       }>;
       readonly slug: string;
     }>;
     readonly recommendation: {
-      readonly evaluatedAt: any;
+      readonly evaluatedAt: string;
       readonly missingInputs: ReadonlyArray<string>;
       readonly rankings: ReadonlyArray<{
         readonly productId: string;
         readonly productName: string;
         readonly reasons: ReadonlyArray<string>;
       }>;
-      readonly winnerProductId: string | null | undefined;
+      readonly winnerProductId: string | null;
     };
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
-    readonly title: string | null | undefined;
-  } | null | undefined;
+    readonly title: string | null;
+  } | null;
 };
 export type SharedComparisonRouteQuery = {
   response: SharedComparisonRouteQuery$data;
@@ -102,8 +101,8 @@ v4 = {
   "name": "seo",
   "plural": false,
   "selections": [
-    (v2/*: any*/),
-    (v3/*: any*/),
+    (v2/*:: as any*/),
+    (v3/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -164,7 +163,7 @@ v8 = {
   "name": "products",
   "plural": true,
   "selections": [
-    (v7/*: any*/),
+    (v7/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -179,7 +178,7 @@ v8 = {
       "name": "slug",
       "storageKey": null
     },
-    (v3/*: any*/),
+    (v3/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -359,25 +358,25 @@ v9 = {
 };
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "SharedComparisonRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "ComparisonSnapshot",
         "kind": "LinkedField",
         "name": "comparisonSnapshot",
         "plural": false,
         "selections": [
-          (v2/*: any*/),
-          (v4/*: any*/),
-          (v5/*: any*/),
-          (v6/*: any*/),
-          (v8/*: any*/),
-          (v9/*: any*/)
+          (v2/*:: as any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
+          (v6/*:: as any*/),
+          (v8/*:: as any*/),
+          (v9/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -387,25 +386,25 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "SharedComparisonRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "ComparisonSnapshot",
         "kind": "LinkedField",
         "name": "comparisonSnapshot",
         "plural": false,
         "selections": [
-          (v2/*: any*/),
-          (v4/*: any*/),
-          (v5/*: any*/),
-          (v6/*: any*/),
-          (v8/*: any*/),
-          (v9/*: any*/),
-          (v7/*: any*/)
+          (v2/*:: as any*/),
+          (v4/*:: as any*/),
+          (v5/*:: as any*/),
+          (v6/*:: as any*/),
+          (v8/*:: as any*/),
+          (v9/*:: as any*/),
+          (v7/*:: as any*/)
         ],
         "storageKey": null
       }

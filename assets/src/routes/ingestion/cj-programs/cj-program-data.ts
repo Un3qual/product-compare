@@ -1,5 +1,5 @@
-import { parseGraphQLDateTime } from "../../graphql-datetime";
-import { formatProductDateTime } from "../../product-formatting";
+import { parseGraphQLDateTime } from "$relay/scalars";
+import { formatProductDateTime } from "$frontend/formatting";
 
 export const CJ_PROGRAM_STAGES = [
   { countKey: "new", label: "New", urlValue: "new", value: "NEW" },
@@ -35,7 +35,7 @@ export const CJ_PROGRAM_SORTS = [
 
 export type CJProgramSort = (typeof CJ_PROGRAM_SORTS)[number]["value"];
 
-export function cjProgramStageLabel(stage: string | null | undefined) {
+export function cjProgramStageLabel(stage: string | null) {
   return CJ_PROGRAM_STAGES.find(({ value }) => value === stage)?.label ?? null;
 }
 
@@ -43,7 +43,7 @@ export function isCJProgramStage(stage: string): stage is CJProgramStage {
   return CJ_PROGRAM_STAGES.some(({ value }) => value === stage);
 }
 
-export function cjProgramWarningCopy(code: string | null | undefined) {
+export function cjProgramWarningCopy(code: string | null) {
   switch (code) {
     case "MISSING_ADVERTISER_NAME":
       return "At least one observed feed is missing an advertiser name.";
@@ -60,15 +60,15 @@ export function cjProgramWarningCopy(code: string | null | undefined) {
   }
 }
 
-export function formatFeedProductCount(productCount: number | null | undefined) {
-  if (typeof productCount !== "number") {
+export function formatFeedProductCount(productCount: number | null) {
+  if (productCount === null) {
     return "Product count unavailable";
   }
 
   return productCount === 1 ? "1 product" : `${productCount} products`;
 }
 
-export function formatCJDateTime(value: string | null | undefined) {
+export function formatCJDateTime(value: string | null) {
   const date = parseGraphQLDateTime(value);
 
   return date ? formatProductDateTime(date) : "";

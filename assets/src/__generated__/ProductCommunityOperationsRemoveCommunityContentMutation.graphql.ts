@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<5b300214db3d68ce7d4959aa671493fd>>
+ * @generated SignedSource<<799513778257a72b978ed01e2e48dcd3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -21,10 +20,10 @@ export type ProductCommunityOperationsRemoveCommunityContentMutation$data = {
   readonly removeCommunityContent: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly removedContentId: string | null | undefined;
+    readonly removedContentId: string | null;
   };
 };
 export type ProductCommunityOperationsRemoveCommunityContentMutation = {
@@ -100,20 +99,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityOperationsRemoveCommunityContentMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductCommunityOperationsRemoveCommunityContentMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "aac879b07bd8cc534a2d32d8adfb6306",

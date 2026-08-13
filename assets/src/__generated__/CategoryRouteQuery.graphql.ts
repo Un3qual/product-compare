@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<a49033caa99823e32b42a4b072870658>>
+ * @generated SignedSource<<f02cd921ae6792cfa7ad96b206ac21cc>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,7 +9,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CategoryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   slug: string;
 };
@@ -26,21 +25,21 @@ export type CategoryRouteQuery$data = {
           readonly brand: {
             readonly id: string;
             readonly name: string;
-          } | null | undefined;
+          } | null;
           readonly currentAttributes: ReadonlyArray<{
             readonly attributeId: string;
             readonly displayName: string;
-            readonly sortOrder: number | null | undefined;
+            readonly sortOrder: number | null;
             readonly valueText: string;
           }>;
-          readonly description: string | null | undefined;
+          readonly description: string | null;
           readonly id: string;
           readonly name: string;
           readonly slug: string;
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
@@ -48,13 +47,13 @@ export type CategoryRouteQuery$data = {
     readonly seo: {
       readonly canonicalPath: string;
       readonly description: string;
-      readonly imageUrl: string | null | undefined;
+      readonly imageUrl: string | null;
       readonly indexable: boolean;
-      readonly structuredData: string | null | undefined;
+      readonly structuredData: string | null;
       readonly title: string;
     };
     readonly slug: string;
-  } | null | undefined;
+  } | null;
 };
 export type CategoryRouteQuery = {
   response: CategoryRouteQuery$data;
@@ -127,10 +126,10 @@ v8 = [
     "name": "category",
     "plural": false,
     "selections": [
-      (v3/*: any*/),
-      (v4/*: any*/),
-      (v5/*: any*/),
-      (v6/*: any*/),
+      (v3/*:: as any*/),
+      (v4/*:: as any*/),
+      (v5/*:: as any*/),
+      (v6/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -138,7 +137,7 @@ v8 = [
         "name": "qualifiedProductCount",
         "storageKey": null
       },
-      (v7/*: any*/),
+      (v7/*:: as any*/),
       {
         "alias": null,
         "args": null,
@@ -154,7 +153,7 @@ v8 = [
             "name": "title",
             "storageKey": null
           },
-          (v6/*: any*/),
+          (v6/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -162,7 +161,7 @@ v8 = [
             "name": "canonicalPath",
             "storageKey": null
           },
-          (v7/*: any*/),
+          (v7/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -215,10 +214,10 @@ v8 = [
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
-                  (v4/*: any*/),
-                  (v5/*: any*/),
-                  (v6/*: any*/),
+                  (v3/*:: as any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -227,8 +226,8 @@ v8 = [
                     "name": "brand",
                     "plural": false,
                     "selections": [
-                      (v3/*: any*/),
-                      (v4/*: any*/)
+                      (v3/*:: as any*/),
+                      (v4/*:: as any*/)
                     ],
                     "storageKey": null
                   },
@@ -312,27 +311,27 @@ v8 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "CategoryRouteQuery",
-    "selections": (v8/*: any*/),
+    "selections": (v8/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "CategoryRouteQuery",
-    "selections": (v8/*: any*/)
+    "selections": (v8/*:: as any*/)
   },
   "params": {
     "cacheID": "3acaf4ecd9a11a800c023b0987eca776",

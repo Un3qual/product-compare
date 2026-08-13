@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<ecc86af046c23156040df2955d8667a2>>
+ * @generated SignedSource<<b978b083a3eae4337538919eb5e0b5fa>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,8 +10,8 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "REJECTED" | "REMOVED" | "%future added value";
 export type AskProductQuestionInput = {
-  body?: string | null | undefined;
-  idempotencyKey?: string | null | undefined;
+  body?: string | null;
+  idempotencyKey?: string | null;
   productId: string;
   title: string;
 };
@@ -23,13 +22,13 @@ export type ProductCommunityOperationsAskProductQuestionMutation$data = {
   readonly askProductQuestion: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly question: {
       readonly id: string;
       readonly moderationStatus: CommunityModerationStatus;
-    } | null | undefined;
+    } | null;
   };
 };
 export type ProductCommunityOperationsAskProductQuestionMutation = {
@@ -123,20 +122,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ProductCommunityOperationsAskProductQuestionMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ProductCommunityOperationsAskProductQuestionMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "4f1cb105c5187adce45669c42f1ccfd2",

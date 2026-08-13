@@ -1,4 +1,3 @@
-import type { ReactElement } from "react";
 import { useRef, useState } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
@@ -25,9 +24,9 @@ import {
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { addSetValue, removeSetValue } from "../immutable-collection-state";
-import { commitRouteMutation } from "../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../route-errors";
+import { addSetValue, removeSetValue } from "$frontend/state/immutable-collections";
+import { commitRouteMutation } from "$relay/mutations";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { resolveDeleteSavedComparisonSetMutationOutcome } from "./saved-comparison-delete-mutation-data";
 import {
   buildSavedComparisonReopenPath,
@@ -115,7 +114,7 @@ export function SavedComparisonSetList({
 }: {
   fragmentRef: SavedComparisonSetList_savedSets$key;
   pagination: SavedComparisonsPagination;
-}): ReactElement {
+}) {
   const connection = useFragment(savedComparisonSetsFragment, fragmentRef);
   const savedSets = summarizeSavedComparisonSets(connection);
   const [deletedSavedSetIds, setDeletedSavedSetIds] = useState<ReadonlySet<string>>(new Set());
@@ -160,12 +159,12 @@ export function SavedComparisonSetList({
           finishDelete(savedComparisonSetId);
         },
         onError: () => {
-          setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+          setDeleteError(DEFAULT_MUTATION_ERROR_MESSAGE);
           finishDelete(savedComparisonSetId);
         },
       },
       () => {
-        setDeleteError(DEFAULT_ROUTE_ERROR_MESSAGE);
+        setDeleteError(DEFAULT_MUTATION_ERROR_MESSAGE);
         finishDelete(savedComparisonSetId);
       },
     );

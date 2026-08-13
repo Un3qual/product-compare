@@ -2,6 +2,7 @@ defmodule ProductCompareWeb.SeoController do
   use ProductCompareWeb, :controller
 
   alias ProductCompare.Seo
+  alias ProductCompareWeb.Seo.SitemapXml
 
   @sitemap_kinds ~w(products merchants categories comparisons)a
   @cache_control "public, max-age=300, stale-while-revalidate=600"
@@ -22,16 +23,10 @@ defmodule ProductCompareWeb.SeoController do
   end
 
   def sitemap_index(conn, _params) do
-    body =
-      [
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-        "<sitemapindex xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-      ] ++
-        Enum.map(@sitemap_kinds, fn kind ->
-          "<sitemap><loc>#{xml_escape("#{public_base_url()}/sitemaps/#{kind}.xml")}</loc></sitemap>"
-        end) ++ ["</sitemapindex>"]
+    locations =
+      Enum.map(@sitemap_kinds, &"#{public_base_url()}/sitemaps/#{&1}.xml")
 
-    xml_response(conn, Enum.join(body))
+    xml_response(conn, SitemapXml.sitemap_index(locations))
   end
 
   for kind <- @sitemap_kinds do
@@ -39,21 +34,14 @@ defmodule ProductCompareWeb.SeoController do
   end
 
   defp sitemap(conn, kind) do
-    urls =
+    entries =
       kind
       |> Seo.sitemap_entries()
       |> Enum.map(fn entry ->
-        "<url><loc>#{xml_escape(public_base_url() <> entry.path)}</loc><lastmod>#{xml_escape(iso8601(entry.last_modified))}</lastmod></url>"
+        {public_base_url() <> entry.path, iso8601(entry.last_modified)}
       end)
 
-    body =
-      ([
-         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
-         "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">"
-       ] ++ urls ++ ["</urlset>"])
-      |> Enum.join()
-
-    xml_response(conn, body)
+    xml_response(conn, SitemapXml.url_set(entries))
   end
 
   defp public_base_url do
@@ -73,13 +61,4 @@ defmodule ProductCompareWeb.SeoController do
 
   defp iso8601(%DateTime{} = value), do: DateTime.to_iso8601(value)
   defp iso8601(%NaiveDateTime{} = value), do: NaiveDateTime.to_iso8601(value) <> "Z"
-
-  defp xml_escape(value) do
-    value
-    |> String.replace("&", "&amp;")
-    |> String.replace("<", "&lt;")
-    |> String.replace(">", "&gt;")
-    |> String.replace("\"", "&quot;")
-    |> String.replace("'", "&apos;")
-  end
 end

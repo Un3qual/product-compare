@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<8c383b4bc25c90b2d7e8132622525791>>
+ * @generated SignedSource<<ec7d3609e3fa02f9125c01b73ae1d7e6>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -19,10 +18,10 @@ export type TrackedCommerceClickActionMutation$data = {
   readonly trackCommerceClick: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-    readonly redirectPath: string | null | undefined;
+    readonly redirectPath: string | null;
   };
 };
 export type TrackedCommerceClickActionMutation = {
@@ -98,20 +97,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "TrackedCommerceClickActionMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "TrackedCommerceClickActionMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "31f5e4874b9bead2ddca816d0de9dbc7",

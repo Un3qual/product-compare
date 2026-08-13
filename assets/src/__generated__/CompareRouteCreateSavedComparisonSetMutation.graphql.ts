@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<c8b8090995617d0049d104309523f004>>
+ * @generated SignedSource<<f119b3f0b7551ad34086af87e3d67e4b>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -20,12 +19,12 @@ export type CompareRouteCreateSavedComparisonSetMutation$data = {
   readonly createSavedComparisonSet: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly savedComparisonSet: {
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type CompareRouteCreateSavedComparisonSetMutation = {
@@ -112,20 +111,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "CompareRouteCreateSavedComparisonSetMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "CompareRouteCreateSavedComparisonSetMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "9186b19ed6208d6b6b59f34ad1d1c492",

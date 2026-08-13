@@ -47,11 +47,11 @@ export function CJProgramList({
   const paginationData = buildCJProgramPaginationData(pagination, {
     program: {
       ...data.cjPrograms.pageInfo,
-      endCursor: data.cjPrograms.pageInfo.endCursor ?? null,
+      endCursor: data.cjPrograms.pageInfo.endCursor,
     },
     unmatched: {
       ...data.unmatchedCjFeeds.pageInfo,
-      endCursor: data.unmatchedCjFeeds.pageInfo.endCursor ?? null,
+      endCursor: data.unmatchedCjFeeds.pageInfo.endCursor,
     },
   });
 

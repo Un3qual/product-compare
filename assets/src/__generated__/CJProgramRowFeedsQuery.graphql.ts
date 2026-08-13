@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<a983db5075adf6937aa11b6a3324af9a>>
+ * @generated SignedSource<<c7d2b272b23c99b41775b182f08a7456>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,7 +10,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type CJProgramRowFeedsQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   id: string;
 };
@@ -25,12 +24,12 @@ export type CJProgramRowFeedsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
         readonly hasPreviousPage: boolean;
       };
     };
-  } | null | undefined;
+  } | null;
 };
 export type CJProgramRowFeedsQuery = {
   response: CJProgramRowFeedsQuery$data;
@@ -114,9 +113,9 @@ v6 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -124,7 +123,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "concreteType": "CJProgram",
         "kind": "LinkedField",
         "name": "cjProgram",
@@ -132,7 +131,7 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v4/*: any*/),
+            "args": (v4/*:: as any*/),
             "concreteType": "MerchantFeedCandidateConnection",
             "kind": "LinkedField",
             "name": "feeds",
@@ -154,7 +153,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v5/*: any*/),
+                      (v5/*:: as any*/),
                       {
                         "args": null,
                         "kind": "FragmentSpread",
@@ -166,7 +165,7 @@ return {
                 ],
                 "storageKey": null
               },
-              (v6/*: any*/)
+              (v6/*:: as any*/)
             ],
             "storageKey": null
           }
@@ -180,16 +179,16 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v2/*: any*/),
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v2/*:: as any*/),
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "CJProgramRowFeedsQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v3/*: any*/),
+        "args": (v3/*:: as any*/),
         "concreteType": "CJProgram",
         "kind": "LinkedField",
         "name": "cjProgram",
@@ -197,7 +196,7 @@ return {
         "selections": [
           {
             "alias": null,
-            "args": (v4/*: any*/),
+            "args": (v4/*:: as any*/),
             "concreteType": "MerchantFeedCandidateConnection",
             "kind": "LinkedField",
             "name": "feeds",
@@ -219,7 +218,7 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v5/*: any*/),
+                      (v5/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -289,11 +288,11 @@ return {
                 ],
                 "storageKey": null
               },
-              (v6/*: any*/)
+              (v6/*:: as any*/)
             ],
             "storageKey": null
           },
-          (v5/*: any*/)
+          (v5/*:: as any*/)
         ],
         "storageKey": null
       }

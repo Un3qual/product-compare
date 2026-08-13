@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<79a2215f59d222d814a6a9ebf5ed35b7>>
+ * @generated SignedSource<<eb62a489f38e5e17ca47628a3be991a6>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -14,12 +13,12 @@ import { FragmentRefs } from "relay-runtime";
 export type AlertsRoute_alert$data = {
   readonly currency: string;
   readonly id: string;
-  readonly landedPrice: any;
+  readonly landedPrice: string;
   readonly merchantName: string;
-  readonly observedAt: any;
+  readonly observedAt: string;
   readonly productName: string;
   readonly productSlug: string;
-  readonly readAt: any | null | undefined;
+  readonly readAt: string | null;
   readonly ruleType: PriceWatchRuleType;
   readonly " $fragmentType": "AlertsRoute_alert";
 };

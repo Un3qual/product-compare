@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<37e8af60d3b71338b8ec6c5fb782a1c7>>
+ * @generated SignedSource<<8cc0f3817c79d3361447bdb9e21f7cdd>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,11 +9,11 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type UpdatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
-  enabled?: boolean | null | undefined;
+  cooldownSeconds?: number | null;
+  enabled?: boolean | null;
   id: string;
-  percentageDrop?: any | null | undefined;
-  targetAmount?: any | null | undefined;
+  percentageDrop?: string | null;
+  targetAmount?: string | null;
 };
 export type AlertOperationsUpdatePriceWatchMutation$variables = {
   input: UpdatePriceWatchInput;
@@ -23,13 +22,13 @@ export type AlertOperationsUpdatePriceWatchMutation$data = {
   readonly updatePriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly watch: {
       readonly enabled: boolean;
       readonly id: string;
-    } | null | undefined;
+    } | null;
   };
 };
 export type AlertOperationsUpdatePriceWatchMutation = {
@@ -123,20 +122,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertOperationsUpdatePriceWatchMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertOperationsUpdatePriceWatchMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "190834ba5852ed2c092feb33a7177f96",

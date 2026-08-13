@@ -14,6 +14,84 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
   alias ProductCompareSchemas.Specs.SourceArtifact
 
   describe "/api/graphql pricing discovery queries" do
+    test "product priceHistory90d exposes currency-separated merchant trends with global ids", %{
+      conn: conn,
+      test: test_name
+    } do
+      product = SpecsFixtures.product_fixture(%{slug: "#{test_name}-trend"})
+      alpha = merchant_fixture(%{name: unique_name("Alpha Trend")})
+      euro = merchant_fixture(%{name: unique_name("Euro Trend")})
+      usd_offer = merchant_product_fixture(%{merchant: alpha, product: product, currency: "USD"})
+      eur_offer = merchant_product_fixture(%{merchant: euro, product: product, currency: "EUR"})
+      observed_at = DateTime.utc_now() |> DateTime.add(-3_600, :second)
+
+      {:ok, _usd_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: usd_offer.id,
+          observed_at: observed_at,
+          price: Decimal.new("120.50"),
+          in_stock: true
+        })
+
+      {:ok, _eur_point} =
+        Pricing.add_price_point(%{
+          merchant_product_id: eur_offer.id,
+          observed_at: observed_at,
+          price: Decimal.new("99.25"),
+          in_stock: true
+        })
+
+      assert %{
+               "data" => %{
+                 "product" => %{
+                   "priceHistory90d" => [
+                     %{
+                       "currency" => "EUR",
+                       "merchants" => [eur_merchant],
+                       "points" => eur_points
+                     },
+                     %{"currency" => "USD", "merchants" => [usd_merchant], "points" => usd_points}
+                   ]
+                 }
+               }
+             } = graphql(conn, product_price_history_query(), %{"slug" => product.slug})
+
+      assert eur_merchant == %{
+               "id" => relay_id(:merchant, euro.id),
+               "merchantProductId" => relay_id(:merchant_product, eur_offer.id),
+               "name" => euro.name
+             }
+
+      assert usd_merchant == %{
+               "id" => relay_id(:merchant, alpha.id),
+               "merchantProductId" => relay_id(:merchant_product, usd_offer.id),
+               "name" => alpha.name
+             }
+
+      eur_offer_id = relay_id(:merchant_product, eur_offer.id)
+
+      assert %{
+               "averagePrice" => "99.25",
+               "lowestMerchantProductId" => ^eur_offer_id,
+               "lowestPrice" => "99.25",
+               "merchantPrices" => [
+                 %{
+                   "merchantProductId" => ^eur_offer_id,
+                   "price" => "99.25"
+                 }
+               ],
+               "observedAt" => latest_observed_at
+             } = List.last(eur_points)
+
+      assert {:ok, latest_date, 0} = DateTime.from_iso8601(latest_observed_at)
+      assert DateTime.compare(latest_date, observed_at) in [:eq, :gt]
+      assert DateTime.to_date(latest_date) == DateTime.to_date(observed_at)
+
+      assert List.last(usd_points)["lowestPrice"] == "120.50"
+      assert Enum.count_until(eur_points, 92) <= 91
+      assert Enum.count_until(usd_points, 92) <= 91
+    end
+
     test "merchants returns a paginated connection with stable ordering", %{conn: conn} do
       merchant_a =
         merchant_fixture(%{name: unique_name("Merchant A"), domain: unique_domain("a")})
@@ -1042,6 +1120,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                          "eligibleOfferCount" => 2,
                          "bestOffer" => %{
                            "merchantProductId" => best_offer_id,
+                           "merchantName" => best_offer_merchant_name,
                            "itemPrice" => "60",
                            "shipping" => "0",
                            "landedPrice" => "60",
@@ -1088,6 +1167,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
                })
 
       assert best_offer_id == relay_id(:merchant_product, higher_item_offer.id)
+      assert best_offer_merchant_name == higher_item_merchant.name
       assert latest_price_id == relay_id(:price_point, higher_item_price.id)
       assert source_artifact_id == relay_id(:source_artifact, artifact.id)
       assert latest_source_artifact_id == relay_id(:source_artifact, artifact.id)
@@ -1174,6 +1254,33 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
           hasPreviousPage
           startCursor
           endCursor
+        }
+      }
+    }
+    """
+  end
+
+  defp product_price_history_query do
+    """
+    query ProductPriceHistory($slug: String!) {
+      product(slug: $slug) {
+        priceHistory90d {
+          currency
+          merchants {
+            id
+            name
+            merchantProductId
+          }
+          points {
+            observedAt
+            lowestPrice
+            averagePrice
+            lowestMerchantProductId
+            merchantPrices {
+              merchantProductId
+              price
+            }
+          }
         }
       }
     }
@@ -1376,6 +1483,7 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
             eligibleOfferCount
             bestOffer {
               merchantProductId
+              merchantName
               itemPrice
               shipping
               landedPrice

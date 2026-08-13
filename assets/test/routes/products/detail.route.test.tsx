@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import type { LoaderFunctionArgs } from "react-router-dom";
 import { MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
+import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
 import { createRelayEnvironment, RouteLoaderGraphQLError } from "../../../src/relay/environment";
 import {
   createRelayRouterContext,
@@ -21,7 +22,9 @@ import {
 import {
   ProductOfferList,
   type ProductOfferListItem,
-} from "../../../src/routes/products/ProductOfferList";
+} from "../../../src/routes/products/offers/ProductOfferList";
+import type { ProductSpecification } from "../../../src/routes/products/specifications";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   fetchRouteQueryMock,
@@ -121,43 +124,34 @@ function makeOffersQueryDescriptor(offersAfter?: string | null) {
 
 const OFFERS_QUERY_DESCRIPTOR = makeOffersQueryDescriptor();
 
-type DetailProduct = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string;
-  seo: {
-    title: string;
-    description: string;
-    canonicalPath: string;
-    indexable: boolean;
-    imageUrl: string | null;
-    structuredData: string | null;
+type DetailProduct = Omit<
+  NonNullable<ProductDetailRouteQuery["response"]["product"]>,
+  "currentAttributes" | "merchantProducts"
+> & { currentAttributes: readonly ProductSpecification[] };
+
+function productSpecification(
+  value: Pick<ProductSpecification, "code" | "displayName" | "valueText"> &
+    Partial<Omit<ProductSpecification, "code" | "displayName" | "valueText">>,
+) {
+  return {
+    attributeId: `attribute-${value.code}`,
+    booleanValue: null,
+    dataType: "text",
+    enumOptionId: null,
+    groupLabel: null,
+    isRequired: false,
+    numericValue: null,
+    sortOrder: null,
+    unitSymbol: null,
+    ...value,
   };
-  brand: {
-    id: string;
-    name: string;
-  };
-  currentAttributes: ReadonlyArray<{
-    attributeId?: string;
-    code: string;
-    displayName: string;
-    dataType: string;
-    valueText: string;
-    sortOrder?: number | null;
-    groupLabel?: string | null;
-    isRequired?: boolean;
-    numericValue?: string | null;
-    booleanValue?: boolean | null;
-    enumOptionId?: string | null;
-    unitSymbol?: string | null;
-  }>;
-};
+}
 
 const DETAIL_PRODUCT: DetailProduct = {
   id: "UHJvZHVjdDox",
   name: "Detail Product",
   slug: "detail-product",
+  modelNumber: "DP-100",
   description: "A narrow product detail baseline.",
   seo: {
     title: "Detail Product specifications and prices | Product Compare",
@@ -173,16 +167,42 @@ const DETAIL_PRODUCT: DetailProduct = {
     name: "Acme",
   },
   currentAttributes: [],
+  offerTruth: {
+    asOf: "2026-06-01T02:00:00Z",
+    offerCount: 0,
+    observedOfferCount: 0,
+    eligibleOfferCount: 0,
+    currencySummaries: [],
+  },
+  priceHistory90d: [],
 };
 
-const productQueryRef = {
-  dispose: vi.fn(),
-  variables: PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+const productQueryRef = mockPreloadedQuery(PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables);
+
+const DETAIL_PRODUCT_WITH_CURRENT_PRICE: DetailProduct = {
+  ...DETAIL_PRODUCT,
+  offerTruth: {
+    ...DETAIL_PRODUCT.offerTruth,
+    offerCount: 1,
+    observedOfferCount: 1,
+    eligibleOfferCount: 1,
+    currencySummaries: [
+      {
+        currency: "USD",
+        eligibleOfferCount: 1,
+        bestOffer: {
+          eligible: true,
+          freshness: "FRESH",
+          landedPrice: "199.99",
+          merchantName: "Acme",
+          merchantProductId: "merchant-product-1",
+          observedAt: "2026-06-01T00:00:00Z",
+        },
+      },
+    ],
+  },
 };
-const offersQueryRef = {
-  dispose: vi.fn(),
-  variables: OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const offersQueryRef = mockPreloadedQuery(OFFERS_QUERY_DESCRIPTOR.__relayQuery.variables);
 
 const buildProductDetailLoaderArgs = ({
   environment = createRelayEnvironment(),
@@ -705,6 +725,7 @@ test("renders product detail and active offers from Relay route queries", () => 
         },
       },
     ]),
+    DETAIL_PRODUCT_WITH_CURRENT_PRICE,
   );
 
   render(
@@ -717,20 +738,22 @@ test("renders product detail and active offers from Relay route queries", () => 
   expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Detail Product" })).toBeInTheDocument();
   const detailTabs = screen.getByRole("tablist", { name: "Product details" });
-  expect(within(detailTabs).getByRole("tab", { name: "Overview" })).toHaveAttribute(
+  expect(within(detailTabs).queryByRole("tab", { name: "Overview" })).not.toBeInTheDocument();
+  expect(within(detailTabs).getByRole("tab", { name: "Specifications" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
-  expect(screen.getByRole("region", { name: "Product overview" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
-  expect(screen.getByText("Acme", { selector: "p" })).toBeInTheDocument();
-  expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
-
-  fireEvent.click(within(detailTabs).getByRole("tab", { name: "Specifications" }));
   expect(screen.getByRole("region", { name: "Specifications" })).toBeInTheDocument();
-  expect(screen.getByTestId("location")).toHaveTextContent("#specifications");
+  expect(screen.getByRole("complementary", { name: "Product decisions" })).toBeInTheDocument();
+  expect(screen.getByText("Acme")).toBeInTheDocument();
+  expect(screen.getByText("Model DP-100")).toBeInTheDocument();
+  const decisionSummary = screen.getByRole("region", { name: "Product decision summary" });
+  expect(within(decisionSummary).getByText("199.99 USD at Acme")).toBeInTheDocument();
+  expect(screen.getByText("A narrow product detail baseline.")).toBeInTheDocument();
+  expect(screen.queryByText("detail-product")).not.toBeInTheDocument();
 
   fireEvent.click(within(detailTabs).getByRole("tab", { name: "Offers" }));
+  expect(screen.getByRole("heading", { name: "Detail Product" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Active offers" })).toBeInTheDocument();
   expect(screen.getByTestId("location")).toHaveTextContent("#offers");
   expect(screen.getByRole("heading", { name: "Active offers" })).toBeInTheDocument();
@@ -738,15 +761,71 @@ test("renders product detail and active offers from Relay route queries", () => 
     "href",
     `${API_ORIGIN}/r/merchant-product?merchantProductId=merchant-product-1`,
   );
-  expect(screen.getByText("199.99 USD")).toBeInTheDocument();
-  const priceObservedAt = screen.getByText("2026-06-01", { selector: "time" });
+  expect(screen.getByText("199.99 USD")).toBeVisible();
+  const priceObservedAt = screen.getAllByText("Price observed 2 hours ago", {
+    selector: "time",
+  })[0];
 
   expect(priceObservedAt).toHaveAttribute("datetime", "2026-06-01T00:00:00Z");
-  expect(priceObservedAt.parentElement).toHaveTextContent("Price observed 2026-06-01");
+  expect(priceObservedAt.closest("button")).toHaveAttribute("title", "Jun 1, 2026, 12:00 AM UTC");
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
     PRODUCT_QUERY_DESCRIPTOR,
   );
+});
+
+test("derives price freshness from the newest eligible offer across currencies", () => {
+  mockedUseLoaderData.mockReturnValue({
+    status: "ready",
+    productQuery: PRODUCT_QUERY_DESCRIPTOR,
+  });
+  mockRouteQueryRefs();
+  mockProductAndOffersQueries(buildOffersData([]), {
+    ...DETAIL_PRODUCT,
+    offerTruth: {
+      ...DETAIL_PRODUCT.offerTruth,
+      eligibleOfferCount: 2,
+      observedOfferCount: 2,
+      offerCount: 2,
+      currencySummaries: [
+        {
+          currency: "EUR",
+          eligibleOfferCount: 1,
+          bestOffer: {
+            eligible: true,
+            freshness: "FRESH",
+            landedPrice: "180",
+            merchantName: "Euro Shop",
+            merchantProductId: "merchant-product-euro",
+            observedAt: "2026-06-01T00:00:00Z",
+          },
+        },
+        {
+          currency: "USD",
+          eligibleOfferCount: 1,
+          bestOffer: {
+            eligible: true,
+            freshness: "FRESH",
+            landedPrice: "199.99",
+            merchantName: "Acme",
+            merchantProductId: "merchant-product-usd",
+            observedAt: "2026-06-01T01:00:00Z",
+          },
+        },
+      ],
+    },
+  });
+
+  render(
+    <MemoryRouter>
+      <ProductDetailRoute />
+    </MemoryRouter>,
+  );
+
+  const decisionSummary = screen.getByRole("region", { name: "Product decision summary" });
+  const freshness = within(decisionSummary).getByText("Observed 1 hour ago", { selector: "time" });
+
+  expect(freshness).toHaveAttribute("datetime", "2026-06-01T01:00:00Z");
 });
 
 test("loads bounded community data only when the Reviews & Q&A tab is opened", () => {
@@ -1247,11 +1326,7 @@ test("renders product decision actions with compare, offer review, and browse de
   });
 
   render(
-    <MemoryRouter
-      initialEntries={[
-        "/products/detail%2Fproduct%20slug?slug=alpha&slug=beta",
-      ]}
-    >
+    <MemoryRouter initialEntries={["/products/detail%2Fproduct%20slug?slug=alpha&slug=beta"]}>
       <ProductDetailRoute />
     </MemoryRouter>,
   );
@@ -1798,18 +1873,18 @@ test("renders product specifications from current attributes", () => {
   mockProductAndOffersQueries(buildOffersData([]), {
     ...DETAIL_PRODUCT,
     currentAttributes: [
-      {
+      productSpecification({
         code: "refresh-rate",
         displayName: "Refresh rate",
         dataType: "numeric",
         valueText: "144 Hz",
-      },
-      {
+      }),
+      productSpecification({
         code: "panel-type",
         displayName: "Panel type",
         dataType: "text",
         valueText: "OLED",
-      },
+      }),
     ],
   });
 
@@ -1822,10 +1897,11 @@ test("renders product specifications from current attributes", () => {
   openProductDetailTab("Specifications");
 
   expect(screen.getByRole("heading", { name: "Specifications" })).toBeInTheDocument();
-  expect(screen.getByText("Refresh rate")).toBeVisible();
-  expect(screen.getByText("144 Hz")).toBeVisible();
-  expect(screen.getByText("Panel type")).toBeVisible();
-  expect(screen.getByText("OLED")).toBeVisible();
+  const specifications = screen.getByRole("region", { name: "Specifications" });
+  expect(within(specifications).getByText("Refresh rate")).toBeVisible();
+  expect(within(specifications).getByText("144 Hz")).toBeVisible();
+  expect(within(specifications).getByText("Panel type")).toBeVisible();
+  expect(within(specifications).getByText("OLED")).toBeVisible();
 });
 
 test("renders product specifications grouped by compare group label", () => {
@@ -1922,27 +1998,27 @@ test("renders product specification group labels case-insensitively", () => {
   mockProductAndOffersQueries(buildOffersData([]), {
     ...DETAIL_PRODUCT,
     currentAttributes: [
-      {
+      productSpecification({
         code: "refresh-rate",
         displayName: "Refresh rate",
         dataType: "numeric",
         valueText: "144 Hz",
         groupLabel: "Performance",
-      },
-      {
+      }),
+      productSpecification({
         code: "response-time",
         displayName: "Response time",
         dataType: "numeric",
         valueText: "1 ms",
         groupLabel: "performance",
-      },
-      {
+      }),
+      productSpecification({
         code: "release-year",
         displayName: "Release year",
         dataType: "int",
         valueText: "2026",
         groupLabel: " ",
-      },
+      }),
     ],
   });
 

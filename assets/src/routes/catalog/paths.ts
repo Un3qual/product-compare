@@ -1,10 +1,10 @@
 import { catalogProductSortParam, uniqueCatalogEnumFilters, type CatalogFilters } from "./filters";
-import { nextRelayPageCursor } from "../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 export function catalogBrowsePath(
   filters: CatalogFilters,
   first: number,
-  after?: string | null,
+  after: string | null = null,
   compareSlugs: readonly string[] = [],
 ) {
   const params = new URLSearchParams();
@@ -53,7 +53,7 @@ export function buildCatalogBrowsePaginationData({
   readonly hasNextPage: boolean;
   readonly selectedCompareSlugs: readonly string[];
 }) {
-  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, currentAfter);
+  const nextCursor = nextPageCursor({ endCursor, hasNextPage }, currentAfter);
 
   return {
     firstHref: currentAfter
@@ -117,11 +117,11 @@ function appendUseCaseFilterParams(params: URLSearchParams, filters: CatalogFilt
 
 function appendNumericFilterParams(params: URLSearchParams, filters: CatalogFilters) {
   for (const numericFilter of filters.numeric) {
-    if (numericFilter.min !== undefined) {
+    if (numericFilter.min != null) {
       params.append(`numeric.${numericFilter.attributeId}.min`, numericFilter.min);
     }
 
-    if (numericFilter.max !== undefined) {
+    if (numericFilter.max != null) {
       params.append(`numeric.${numericFilter.attributeId}.max`, numericFilter.max);
     }
   }

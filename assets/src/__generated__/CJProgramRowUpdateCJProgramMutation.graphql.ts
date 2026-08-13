@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<077be6f1647b5796a324c7080cfeb032>>
+ * @generated SignedSource<<bba6090bd93f6f26d6e5ec2c37e98506>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,9 +10,9 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CJProgramStage = "ACCEPTED" | "APPLIED" | "CONSIDERING" | "DECLINED" | "NEW" | "NOT_PURSUING" | "SELECTED" | "%future added value";
 export type UpdateCjProgramInput = {
-  expectedChangedAt: any;
+  expectedChangedAt: string;
   id: string;
-  note?: string | null | undefined;
+  note?: string | null;
   stage: CJProgramStage;
 };
 export type CJProgramRowUpdateCJProgramMutation$variables = {
@@ -23,7 +22,7 @@ export type CJProgramRowUpdateCJProgramMutation$data = {
   readonly updateCjProgram: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };
@@ -94,20 +93,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "CJProgramRowUpdateCJProgramMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "CJProgramRowUpdateCJProgramMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "53a9de2f70ed5ad98ee90851479f2a86",

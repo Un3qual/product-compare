@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<dcb38120bb5ed487afa57d155d118b60>>
+ * @generated SignedSource<<033236438c236e18276497b73d43b4e3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,7 +10,7 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type AffiliateSetupRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type AffiliateSetupRouteQuery$data = {
@@ -19,18 +18,19 @@ export type AffiliateSetupRouteQuery$data = {
     readonly edges: ReadonlyArray<{
       readonly cursor: string;
       readonly node: {
+        readonly domain: string;
         readonly id: string;
         readonly name: string;
         readonly " $fragmentSpreads": FragmentRefs<"MerchantDirectoryView_item">;
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
       readonly hasPreviousPage: boolean;
-      readonly startCursor: string | null | undefined;
+      readonly startCursor: string | null;
     };
-  } | null | undefined;
+  } | null;
 };
 export type AffiliateSetupRouteQuery = {
   response: AffiliateSetupRouteQuery$data;
@@ -84,6 +84,13 @@ v5 = {
 v6 = {
   "alias": null,
   "args": null,
+  "kind": "ScalarField",
+  "name": "domain",
+  "storageKey": null
+},
+v7 = {
+  "alias": null,
+  "args": null,
   "concreteType": "PageInfo",
   "kind": "LinkedField",
   "name": "pageInfo",
@@ -123,8 +130,8 @@ v6 = {
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -132,7 +139,7 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -146,7 +153,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v3/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -155,8 +162,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
-                  (v5/*: any*/),
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
@@ -168,7 +176,7 @@ return {
             ],
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v7/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -179,15 +187,15 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "AffiliateSetupRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v2/*: any*/),
+        "args": (v2/*:: as any*/),
         "concreteType": "MerchantConnection",
         "kind": "LinkedField",
         "name": "merchants",
@@ -201,7 +209,7 @@ return {
             "name": "edges",
             "plural": true,
             "selections": [
-              (v3/*: any*/),
+              (v3/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -210,15 +218,9 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v4/*: any*/),
-                  (v5/*: any*/),
-                  {
-                    "alias": null,
-                    "args": null,
-                    "kind": "ScalarField",
-                    "name": "domain",
-                    "storageKey": null
-                  },
+                  (v4/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -232,23 +234,23 @@ return {
             ],
             "storageKey": null
           },
-          (v6/*: any*/)
+          (v7/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "01eaadbc0a718ea14441ba0796909014",
+    "cacheID": "d7e7ad0856c15b53584d85381070d0b2",
     "id": null,
     "metadata": {},
     "name": "AffiliateSetupRouteQuery",
     "operationKind": "query",
-    "text": "query AffiliateSetupRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        ...MerchantDirectoryView_item\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n\nfragment MerchantDirectoryView_item on Merchant {\n  id\n  name\n  domain\n  slug\n}\n"
+    "text": "query AffiliateSetupRouteQuery(\n  $first: Int!\n  $after: String\n) {\n  merchants(first: $first, after: $after) {\n    edges {\n      cursor\n      node {\n        id\n        name\n        domain\n        ...MerchantDirectoryView_item\n      }\n    }\n    pageInfo {\n      hasNextPage\n      hasPreviousPage\n      startCursor\n      endCursor\n    }\n  }\n}\n\nfragment MerchantDirectoryView_item on Merchant {\n  id\n  name\n  domain\n  slug\n}\n"
   }
 };
 })();
 
-(node as any).hash = "b5776db9efef1c99d2fe463b7b0e84fc";
+(node as any).hash = "0cb82e1b3805c2d1cb161733e22695a4";
 
 export default node;

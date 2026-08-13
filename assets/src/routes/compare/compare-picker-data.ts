@@ -1,17 +1,15 @@
+import type { CompareProductPickerBoundaryQuery } from "$generated/CompareProductPickerBoundaryQuery.graphql";
 import {
   MAX_COMPARE_PRODUCTS,
   buildComparePathFromSlugs,
   selectedCompareSlugsAfterAdding,
   type CompareSpecMode,
 } from "./paths";
-import { nextRelayPageCursor } from "../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
-export type ComparePickerProduct = {
-  readonly brand?: { readonly name: string | null } | null;
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-};
+export type ComparePickerProduct = NonNullable<
+  CompareProductPickerBoundaryQuery["response"]["products"]
+>["edges"][number]["node"];
 
 export type ComparePickerOption = {
   brandName: string;
@@ -21,7 +19,7 @@ export type ComparePickerOption = {
 };
 
 export type ComparePickerPageInfo = {
-  readonly endCursor: string | null | undefined;
+  readonly endCursor: string | null;
   readonly hasNextPage: boolean;
 };
 
@@ -79,15 +77,15 @@ export function buildComparePickerOptions(
 }
 
 export function nextComparePickerPageCursor(
-  pageInfo: ComparePickerPageInfo | null | undefined,
+  pageInfo: ComparePickerPageInfo | null,
   currentAfter: string | null = null,
 ) {
-  return nextRelayPageCursor(pageInfo, currentAfter);
+  return nextPageCursor(pageInfo, currentAfter);
 }
 
 export function isComparePickerEmpty(
   availableProducts: readonly ComparePickerProduct[],
-  nextCursor: string | null | undefined,
+  nextCursor: string | null,
 ) {
   return availableProducts.length === 0 && !nextCursor;
 }

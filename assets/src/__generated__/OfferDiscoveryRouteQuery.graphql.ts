@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<b46a77eb59ed347f5e203822a3638be9>>
+ * @generated SignedSource<<56194588b0b8f98d29b97c68d271e689>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,12 +10,12 @@
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
 export type MerchantProductsInput = {
-  activeOnly?: boolean | null | undefined;
-  merchantId?: string | null | undefined;
+  activeOnly?: boolean | null;
+  merchantId?: string | null;
   productId: string;
 };
 export type OfferDiscoveryRouteQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
   input: MerchantProductsInput;
   productId: string;
@@ -24,13 +23,13 @@ export type OfferDiscoveryRouteQuery$variables = {
 export type OfferDiscoveryRouteQuery$data = {
   readonly merchantProducts: {
     readonly " $fragmentSpreads": FragmentRefs<"OfferDiscoveryList_connection">;
-  } | null | undefined;
+  } | null;
   readonly selectedProduct: {
     readonly __typename: "Product";
     readonly brand: {
       readonly id: string;
       readonly name: string;
-    } | null | undefined;
+    } | null;
     readonly id: string;
     readonly name: string;
     readonly slug: string;
@@ -38,7 +37,7 @@ export type OfferDiscoveryRouteQuery$data = {
     // This will never be '%other', but we need some
     // value in case none of the concrete values match.
     readonly __typename: "%other";
-  } | null | undefined;
+  } | null;
 };
 export type OfferDiscoveryRouteQuery = {
   response: OfferDiscoveryRouteQuery$data;
@@ -111,8 +110,8 @@ v6 = {
   "name": "brand",
   "plural": false,
   "selections": [
-    (v3/*: any*/),
-    (v4/*: any*/)
+    (v3/*:: as any*/),
+    (v4/*:: as any*/)
   ],
   "storageKey": null
 },
@@ -169,33 +168,33 @@ v12 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v11/*: any*/)
+    (v11/*:: as any*/)
   ],
   "storageKey": null
 };
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "OfferDiscoveryRouteQuery",
     "selections": [
       {
         "alias": "selectedProduct",
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": null,
         "kind": "LinkedField",
         "name": "node",
         "plural": false,
         "selections": [
-          (v2/*: any*/),
+          (v2/*:: as any*/),
           {
             "kind": "InlineFragment",
             "selections": [
-              (v3/*: any*/),
-              (v4/*: any*/),
-              (v5/*: any*/),
-              (v6/*: any*/)
+              (v3/*:: as any*/),
+              (v4/*:: as any*/),
+              (v5/*:: as any*/),
+              (v6/*:: as any*/)
             ],
             "type": "Product",
             "abstractKey": null
@@ -205,7 +204,7 @@ return {
       },
       {
         "alias": null,
-        "args": (v7/*: any*/),
+        "args": (v7/*:: as any*/),
         "concreteType": "MerchantProductConnection",
         "kind": "LinkedField",
         "name": "merchantProducts",
@@ -225,26 +224,26 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "OfferDiscoveryRouteQuery",
     "selections": [
       {
         "alias": "selectedProduct",
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": null,
         "kind": "LinkedField",
         "name": "node",
         "plural": false,
         "selections": [
-          (v2/*: any*/),
-          (v3/*: any*/),
+          (v2/*:: as any*/),
+          (v3/*:: as any*/),
           {
             "kind": "InlineFragment",
             "selections": [
-              (v4/*: any*/),
-              (v5/*: any*/),
-              (v6/*: any*/)
+              (v4/*:: as any*/),
+              (v5/*:: as any*/),
+              (v6/*:: as any*/)
             ],
             "type": "Product",
             "abstractKey": null
@@ -254,7 +253,7 @@ return {
       },
       {
         "alias": null,
-        "args": (v7/*: any*/),
+        "args": (v7/*:: as any*/),
         "concreteType": "MerchantProductConnection",
         "kind": "LinkedField",
         "name": "merchantProducts",
@@ -276,7 +275,7 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v3/*: any*/),
+                  (v3/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -284,7 +283,7 @@ return {
                     "name": "url",
                     "storageKey": null
                   },
-                  (v8/*: any*/),
+                  (v8/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -293,8 +292,8 @@ return {
                     "name": "merchant",
                     "plural": false,
                     "selections": [
-                      (v3/*: any*/),
-                      (v4/*: any*/),
+                      (v3/*:: as any*/),
+                      (v4/*:: as any*/),
                       {
                         "alias": null,
                         "args": null,
@@ -313,9 +312,9 @@ return {
                     "name": "latestPrice",
                     "plural": false,
                     "selections": [
-                      (v9/*: any*/),
-                      (v3/*: any*/),
-                      (v10/*: any*/)
+                      (v9/*:: as any*/),
+                      (v3/*:: as any*/),
+                      (v10/*:: as any*/)
                     ],
                     "storageKey": null
                   },
@@ -384,7 +383,7 @@ return {
                                 "name": "discountValue",
                                 "storageKey": null
                               },
-                              (v8/*: any*/),
+                              (v8/*:: as any*/),
                               {
                                 "alias": null,
                                 "args": null,
@@ -405,7 +404,7 @@ return {
                         ],
                         "storageKey": null
                       },
-                      (v12/*: any*/)
+                      (v12/*:: as any*/)
                     ],
                     "storageKey": "activeCoupons(first:2)"
                   },
@@ -431,9 +430,9 @@ return {
                     "name": "product",
                     "plural": false,
                     "selections": [
-                      (v3/*: any*/),
-                      (v4/*: any*/),
-                      (v5/*: any*/)
+                      (v3/*:: as any*/),
+                      (v4/*:: as any*/),
+                      (v5/*:: as any*/)
                     ],
                     "storageKey": null
                   },
@@ -467,16 +466,16 @@ return {
                             "name": "node",
                             "plural": false,
                             "selections": [
-                              (v3/*: any*/),
-                              (v9/*: any*/),
-                              (v10/*: any*/)
+                              (v3/*:: as any*/),
+                              (v9/*:: as any*/),
+                              (v10/*:: as any*/)
                             ],
                             "storageKey": null
                           }
                         ],
                         "storageKey": null
                       },
-                      (v12/*: any*/)
+                      (v12/*:: as any*/)
                     ],
                     "storageKey": "priceHistory(first:12)"
                   }
@@ -501,7 +500,7 @@ return {
                 "name": "endCursor",
                 "storageKey": null
               },
-              (v11/*: any*/),
+              (v11/*:: as any*/),
               {
                 "alias": null,
                 "args": null,

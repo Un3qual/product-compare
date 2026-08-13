@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<f3d141334af1c084091ea3f6288c71e4>>
+ * @generated SignedSource<<5396a87184598fe64e037f0d7a56b061>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -14,7 +13,7 @@ export type LogoutRouteMutation$data = {
   readonly logout: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly ok: boolean;
@@ -84,7 +83,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "LogoutRouteMutation",
-    "selections": (v0/*: any*/),
+    "selections": (v0/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
@@ -93,7 +92,7 @@ return {
     "argumentDefinitions": [],
     "kind": "Operation",
     "name": "LogoutRouteMutation",
-    "selections": (v0/*: any*/)
+    "selections": (v0/*:: as any*/)
   },
   "params": {
     "cacheID": "a7efa52bead19d92b0cc1df51919c8c9",

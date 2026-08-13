@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<8710d2eb0b53363304ba41994d8ebd50>>
+ * @generated SignedSource<<d6776727da27511517c0971675350eb3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -16,13 +15,13 @@ export type AlertOperationsMarkAlertReadMutation$data = {
   readonly markAlertRead: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly event: {
       readonly id: string;
-      readonly readAt: any | null | undefined;
-    } | null | undefined;
+      readonly readAt: string | null;
+    } | null;
   };
 };
 export type AlertOperationsMarkAlertReadMutation = {
@@ -116,20 +115,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertOperationsMarkAlertReadMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertOperationsMarkAlertReadMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "48bf899b13001c9e21dc4e8fbf098a7b",

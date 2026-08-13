@@ -14,7 +14,7 @@ import type {
   AlertsRoute_watch$key,
 } from "$generated/AlertsRoute_watch.graphql";
 import type { AlertsRouteQuery } from "$generated/AlertsRouteQuery.graphql";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -26,8 +26,8 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
-import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, isRouteRecord } from "../../route-errors";
+import { commitRouteMutationPromise } from "$relay/mutations";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   resolveDeletePriceWatchMutationError,
   resolveMarkAlertReadMutationError,
@@ -142,7 +142,7 @@ const styles = create({
 });
 
 export function AlertsRoute() {
-  const loaderData = useLoaderData() as AlertsRouteLoaderData;
+  const loaderData = useLoaderData<typeof alertsLoader>();
 
   if (loaderData.status === "unauthorized") {
     return (
@@ -205,7 +205,7 @@ function AlertsWorkspace({
       if (operationError) setErrorsById((current) => withError(current, id, operationError));
       else await revalidator.revalidate();
     } catch {
-      setErrorsById((current) => withError(current, id, DEFAULT_ROUTE_ERROR_MESSAGE));
+      setErrorsById((current) => withError(current, id, DEFAULT_MUTATION_ERROR_MESSAGE));
     } finally {
       setPendingIds((current) => {
         const next = new Set(current);
@@ -468,11 +468,5 @@ export async function alertsLoader({
 
 function isAuthError(error: unknown) {
   if (!(error instanceof RouteLoaderGraphQLError)) return false;
-  const response = error.response;
-  if (!isRouteRecord(response) || !Array.isArray(response.errors)) return false;
-
-  return response.errors.some((item) => {
-    if (!isRouteRecord(item) || !isRouteRecord(item.extensions)) return false;
-    return typeof item.extensions.code === "string" && AUTH_CODES.has(item.extensions.code);
-  });
+  return graphQLResponseHasErrorCode(error.response, AUTH_CODES);
 }

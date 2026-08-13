@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<f8afd650c0a1bc38a4409def84bc7cb9>>
+ * @generated SignedSource<<fcd90fc86e0c0e19eecc44a6e6472416>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,13 +10,13 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type PriceWatchRuleType = "BACK_IN_STOCK" | "NEWLY_AVAILABLE" | "PERCENTAGE_DROP" | "TARGET_PRICE" | "%future added value";
 export type CreatePriceWatchInput = {
-  cooldownSeconds?: number | null | undefined;
+  cooldownSeconds?: number | null;
   currency: string;
-  merchantProductId?: string | null | undefined;
-  percentageDrop?: any | null | undefined;
+  merchantProductId?: string | null;
+  percentageDrop?: string | null;
   productId: string;
   ruleType: PriceWatchRuleType;
-  targetAmount?: any | null | undefined;
+  targetAmount?: string | null;
 };
 export type AlertOperationsCreatePriceWatchMutation$variables = {
   input: CreatePriceWatchInput;
@@ -26,18 +25,18 @@ export type AlertOperationsCreatePriceWatchMutation$data = {
   readonly createPriceWatch: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly watch: {
       readonly currency: string;
       readonly enabled: boolean;
       readonly id: string;
-      readonly percentageDrop: any | null | undefined;
+      readonly percentageDrop: string | null;
       readonly productName: string;
       readonly ruleType: PriceWatchRuleType;
-      readonly targetAmount: any | null | undefined;
-    } | null | undefined;
+      readonly targetAmount: string | null;
+    } | null;
   };
 };
 export type AlertOperationsCreatePriceWatchMutation = {
@@ -166,20 +165,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertOperationsCreatePriceWatchMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertOperationsCreatePriceWatchMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "d90cd58592fe5ba601502d36eee21b85",

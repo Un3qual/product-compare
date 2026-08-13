@@ -1,36 +1,27 @@
-export type RevenueSummaryFilters = {
-  currency?: string | null;
-  from?: string | null;
-  network?: string | null;
-  to?: string | null;
-};
+import type { RevenueSummaryRouteQuery } from "$generated/RevenueSummaryRouteQuery.graphql";
 
-export type RevenueActiveFilter = { label: string; value: string };
-export type RevenueDatePresetLink = { label: string; to: string };
-export type RevenueSummaryMetric = { label: string; value: string };
-export type RevenueSummaryFilterFormValues = {
-  currency: string;
-  from: string;
-  network: string;
-  to: string;
-};
+type RevenueSummaryInput = NonNullable<RevenueSummaryRouteQuery["variables"]["input"]>;
+export type RevenueSummaryFilters = Pick<
+  RevenueSummaryInput,
+  "currency" | "from" | "network" | "to"
+>;
 
 export const ATTRIBUTION_LEDGER_PAGE_SIZE = 20;
 const DATE_FILTER_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const SUPPORTED_NETWORKS = new Set(["impact", "awin", "rakuten", "cj", "amazon_associates"]);
 
+type RevenueSummaryMetrics = NonNullable<
+  RevenueSummaryRouteQuery["response"]["revenueSummary"]
+>["metrics"];
 type RevenueSummaryMetricSource = {
-  metrics: {
-    averagePaidPrice?: string | null;
-    clicks?: number | null;
-    commissionRevenue?: string | null;
-    conversions?: number | null;
-    grossOrderValue?: string | null;
-  };
+  readonly metrics: Pick<
+    RevenueSummaryMetrics,
+    "averagePaidPrice" | "clicks" | "commissionRevenue" | "conversions" | "grossOrderValue"
+  >;
 };
 
 export function buildRevenueSummaryFilterFormData(filters: RevenueSummaryFilters) {
-  const values: RevenueSummaryFilterFormValues = {
+  const values = {
     currency: revenueFilterFormValue(filters.currency),
     from: revenueFilterFormValue(filters.from),
     network: revenueFilterFormValue(filters.network),
@@ -43,17 +34,14 @@ export function buildRevenueSummaryFilterFormData(filters: RevenueSummaryFilters
   };
 }
 
-function revenueFilterFormValue(value: string | null | undefined) {
+function revenueFilterFormValue(value: RevenueSummaryInput["currency"]) {
   return value ?? "";
 }
 
 export function buildRevenueSummaryControls(
   filters: RevenueSummaryFilters,
   currentDate: Date | null = new Date(),
-): {
-  activeFilters: RevenueActiveFilter[];
-  datePresetLinks: RevenueDatePresetLink[];
-} {
+) {
   return {
     activeFilters: buildActiveFilterItems(filters),
     datePresetLinks: buildRevenueDatePresetLinks(filters, currentDate),
@@ -63,7 +51,7 @@ export function buildRevenueSummaryControls(
 export function buildRevenueDatePresetLinks(
   filters: Pick<RevenueSummaryFilters, "network" | "currency">,
   currentDate: Date | null = new Date(),
-): RevenueDatePresetLink[] {
+) {
   if (currentDate === null) {
     return [
       {
@@ -98,26 +86,15 @@ export function buildRevenueDatePresetLinks(
       to: null,
     },
   ] as const;
-  const links: RevenueDatePresetLink[] = [];
-
-  for (const { label, from, to } of presets) {
-    if (from && to && from > to) {
-      continue;
-    }
-
-    links.push({
+  return presets
+    .filter(({ from, to }) => !from || !to || from <= to)
+    .map(({ label, from, to }) => ({
       label,
       to: buildRevenueDatePresetSearchPath(filters, from, to),
-    });
-  }
-
-  return links;
+    }));
 }
 
-export function buildRevenueSummaryMetrics(
-  summary: RevenueSummaryMetricSource,
-  currency: string,
-): RevenueSummaryMetric[] {
+export function buildRevenueSummaryMetrics(summary: RevenueSummaryMetricSource, currency: string) {
   return [
     {
       label: "Clicks",
@@ -142,17 +119,19 @@ export function buildRevenueSummaryMetrics(
   ];
 }
 
-function buildActiveFilterItems(filters: RevenueSummaryFilters): RevenueActiveFilter[] {
+function buildActiveFilterItems(filters: RevenueSummaryFilters) {
   return [
-    filters.network ? { label: "Network", value: filters.network } : null,
-    filters.currency ? { label: "Currency", value: filters.currency } : null,
-    filters.from || filters.to
-      ? {
-          label: "Date range",
-          value: `${filters.from ?? "Any start"} to ${filters.to ?? "Any end"}`,
-        }
-      : null,
-  ].filter((filter): filter is RevenueActiveFilter => filter !== null);
+    ...(filters.network ? [{ label: "Network", value: filters.network }] : []),
+    ...(filters.currency ? [{ label: "Currency", value: filters.currency }] : []),
+    ...(filters.from || filters.to
+      ? [
+          {
+            label: "Date range",
+            value: `${filters.from ?? "Any start"} to ${filters.to ?? "Any end"}`,
+          },
+        ]
+      : []),
+  ];
 }
 
 function buildRevenueDatePresetSearchPath(
@@ -203,12 +182,15 @@ function shiftDate(baseDate: Date, days: number) {
   return toLocalDateOnly(date);
 }
 
-function formatCount(value: number | null | undefined) {
-  return value === null || value === undefined ? "Not available" : String(value);
+function formatCount(value: RevenueSummaryMetrics["clicks"]) {
+  return value === null ? "Not available" : String(value);
 }
 
-export function formatCurrencyAmount(value: string | null | undefined, currency: string) {
-  if (value === null || value === undefined) {
+export function formatCurrencyAmount(
+  value: RevenueSummaryMetrics["commissionRevenue"],
+  currency: string,
+) {
+  if (value === null) {
     return "Not available";
   }
 
@@ -216,16 +198,17 @@ export function formatCurrencyAmount(value: string | null | undefined, currency:
 }
 
 export function revenueSummaryFiltersFromUrl(url: URL): RevenueSummaryFilters {
-  const filters = {
-    currency: normalizeCurrencyFilter(url.searchParams.get("currency")),
-    from: normalizeDateFilter(url.searchParams.get("from")),
-    network: normalizeNetworkFilter(url.searchParams.get("network")),
-    to: normalizeDateFilter(url.searchParams.get("to")),
-  };
+  const currency = normalizeCurrencyFilter(url.searchParams.get("currency"));
+  const from = normalizeDateFilter(url.searchParams.get("from"));
+  const network = normalizeNetworkFilter(url.searchParams.get("network"));
+  const to = normalizeDateFilter(url.searchParams.get("to"));
 
-  return Object.fromEntries(
-    Object.entries(filters).filter(([, value]) => value !== undefined),
-  ) as RevenueSummaryFilters;
+  return {
+    ...(currency ? { currency } : {}),
+    ...(from ? { from } : {}),
+    ...(network ? { network } : {}),
+    ...(to ? { to } : {}),
+  };
 }
 
 export function hasInvertedRevenueDateRange(filters: RevenueSummaryFilters) {

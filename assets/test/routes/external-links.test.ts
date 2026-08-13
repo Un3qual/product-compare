@@ -1,5 +1,8 @@
 import { describe, expect, test } from "vitest";
-import { externalHttpUrlHref, externalWebsiteHref } from "../../src/routes/external-links";
+import {
+  externalHttpUrlHref,
+  externalWebsiteHref,
+} from "../../src/frontend/navigation/external-links";
 
 describe("external HTTP URL hrefs", () => {
   test.each([

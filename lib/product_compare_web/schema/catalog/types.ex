@@ -222,6 +222,10 @@ defmodule ProductCompareWeb.Schema.Catalog.Types do
       resolve(&Offers.product_offer_truth/3)
     end
 
+    field :price_history90d, non_null(list_of(non_null(:product_price_trend_currency))) do
+      resolve(&Offers.product_price_history/3)
+    end
+
     field :review_summary, non_null(:product_review_summary),
       resolve: &DiscussionReads.review_summary/3
 

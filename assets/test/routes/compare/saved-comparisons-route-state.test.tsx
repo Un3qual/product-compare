@@ -77,10 +77,12 @@ test("saved comparisons deletes a Relay-backed set after confirmation", async ()
       expect.anything(),
     );
   });
-  expect(screen.queryByRole("heading", { name: "Desk setup" })).not.toBeInTheDocument();
-  expect(screen.getByRole("status", { name: "Saved comparisons status" })).toHaveTextContent(
-    "Comparison deleted.",
-  );
+  await waitFor(() => {
+    expect(screen.queryByRole("heading", { name: "Desk setup" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Saved comparisons status" })).toHaveTextContent(
+      "Comparison deleted.",
+    );
+  });
 });
 
 test("saved comparisons preserves a set and reports typed deletion failure", async () => {

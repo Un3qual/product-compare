@@ -3,8 +3,8 @@ import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import type { RegisterRouteMutation } from "$generated/RegisterRouteMutation.graphql";
-import { routeFormValue } from "../form-data";
-import { commitRouteMutation } from "../relay-mutations";
+import { routeFormValue } from "$frontend/forms/route-form";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   type MutationError,
   resolveSessionMutationResult,
@@ -49,7 +49,7 @@ export function RegisterRoute() {
       {
         variables: { email, password },
         onCompleted(response, graphQLErrors) {
-          const result = resolveSessionMutationResult(response?.register, graphQLErrors);
+          const result = resolveSessionMutationResult(response.register, graphQLErrors);
 
           if (result.viewer) {
             setRootViewer(relayEnvironment, result.viewer);

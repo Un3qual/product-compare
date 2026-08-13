@@ -6,14 +6,14 @@ import {
   OfferDiscoveryRoute,
   type OfferDiscoveryLoaderData,
 } from "../../../src/routes/offers/OfferDiscoveryRoute";
-import { OfferDiscoveryCard } from "../../../src/routes/offers/OfferDiscoveryCard";
+import { OfferDiscoveryCard } from "../../../src/routes/offers/discovery/OfferDiscoveryCard";
 import type {
   ActiveCouponsConnection,
   OfferNode,
   PriceHistoryConnection,
-} from "../../../src/routes/offers/offer-discovery-data";
-import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/tracked-commerce-click-data";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+} from "../../../src/routes/offers/discovery/offer-discovery-data";
+import { resolveTrackedCommerceRedirectUrl } from "../../../src/routes/offers/commerce-click/TrackedCommerceClickAction";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 
 const {
   commitCommerceClickMock,
@@ -440,7 +440,7 @@ test("offer discovery omits unsafe observation and coupon validity claims", () =
     buildOfferDiscoveryData({
       offers: [
         buildOffer({
-          lastSeenAt: 1_717_326_000_000,
+          lastSeenAt: "not-a-date",
           latestPrice: {
             id: "price-invalid-date",
             price: "199.99",
@@ -664,7 +664,7 @@ test("offer discovery renders a route error when a tracked redirect is cross-ori
       );
     });
   }).not.toThrow();
-  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(screen.getByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
 });
 
 test("offer discovery renders tracked click errors without nested paragraph markup", () => {
@@ -1005,7 +1005,7 @@ test("offer discovery uses product merchant ordering rather than the environment
   try {
     vi.resetModules();
     const { sortedRenderableOffers: sortedWithContrastingDefault } =
-      await import("../../../src/routes/offers/offer-discovery-data");
+      await import("../../../src/routes/offers/discovery/offer-discovery-data");
     const offers = [
       buildOffer({
         id: "merchant-product-zebra",

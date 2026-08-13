@@ -13,7 +13,7 @@ import {
   resolveAffiliateNetworkMutationOutcome,
   resolveAffiliateProgramMutationOutcome,
 } from "../../../../src/routes/affiliate/setup/affiliate-setup-data";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 
 const FIRST_MERCHANT = {
   id: "merchant-1",
@@ -29,12 +29,12 @@ test.each([
   ],
   [
     "hides amount discounts with currency but no value",
-    { discountType: "AMOUNT", currency: "USD" },
+    { discountType: "AMOUNT", currency: "USD", discountValue: null },
     null,
   ],
   [
     "hides amount discounts with a value but no currency",
-    { discountType: "AMOUNT", discountValue: "20.00" },
+    { discountType: "AMOUNT", discountValue: "20.00", currency: null },
     null,
   ],
   [
@@ -54,33 +54,37 @@ test.each([
   ],
   [
     "formats percent discounts with a value",
-    { discountType: "PERCENT", discountValue: "15" },
+    { discountType: "PERCENT", discountValue: "15", currency: null },
     "15% off",
   ],
   [
     "hides percent discounts with a blank value",
-    { discountType: "PERCENT", discountValue: "" },
+    { discountType: "PERCENT", discountValue: "", currency: null },
     null,
   ],
-  ["formats free-shipping discounts", { discountType: "FREE_SHIPPING" }, "Free shipping"],
+  [
+    "formats free-shipping discounts",
+    { discountType: "FREE_SHIPPING", currency: null, discountValue: null },
+    "Free shipping",
+  ],
   [
     "formats other discounts with a value",
-    { discountType: "OTHER", discountValue: "Member reward" },
+    { discountType: "OTHER", discountValue: "Member reward", currency: null },
     "Member reward off",
   ],
   [
     "uses the other discount fallback for a blank value",
-    { discountType: "OTHER", discountValue: "" },
+    { discountType: "OTHER", discountValue: "", currency: null },
     "Other discount",
   ],
   [
     "uses the other discount fallback for a nullish value",
-    { discountType: "OTHER", discountValue: null },
+    { discountType: "OTHER", discountValue: null, currency: null },
     "Other discount",
   ],
   [
     "hides unknown future discount types",
-    { discountType: "BUY_ONE_GET_ONE", discountValue: "1" },
+    { discountType: "%future added value", discountValue: "1", currency: null },
     null,
   ],
 ] as const)("couponDiscountText %s", (_description, coupon, expected) => {
@@ -95,16 +99,10 @@ const MUTATION_ERROR = {
 
 const GRAPHQL_ERROR = { message: "Private GraphQL failure" } as const;
 
-test("buildMerchantChoices filters invalid merchant nodes while preserving valid choices", () => {
+test("buildMerchantChoices projects generated merchant nodes", () => {
   expect(
     buildMerchantChoices({
-      edges: [
-        { node: FIRST_MERCHANT },
-        { node: { ...FIRST_MERCHANT, id: "" } },
-        { node: { ...FIRST_MERCHANT, name: "" } },
-        { node: { ...FIRST_MERCHANT, domain: "" } },
-        { node: null },
-      ],
+      edges: [{ node: FIRST_MERCHANT }],
     }),
   ).toEqual([FIRST_MERCHANT]);
   expect(buildMerchantChoices(null)).toEqual([]);
@@ -224,11 +222,44 @@ test("buildCouponVariables preserves the full mutation shape and normalizes opti
   });
 });
 
+test("buildCouponVariables falls back to OTHER for an invalid discount type", () => {
+  expect(
+    buildCouponVariables({
+      couponMerchantId: "merchant-1",
+      couponCode: "SAVE-20",
+      discountType: "NOT_A_DISCOUNT_TYPE",
+    }).input.discountType,
+  ).toBe("OTHER");
+});
+
 test("affiliate setup mutation outcomes preserve each complete fact and its identity", () => {
   const network = Object.freeze({ id: "network-1", name: "Impact" });
-  const program = Object.freeze({ id: "program-1", merchantId: "merchant-1" });
-  const link = Object.freeze({ id: "link-1", affiliateUrl: "https://network.example/track" });
-  const coupon = Object.freeze({ id: "coupon-1", code: "SAVE20" });
+  const program = Object.freeze({
+    id: "program-1",
+    affiliateNetworkId: "network-1",
+    merchantId: "merchant-1",
+    programCode: null,
+    status: "ACTIVE",
+  });
+  const link = Object.freeze({
+    id: "link-1",
+    affiliateNetworkId: "network-1",
+    affiliateUrl: "https://network.example/track",
+    lastVerifiedAt: null,
+    merchantProductId: "merchant-product-1",
+    originalUrl: "https://merchant.example/product",
+  });
+  const coupon = Object.freeze({
+    id: "coupon-1",
+    affiliateNetworkId: "network-1",
+    code: "SAVE20",
+    currency: "USD",
+    discountType: "AMOUNT" as const,
+    discountValue: "20",
+    merchantId: "merchant-1",
+    validFrom: null,
+    validTo: null,
+  });
   const errors = Object.freeze([MUTATION_ERROR]);
 
   const outcomes = [
@@ -248,7 +279,7 @@ test("affiliate setup mutation outcomes preserve each complete fact and its iden
 test.each([
   [
     "network",
-    () => resolveAffiliateNetworkMutationOutcome(undefined, []),
+    () => resolveAffiliateNetworkMutationOutcome(null, []),
     () => resolveAffiliateNetworkMutationOutcome({ network: null, errors: [MUTATION_ERROR] }, []),
   ],
   [
@@ -258,18 +289,18 @@ test.each([
   ],
   [
     "link",
-    () => resolveAffiliateLinkMutationOutcome({}, []),
+    () => resolveAffiliateLinkMutationOutcome(null, []),
     () => resolveAffiliateLinkMutationOutcome({ link: null, errors: [MUTATION_ERROR] }, []),
   ],
   [
     "coupon",
-    () => resolveAffiliateCouponMutationOutcome(undefined, []),
+    () => resolveAffiliateCouponMutationOutcome(null, []),
     () => resolveAffiliateCouponMutationOutcome({ coupon: null, errors: [MUTATION_ERROR] }, []),
   ],
 ] as const)(
-  "%s outcome uses shared errors for missing payloads and null facts",
+  "%s outcome uses shared errors for null payloads and null facts",
   (_kind, resolveMissing, resolveNullFact) => {
-    expect(resolveMissing()).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, result: null });
+    expect(resolveMissing()).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, result: null });
     expect(resolveNullFact()).toEqual({ error: MUTATION_ERROR.message, result: null });
   },
 );
@@ -279,7 +310,7 @@ test.each([
     "network",
     () =>
       resolveAffiliateNetworkMutationOutcome(
-        { network: { id: "network-1" }, errors: [MUTATION_ERROR] },
+        { network: { id: "network-1", name: "Impact" }, errors: [MUTATION_ERROR] },
         [GRAPHQL_ERROR],
       ),
   ],
@@ -287,25 +318,58 @@ test.each([
     "program",
     () =>
       resolveAffiliateProgramMutationOutcome(
-        { program: { id: "program-1" }, errors: [MUTATION_ERROR] },
+        {
+          program: {
+            id: "program-1",
+            affiliateNetworkId: "network-1",
+            merchantId: "merchant-1",
+            programCode: null,
+            status: null,
+          },
+          errors: [MUTATION_ERROR],
+        },
         [GRAPHQL_ERROR],
       ),
   ],
   [
     "link",
     () =>
-      resolveAffiliateLinkMutationOutcome({ link: { id: "link-1" }, errors: [MUTATION_ERROR] }, [
-        GRAPHQL_ERROR,
-      ]),
+      resolveAffiliateLinkMutationOutcome(
+        {
+          link: {
+            id: "link-1",
+            affiliateNetworkId: null,
+            affiliateUrl: "https://network.example/track",
+            lastVerifiedAt: null,
+            merchantProductId: "merchant-product-1",
+            originalUrl: "https://merchant.example/product",
+          },
+          errors: [MUTATION_ERROR],
+        },
+        [GRAPHQL_ERROR],
+      ),
   ],
   [
     "coupon",
     () =>
       resolveAffiliateCouponMutationOutcome(
-        { coupon: { id: "coupon-1" }, errors: [MUTATION_ERROR] },
+        {
+          coupon: {
+            id: "coupon-1",
+            affiliateNetworkId: null,
+            code: "SAVE20",
+            currency: "USD",
+            discountType: "AMOUNT",
+            discountValue: "20",
+            merchantId: "merchant-1",
+            validFrom: null,
+            validTo: null,
+          },
+          errors: [MUTATION_ERROR],
+        },
         [GRAPHQL_ERROR],
       ),
   ],
 ] as const)("%s outcome gives top-level GraphQL errors precedence", (_kind, resolveOutcome) => {
-  expect(resolveOutcome()).toEqual({ error: DEFAULT_ROUTE_ERROR_MESSAGE, result: null });
+  expect(resolveOutcome()).toEqual({ error: DEFAULT_MUTATION_ERROR_MESSAGE, result: null });
 });

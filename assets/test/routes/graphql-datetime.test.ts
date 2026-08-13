@@ -2,7 +2,7 @@ import {
   graphQLDateTimeContext,
   graphQLDateTimeLabel,
   parseGraphQLDateTime,
-} from "../../src/routes/graphql-datetime";
+} from "../../src/relay/scalars";
 
 test.each([
   ["2026-06-01T00:00:00Z", "2026-06-01"],

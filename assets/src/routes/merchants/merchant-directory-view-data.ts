@@ -1,15 +1,11 @@
-import { externalWebsiteHref } from "../external-links";
+import type { MerchantDirectoryView_item$data } from "$generated/MerchantDirectoryView_item.graphql";
+import { externalWebsiteHref } from "$frontend/navigation/external-links";
 
 export type MerchantDirectoryViewDataMerchant = {
   name: string;
 };
 
-export type MerchantDirectoryResultNode = {
-  readonly domain: string;
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-};
+export type MerchantDirectoryResultNode = Omit<MerchantDirectoryView_item$data, " $fragmentType">;
 
 export function buildMerchantDirectoryRows(merchants: readonly MerchantDirectoryResultNode[]) {
   return merchants.map((merchant) => ({

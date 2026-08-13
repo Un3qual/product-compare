@@ -72,7 +72,7 @@ test("apiTokensLoader returns unauthorized state for myApiTokens UNAUTHENTICATED
   expect(fetchRouteQueryMock).toHaveBeenCalledWith(
     environment,
     expect.anything(),
-    { first: 20, status: "ACTIVE" },
+    { after: null, first: 20, status: "ACTIVE" },
     { signal: request.signal },
   );
 });
@@ -108,7 +108,7 @@ test("apiTokensLoader returns one page and exposes its next cursor", async () =>
     1,
     environment,
     expect.anything(),
-    { first: 20, status: "REVOKED" },
+    { after: null, first: 20, status: "REVOKED" },
     { signal: request.signal },
   );
   expect(fetchRouteQueryMock).toHaveBeenCalledTimes(1);

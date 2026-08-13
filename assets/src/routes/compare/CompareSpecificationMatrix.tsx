@@ -15,16 +15,16 @@ import {
   type SpecificationMatrixRow,
 } from "./specification-matrix-data";
 
-const SPECIFICATION_MATRIX_TITLES: Record<CompareSpecMode, string> = {
+const SPECIFICATION_MATRIX_TITLES = {
   all: "All specifications",
   differences: "Different specifications",
   shared: "Shared specifications",
-};
-const EMPTY_SPECIFICATION_MATRIX_MESSAGES: Record<CompareSpecMode, string> = {
+} satisfies Record<CompareSpecMode, string>;
+const EMPTY_SPECIFICATION_MATRIX_MESSAGES = {
   all: "No specifications are available for these products yet.",
   differences: "No specification differences across these products yet.",
   shared: "No shared specifications across these products yet.",
-};
+} satisfies Record<CompareSpecMode, string>;
 
 const tableModel = tableFeatures({});
 const columnHelper = createColumnHelper<typeof tableModel, SpecificationMatrixRow>();
@@ -116,11 +116,9 @@ export function CompareSpecificationMatrix({
 }
 
 function specificationMatrixTitle(specMode: CompareSpecMode) {
-  return SPECIFICATION_MATRIX_TITLES[specMode] ?? SPECIFICATION_MATRIX_TITLES.shared;
+  return SPECIFICATION_MATRIX_TITLES[specMode];
 }
 
 function emptySpecificationMatrixMessage(specMode: CompareSpecMode) {
-  return (
-    EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode] ?? EMPTY_SPECIFICATION_MATRIX_MESSAGES.shared
-  );
+  return EMPTY_SPECIFICATION_MATRIX_MESSAGES[specMode];
 }

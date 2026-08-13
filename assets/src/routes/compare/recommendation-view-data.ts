@@ -1,7 +1,7 @@
 export type RecommendationViewDataInput = {
   missingInputs: readonly string[];
   rankings: readonly RecommendationRanking[];
-  winnerProductId: string | null | undefined;
+  winnerProductId: string | null;
 };
 
 type RecommendationRanking = {

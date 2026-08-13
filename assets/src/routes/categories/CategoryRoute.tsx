@@ -8,10 +8,9 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { isCanonicalSlug } from "$routes/route-params";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { routeMetadataFromSeo } from "$frontend/head";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";
@@ -92,7 +91,7 @@ const styles = create({
 });
 
 export function CategoryRoute() {
-  const loaderData = useLoaderData() as CategoryLoaderData;
+  const loaderData = useLoaderData<typeof categoryLoader>();
   if (loaderData.status !== "ready") {
     return (
       <PageShell eyebrow="Product category" title="Category not found">
@@ -152,7 +151,7 @@ function ReadyCategory({
 
 export async function categoryLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!isCanonicalSlug(slug)) return categoryNotFound();
+  if (!slug) return categoryNotFound();
 
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);

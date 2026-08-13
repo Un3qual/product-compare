@@ -57,6 +57,11 @@ beforeEach(() => {
 
 test("merchant detail loader returns HTTP 404 for malformed and unknown slugs", async () => {
   const environment = createRelayEnvironment();
+  mockedFetchRouteQuery.mockResolvedValueOnce({
+    data: { merchant: null },
+    descriptor: {},
+    dispose: vi.fn(),
+  } as never);
   const invalid = await merchantDetailLoader({
     context: createRelayRouterContext(environment),
     params: { slug: "Bad Slug" },
@@ -64,7 +69,6 @@ test("merchant detail loader returns HTTP 404 for malformed and unknown slugs", 
   } as never);
   expect(invalid).toMatchObject({ data: { status: "not_found" } });
   expect((invalid as { init: { status: number } }).init.status).toBe(404);
-  expect(mockedFetchRouteQuery).not.toHaveBeenCalled();
   const dispose = vi.fn();
   mockedFetchRouteQuery.mockResolvedValueOnce({
     data: { merchant: null },

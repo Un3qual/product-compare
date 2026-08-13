@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<de580a01a95773ff369b0d460fc4a58b>>
+ * @generated SignedSource<<4d98609229983d7ce0e8847d9efbf703>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -18,7 +17,7 @@ export type AlertsRouteQuery$data = {
     readonly edges: ReadonlyArray<{
       readonly node: {
         readonly id: string;
-        readonly readAt: any | null | undefined;
+        readonly readAt: string | null;
         readonly " $fragmentSpreads": FragmentRefs<"AlertsRoute_alert">;
       };
     }>;
@@ -135,14 +134,14 @@ v10 = {
 };
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AlertsRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "AlertEventConnection",
         "kind": "LinkedField",
         "name": "myAlertEvents",
@@ -164,8 +163,8 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v3/*: any*/),
+                  (v2/*:: as any*/),
+                  (v3/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
@@ -177,13 +176,13 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*: any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       },
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "PriceWatchConnection",
         "kind": "LinkedField",
         "name": "myPriceWatches",
@@ -205,8 +204,8 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v5/*: any*/),
+                  (v2/*:: as any*/),
+                  (v5/*:: as any*/),
                   {
                     "args": null,
                     "kind": "FragmentSpread",
@@ -218,7 +217,7 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*: any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       }
@@ -228,13 +227,13 @@ return {
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AlertsRouteQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "AlertEventConnection",
         "kind": "LinkedField",
         "name": "myAlertEvents",
@@ -256,13 +255,13 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v3/*: any*/),
-                  (v6/*: any*/),
-                  (v7/*: any*/),
-                  (v8/*: any*/),
-                  (v9/*: any*/),
-                  (v10/*: any*/),
+                  (v2/*:: as any*/),
+                  (v3/*:: as any*/),
+                  (v6/*:: as any*/),
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/),
+                  (v10/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -283,13 +282,13 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*: any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       },
       {
         "alias": null,
-        "args": (v1/*: any*/),
+        "args": (v1/*:: as any*/),
         "concreteType": "PriceWatchConnection",
         "kind": "LinkedField",
         "name": "myPriceWatches",
@@ -311,13 +310,13 @@ return {
                 "name": "node",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v5/*: any*/),
-                  (v6/*: any*/),
-                  (v7/*: any*/),
-                  (v8/*: any*/),
-                  (v9/*: any*/),
-                  (v10/*: any*/),
+                  (v2/*:: as any*/),
+                  (v5/*:: as any*/),
+                  (v6/*:: as any*/),
+                  (v7/*:: as any*/),
+                  (v8/*:: as any*/),
+                  (v9/*:: as any*/),
+                  (v10/*:: as any*/),
                   {
                     "alias": null,
                     "args": null,
@@ -345,7 +344,7 @@ return {
             ],
             "storageKey": null
           },
-          (v4/*: any*/)
+          (v4/*:: as any*/)
         ],
         "storageKey": null
       }

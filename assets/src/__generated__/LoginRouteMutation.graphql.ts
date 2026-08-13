@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<58c3a2b7187e6ab039843a32d89164cb>>
+ * @generated SignedSource<<0d07fda1e5448480e5bb295679e9bbc5>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -17,14 +16,14 @@ export type LoginRouteMutation$data = {
   readonly login: {
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
     readonly viewer: {
       readonly email: string;
       readonly id: string;
       readonly isOperator: boolean;
-    } | null | undefined;
+    } | null;
   };
 };
 export type LoginRouteMutation = {
@@ -135,20 +134,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "LoginRouteMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "LoginRouteMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "976721b180079f8209d47b12269a5c66",

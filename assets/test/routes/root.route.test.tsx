@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { createHead, UnheadProvider } from "@unhead/react/client";
 import { usePreloadedQuery } from "react-relay";
 import { createMemoryRouter, MemoryRouter, RouterProvider } from "react-router-dom";
 import type { LoaderFunctionArgs } from "react-router-dom";
@@ -55,14 +56,12 @@ const ROOT_VIEWER_QUERY_DESCRIPTOR = {
   },
 };
 
-const guestLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
-  status: "ready",
+const guestLoaderData: RootLoaderData = {
   viewer: null,
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
-  status: "ready",
+const authenticatedLoaderData: RootLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
@@ -71,21 +70,19 @@ const authenticatedLoaderData: Extract<RootLoaderData, { status: "ready" }> = {
   viewerQuery: ROOT_VIEWER_QUERY_DESCRIPTOR,
 };
 
-const readyLoaderDataWithoutSnapshotViewer: Extract<RootLoaderData, { status: "ready" }> = {
-  status: "ready",
+const loaderDataWithoutSnapshotViewer: RootLoaderData = {
   viewer: null,
   viewerQuery: authenticatedLoaderData.viewerQuery,
 };
 
-const degradedAuthenticatedLoaderData = {
-  status: "degraded",
+const cachedAuthenticatedLoaderData: RootLoaderData = {
   viewer: {
     id: "viewer-1",
     email: "person@example.com",
     isOperator: true,
   },
   viewerQuery: null,
-} satisfies RootLoaderData;
+};
 
 function RootTestIndex() {
   return <h1>Test home</h1>;
@@ -153,7 +150,11 @@ function renderRootRoute(loaderData: RootLoaderData, initialEntry = "/") {
     },
   );
 
-  return render(<RouterProvider router={router} />);
+  return render(
+    <UnheadProvider head={createHead()}>
+      <RouterProvider router={router} />
+    </UnheadProvider>,
+  );
 }
 
 test("primary navigation preserves the URL-backed comparison across public destinations", () => {
@@ -425,7 +426,7 @@ test("root layout identifies one exact active destination on saved comparisons",
 });
 
 test("root layout reads authenticated viewer state from the preloaded root query", async () => {
-  renderRootRoute(readyLoaderDataWithoutSnapshotViewer);
+  renderRootRoute(loaderDataWithoutSnapshotViewer);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
   const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
@@ -436,13 +437,13 @@ test("root layout reads authenticated viewer state from the preloaded root query
   );
   expect(mockedUseRoutePreloadedQuery).toHaveBeenCalledWith(
     expect.anything(),
-    readyLoaderDataWithoutSnapshotViewer.viewerQuery,
+    loaderDataWithoutSnapshotViewer.viewerQuery,
   );
   expect(mockedUsePreloadedQuery).toHaveBeenCalledWith(expect.anything(), ROOT_VIEWER_QUERY_REF);
 });
 
-test("root layout preserves cached viewer state when the root viewer preload is degraded", async () => {
-  renderRootRoute(degradedAuthenticatedLoaderData);
+test("root layout preserves cached viewer state when no viewer query descriptor is available", async () => {
+  renderRootRoute(cachedAuthenticatedLoaderData);
 
   const primaryNavigation = await screen.findByRole("navigation", { name: "Primary" });
   const accountNavigation = openNavigationMenu(primaryNavigation, "Account");
@@ -491,7 +492,6 @@ test("rootLoader preserves the cached root viewer when the viewer preload fails"
   mockedFetchRouteQuery.mockRejectedValueOnce(new Error("Viewer fetch failed"));
 
   await expect(rootLoader(buildRootLoaderArgs({ environment, request }))).resolves.toEqual({
-    status: "degraded",
     viewer: {
       id: "viewer-1",
       email: "person@example.com",

@@ -4,9 +4,10 @@ import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { MemoryRouter, useLoaderData, useLocation, useRouteError } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
   MAX_COMPARE_PRODUCTS,
+  type CompareProductSummary,
   type CompareRouteLoaderData,
 } from "../../../src/routes/compare/compare-route-data";
 import {
@@ -31,6 +32,7 @@ import {
   buildSavedComparisonsLoaderArgs,
 } from "./saved-comparisons-test-helpers";
 import { savedProductsForSlugs } from "./saved-comparison-products-test-helpers";
+import { mockPreloadedQuery } from "../../helpers/relay";
 
 const {
   commitMutationMock,
@@ -97,6 +99,21 @@ const mockedUsePreloadedQuery = vi.mocked(usePreloadedQuery);
 const mockedUseRouteError = vi.mocked(useRouteError);
 const mockedUseRoutePreloadedQuery = vi.mocked(useRoutePreloadedQuery);
 
+type CompareTestAttribute = {
+  attributeId?: string;
+  code: string;
+  displayName: string;
+  dataType?: string;
+  valueText: string;
+  sortOrder?: number | null;
+  groupLabel?: string | null;
+  isRequired?: boolean;
+  numericValue?: string | null;
+  booleanValue?: boolean | null;
+  enumOptionId?: string | null;
+  unitSymbol?: string | null;
+};
+
 type CompareTestProduct = {
   id: string;
   name: string;
@@ -106,20 +123,11 @@ type CompareTestProduct = {
     id: string;
     name: string;
   };
-  currentAttributes: ReadonlyArray<{
-    attributeId?: string;
-    code: string;
-    displayName: string;
-    dataType: string;
-    valueText: string;
-    sortOrder?: number | null;
-    groupLabel?: string | null;
-    isRequired?: boolean;
-    numericValue?: string | null;
-    booleanValue?: boolean | null;
-    enumOptionId?: string | null;
-    unitSymbol?: string | null;
-  }>;
+  currentAttributes: ReadonlyArray<CompareTestAttribute>;
+};
+
+type CompareTestProductSummary = Omit<CompareProductSummary, "currentAttributes"> & {
+  currentAttributes: ReadonlyArray<CompareTestAttribute>;
 };
 
 type CompareOfferTestNode = {
@@ -221,20 +229,17 @@ const THIRD_PRODUCT_QUERY_DESCRIPTOR = {
   },
 };
 
-const DETAIL_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const DETAIL_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  DETAIL_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
-const SECOND_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const SECOND_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  SECOND_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
-const THIRD_PRODUCT_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const THIRD_PRODUCT_QUERY_REF = mockPreloadedQuery(
+  THIRD_PRODUCT_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
 const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   __relayQuery: {
@@ -247,10 +252,9 @@ const COMPARE_ROUTE_QUERY_DESCRIPTOR = {
   },
 };
 
-const COMPARE_ROUTE_QUERY_REF = {
-  dispose: vi.fn(),
-  variables: COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
-};
+const COMPARE_ROUTE_QUERY_REF = mockPreloadedQuery(
+  COMPARE_ROUTE_QUERY_DESCRIPTOR.__relayQuery.variables,
+);
 
 const savedComparisonsQueryDescriptor = (variables: { first: number; after?: string }) => ({
   __relayQuery: {
@@ -392,19 +396,29 @@ const buildProductSummary = (product: CompareTestProduct) => ({
   slug: product.slug,
   description: product.description,
   brandName: product.brand.name,
-  currentAttributes: product.currentAttributes.map((attribute) => ({
-    attributeId: attribute.attributeId,
-    code: attribute.code,
-    displayName: attribute.displayName,
-    valueText: attribute.valueText,
-    sortOrder: attribute.sortOrder,
-    groupLabel: attribute.groupLabel,
-    isRequired: attribute.isRequired,
-    numericValue: attribute.numericValue,
-    booleanValue: attribute.booleanValue,
-    enumOptionId: attribute.enumOptionId,
-    unitSymbol: attribute.unitSymbol,
-  })),
+  currentAttributes: product.currentAttributes.map(completeAttributeSummary),
+});
+
+const completeProductSummary = (product: CompareTestProductSummary): CompareProductSummary => ({
+  ...product,
+  currentAttributes: product.currentAttributes.map(completeAttributeSummary),
+});
+
+const completeProductSummaries = (products: readonly CompareTestProductSummary[]) =>
+  products.map(completeProductSummary);
+
+const completeAttributeSummary = (attribute: CompareTestAttribute) => ({
+  attributeId: attribute.attributeId ?? `attribute-${attribute.code}`,
+  code: attribute.code,
+  displayName: attribute.displayName,
+  valueText: attribute.valueText,
+  sortOrder: attribute.sortOrder ?? null,
+  groupLabel: attribute.groupLabel ?? null,
+  isRequired: attribute.isRequired ?? false,
+  numericValue: attribute.numericValue ?? null,
+  booleanValue: attribute.booleanValue ?? null,
+  enumOptionId: attribute.enumOptionId ?? null,
+  unitSymbol: attribute.unitSymbol ?? null,
 });
 
 const buildSavedProducts = (slugs: string[]) =>
@@ -453,20 +467,29 @@ const buildFetchedSavedComparisonPage = (
   dispose: vi.fn(),
 });
 
-const buildReadyCompareLoaderData = (
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>> = {},
-) => ({
-  status: "ready" as const,
-  specMode: "shared" as const,
-  slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
-  query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
-  offerContexts: buildDefaultOfferContexts(),
-  products: [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
-  ...overrides,
-});
+type ReadyCompareLoaderData = Extract<CompareRouteLoaderData, { status: "ready" }>;
+type ReadyCompareLoaderDataOverrides = Omit<Partial<ReadyCompareLoaderData>, "products"> & {
+  products?: ReadonlyArray<CompareTestProductSummary>;
+};
+
+const buildReadyCompareLoaderData = (overrides: ReadyCompareLoaderDataOverrides = {}) => {
+  const { products, ...otherOverrides } = overrides;
+
+  return {
+    status: "ready" as const,
+    specMode: "shared" as const,
+    slugs: [DETAIL_PRODUCT.slug, SECOND_PRODUCT.slug],
+    query: COMPARE_ROUTE_QUERY_DESCRIPTOR,
+    offerContexts: buildDefaultOfferContexts(),
+    products: products
+      ? products.map(completeProductSummary)
+      : [buildProductSummary(DETAIL_PRODUCT), buildProductSummary(SECOND_PRODUCT)],
+    ...otherOverrides,
+  };
+};
 
 function renderRelativeLoadedPriceCells(
-  overrides: Partial<Extract<CompareRouteLoaderData, { status: "ready" }>>,
+  overrides: ReadyCompareLoaderDataOverrides,
 ) {
   mockedUseLoaderData.mockReturnValue(buildReadyCompareLoaderData(overrides));
   renderCompareRoute();
@@ -505,7 +528,7 @@ beforeEach(() => {
 test("comparison matrix directly renders ordered rows, missing values, and the selected mode", () => {
   render(
     <CompareSpecificationMatrix
-      products={[
+      products={completeProductSummaries([
         {
           ...buildProductSummary(DETAIL_PRODUCT),
           currentAttributes: [
@@ -534,7 +557,7 @@ test("comparison matrix directly renders ordered rows, missing values, and the s
             },
           ],
         },
-      ]}
+      ])}
       specMode="all"
     />,
   );
@@ -567,7 +590,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
   try {
     render(
       <CompareSpecificationMatrix
-        products={[
+        products={completeProductSummaries([
           {
             ...buildProductSummary(DETAIL_PRODUCT),
             currentAttributes: [
@@ -582,7 +605,7 @@ test("comparison matrix uses product ordering when the environment default is Sw
               { code: "accent", displayName: "Älg", valueText: "2" },
             ],
           },
-        ]}
+        ])}
         specMode="all"
       />,
     );
@@ -1460,10 +1483,7 @@ test("product picker view filters loaded options, clears the filter, and keeps r
   const filter = screen.getByRole("searchbox", { name: "Filter loaded products" });
 
   const compareAlpha = screen.getByRole("link", { name: "Compare Monitor Alpha" });
-  expect(compareAlpha).toHaveAttribute(
-    "href",
-    "/compare?slug=monitor-alpha",
-  );
+  expect(compareAlpha).toHaveAttribute("href", "/compare?slug=monitor-alpha");
   expect(compareAlpha).not.toHaveAttribute("data-slot", "button");
   expect(screen.getByRole("link", { name: "Compare Monitor Beta" })).toHaveAttribute(
     "href",
@@ -3436,7 +3456,7 @@ test("compare route reports a fallback error when the save commit throws synchro
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
 
   fireEvent.click(screen.getByRole("button", { name: /save comparison/i }));
 

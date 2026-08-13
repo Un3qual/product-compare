@@ -1,26 +1,29 @@
-import { routeMutationErrorMessage } from "../../route-errors";
+import type { AlertOperationsDeletePriceWatchMutation } from "$generated/AlertOperationsDeletePriceWatchMutation.graphql";
+import type { AlertOperationsMarkAlertReadMutation } from "$generated/AlertOperationsMarkAlertReadMutation.graphql";
+import type { AlertOperationsUpdatePriceWatchMutation } from "$generated/AlertOperationsUpdatePriceWatchMutation.graphql";
+import { mutationErrorMessage, type MutationGraphQLErrors } from "$relay/mutation-errors";
 
-type MutationPayload = {
-  errors?: unknown;
-};
+type TogglePayload = AlertOperationsUpdatePriceWatchMutation["response"]["updatePriceWatch"];
+type DeletePayload = AlertOperationsDeletePriceWatchMutation["response"]["deletePriceWatch"];
+type MarkReadPayload = AlertOperationsMarkAlertReadMutation["response"]["markAlertRead"];
 
 export function resolveTogglePriceWatchMutationError(
-  payload: (MutationPayload & { watch?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: TogglePayload,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return payload?.watch ? null : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+  return payload.watch ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveDeletePriceWatchMutationError(
-  payload: (MutationPayload & { deletedWatchId?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: DeletePayload,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return payload?.deletedWatchId ? null : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+  return payload.deletedWatchId ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveMarkAlertReadMutationError(
-  payload: (MutationPayload & { event?: unknown }) | null | undefined,
-  graphQLErrors?: readonly unknown[] | null,
+  payload: MarkReadPayload,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return payload?.event ? null : routeMutationErrorMessage(payload?.errors, graphQLErrors);
+  return payload.event ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }

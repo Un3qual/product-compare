@@ -3,21 +3,22 @@ import { useEffect, useRef, useState } from "react";
 import { graphql, useMutation } from "react-relay";
 import { useSearchParams } from "react-router-dom";
 import type { ResetPasswordRouteMutation } from "$generated/ResetPasswordRouteMutation.graphql";
-import { routeFormValue } from "../form-data";
-import { commitRouteMutation } from "../relay-mutations";
+import { routeFormValue } from "$frontend/forms/route-form";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   findMutationError,
+  invalidTokenMutationError,
   isSuccessfulActionResult,
   type MutationError,
   resolveActionMutationResult,
   transportMutationErrors,
 } from "./errors";
-import {
-  CREDENTIAL_RESET_COMPLETION_MESSAGE,
-  normalizeResetPasswordToken,
-  resetPasswordErrorsForToken,
-} from "./reset-password-data";
 import { AuthField, AuthFormShell, AuthSubmitButton } from "./AuthFormShell";
+
+const RESET_PASSWORD_MISSING_TOKEN_ERROR = Object.freeze(
+  invalidTokenMutationError("This reset link is missing or invalid."),
+);
+const CREDENTIAL_RESET_COMPLETION_MESSAGE = "Your password has been updated.";
 
 const resetPasswordMutation = graphql`
   mutation ResetPasswordRouteMutation($token: String!, $password: String!) {
@@ -75,7 +76,7 @@ export function ResetPasswordRoute() {
             return;
           }
 
-          const result = resolveActionMutationResult(response?.resetPassword, graphQLErrors);
+          const result = resolveActionMutationResult(response.resetPassword, graphQLErrors);
 
           if (isSuccessfulActionResult(result)) {
             setMessage(CREDENTIAL_RESET_COMPLETION_MESSAGE);
@@ -127,4 +128,12 @@ export function ResetPasswordRoute() {
       </form>
     </AuthFormShell>
   );
+}
+
+function normalizeResetPasswordToken(token: string | null) {
+  return token?.trim() ?? "";
+}
+
+function resetPasswordErrorsForToken(token: string): MutationError[] {
+  return token ? [] : [RESET_PASSWORD_MISSING_TOKEN_ERROR];
 }

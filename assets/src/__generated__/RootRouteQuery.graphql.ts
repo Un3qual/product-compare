@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<57595eb63c6611e9a4627db2005c8beb>>
+ * @generated SignedSource<<d8ed1dffd51bb6bdc78333566d4a365f>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -15,7 +14,7 @@ export type RootRouteQuery$data = {
     readonly email: string;
     readonly id: string;
     readonly isOperator: boolean;
-  } | null | undefined;
+  } | null;
 };
 export type RootRouteQuery = {
   response: RootRouteQuery$data;
@@ -63,7 +62,7 @@ return {
     "kind": "Fragment",
     "metadata": null,
     "name": "RootRouteQuery",
-    "selections": (v0/*: any*/),
+    "selections": (v0/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
@@ -72,7 +71,7 @@ return {
     "argumentDefinitions": [],
     "kind": "Operation",
     "name": "RootRouteQuery",
-    "selections": (v0/*: any*/)
+    "selections": (v0/*:: as any*/)
   },
   "params": {
     "cacheID": "9ee512622d83fbf8088e5bf97a78269c",

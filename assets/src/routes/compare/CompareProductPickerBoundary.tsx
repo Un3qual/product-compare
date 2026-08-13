@@ -11,12 +11,10 @@ import {
   comparePickerResetToken,
   isComparePickerEmpty,
   nextComparePickerPageCursor,
+  type ComparePickerProduct,
 } from "./compare-picker-data";
 import type { CompareSpecMode } from "./paths";
-import {
-  CompareProductPickerView,
-  type CompareProductPickerOption,
-} from "./CompareProductPickerView";
+import { CompareProductPickerView } from "./CompareProductPickerView";
 
 const COMPARE_PRODUCT_PICKER_PAGE_SIZE = 24;
 const compareProductPickerQuery = graphql`
@@ -40,10 +38,6 @@ const compareProductPickerQuery = graphql`
     }
   }
 `;
-
-type ComparePickerProduct = NonNullable<
-  CompareProductPickerBoundaryQuery["response"]["products"]
->["edges"][number]["node"];
 
 export function CompareProductPickerBoundary({
   heading = "Choose products",
@@ -97,12 +91,8 @@ function CompareProductPicker({
   );
   const productOptions = appendUniqueComparePickerProducts(loadedProducts, pageProducts);
   const availableProducts = availableComparePickerProducts(productOptions, selectedSlugs);
-  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo, after);
-  const options = buildComparePickerOptions(
-    availableProducts,
-    selectedSlugs,
-    specMode,
-  ) satisfies CompareProductPickerOption[];
+  const nextCursor = nextComparePickerPageCursor(productConnection?.pageInfo ?? null, after);
+  const options = buildComparePickerOptions(availableProducts, selectedSlugs, specMode);
 
   useEffect(() => {
     setLoadedProducts((products) => appendUniqueComparePickerProducts(products, pageProducts));

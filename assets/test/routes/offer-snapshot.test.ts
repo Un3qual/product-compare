@@ -1,7 +1,7 @@
 import {
   buildOfferSnapshotSummary,
   type OfferSnapshotSelectors,
-} from "../../src/routes/offer-snapshot";
+} from "../../src/routes/offers/offer-snapshot";
 
 type TestOffer = {
   currency: string | null;

@@ -6,14 +6,14 @@ defmodule ProductCompareWeb.CommerceRedirectController do
   alias ProductCompareWeb.GraphQL.GlobalId
   alias ProductCompareWeb.Plugs.RequireSameOrigin
 
-  def show(conn, %{"click_id" => click_id}) do
+  def redirect_tracked_click(conn, %{"click_id" => click_id}) do
     case CommerceAttribution.redirect_destination(click_id) do
       {:ok, destination_url} -> redirect(conn, external: destination_url)
       {:error, :not_found} -> send_resp(conn, :not_found, "redirect not found")
     end
   end
 
-  def merchant_product(conn, %{"merchantProductId" => merchant_product_id}) do
+  def track_merchant_product_click(conn, %{"merchantProductId" => merchant_product_id}) do
     with true <- trusted_or_direct_navigation?(conn),
          {:ok, merchant_product_id} <-
            GlobalId.decode_integer(merchant_product_id, :merchant_product),
@@ -36,7 +36,8 @@ defmodule ProductCompareWeb.CommerceRedirectController do
     end
   end
 
-  def merchant_product(conn, _params), do: send_resp(conn, :not_found, "redirect not found")
+  def track_merchant_product_click(conn, _params),
+    do: send_resp(conn, :not_found, "redirect not found")
 
   defp trusted_or_direct_navigation?(conn) do
     case RequireSameOrigin.request_origin(conn) do

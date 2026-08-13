@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<423b827324d4c8be99fe86d9c92d21d7>>
+ * @generated SignedSource<<dc1d369f09c936b5e28395b2eb984e1d>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -13,9 +12,9 @@ import { FragmentRefs } from "relay-runtime";
 export type ProductCommunityOperationsQuery$variables = {
   answerFirst: number;
   questionFirst: number;
-  questionsAfter?: string | null | undefined;
+  questionsAfter?: string | null;
   reviewFirst: number;
-  reviewsAfter?: string | null | undefined;
+  reviewsAfter?: string | null;
   slug: string;
 };
 export type ProductCommunityOperationsQuery$data = {
@@ -24,7 +23,7 @@ export type ProductCommunityOperationsQuery$data = {
     readonly questions: {
       readonly edges: ReadonlyArray<{
         readonly node: {
-          readonly acceptedAnswerId: string | null | undefined;
+          readonly acceptedAnswerId: string | null;
           readonly answers: {
             readonly edges: ReadonlyArray<{
               readonly node: {
@@ -33,7 +32,7 @@ export type ProductCommunityOperationsQuery$data = {
               };
             }>;
             readonly pageInfo: {
-              readonly endCursor: string | null | undefined;
+              readonly endCursor: string | null;
               readonly hasNextPage: boolean;
             };
           };
@@ -42,12 +41,12 @@ export type ProductCommunityOperationsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
     readonly reviewSummary: {
-      readonly averageRating: any | null | undefined;
+      readonly averageRating: string | null;
       readonly count: number;
     };
     readonly reviews: {
@@ -58,7 +57,7 @@ export type ProductCommunityOperationsQuery$data = {
         };
       }>;
       readonly pageInfo: {
-        readonly endCursor: string | null | undefined;
+        readonly endCursor: string | null;
         readonly hasNextPage: boolean;
       };
     };
@@ -76,7 +75,7 @@ export type ProductCommunityOperationsQuery$data = {
         readonly " $fragmentSpreads": FragmentRefs<"ProductCommunityItems_review">;
       }>;
     };
-  } | null | undefined;
+  } | null;
 };
 export type ProductCommunityOperationsQuery = {
   response: ProductCommunityOperationsQuery$data;
@@ -166,7 +165,7 @@ v9 = [
   }
 ],
 v10 = [
-  (v7/*: any*/),
+  (v7/*:: as any*/),
   {
     "args": null,
     "kind": "FragmentSpread",
@@ -230,7 +229,7 @@ v15 = [
   }
 ],
 v16 = [
-  (v7/*: any*/),
+  (v7/*:: as any*/),
   {
     "args": null,
     "kind": "FragmentSpread",
@@ -280,7 +279,7 @@ v22 = {
   "storageKey": null
 },
 v23 = [
-  (v7/*: any*/),
+  (v7/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -288,8 +287,8 @@ v23 = [
     "name": "rating",
     "storageKey": null
   },
-  (v17/*: any*/),
-  (v18/*: any*/),
+  (v17/*:: as any*/),
+  (v18/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -297,28 +296,28 @@ v23 = [
     "name": "verifiedPurchase",
     "storageKey": null
   },
-  (v19/*: any*/),
-  (v20/*: any*/),
-  (v21/*: any*/),
-  (v22/*: any*/)
+  (v19/*:: as any*/),
+  (v20/*:: as any*/),
+  (v21/*:: as any*/),
+  (v22/*:: as any*/)
 ],
 v24 = [
-  (v7/*: any*/),
-  (v18/*: any*/),
-  (v19/*: any*/),
-  (v20/*: any*/),
-  (v21/*: any*/),
-  (v22/*: any*/)
+  (v7/*:: as any*/),
+  (v18/*:: as any*/),
+  (v19/*:: as any*/),
+  (v20/*:: as any*/),
+  (v21/*:: as any*/),
+  (v22/*:: as any*/)
 ];
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/),
-      (v3/*: any*/),
-      (v4/*: any*/),
-      (v5/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/),
+      (v3/*:: as any*/),
+      (v4/*:: as any*/),
+      (v5/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
@@ -326,17 +325,17 @@ return {
     "selections": [
       {
         "alias": null,
-        "args": (v6/*: any*/),
+        "args": (v6/*:: as any*/),
         "concreteType": "Product",
         "kind": "LinkedField",
         "name": "product",
         "plural": false,
         "selections": [
-          (v7/*: any*/),
-          (v8/*: any*/),
+          (v7/*:: as any*/),
+          (v8/*:: as any*/),
           {
             "alias": null,
-            "args": (v9/*: any*/),
+            "args": (v9/*:: as any*/),
             "concreteType": "ProductReviewConnection",
             "kind": "LinkedField",
             "name": "reviews",
@@ -357,19 +356,19 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v10/*: any*/),
+                    "selections": (v10/*:: as any*/),
                     "storageKey": null
                   }
                 ],
                 "storageKey": null
               },
-              (v11/*: any*/)
+              (v11/*:: as any*/)
             ],
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v12/*: any*/),
+            "args": (v12/*:: as any*/),
             "concreteType": "ProductQuestionConnection",
             "kind": "LinkedField",
             "name": "questions",
@@ -391,12 +390,12 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v7/*: any*/),
-                      (v13/*: any*/),
-                      (v14/*: any*/),
+                      (v7/*:: as any*/),
+                      (v13/*:: as any*/),
+                      (v14/*:: as any*/),
                       {
                         "alias": null,
-                        "args": (v15/*: any*/),
+                        "args": (v15/*:: as any*/),
                         "concreteType": "ProductAnswerConnection",
                         "kind": "LinkedField",
                         "name": "answers",
@@ -417,13 +416,13 @@ return {
                                 "kind": "LinkedField",
                                 "name": "node",
                                 "plural": false,
-                                "selections": (v16/*: any*/),
+                                "selections": (v16/*:: as any*/),
                                 "storageKey": null
                               }
                             ],
                             "storageKey": null
                           },
-                          (v11/*: any*/)
+                          (v11/*:: as any*/)
                         ],
                         "storageKey": null
                       }
@@ -433,7 +432,7 @@ return {
                 ],
                 "storageKey": null
               },
-              (v11/*: any*/)
+              (v11/*:: as any*/)
             ],
             "storageKey": null
           },
@@ -452,7 +451,7 @@ return {
                 "kind": "LinkedField",
                 "name": "reviews",
                 "plural": true,
-                "selections": (v10/*: any*/),
+                "selections": (v10/*:: as any*/),
                 "storageKey": null
               },
               {
@@ -463,8 +462,8 @@ return {
                 "name": "questions",
                 "plural": true,
                 "selections": [
-                  (v7/*: any*/),
-                  (v13/*: any*/)
+                  (v7/*:: as any*/),
+                  (v13/*:: as any*/)
                 ],
                 "storageKey": null
               },
@@ -475,7 +474,7 @@ return {
                 "kind": "LinkedField",
                 "name": "answers",
                 "plural": true,
-                "selections": (v16/*: any*/),
+                "selections": (v16/*:: as any*/),
                 "storageKey": null
               }
             ],
@@ -491,29 +490,29 @@ return {
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v5/*: any*/),
-      (v3/*: any*/),
-      (v4/*: any*/),
-      (v1/*: any*/),
-      (v2/*: any*/),
-      (v0/*: any*/)
+      (v5/*:: as any*/),
+      (v3/*:: as any*/),
+      (v4/*:: as any*/),
+      (v1/*:: as any*/),
+      (v2/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "ProductCommunityOperationsQuery",
     "selections": [
       {
         "alias": null,
-        "args": (v6/*: any*/),
+        "args": (v6/*:: as any*/),
         "concreteType": "Product",
         "kind": "LinkedField",
         "name": "product",
         "plural": false,
         "selections": [
-          (v7/*: any*/),
-          (v8/*: any*/),
+          (v7/*:: as any*/),
+          (v8/*:: as any*/),
           {
             "alias": null,
-            "args": (v9/*: any*/),
+            "args": (v9/*:: as any*/),
             "concreteType": "ProductReviewConnection",
             "kind": "LinkedField",
             "name": "reviews",
@@ -534,19 +533,19 @@ return {
                     "kind": "LinkedField",
                     "name": "node",
                     "plural": false,
-                    "selections": (v23/*: any*/),
+                    "selections": (v23/*:: as any*/),
                     "storageKey": null
                   }
                 ],
                 "storageKey": null
               },
-              (v11/*: any*/)
+              (v11/*:: as any*/)
             ],
             "storageKey": null
           },
           {
             "alias": null,
-            "args": (v12/*: any*/),
+            "args": (v12/*:: as any*/),
             "concreteType": "ProductQuestionConnection",
             "kind": "LinkedField",
             "name": "questions",
@@ -568,17 +567,17 @@ return {
                     "name": "node",
                     "plural": false,
                     "selections": [
-                      (v7/*: any*/),
-                      (v17/*: any*/),
-                      (v18/*: any*/),
-                      (v19/*: any*/),
-                      (v20/*: any*/),
-                      (v21/*: any*/),
-                      (v22/*: any*/),
-                      (v14/*: any*/),
+                      (v7/*:: as any*/),
+                      (v17/*:: as any*/),
+                      (v18/*:: as any*/),
+                      (v19/*:: as any*/),
+                      (v20/*:: as any*/),
+                      (v21/*:: as any*/),
+                      (v22/*:: as any*/),
+                      (v14/*:: as any*/),
                       {
                         "alias": null,
-                        "args": (v15/*: any*/),
+                        "args": (v15/*:: as any*/),
                         "concreteType": "ProductAnswerConnection",
                         "kind": "LinkedField",
                         "name": "answers",
@@ -599,13 +598,13 @@ return {
                                 "kind": "LinkedField",
                                 "name": "node",
                                 "plural": false,
-                                "selections": (v24/*: any*/),
+                                "selections": (v24/*:: as any*/),
                                 "storageKey": null
                               }
                             ],
                             "storageKey": null
                           },
-                          (v11/*: any*/)
+                          (v11/*:: as any*/)
                         ],
                         "storageKey": null
                       }
@@ -615,7 +614,7 @@ return {
                 ],
                 "storageKey": null
               },
-              (v11/*: any*/)
+              (v11/*:: as any*/)
             ],
             "storageKey": null
           },
@@ -634,7 +633,7 @@ return {
                 "kind": "LinkedField",
                 "name": "reviews",
                 "plural": true,
-                "selections": (v23/*: any*/),
+                "selections": (v23/*:: as any*/),
                 "storageKey": null
               },
               {
@@ -645,13 +644,13 @@ return {
                 "name": "questions",
                 "plural": true,
                 "selections": [
-                  (v7/*: any*/),
-                  (v17/*: any*/),
-                  (v18/*: any*/),
-                  (v19/*: any*/),
-                  (v20/*: any*/),
-                  (v21/*: any*/),
-                  (v22/*: any*/)
+                  (v7/*:: as any*/),
+                  (v17/*:: as any*/),
+                  (v18/*:: as any*/),
+                  (v19/*:: as any*/),
+                  (v20/*:: as any*/),
+                  (v21/*:: as any*/),
+                  (v22/*:: as any*/)
                 ],
                 "storageKey": null
               },
@@ -662,7 +661,7 @@ return {
                 "kind": "LinkedField",
                 "name": "answers",
                 "plural": true,
-                "selections": (v24/*: any*/),
+                "selections": (v24/*:: as any*/),
                 "storageKey": null
               }
             ],

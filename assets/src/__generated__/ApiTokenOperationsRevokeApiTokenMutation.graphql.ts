@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<4f5ef2e89ec76f72339721dd57b0bd8b>>
+ * @generated SignedSource<<d269b8c3a73f2cd90d2231c8ea194535>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -15,17 +14,17 @@ export type ApiTokenOperationsRevokeApiTokenMutation$variables = {
 export type ApiTokenOperationsRevokeApiTokenMutation$data = {
   readonly revokeApiToken: {
     readonly apiToken: {
-      readonly expiresAt: any | null | undefined;
+      readonly expiresAt: string | null;
       readonly id: string;
-      readonly insertedAt: any;
-      readonly label: string | null | undefined;
-      readonly lastUsedAt: any | null | undefined;
-      readonly revokedAt: any | null | undefined;
+      readonly insertedAt: string;
+      readonly label: string | null;
+      readonly lastUsedAt: string | null;
+      readonly revokedAt: string | null;
       readonly tokenPrefix: string;
-    } | null | undefined;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
   };
@@ -156,20 +155,20 @@ v1 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "ApiTokenOperationsRevokeApiTokenMutation",
-    "selections": (v1/*: any*/),
+    "selections": (v1/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "ApiTokenOperationsRevokeApiTokenMutation",
-    "selections": (v1/*: any*/)
+    "selections": (v1/*:: as any*/)
   },
   "params": {
     "cacheID": "641446743583d4dc629f40cb918ae54b",

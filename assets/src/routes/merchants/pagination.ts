@@ -1,4 +1,4 @@
-import { nextRelayPageCursor } from "../relay-pagination";
+import { nextPageCursor } from "$relay/pagination";
 
 const MERCHANT_DEFAULT_PAGE_SIZE = 20;
 const MERCHANT_MAX_PAGE_SIZE = 50;
@@ -8,7 +8,10 @@ export interface MerchantPagination {
   first: number;
 }
 
-export function merchantDirectoryPagePath(pagination: MerchantPagination, after?: string | null) {
+export function merchantDirectoryPagePath(
+  pagination: MerchantPagination,
+  after: string | null = null,
+) {
   const params = new URLSearchParams();
 
   params.set("first", String(pagination.first));
@@ -31,7 +34,7 @@ export function buildMerchantDirectoryPaginationData({
   readonly hasPreviousPage: boolean;
   readonly pagination: Readonly<MerchantPagination>;
 }) {
-  const nextCursor = nextRelayPageCursor({ endCursor, hasNextPage }, pagination.after);
+  const nextCursor = nextPageCursor({ endCursor, hasNextPage }, pagination.after);
 
   return {
     firstHref: hasPreviousPage && pagination.after ? merchantDirectoryPagePath(pagination) : null,

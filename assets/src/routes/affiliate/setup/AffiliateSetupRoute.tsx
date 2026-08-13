@@ -18,10 +18,13 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import { recoverRouteLoaderError } from "../../loader-errors";
-import { merchantPaginationFromUrl } from "../../merchants/pagination";
-import { commitRouteMutationPromise } from "../../relay-mutations";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../route-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
+import {
+  merchantPaginationFromUrl,
+  type MerchantPagination,
+} from "../../merchants/pagination";
+import { commitRouteMutationPromise } from "$relay/mutations";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   AffiliateCouponForm,
   AffiliateLinkForm,
@@ -50,10 +53,7 @@ import {
   resolveAffiliateNetworkMutationOutcome,
   resolveAffiliateProgramMutationOutcome,
 } from "./affiliate-setup-data";
-import {
-  buildAffiliateSetupPaginationData,
-  type AffiliateSetupMerchantPagination,
-} from "./pagination";
+import { buildAffiliateSetupPaginationData } from "./pagination";
 
 const affiliateSetupRouteQuery = graphql`
   query AffiliateSetupRouteQuery($first: Int!, $after: String) {
@@ -63,6 +63,7 @@ const affiliateSetupRouteQuery = graphql`
         node {
           id
           name
+          domain
           ...MerchantDirectoryView_item
         }
       }
@@ -79,12 +80,12 @@ const affiliateSetupRouteQuery = graphql`
 export type AffiliateSetupLoaderData =
   | {
       status: "ready";
-      merchantPagination: AffiliateSetupMerchantPagination;
+      merchantPagination: MerchantPagination;
       merchantQuery: RelayRouteQueryDescriptor<AffiliateSetupRouteQuery["variables"]>;
     }
   | {
       status: "error";
-      merchantPagination: AffiliateSetupMerchantPagination;
+      merchantPagination: MerchantPagination;
     };
 
 export async function affiliateSetupLoader({
@@ -118,7 +119,7 @@ export async function affiliateSetupLoader({
 }
 
 export function AffiliateSetupRoute() {
-  const loaderData = useLoaderData<typeof affiliateSetupLoader>() as AffiliateSetupLoaderData;
+  const loaderData = useLoaderData<typeof affiliateSetupLoader>();
 
   return (
     <PageShell
@@ -229,7 +230,7 @@ function AffiliateSetupPanel({
         setNetworkError(outcome.error);
       }
     } catch {
-      setNetworkError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setNetworkError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       networkInFlightRef.current = false;
       setNetworkPending(false);
@@ -266,7 +267,7 @@ function AffiliateSetupPanel({
         setProgramError(outcome.error);
       }
     } catch {
-      setProgramError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setProgramError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       programInFlightRef.current = false;
       setProgramPending(false);
@@ -301,7 +302,7 @@ function AffiliateSetupPanel({
         setLinkError(outcome.error);
       }
     } catch {
-      setLinkError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setLinkError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       linkInFlightRef.current = false;
       setLinkPending(false);
@@ -333,7 +334,7 @@ function AffiliateSetupPanel({
         setCouponError(outcome.error);
       }
     } catch {
-      setCouponError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setCouponError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       couponInFlightRef.current = false;
       setCouponPending(false);
@@ -341,7 +342,7 @@ function AffiliateSetupPanel({
   }
 
   const paginationData = buildAffiliateSetupPaginationData({
-    endCursor: data.merchants.pageInfo.endCursor ?? null,
+    endCursor: data.merchants.pageInfo.endCursor,
     hasNextPage: data.merchants.pageInfo.hasNextPage,
     hasPreviousPage: data.merchants.pageInfo.hasPreviousPage,
     pagination: merchantPagination,

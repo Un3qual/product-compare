@@ -1,6 +1,6 @@
-import { routeMetadataFromSeo } from "../../src/routes/seo";
+import { routeMetadataFromSeo } from "../../src/frontend/head";
 
-test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision, and safe absolute JSON-LD URLs", () => {
+test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision, and structured JSON-LD URLs", () => {
   const metadata = routeMetadataFromSeo(
     {
       title: "A <careful> product | Product Compare",
@@ -17,9 +17,11 @@ test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision
   expect(metadata.canonicalUrl).toBe("https://app.example.com/products/careful-product");
   expect(metadata.imageUrl).toBe("https://app.example.com/images/careful.jpg");
   expect(metadata.indexable).toBe(true);
-  expect(metadata.structuredData).toContain("https://app.example.com/products/careful-product");
-  expect(metadata.structuredData).not.toContain("</script>");
-  expect(metadata.structuredData).toContain("\\u003c/script>");
+  expect(metadata.structuredData).toEqual({
+    "@type": "Product",
+    name: "</script><script>bad()</script>",
+    url: "https://app.example.com/products/careful-product",
+  });
 });
 
 test("routeMetadataFromSeo can force parameterized variants to noindex without changing their canonical", () => {

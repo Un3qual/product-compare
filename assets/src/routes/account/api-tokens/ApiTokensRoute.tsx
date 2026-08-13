@@ -7,7 +7,7 @@ import type { ApiTokenOperationsCreateApiTokenMutation } from "$generated/ApiTok
 import type { ApiTokenOperationsRevokeApiTokenMutation } from "$generated/ApiTokenOperationsRevokeApiTokenMutation.graphql";
 import type { ApiTokenOperationsRotateApiTokenMutation } from "$generated/ApiTokenOperationsRotateApiTokenMutation.graphql";
 import { ResettableErrorBoundary } from "$relay/ResettableErrorBoundary";
-import { RouteLoaderGraphQLError } from "$relay/environment";
+import { graphQLResponseHasErrorCode, RouteLoaderGraphQLError } from "$relay/environment";
 import {
   fetchRouteQuery,
   getRelayEnvironmentFromRouterContext,
@@ -19,14 +19,14 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutation, commitRouteMutationPromise } from "$relay/mutations";
 import {
   addSetValue,
   removeMapValue,
   removeSetValue,
   upsertMapValue,
-} from "../../immutable-collection-state";
-import { DEFAULT_ROUTE_ERROR_MESSAGE, isRouteRecord } from "../../route-errors";
+} from "$frontend/state/immutable-collections";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { ApiTokenList, RelayApiTokenList } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
 import {
@@ -51,13 +51,12 @@ import {
 } from "./api-token-route-data";
 import { apiTokenIsActive } from "./api-token-status";
 
-export type ApiTokenSummary = ApiTokenRecord;
 export type ApiTokenQueryDescriptor = RelayRouteQueryDescriptor<ApiTokensRouteQuery["variables"]>;
 export type ApiTokensRouteLoaderData =
   | {
       status: "ready" | "empty";
       tokenQueries: ApiTokenQueryDescriptor[];
-      tokens: ApiTokenSummary[];
+      tokens: ApiTokenRecord[];
       tokenStatus: ApiTokenStatus;
       after?: string | null;
       hasNextPage?: boolean;
@@ -117,7 +116,7 @@ export async function apiTokensLoader({
     fetchedPage = await fetchRouteQuery<ApiTokensRouteQuery>(
       environment,
       apiTokensRouteQuery,
-      apiTokensQueryVariables(tokenStatus, after ?? undefined),
+      apiTokensQueryVariables(tokenStatus, after),
       { signal: request.signal },
     );
     throwIfAborted(request.signal);
@@ -154,18 +153,13 @@ export async function apiTokensLoader({
 
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
-  after: string | undefined,
-): ApiTokensRouteQuery["variables"] {
-  const variables: ApiTokensRouteQuery["variables"] = {
+  after: string | null,
+) {
+  return {
     first: API_TOKENS_PAGE_SIZE,
     status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
-  };
-
-  if (after !== undefined) {
-    variables.after = after;
-  }
-
-  return variables;
+    after,
+  } satisfies ApiTokensRouteQuery["variables"];
 }
 
 function parseApiTokenStatus(status: string | null): ApiTokenStatus {
@@ -193,24 +187,7 @@ function isUnauthorizedApiTokensError(error: unknown) {
 }
 
 function isUnauthorizedApiTokensResponse(response: GraphQLResponse) {
-  if (!response || typeof response !== "object" || Array.isArray(response)) return false;
-  if (!("errors" in response) || !Array.isArray(response.errors)) return false;
-
-  return response.errors.some((error) => {
-    if (!isRouteRecord(error)) return false;
-    const relevantPath =
-      error.path == null ||
-      (Array.isArray(error.path) &&
-        (error.path.length === 0 || error.path.some((segment) => segment === "myApiTokens")));
-    const extensions = error.extensions;
-
-    return (
-      relevantPath &&
-      isRouteRecord(extensions) &&
-      typeof extensions.code === "string" &&
-      API_TOKENS_AUTH_ERROR_CODES.has(extensions.code.toUpperCase())
-    );
-  });
+  return graphQLResponseHasErrorCode(response, API_TOKENS_AUTH_ERROR_CODES, "myApiTokens");
 }
 
 export function ApiTokensRoute() {
@@ -222,8 +199,8 @@ export function ApiTokensRoute() {
 }
 
 function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderData }) {
-  const [createdTokens, setCreatedTokens] = useState<ApiTokenSummary[]>([]);
-  const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenSummary>>(
+  const [createdTokens, setCreatedTokens] = useState<ApiTokenRecord[]>([]);
+  const [apiTokenUpdates, setApiTokenUpdates] = useState<ReadonlyMap<string, ApiTokenRecord>>(
     () => new Map(),
   );
   const [oneTimeToken, setOneTimeToken] = useState<string | null>(null);
@@ -288,7 +265,7 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         setCreateError(outcome.error);
       }
     } catch {
-      setCreateError(DEFAULT_ROUTE_ERROR_MESSAGE);
+      setCreateError(DEFAULT_MUTATION_ERROR_MESSAGE);
     } finally {
       createInFlightRef.current = false;
       setCreatePending(false);
@@ -309,7 +286,7 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
     );
   }
 
-  function handleRotate(token: ApiTokenSummary, form: HTMLFormElement) {
+  function handleRotate(token: ApiTokenRecord, form: HTMLFormElement) {
     if (
       inFlightRotateIdsRef.current.has(token.id) ||
       inFlightRevokeIdsRef.current.has(token.id) ||
@@ -360,14 +337,14 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         },
         onError: () => {
           setRotateErrorsByTokenId((currentErrors) =>
-            upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+            upsertMapValue(currentErrors, token.id, DEFAULT_MUTATION_ERROR_MESSAGE),
           );
           finishRotate(token.id);
         },
       },
       () => {
         setRotateErrorsByTokenId((currentErrors) =>
-          upsertMapValue(currentErrors, token.id, DEFAULT_ROUTE_ERROR_MESSAGE),
+          upsertMapValue(currentErrors, token.id, DEFAULT_MUTATION_ERROR_MESSAGE),
         );
         finishRotate(token.id);
       },
@@ -407,14 +384,14 @@ function ApiTokensRoutePage({ loaderData }: { loaderData: ApiTokensRouteLoaderDa
         },
         onError: () => {
           setRevokeErrorsByTokenId((currentErrors) =>
-            upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE),
+            upsertMapValue(currentErrors, tokenId, DEFAULT_MUTATION_ERROR_MESSAGE),
           );
           finishRevoke(tokenId);
         },
       },
       () => {
         setRevokeErrorsByTokenId((currentErrors) =>
-          upsertMapValue(currentErrors, tokenId, DEFAULT_ROUTE_ERROR_MESSAGE),
+          upsertMapValue(currentErrors, tokenId, DEFAULT_MUTATION_ERROR_MESSAGE),
         );
         finishRevoke(tokenId);
       },
@@ -518,9 +495,9 @@ function RelayApiTokenPage({
   tokenQuery,
   ...listProps
 }: {
-  apiTokenUpdates: ReadonlyMap<string, ApiTokenSummary>;
-  localTokens: ApiTokenSummary[];
-  onRotate: (token: ApiTokenSummary, form: HTMLFormElement) => void;
+  apiTokenUpdates: ReadonlyMap<string, ApiTokenRecord>;
+  localTokens: ApiTokenRecord[];
+  onRotate: (token: ApiTokenRecord, form: HTMLFormElement) => void;
   onRevoke: (tokenId: string) => void;
   pendingRevokeIds: ReadonlySet<string>;
   pendingRotateIds: ReadonlySet<string>;

@@ -161,7 +161,7 @@ test("buildRevenueSummaryMetrics preserves null and empty-string amount semantic
         metrics: {
           averagePaidPrice: null,
           clicks: null,
-          commissionRevenue: undefined,
+          commissionRevenue: null,
           conversions: 0,
           grossOrderValue: "",
         },

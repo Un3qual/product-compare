@@ -1,4 +1,4 @@
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 import {
   resolveDeletePriceWatchMutationError,
   resolveMarkAlertReadMutationError,
@@ -14,7 +14,7 @@ const MUTATION_ERROR = {
 test("operation resolvers return no error only for their expected truthy success result", () => {
   expect(
     resolveTogglePriceWatchMutationError(
-      { watch: { id: "watch-1" }, errors: [MUTATION_ERROR] },
+      { watch: { id: "watch-1", enabled: true }, errors: [MUTATION_ERROR] },
       [],
     ),
   ).toBeNull();
@@ -25,7 +25,10 @@ test("operation resolvers return no error only for their expected truthy success
     ),
   ).toBeNull();
   expect(
-    resolveMarkAlertReadMutationError({ event: { id: "alert-1" }, errors: [MUTATION_ERROR] }, []),
+    resolveMarkAlertReadMutationError(
+      { event: { id: "alert-1", readAt: "2026-08-12T12:00:00Z" }, errors: [MUTATION_ERROR] },
+      [],
+    ),
   ).toBeNull();
 });
 
@@ -70,5 +73,5 @@ test.each([
       ]),
   ],
 ])("%s GraphQL failures use the shared fallback copy", (_operation, resolveError) => {
-  expect(resolveError()).toBe(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(resolveError()).toBe(DEFAULT_MUTATION_ERROR_MESSAGE);
 });

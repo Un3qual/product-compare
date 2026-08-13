@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<5363d0f9f038773c94da6e3c712b1293>>
+ * @generated SignedSource<<b8afed01c0b0772efbf5e4426a32077b>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,7 +9,7 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type CompareProductPickerBoundaryQuery$variables = {
-  after?: string | null | undefined;
+  after?: string | null;
   first: number;
 };
 export type CompareProductPickerBoundaryQuery$data = {
@@ -20,17 +19,17 @@ export type CompareProductPickerBoundaryQuery$data = {
         readonly brand: {
           readonly id: string;
           readonly name: string;
-        } | null | undefined;
+        } | null;
         readonly id: string;
         readonly name: string;
         readonly slug: string;
       };
     }>;
     readonly pageInfo: {
-      readonly endCursor: string | null | undefined;
+      readonly endCursor: string | null;
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
 };
 export type CompareProductPickerBoundaryQuery = {
   response: CompareProductPickerBoundaryQuery$data;
@@ -98,8 +97,8 @@ v4 = [
             "name": "node",
             "plural": false,
             "selections": [
-              (v2/*: any*/),
-              (v3/*: any*/),
+              (v2/*:: as any*/),
+              (v3/*:: as any*/),
               {
                 "alias": null,
                 "args": null,
@@ -115,8 +114,8 @@ v4 = [
                 "name": "brand",
                 "plural": false,
                 "selections": [
-                  (v2/*: any*/),
-                  (v3/*: any*/)
+                  (v2/*:: as any*/),
+                  (v3/*:: as any*/)
                 ],
                 "storageKey": null
               }
@@ -158,25 +157,25 @@ v4 = [
 return {
   "fragment": {
     "argumentDefinitions": [
-      (v0/*: any*/),
-      (v1/*: any*/)
+      (v0/*:: as any*/),
+      (v1/*:: as any*/)
     ],
     "kind": "Fragment",
     "metadata": null,
     "name": "CompareProductPickerBoundaryQuery",
-    "selections": (v4/*: any*/),
+    "selections": (v4/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
     "argumentDefinitions": [
-      (v1/*: any*/),
-      (v0/*: any*/)
+      (v1/*:: as any*/),
+      (v0/*:: as any*/)
     ],
     "kind": "Operation",
     "name": "CompareProductPickerBoundaryQuery",
-    "selections": (v4/*: any*/)
+    "selections": (v4/*:: as any*/)
   },
   "params": {
     "cacheID": "27ede87f01f19b8b7a7a61ff46bcc6ca",

@@ -8,15 +8,14 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
-import { isCanonicalSlug } from "$routes/route-params";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
+import { routeMetadataFromSeo } from "$frontend/head";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { externalWebsiteHref } from "../../external-links";
-import { formatProductDateLabel } from "../../product-formatting";
+import { externalWebsiteHref } from "$frontend/navigation/external-links";
+import { formatProductDateLabel } from "$frontend/formatting";
 import { getMerchantDetailViewData } from "./merchant-detail-view-data";
 
 const merchantDetailRouteQuery = graphql`
@@ -93,7 +92,7 @@ const styles = create({
 });
 
 export function MerchantDetailRoute() {
-  const loaderData = useLoaderData() as MerchantDetailLoaderData;
+  const loaderData = useLoaderData<typeof merchantDetailLoader>();
   if (loaderData.status !== "ready")
     return (
       <PageShell eyebrow="Seller detail" title="Merchant not found">
@@ -175,7 +174,7 @@ function ReadyMerchantDetail({
 
 export async function merchantDetailLoader({ context, params, request }: LoaderFunctionArgs) {
   const slug = params.slug?.trim() ?? "";
-  if (!isCanonicalSlug(slug)) return merchantNotFound();
+  if (!slug) return merchantNotFound();
   const after = new URL(request.url).searchParams.get("after");
   const environment = getRelayEnvironmentFromRouterContext(context);
 

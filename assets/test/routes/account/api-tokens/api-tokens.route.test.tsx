@@ -3,12 +3,12 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { Link, MemoryRouter, useLoaderData, useLocation } from "react-router-dom";
 import { useFragment, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../../src/relay/route-preload";
-import { DEFAULT_ROUTE_ERROR_MESSAGE } from "../../../../src/routes/route-errors";
+import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../../src/relay/mutation-errors";
 import {
   ApiTokensRoute,
-  type ApiTokenSummary,
   type ApiTokensRouteLoaderData,
 } from "../../../../src/routes/account/api-tokens/ApiTokensRoute";
+import type { ApiTokenRecord } from "../../../../src/routes/account/api-tokens/api-token-route-data";
 import {
   ApiTokenControls,
   OneTimeApiToken,
@@ -82,7 +82,7 @@ const ROTATED_TOKEN_PREFIX = "prefix-rotated";
 const ONE_TIME_TOKEN_VALUE = ["example", "one", "time", "api", "value"].join("-");
 const ROTATED_TOKEN_VALUE = ["example", "rotated", "api", "value"].join("-");
 
-const ACTIVE_TOKEN: ApiTokenSummary = {
+const ACTIVE_TOKEN: ApiTokenRecord = {
   id: "QXBpVG9rZW46MDEyMzQ1NjctODlhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: "CLI",
   tokenPrefix: ACTIVE_TOKEN_PREFIX,
@@ -92,7 +92,7 @@ const ACTIVE_TOKEN: ApiTokenSummary = {
   insertedAt: "2026-05-31T12:00:00Z",
 };
 
-const REVOKED_TOKEN: ApiTokenSummary = {
+const REVOKED_TOKEN: ApiTokenRecord = {
   id: "QXBpVG9rZW46OTg3NjU0MzItMTBhYi1jZGVmLTAxMjMtNDU2Nzg5YWJjZGVm",
   label: "Old automation",
   tokenPrefix: REVOKED_TOKEN_PREFIX,
@@ -102,7 +102,7 @@ const REVOKED_TOKEN: ApiTokenSummary = {
   insertedAt: "2026-05-29T12:00:00Z",
 };
 
-const BUILD_BOT_TOKEN: ApiTokenSummary = {
+const BUILD_BOT_TOKEN: ApiTokenRecord = {
   id: "QXBpVG9rZW46YnVpbGQtYm90LXRva2Vu",
   label: "Build bot",
   tokenPrefix: BUILD_TOKEN_PREFIX,
@@ -112,7 +112,7 @@ const BUILD_BOT_TOKEN: ApiTokenSummary = {
   insertedAt: "2026-05-30T12:00:00Z",
 };
 
-const EXPIRED_TOKEN: ApiTokenSummary = {
+const EXPIRED_TOKEN: ApiTokenRecord = {
   id: "QXBpVG9rZW46ZXhwaXJlZC10b2tlbg==",
   label: "Expired token",
   tokenPrefix: EXPIRED_TOKEN_PREFIX,
@@ -849,7 +849,7 @@ test("create token renders a generic alert for top-level GraphQL errors", async 
   });
   completeLatestCreateMutation(buildSuccessfulCreateResponse(), [{ message: "boom" }]);
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(screen.queryByRole("region", { name: "One-time API token" })).not.toBeInTheDocument();
 });
 
@@ -1065,7 +1065,7 @@ test("revoke token renders a generic alert for network errors", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Revoke token" }));
   confirmApiTokenRevocation();
 
-  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_ROUTE_ERROR_MESSAGE);
+  expect(await screen.findByRole("alert")).toHaveTextContent(DEFAULT_MUTATION_ERROR_MESSAGE);
   expect(screen.getByRole("button", { name: "Revoke token" })).not.toBeDisabled();
 });
 
@@ -1342,7 +1342,7 @@ test("server token snapshots supersede local mutation snapshots after reload", a
     tokens: [ACTIVE_TOKEN],
     tokenStatus: "all",
   };
-  const serverRotatedToken: ApiTokenSummary = {
+  const serverRotatedToken: ApiTokenRecord = {
     id: "QXBpVG9rZW46cm90YXRlZC10b2tlbg==",
     label: "Server replacement",
     tokenPrefix: ROTATED_TOKEN_PREFIX,
@@ -1499,7 +1499,7 @@ function buildSuccessfulRotateResponse() {
   };
 }
 
-function buildSuccessfulRevokeResponse(token: ApiTokenSummary) {
+function buildSuccessfulRevokeResponse(token: ApiTokenRecord) {
   return {
     revokeApiToken: {
       apiToken: {
@@ -1511,7 +1511,7 @@ function buildSuccessfulRevokeResponse(token: ApiTokenSummary) {
   };
 }
 
-function buildApiTokenQueryData(tokens: ApiTokenSummary[]) {
+function buildApiTokenQueryData(tokens: ApiTokenRecord[]) {
   return {
     myApiTokens: {
       edges: tokens.map((token) => ({
@@ -1528,6 +1528,6 @@ function buildApiTokenQueryData(tokens: ApiTokenSummary[]) {
   };
 }
 
-function apiTokenFragmentRef(token: ApiTokenSummary) {
+function apiTokenFragmentRef(token: ApiTokenRecord) {
   return token as never;
 }

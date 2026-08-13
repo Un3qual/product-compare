@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<3da724da855ecdbde7c684a6cf03c89a>>
+ * @generated SignedSource<<fdec83099eaa979188a7b872df92fd79>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -11,17 +10,17 @@
 import { ConcreteRequest } from 'relay-runtime';
 export type CouponDiscountType = "AMOUNT" | "FREE_SHIPPING" | "OTHER" | "PERCENT" | "%future added value";
 export type CreateCouponInput = {
-  affiliateNetworkId?: string | null | undefined;
-  artifactId?: string | null | undefined;
+  affiliateNetworkId?: string | null;
+  artifactId?: string | null;
   code: string;
-  currency?: string | null | undefined;
-  description?: string | null | undefined;
+  currency?: string | null;
+  description?: string | null;
   discountType: CouponDiscountType;
-  discountValue?: any | null | undefined;
+  discountValue?: string | null;
   merchantId: string;
-  terms?: string | null | undefined;
-  validFrom?: any | null | undefined;
-  validTo?: any | null | undefined;
+  terms?: string | null;
+  validFrom?: string | null;
+  validTo?: string | null;
 };
 export type AffiliateSetupOperationsCreateCouponMutation$variables = {
   input: CreateCouponInput;
@@ -29,22 +28,22 @@ export type AffiliateSetupOperationsCreateCouponMutation$variables = {
 export type AffiliateSetupOperationsCreateCouponMutation$data = {
   readonly createCoupon: {
     readonly coupon: {
-      readonly affiliateNetworkId: string | null | undefined;
+      readonly affiliateNetworkId: string | null;
       readonly code: string;
-      readonly currency: string | null | undefined;
+      readonly currency: string | null;
       readonly discountType: CouponDiscountType;
-      readonly discountValue: any | null | undefined;
+      readonly discountValue: string | null;
       readonly id: string;
       readonly merchantId: string;
-      readonly validFrom: any | null | undefined;
-      readonly validTo: any | null | undefined;
-    } | null | undefined;
+      readonly validFrom: string | null;
+      readonly validTo: string | null;
+    } | null;
     readonly errors: ReadonlyArray<{
       readonly code: string;
-      readonly field: string | null | undefined;
+      readonly field: string | null;
       readonly message: string;
     }>;
-  } | null | undefined;
+  } | null;
 };
 export type AffiliateSetupOperationsCreateCouponMutation = {
   response: AffiliateSetupOperationsCreateCouponMutation$data;
@@ -110,7 +109,7 @@ v2 = [
             "name": "affiliateNetworkId",
             "storageKey": null
           },
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -157,7 +156,7 @@ v2 = [
         "name": "errors",
         "plural": true,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -181,20 +180,20 @@ v2 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "AffiliateSetupOperationsCreateCouponMutation",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootMutationType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "AffiliateSetupOperationsCreateCouponMutation",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "f2595db97ee5383769c3da4b3f6130cf",

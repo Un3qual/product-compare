@@ -1,7 +1,7 @@
 import type { CompareRouteQuery } from "$generated/CompareRouteQuery.graphql";
 import type { RelayRouteQueryDescriptor } from "$relay/route-preload";
-import { compareDecimalStrings } from "../decimal-values";
-import { parseGraphQLDateTime } from "../graphql-datetime";
+import { compareDecimalStrings } from "$relay/scalars";
+import { parseGraphQLDateTime } from "$relay/scalars";
 import type { CompareSpecMode } from "./paths";
 
 export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";
@@ -13,28 +13,8 @@ export {
 
 export const COMPARE_OFFER_CONTEXT_PAGE_SIZE = 3;
 
-export interface CompareProductSummary {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  brandName: string | null;
-  currentAttributes: CompareProductAttributeSummary[];
-}
-
-export interface CompareProductAttributeSummary {
-  attributeId?: string;
-  code: string;
-  displayName: string;
-  valueText: string;
-  sortOrder?: number | null;
-  groupLabel?: string | null;
-  isRequired?: boolean;
-  numericValue?: string | null;
-  booleanValue?: boolean | null;
-  enumOptionId?: string | null;
-  unitSymbol?: string | null;
-}
+export type CompareProductSummary = ReturnType<typeof summarizeProduct>;
+export type CompareProductAttributeSummary = CompareProductSummary["currentAttributes"][number];
 
 export type CompareOfferContextsByProductId = Record<string, CompareOfferContextSummary>;
 
@@ -129,12 +109,12 @@ function orderProductsByRequestedSlugs(
   return slugs.map((slug) => productsBySlug.get(slug) ?? null);
 }
 
-function summarizeProduct(product: PresentCompareProduct): CompareProductSummary {
+function summarizeProduct(product: PresentCompareProduct) {
   return {
     id: product.id,
     name: product.name,
     slug: product.slug,
-    description: typeof product.description === "string" ? product.description : null,
+    description: product.description,
     brandName: product.brand?.name ?? null,
     currentAttributes: product.currentAttributes.map((attribute) => ({
       attributeId: attribute.attributeId,

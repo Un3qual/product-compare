@@ -34,6 +34,7 @@ export function CredentialAuthForm({
       errors={errors}
       fieldNames={["email", "password"]}
       footerLinks={footerLinks}
+      successMessage={null}
       title={title}
     >
       <form onSubmit={onSubmit}>

@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<97870ac8590f7281502365e780f9d4bb>>
+ * @generated SignedSource<<f5ca4747cfae95077a2aebfe7ca91cb3>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -13,7 +12,7 @@ export type CommunityModerationStatus = "HIDDEN" | "PENDING" | "PUBLISHED" | "RE
 import { FragmentRefs } from "relay-runtime";
 export type ProductCommunityItems_question$data = {
   readonly authorLabel: string;
-  readonly body: string | null | undefined;
+  readonly body: string | null;
   readonly id: string;
   readonly moderationStatus: CommunityModerationStatus;
   readonly title: string;

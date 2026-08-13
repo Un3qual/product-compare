@@ -41,6 +41,12 @@ defmodule ProductCompareWeb.GraphQL.Loader.ParentSources do
     |> then(&batch_values(product_ids, &1))
   end
 
+  defp product_evidence_batch(Product, _query, :price_history_90d, product_ids, _repo_opts) do
+    product_ids
+    |> Pricing.product_price_trends(as_of: DateTime.utc_now())
+    |> then(&batch_values(product_ids, &1))
+  end
+
   defp product_evidence_batch(Product, _query, :review_summary, product_ids, _repo_opts) do
     product_ids
     |> Discussions.review_summaries()

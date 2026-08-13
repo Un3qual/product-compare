@@ -14,7 +14,7 @@ describe("verify email data", () => {
     });
   });
 
-  test.each([undefined, null, "", "  \t\n  "])(
+  test.each([null, "", "  \t\n  "])(
     "uses one exact missing-token error identity for %s",
     (rawToken) => {
       const requestData = buildVerifyEmailRequestData(rawToken);

@@ -1,5 +1,6 @@
-import { compareDecimalStrings } from "../decimal-values";
-import { graphQLDateTimeLabel } from "../graphql-datetime";
+import { compareDecimalStrings } from "$relay/scalars";
+import { graphQLDateTimeLabel } from "$relay/scalars";
+import type { CompareOfferContextSummary } from "./compare-route-data";
 
 export type DecisionSummaryMetricKey =
   | "relative-loaded-price"
@@ -10,32 +11,6 @@ export type DecisionSummaryMetricKey =
 
 export interface DecisionSummaryProduct {
   id: string;
-}
-
-export type DecisionSummaryOfferContext =
-  | DecisionSummaryAvailableOfferContext
-  | DecisionSummaryUnavailableOfferContext;
-
-export interface DecisionSummaryAvailableOfferContext {
-  status: "available";
-  productId: string;
-  activeOfferCount: number;
-  bestCurrentPrice: DecisionSummaryBestCurrentPrice | null;
-  hasLoadedCoupons: boolean;
-  hasMoreActiveOffers: boolean;
-  hasMoreCoupons: boolean;
-  latestPriceObservedAt: string | null;
-}
-
-export interface DecisionSummaryUnavailableOfferContext {
-  status: "unavailable";
-  productId: string;
-}
-
-export interface DecisionSummaryBestCurrentPrice {
-  currency: string;
-  merchantName: string | null;
-  price: string;
 }
 
 export interface DecisionSummaryMetricCell {
@@ -52,7 +27,7 @@ export interface DecisionSummaryMetricRow {
 interface DecisionSummaryMetricDefinition {
   key: Exclude<DecisionSummaryMetricKey, "relative-loaded-price">;
   label: string;
-  value: (context: DecisionSummaryOfferContext) => string;
+  value: (context: CompareOfferContextSummary) => string;
 }
 
 interface ComparablePrice {
@@ -61,7 +36,7 @@ interface ComparablePrice {
   value: string;
 }
 
-const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
+const DECISION_SUMMARY_METRICS = [
   {
     key: "best-price",
     label: "Lowest current price",
@@ -82,11 +57,11 @@ const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
     label: "Price last checked",
     value: priceRecencyLabel,
   },
-];
+] satisfies readonly DecisionSummaryMetricDefinition[];
 
 export function buildDecisionSummaryMetricRows(
   products: readonly DecisionSummaryProduct[],
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, CompareOfferContextSummary>>,
 ): DecisionSummaryMetricRow[] {
   const relativePriceLabels = relativeLoadedPriceLabels(products, offerContexts);
 
@@ -112,7 +87,7 @@ export function buildDecisionSummaryMetricRows(
 
 function relativeLoadedPriceLabels(
   products: readonly DecisionSummaryProduct[],
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, CompareOfferContextSummary>>,
 ) {
   const unavailable = new Map(products.map(({ id }) => [id, "Not comparable"]));
 
@@ -171,13 +146,13 @@ function relativeLoadedPriceLabels(
 }
 
 function offerContextForProduct(
-  offerContexts: Readonly<Record<string, DecisionSummaryOfferContext>> | undefined,
+  offerContexts: Readonly<Record<string, CompareOfferContextSummary>>,
   productId: string,
-): DecisionSummaryOfferContext {
-  return offerContexts?.[productId] ?? { status: "unavailable", productId };
+): CompareOfferContextSummary {
+  return offerContexts[productId];
 }
 
-function bestCurrentPriceLabel(context: DecisionSummaryOfferContext) {
+function bestCurrentPriceLabel(context: CompareOfferContextSummary) {
   if (context.status === "unavailable") {
     return "Offer details unavailable";
   }
@@ -191,7 +166,7 @@ function bestCurrentPriceLabel(context: DecisionSummaryOfferContext) {
   }`;
 }
 
-function activeOfferCountLabel(context: DecisionSummaryOfferContext) {
+function activeOfferCountLabel(context: CompareOfferContextSummary) {
   if (context.status === "unavailable") {
     return "Unavailable";
   }
@@ -201,7 +176,7 @@ function activeOfferCountLabel(context: DecisionSummaryOfferContext) {
     : `${context.activeOfferCount} shown`;
 }
 
-function couponSignalLabel(context: DecisionSummaryOfferContext) {
+function couponSignalLabel(context: CompareOfferContextSummary) {
   if (context.status === "unavailable") {
     return "Unavailable";
   }
@@ -213,7 +188,7 @@ function couponSignalLabel(context: DecisionSummaryOfferContext) {
   return context.hasLoadedCoupons ? "Coupons available" : "No coupons found";
 }
 
-function priceRecencyLabel(context: DecisionSummaryOfferContext) {
+function priceRecencyLabel(context: CompareOfferContextSummary) {
   if (context.status === "unavailable") {
     return "Unavailable";
   }
@@ -221,6 +196,6 @@ function priceRecencyLabel(context: DecisionSummaryOfferContext) {
   return dateLabel(context.latestPriceObservedAt) ?? "No price check available";
 }
 
-function dateLabel(value: string | null | undefined) {
+function dateLabel(value: string | null) {
   return graphQLDateTimeLabel(value);
 }

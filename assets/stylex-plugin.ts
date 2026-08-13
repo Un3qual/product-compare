@@ -13,6 +13,7 @@ const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 export const STYLEX_CLASS_NAME_PREFIX = "pcx";
 
 export const frontendAliases = {
+  $frontend: path.join(projectRoot, "src/frontend"),
   $generated: path.join(projectRoot, "src/__generated__"),
   $relay: path.join(projectRoot, "src/relay"),
   $routes: path.join(projectRoot, "src/routes"),
@@ -29,6 +30,7 @@ export function reactWithStyleX() {
           stylexPlugin,
           {
             aliases: {
+              "$frontend/*": [`${pathToFileURL(frontendAliases.$frontend).href}/*`],
               "$generated/*": [`${pathToFileURL(frontendAliases.$generated).href}/*`],
               "$relay/*": [`${pathToFileURL(frontendAliases.$relay).href}/*`],
               "$routes/*": [`${pathToFileURL(frontendAliases.$routes).href}/*`],

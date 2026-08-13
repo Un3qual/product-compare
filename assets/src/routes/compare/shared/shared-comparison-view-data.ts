@@ -91,7 +91,7 @@ function projectProduct(product: SharedComparisonProductInput) {
     description: nonBlankText(product.description),
     brandModelLabel: modelNumber ? `${brandName} · ${modelNumber}` : brandName,
     attributes: product.attributes.map((attribute) => {
-      const sourceName = nonBlankText(attribute.evidence[0]?.sourceName);
+      const sourceName = nonBlankText(attribute.evidence[0]?.sourceName ?? null);
 
       return {
         key: attribute.claimId,
@@ -102,7 +102,7 @@ function projectProduct(product: SharedComparisonProductInput) {
     }),
     offers: product.offers.map((offer) => {
       const merchantName = nonBlankText(offer.merchantName) ?? "Unknown merchant";
-      const landedPrice = scalarText(offer.landedPrice);
+      const landedPrice = nonBlankText(offer.landedPrice);
       const currency = nonBlankText(offer.currency);
 
       return {
@@ -117,16 +117,6 @@ function projectProduct(product: SharedComparisonProductInput) {
   };
 }
 
-function nonBlankText(value: string | null | undefined) {
+function nonBlankText(value: string | null) {
   return value?.trim() ? value : null;
-}
-
-function scalarText(value: unknown) {
-  if (typeof value !== "string" && typeof value !== "number") {
-    return null;
-  }
-
-  const text = String(value).trim();
-
-  return text || null;
 }

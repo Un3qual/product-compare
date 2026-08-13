@@ -6,17 +6,12 @@ import {
   selectedCompareSlugsFromSearch,
 } from "../compare/paths";
 
-export type ProductDetailView = "overview" | "specifications" | "offers" | "community";
+export type ProductDetailView = "specifications" | "offers" | "community";
 
 export type ProductDetailCompareAction =
   | { kind: "selected" }
   | { kind: "full" }
   | { href: string; kind: "add" };
-
-export type ProductOverviewSummaryItem = {
-  label: string;
-  value: number | string;
-};
 
 export interface ProductDetailRouteData {
   browsePath: string;
@@ -70,24 +65,6 @@ export function createProductDetailRouteData({
   };
 }
 
-export function overviewSummaryItems({
-  attributeCount,
-  hasMoreOffers,
-  loadedOfferCount,
-}: {
-  attributeCount: number;
-  hasMoreOffers: boolean;
-  loadedOfferCount: number;
-}): ProductOverviewSummaryItem[] {
-  return [
-    { label: "Specifications available", value: attributeCount },
-    {
-      label: "Active offers loaded",
-      value: hasMoreOffers ? `${loadedOfferCount}+` : loadedOfferCount,
-    },
-  ];
-}
-
 export function productDetailPath(productSlug: string) {
   return `/products/${encodeURIComponent(productSlug)}`;
 }
@@ -127,16 +104,11 @@ function productDetailCompareAction({
 function detailViewFromLocation(hash: string, search: string): ProductDetailView {
   const view = hash.replace(/^#/, "");
 
-  if (
-    view === "overview" ||
-    view === "specifications" ||
-    view === "offers" ||
-    view === "community"
-  ) {
+  if (view === "specifications" || view === "offers" || view === "community") {
     return view;
   }
 
-  return new URLSearchParams(search).has("offersAfter") ? "offers" : "overview";
+  return new URLSearchParams(search).has("offersAfter") ? "offers" : "specifications";
 }
 
 function productPathWithCompareSlugs(

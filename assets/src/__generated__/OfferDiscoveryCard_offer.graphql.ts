@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<babfab178fe38bef45a452b025764f5e>>
+ * @generated SignedSource<<b15e4fce4d92b17b814347b60c01c2a0>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -17,49 +16,49 @@ export type OfferDiscoveryCard_offer$data = {
       readonly cursor: string;
       readonly node: {
         readonly code: string;
-        readonly currency: string | null | undefined;
-        readonly description: string | null | undefined;
+        readonly currency: string | null;
+        readonly description: string | null;
         readonly discountType: CouponDiscountType;
-        readonly discountValue: any | null | undefined;
-        readonly terms: string | null | undefined;
-        readonly validTo: any | null | undefined;
+        readonly discountValue: string | null;
+        readonly terms: string | null;
+        readonly validTo: string | null;
       };
     }>;
     readonly pageInfo: {
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
   readonly currency: string;
   readonly id: string;
   readonly isActive: boolean;
-  readonly lastSeenAt: any | null | undefined;
+  readonly lastSeenAt: string | null;
   readonly latestPrice: {
     readonly id: string;
-    readonly observedAt: any;
-    readonly price: any;
-  } | null | undefined;
+    readonly observedAt: string;
+    readonly price: string;
+  } | null;
   readonly merchant: {
     readonly domain: string;
     readonly id: string;
     readonly name: string;
-  } | null | undefined;
+  } | null;
   readonly priceHistory: {
     readonly edges: ReadonlyArray<{
       readonly node: {
         readonly id: string;
-        readonly observedAt: any;
-        readonly price: any;
+        readonly observedAt: string;
+        readonly price: string;
       };
     }>;
     readonly pageInfo: {
       readonly hasNextPage: boolean;
     };
-  } | null | undefined;
+  } | null;
   readonly product: {
     readonly id: string;
     readonly name: string;
     readonly slug: string;
-  } | null | undefined;
+  } | null;
   readonly url: string;
   readonly " $fragmentType": "OfferDiscoveryCard_offer";
 };
@@ -91,7 +90,7 @@ v2 = {
   "storageKey": null
 },
 v3 = [
-  (v0/*: any*/),
+  (v0/*:: as any*/),
   {
     "alias": null,
     "args": null,
@@ -131,7 +130,7 @@ return {
   "metadata": null,
   "name": "OfferDiscoveryCard_offer",
   "selections": [
-    (v0/*: any*/),
+    (v0/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -139,7 +138,7 @@ return {
       "name": "url",
       "storageKey": null
     },
-    (v1/*: any*/),
+    (v1/*:: as any*/),
     {
       "alias": null,
       "args": null,
@@ -162,8 +161,8 @@ return {
       "name": "merchant",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v2/*: any*/),
+        (v0/*:: as any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -182,8 +181,8 @@ return {
       "name": "product",
       "plural": false,
       "selections": [
-        (v0/*: any*/),
-        (v2/*: any*/),
+        (v0/*:: as any*/),
+        (v2/*:: as any*/),
         {
           "alias": null,
           "args": null,
@@ -201,7 +200,7 @@ return {
       "kind": "LinkedField",
       "name": "latestPrice",
       "plural": false,
-      "selections": (v3/*: any*/),
+      "selections": (v3/*:: as any*/),
       "storageKey": null
     },
     {
@@ -269,7 +268,7 @@ return {
                   "name": "discountValue",
                   "storageKey": null
                 },
-                (v1/*: any*/),
+                (v1/*:: as any*/),
                 {
                   "alias": null,
                   "args": null,
@@ -290,7 +289,7 @@ return {
           ],
           "storageKey": null
         },
-        (v4/*: any*/)
+        (v4/*:: as any*/)
       ],
       "storageKey": "activeCoupons(first:2)"
     },
@@ -323,13 +322,13 @@ return {
               "kind": "LinkedField",
               "name": "node",
               "plural": false,
-              "selections": (v3/*: any*/),
+              "selections": (v3/*:: as any*/),
               "storageKey": null
             }
           ],
           "storageKey": null
         },
-        (v4/*: any*/)
+        (v4/*:: as any*/)
       ],
       "storageKey": "priceHistory(first:12)"
     }

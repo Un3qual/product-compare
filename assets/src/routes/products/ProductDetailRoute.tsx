@@ -19,29 +19,24 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
+import { routeMetadataFromSeo } from "$frontend/head";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { DetailTabs } from "$ui/components/layout/DetailTabs";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
-import { tokens } from "$ui/theme/tokens.stylex";
 import { MAX_COMPARE_PRODUCTS } from "../compare/paths";
 import { CompareSelectionTray } from "../compare/CompareSelectionTray";
 import { productOffersPath } from "../offers/paths";
-import { ProductAttributeList, type ProductAttributeListItem } from "./ProductAttributeList";
 import { ProductDecisionActions } from "./ProductDecisionActions";
-import { ProductOfferPanel } from "./ProductOfferPanel";
+import { ProductDecisionHeader } from "./ProductDecisionHeader";
+import { ProductOfferPanel } from "./offers";
 import { PriceWatchControl } from "./PriceWatchControl";
-import { ProductCommunityPanel } from "./ProductCommunityPanel";
-import {
-  createProductDetailRouteData,
-  overviewSummaryItems,
-  type ProductOverviewSummaryItem,
-} from "./product-detail-route-data";
+import { ProductCommunityPanel } from "./community";
+import { createProductDetailRouteData } from "./product-detail-route-data";
+import { ProductSpecifications } from "./specifications";
 
 const productDetailRouteQuery = graphql`
   query ProductDetailRouteQuery($slug: String!, $offerFirst: Int!, $offersAfter: String) {
@@ -49,6 +44,7 @@ const productDetailRouteQuery = graphql`
       id
       name
       slug
+      modelNumber
       description
       seo {
         title
@@ -75,6 +71,42 @@ const productDetailRouteQuery = graphql`
         booleanValue
         enumOptionId
         unitSymbol
+      }
+      offerTruth {
+        asOf
+        offerCount
+        observedOfferCount
+        eligibleOfferCount
+        currencySummaries {
+          currency
+          eligibleOfferCount
+          bestOffer {
+            merchantProductId
+            merchantName
+            landedPrice
+            observedAt
+            freshness
+            eligible
+          }
+        }
+      }
+      priceHistory90d {
+        currency
+        merchants {
+          id
+          name
+          merchantProductId
+        }
+        points {
+          observedAt
+          lowestPrice
+          averagePrice
+          lowestMerchantProductId
+          merchantPrices {
+            merchantProductId
+            price
+          }
+        }
       }
       merchantProducts(first: $offerFirst, after: $offersAfter, activeOnly: true) {
         edges {
@@ -110,13 +142,6 @@ type ProductDetailResponseWithProduct = ProductDetailRouteQuery["response"] & {
 };
 
 const styles = create({
-  description: {
-    display: "grid",
-    gap: "0.35rem",
-  },
-  descriptionText: {
-    margin: 0,
-  },
   section: {
     display: "grid",
     gap: "1rem",
@@ -125,16 +150,6 @@ const styles = create({
     fontSize: "1.4rem",
     letterSpacing: "-0.025em",
     margin: 0,
-  },
-  overview: {
-    display: "grid",
-    gap: "1.25rem",
-  },
-  overviewCopy: {
-    color: tokens.textSecondary,
-    lineHeight: 1.65,
-    margin: 0,
-    maxWidth: "42rem",
   },
 });
 
@@ -206,8 +221,10 @@ function ProductDetail({
       </h2>
       <ProductOfferPanel
         connection={product.merchantProducts}
-        productSlug={product.slug}
         offersAfter={routeData.offersAfter}
+        priceTrendSeries={product.priceHistory90d}
+        productSlug={product.slug}
+        referenceTime={String(product.offerTruth.asOf)}
         selectedCompareSlugs={routeData.selectedCompareSlugs}
       />
     </section>
@@ -215,14 +232,7 @@ function ProductDetail({
 
   return (
     <PageShell
-      description={
-        <div {...props(styles.description)}>
-          <p {...props(styles.descriptionText)}>{product.brand?.name ?? "Unknown brand"}</p>
-          {product.description ? (
-            <p {...props(styles.descriptionText)}>{product.description}</p>
-          ) : null}
-        </div>
-      }
+      description={<ProductDecisionHeader product={product} />}
       eyebrow="Product detail"
       title={product.name}
     >
@@ -247,19 +257,12 @@ function ProductDetail({
           items={[
             {
               content: (
-                <ProductOverview
-                  summaryItems={overviewSummaryItems({
-                    attributeCount: product.currentAttributes.length,
-                    loadedOfferCount: product.merchantProducts?.edges.length ?? 0,
-                    hasMoreOffers: product.merchantProducts?.pageInfo.hasNextPage ?? false,
-                  })}
+                <ProductSpecifications
+                  attributes={product.currentAttributes}
+                  productId={product.id}
+                  selectedCompareSlugs={routeData.selectedCompareSlugs}
                 />
               ),
-              label: "Overview",
-              value: "overview",
-            },
-            {
-              content: <ProductSpecifications attributes={product.currentAttributes} />,
               label: "Specifications",
               value: "specifications",
             },
@@ -303,42 +306,6 @@ function ProductDetail({
   );
 }
 
-function ProductOverview({
-  summaryItems,
-}: {
-  summaryItems: readonly ProductOverviewSummaryItem[];
-}) {
-  return (
-    <section aria-label="Product overview" {...props(styles.overview)}>
-      <SummaryStrip items={summaryItems} label="At a glance" />
-      <p {...props(styles.overviewCopy)}>
-        Start with the available decision signals, then move into specifications or merchant offers
-        when you need the supporting detail.
-      </p>
-    </section>
-  );
-}
-
-function ProductSpecifications({
-  attributes,
-}: {
-  attributes: ReadonlyArray<ProductAttributeListItem>;
-}) {
-  const titleId = useId();
-
-  return (
-    <section aria-labelledby={titleId} {...props(styles.section)}>
-      <h2 id={titleId} {...props(styles.sectionTitle)}>
-        Specifications
-      </h2>
-      <ProductAttributeList
-        attributes={attributes}
-        emptyMessage="No product attributes available yet."
-      />
-    </section>
-  );
-}
-
 function ProductUnavailableFallback() {
   return (
     <PageShell title="Product unavailable" width="reading">
@@ -366,11 +333,11 @@ export async function productDetailLoader({
   if (slug === "") return productNotFoundResult();
 
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const variables: ProductDetailRouteQuery["variables"] = {
+  const variables = {
     slug,
     offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
     offersAfter,
-  };
+  } satisfies ProductDetailRouteQuery["variables"];
 
   try {
     const productRouteQuery = await fetchRouteQuery<ProductDetailRouteQuery>(
@@ -434,12 +401,15 @@ function partialProductData(error: unknown): ProductDetailResponseWithProduct | 
   const response = error.response;
   if (Array.isArray(response) || !("data" in response)) return null;
 
-  const responseData = response.data as ProductDetailRouteQuery["response"] | null | undefined;
-  return hasProduct(responseData) ? responseData : null;
+  return hasProduct(response.data) ? response.data : null;
 }
 
-function hasProduct(
-  productData: ProductDetailRouteQuery["response"] | null | undefined,
-): productData is ProductDetailResponseWithProduct {
-  return productData?.product !== null && productData?.product !== undefined;
+function hasProduct(productData: unknown): productData is ProductDetailResponseWithProduct {
+  return Boolean(
+    productData &&
+    typeof productData === "object" &&
+    "product" in productData &&
+    productData.product &&
+    typeof productData.product === "object",
+  );
 }

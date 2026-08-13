@@ -1,7 +1,6 @@
 /**
- * @generated SignedSource<<5f6c26f35ecdff6e1d4c53329f9ebfba>>
+ * @generated SignedSource<<34f1083da4aa4a95f35fddf549429876>>
  * @lightSyntaxTransform
- * @nogrep
  */
 
 /* tslint:disable */
@@ -10,35 +9,35 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 export type RevenueSummaryInput = {
-  currency?: string | null | undefined;
-  from?: string | null | undefined;
-  merchantId?: string | null | undefined;
-  network?: string | null | undefined;
-  productId?: string | null | undefined;
-  to?: string | null | undefined;
+  currency?: string | null;
+  from?: string | null;
+  merchantId?: string | null;
+  network?: string | null;
+  productId?: string | null;
+  to?: string | null;
 };
 export type RevenueSummaryRouteQuery$variables = {
-  input?: RevenueSummaryInput | null | undefined;
+  input?: RevenueSummaryInput | null;
 };
 export type RevenueSummaryRouteQuery$data = {
   readonly revenueSummary: {
     readonly filters: {
-      readonly currency: string | null | undefined;
-      readonly from: string | null | undefined;
-      readonly merchantId: string | null | undefined;
-      readonly network: string | null | undefined;
-      readonly productId: string | null | undefined;
-      readonly to: string | null | undefined;
+      readonly currency: string | null;
+      readonly from: string | null;
+      readonly merchantId: string | null;
+      readonly network: string | null;
+      readonly productId: string | null;
+      readonly to: string | null;
     };
     readonly metrics: {
-      readonly averagePaidPrice: string | null | undefined;
-      readonly clicks: number | null | undefined;
-      readonly commissionRevenue: string | null | undefined;
-      readonly conversions: number | null | undefined;
-      readonly currency: string | null | undefined;
-      readonly grossOrderValue: string | null | undefined;
+      readonly averagePaidPrice: string | null;
+      readonly clicks: number | null;
+      readonly commissionRevenue: string | null;
+      readonly conversions: number | null;
+      readonly currency: string | null;
+      readonly grossOrderValue: string | null;
     };
-  } | null | undefined;
+  } | null;
 };
 export type RevenueSummaryRouteQuery = {
   response: RevenueSummaryRouteQuery$data;
@@ -83,7 +82,7 @@ v2 = [
         "name": "filters",
         "plural": false,
         "selections": [
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -158,7 +157,7 @@ v2 = [
             "name": "conversions",
             "storageKey": null
           },
-          (v1/*: any*/),
+          (v1/*:: as any*/),
           {
             "alias": null,
             "args": null,
@@ -175,20 +174,20 @@ v2 = [
 ];
 return {
   "fragment": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Fragment",
     "metadata": null,
     "name": "RevenueSummaryRouteQuery",
-    "selections": (v2/*: any*/),
+    "selections": (v2/*:: as any*/),
     "type": "RootQueryType",
     "abstractKey": null
   },
   "kind": "Request",
   "operation": {
-    "argumentDefinitions": (v0/*: any*/),
+    "argumentDefinitions": (v0/*:: as any*/),
     "kind": "Operation",
     "name": "RevenueSummaryRouteQuery",
-    "selections": (v2/*: any*/)
+    "selections": (v2/*:: as any*/)
   },
   "params": {
     "cacheID": "73aaa913d38fe428bfc197e5595d7ee7",

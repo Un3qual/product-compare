@@ -20,10 +20,29 @@ of active and candidate plans, not the dispatch queue.
 - `docs/superpowers/specs/2026-08-09-database-constraint-application-parity-design.md`
 - `docs/superpowers/specs/2026-08-11-homepage-query-scaling-and-ownership-design.md`
 - `docs/superpowers/specs/2026-08-11-base-ui-stylex-table-foundation-design.md`
+- `docs/superpowers/specs/2026-08-12-product-experience-and-code-simplification-design.md`
 
 ## Active Plan Catalog
 
 Start at `docs/work/index.md` for live dispatch status and ownership.
+
+The approved Product Experience And Code Simplification program is planned as
+five immediately executable, path-disjoint outcomes plus one prerequisite-gated
+residual audit:
+
+- `docs/superpowers/plans/2026-08-12-frontend-seo-foundations-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-12-product-discovery-evaluation-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-12-comparison-auth-continuity-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-12-operator-workspaces-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-12-realistic-development-data-implementation-plan.md`
+- `docs/superpowers/plans/2026-08-12-type-validation-and-slop-remediation-implementation-plan.md`
+
+The first five are the current live ready rows. The type/validation/slop plan is
+not queue filler: after those cohorts complete, its first task refreshes the
+remaining manual-type, validator, bigint, declaration, barrel, and generic-file
+inventory and promotes one exact non-overlapping residual outcome. The previous
+four production-UI rows remain below as completion/supersession history rather
+than live dispatch sources.
 
 The approved homepage query-scaling outcome is complete through:
 
@@ -45,11 +64,10 @@ reviewable outcomes:
 
 The shared System Spine And Home outcome is complete. Its tokens, layout,
 navigation, primitives, homepage contracts, and production verification harness
-are stable. Discover And Evaluate, Compare And Return, Account And Setup, and
-Operations are now the four `ready` rows in the live dispatch queue; their route,
-test, browser, and lane paths are disjoint. The durable product and
-feature-parity contract is
-`docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
+are stable. The former Discover And Evaluate, Compare And Return, Account And
+Setup, and Operations rows were superseded on 2026-08-12 by the approved
+product-experience program above. Their durable earlier feature-parity contract
+remains `docs/superpowers/specs/2026-08-10-production-ui-redesign-design.md`.
 
 The most recently completed foundation plan is:
 

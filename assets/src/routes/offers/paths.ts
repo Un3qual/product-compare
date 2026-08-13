@@ -1,6 +1,9 @@
 import { MAX_COMPARE_PRODUCTS, normalizedCompareSlugs } from "../compare/paths";
 
-export { offerDiscoveryPath, offerDiscoveryResetPath } from "./offer-discovery-filter-data";
+export {
+  offerDiscoveryPath,
+  offerDiscoveryResetPath,
+} from "./discovery/offer-discovery-filter-data";
 
 export function productOffersPath(productId: string, compareSlugs: readonly string[] = []) {
   const params = new URLSearchParams();
