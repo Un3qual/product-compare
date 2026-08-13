@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, useLoaderData } from "react-router-dom";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
@@ -426,6 +427,69 @@ test("compare route enables saving a new selection while the previous Relay muta
   await waitFor(() => {
     expect(commitMutationMock).toHaveBeenCalledTimes(2);
   });
+});
+
+test("a guest save request opens auth continuity without committing or losing the selection", async () => {
+  const user = userEvent.setup();
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(
+    <MemoryRouter initialEntries={["/compare?slug=desk-lamp"]}>
+      <Routes>
+        <Route element={<Outlet context={{ viewer: null }} />}>
+          <Route path="/compare" element={<CompareRoute />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+
+  const saveButton = screen.getByRole("button", { name: "Save comparison" });
+  await user.click(saveButton);
+
+  expect(commitMutationMock).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog", { name: "Sign in to save this comparison" })).toBeVisible();
+  expect(screen.getByText("Desk Lamp")).toBeVisible();
+  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
+    "href",
+    "/auth/login?returnTo=%2Fcompare%3Fslug%3Ddesk-lamp&intent=save_comparison",
+  );
+});
+
+test("a matching signed-in return restores comparison save for review without submitting", () => {
+  sessionStorage.setItem(
+    "product-compare.pending-intent",
+    JSON.stringify({
+      kind: "save_comparison",
+      version: 1,
+      expiresAt: Date.now() + 10 * 60_000,
+      returnTo: "/compare?slug=desk-lamp",
+      productIds: [DESK_LAMP.id],
+    }),
+  );
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(
+    <MemoryRouter initialEntries={["/compare?slug=desk-lamp"]}>
+      <Routes>
+        <Route
+          element={
+            <Outlet
+              context={{
+                viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+              }}
+            />
+          }
+        >
+          <Route path="/compare" element={<CompareRoute />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+
+  expect(saveComparisonStatus()).toHaveTextContent(/comparison draft was restored/i);
+  expect(screen.getByRole("button", { name: "Save comparison" })).toBeEnabled();
+  expect(commitMutationMock).not.toHaveBeenCalled();
+  expect(sessionStorage.getItem("product-compare.pending-intent")).toBeNull();
 });
 
 function mockRouteQueryRefs() {

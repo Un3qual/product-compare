@@ -2011,11 +2011,15 @@ test("ready compare page renders decision summary rows above the specification m
   renderCompareRoute();
 
   expect(screen.getByRole("region", { name: "Comparison workspace" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Comparison controls" })).toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "Comparison controls" })).not.toBeInTheDocument();
+  const controls = screen.getByRole("region", { name: "Comparison controls" });
   const decisionHeading = screen.getByRole("heading", { name: "Decision summary" });
   const specsHeading = screen.getByRole("heading", { name: "Shared specifications" });
   const decisionSummary = screen.getByRole("table", { name: "Decision summary" });
 
+  expect(
+    controls.compareDocumentPosition(decisionHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+  ).toBeTruthy();
   expect(
     decisionHeading.compareDocumentPosition(specsHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
   ).toBeTruthy();
@@ -2218,6 +2222,49 @@ test("ready compare cards render product attributes", () => {
   expect(screen.getAllByText("144 Hz")).toHaveLength(2);
   expect(screen.getAllByText("165 Hz")).toHaveLength(2);
   expect(screen.getAllByText("Refresh rate")).toHaveLength(3);
+});
+
+test("ready compare page renders curated product summaries without slugs or generic property dumps", () => {
+  const currentAttributes = [
+    {
+      code: "refresh-rate",
+      dataType: "numeric",
+      displayName: "Refresh rate",
+      valueText: "144 Hz",
+    },
+    {
+      code: "panel-type",
+      dataType: "text",
+      displayName: "Panel type",
+      valueText: "IPS",
+    },
+    {
+      code: "internal-calibration-code",
+      dataType: "text",
+      displayName: "Internal calibration code",
+      valueText: "CAL-001",
+    },
+  ];
+  mockedUseLoaderData.mockReturnValue(
+    buildReadyCompareLoaderData({
+      products: [
+        { ...buildProductSummary(DETAIL_PRODUCT), currentAttributes },
+        buildProductSummary(SECOND_PRODUCT),
+      ],
+    }),
+  );
+  mockBatchedCompareProducts([{ ...DETAIL_PRODUCT, currentAttributes }, SECOND_PRODUCT]);
+
+  renderCompareRoute();
+
+  const summaries = screen.getByRole("region", { name: "Product decision summaries" });
+  expect(within(summaries).getByRole("heading", { name: "Detail Product" })).toBeVisible();
+  expect(within(summaries).getByText("Acme")).toBeVisible();
+  expect(within(summaries).getByText("A narrow product detail baseline.")).toBeVisible();
+  expect(within(summaries).getByText("Refresh rate")).toBeVisible();
+  expect(within(summaries).queryByText("detail-product")).not.toBeInTheDocument();
+  expect(within(summaries).queryByText("Internal calibration code")).not.toBeInTheDocument();
+  expect(within(summaries).queryByText(DETAIL_PRODUCT.id)).not.toBeInTheDocument();
 });
 
 test("ready compare cards render from batched loader data without synthetic product reads", () => {
@@ -2608,6 +2655,10 @@ test("ready compare page renders specification mode tabs with stable URL state",
   }
 
   expect(document.getElementById(activePanelId)).not.toHaveAttribute("hidden");
+
+  const tabs = screen.getByRole("tablist", { name: "Specification views" });
+  const matrixHeading = screen.getByRole("heading", { name: "Different specifications" });
+  expect(tabs.compareDocumentPosition(matrixHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
 test("specification mode tab clicks navigate to loader-backed URL state", () => {

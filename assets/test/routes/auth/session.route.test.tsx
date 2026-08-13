@@ -339,6 +339,55 @@ test("login route commits credentials through Relay and redirects after a succes
   });
 });
 
+test("login returns to a validated same-origin relative target without putting the draft in the URL", async () => {
+  renderRoute(
+    "/auth/login?returnTo=%2Fcompare%3Fslug%3Dlamp%26slug%3Dchair%23matrix&intent=save_comparison",
+  );
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: TEST_PASSWORD },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  completeMutation({
+    login: {
+      viewer: { id: "1", email: "person@example.com", isOperator: false },
+      errors: [],
+    },
+  });
+
+  await waitFor(() => {
+    expect(navigateMock).toHaveBeenCalledWith("/compare?slug=lamp&slug=chair#matrix");
+  });
+  expect(screen.getByRole("link", { name: "Create account" })).toHaveAttribute(
+    "href",
+    "/auth/register?returnTo=%2Fcompare%3Fslug%3Dlamp%26slug%3Dchair%23matrix&intent=save_comparison",
+  );
+});
+
+test("login rejects an external return target", async () => {
+  renderRoute("/auth/login?returnTo=https%3A%2F%2Fevil.example%2Fsteal");
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText(/password/i), {
+    target: { value: TEST_PASSWORD },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+
+  completeMutation({
+    login: {
+      viewer: { id: "1", email: "person@example.com", isOperator: false },
+      errors: [],
+    },
+  });
+
+  await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/"));
+});
+
 test("logout route commits the Relay logout mutation and redirects after Phoenix clears the session", async () => {
   renderRoute("/auth/logout");
 
@@ -536,6 +585,33 @@ test("register route updates root viewer after a successful session response", a
   await waitFor(() => {
     expect(navigateMock).toHaveBeenCalledWith("/");
   });
+});
+
+test("register returns to a validated relative target and preserves it on the sign-in link", async () => {
+  renderRoute(
+    "/auth/register?returnTo=%2Fproducts%2Fdesk-lamp%23watch&intent=price_watch",
+  );
+  expect(screen.getByRole("link", { name: "Sign in instead" })).toHaveAttribute(
+    "href",
+    "/auth/login?returnTo=%2Fproducts%2Fdesk-lamp%23watch&intent=price_watch",
+  );
+
+  fireEvent.change(screen.getByLabelText(/email/i), {
+    target: { value: "person@example.com" },
+  });
+  fireEvent.change(screen.getByLabelText(/^password$/i), {
+    target: { value: TEST_PASSWORD },
+  });
+  fireEvent.click(screen.getByRole("button", { name: /create account/i }));
+
+  completeMutation({
+    register: {
+      viewer: { id: "1", email: "person@example.com", isOperator: false },
+      errors: [],
+    },
+  });
+
+  await waitFor(() => expect(navigateMock).toHaveBeenCalledWith("/products/desk-lamp#watch"));
 });
 
 test("logout route leaves root viewer unchanged when the action payload is missing ok", async () => {
