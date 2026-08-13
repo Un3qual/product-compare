@@ -37,9 +37,22 @@ for (const viewport of VIEWPORTS) {
 
     await page.goto("/ingestion/cj-programs");
     const cjLedger = page.getByRole("table", { name: "CJ program lifecycle ledger" });
+    const unmatchedLedger = page.getByRole("table", { name: "Unmatched CJ feeds" });
+    await expect(page.getByRole("heading", { name: "CJ program lifecycle summary" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Program attention" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Feed health" })).toBeVisible();
     await expect(cjLedger).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Action" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Unmatched feeds" })).toBeVisible();
+    await expect(unmatchedLedger).toBeVisible();
+    await expect(
+      unmatchedLedger.getByRole("columnheader", { name: "Provider feed" }),
+    ).toBeVisible();
+    await expect(unmatchedLedger.getByRole("columnheader", { name: "Advertiser" })).toBeVisible();
+    await expect(unmatchedLedger.getByText("Unmatched Northwind Feed")).toBeVisible();
+    await expect(unmatchedLedger.getByText("25 products")).toBeVisible();
+    await expect(unmatchedLedger.getByRole("cell", { name: "PRODUCT", exact: true })).toBeVisible();
+    await expect(unmatchedLedger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
     await expect(page.locator('time[datetime="2026-08-12T17:45:00Z"]')).toBeVisible();
     await expect(cjLedger.getByText("ID northwind-advertiser")).toBeVisible();
     await expect(cjLedger.getByText("1 feed")).toBeVisible();
@@ -62,15 +75,21 @@ for (const viewport of VIEWPORTS) {
     }
     await page.getByRole("button", { name: "Close editor Northwind Merchant" }).click();
     await expectTableContained(cjLedger, { compact: viewport.name !== "mobile" });
+    await expectTableContained(unmatchedLedger, { compact: viewport.name !== "mobile" });
     await expectOperatorSurface(page, viewport.width);
     await captureOperatorWorkspace(page, testInfo.outputPath(`${viewport.name}-cj-lifecycle.png`));
 
     await page.goto("/commerce/revenue?currency=USD&network=impact");
     const controls = page.getByRole("region", { name: "Revenue controls" });
-    const summary = page.getByRole("region", { name: "Summary" });
+    const performance = page.getByRole("region", { name: "Attribution performance" });
+    const outcome = page.getByRole("region", { name: "Revenue outcome" });
+    const recent = page.getByRole("region", { name: "Recent conversion" });
     const ledger = page.getByRole("table", { name: "Attribution ledger" });
     await expect(controls).toBeVisible();
-    await expect(summary).toBeVisible();
+    await expect(performance).toBeVisible();
+    await expect(outcome).toBeVisible();
+    await expect(recent).toBeVisible();
+    await expect(recent.getByText("Latest in loaded activity")).toBeVisible();
     await expect(ledger).toBeVisible();
     await expectTableContained(ledger, { compact: viewport.name !== "mobile" });
     expect(
@@ -80,10 +99,47 @@ for (const viewport of VIEWPORTS) {
             nextElement &&
             element.compareDocumentPosition(nextElement) & Node.DOCUMENT_POSITION_FOLLOWING,
           ),
-        await summary.elementHandle(),
+        await performance.elementHandle(),
       ),
     ).toBe(true);
-    const conversion = ledger.getByRole("group", {
+    await expect(ledger.getByRole("columnheader", { name: "Visit" })).toBeVisible();
+    await expect(ledger.getByRole("columnheader", { name: "Customer" })).toBeVisible();
+    await expect(ledger.getByRole("columnheader", { name: "Commerce" })).toBeVisible();
+    await expect(ledger.getByRole("columnheader", { name: "Order" })).toBeVisible();
+    await expect(ledger.getByRole("columnheader", { name: "Commission" })).toBeVisible();
+    await expect(ledger.getByRole("columnheader", { name: "State" })).toBeVisible();
+    await expect(ledger.getByText("operator@example.test")).toBeVisible();
+    await expect(ledger.getByText("Northwind Supply · Field Camera")).toBeVisible();
+    await expect(ledger.getByText("180.00 USD")).toBeVisible();
+    await expect(ledger.getByText("18.00 USD")).toBeVisible();
+    await expect(ledger.getByRole("region", { name: /Attribution details/ })).toHaveCount(0);
+    await expect(ledger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
+
+    await ledger.getByRole("button", { name: /Show details/ }).click();
+    const details = ledger.getByRole("region", { name: /Attribution details/ });
+    await expect(details).toBeVisible();
+    expect(
+      await details.evaluate((element) => {
+        const detailRow = element.closest("tr");
+        const sourceRow = detailRow?.previousElementSibling;
+
+        return Boolean(
+          detailRow &&
+          sourceRow?.querySelector('button[aria-expanded="true"]') &&
+          detailRow.parentElement === sourceRow.parentElement,
+        );
+      }),
+    ).toBe(true);
+    await expect(details.getByRole("heading", { name: "Touchpoint" })).toBeVisible();
+    await expect(details.getByRole("heading", { name: "Request evidence" })).toBeVisible();
+    await expect(details.getByRole("heading", { name: "Commerce" })).toBeVisible();
+    await expect(details.getByRole("heading", { name: "Conversion" })).toBeVisible();
+    await expect(details.getByText("Product Compare website")).toBeVisible();
+    await expect(details.getByText("OperatorBrowser 1.0")).toBeVisible();
+    await expect(details.getByText("203.0.113.10")).toBeVisible();
+    await expect(details.getByText("FIELD-CAMERA-1")).toBeVisible();
+    await expect(details.getByText("northwind-impact")).toBeVisible();
+    const conversion = details.getByRole("group", {
       name: "Conversion impact-conversion-123",
     });
     await expect(conversion.getByText("Order value")).toBeVisible();
@@ -95,7 +151,7 @@ for (const viewport of VIEWPORTS) {
     await expect(conversion.getByText("Impact", { exact: true })).toBeVisible();
     await expect(conversion.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
     await expect(conversion.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
-    await expect(ledger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
+    await expectTableContained(ledger, { compact: viewport.name !== "mobile" });
     await expectOperatorSurface(page, viewport.width);
     await captureOperatorWorkspace(
       page,
@@ -256,7 +312,9 @@ test("an unmatched-feed failure does not hide the CJ lifecycle ledger", async ({
   await page.goto("/ingestion/cj-programs");
 
   await expect(page.getByRole("table", { name: "CJ program lifecycle ledger" })).toBeVisible();
-  await expect(page.getByRole("alert")).toContainText("Unmatched feeds unavailable.");
+  await expect(
+    page.getByRole("alert").filter({ hasText: "Unmatched feeds unavailable." }),
+  ).toBeVisible();
   await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
   await expect(
     page
@@ -298,7 +356,8 @@ test("revenue summary, ledger preload, and pagination failures recover independe
   failSummary = false;
   failLedger = true;
   await page.reload();
-  await expect(page.getByRole("region", { name: "Summary" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Attribution performance" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
   await expect(page.getByText("Attribution ledger unavailable.")).toBeVisible();
 
   failLedger = false;

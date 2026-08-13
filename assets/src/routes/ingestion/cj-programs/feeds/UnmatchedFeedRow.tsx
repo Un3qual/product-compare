@@ -20,7 +20,12 @@ const fragment = graphql`
 `;
 
 const styles = create({
-  cell: { fontSize: "0.8rem", minWidth: 0, overflowWrap: "anywhere" },
+  cell: {
+    fontSize: "0.8rem",
+    minWidth: 0,
+    overflowWrap: "anywhere",
+    paddingInline: "0.3rem",
+  },
   feed: { display: "grid", gap: "0.1rem" },
   name: { fontWeight: 750 },
   id: { color: tokens.textSecondary, fontFamily: tokens.fontMono, fontSize: "0.72rem" },

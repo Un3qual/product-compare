@@ -78,19 +78,24 @@ const styles = create({
     tableLayout: "fixed",
     width: "100%",
   },
-  visitColumn: { width: "15%" },
+  visitColumn: { width: "14%" },
   customerColumn: { width: "20%" },
-  commerceColumn: { width: "23%" },
+  commerceColumn: { width: "22%" },
   amountColumn: { width: "11%" },
-  stateColumn: { width: "14%" },
-  actionColumn: { width: "8%" },
+  stateColumn: { width: "13%" },
+  actionColumn: { width: "9%" },
   time: { fontWeight: 650, whiteSpace: "nowrap" },
   identity: { display: "grid", gap: "0.1rem" },
   primary: { fontWeight: 700, lineHeight: 1.25, overflowWrap: "anywhere" },
   secondary: { color: tokens.textSecondary, fontSize: "0.72rem", lineHeight: 1.25 },
   state: { display: "flex", flexWrap: "wrap", gap: "0.25rem" },
-  actionCell: { textAlign: "end", whiteSpace: "nowrap" },
-  actionButton: { minHeight: "2rem", paddingInline: "0.4rem" },
+  actionCell: { paddingInline: "0.25rem", textAlign: "end", whiteSpace: "nowrap" },
+  actionButton: {
+    minHeight: "2rem",
+    minWidth: 0,
+    paddingInline: "0.2rem",
+    whiteSpace: "nowrap",
+  },
   pagination: { paddingInline: "1rem" },
 });
 
@@ -191,10 +196,14 @@ const columns = columnHelper.columns([
     header: "State",
     cell: ({ row }) => <AttributionState click={row.original} />,
   }),
-  columnHelper.display({ id: "details", header: "", cell: () => null }),
+  columnHelper.display({ id: "details", header: "Details", cell: () => null }),
 ]);
 
-export function AttributionLedger({ fragmentRef }: { fragmentRef: AttributionLedger_connection$key }) {
+export function AttributionLedger({
+  fragmentRef,
+}: {
+  fragmentRef: AttributionLedger_connection$key;
+}) {
   const { data, hasNext, isLoadingNext, loadNext } = usePaginationFragment<
     AttributionLedgerPaginationQuery,
     AttributionLedger_connection$key
@@ -264,11 +273,14 @@ export function AttributionLedger({ fragmentRef }: { fragmentRef: AttributionLed
             <TableBody>
               {table.getRowModel().rows.map((row) => (
                 <AttributionLedgerRow click={row.original} key={row.id}>
-                  {row.getAllCells().slice(0, -1).map((cell) => (
-                    <TableCell key={cell.id} style={styles.cell}>
-                      <table.FlexRender cell={cell} />
-                    </TableCell>
-                  ))}
+                  {row
+                    .getAllCells()
+                    .slice(0, -1)
+                    .map((cell) => (
+                      <TableCell key={cell.id} style={styles.cell}>
+                        <table.FlexRender cell={cell} />
+                      </TableCell>
+                    ))}
                 </AttributionLedgerRow>
               ))}
             </TableBody>
@@ -279,7 +291,13 @@ export function AttributionLedger({ fragmentRef }: { fragmentRef: AttributionLed
   );
 }
 
-function AttributionLedgerRow({ click, children }: { click: AttributionClick; children: ReactNode }) {
+function AttributionLedgerRow({
+  click,
+  children,
+}: {
+  click: AttributionClick;
+  children: ReactNode;
+}) {
   const [isExpanded, setIsExpanded] = useState(false);
   const time = formatProductDateTimeLabel(click.insertedAt);
   const identity = attributionIdentityCopy(click);
@@ -300,7 +318,7 @@ function AttributionLedgerRow({ click, children }: { click: AttributionClick; ch
             type="button"
             variant="link"
           >
-            {isExpanded ? "Close details" : "Details"}
+            {isExpanded ? "Close" : "Details"}
             {isExpanded ? (
               <ChevronUpIcon aria-hidden="true" size={14} />
             ) : (
@@ -334,7 +352,13 @@ function attributionIdentityCopy(click: AttributionClick) {
   return click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click";
 }
 
-function AttributionAmount({ click, kind }: { click: AttributionClick; kind: "commission" | "order" }) {
+function AttributionAmount({
+  click,
+  kind,
+}: {
+  click: AttributionClick;
+  kind: "commission" | "order";
+}) {
   const outcome = buildAttributionOutcome(click.matchedConversions);
 
   if (outcome.kind === "none") return <>—</>;
@@ -368,7 +392,12 @@ function AttributionState({ click }: { click: AttributionClick }) {
   );
 }
 
-function AttributionPaginationControl({ failed, hasNext, isLoadingNext, onLoadMore }: {
+function AttributionPaginationControl({
+  failed,
+  hasNext,
+  isLoadingNext,
+  onLoadMore,
+}: {
   failed: boolean;
   hasNext: boolean;
   isLoadingNext: boolean;

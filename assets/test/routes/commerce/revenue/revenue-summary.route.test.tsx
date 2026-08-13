@@ -257,9 +257,7 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByRole("region", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue report" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue controls" })).toBeInTheDocument();
-  expect(
-    screen.queryByRole("complementary", { name: "Revenue controls" }),
-  ).not.toBeInTheDocument();
+  expect(screen.queryByRole("complementary", { name: "Revenue controls" })).not.toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
@@ -325,7 +323,7 @@ test("revenue route renders customer-facing visit and purchase details without i
     within(ledger)
       .getAllByRole("columnheader")
       .map((header) => header.textContent),
-  ).toEqual(["Visit", "Customer", "Commerce", "Order", "Commission", "State", ""]);
+  ).toEqual(["Visit", "Customer", "Commerce", "Order", "Commission", "State", "Details"]);
   expect(ledger.querySelectorAll("dl")).toHaveLength(0);
   const visitRow = within(ledger).getByRole("row", { name: /operator@example\.test/ });
   expect(within(visitRow).getByText("May 31, 2026, 12:30 PM")).toHaveAttribute(

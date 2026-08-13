@@ -72,7 +72,12 @@ const styles = create({
   count: { color: tokens.textSecondary, fontSize: "0.78rem", margin: 0 },
   empty: { color: tokens.textSecondary, margin: 0, paddingInline: "1rem" },
   pagination: { paddingInline: "1rem" },
-  table: { minWidth: "58rem", tableLayout: "fixed", width: "100%" },
+  tableHead: { fontSize: "0.7rem", overflowWrap: "anywhere", paddingInline: "0.3rem" },
+  table: {
+    minWidth: { default: "58rem", "@media (min-width: 48rem)": "100%" },
+    tableLayout: "fixed",
+    width: "100%",
+  },
   feedColumn: { width: "20%" },
   timeColumn: { width: "15%" },
   productsColumn: { width: "10%" },
@@ -93,7 +98,10 @@ const columns = columnHelper.columns([
   columnHelper.display({ id: "language", header: "Language" }),
 ]);
 
-export function UnmatchedFeeds({ pagination, query }: {
+export function UnmatchedFeeds({
+  pagination,
+  query,
+}: {
   pagination: CJProgramsPagination;
   query: RelayRouteQueryDescriptor<UnmatchedFeedsQuery["variables"]>;
 }) {
@@ -103,13 +111,20 @@ export function UnmatchedFeeds({ pagination, query }: {
   const feeds = data.unmatchedCjFeeds.edges.map(({ node }) => node);
   const firstFeed = feeds[0] ?? null;
   const paginationData = buildCJUnmatchedFeedPageData(pagination, data.unmatchedCjFeeds.pageInfo);
-  const table = useTable({ columns, data: feeds, features: tableModel, getRowId: (feed) => feed.id });
+  const table = useTable({
+    columns,
+    data: feeds,
+    features: tableModel,
+    getRowId: (feed) => feed.id,
+  });
 
   return (
     <>
       <section aria-labelledby={healthId} {...props(styles.health)}>
         <header {...props(styles.healthHeader)}>
-          <h2 id={healthId} {...props(styles.healthTitle)}>Feed health</h2>
+          <h2 id={healthId} {...props(styles.healthTitle)}>
+            Feed health
+          </h2>
           <p {...props(styles.healthCount)}>
             {feeds.length === 0
               ? "No unmatched feeds on this loaded page"
@@ -119,17 +134,23 @@ export function UnmatchedFeeds({ pagination, query }: {
         {firstFeed ? (
           <>
             <p {...props(styles.healthExample)}>{firstFeed.feedName ?? "Unnamed feed"}</p>
-            <p {...props(styles.healthProducts)}>{formatFeedProductCount(firstFeed.productCount)}</p>
+            <p {...props(styles.healthProducts)}>
+              {formatFeedProductCount(firstFeed.productCount)}
+            </p>
           </>
         ) : null}
       </section>
       <section aria-labelledby="unmatched-cj-feeds" {...props(styles.section)}>
         <header {...props(styles.sectionHeader)}>
-          <h2 id="unmatched-cj-feeds" {...props(styles.title)}>Unmatched feeds</h2>
-          <p {...props(styles.count)}>{feeds.length} feeds on this loaded page</p>
+          <h2 id="unmatched-cj-feeds" {...props(styles.title)}>
+            Unmatched feeds
+          </h2>
+          <p {...props(styles.count)}>
+            {feeds.length} {feeds.length === 1 ? "feed" : "feeds"} on this loaded page
+          </p>
         </header>
         {feeds.length > 0 ? (
-          <Table aria-label="Unmatched CJ feeds" style={styles.table}>
+          <Table aria-label="Unmatched CJ feeds" style={styles.table} tabIndex={0}>
             <colgroup>
               <col {...props(styles.feedColumn)} />
               <col {...props(styles.timeColumn)} />
@@ -144,7 +165,7 @@ export function UnmatchedFeeds({ pagination, query }: {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead key={header.id} scope="col">
+                    <TableHead key={header.id} scope="col" style={styles.tableHead}>
                       {header.isPlaceholder ? null : <table.FlexRender header={header} />}
                     </TableHead>
                   ))}

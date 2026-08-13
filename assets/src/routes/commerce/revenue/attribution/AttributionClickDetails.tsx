@@ -13,7 +13,7 @@ const styles = create({
     gap: "1rem",
     gridTemplateColumns: {
       default: "repeat(4, minmax(0, 1fr))",
-      "@media (max-width: 64rem)": "repeat(2, minmax(0, 1fr))",
+      "@media (max-width: 80rem)": "repeat(2, minmax(0, 1fr))",
       "@media (max-width: 40rem)": "minmax(0, 1fr)",
     },
     padding: "1rem",
@@ -66,7 +66,11 @@ export function AttributionClickDetails({
             <Fact label="Product" value={click.productName ?? "No product"} />
             <Fact label="Network" value={click.affiliateNetworkName ?? "No network"} />
             <Fact code label="Merchant SKU" value={click.merchantProductExternalSku ?? "No SKU"} />
-            <Fact code label="Program" value={click.affiliateProgramCode ?? "No affiliate program"} />
+            <Fact
+              code
+              label="Program"
+              value={click.affiliateProgramCode ?? "No affiliate program"}
+            />
           </DetailGroup>
           <section aria-labelledby={conversionId} {...props(styles.group)}>
             <h3 id={conversionId} {...props(styles.title)}>
@@ -91,15 +95,7 @@ export function AttributionClickDetails({
   );
 }
 
-function DetailGroup({
-  children,
-  id,
-  title,
-}: {
-  children: ReactNode;
-  id: string;
-  title: string;
-}) {
+function DetailGroup({ children, id, title }: { children: ReactNode; id: string; title: string }) {
   return (
     <section aria-labelledby={id} {...props(styles.group)}>
       <h3 id={id} {...props(styles.title)}>

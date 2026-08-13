@@ -105,7 +105,11 @@ const columns = columnHelper.columns([
   columnHelper.display({ id: "action", header: "Action" }),
 ]);
 
-export function ProgramLifecycleTable({ counts, pagination, programs }: {
+export function ProgramLifecycleTable({
+  counts,
+  pagination,
+  programs,
+}: {
   counts: CJProgramsRouteQuery["response"]["cjProgramStageCounts"];
   pagination: ProgramPagination;
   programs: ProgramsConnection;
@@ -168,7 +172,10 @@ export function ProgramLifecycleTable({ counts, pagination, programs }: {
           <h2 id="cj-program-work-queue" {...props(styles.programsTitle)}>
             Programs work queue
           </h2>
-          <p {...props(styles.programsCount)}>{programs.edges.length} programs on this page</p>
+          <p {...props(styles.programsCount)}>
+            {programs.edges.length} {programs.edges.length === 1 ? "program" : "programs"} on this
+            page
+          </p>
         </header>
         {programs.edges.length > 0 ? (
           <Table aria-label="CJ program lifecycle ledger" style={styles.table}>

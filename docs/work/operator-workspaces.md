@@ -11,15 +11,21 @@
   `docs/superpowers/plans/2026-08-13-compact-operator-ledgers-implementation-plan.md`
 - Ledger refinement design:
   `docs/superpowers/specs/2026-08-13-compact-operator-ledgers-design.md`
+- Dashboard refinement plan:
+  `docs/superpowers/plans/2026-08-13-revenue-cj-operator-dashboard-implementation-plan.md`
+- Dashboard refinement design:
+  `docs/superpowers/specs/2026-08-13-revenue-cj-operator-dashboard-design.md`
 - Last verified: 2026-08-13 against affiliate setup, CJ lifecycle/feed, revenue
   summary/ledger, generated Relay operations, deterministic browser acceptance,
   and the complete frontend/backend gates.
 
 ## Target Outcome
 
-Affiliate setup is a guided workflow, CJ is a lifecycle ledger with independent
-feed regions, and revenue is a dense control/metric/attribution workspace with
-independent failure recovery and generated type ownership.
+Affiliate setup is a guided workflow. CJ is a compact operations dashboard with
+aggregate lifecycle context, loaded-page attention/feed health, and independent
+program/feed ledgers. Revenue is a compact performance dashboard with a dense
+attribution ledger and complete below-row evidence disclosure. Both dashboards
+retain independent failure recovery and generated type ownership.
 
 ## Owned Paths
 
@@ -49,43 +55,42 @@ diff checks.
   `merchant-link`, and `coupon` steps. Generated mutation variables are built at
   the HTML form boundary, mutation outcomes live with their Relay operations,
   and merchant selection context is a projection of the generated route query.
-- CJ program management is a TanStack lifecycle table. Program mutation state,
-  program-feed disclosure/query state, unmatched-feed preload/query state, and
-  lifecycle policy each have separate owners and failure boundaries.
-- Revenue reporting renders one main-band control region before its generated
-  metric projection and independently preloaded attribution ledger. Conversion
-  reconciliation facts use a generated fragment and remain visible in the
-  ledger without a details disclosure. Ledger cells are composed summaries
-  rather than parameter dumps: click origin and type use badges, identity and
-  commerce lead with their primary facts, diagnostics compact the
-  referrer/browser/IP evidence, and conversion amount and state lead before
-  exact diagnostic facts.
+- CJ program management composes a compact aggregate lifecycle strip with
+  loaded-page attention and feed-health modules. The program and unmatched-feed
+  regions remain independently recoverable TanStack tables. Program mutation
+  state, row-local editor feedback, lazy feed inspection, unmatched-feed preload,
+  and lifecycle policy keep separate owners and failure boundaries.
+- Revenue reporting places one shallow command band before separate attribution
+  performance, revenue outcome, and recent-loaded-conversion modules. Its
+  independently preloaded ledger leads with visit, customer, commerce, order,
+  commission, and state. Less important evidence expands in a full-width row
+  immediately below the selected visit, grouped as Touchpoint, Request evidence,
+  Commerce, and Conversion rather than rendered as a parameter dump.
 - The former generic `affiliate-setup-data.ts`, `cj-program-data.ts`,
   `RevenueSummaryView.tsx`, and `revenue-summary-view-data.ts` owners were
   removed or renamed by their actual responsibilities.
 
 ## Compact Ledger Hierarchy
 
-- Revenue keeps four scan columns with explicit priority. Visit leads with time
-  and customer identity, then source/link badges. Request leads with referrer,
-  then browser and IP diagnostics. Commerce leads with merchant and product,
-  then network, SKU, and affiliate program. Conversion leads with order value,
-  status, commission, and confidence, followed by merchant/product/network and
-  the exact purchased/reported timeline plus network reference.
-- Every revenue fact remains visible. Multiple conversions use quiet dividers,
-  while identifiers retain wrapping and full-value titles where needed; no
-  record data is hidden behind a disclosure or clipped to a row-height limit.
+- Revenue uses seven dense scan columns with explicit priority. The closed row
+  keeps visit time, customer identity, merchant/product, order, commission,
+  status, and confidence visible. Its accessible Details action inserts a
+  sibling table row below the visit containing source, link type, referrer,
+  browser, IP, network, SKU, affiliate program, every matched conversion,
+  purchased/reported times, and the network conversion reference.
+- No revenue or CJ record fact is discarded, truncated to a row-height limit,
+  or aggregated client-side. Multiple conversions remain individually legible
+  with quiet dividers, and exact identifiers wrap inside their contained region.
 - CJ merchant cells are semantic row headers rather than nested page headings.
   Program name is primary, lifecycle state and required action are the next
   scan targets, and provider, advertiser ID, feed count, warnings, and exact
   change time remain supporting facts. Editing stays a full-width task row with
   unchanged mutation, feedback, and lazy feed behavior.
-- Column widths follow information density: conversion and CJ action receive
-  the most space, while lifecycle and request diagnostics receive less. Shared
-  cell padding is modestly tighter without reducing typography. Ordinary
-  operator ledgers fit at desktop/tablet widths and use contained scrolling on
-  mobile; the two comparison matrices retain their deliberate internal 48rem
-  scrolling contract.
+- Column widths follow information density: customer/commerce and CJ action
+  receive more space, while state and compact feed qualifiers receive less.
+  Ordinary operator ledgers fit at desktop/tablet widths and use focusable,
+  contained scrolling on mobile; the two comparison matrices retain their
+  deliberate internal 48rem scrolling contract.
 
 ## Retained Manual Boundary Inventory
 
@@ -113,22 +118,24 @@ diff checks.
   guiding network, program, merchant-link, and coupon work in dependency order.
   Mutation failures remain local and successful identifiers flow into the next
   required step.
-- CJ renders one TanStack lifecycle ledger with exact reconciliation time,
-  lifecycle mutation controls, separately recoverable program-feed disclosure,
-  and independently recoverable unmatched feeds.
-- Revenue renders controls before metrics and attribution, keeps summary and
-  ledger preload failures independent in both directions, keeps pagination
-  failure local, and keeps exact conversion investigation facts visible in the
+- CJ renders aggregate lifecycle counts without a progress metaphor, truthful
+  loaded-page attention/feed-health summaries, a four-column program work
+  queue, exact reconciliation time, lifecycle mutation controls, separately
+  recoverable program-feed disclosure, and an eight-column unmatched-feed
   ledger.
+- Revenue renders controls before three compact summary modules and attribution,
+  keeps summary and ledger preload failures independent in both directions,
+  keeps pagination failure local, and retains complete conversion investigation
+  facts in the selected visit's below-row disclosure.
 - The combined production browser matrix passed 11/11 scenarios. Its desktop,
-  tablet, and mobile runs cover both operator ledgers and both comparison
+  tablet, and mobile runs cover both operator dashboards and both comparison
   matrices with reduced motion, zero axe violations, document/table-container
-  bounds, contained mobile scrolling, affiliate mutations, CJ lifecycle/feed
-  recovery, revenue preload/pagination recovery, and inspected full-page CJ,
-  revenue, and editor captures.
+  bounds, focusable contained mobile scrolling, below-row revenue expansion,
+  affiliate mutations, CJ lifecycle/feed recovery, revenue preload/pagination
+  recovery, and inspected full-page CJ, revenue, and editor captures.
 - `cd assets && pnpm run check` passed Relay validation, TypeScript, lint,
-  formatting, 118 files / 1,528 tests, client and SSR builds, StyleX mangling,
-  and the 226,357-byte gzip initial bundle within the 300,000-byte budget. The
+  formatting, 118 files / 1,542 tests, client and SSR builds, StyleX mangling,
+  and the 226,340-byte gzip initial bundle within the 300,000-byte budget. The
   host used Node 25.6.0 and emitted the known warning for the pinned Node 24.18.1.
 - `mix work_queue.validate` passed with the committed one-row Ready Floor
   Exception, and the final whitespace/status checks covered only the intended
