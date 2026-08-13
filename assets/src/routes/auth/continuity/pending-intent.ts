@@ -108,7 +108,9 @@ export function safeRelativeReturnPath(value: string | null | undefined, origin 
     const url = new URL(value, origin);
 
     if (url.origin !== new URL(origin).origin) return null;
-    if (url.pathname === "/auth/login" || url.pathname === "/auth/register") return null;
+    const normalizedPathname = decodeURIComponent(url.pathname).replace(/\/+$/u, "").toLowerCase();
+    if (normalizedPathname === "/auth/login" || normalizedPathname === "/auth/register")
+      return null;
 
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {

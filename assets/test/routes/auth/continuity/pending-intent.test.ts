@@ -134,6 +134,12 @@ test.each([
   "\\\\evil.example\\compare",
   "/auth/login?returnTo=/compare",
   "/auth/register",
+  "/auth/login/",
+  "/AUTH/LOGIN",
+  "/auth/%6cogin",
+  "/auth/register/",
+  "/AUTH/REGISTER",
+  "/auth/%72egister",
   "compare?slug=lamp",
   "/compare\nSet-Cookie:bad",
 ])("rejects unsafe or looping return target %s", (value) => {

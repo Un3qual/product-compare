@@ -73,8 +73,6 @@ const PRICE_WATCH_RULE_OPTIONS = PRICE_WATCH_RULE_TYPES.map((value) => ({
   value,
 }));
 
-type SupportedPriceWatchRuleType = PriceWatchIntentDraft["ruleType"];
-
 export function PriceWatchControl({ productId }: { productId: string }) {
   return <PriceWatchForm key={productId} productId={productId} />;
 }
@@ -93,7 +91,7 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const amountId = useId();
   const currencyId = useId();
   const ruleId = useId();
-  const [ruleType, setRuleType] = useState<SupportedPriceWatchRuleType>(
+  const [ruleType, setRuleType] = useState<PriceWatchRuleType>(
     restoredIntent?.ruleType ?? "TARGET_PRICE",
   );
   const [amount, setAmount] = useState(restoredIntent?.amount ?? "");
@@ -213,13 +211,13 @@ function PriceWatchRuleField({
   value,
 }: {
   id: string;
-  onChange: (value: SupportedPriceWatchRuleType) => void;
-  value: SupportedPriceWatchRuleType;
+  onChange: (value: PriceWatchRuleType) => void;
+  value: PriceWatchRuleType;
 }) {
   return (
     <Label htmlFor={id} style={styles.field}>
       Alert when
-      <Select<SupportedPriceWatchRuleType>
+      <Select<PriceWatchRuleType>
         items={PRICE_WATCH_RULE_OPTIONS}
         name="ruleType"
         onValueChange={(nextValue) => {
@@ -251,7 +249,7 @@ function buildCreatePriceWatchInput({
   amount: string;
   currency: string;
   productId: string;
-  ruleType: SupportedPriceWatchRuleType;
+  ruleType: PriceWatchRuleType;
 }): CreatePriceWatchInput {
   const amount = rawAmount.trim();
   const currency = rawCurrency.trim().toUpperCase();
@@ -274,7 +272,7 @@ function resolveCreatePriceWatchMutationMessage(
     : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
-function getPriceWatchAmountFieldData(ruleType: SupportedPriceWatchRuleType) {
+function getPriceWatchAmountFieldData(ruleType: PriceWatchRuleType) {
   switch (ruleType) {
     case "TARGET_PRICE":
       return { visible: true, label: "Target landed price" } as const;
