@@ -200,51 +200,52 @@ function PriceTrendDataTable({
   const merchantNames = merchantNameByProductId(series);
 
   return (
-    <table
-      aria-label={`${tableModeLabel(mode)} ${series.currency} price trend data`}
-      {...props(styles.visuallyHidden)}
-    >
-      <thead>
-        <tr>
-          <th scope="col">Observed</th>
-          {mode === "merchants" ? (
-            series.merchants.map((merchant) => <th key={merchant.id}>{merchant.name}</th>)
-          ) : (
-            <>
-              <th scope="col">{mode === "average" ? "Average price" : "Lowest price"}</th>
-              {mode === "lowest" ? <th scope="col">Merchant</th> : null}
-            </>
-          )}
-        </tr>
-      </thead>
-      <tbody>
-        {series.points.map((point) => (
-          <tr key={String(point.observedAt)}>
-            <td>
-              <time dateTime={String(point.observedAt)}>{String(point.observedAt)}</time>
-            </td>
+    <div {...props(styles.visuallyHidden)}>
+      <table aria-label={`${tableModeLabel(mode)} ${series.currency} price trend data`}>
+        <thead>
+          <tr>
+            <th scope="col">Observed</th>
             {mode === "merchants" ? (
-              series.merchants.map((merchant) => (
-                <td key={merchant.id}>
-                  {String(
-                    point.merchantPrices.find(
-                      ({ merchantProductId }) => merchantProductId === merchant.merchantProductId,
-                    )?.price ?? "—",
-                  )}
-                </td>
-              ))
+              series.merchants.map((merchant) => <th key={merchant.id}>{merchant.name}</th>)
             ) : (
               <>
-                <td>{String(mode === "average" ? point.averagePrice : point.lowestPrice)}</td>
-                {mode === "lowest" ? (
-                  <td>{merchantNames.get(point.lowestMerchantProductId) ?? "Unknown merchant"}</td>
-                ) : null}
+                <th scope="col">{mode === "average" ? "Average price" : "Lowest price"}</th>
+                {mode === "lowest" ? <th scope="col">Merchant</th> : null}
               </>
             )}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {series.points.map((point) => (
+            <tr key={String(point.observedAt)}>
+              <td>
+                <time dateTime={String(point.observedAt)}>{String(point.observedAt)}</time>
+              </td>
+              {mode === "merchants" ? (
+                series.merchants.map((merchant) => (
+                  <td key={merchant.id}>
+                    {String(
+                      point.merchantPrices.find(
+                        ({ merchantProductId }) => merchantProductId === merchant.merchantProductId,
+                      )?.price ?? "—",
+                    )}
+                  </td>
+                ))
+              ) : (
+                <>
+                  <td>{String(mode === "average" ? point.averagePrice : point.lowestPrice)}</td>
+                  {mode === "lowest" ? (
+                    <td>
+                      {merchantNames.get(point.lowestMerchantProductId) ?? "Unknown merchant"}
+                    </td>
+                  ) : null}
+                </>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

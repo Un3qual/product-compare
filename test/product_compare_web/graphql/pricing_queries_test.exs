@@ -87,8 +87,8 @@ defmodule ProductCompareWeb.GraphQL.PricingQueriesTest do
       assert DateTime.to_time(latest_date) == ~T[00:00:00]
 
       assert List.last(usd_points)["lowestPrice"] == "120.50"
-      assert length(eur_points) <= 91
-      assert length(usd_points) <= 91
+      assert Enum.count_until(eur_points, 92) <= 91
+      assert Enum.count_until(usd_points, 92) <= 91
     end
 
     test "merchants returns a paginated connection with stable ordering", %{conn: conn} do

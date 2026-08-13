@@ -28,7 +28,7 @@ defmodule ProductCompare.Pricing.ProductPriceTrendsTest do
 
     assert eur.currency == "EUR"
     assert usd.currency == "USD"
-    assert length(usd.points) == 91
+    assert Enum.count_until(usd.points, 92) == 91
     assert length(eur.points) == Date.diff(~D[2026-08-12], ~D[2026-06-01]) + 1
 
     assert Enum.map(usd.merchants, & &1.name) == ["Alpha Market", "Beta Market"]

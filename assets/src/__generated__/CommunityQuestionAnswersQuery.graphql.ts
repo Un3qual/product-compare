@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b37c0f2d18391e4546d44b89ae5fafa6>>
+ * @generated SignedSource<<a0d6f08103a36a572a998ff79af4e7ac>>
  * @lightSyntaxTransform
  * @nogrep
  */
@@ -10,12 +10,12 @@
 
 import { ConcreteRequest } from 'relay-runtime';
 import { FragmentRefs } from "relay-runtime";
-export type ProductCommunityPanelQuestionAnswersQuery$variables = {
+export type CommunityQuestionAnswersQuery$variables = {
   after?: string | null | undefined;
   first: number;
   id: string;
 };
-export type ProductCommunityPanelQuestionAnswersQuery$data = {
+export type CommunityQuestionAnswersQuery$data = {
   readonly productQuestion: {
     readonly answers: {
       readonly edges: ReadonlyArray<{
@@ -32,9 +32,9 @@ export type ProductCommunityPanelQuestionAnswersQuery$data = {
     readonly id: string;
   } | null | undefined;
 };
-export type ProductCommunityPanelQuestionAnswersQuery = {
-  response: ProductCommunityPanelQuestionAnswersQuery$data;
-  variables: ProductCommunityPanelQuestionAnswersQuery$variables;
+export type CommunityQuestionAnswersQuery = {
+  response: CommunityQuestionAnswersQuery$data;
+  variables: CommunityQuestionAnswersQuery$variables;
 };
 
 const node: ConcreteRequest = (function(){
@@ -113,7 +113,7 @@ return {
     ],
     "kind": "Fragment",
     "metadata": null,
-    "name": "ProductCommunityPanelQuestionAnswersQuery",
+    "name": "CommunityQuestionAnswersQuery",
     "selections": [
       {
         "alias": null,
@@ -179,7 +179,7 @@ return {
       (v0/*: any*/)
     ],
     "kind": "Operation",
-    "name": "ProductCommunityPanelQuestionAnswersQuery",
+    "name": "CommunityQuestionAnswersQuery",
     "selections": [
       {
         "alias": null,
@@ -266,16 +266,16 @@ return {
     ]
   },
   "params": {
-    "cacheID": "fea2c2b1500cf3003640119b63dcdb0f",
+    "cacheID": "0ac58667147d279930c77c05c63616c2",
     "id": null,
     "metadata": {},
-    "name": "ProductCommunityPanelQuestionAnswersQuery",
+    "name": "CommunityQuestionAnswersQuery",
     "operationKind": "query",
-    "text": "query ProductCommunityPanelQuestionAnswersQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  productQuestion(id: $id) {\n    id\n    answers(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          ...ProductCommunityItems_answer\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n\nfragment ProductCommunityItems_answer on ProductAnswer {\n  id\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n"
+    "text": "query CommunityQuestionAnswersQuery(\n  $id: ID!\n  $first: Int!\n  $after: String\n) {\n  productQuestion(id: $id) {\n    id\n    answers(first: $first, after: $after) {\n      edges {\n        node {\n          id\n          ...ProductCommunityItems_answer\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n  }\n}\n\nfragment ProductCommunityItems_answer on ProductAnswer {\n  id\n  body\n  authorLabel\n  moderationStatus\n  viewerCanEdit\n  viewerCanRemove\n}\n"
   }
 };
 })();
 
-(node as any).hash = "c540e1338f8b9bc52e8e9778ea72b18c";
+(node as any).hash = "d7a4bb8f752c3b52d515f77698f8d81b";
 
 export default node;

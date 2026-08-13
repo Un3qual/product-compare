@@ -43,30 +43,6 @@ preserved in `docs/plans/2026-07-31-work-index-history.md`.
 - Completed lanes do not stay in this queue. Their history remains in the lane
   work doc and dated plan archive.
 
-## Active Work
-
-### Product Discovery And Evaluation
-
-Status: active
-Owner: current detached worktree
-Lane: Product discovery and evaluation
-Plan: `docs/superpowers/plans/2026-08-12-product-discovery-evaluation-implementation-plan.md`
-Batch outcome: Product detail becomes a persistent decision workspace with a
-multi-spec filter drawer and bounded product-wide merchant chart while touched
-product/catalog/offer code adopts capability and Relay-generated ownership.
-Current action: Task 1 RED characterization for product hierarchy, multi-spec
-selection, currency-separated Decimal trends, and constant query counts.
-Owned paths:
-
-- Product detail/specification/offer/community, catalog, and offer-discovery
-  route capabilities and focused tests named by the plan, excluding
-  `PriceWatchControl.tsx`, `price-watch-data.ts`, and their auth-continuity test.
-- Shared `RelativeDateTime` data leaf and its focused tests.
-- Pricing product-trend context, Product GraphQL projection/Dataloader source,
-  schema artifacts, and focused backend tests named by the plan.
-- Production discovery Playwright spec and snapshots.
-- `docs/work/product-discovery-evaluation.md`.
-
 ## Ready Work
 
 ### 1. Comparison And Authentication Continuity
