@@ -12,6 +12,24 @@ defmodule ProductCompareWeb.CommerceRedirectControllerTest do
   alias ProductCompareSchemas.CommerceAttribution.CommerceClickSession
   alias ProductCompareSchemas.CommerceAttribution.AnonymousVisitor
 
+  test "router exposes behavior-revealing commerce redirect actions" do
+    assert %{plug_opts: :track_merchant_product_click} =
+             Phoenix.Router.route_info(
+               ProductCompareWeb.Router,
+               "GET",
+               "/r/merchant-product",
+               "localhost"
+             )
+
+    assert %{plug_opts: :redirect_tracked_click} =
+             Phoenix.Router.route_info(
+               ProductCompareWeb.Router,
+               "GET",
+               "/r/#{Ecto.UUID.generate()}",
+               "localhost"
+             )
+  end
+
   describe "GET /r/:click_id" do
     test "does not load the signed-in user on an existing click redirect", %{conn: conn} do
       user = AccountsFixtures.user_fixture()

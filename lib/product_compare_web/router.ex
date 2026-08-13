@@ -44,11 +44,11 @@ defmodule ProductCompareWeb.Router do
   scope "/r", ProductCompareWeb do
     pipe_through [:api_session]
 
-    get "/merchant-product", CommerceRedirectController, :merchant_product
+    get "/merchant-product", CommerceRedirectController, :track_merchant_product_click
   end
 
   scope "/r", ProductCompareWeb do
-    get "/:click_id", CommerceRedirectController, :show
+    get "/:click_id", CommerceRedirectController, :redirect_tracked_click
   end
 
   scope "/api", ProductCompareWeb do
