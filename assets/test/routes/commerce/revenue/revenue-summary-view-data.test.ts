@@ -1,7 +1,7 @@
 import {
   buildRevenueSummaryControls,
   buildRevenueSummaryFilterFormData,
-  buildRevenueSummaryMetrics,
+  buildRevenueDashboardMetrics,
 } from "../../../../src/routes/commerce/revenue/summary/revenue-summary-data";
 
 test("buildRevenueSummaryFilterFormData normalizes only nullish form values", () => {
@@ -131,32 +131,63 @@ test("buildRevenueSummaryControls never emits an inverted preset range", () => {
   ).toBe(true);
 });
 
-test("buildRevenueSummaryMetrics returns one-conversion values without suppression metadata", () => {
+test("buildRevenueDashboardMetrics groups attribution and revenue outcomes", () => {
   expect(
-    buildRevenueSummaryMetrics(
+    buildRevenueDashboardMetrics(
       {
         metrics: {
-          averagePaidPrice: "90.00",
-          clicks: 1,
-          commissionRevenue: "9.00",
+          averagePaidPrice: "180.00",
+          clicks: 8,
+          commissionRevenue: "18.00",
           conversions: 1,
-          grossOrderValue: "90.00",
+          grossOrderValue: "180.00",
         },
       },
       "USD",
     ),
-  ).toEqual([
-    { label: "Clicks", value: "1" },
-    { label: "Conversions", value: "1" },
-    { label: "Gross order value", value: "90.00 USD" },
-    { label: "Commission revenue", value: "9.00 USD" },
-    { label: "Average paid price", value: "90.00 USD" },
-  ]);
+  ).toEqual({
+    attribution: {
+      clicks: "8",
+      conversions: "1",
+      conversionRate: "12.5%",
+    },
+    revenue: [
+      { label: "Gross order value", value: "180.00 USD" },
+      { label: "Commission revenue", value: "18.00 USD" },
+      { label: "Average paid price", value: "180.00 USD" },
+    ],
+  });
 });
 
-test("buildRevenueSummaryMetrics preserves null and empty-string amount semantics", () => {
+test.each([
+  { clicks: 0, conversions: 0, expected: "Not available" },
+  { clicks: null, conversions: 1, expected: "Not available" },
+  { clicks: 2, conversions: null, expected: "Not available" },
+  { clicks: 2, conversions: 1, expected: "50%" },
+  { clicks: 3, conversions: 1, expected: "33.3%" },
+])(
+  "buildRevenueDashboardMetrics formats $clicks clicks and $conversions conversions as $expected",
+  ({ clicks, conversions, expected }) => {
+    expect(
+      buildRevenueDashboardMetrics(
+        {
+          metrics: {
+            averagePaidPrice: null,
+            clicks,
+            commissionRevenue: null,
+            conversions,
+            grossOrderValue: null,
+          },
+        },
+        "USD",
+      ).attribution.conversionRate,
+    ).toBe(expected);
+  },
+);
+
+test("buildRevenueDashboardMetrics preserves null and empty-string amount semantics", () => {
   expect(
-    buildRevenueSummaryMetrics(
+    buildRevenueDashboardMetrics(
       {
         metrics: {
           averagePaidPrice: null,
@@ -168,11 +199,16 @@ test("buildRevenueSummaryMetrics preserves null and empty-string amount semantic
       },
       "USD",
     ),
-  ).toEqual([
-    { label: "Clicks", value: "Not available" },
-    { label: "Conversions", value: "0" },
-    { label: "Gross order value", value: " USD" },
-    { label: "Commission revenue", value: "Not available" },
-    { label: "Average paid price", value: "Not available" },
-  ]);
+  ).toEqual({
+    attribution: {
+      clicks: "Not available",
+      conversions: "0",
+      conversionRate: "Not available",
+    },
+    revenue: [
+      { label: "Gross order value", value: " USD" },
+      { label: "Commission revenue", value: "Not available" },
+      { label: "Average paid price", value: "Not available" },
+    ],
+  });
 });

@@ -220,7 +220,12 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
             to: "2026-07-11",
           }}
         />
-        <RevenueMetrics metrics={[{ label: "Clicks", value: "12" }]} />
+        <RevenueMetrics
+          metrics={{
+            attribution: { clicks: "12", conversionRate: "25%", conversions: "3" },
+            revenue: [{ label: "Gross order value", value: "90.00 USD" }],
+          }}
+        />
       </section>
     </MemoryRouter>,
   );
@@ -237,7 +242,10 @@ test("revenue presentation exposes filters, presets, active filters, and metrics
   );
   expect(screen.getByRole("list", { name: "Revenue date presets" })).toBeVisible();
   expect(screen.getByRole("list", { name: "Active revenue filters" })).toBeVisible();
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Revenue outcome" })).toBeVisible();
+  expect(screen.getByText("25%")).toBeVisible();
+  expect(screen.queryByRole("region", { name: "Summary" })).not.toBeInTheDocument();
 });
 
 test("revenue route identifies recorded attribution data as a preview", () => {
@@ -248,7 +256,10 @@ test("revenue route identifies recorded attribution data as a preview", () => {
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(screen.getByRole("region", { name: "Revenue report" })).toBeInTheDocument();
-  expect(screen.getByRole("complementary", { name: "Revenue controls" })).toBeInTheDocument();
+  expect(screen.getByRole("region", { name: "Revenue controls" })).toBeInTheDocument();
+  expect(
+    screen.queryByRole("complementary", { name: "Revenue controls" }),
+  ).not.toBeInTheDocument();
   expect(screen.getByText(/preview summarizes recorded attribution data/i)).toBeInTheDocument();
   expect(screen.getByText(/live conversion provider is not connected/i)).toBeInTheDocument();
 });
@@ -259,7 +270,7 @@ test("revenue route keeps one control band ahead of metrics and the attribution 
   renderRevenueSummaryRoute();
 
   const controls = screen.getByRole("region", { name: "Revenue controls" });
-  const summary = screen.getByRole("region", { name: "Summary" });
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
   const ledger = screen.getByRole("table", { name: "Attribution ledger" });
 
   expect(controls.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -303,7 +314,7 @@ test("revenue route renders customer-facing visit and purchase details without i
 
   renderRevenueSummaryRoute();
 
-  const summary = screen.getByRole("region", { name: "Summary" });
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
   const ledgerHeading = screen.getByRole("heading", { name: "Attribution ledger" });
 
   expect(
@@ -508,7 +519,7 @@ test("revenue route keeps the summary visible when the ledger preload failed", (
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("Attribution ledger unavailable.");
 });
 
@@ -535,7 +546,7 @@ test("revenue route renders the summary while the ledger preload is pending", as
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getByRole("region", { name: "Summary" })).toBeVisible();
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBeVisible();
   expect(screen.getByRole("status")).toHaveTextContent("Loading attribution ledger...");
   expect(screen.queryByRole("table", { name: "Attribution ledger" })).not.toBeInTheDocument();
 
@@ -614,11 +625,12 @@ test("revenue route renders one-conversion metrics without hidden-metrics copy",
 
   renderRevenueSummaryRoute();
 
-  const summary = screen.getByRole("region", { name: "Summary" });
+  const summary = screen.getByRole("region", { name: "Attribution performance" });
+  const revenue = screen.getByRole("region", { name: "Revenue outcome" });
   expect(screen.getByRole("heading", { name: "Revenue reporting preview" })).toBeInTheDocument();
   expect(within(summary).getByText("Clicks")).toBeInTheDocument();
   expect(within(summary).getAllByText("1")).toHaveLength(2);
-  expect(within(summary).getAllByText("90.00 USD")).toHaveLength(2);
+  expect(within(revenue).getAllByText("90.00 USD")).toHaveLength(2);
   expect(screen.queryByText(/Revenue metrics are hidden/i)).not.toBeInTheDocument();
 });
 
@@ -637,7 +649,7 @@ test("revenue route renders unavailable null counts when metrics are unsuppresse
 
   renderRevenueSummaryRoute();
 
-  expect(screen.getAllByText("Not available")).toHaveLength(2);
+  expect(screen.getAllByText("Not available")).toHaveLength(3);
 });
 
 test("revenue route renders unsuppressed revenue metrics", () => {
@@ -899,7 +911,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Network")).toHaveValue("impact");
   expect(screen.getByLabelText("From")).toHaveValue("2026-05-01");
   expect(screen.getByLabelText("To")).toHaveValue("2026-05-31");
-  const reportSummary = screen.getByRole("region", { name: "Summary" });
+  const reportSummary = screen.getByRole("region", { name: "Attribution performance" });
 
   loaderData = buildReadyLoaderData({ currency: "USD" });
   rerender(
@@ -912,7 +924,7 @@ test("revenue route updates filter field values when loader filters change", () 
   expect(screen.getByLabelText("Currency")).toHaveValue("USD");
   expect(screen.getByLabelText("From")).toHaveValue("");
   expect(screen.getByLabelText("To")).toHaveValue("");
-  expect(screen.getByRole("region", { name: "Summary" })).toBe(reportSummary);
+  expect(screen.getByRole("region", { name: "Attribution performance" })).toBe(reportSummary);
 });
 
 test("revenue route asks for a currency before loading metrics", () => {

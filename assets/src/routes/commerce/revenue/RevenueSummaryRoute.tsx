@@ -1,4 +1,5 @@
 import { Suspense, useEffect, useState } from "react";
+import { create, props } from "@stylexjs/stylex";
 import { Await, useLoaderData, type LoaderFunctionArgs } from "react-router-dom";
 import { graphql, usePreloadedQuery } from "react-relay";
 import type { Environment } from "relay-runtime";
@@ -20,12 +21,21 @@ import { RevenueControls } from "./summary/RevenueControls";
 import { RevenueMetrics } from "./summary/RevenueMetrics";
 import {
   buildRevenueSummaryControls,
-  buildRevenueSummaryMetrics,
+  buildRevenueDashboardMetrics,
   hasInvertedRevenueDateRange,
   revenueSummaryFiltersFromUrl,
   ATTRIBUTION_LEDGER_PAGE_SIZE,
   type RevenueSummaryFilters,
 } from "./summary/revenue-summary-data";
+
+const styles = create({
+  dashboard: {
+    display: "grid",
+    gap: "1rem",
+    gridTemplateAreas: '"summary" "ledger"',
+    minWidth: 0,
+  },
+});
 
 const revenueSummaryRouteQuery = graphql`
   query RevenueSummaryRouteQuery($input: RevenueSummaryInput) {
@@ -134,16 +144,18 @@ export function RevenueSummaryRoute() {
 
   return (
     <PageShell
-      description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
-      eyebrow="Commerce analytics"
-      title="Revenue reporting preview"
-    >
-      <section aria-label="Revenue report">
+      actions={
         <RevenueControls
           activeFilters={activeFilters}
           datePresetLinks={datePresetLinks}
           filters={loaderData.filters}
         />
+      }
+      description="This preview summarizes recorded attribution data. A live conversion provider is not connected for this milestone."
+      eyebrow="Commerce analytics"
+      title="Revenue reporting preview"
+    >
+      <section aria-label="Revenue report" {...props(styles.dashboard)}>
         {loaderData.status === "needsCurrency" ? (
           <RevenueSummaryCurrencyRequiredFallback />
         ) : loaderData.status === "invalidDateRange" ? (
@@ -186,7 +198,7 @@ function RevenueSummaryPanel({ query }: {
   const currency =
     data.revenueSummary.metrics.currency ?? data.revenueSummary.filters.currency ?? "";
 
-  return <RevenueMetrics metrics={buildRevenueSummaryMetrics(data.revenueSummary, currency)} />;
+  return <RevenueMetrics metrics={buildRevenueDashboardMetrics(data.revenueSummary, currency)} />;
 }
 
 function DeferredAttributionLedgerBoundary({

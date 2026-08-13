@@ -93,29 +93,41 @@ export function buildRevenueDatePresetLinks(
     }));
 }
 
-export function buildRevenueSummaryMetrics(summary: RevenueSummaryMetricSource, currency: string) {
-  return [
-    {
-      label: "Clicks",
-      value: formatCount(summary.metrics.clicks),
+export function buildRevenueDashboardMetrics(summary: RevenueSummaryMetricSource, currency: string) {
+  return {
+    attribution: {
+      clicks: formatCount(summary.metrics.clicks),
+      conversions: formatCount(summary.metrics.conversions),
+      conversionRate: formatConversionRate(summary.metrics.clicks, summary.metrics.conversions),
     },
-    {
-      label: "Conversions",
-      value: formatCount(summary.metrics.conversions),
-    },
-    {
-      label: "Gross order value",
-      value: formatCurrencyAmount(summary.metrics.grossOrderValue, currency),
-    },
-    {
-      label: "Commission revenue",
-      value: formatCurrencyAmount(summary.metrics.commissionRevenue, currency),
-    },
-    {
-      label: "Average paid price",
-      value: formatCurrencyAmount(summary.metrics.averagePaidPrice, currency),
-    },
-  ];
+    revenue: [
+      {
+        label: "Gross order value",
+        value: formatCurrencyAmount(summary.metrics.grossOrderValue, currency),
+      },
+      {
+        label: "Commission revenue",
+        value: formatCurrencyAmount(summary.metrics.commissionRevenue, currency),
+      },
+      {
+        label: "Average paid price",
+        value: formatCurrencyAmount(summary.metrics.averagePaidPrice, currency),
+      },
+    ],
+  };
+}
+
+function formatConversionRate(
+  clicks: RevenueSummaryMetrics["clicks"],
+  conversions: RevenueSummaryMetrics["conversions"],
+) {
+  if (clicks === null || conversions === null || clicks === 0) {
+    return "Not available";
+  }
+
+  const percentage = Math.round((conversions / clicks) * 1_000) / 10;
+
+  return `${percentage.toFixed(1).replace(/\.0$/, "")}%`;
 }
 
 function buildActiveFilterItems(filters: RevenueSummaryFilters) {

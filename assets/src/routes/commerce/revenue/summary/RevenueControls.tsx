@@ -1,6 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
-import { ContextRail } from "$ui/components/layout/ContextRail";
 import { Button } from "$ui/primitives/Button";
 import { Input } from "$ui/primitives/Input";
 import { tokens } from "$ui/theme/tokens.stylex";
@@ -22,8 +21,16 @@ const LABEL_IDS = {
 
 const styles = create({
   band: {
+    backgroundColor: tokens.surfaceMuted,
+    borderColor: tokens.borderQuiet,
+    borderRadius: "var(--pc-radius-large)",
+    borderStyle: "solid",
+    borderWidth: "1px",
     display: "grid",
-    gap: "0.75rem",
+    gap: "0.65rem",
+    maxWidth: "100%",
+    minWidth: 0,
+    padding: "0.75rem",
   },
   field: {
     display: "grid",
@@ -31,17 +38,26 @@ const styles = create({
   },
   form: {
     alignItems: "end",
-    backgroundColor: tokens.surfaceMuted,
-    borderRadius: "var(--pc-radius-large)",
-    display: "grid",
-    gap: "1rem",
-    gridTemplateColumns: "repeat(auto-fit, minmax(10rem, 1fr))",
-    padding: "1rem",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.6rem",
+  },
+  textField: {
+    width: "8rem",
+  },
+  dateField: {
+    width: "9.5rem",
+  },
+  supporting: {
+    alignItems: "baseline",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.4rem 1rem",
   },
   list: {
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.5rem 1rem",
+    gap: "0.35rem 0.85rem",
     listStyle: "none",
     margin: 0,
     padding: 0,
@@ -49,6 +65,11 @@ const styles = create({
   activeFilter: {
     display: "flex",
     gap: "0.35rem",
+  },
+  secondary: {
+    color: tokens.textSecondary,
+    fontSize: "0.8rem",
+    margin: 0,
   },
 });
 
@@ -65,14 +86,11 @@ export function RevenueControls({
 
   return (
     <section aria-label="Revenue controls" {...props(styles.band)}>
-      <ContextRail
-        description="Filter recorded attribution by network, currency, or date range."
-        label="Revenue controls"
-      >
-        <RevenueFilterForm key={filterFormData.key} values={filterFormData.values} />
+      <RevenueFilterForm key={filterFormData.key} values={filterFormData.values} />
+      <div {...props(styles.supporting)}>
         <RevenueDatePresetList links={datePresetLinks} />
         <RevenueActiveFilterList filters={activeFilters} />
-      </ContextRail>
+      </div>
     </section>
   );
 }
@@ -80,7 +98,7 @@ export function RevenueControls({
 function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
   return (
     <form aria-label="Revenue filters" method="get" {...props(styles.form)}>
-      <div {...props(styles.field)}>
+      <div {...props(styles.field, styles.textField)}>
         <span id={LABEL_IDS.network}>Network</span>
         <Input
           aria-labelledby={LABEL_IDS.network}
@@ -90,7 +108,7 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
           type="text"
         />
       </div>
-      <div {...props(styles.field)}>
+      <div {...props(styles.field, styles.textField)}>
         <span id={LABEL_IDS.currency}>Currency</span>
         <Input
           aria-labelledby={LABEL_IDS.currency}
@@ -101,7 +119,7 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
           type="text"
         />
       </div>
-      <div {...props(styles.field)}>
+      <div {...props(styles.field, styles.dateField)}>
         <span id={LABEL_IDS.from}>From</span>
         <Input
           aria-labelledby={LABEL_IDS.from}
@@ -110,7 +128,7 @@ function RevenueFilterForm({ values }: { values: RevenueFilterFormValues }) {
           type="date"
         />
       </div>
-      <div {...props(styles.field)}>
+      <div {...props(styles.field, styles.dateField)}>
         <span id={LABEL_IDS.to}>To</span>
         <Input aria-labelledby={LABEL_IDS.to} defaultValue={values.to} name="to" type="date" />
       </div>
@@ -138,7 +156,7 @@ function RevenueDatePresetList({ links }: { links: RevenueControlData["datePrese
 
 function RevenueActiveFilterList({ filters }: { filters: RevenueControlData["activeFilters"] }) {
   if (filters.length === 0) {
-    return <p>Aggregate revenue summary</p>;
+    return <p {...props(styles.secondary)}>Aggregate revenue summary</p>;
   }
 
   return (
