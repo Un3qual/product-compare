@@ -32,6 +32,7 @@ product_compare-*.tar
 /.pnpm-store/
 /.superpowers/
 /.worktrees/
+/.playwright-cli/
 
 # Local environment files (dotenv).
 .env

@@ -9,6 +9,8 @@ import {
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
 import { AppShell } from "$ui/components/layout/AppShell";
+import { PageShell } from "$ui/components/layout/PageShell";
+import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { AppProviders } from "$ui/providers/AppProviders";
 import { RootPrimaryNavigation } from "./RootDestinations";
 import { RouteMetadata } from "./RouteMetadata";
@@ -47,6 +49,20 @@ export function RootLayout() {
   }
 
   return <ReadyRootLayout viewerQuery={loaderData.viewerQuery} />;
+}
+
+export function RootHydrateFallback() {
+  return (
+    <AppShell>
+      <PageShell
+        description="Preparing current products, offers, and account details."
+        title="Product Compare"
+        width="reading"
+      >
+        <FeedbackState kind="loading" title="Loading Product Compare..." />
+      </PageShell>
+    </AppShell>
+  );
 }
 
 function ReadyRootLayout({ viewerQuery }: { viewerQuery: RootViewerQueryDescriptor }) {

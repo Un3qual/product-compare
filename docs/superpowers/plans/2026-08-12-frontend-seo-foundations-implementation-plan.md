@@ -32,15 +32,15 @@
 **Interfaces:**
 - Produces: characterization for one title, one canonical link, one robots tag, deduplicated Open Graph/Twitter tags, safe JSON-LD, unchanged SSR response propagation, parseable sitemap documents, and both redirect lifecycles.
 
-- [ ] **Step 1: Add failing metadata and hydration assertions**
+- [x] **Step 1: Add failing metadata and hydration assertions**
 
   Assert an SSR render followed by hydration contains one tag for every unique metadata key and that loader metadata supersedes the route default. Include a JSON-LD value containing `<`, `>`, `&`, and quotes and parse the rendered script as JSON rather than comparing markup substrings.
 
-- [ ] **Step 2: Add failing semantic XML assertions**
+- [x] **Step 2: Add failing semantic XML assertions**
 
   Parse `/sitemap.xml` and every `/sitemaps/*.xml` response with Saxy in the test. Assert the sitemap namespace, partition locations, escaped URL round trip, ISO-8601 `lastmod`, empty partition validity, content type, and cache control.
 
-- [ ] **Step 3: Run RED**
+- [x] **Step 3: Run RED**
 
   ```bash
   cd assets && pnpm run test:unit -- test/entry.server.test.tsx test/entry.server.error-handling.test.tsx test/router.test.tsx test/routes/route-metadata.test.tsx
@@ -49,7 +49,7 @@
 
   Expected: Unhead provider/rendering and Saxy parsing tests fail because those boundaries do not exist; existing redirect behavior remains green.
 
-- [ ] **Step 4: Commit characterization**
+- [x] **Step 4: Commit characterization**
 
   ```bash
   git add assets/test test/product_compare_web/controllers
@@ -80,31 +80,31 @@
 - Produces: `RouteHead({ metadata }: { metadata: RouteHeadInput }): null`, implemented with `useSeoMeta` plus a safe JSON-LD head entry.
 - Produces: one client `createHead()` and one request-scoped server `createHead()` supplied through `UnheadProvider`; the server returns `head.render()` output for document insertion.
 
-- [ ] **Step 1: Install the maintained React head integration**
+- [x] **Step 1: Install the maintained React head integration**
 
   ```bash
   cd assets && pnpm add @unhead/react@3.2.3
   ```
 
-- [ ] **Step 2: Implement the typed head boundary**
+- [x] **Step 2: Implement the typed head boundary**
 
   Define route metadata on route handles or typed loader results without accepting `unknown`. Keep `routes/RouteMetadata.tsx` as the thin React Router match adapter so existing route modules retain one stable import boundary. Map `indexable === true` to `index,follow`, otherwise `noindex,follow`; select `summary_large_image` only when an image exists. Serialize structured data through the library's safe script-content path and never pass prebuilt HTML.
 
-- [ ] **Step 3: Wire one head instance per render**
+- [x] **Step 3: Wire one head instance per render**
 
   Wrap both router providers with the matching Unhead provider. During SSR, wait for React data, render Unhead, and insert the returned head tags before `</head>` while Relay records remain before `</body>`. During hydration, create one client instance so existing tags are adopted instead of duplicated.
 
-- [ ] **Step 4: Remove manual metadata interpretation**
+- [x] **Step 4: Remove manual metadata interpretation**
 
   Delete the deepest-match `unknown` record walk and direct `<title>/<meta>/<link>/<script>` construction. Keep route-default fallback as a typed router concern and treat React Router's match array as the single library-boundary cast; do not spread record guards into dynamic route loaders.
 
-- [ ] **Step 5: Run GREEN**
+- [x] **Step 5: Run GREEN**
 
   ```bash
   cd assets && pnpm run relay:check && pnpm run typecheck && pnpm run test:unit -- test/entry.server.test.tsx test/entry.server.error-handling.test.tsx test/router.test.tsx test/routes/route-metadata.test.tsx
   ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add assets/package.json assets/pnpm-lock.yaml assets/src assets/test
@@ -127,26 +127,26 @@
 - Produces: `ProductCompareWeb.Seo.SitemapXml.url_set([%{path: String.t(), last_modified: DateTime.t() | NaiveDateTime.t()}], String.t()) :: iodata()`.
 - Consumes: absolute URLs assembled by the controller and existing `Seo.sitemap_entries/1`; Saxy alone performs XML escaping/encoding.
 
-- [ ] **Step 1: Add Saxy**
+- [x] **Step 1: Add Saxy**
 
   Add `{:saxy, "~> 1.6"}` to runtime dependencies and run `mix deps.get`.
 
-- [ ] **Step 2: Implement XML elements, not XML strings**
+- [x] **Step 2: Implement XML elements, not XML strings**
 
   Build `sitemapindex/sitemap/loc` and `urlset/url/loc/lastmod` element tuples with the sitemap namespace, pass them to `Saxy.encode!/2`, and prepend the XML declaration through encoder options or one static declaration constant. Remove `xml_escape/1` and every interpolated XML tag.
 
-- [ ] **Step 3: Preserve controller response behavior**
+- [x] **Step 3: Preserve controller response behavior**
 
   Keep the existing routes, four partitions, entry ordering, cache control, and `application/xml; charset=utf-8`. If encoding raises, allow the request to become a logged server error; never send a partial success body.
 
-- [ ] **Step 4: Run GREEN**
+- [x] **Step 4: Run GREEN**
 
   ```bash
   mix format
   mix test test/product_compare_web/controllers/seo_controller_test.exs test/product_compare/seo_test.exs
   ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
   ```bash
   git add mix.exs mix.lock lib/product_compare_web/seo lib/product_compare_web/controllers/seo_controller.ex test/product_compare_web/controllers/seo_controller_test.exs
@@ -181,29 +181,29 @@
 - Produces: `createServerRequest`, `waitForAllReady`, `responseHeadersFromContext`, and `insertDocumentBootstrap` under the SSR leaf barrel.
 - Changes: `RootLoaderData` becomes `{ viewer: RootViewer | null; viewerQuery: RootViewerQueryDescriptor | null }`; `null` means the public shell uses the trusted Relay cache fallback, not a vague degraded mode.
 
-- [ ] **Step 1: Move SSR mechanics with characterization green**
+- [x] **Step 1: Move SSR mechanics with characterization green**
 
   Move one responsibility at a time without changing its implementation. Keep `entry.server.tsx` responsible only for environment/router/head creation, React rendering, and response assembly.
 
-- [ ] **Step 2: Split the registry by audience**
+- [x] **Step 2: Split the registry by audience**
 
   Move public shopper routes, auth/account routes, and operator-only routes into three explicit arrays. Keep root route creation, root revalidation, hydration data, and route-group composition in `router.tsx`.
 
-- [ ] **Step 3: Remove the root destination projection file**
+- [x] **Step 3: Remove the root destination projection file**
 
   Collocate the static navigation arrays and viewer-based selection with `RootDestinations.tsx`. Preserve comparison query continuity, operator visibility, mobile grouping, and focus behavior.
 
-- [ ] **Step 4: Remove the `degraded` state name**
+- [x] **Step 4: Remove the `degraded` state name**
 
   Preserve the public-shell fallback on viewer-query failure, abort propagation, and cached-viewer behavior. Express the actual nullable query descriptor rather than a status union that implies application degradation.
 
-- [ ] **Step 5: Run GREEN and inspect cycles**
+- [x] **Step 5: Run GREEN and inspect cycles**
 
   ```bash
   cd assets && pnpm run typecheck && pnpm run test:unit -- test/entry.server.test.tsx test/entry.server.error-handling.test.tsx test/router.test.tsx test/routes/root-destinations.test.tsx
   ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
   ```bash
   git add assets/src assets/test
@@ -222,17 +222,17 @@
 **Interfaces:**
 - Renames: controller `show/2` to `redirect_tracked_click/2`; `merchant_product/2` to `track_merchant_product_click/2`. Paths stay `/r/:click_id` and `/r/merchant-product`.
 
-- [ ] **Step 1: Rename controller actions and routes**
+- [x] **Step 1: Rename controller actions and routes**
 
   Update Phoenix route action atoms and test descriptions. Do not change controller logic, redirect security, click attribution, or response bodies.
 
-- [ ] **Step 2: Run focused verification**
+- [x] **Step 2: Run focused verification**
 
   ```bash
   mix test test/product_compare_web/controllers/commerce_redirect_controller_test.exs
   ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
   ```bash
   git add lib/product_compare_web/controllers/commerce_redirect_controller.ex lib/product_compare_web/router.ex test/product_compare_web/controllers/commerce_redirect_controller_test.exs
@@ -251,11 +251,11 @@
 **Interfaces:**
 - Produces: deterministic SSR/hydration, metadata, navigation, and no-overflow evidence at 1440×1000, 900×1100, and 390×844.
 
-- [ ] **Step 1: Run browser acceptance without snapshot updates**
+- [x] **Step 1: Run browser acceptance without snapshot updates**
 
   Verify a dynamic product canonical/JSON-LD page, a noindex account page, auth navigation, and one operator route. Inspect all screenshots before updating expected files.
 
-- [ ] **Step 2: Run complete gates**
+- [x] **Step 2: Run complete gates**
 
   ```bash
   cd assets && pnpm run check
@@ -267,7 +267,7 @@
   git diff --check
   ```
 
-- [ ] **Step 3: Run anti-slop review and commit**
+- [x] **Step 3: Run anti-slop review and commit**
 
   Confirm no manual metadata tag builder, XML escape helper, `status: "degraded"`, application selector for `ts-chart-*`, or generic root destination data file remains. Confirm the new barrels are used by multiple consumers and do not increase the client bundle beyond its budget.
 

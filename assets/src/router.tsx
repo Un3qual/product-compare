@@ -8,7 +8,7 @@ import { operatorRoutes } from "./routing/operator-routes";
 import { shopperRoutes } from "./routing/shopper-routes";
 import { RouteErrorBoundary } from "./routes/compare/RouteErrorBoundary";
 import { notFoundLoader } from "./routes/NotFoundRoute";
-import { RootLayout, rootLoader, ROOT_ROUTE_ID } from "./routes/RootRoute";
+import { RootHydrateFallback, RootLayout, rootLoader, ROOT_ROUTE_ID } from "./routes/RootRoute";
 
 declare global {
   interface Window {
@@ -31,6 +31,7 @@ export const routes: RouteObject[] = [
     loader: rootLoader,
     shouldRevalidate: shouldRevalidateRootLoader,
     element: <RootLayout />,
+    HydrateFallback: RootHydrateFallback,
     errorElement: <RouteErrorBoundary resourceName="page" title="Product Compare" />,
     children: [
       ...shopperRoutes,
