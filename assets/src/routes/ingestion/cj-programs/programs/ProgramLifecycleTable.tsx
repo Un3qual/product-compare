@@ -14,8 +14,12 @@ type ProgramReference = ProgramsConnection["edges"][number]["node"];
 type ProgramPagination = ReturnType<typeof buildCJProgramPaginationData>["program"];
 
 const styles = create({
+  actionColumn: { width: "31%" },
   content: { display: "grid", gap: "1rem" },
   empty: { color: tokens.textSecondary, margin: 0 },
+  lastChangeColumn: { width: "23%" },
+  lifecycleColumn: { width: "18%" },
+  merchantColumn: { width: "28%" },
   table: {
     minWidth: { default: "44rem", "@media (min-width: 62rem)": 0 },
     tableLayout: "fixed",
@@ -59,6 +63,12 @@ export function ProgramLifecycleTable({
       />
       {programs.edges.length > 0 ? (
         <Table aria-label="CJ program lifecycle ledger" style={styles.table}>
+          <colgroup>
+            <col {...props(styles.merchantColumn)} />
+            <col {...props(styles.lifecycleColumn)} />
+            <col {...props(styles.lastChangeColumn)} />
+            <col {...props(styles.actionColumn)} />
+          </colgroup>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>

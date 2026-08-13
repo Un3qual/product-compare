@@ -186,7 +186,7 @@ test("CJ programs route presents a scannable lifecycle ledger with exact change 
 
   const newMerchantRow = within(ledger).getByRole("row", { name: /New Merchant/ });
   expect(within(newMerchantRow).getByText("CJ Affiliate")).toBeInTheDocument();
-  expect(within(newMerchantRow).getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(within(newMerchantRow).getByText("ID advertiser-1")).toBeInTheDocument();
   expect(within(newMerchantRow).getByText("1 feed")).toBeInTheDocument();
   expect(within(newMerchantRow).getByText("Review feed warnings")).toBeInTheDocument();
   expect(
@@ -216,7 +216,7 @@ test("CJ program rows expand a full-width editor without removing summary facts"
   fireEvent.click(screen.getByRole("button", { name: "Close editor New Merchant" }));
 
   expect(screen.queryByRole("region", { name: "Edit New Merchant" })).not.toBeInTheDocument();
-  expect(rowFor("New Merchant").getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(rowFor("New Merchant").getByText("ID advertiser-1")).toBeInTheDocument();
 });
 
 test("CJ program rows expose every lifecycle stage and save a trimmed note", async () => {
@@ -429,7 +429,7 @@ test("CJ program rows show factual advertiser details and plain warning copy", (
 
   const row = rowFor("New Merchant");
 
-  expect(row.getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(row.getByText("ID advertiser-1")).toBeInTheDocument();
   expect(row.getByText("1 feed")).toBeInTheDocument();
   expect(row.getByText("Jul 20, 2026, 10:00 AM")).toHaveAttribute(
     "datetime",

@@ -41,8 +41,9 @@ for (const viewport of VIEWPORTS) {
     await expect(page.getByRole("columnheader", { name: "Action" })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Unmatched feeds" })).toBeVisible();
     await expect(page.locator('time[datetime="2026-08-12T17:45:00Z"]')).toBeVisible();
-    await expect(cjLedger.getByText("Advertiser ID northwind-advertiser")).toBeVisible();
+    await expect(cjLedger.getByText("ID northwind-advertiser")).toBeVisible();
     await expect(cjLedger.getByText("1 feed")).toBeVisible();
+    await expect(cjLedger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
     await page.getByRole("button", { name: "Edit program Northwind Merchant" }).click();
     const programEditor = page.getByRole("region", { name: "Edit Northwind Merchant" });
     await expect(programEditor.getByLabel("Stage for Northwind Merchant")).toBeVisible();
@@ -82,30 +83,19 @@ for (const viewport of VIEWPORTS) {
         await summary.elementHandle(),
       ),
     ).toBe(true);
-    await page
-      .getByRole("button", { name: "Show conversion impact-conversion-123 details" })
-      .click();
-    const investigation = page.getByRole("group", {
-      name: "Conversion impact-conversion-123 investigation",
+    const conversion = ledger.getByRole("group", {
+      name: "Conversion impact-conversion-123",
     });
-    await expect(investigation.getByText("Order value")).toBeVisible();
-    await expect(investigation.getByText("Commission")).toBeVisible();
-    await expect(investigation.getByText("180.00 USD")).toBeVisible();
-    await expect(investigation.getByText("18.00 USD")).toBeVisible();
-    await expect(investigation.getByText("Northwind Supply")).toBeVisible();
-    await expect(investigation.getByText("Field Camera")).toBeVisible();
-    await expect(investigation.getByText("Impact")).toBeVisible();
-    await expect(investigation.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
-    await expect(investigation.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
-    if (viewport.name === "desktop") {
-      await page.screenshot({
-        fullPage: true,
-        path: testInfo.outputPath("desktop-revenue-conversion.png"),
-      });
-    }
-    await page
-      .getByRole("button", { name: "Hide conversion impact-conversion-123 details" })
-      .click();
+    await expect(conversion.getByText("Order value")).toBeVisible();
+    await expect(conversion.getByText("Commission")).toBeVisible();
+    await expect(conversion.getByText("180.00 USD")).toBeVisible();
+    await expect(conversion.getByText("18.00 USD")).toBeVisible();
+    await expect(conversion.getByText("Northwind Supply")).toBeVisible();
+    await expect(conversion.getByText("Field Camera")).toBeVisible();
+    await expect(conversion.getByText("Impact", { exact: true })).toBeVisible();
+    await expect(conversion.locator('time[datetime="2026-08-12T18:00:00Z"]')).toBeVisible();
+    await expect(conversion.locator('time[datetime="2026-08-13T09:15:00Z"]')).toBeVisible();
+    await expect(ledger.locator("h1, h2, h3, h4, h5, h6")).toHaveCount(0);
     await expectOperatorSurface(page, viewport.width);
     await captureOperatorWorkspace(
       page,

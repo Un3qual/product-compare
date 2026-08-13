@@ -186,7 +186,7 @@ export function ProgramLifecycleRow({
           <strong {...props(styles.programName)}>{programName}</strong>
           <p {...props(styles.facts)}>
             <span>CJ Affiliate</span>
-            <span>Advertiser ID {program.advertiserId}</span>
+            <span>ID {program.advertiserId}</span>
             <span>{formatFeedCount(program.feedCount)}</span>
           </p>
         </TableHead>

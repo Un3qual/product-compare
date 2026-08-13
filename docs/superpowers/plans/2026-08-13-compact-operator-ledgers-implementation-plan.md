@@ -559,7 +559,7 @@ its four-column table and non-loss contract.
 
   const row = rowFor("New Merchant");
   expect(row.getByText("CJ Affiliate")).toBeInTheDocument();
-  expect(row.getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(row.getByText("ID advertiser-1")).toBeInTheDocument();
   expect(row.getByText("1 feed")).toBeInTheDocument();
   expect(row.getByText("Decide whether to pursue")).toBeInTheDocument();
   expect(row.getByRole("button", { name: "Edit program New Merchant" })).toBeInTheDocument();
@@ -684,7 +684,7 @@ its four-column table and non-loss contract.
     <strong {...props(styles.programName)}>{programName}</strong>
     <p {...props(styles.facts)}>
       <span>CJ Affiliate</span>
-      <span>Advertiser ID {program.advertiserId}</span>
+      <span>ID {program.advertiserId}</span>
       <span>{formatFeedCount(program.feedCount)}</span>
     </p>
   </TableHead>
@@ -750,7 +750,7 @@ its four-column table and non-loss contract.
 **Interfaces:**
 - Produces: browser proof of preserved hierarchy and containment, a complete shared-table consumer inventory, updated lane evidence, and a clean verified branch.
 
-- [ ] **Step 1: Update browser acceptance for always-visible facts**
+- [x] **Step 1: Update browser acceptance for always-visible facts**
 
   Remove the conversion Details click/open/close sequence. Assert its labeled
   group and all decision/diagnostic facts immediately after the ledger renders:
@@ -775,7 +775,7 @@ its four-column table and non-loss contract.
   table-container bounds, and screenshot assertions. Add the same heading count
   assertion to the CJ table. Do not add pixel or row-height assertions.
 
-- [ ] **Step 2: Run the operator browser scenario and inspect hierarchy**
+- [x] **Step 2: Run the operator browser scenario and inspect hierarchy**
 
   ```bash
   cd assets
@@ -787,7 +787,7 @@ its four-column table and non-loss contract.
   subdued diagnostics, sensible wrapping, and no wasted nested shells. Inspect
   the open desktop CJ editor capture for a compact task layout.
 
-- [ ] **Step 3: Audit the complete shared-table inventory**
+- [x] **Step 3: Audit the complete shared-table inventory**
 
   ```bash
   rg -l '<Table' assets/src -g '*.tsx' | sort

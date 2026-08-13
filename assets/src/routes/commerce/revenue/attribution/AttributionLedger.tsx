@@ -31,12 +31,14 @@ export const attributionLedgerRouteQuery = graphql`
 
 const styles = create({
   cell: { minWidth: "12rem", textAlign: "start", verticalAlign: "top" },
+  commerceColumn: { width: "19%" },
   code: {
     fontFamily: tokens.fontMono,
     fontSize: "0.78rem",
     overflowWrap: "anywhere",
   },
   conversionList: { display: "grid", gap: "0.4rem", listStyle: "none", margin: 0, padding: 0 },
+  conversionColumn: { width: "37%" },
   factGroup: { display: "grid", gap: "0.25rem" },
   identity: {
     fontSize: "0.9rem",
@@ -62,6 +64,7 @@ const styles = create({
     margin: 0,
     overflowWrap: "anywhere",
   },
+  requestColumn: { width: "18%" },
   row: { borderBlockStart: "1px solid var(--pc-border-quiet)" },
   secondary: {
     color: tokens.textSecondary,
@@ -77,6 +80,7 @@ const styles = create({
     width: "100%",
   },
   title: { fontSize: "1.25rem", marginBlockEnd: "0.5rem" },
+  visitColumn: { width: "26%" },
   wrapper: { display: "grid", gap: "1rem", marginBlockStart: "2rem" },
 });
 
@@ -190,7 +194,13 @@ export function AttributionLedger({
       {clicks.length === 0 ? (
         <p>No attribution clicks match these filters.</p>
       ) : (
-        <Table aria-labelledby="attribution-ledger-heading" style={styles.table}>
+        <Table aria-labelledby="attribution-ledger-heading" style={styles.table} tabIndex={0}>
+          <colgroup>
+            <col {...props(styles.visitColumn)} />
+            <col {...props(styles.requestColumn)} />
+            <col {...props(styles.commerceColumn)} />
+            <col {...props(styles.conversionColumn)} />
+          </colgroup>
           <TableHeader>
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
