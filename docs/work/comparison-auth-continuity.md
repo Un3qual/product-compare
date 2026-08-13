@@ -10,7 +10,7 @@
   GraphQL session mutation, generated Relay contracts, browser behavior, and
   the complete frontend and backend gates.
 
-## Target Outcome
+## Batch Outcome
 
 Comparison uses a wide toolbar, matrix-adjacent modes, and curated product
 summaries; guest watch/save actions use a modal and restore a safe minimal draft

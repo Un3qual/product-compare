@@ -1,4 +1,5 @@
 import {
+  PENDING_INTENT_TTL_MS,
   PENDING_INTENT_STORAGE_KEY,
   consumePendingIntent,
   readPendingIntent,
@@ -24,6 +25,12 @@ const watchIntent = (overrides: Partial<PendingIntent> = {}): PendingIntent =>
 
 beforeEach(() => {
   sessionStorage.clear();
+  vi.useFakeTimers();
+  vi.setSystemTime(NOW);
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 test("round-trips the exact supported price-watch draft without reinterpreting typed values", () => {
@@ -31,7 +38,19 @@ test("round-trips the exact supported price-watch draft without reinterpreting t
 
   writePendingIntent(intent);
 
-  expect(readPendingIntent(NOW)).toEqual(intent);
+  expect(readPendingIntent(NOW)).toEqual({
+    ...intent,
+    expiresAt: NOW + PENDING_INTENT_TTL_MS,
+  });
+});
+
+test("stamps a fresh expiry when the draft is persisted", () => {
+  writePendingIntent(watchIntent({ expiresAt: NOW - 1 }));
+
+  expect(JSON.parse(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY) ?? "null")).toEqual({
+    ...watchIntent(),
+    expiresAt: NOW + PENDING_INTENT_TTL_MS,
+  });
 });
 
 test("preserves ordered comparison identity", () => {
@@ -46,7 +65,7 @@ test("preserves ordered comparison identity", () => {
   writePendingIntent(intent);
 
   const restored = readPendingIntent(NOW);
-  expect(restored).toEqual(intent);
+  expect(restored).toEqual({ ...intent, expiresAt: NOW + PENDING_INTENT_TTL_MS });
   expect(restored?.kind === "save_comparison" ? restored.productIds : null).toEqual([
     "product-lamp",
     "product-chair",
@@ -71,8 +90,42 @@ test("consume returns one valid draft and removes it", () => {
   const intent = watchIntent();
   writePendingIntent(intent);
 
-  expect(consumePendingIntent(NOW)).toEqual(intent);
+  expect(consumePendingIntent(NOW)).toEqual({
+    ...intent,
+    expiresAt: NOW + PENDING_INTENT_TTL_MS,
+  });
   expect(consumePendingIntent(NOW)).toBeNull();
+});
+
+test("treats unavailable storage operations as an absent draft", () => {
+  const unavailableStorage = {
+    getItem() {
+      throw new DOMException("Storage disabled", "SecurityError");
+    },
+    removeItem() {
+      throw new DOMException("Storage disabled", "SecurityError");
+    },
+    setItem() {
+      throw new DOMException("Storage full", "QuotaExceededError");
+    },
+  } as unknown as Storage;
+
+  expect(() => writePendingIntent(watchIntent(), unavailableStorage)).not.toThrow();
+  expect(readPendingIntent(NOW, unavailableStorage)).toBeNull();
+  expect(consumePendingIntent(NOW, unavailableStorage)).toBeNull();
+});
+
+test("treats an inaccessible browser sessionStorage getter as unavailable", () => {
+  const sessionStorageGetter = vi.spyOn(window, "sessionStorage", "get").mockImplementation(() => {
+    throw new DOMException("Storage disabled", "SecurityError");
+  });
+
+  try {
+    expect(() => writePendingIntent(watchIntent())).not.toThrow();
+    expect(readPendingIntent(NOW)).toBeNull();
+  } finally {
+    sessionStorageGetter.mockRestore();
+  }
 });
 
 test.each([

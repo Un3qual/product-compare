@@ -1,14 +1,14 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import type { RootViewer } from "../../root/viewer";
 import { AuthRequiredDialog } from "./AuthRequiredDialog";
-import type { PendingIntent } from "./pending-intent";
+import type { PendingIntentDraft } from "./pending-intent";
 
 export function useAuthenticatedIntent({
   intent,
   onAuthenticated,
   viewer,
 }: {
-  intent: PendingIntent;
+  intent: PendingIntentDraft;
   onAuthenticated: () => void;
   viewer: RootViewer | null | undefined;
 }): { dialog: ReactNode; request: () => void } {
@@ -24,7 +24,7 @@ export function useAuthenticatedIntent({
   }, []);
 
   const request = useCallback(() => {
-    if (viewer !== null) {
+    if (viewer) {
       onAuthenticated();
       return;
     }

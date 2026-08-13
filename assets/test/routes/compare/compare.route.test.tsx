@@ -2,7 +2,15 @@ import { startTransition } from "react";
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRelayEnvironment } from "../../../src/relay/environment";
 import { fetchRouteQuery, useRoutePreloadedQuery } from "../../../src/relay/route-preload";
-import { MemoryRouter, useLoaderData, useLocation, useRouteError } from "react-router-dom";
+import {
+  MemoryRouter,
+  Outlet,
+  Route,
+  Routes,
+  useLoaderData,
+  useLocation,
+  useRouteError,
+} from "react-router-dom";
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
 import {
@@ -314,6 +322,7 @@ const buildFetchedProductQuery = (
       product
         ? {
             ...product,
+            offerTruth: { asOf: "2026-06-29T13:00:00Z" },
             merchantProducts: buildOfferContextConnection({ offers: [] }),
           }
         : null,
@@ -342,6 +351,7 @@ const buildFetchedCompareRouteQuery = ({
       product
         ? {
             ...product,
+            offerTruth: { asOf: "2026-06-29T13:00:00Z" },
             merchantProducts: offerConnections.has(product.id)
               ? offerConnections.get(product.id)
               : buildOfferContextConnection({ offers: [] }),
@@ -366,6 +376,7 @@ const buildAvailableOfferContextSummary = (
     hasMoreActiveOffers: boolean;
     hasMoreCoupons: boolean;
     latestPriceObservedAt: string | null;
+    referenceTime: string;
   }> = {},
 ) => ({
   status: "available" as const,
@@ -376,6 +387,7 @@ const buildAvailableOfferContextSummary = (
   hasMoreActiveOffers: false,
   hasMoreCoupons: false,
   latestPriceObservedAt: null,
+  referenceTime: "2026-06-29T13:00:00Z",
   ...overrides,
 });
 
@@ -1901,7 +1913,7 @@ test("product picker resets pagination before rendering a changed selected set",
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -2248,6 +2260,13 @@ test("ready compare page renders curated product summaries without slugs or gene
         { ...buildProductSummary(DETAIL_PRODUCT), currentAttributes },
         buildProductSummary(SECOND_PRODUCT),
       ],
+      offerContexts: {
+        [DETAIL_PRODUCT.id]: buildAvailableOfferContextSummary(DETAIL_PRODUCT.id, {
+          latestPriceObservedAt: "2026-06-29T12:00:00Z",
+          referenceTime: "2026-06-29T13:00:00Z",
+        }),
+        [SECOND_PRODUCT.id]: buildUnavailableOfferContextSummary(SECOND_PRODUCT.id),
+      },
     }),
   );
   mockBatchedCompareProducts([{ ...DETAIL_PRODUCT, currentAttributes }, SECOND_PRODUCT]);
@@ -2259,6 +2278,8 @@ test("ready compare page renders curated product summaries without slugs or gene
   expect(within(summaries).getByText("Acme")).toBeVisible();
   expect(within(summaries).getByText("A narrow product detail baseline.")).toBeVisible();
   expect(within(summaries).getByText("Refresh rate")).toBeVisible();
+  const freshness = within(summaries).getByText("Observed 1 hour ago", { selector: "time" });
+  expect(freshness).toHaveAttribute("datetime", "2026-06-29T12:00:00Z");
   expect(within(summaries).queryByText("detail-product")).not.toBeInTheDocument();
   expect(within(summaries).queryByText("Internal calibration code")).not.toBeInTheDocument();
   expect(within(summaries).queryByText(DETAIL_PRODUCT.id)).not.toBeInTheDocument();
@@ -2662,7 +2683,7 @@ test("specification mode tab clicks navigate to loader-backed URL state", () => 
 
   render(
     <MemoryRouter initialEntries={["/compare?slug=detail-product&slug=second-product"]}>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
       <LocationProbe />
     </MemoryRouter>,
   );
@@ -3288,7 +3309,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   const { rerender } = render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3308,7 +3329,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3319,7 +3340,7 @@ test("compare route clears stale save feedback when selected products change", a
 
   rerender(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3352,7 +3373,7 @@ test("compare save completion settles the visible selection when a new selection
 
   const { rerender } = render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
   );
 
@@ -3382,7 +3403,7 @@ test("compare save completion settles the visible selection when a new selection
     startTransition(() => {
       rerender(
         <MemoryRouter>
-          <CompareRoute />
+          <AuthenticatedCompareRoute />
         </MemoryRouter>,
       );
     });
@@ -3665,8 +3686,26 @@ function getSaveFeedbackStatus() {
 function renderCompareRoute() {
   return render(
     <MemoryRouter>
-      <CompareRoute />
+      <AuthenticatedCompareRoute />
     </MemoryRouter>,
+  );
+}
+
+function AuthenticatedCompareRoute() {
+  return (
+    <Routes>
+      <Route
+        element={
+          <Outlet
+            context={{
+              viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+            }}
+          />
+        }
+      >
+        <Route path="*" element={<CompareRoute />} />
+      </Route>
+    </Routes>
   );
 }
 

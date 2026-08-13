@@ -10,9 +10,6 @@ type SavedComparisonMutationProduct = {
   readonly name: string;
 };
 
-type SavedComparisonSetPayload =
-  CompareRouteCreateSavedComparisonSetMutation["response"]["createSavedComparisonSet"];
-
 export const SAVED_COMPARISON_SUCCESS_MESSAGE = "Comparison saved.";
 
 export function buildSavedComparisonSetMutationInput(
@@ -25,7 +22,7 @@ export function buildSavedComparisonSetMutationInput(
 }
 
 export function resolveSavedComparisonSetMutationOutcome(
-  payload: SavedComparisonSetPayload,
+  payload: CompareRouteCreateSavedComparisonSetMutation["response"]["createSavedComparisonSet"],
   graphQLErrors: MutationGraphQLErrors = null,
 ) {
   if (payload.savedComparisonSet?.id && !hasGraphQLErrors(graphQLErrors)) {

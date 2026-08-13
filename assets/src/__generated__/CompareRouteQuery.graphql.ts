@@ -1,5 +1,5 @@
 /**
- * @generated SignedSource<<b8657b61916ef7db90cbbe0d94193d21>>
+ * @generated SignedSource<<2c19a3f8ec641b18be353a98de00c802>>
  * @lightSyntaxTransform
  */
 
@@ -85,6 +85,9 @@ export type CompareRouteQuery$data = {
       };
     } | null;
     readonly name: string;
+    readonly offerTruth: {
+      readonly asOf: string;
+    };
     readonly slug: string;
     readonly " $fragmentSpreads": FragmentRefs<"CompareProductList_product">;
   } | null>;
@@ -252,11 +255,29 @@ v9 = {
 v10 = {
   "alias": null,
   "args": null,
+  "concreteType": "ProductOfferTruth",
+  "kind": "LinkedField",
+  "name": "offerTruth",
+  "plural": false,
+  "selections": [
+    {
+      "alias": null,
+      "args": null,
+      "kind": "ScalarField",
+      "name": "asOf",
+      "storageKey": null
+    }
+  ],
+  "storageKey": null
+},
+v11 = {
+  "alias": null,
+  "args": null,
   "kind": "ScalarField",
   "name": "currency",
   "storageKey": null
 },
-v11 = [
+v12 = [
   (v3/*:: as any*/),
   {
     "alias": null,
@@ -273,14 +294,14 @@ v11 = [
     "storageKey": null
   }
 ],
-v12 = {
+v13 = {
   "alias": null,
   "args": null,
   "kind": "ScalarField",
   "name": "hasNextPage",
   "storageKey": null
 },
-v13 = {
+v14 = {
   "alias": null,
   "args": null,
   "concreteType": "PageInfo",
@@ -288,11 +309,11 @@ v13 = {
   "name": "pageInfo",
   "plural": false,
   "selections": [
-    (v12/*:: as any*/)
+    (v13/*:: as any*/)
   ],
   "storageKey": null
 },
-v14 = {
+v15 = {
   "alias": null,
   "args": [
     {
@@ -328,7 +349,7 @@ v14 = {
           "plural": false,
           "selections": [
             (v3/*:: as any*/),
-            (v10/*:: as any*/),
+            (v11/*:: as any*/),
             {
               "alias": null,
               "args": null,
@@ -356,7 +377,7 @@ v14 = {
               "kind": "LinkedField",
               "name": "latestPrice",
               "plural": false,
-              "selections": (v11/*:: as any*/),
+              "selections": (v12/*:: as any*/),
               "storageKey": null
             },
             {
@@ -404,7 +425,7 @@ v14 = {
                           "name": "discountValue",
                           "storageKey": null
                         },
-                        (v10/*:: as any*/),
+                        (v11/*:: as any*/),
                         {
                           "alias": null,
                           "args": null,
@@ -418,7 +439,7 @@ v14 = {
                   ],
                   "storageKey": null
                 },
-                (v13/*:: as any*/)
+                (v14/*:: as any*/)
               ],
               "storageKey": "activeCoupons(first:2)"
             },
@@ -451,13 +472,13 @@ v14 = {
                       "kind": "LinkedField",
                       "name": "node",
                       "plural": false,
-                      "selections": (v11/*:: as any*/),
+                      "selections": (v12/*:: as any*/),
                       "storageKey": null
                     }
                   ],
                   "storageKey": null
                 },
-                (v13/*:: as any*/)
+                (v14/*:: as any*/)
               ],
               "storageKey": "priceHistory(first:3)"
             }
@@ -482,7 +503,7 @@ v14 = {
           "name": "endCursor",
           "storageKey": null
         },
-        (v12/*:: as any*/)
+        (v13/*:: as any*/)
       ],
       "storageKey": null
     }
@@ -513,7 +534,8 @@ return {
           (v6/*:: as any*/),
           (v7/*:: as any*/),
           (v9/*:: as any*/),
-          (v14/*:: as any*/),
+          (v10/*:: as any*/),
+          (v15/*:: as any*/),
           {
             "args": null,
             "kind": "FragmentSpread",
@@ -549,23 +571,24 @@ return {
           (v6/*:: as any*/),
           (v7/*:: as any*/),
           (v9/*:: as any*/),
-          (v14/*:: as any*/)
+          (v10/*:: as any*/),
+          (v15/*:: as any*/)
         ],
         "storageKey": null
       }
     ]
   },
   "params": {
-    "cacheID": "187ba9cde8614647b5765f65ac323419",
+    "cacheID": "b36128c4e74082536563e686ab62b3a3",
     "id": null,
     "metadata": {},
     "name": "CompareRouteQuery",
     "operationKind": "query",
-    "text": "query CompareRouteQuery(\n  $slugs: [String!]!\n  $offerFirst: Int!\n) {\n  comparisonProducts(slugs: $slugs) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    merchantProducts(first: $offerFirst, activeOnly: true) {\n      edges {\n        node {\n          id\n          currency\n          merchant {\n            id\n            name\n            domain\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              node {\n                code\n                discountType\n                discountValue\n                currency\n                validTo\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    ...CompareProductList_product\n  }\n}\n\nfragment CompareProductList_product on Product {\n  id\n  name\n  slug\n  description\n  brand {\n    name\n    id\n  }\n  currentAttributes {\n    attributeId\n    code\n    displayName\n    dataType\n    valueText\n    sortOrder\n    groupLabel\n    isRequired\n    numericValue\n    booleanValue\n    enumOptionId\n    unitSymbol\n  }\n}\n"
+    "text": "query CompareRouteQuery(\n  $slugs: [String!]!\n  $offerFirst: Int!\n) {\n  comparisonProducts(slugs: $slugs) {\n    id\n    name\n    slug\n    description\n    brand {\n      id\n      name\n    }\n    currentAttributes {\n      attributeId\n      code\n      displayName\n      dataType\n      valueText\n      sortOrder\n      groupLabel\n      isRequired\n      numericValue\n      booleanValue\n      enumOptionId\n      unitSymbol\n    }\n    offerTruth {\n      asOf\n    }\n    merchantProducts(first: $offerFirst, activeOnly: true) {\n      edges {\n        node {\n          id\n          currency\n          merchant {\n            id\n            name\n            domain\n          }\n          latestPrice {\n            id\n            price\n            observedAt\n          }\n          activeCoupons(first: 2) {\n            edges {\n              node {\n                code\n                discountType\n                discountValue\n                currency\n                validTo\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n          priceHistory(first: 3) {\n            edges {\n              node {\n                id\n                price\n                observedAt\n              }\n            }\n            pageInfo {\n              hasNextPage\n            }\n          }\n        }\n      }\n      pageInfo {\n        endCursor\n        hasNextPage\n      }\n    }\n    ...CompareProductList_product\n  }\n}\n\nfragment CompareProductList_product on Product {\n  id\n  name\n  slug\n  description\n  brand {\n    name\n    id\n  }\n  currentAttributes {\n    attributeId\n    code\n    displayName\n    dataType\n    valueText\n    sortOrder\n    groupLabel\n    isRequired\n    numericValue\n    booleanValue\n    enumOptionId\n    unitSymbol\n  }\n}\n"
   }
 };
 })();
 
-(node as any).hash = "5f0be6344d1ad5fba2096822a904c73f";
+(node as any).hash = "c21577021c54c3aeec50dfb9436556e2";
 
 export default node;

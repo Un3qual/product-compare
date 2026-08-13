@@ -184,6 +184,7 @@ test("guest price-watch intent returns through login for review without automati
   const requests = await mockGraphQL(page, {
     RootRouteQuery: [
       rootViewerResponse(),
+      rootViewerResponse(),
       rootViewerResponse({ id: "member-1", email: "member@example.com" }),
       rootViewerResponse({ id: "member-1", email: "member@example.com" }),
     ],
@@ -233,10 +234,15 @@ test("guest price-watch intent returns through login for review without automati
   await expect(amount).toHaveValue("125.00");
 
   await createWatch.click();
-  await dialog.getByRole("link", { name: "Sign in" }).click();
+  await dialog.getByRole("button", { name: "Sign in" }).click();
   await expect(page).toHaveURL(
     /\/auth\/login\?returnTo=%2Fproducts%2Ffield-camera&intent=price_watch$/,
   );
+  await expect
+    .poll(() =>
+      page.evaluate(() => window.sessionStorage.getItem("product-compare.pending-intent")),
+    )
+    .not.toBeNull();
   await page.getByLabel("Email").fill("member@example.com");
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: "Sign in" }).click();

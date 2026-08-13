@@ -13,9 +13,6 @@ export interface PublishedComparisonSnapshot {
   title: string | null;
 }
 
-export type ComparisonSnapshotPublishInput =
-  ComparisonSharingOperationsPublishComparisonSnapshotMutation["variables"]["input"];
-
 export interface ComparisonSnapshotState {
   message: string | null;
   published: readonly PublishedComparisonSnapshot[];
@@ -26,12 +23,6 @@ type GeneratedSnapshotConnection = NonNullable<
   ComparisonSharingOperationsQuery["response"]["viewer"]
 >["comparisonSnapshots"];
 export type ComparisonSnapshotPageConnection = Pick<GeneratedSnapshotConnection, "pageInfo">;
-
-export type ComparisonSnapshotPublishPayload =
-  ComparisonSharingOperationsPublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"];
-
-export type ComparisonSnapshotRevokePayload =
-  ComparisonSharingOperationsRevokeComparisonSnapshotMutation["response"]["revokeComparisonSnapshot"];
 
 export type ComparisonSnapshotMutationOutcome =
   | { readonly error: null; readonly snapshot: PublishedComparisonSnapshot }
@@ -56,7 +47,7 @@ export function buildComparisonSnapshotPublishInput({
   recommendationProfile: "best_value" | "lowest_current_cost";
   searchIndexable: boolean;
   title: unknown;
-}): ComparisonSnapshotPublishInput {
+}): ComparisonSharingOperationsPublishComparisonSnapshotMutation["variables"]["input"] {
   const title = String(rawTitle ?? "").trim();
 
   return {
@@ -69,7 +60,7 @@ export function buildComparisonSnapshotPublishInput({
 }
 
 export function publishedSnapshotFromPayload(
-  payload: ComparisonSnapshotPublishPayload,
+  payload: ComparisonSharingOperationsPublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"],
   title: string | null,
 ): PublishedComparisonSnapshot | null {
   return payload.snapshot?.id && payload.sharePath
@@ -78,7 +69,7 @@ export function publishedSnapshotFromPayload(
 }
 
 export function resolvePublishComparisonSnapshotMutationOutcome(
-  payload: ComparisonSnapshotPublishPayload,
+  payload: ComparisonSharingOperationsPublishComparisonSnapshotMutation["response"]["publishComparisonSnapshot"],
   title: string | null,
   graphQLErrors: MutationGraphQLErrors = null,
 ): ComparisonSnapshotMutationOutcome {
@@ -93,7 +84,7 @@ export function resolvePublishComparisonSnapshotMutationOutcome(
 }
 
 export function resolveRevokeComparisonSnapshotMutationOutcome(
-  payload: ComparisonSnapshotRevokePayload,
+  payload: ComparisonSharingOperationsRevokeComparisonSnapshotMutation["response"]["revokeComparisonSnapshot"],
   snapshot: PublishedComparisonSnapshot,
   graphQLErrors: MutationGraphQLErrors = null,
 ): ComparisonSnapshotMutationOutcome {

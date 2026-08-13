@@ -4,6 +4,10 @@ import { MemoryRouter, Outlet, Route, Routes, useLoaderData } from "react-router
 import { useFragment, useLazyLoadQuery, useMutation, usePreloadedQuery } from "react-relay";
 import { useRoutePreloadedQuery } from "../../../src/relay/route-preload";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "../../../src/relay/mutation-errors";
+import {
+  PENDING_INTENT_STORAGE_KEY,
+  PENDING_INTENT_TTL_MS,
+} from "../../../src/routes/auth/continuity/pending-intent";
 import { CompareRoute } from "../../../src/routes/compare/CompareRoute";
 import { mockPreloadedQuery } from "../../helpers/relay";
 
@@ -173,6 +177,7 @@ const SECOND_READY_LOADER_DATA = {
 } as const;
 
 beforeEach(() => {
+  sessionStorage.clear();
   commitMutationMock.mockReset();
   mockedUseFragment.mockReset();
   mockedUseFragment.mockImplementation((_fragment, fragmentRef) => fragmentRef as never);
@@ -447,10 +452,41 @@ test("a guest save request opens auth continuity without committing or losing th
   expect(commitMutationMock).not.toHaveBeenCalled();
   expect(screen.getByRole("dialog", { name: "Sign in to save this comparison" })).toBeVisible();
   expect(screen.getAllByText("Desk Lamp").length).toBeGreaterThan(0);
-  expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute(
-    "href",
-    "/auth/login?returnTo=%2Fcompare%3Fslug%3Ddesk-lamp&intent=save_comparison",
-  );
+  expect(screen.getByRole("button", { name: "Sign in" })).toBeVisible();
+});
+
+test("a delayed guest save receives a fresh pending-intent lifetime", async () => {
+  const startedAt = Date.UTC(2026, 7, 13, 12, 0, 0);
+  vi.useFakeTimers();
+  vi.setSystemTime(startedAt);
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  try {
+    render(
+      <MemoryRouter initialEntries={["/compare?slug=desk-lamp"]}>
+        <Routes>
+          <Route element={<Outlet context={{ viewer: null }} />}>
+            <Route path="/compare" element={<CompareRoute />} />
+          </Route>
+          <Route path="/auth/login" element={<span>Login</span>} />
+        </Routes>
+      </MemoryRouter>,
+    );
+    act(() => vi.advanceTimersByTime(20 * 60_000));
+
+    fireEvent.click(screen.getByRole("button", { name: "Save comparison" }));
+    fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
+
+    expect(JSON.parse(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY) ?? "null")).toEqual({
+      kind: "save_comparison",
+      version: 1,
+      expiresAt: startedAt + 20 * 60_000 + PENDING_INTENT_TTL_MS,
+      returnTo: "/compare?slug=desk-lamp",
+      productIds: [DESK_LAMP.id],
+    });
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 test("a matching signed-in return restores comparison save for review without submitting", () => {
@@ -490,6 +526,41 @@ test("a matching signed-in return restores comparison save for review without su
   expect(sessionStorage.getItem("product-compare.pending-intent")).toBeNull();
 });
 
+test("a mismatched comparison preserves the pending draft for its original route", () => {
+  sessionStorage.setItem(
+    PENDING_INTENT_STORAGE_KEY,
+    JSON.stringify({
+      kind: "save_comparison",
+      version: 1,
+      expiresAt: Date.now() + 10 * 60_000,
+      returnTo: "/compare?slug=desk-chair",
+      productIds: [DESK_CHAIR.id],
+    }),
+  );
+  mockedUseLoaderData.mockReturnValue(READY_LOADER_DATA);
+
+  render(
+    <MemoryRouter initialEntries={["/compare?slug=desk-lamp"]}>
+      <Routes>
+        <Route
+          element={
+            <Outlet
+              context={{
+                viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+              }}
+            />
+          }
+        >
+          <Route path="/compare" element={<CompareRoute />} />
+        </Route>
+      </Routes>
+    </MemoryRouter>,
+  );
+
+  expect(saveComparisonStatus()).toBeEmptyDOMElement();
+  expect(sessionStorage.getItem(PENDING_INTENT_STORAGE_KEY)).not.toBeNull();
+});
+
 function mockRouteQueryRefs() {
   mockedUseRoutePreloadedQuery.mockImplementation((_query, descriptor) => {
     if (descriptor === deskLampCompareQueryDescriptor) {
@@ -507,7 +578,19 @@ function mockRouteQueryRefs() {
 function compareRouteElement() {
   return (
     <MemoryRouter>
-      <CompareRoute />
+      <Routes>
+        <Route
+          element={
+            <Outlet
+              context={{
+                viewer: { id: "viewer-1", email: "person@example.com", isOperator: false },
+              }}
+            />
+          }
+        >
+          <Route path="*" element={<CompareRoute />} />
+        </Route>
+      </Routes>
     </MemoryRouter>
   );
 }

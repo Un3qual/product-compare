@@ -110,7 +110,7 @@ test("guest comparison intent returns through registration for review before sav
     ),
   ).toBe(false);
 
-  await dialog.getByRole("link", { name: "Create account" }).click();
+  await dialog.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(
     /\/auth\/register\?returnTo=%2Fcompare%3Fslug%3Dbrewmaster-precision-kettle%26slug%3Dnorthstar-barista-scale&intent=save_comparison$/,
   );

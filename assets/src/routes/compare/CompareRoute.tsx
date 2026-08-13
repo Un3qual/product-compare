@@ -25,12 +25,12 @@ import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import type { RootViewer } from "../root/viewer";
 import {
-  PENDING_INTENT_TTL_MS,
   consumePendingIntent,
   readPendingIntent,
   safeRelativeReturnPath,
   useAuthenticatedIntent,
-  type SaveComparisonIntent,
+  type PendingIntent,
+  type SaveComparisonIntentDraft,
 } from "../auth/continuity";
 import { CompareShell } from "./CompareShell";
 import {
@@ -80,6 +80,9 @@ const compareRouteQuery = graphql`
         booleanValue
         enumOptionId
         unitSymbol
+      }
+      offerTruth {
+        asOf
       }
       merchantProducts(first: $offerFirst, activeOnly: true) {
         edges {
@@ -211,14 +214,18 @@ export function CompareRoute() {
 function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderData }) {
   const outletContext = useOutletContext<{ viewer: RootViewer | null } | null>();
   const viewer = outletContext?.viewer;
-  const [pendingIntent] = useState(() => (viewer ? readPendingIntent() : null));
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null | undefined>(() =>
+    viewer ? readPendingIntent() : undefined,
+  );
   const restoredComparison =
     loaderData.status === "ready" &&
     pendingIntent?.kind === "save_comparison" &&
     orderedValuesEqual(
       pendingIntent.productIds,
       loaderData.products.map(({ id }) => id),
-    );
+    )
+      ? pendingIntent
+      : null;
   const [saveFeedback, setSaveFeedback] = useState<SaveFeedbackState>({
     error: null,
     isInFlight: false,
@@ -233,8 +240,20 @@ function CompareSelectionRoute({ loaderData }: { loaderData: CompareRouteLoaderD
     useMutation<CompareRouteCreateSavedComparisonSetMutation>(createSavedComparisonSetMutation);
 
   useEffect(() => {
-    if (viewer && pendingIntent?.kind === "save_comparison") consumePendingIntent();
+    if (viewer && pendingIntent === undefined) setPendingIntent(readPendingIntent());
   }, [pendingIntent, viewer]);
+
+  useEffect(() => {
+    if (!viewer || !restoredComparison) return;
+
+    setSaveFeedback({
+      error: null,
+      isInFlight: false,
+      message: "Your comparison draft was restored. Review it before saving the comparison.",
+    });
+    consumePendingIntent();
+    setPendingIntent(null);
+  }, [restoredComparison, viewer]);
 
   function handleSave() {
     if (loaderData.status !== "ready") {
@@ -357,11 +376,10 @@ function ReadyCompareSelectionRoute({
   const saveInFlight = saveFeedback.isInFlight;
   const returnTo =
     safeRelativeReturnPath(`${location.pathname}${location.search}${location.hash}`) ?? "/";
-  const intent = useMemo<SaveComparisonIntent>(
+  const intent = useMemo<SaveComparisonIntentDraft>(
     () => ({
       kind: "save_comparison",
       version: 1,
-      expiresAt: Date.now() + PENDING_INTENT_TTL_MS,
       returnTo,
       productIds: loaderData.products.map(({ id }) => id),
     }),

@@ -13,6 +13,7 @@ type AvailableOfferContext = {
   hasMoreActiveOffers: boolean;
   hasMoreCoupons: boolean;
   latestPriceObservedAt: string | null;
+  referenceTime: string;
 };
 
 test("buildDecisionSummaryMetricRows returns exact metric labels and unavailable cells", () => {
@@ -157,6 +158,7 @@ function availableContext(
     hasMoreActiveOffers: false,
     hasMoreCoupons: false,
     latestPriceObservedAt: null,
+    referenceTime: "2026-06-29T13:00:00Z",
     ...overrides,
   };
 }

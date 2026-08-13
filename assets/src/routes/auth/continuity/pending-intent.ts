@@ -4,7 +4,7 @@ export const PENDING_INTENT_STORAGE_KEY = "product-compare.pending-intent";
 export const PENDING_INTENT_MAX_LIFETIME_MS = 30 * 60_000;
 export const PENDING_INTENT_TTL_MS = 15 * 60_000;
 
-type PriceWatchRuleType = Exclude<RelayPriceWatchRuleType, "%future added value">;
+export type PriceWatchRuleType = Exclude<RelayPriceWatchRuleType, "%future added value">;
 
 export type PriceWatchIntent = Readonly<{
   amount: string | null;
@@ -26,26 +26,44 @@ export type SaveComparisonIntent = Readonly<{
 }>;
 
 export type PendingIntent = PriceWatchIntent | SaveComparisonIntent;
+export type PriceWatchIntentDraft = Omit<PriceWatchIntent, "expiresAt">;
+export type SaveComparisonIntentDraft = Omit<SaveComparisonIntent, "expiresAt">;
+export type PendingIntentDraft = PriceWatchIntentDraft | SaveComparisonIntentDraft;
 
-const PRICE_WATCH_RULE_TYPES = new Set<PriceWatchRuleType>([
+export const PRICE_WATCH_RULE_TYPES = [
   "TARGET_PRICE",
   "PERCENTAGE_DROP",
   "BACK_IN_STOCK",
   "NEWLY_AVAILABLE",
-]);
+] as const satisfies readonly PriceWatchRuleType[];
+
+const PRICE_WATCH_RULE_TYPE_SET = new Set<PriceWatchRuleType>(PRICE_WATCH_RULE_TYPES);
 
 export function writePendingIntent(
-  intent: PendingIntent,
+  intent: PendingIntent | PendingIntentDraft,
   storage: Storage | null = browserSessionStorage(),
 ) {
-  storage?.setItem(PENDING_INTENT_STORAGE_KEY, JSON.stringify(intent));
+  try {
+    storage?.setItem(
+      PENDING_INTENT_STORAGE_KEY,
+      JSON.stringify({ ...intent, expiresAt: Date.now() + PENDING_INTENT_TTL_MS }),
+    );
+  } catch {
+    // Unavailable browser storage drops the draft instead of blocking navigation.
+  }
 }
 
 export function readPendingIntent(
   now = Date.now(),
   storage: Storage | null = browserSessionStorage(),
 ): PendingIntent | null {
-  const storedValue = storage?.getItem(PENDING_INTENT_STORAGE_KEY);
+  let storedValue: string | null | undefined;
+
+  try {
+    storedValue = storage?.getItem(PENDING_INTENT_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 
   if (!storedValue) return null;
 
@@ -54,10 +72,14 @@ export function readPendingIntent(
 
     if (intent) return intent;
   } catch {
-    // Invalid browser storage is treated as an absent draft.
+    // Invalid browser storage is removed below.
   }
 
-  storage?.removeItem(PENDING_INTENT_STORAGE_KEY);
+  try {
+    storage?.removeItem(PENDING_INTENT_STORAGE_KEY);
+  } catch {
+    // Unavailable browser storage is treated as an absent draft.
+  }
   return null;
 }
 
@@ -67,7 +89,13 @@ export function consumePendingIntent(
 ) {
   const intent = readPendingIntent(now, storage);
 
-  if (intent) storage?.removeItem(PENDING_INTENT_STORAGE_KEY);
+  if (intent) {
+    try {
+      storage?.removeItem(PENDING_INTENT_STORAGE_KEY);
+    } catch {
+      // A valid in-memory draft remains usable when browser removal fails.
+    }
+  }
   return intent;
 }
 
@@ -147,7 +175,7 @@ function parsePriceWatchIntent(value: Record<string, unknown>): PriceWatchIntent
     !/^[A-Z]{3}$/u.test(value.currency) ||
     (value.amount !== null && typeof value.amount !== "string") ||
     typeof value.ruleType !== "string" ||
-    !PRICE_WATCH_RULE_TYPES.has(value.ruleType as PriceWatchRuleType)
+    !PRICE_WATCH_RULE_TYPE_SET.has(value.ruleType as PriceWatchRuleType)
   ) {
     return null;
   }
@@ -194,7 +222,13 @@ function nonEmptyString(value: unknown): value is string {
 }
 
 function browserSessionStorage() {
-  return typeof window === "undefined" ? null : window.sessionStorage;
+  if (typeof window === "undefined") return null;
+
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
 }
 
 function browserOrigin() {

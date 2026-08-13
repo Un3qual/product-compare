@@ -1,5 +1,5 @@
 import { create, props } from "@stylexjs/stylex";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "$ui/primitives/Button";
 import {
   Dialog,
@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "$ui/primitives/Dialog";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { writePendingIntent, type PendingIntent } from "./pending-intent";
+import { writePendingIntent, type PendingIntentDraft } from "./pending-intent";
 
 const styles = create({
   actions: {
@@ -29,13 +29,17 @@ export function AuthRequiredDialog({
   onOpenChange,
   open,
 }: {
-  intent: PendingIntent;
+  intent: PendingIntentDraft;
   onOpenChange: (open: boolean) => void;
   open: boolean;
 }) {
+  const navigate = useNavigate();
   const copy = authRequiredCopy(intent.kind);
   const query = new URLSearchParams({ returnTo: intent.returnTo, intent: intent.kind }).toString();
-  const preserveIntent = () => writePendingIntent(intent);
+  const chooseAuthPath = (path: "/auth/login" | "/auth/register") => {
+    writePendingIntent(intent);
+    void navigate(`${path}?${query}`);
+  };
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -44,12 +48,9 @@ export function AuthRequiredDialog({
         <DialogDescription>{copy.description}</DialogDescription>
         <p {...props(styles.copy)}>Your entered values stay here until you return.</p>
         <div {...props(styles.actions)}>
-          <Button onClick={preserveIntent} render={<Link to={`/auth/login?${query}`} />}>
-            Sign in
-          </Button>
+          <Button onClick={() => chooseAuthPath("/auth/login")}>Sign in</Button>
           <Button
-            onClick={preserveIntent}
-            render={<Link to={`/auth/register?${query}`} />}
+            onClick={() => chooseAuthPath("/auth/register")}
             variant="secondary"
           >
             Create account
@@ -61,7 +62,7 @@ export function AuthRequiredDialog({
   );
 }
 
-function authRequiredCopy(kind: PendingIntent["kind"]) {
+function authRequiredCopy(kind: PendingIntentDraft["kind"]) {
   return kind === "price_watch"
     ? {
         title: "Sign in to watch this product",

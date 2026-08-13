@@ -27,12 +27,14 @@ import {
 import { createPriceWatchMutation } from "../account/alerts/AlertOperations";
 import type { RootViewer } from "../root/viewer";
 import {
-  PENDING_INTENT_TTL_MS,
+  PRICE_WATCH_RULE_TYPES,
   consumePendingIntent,
   readPendingIntent,
   safeRelativeReturnPath,
   useAuthenticatedIntent,
-  type PriceWatchIntent,
+  type PendingIntent,
+  type PriceWatchIntentDraft,
+  type PriceWatchRuleType,
 } from "../auth/continuity";
 
 const styles = create({
@@ -59,20 +61,19 @@ const styles = create({
   message: { color: "var(--pc-text-secondary)", margin: 0 },
 });
 
-const PRICE_WATCH_RULE_OPTIONS = [
-  { label: "Landed price reaches a target", value: "TARGET_PRICE" },
-  {
-    label: "Landed price drops by a percentage",
-    value: "PERCENTAGE_DROP",
-  },
-  { label: "An offer returns in stock", value: "BACK_IN_STOCK" },
-  {
-    label: "A qualifying offer becomes available",
-    value: "NEWLY_AVAILABLE",
-  },
-] as const;
+const PRICE_WATCH_RULE_LABELS: Readonly<Record<PriceWatchRuleType, string>> = {
+  TARGET_PRICE: "Landed price reaches a target",
+  PERCENTAGE_DROP: "Landed price drops by a percentage",
+  BACK_IN_STOCK: "An offer returns in stock",
+  NEWLY_AVAILABLE: "A qualifying offer becomes available",
+};
 
-type SupportedPriceWatchRuleType = (typeof PRICE_WATCH_RULE_OPTIONS)[number]["value"];
+const PRICE_WATCH_RULE_OPTIONS = PRICE_WATCH_RULE_TYPES.map((value) => ({
+  label: PRICE_WATCH_RULE_LABELS[value],
+  value,
+}));
+
+type SupportedPriceWatchRuleType = PriceWatchIntentDraft["ruleType"];
 
 export function PriceWatchControl({ productId }: { productId: string }) {
   return <PriceWatchForm key={productId} productId={productId} />;
@@ -82,7 +83,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
   const outletContext = useOutletContext<{ viewer: RootViewer | null } | null>();
   const viewer = outletContext?.viewer;
   const location = useLocation();
-  const [pendingIntent] = useState(() => (viewer ? readPendingIntent() : null));
+  const [pendingIntent, setPendingIntent] = useState<PendingIntent | null | undefined>(() =>
+    viewer ? readPendingIntent() : undefined,
+  );
   const restoredIntent =
     pendingIntent?.kind === "price_watch" && pendingIntent.productId === productId
       ? pendingIntent
@@ -102,8 +105,19 @@ function PriceWatchForm({ productId }: { productId: string }) {
     useMutation<AlertOperationsCreatePriceWatchMutation>(createPriceWatchMutation);
 
   useEffect(() => {
-    if (viewer && pendingIntent?.kind === "price_watch") consumePendingIntent();
+    if (viewer && pendingIntent === undefined) setPendingIntent(readPendingIntent());
   }, [pendingIntent, viewer]);
+
+  useEffect(() => {
+    if (!viewer || !restoredIntent) return;
+
+    setRuleType(restoredIntent.ruleType);
+    setAmount(restoredIntent.amount ?? "");
+    setCurrency(restoredIntent.currency);
+    setMessage("Your watch draft was restored. Review it before creating the watch.");
+    consumePendingIntent();
+    setPendingIntent(null);
+  }, [restoredIntent, viewer]);
 
   function submitWatch() {
     setMessage(null);
@@ -127,10 +141,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
 
   const returnTo =
     safeRelativeReturnPath(`${location.pathname}${location.search}${location.hash}`) ?? "/";
-  const intent: PriceWatchIntent = {
+  const intent: PriceWatchIntentDraft = {
     kind: "price_watch",
     version: 1,
-    expiresAt: Date.now() + PENDING_INTENT_TTL_MS,
     returnTo,
     productId,
     ruleType,
@@ -164,7 +177,9 @@ function PriceWatchForm({ productId }: { productId: string }) {
               id={currencyId}
               name="currency"
               maxLength={3}
+              minLength={3}
               onChange={(event) => setCurrency(event.currentTarget.value)}
+              pattern="[A-Za-z]{3}"
               required
               style={styles.input}
               value={currency}

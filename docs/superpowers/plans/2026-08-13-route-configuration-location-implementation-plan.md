@@ -20,6 +20,7 @@
 ### Task 1: Relocate the route configuration boundary
 
 **Files:**
+
 - Move: `assets/src/routing/account-routes.tsx` to `assets/src/routes/config/account-routes.tsx`
 - Move: `assets/src/routing/operator-routes.tsx` to `assets/src/routes/config/operator-routes.tsx`
 - Move: `assets/src/routing/shopper-routes.tsx` to `assets/src/routes/config/shopper-routes.tsx`
@@ -27,6 +28,7 @@
 - Modify: `assets/src/router.tsx:6-8`
 
 **Interfaces:**
+
 - Consumes: React Router's `RouteObject`, route metadata, route page modules, and the existing `withLazyRouteImportRecovery` helper.
 - Produces: unchanged `accountRoutes`, `operatorRoutes`, `shopperRoutes`, and `withLazyRouteImportRecovery` exports from their new paths.
 

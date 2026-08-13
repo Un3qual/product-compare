@@ -1,8 +1,10 @@
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { graphql, useFragment } from "react-relay";
+import type { ReactNode } from "react";
 import type { CompareProductList_product$key } from "$generated/CompareProductList_product.graphql";
-import { graphQLDateTimeLabel } from "$relay/scalars";
+import type { CompareRouteQuery$data } from "$generated/CompareRouteQuery.graphql";
+import { RelativeDateTime } from "$ui/components/data";
 import { tokens } from "$ui/theme/tokens.stylex";
 import type { CompareProductSummary, CompareRouteLoaderData } from "../compare-route-data";
 
@@ -32,7 +34,6 @@ const compareProductFragment = graphql`
   }
 `;
 
-type CompareProductFragmentRef = CompareProductList_product$key & { readonly slug: string };
 type ReadyLoaderData = Extract<CompareRouteLoaderData, { status: "ready" }>;
 
 const styles = create({
@@ -95,7 +96,7 @@ export function ProductDecisionSummaries({
   fragmentProducts,
   loaderData,
 }: {
-  fragmentProducts: ReadonlyArray<CompareProductFragmentRef | null>;
+  fragmentProducts: CompareRouteQuery$data["comparisonProducts"];
   loaderData: ReadyLoaderData;
 }) {
   const fragmentsBySlug = new Map(
@@ -124,11 +125,14 @@ function ProductDecisionSummary({
   offerContext,
   summary,
 }: {
-  fragment: CompareProductFragmentRef | null;
+  fragment: CompareRouteQuery$data["comparisonProducts"][number];
   offerContext: ReadyLoaderData["offerContexts"][string];
   summary: CompareProductSummary;
 }) {
-  const fragmentProduct = useFragment(compareProductFragment, fragment);
+  const fragmentProduct = useFragment<CompareProductList_product$key>(
+    compareProductFragment,
+    fragment,
+  );
   const product = fragmentProduct ?? summary;
   const keySpecifications = product.currentAttributes.slice(0, 2);
 
@@ -161,7 +165,7 @@ function ProductDecisionSummary({
   );
 }
 
-function DecisionFact({ label, value }: { label: string; value: string }) {
+function DecisionFact({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div {...props(styles.fact)}>
       <dt {...props(styles.term)}>{label}</dt>
@@ -181,5 +185,13 @@ function currentBuyingPosition(context: ReadyLoaderData["offerContexts"][string]
 
 function priceFreshness(context: ReadyLoaderData["offerContexts"][string]) {
   if (context.status === "unavailable") return "Unavailable";
-  return graphQLDateTimeLabel(context.latestPriceObservedAt) ?? "No price check available";
+  return context.latestPriceObservedAt ? (
+    <RelativeDateTime
+      prefix="Observed"
+      referenceTime={context.referenceTime}
+      value={context.latestPriceObservedAt}
+    />
+  ) : (
+    "No price check available"
+  );
 }
