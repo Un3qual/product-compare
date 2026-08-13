@@ -36,19 +36,25 @@ const styles = create({
     fontSize: "0.78rem",
     overflowWrap: "anywhere",
   },
-  conversionList: { display: "grid", gap: "0.35rem", listStyle: "none", margin: 0, padding: 0 },
+  conversionList: { display: "grid", gap: "0.4rem", listStyle: "none", margin: 0, padding: 0 },
+  factGroup: { display: "grid", gap: "0.25rem" },
   identity: {
     fontSize: "0.9rem",
     fontWeight: 700,
     lineHeight: 1.3,
-    margin: 0,
     overflowWrap: "anywhere",
   },
-  meta: {
+  line: {
+    alignItems: "baseline",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.2rem 0.45rem",
+  },
+  metadataLine: {
     alignItems: "center",
     display: "flex",
     flexWrap: "wrap",
-    gap: "0.3rem 0.45rem",
+    gap: "0.2rem 0.4rem",
   },
   primary: {
     fontWeight: 700,
@@ -64,7 +70,6 @@ const styles = create({
     margin: 0,
     overflowWrap: "anywhere",
   },
-  stack: { display: "grid", gap: "0.4rem" },
   table: {
     borderCollapse: "collapse",
     minWidth: { default: "44rem", "@media (min-width: 48rem)": 0 },
@@ -253,11 +258,11 @@ function AttributionDiagnostics({ click }: { click: AttributionClick }) {
   const referrer = referrerCopy(click.referrer);
 
   return (
-    <div {...props(styles.stack)}>
+    <div {...props(styles.factGroup)}>
       <strong title={click.referrer ?? undefined} {...props(styles.primary)}>
         {referrer}
       </strong>
-      <div {...props(styles.meta)}>
+      <div {...props(styles.metadataLine)}>
         <span title={click.userAgent ?? undefined} {...props(styles.secondary)}>
           {userAgentCopy(click.userAgent)}
         </span>
@@ -269,12 +274,12 @@ function AttributionDiagnostics({ click }: { click: AttributionClick }) {
 
 function AttributionCommerce({ click }: { click: AttributionClick }) {
   return (
-    <div {...props(styles.stack)}>
+    <div {...props(styles.factGroup)}>
       <p {...props(styles.primary)}>
         {click.merchantName}
         <span {...props(styles.secondary)}> · {click.productName ?? "No product"}</span>
       </p>
-      <div {...props(styles.meta)}>
+      <div {...props(styles.metadataLine)}>
         <StatusBadge>{click.affiliateNetworkName ?? "No network"}</StatusBadge>
         <code title="Merchant SKU" {...props(styles.code)}>
           {click.merchantProductExternalSku ?? "No SKU"}
@@ -289,15 +294,17 @@ function AttributionCommerce({ click }: { click: AttributionClick }) {
 
 function AttributionVisit({ click }: { click: AttributionClick }) {
   return (
-    <div {...props(styles.stack)}>
-      <time dateTime={click.insertedAt} {...props(styles.primary)}>
-        {formatProductDateTimeLabel(click.insertedAt)}
-      </time>
-      <div {...props(styles.meta)}>
+    <div {...props(styles.factGroup)}>
+      <div {...props(styles.line)}>
+        <time dateTime={click.insertedAt} {...props(styles.primary)}>
+          {formatProductDateTimeLabel(click.insertedAt)}
+        </time>
+        <AttributionIdentity click={click} />
+      </div>
+      <div {...props(styles.metadataLine)}>
         <StatusBadge tone="accent">{sourceSurfaceCopy(click.sourceSurface)}</StatusBadge>
         <StatusBadge>{linkTypeCopy(click.linkType)}</StatusBadge>
       </div>
-      <AttributionIdentity click={click} />
     </div>
   );
 }
@@ -305,20 +312,20 @@ function AttributionVisit({ click }: { click: AttributionClick }) {
 function AttributionIdentity({ click }: { click: AttributionClick }) {
   if (click.userEmail) {
     return (
-      <div {...props(styles.meta)}>
+      <span {...props(styles.line)}>
         <strong {...props(styles.identity)}>{click.userEmail}</strong>
         <span {...props(styles.secondary)}>Known customer</span>
-      </div>
+      </span>
     );
   }
 
   return (
-    <div {...props(styles.meta)}>
-      <p {...props(styles.primary)}>
+    <span {...props(styles.line)}>
+      <strong {...props(styles.primary)}>
         {click.anonymousVisitor ? "Anonymous visitor" : "Unidentified click"}
-      </p>
+      </strong>
       <span {...props(styles.secondary)}>No account linked</span>
-    </div>
+    </span>
   );
 }
 

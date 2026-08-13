@@ -5,11 +5,16 @@ import type { StyleXPrimitiveProps } from "./stylex-props";
 
 const styles = stylex.create({
   caption: { color: tokens.textSecondary, fontSize: "0.875rem", marginTop: "1rem" },
-  cell: { padding: tokens.tableCellSpace, verticalAlign: "middle" },
+  cell: {
+    paddingBlock: "0.55rem",
+    paddingInline: "0.65rem",
+    verticalAlign: "middle",
+  },
   head: {
     color: tokens.textSecondary,
     fontWeight: 700,
-    padding: tokens.tableCellSpace,
+    paddingBlock: "0.55rem",
+    paddingInline: "0.65rem",
     textAlign: "start",
     verticalAlign: "middle",
   },

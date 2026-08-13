@@ -5,7 +5,7 @@ import { graphql, useFragment, useMutation } from "react-relay";
 import type { ProgramLifecycleRow_program$key } from "$generated/ProgramLifecycleRow_program.graphql";
 import type { ProgramLifecycleRowUpdateCJProgramMutation } from "$generated/ProgramLifecycleRowUpdateCJProgramMutation.graphql";
 import { StatusBadge } from "$ui/components/status/StatusBadge";
-import { TableCell, TableRow } from "$ui/primitives/Table";
+import { TableCell, TableHead, TableRow } from "$ui/primitives/Table";
 import { Button } from "$ui/primitives/Button";
 import {
   Select,
@@ -53,18 +53,27 @@ const updateCJProgramMutation = graphql`
 `;
 
 const styles = create({
-  cell: { minWidth: "9rem", verticalAlign: "top" },
-  action: { display: "grid", gap: "0.5rem", justifyItems: "start" },
-  title: {
-    margin: 0,
+  cell: {
+    color: tokens.text,
+    fontWeight: 400,
+    minWidth: "9rem",
+    verticalAlign: "top",
+  },
+  action: {
+    alignItems: "center",
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "0.2rem 0.65rem",
   },
   facts: {
     alignItems: "center",
     color: tokens.textSecondary,
     display: "flex",
+    fontSize: "0.84rem",
     flexWrap: "wrap",
-    gap: "0.2rem 0.55rem",
-    margin: 0,
+    gap: "0.1rem 0.45rem",
+    lineHeight: 1.3,
+    marginBlock: "0.15rem 0",
   },
   controls: {
     alignItems: "end",
@@ -89,11 +98,15 @@ const styles = create({
     fontSize: "0.82rem",
     fontWeight: 600,
   },
-  requiredAction: { margin: 0 },
+  lifecycle: { display: "grid", gap: "0.25rem", justifyItems: "start" },
+  programName: { display: "block", fontSize: "1rem", fontWeight: 750, lineHeight: 1.25 },
+  requiredAction: { fontWeight: 600, margin: 0 },
   warnings: {
     color: tokens.textSecondary,
     display: "grid",
-    gap: "0.25rem",
+    fontSize: "0.82rem",
+    gap: "0.15rem",
+    lineHeight: 1.3,
     margin: 0,
     paddingInlineStart: "1rem",
   },
@@ -169,17 +182,19 @@ export function ProgramLifecycleRow({
   return (
     <>
       <TableRow aria-busy={isUpdateInFlight}>
-        <TableCell style={styles.cell}>
-          <h2 {...props(styles.title)}>{programName}</h2>
+        <TableHead scope="row" style={styles.cell}>
+          <strong {...props(styles.programName)}>{programName}</strong>
           <p {...props(styles.facts)}>
             <span>CJ Affiliate</span>
             <span>Advertiser ID {program.advertiserId}</span>
             <span>{formatFeedCount(program.feedCount)}</span>
           </p>
-        </TableCell>
+        </TableHead>
         <TableCell style={styles.cell}>
-          {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
-          <CJProgramWarnings programName={programName} warnings={warnings} />
+          <div {...props(styles.lifecycle)}>
+            {stageLabel ? <StatusBadge>{stageLabel}</StatusBadge> : null}
+            <CJProgramWarnings programName={programName} warnings={warnings} />
+          </div>
         </TableCell>
         <TableCell style={styles.cell}>
           {lastChanged ? <time dateTime={program.lastChanged}>{lastChanged}</time> : "Not recorded"}
@@ -194,8 +209,9 @@ export function ProgramLifecycleRow({
               aria-expanded={isEditing}
               aria-label={`${isEditing ? "Close editor" : "Edit program"} ${programName}`}
               onClick={() => setIsEditing((open) => !open)}
+              size="sm"
               type="button"
-              variant="secondary"
+              variant="link"
             >
               {isEditing ? "Close editor" : "Edit program"}
             </Button>

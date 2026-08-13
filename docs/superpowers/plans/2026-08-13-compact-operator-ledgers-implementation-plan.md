@@ -509,7 +509,7 @@ its four-column table and non-loss contract.
 - Consumes: unchanged generated revenue/CJ Relay fragments, mutations, pagination, and route loaders.
 - Produces: `ConversionDetails` with no local disclosure state; a semantic CJ row header with no heading element; modestly tighter shared table cell padding; unchanged editor/feed task disclosures.
 
-- [ ] **Step 1: Write the failing always-visible conversion test**
+- [x] **Step 1: Write the failing always-visible conversion test**
 
   Replace the on-demand conversion test with assertions that require all facts
   before any interaction and prohibit a details trigger:
@@ -548,7 +548,7 @@ its four-column table and non-loss contract.
   duplicate-reference rendering, pagination, anonymous identity, and absence of
   internal database IDs.
 
-- [ ] **Step 2: Write the failing heading-free CJ table test**
+- [x] **Step 2: Write the failing heading-free CJ table test**
 
   Add semantic assertions to the existing compact-row test:
 
@@ -568,7 +568,7 @@ its four-column table and non-loss contract.
   Keep every existing editor, mutation, warning, conflict refresh, feedback,
   feed lazy-load/retry/pagination, unmatched-feed, and future-stage assertion.
 
-- [ ] **Step 3: Run the focused route tests and verify RED**
+- [x] **Step 3: Run the focused route tests and verify RED**
 
   ```bash
   cd assets
@@ -579,7 +579,7 @@ its four-column table and non-loss contract.
   the CJ merchant cell still exposes `New Merchant` as a heading instead of a
   row header.
 
-- [ ] **Step 4: Recompose revenue cells into two or three meaningful bands**
+- [x] **Step 4: Recompose revenue cells into two or three meaningful bands**
 
   In `AttributionLedger.tsx`, retain the four columns and every Relay field but
   replace generic stacks with priority-specific inline groups:
@@ -612,7 +612,7 @@ its four-column table and non-loss contract.
   Keep existing `title` attributes on long referrer and user-agent values and
   retain `overflowWrap: "anywhere"` for identifiers.
 
-- [ ] **Step 5: Render every conversion fact without disclosure state**
+- [x] **Step 5: Render every conversion fact without disclosure state**
 
   Remove `useState`, `Button`, and `Collapsible` imports from
   `ConversionDetails.tsx`. Render one labeled group per list item:
@@ -674,7 +674,7 @@ its four-column table and non-loss contract.
   Use wrapping flex lines and small route-local gaps. Separate multiple
   conversions with a quiet border rather than a raised nested card.
 
-- [ ] **Step 6: Make the CJ summary semantic and task-oriented**
+- [x] **Step 6: Make the CJ summary semantic and task-oriented**
 
   Import `TableHead` in `ProgramLifecycleRow.tsx` and replace the merchant
   `TableCell`/`h2` pair with a scoped row header:
@@ -696,7 +696,7 @@ its four-column table and non-loss contract.
   `aria-controls`, `aria-expanded`, its program-specific label, and the
   full-width editor row. Do not move summary facts into the editor.
 
-- [ ] **Step 7: Tighten the shared table rhythm without shrinking typography**
+- [x] **Step 7: Tighten the shared table rhythm without shrinking typography**
 
   In `Table.tsx`, replace the single all-axis token with modest block/inline
   padding while leaving typography and overflow behavior unchanged:
@@ -720,7 +720,7 @@ its four-column table and non-loss contract.
   This is the only global density change. Do not add compact props, table
   variants, row-height limits, or comparison-specific exceptions.
 
-- [ ] **Step 8: Run focused GREEN and commit the hierarchy refinement**
+- [x] **Step 8: Run focused GREEN and commit the hierarchy refinement**
 
   ```bash
   cd assets

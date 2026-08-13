@@ -181,10 +181,17 @@ test("CJ programs route presents a scannable lifecycle ledger with exact change 
     "Last change",
     "Action",
   ]);
+  expect(within(ledger).queryByRole("heading")).not.toBeInTheDocument();
+  expect(within(ledger).getByRole("rowheader", { name: /New Merchant/ })).toBeInTheDocument();
 
   const newMerchantRow = within(ledger).getByRole("row", { name: /New Merchant/ });
   expect(within(newMerchantRow).getByText("CJ Affiliate")).toBeInTheDocument();
+  expect(within(newMerchantRow).getByText("Advertiser ID advertiser-1")).toBeInTheDocument();
+  expect(within(newMerchantRow).getByText("1 feed")).toBeInTheDocument();
   expect(within(newMerchantRow).getByText("Review feed warnings")).toBeInTheDocument();
+  expect(
+    within(newMerchantRow).getByRole("button", { name: "Edit program New Merchant" }),
+  ).toBeInTheDocument();
   expect(within(newMerchantRow).getByText("Jul 20, 2026, 10:00 AM")).toHaveAttribute(
     "datetime",
     "2026-07-20T10:00:00.000000Z",
@@ -743,7 +750,10 @@ function programEditorFor(name: string) {
 }
 
 function rowElementFor(name: string) {
-  const row = screen.getByRole("heading", { name }).closest<HTMLElement>("tr, li");
+  const rowOwner =
+    screen.queryByRole("rowheader", { name: new RegExp(name) }) ??
+    screen.getByRole("heading", { name });
+  const row = rowOwner.closest<HTMLElement>("tr, li");
 
   if (!row) {
     throw new Error(`Could not find row for ${name}.`);

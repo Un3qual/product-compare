@@ -266,26 +266,29 @@ test("revenue route keeps one control band ahead of metrics and the attribution 
   expect(summary.compareDocumentPosition(ledger) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });
 
-test("revenue route expands exact conversion investigation facts on demand", () => {
+test("revenue route keeps exact conversion timing visible in the ledger", () => {
   mockedUseLoaderData.mockReturnValue(buildReadyLoaderData({ currency: "USD" }));
 
   renderRevenueSummaryRoute();
 
-  expect(screen.queryByText("Purchased")).not.toBeInTheDocument();
-  expect(screen.queryByText("Reported")).not.toBeInTheDocument();
-
-  fireEvent.click(
-    screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
-  );
-
-  expect(screen.getByText("May 31, 2026, 1:00 PM")).toHaveAttribute(
+  const conversion = screen.getByRole("group", {
+    name: "Conversion impact-conversion-123",
+  });
+  expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
+  expect(within(conversion).getByText("Reported")).toBeInTheDocument();
+  expect(within(conversion).getByText("May 31, 2026, 1:00 PM")).toHaveAttribute(
     "datetime",
     "2026-05-31T13:00:00Z",
   );
-  expect(screen.getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
+  expect(within(conversion).getByText("Jun 1, 2026, 9:00 AM")).toHaveAttribute(
     "datetime",
     "2026-06-01T09:00:00Z",
   );
+  expect(
+    screen.queryByRole("button", {
+      name: "Show conversion impact-conversion-123 details",
+    }),
+  ).not.toBeInTheDocument();
 });
 
 test("revenue route renders customer-facing visit and purchase details without internal IDs", () => {
@@ -342,22 +345,19 @@ test("revenue route renders customer-facing visit and purchase details without i
   expect(within(ledger).queryByText("Order: 90.00 USD")).not.toBeInTheDocument();
   expect(within(ledger).getByText("Paid")).toBeInTheDocument();
   expect(within(ledger).getByText("Strong match")).toBeInTheDocument();
-  fireEvent.click(
-    screen.getByRole("button", { name: "Show conversion impact-conversion-123 details" }),
-  );
-  const investigation = screen.getByRole("group", {
-    name: "Conversion impact-conversion-123 investigation",
+  const conversion = screen.getByRole("group", {
+    name: "Conversion impact-conversion-123",
   });
-  expect(within(investigation).getByText("Order value")).toBeInTheDocument();
-  expect(within(investigation).getByText("Commission")).toBeInTheDocument();
-  expect(within(investigation).getByText("90.00 USD")).toBeInTheDocument();
-  expect(within(investigation).getByText("9.00 USD")).toBeInTheDocument();
-  expect(within(investigation).getByText("Conversion Merchant")).toBeInTheDocument();
-  expect(within(investigation).getByText("Conversion Product")).toBeInTheDocument();
-  expect(within(investigation).getByText("Conversion Network")).toBeInTheDocument();
-  expect(within(investigation).getByText("Purchased")).toBeInTheDocument();
-  expect(within(investigation).getByText("Reported")).toBeInTheDocument();
-  expect(investigation.querySelector("dl")).not.toBeInTheDocument();
+  expect(within(conversion).getByText("Order value")).toBeInTheDocument();
+  expect(within(conversion).getByText("Commission")).toBeInTheDocument();
+  expect(within(conversion).getByText("90.00 USD")).toBeInTheDocument();
+  expect(within(conversion).getByText("9.00 USD")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Merchant")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Product")).toBeInTheDocument();
+  expect(within(conversion).getByText("Conversion Network")).toBeInTheDocument();
+  expect(within(conversion).getByText("Purchased")).toBeInTheDocument();
+  expect(within(conversion).getByText("Reported")).toBeInTheDocument();
+  expect(conversion.querySelector("dl")).not.toBeInTheDocument();
   expect(
     screen.queryByText(/db8e90c9|user-1|merchant-1|product-1|network-1/),
   ).not.toBeInTheDocument();
@@ -582,12 +582,6 @@ test("revenue route renders equal conversion references from different networks 
 
   try {
     renderRevenueSummaryRoute();
-
-    for (const button of screen.getAllByRole("button", {
-      name: "Show conversion impact-conversion-123 details",
-    })) {
-      fireEvent.click(button);
-    }
 
     expect(screen.getByText("Conversion Network")).toBeVisible();
     expect(screen.getByText("Second Conversion Network")).toBeVisible();
