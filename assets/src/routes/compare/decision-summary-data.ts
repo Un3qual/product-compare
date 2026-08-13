@@ -1,5 +1,5 @@
-import { compareDecimalStrings } from "../decimal-values";
-import { graphQLDateTimeLabel } from "../graphql-datetime";
+import { compareDecimalStrings } from "$relay/scalars";
+import { graphQLDateTimeLabel } from "$relay/scalars";
 
 export type DecisionSummaryMetricKey =
   | "relative-loaded-price"
@@ -61,7 +61,7 @@ interface ComparablePrice {
   value: string;
 }
 
-const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
+const DECISION_SUMMARY_METRICS = [
   {
     key: "best-price",
     label: "Lowest current price",
@@ -82,7 +82,7 @@ const DECISION_SUMMARY_METRICS: readonly DecisionSummaryMetricDefinition[] = [
     label: "Price last checked",
     value: priceRecencyLabel,
   },
-];
+] satisfies readonly DecisionSummaryMetricDefinition[];
 
 export function buildDecisionSummaryMetricRows(
   products: readonly DecisionSummaryProduct[],

@@ -1,10 +1,10 @@
 import type { OfferDiscoveryCard_offer$data } from "$generated/OfferDiscoveryCard_offer.graphql";
 import type { OfferDiscoveryList_connection$data } from "$generated/OfferDiscoveryList_connection.graphql";
-import { canComparePriceCurrencies, decimalStringToNumber } from "../../decimal-values";
-import { externalHttpUrlHref } from "../../external-links";
-import { graphQLDateTimeLabel } from "../../graphql-datetime";
-import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "../../offer-snapshot";
-import { compareProductText } from "../../product-formatting";
+import { canComparePriceCurrencies, decimalStringToNumber } from "$relay/scalars";
+import { externalHttpUrlHref } from "$frontend/navigation/external-links";
+import { graphQLDateTimeLabel } from "$relay/scalars";
+import type { OfferSnapshotSelectors, OfferSnapshotSummary } from "$routes/offers/offer-snapshot";
+import { compareProductText } from "$frontend/formatting";
 import type { OfferDiscoverySort } from "./offer-discovery-filter-data";
 
 export type OfferConnection = OfferDiscoveryList_connection$data;

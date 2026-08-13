@@ -65,7 +65,7 @@ function normalizePublishedReviewRating(rating: number) {
 
 export function resolveProductReviewMutationMessage(
   payload: SubmitReviewPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.review && !hasGraphQLErrors(graphQLErrors)
     ? "Review submitted for review."
@@ -74,7 +74,7 @@ export function resolveProductReviewMutationMessage(
 
 export function resolveProductQuestionMutationMessage(
   payload: AskQuestionPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.question && !hasGraphQLErrors(graphQLErrors)
     ? "Question submitted for review."
@@ -83,7 +83,7 @@ export function resolveProductQuestionMutationMessage(
 
 export function resolveProductAnswerMutationMessage(
   payload: AnswerQuestionPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.answer && !hasGraphQLErrors(graphQLErrors)
     ? "Answer submitted for review."
@@ -92,7 +92,7 @@ export function resolveProductAnswerMutationMessage(
 
 export function resolveProductReviewUpdateMessage(
   payload: UpdateReviewPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveCommunityMutationMessage(
     Boolean(payload.review),
@@ -104,7 +104,7 @@ export function resolveProductReviewUpdateMessage(
 
 export function resolveProductQuestionUpdateMessage(
   payload: UpdateQuestionPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveCommunityMutationMessage(
     Boolean(payload.question),
@@ -116,7 +116,7 @@ export function resolveProductQuestionUpdateMessage(
 
 export function resolveProductAnswerUpdateMessage(
   payload: UpdateAnswerPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveCommunityMutationMessage(
     Boolean(payload.answer),
@@ -128,7 +128,7 @@ export function resolveProductAnswerUpdateMessage(
 
 export function resolveCommunityContentRemovalMessage(
   payload: RemoveContentPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return resolveCommunityMutationMessage(
     Boolean(payload.removedContentId),

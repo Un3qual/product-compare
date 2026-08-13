@@ -80,7 +80,7 @@ export function publishedSnapshotFromPayload(
 export function resolvePublishComparisonSnapshotMutationOutcome(
   payload: ComparisonSnapshotPublishPayload,
   title: string | null,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): ComparisonSnapshotMutationOutcome {
   const snapshot = publishedSnapshotFromPayload(payload, title);
 
@@ -95,7 +95,7 @@ export function resolvePublishComparisonSnapshotMutationOutcome(
 export function resolveRevokeComparisonSnapshotMutationOutcome(
   payload: ComparisonSnapshotRevokePayload,
   snapshot: PublishedComparisonSnapshot,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): ComparisonSnapshotMutationOutcome {
   return payload.revokedSnapshotId === snapshot.id && !hasGraphQLErrors(graphQLErrors)
     ? { error: null, snapshot }

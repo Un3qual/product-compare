@@ -57,7 +57,7 @@ function exactDecimalParts(value: string): ExactDecimalParts | null {
     return null;
   }
 
-  const sign: -1 | 1 = trimmedValue.startsWith("-") ? -1 : 1;
+  const sign = trimmedValue.startsWith("-") ? -1 : 1;
   const unsignedValue =
     trimmedValue.startsWith("-") || trimmedValue.startsWith("+")
       ? trimmedValue.slice(1)

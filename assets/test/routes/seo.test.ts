@@ -1,4 +1,4 @@
-import { routeMetadataFromSeo } from "../../src/routes/seo";
+import { routeMetadataFromSeo } from "../../src/frontend/head";
 
 test("routeMetadataFromSeo emits an absolute canonical, truthful robots decision, and structured JSON-LD URLs", () => {
   const metadata = routeMetadataFromSeo(

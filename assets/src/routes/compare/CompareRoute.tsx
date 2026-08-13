@@ -19,8 +19,8 @@ import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Button } from "$ui/primitives/Button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "$ui/primitives/Tabs";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { commitRouteMutation } from "../relay-mutations";
-import { normalizeRouteLoaderThrownError } from "../loader-errors";
+import { commitRouteMutation } from "$relay/mutations";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { CompareShell } from "./CompareShell";
 import {

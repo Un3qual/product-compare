@@ -1,4 +1,4 @@
-import { compareProductText } from "../product-formatting";
+import { compareProductText } from "$frontend/formatting";
 
 const MISSING_ATTRIBUTE_VALUE = "Not available";
 const DECIMAL_COMPARISON_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[eE][+-]?\d+)?$/;
@@ -225,7 +225,7 @@ function parseDecimalComparisonValue(value: string): ParsedDecimalComparisonValu
     return null;
   }
 
-  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const sign = value.startsWith("-") ? -1 : 1;
   const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
   const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
   const exponent = Number.parseInt(rawExponent, 10);

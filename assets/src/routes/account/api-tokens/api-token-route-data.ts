@@ -8,7 +8,7 @@ import {
   type MutationGraphQLErrors,
 } from "$relay/mutation-errors";
 import { nextPageCursor } from "$relay/pagination";
-import { parseGraphQLDateTime } from "../../graphql-datetime";
+import { parseGraphQLDateTime } from "$relay/scalars";
 import { apiTokenIsActive } from "./api-token-status";
 
 export type ApiTokenStatus = "active" | "revoked" | "all";
@@ -40,8 +40,6 @@ export type ApiTokensRouteIdentityData = {
   after?: string | null;
 };
 
-export type CreateApiTokenVariables = ApiTokenOperationsCreateApiTokenMutation["variables"];
-export type RotateApiTokenVariables = ApiTokenOperationsRotateApiTokenMutation["variables"];
 export type MutationApiToken = NonNullable<CreateApiTokenPayload["apiToken"]>;
 type ApiTokenCredentialMutationPayload = CreateApiTokenPayload | RotateApiTokenPayload;
 
@@ -206,39 +204,26 @@ export function buildApiTokensViewState(
   };
 }
 
-export function buildCreateApiTokenVariables(formData: FormData): CreateApiTokenVariables {
+export function buildCreateApiTokenVariables(formData: FormData) {
   const expiresAt = normalizeExpiresAtFormValue(formData);
-  const variables: CreateApiTokenVariables = {
+  return {
     label: optionalFormText(formData.get("label")),
-  };
-
-  if (expiresAt !== undefined) {
-    variables.expiresAt = expiresAt;
-  }
-
-  return variables;
+    ...(expiresAt === undefined ? {} : { expiresAt }),
+  } satisfies ApiTokenOperationsCreateApiTokenMutation["variables"];
 }
 
-export function buildRotateApiTokenVariables(
-  token: ApiTokenRecord,
-  formData: FormData,
-): RotateApiTokenVariables {
+export function buildRotateApiTokenVariables(token: ApiTokenRecord, formData: FormData) {
   const expiresAt = normalizeExpiresAtFormValue(formData);
-  const variables: RotateApiTokenVariables = {
+  return {
     tokenId: token.id,
     label: optionalFormText(formData.get("label")) ?? token.label,
-  };
-
-  if (expiresAt !== undefined) {
-    variables.expiresAt = expiresAt;
-  }
-
-  return variables;
+    ...(expiresAt === undefined ? {} : { expiresAt }),
+  } satisfies ApiTokenOperationsRotateApiTokenMutation["variables"];
 }
 
 export function resolveApiTokenCredentialMutationOutcome(
   payload: ApiTokenCredentialMutationPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): ApiTokenCredentialMutationOutcome {
   if (hasGraphQLErrors(graphQLErrors)) {
     return credentialMutationFailure(payload, graphQLErrors);
@@ -255,7 +240,7 @@ export function resolveApiTokenCredentialMutationOutcome(
 
 export function resolveRevokeApiTokenMutationOutcome(
   payload: RevokeApiTokenPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): RevokeApiTokenMutationOutcome {
   if (hasGraphQLErrors(graphQLErrors)) {
     return revokeMutationFailure(payload, graphQLErrors);

@@ -19,13 +19,13 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import { commitRouteMutation, commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutation, commitRouteMutationPromise } from "$relay/mutations";
 import {
   addSetValue,
   removeMapValue,
   removeSetValue,
   upsertMapValue,
-} from "../../immutable-collection-state";
+} from "$frontend/state/immutable-collections";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import { ApiTokenList, RelayApiTokenList } from "./ApiTokenList";
 import { ApiTokenControls, OneTimeApiToken } from "./ApiTokenControls";
@@ -155,17 +155,12 @@ export async function apiTokensLoader({
 function apiTokensQueryVariables(
   tokenStatus: ApiTokenStatus,
   after: string | undefined,
-): ApiTokensRouteQuery["variables"] {
-  const variables: ApiTokensRouteQuery["variables"] = {
+  ) {
+  return {
     first: API_TOKENS_PAGE_SIZE,
     status: API_TOKEN_STATUS_VARIABLES[tokenStatus],
-  };
-
-  if (after !== undefined) {
-    variables.after = after;
-  }
-
-  return variables;
+    ...(after === undefined ? {} : { after }),
+  } satisfies ApiTokensRouteQuery["variables"];
 }
 
 function parseApiTokenStatus(status: string | null): ApiTokenStatus {

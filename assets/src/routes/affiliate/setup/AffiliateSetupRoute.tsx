@@ -18,9 +18,9 @@ import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { WorkspaceLayout } from "$ui/components/layout/WorkspaceLayout";
 import { Pagination } from "$ui/components/navigation/Pagination";
-import { recoverRouteLoaderError } from "../../loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { merchantPaginationFromUrl } from "../../merchants/pagination";
-import { commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   AffiliateCouponForm,

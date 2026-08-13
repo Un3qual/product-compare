@@ -8,9 +8,9 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { routeMetadataFromSeo } from "$frontend/head";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";

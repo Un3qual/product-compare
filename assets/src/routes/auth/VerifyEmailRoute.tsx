@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { graphql, useMutation, type MutationCommitFn } from "react-relay";
 import { useSearchParams } from "react-router-dom";
 import type { VerifyEmailRouteMutation } from "$generated/VerifyEmailRouteMutation.graphql";
-import { commitRouteMutationPromise } from "../relay-mutations";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import {
   type AuthActionResult,
   isSuccessfulActionResult,

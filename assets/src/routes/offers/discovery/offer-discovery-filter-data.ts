@@ -32,26 +32,18 @@ type OfferDiscoveryFilterDataInput = Omit<OfferDiscoveryFilters, "sort"> & {
   sort: string;
 };
 
-export interface OfferDiscoveryProductContext {
-  brand: {
-    name: string;
-  } | null;
-  id: string;
-  name: string;
-  slug: string;
-}
-
-type OfferDiscoveryProductNode = Readonly<{
-  __typename: "Product";
-  brand: OfferDiscoveryProductContext["brand"] | undefined;
-  id: string;
-  name: string;
-  slug: string;
-}>;
-
 export type OfferDiscoverySelectedProductNode =
-  | OfferDiscoveryProductNode
-  | Readonly<{ __typename: string }>;
+  OfferDiscoveryRouteQuery["response"]["selectedProduct"];
+type OfferDiscoveryProductNode = Extract<
+  NonNullable<OfferDiscoverySelectedProductNode>,
+  { readonly __typename: "Product" }
+>;
+export type OfferDiscoveryProductContext = Pick<
+  OfferDiscoveryProductNode,
+  "id" | "name" | "slug"
+> & {
+  brand: Pick<NonNullable<OfferDiscoveryProductNode["brand"]>, "name"> | null;
+};
 
 export interface OfferDiscoveryScopeBadgeData {
   label: string;
@@ -65,7 +57,7 @@ export function normalizeOfferDiscoverySort(sort: string | null | undefined): Of
 }
 
 export function offerDiscoverySelectedProductContext(
-  node: OfferDiscoverySelectedProductNode | null | undefined,
+  node: OfferDiscoverySelectedProductNode,
 ): OfferDiscoveryProductContext | null {
   if (!node || !isOfferDiscoveryProductNode(node)) {
     return null;
@@ -205,7 +197,7 @@ function canonicalizeFilters(filters: OfferDiscoveryFilterDataInput): OfferDisco
 }
 
 function isOfferDiscoveryProductNode(
-  node: OfferDiscoverySelectedProductNode,
+  node: NonNullable<OfferDiscoverySelectedProductNode>,
 ): node is OfferDiscoveryProductNode {
   return node.__typename === "Product";
 }
@@ -232,3 +224,4 @@ function hasNonDefaultOfferFilters(filters: OfferDiscoveryFilters) {
     filters.first !== DEFAULT_OFFERS_PAGE_SIZE,
   );
 }
+import type { OfferDiscoveryRouteQuery } from "$generated/OfferDiscoveryRouteQuery.graphql";

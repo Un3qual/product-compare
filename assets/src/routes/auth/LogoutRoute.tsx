@@ -3,7 +3,7 @@ import { useState } from "react";
 import { graphql, useMutation, useRelayEnvironment } from "react-relay";
 import { useNavigate } from "react-router-dom";
 import type { LogoutRouteMutation } from "$generated/LogoutRouteMutation.graphql";
-import { commitRouteMutation } from "../relay-mutations";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   isSuccessfulActionResult,
   type MutationError,

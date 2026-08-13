@@ -9,7 +9,7 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";
@@ -114,12 +114,12 @@ export type BrowseProductsLoaderData =
     }
   | { status: "error" };
 
-const EMPTY_CATALOG_FILTERS: CatalogFilters = {
+const EMPTY_CATALOG_FILTERS = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
   enums: [],
-};
+} satisfies CatalogFilters;
 
 export function BrowseRoute() {
   const loaderData = useLoaderData<typeof browseLoader>();
@@ -283,11 +283,12 @@ export async function browseLoader({
   const filters = catalogFiltersFromUrl(requestUrl);
   const productFiltersInput = catalogFiltersToProductFiltersInput(filters);
   const pageSize = browseProductsPageSizeFromUrl(requestUrl);
-  const variables: BrowseRouteQuery["variables"] = { first: pageSize };
   const after = nonBlankParam(requestUrl, "after");
-
-  if (after) variables.after = after;
-  if (productFiltersInput) variables.filters = productFiltersInput;
+  const variables = {
+    first: pageSize,
+    ...(after ? { after } : {}),
+    ...(productFiltersInput ? { filters: productFiltersInput } : {}),
+  } satisfies BrowseRouteQuery["variables"];
 
   try {
     const queryResult = await fetchRouteQuery<BrowseRouteQuery>(

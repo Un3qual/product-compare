@@ -3,7 +3,7 @@ import {
   removeMapValue,
   removeSetValue,
   upsertMapValue,
-} from "../../src/routes/immutable-collection-state";
+} from "../../src/frontend/state/immutable-collections";
 
 test("upsertMapValue appends a new key without changing the source map", () => {
   const source = new Map([

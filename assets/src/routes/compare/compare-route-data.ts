@@ -1,7 +1,7 @@
 import type { CompareRouteQuery } from "$generated/CompareRouteQuery.graphql";
 import type { RelayRouteQueryDescriptor } from "$relay/route-preload";
-import { compareDecimalStrings } from "../decimal-values";
-import { parseGraphQLDateTime } from "../graphql-datetime";
+import { compareDecimalStrings } from "$relay/scalars";
+import { parseGraphQLDateTime } from "$relay/scalars";
 import type { CompareSpecMode } from "./paths";
 
 export { MAX_COMPARE_PRODUCTS, type CompareSpecMode } from "./paths";

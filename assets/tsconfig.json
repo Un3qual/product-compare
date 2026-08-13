@@ -11,6 +11,7 @@
     "baseUrl": ".",
     "paths": {
       "$generated/*": ["src/__generated__/*"],
+      "$frontend/*": ["src/frontend/*"],
       "$relay/*": ["src/relay/*"],
       "$routes/*": ["src/routes/*"],
       "$ui/*": ["src/ui/*"]

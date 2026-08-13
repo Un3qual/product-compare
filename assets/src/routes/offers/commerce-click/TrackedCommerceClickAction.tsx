@@ -3,7 +3,7 @@ import { graphql, useMutation } from "react-relay";
 import type { TrackedCommerceClickActionMutation } from "$generated/TrackedCommerceClickActionMutation.graphql";
 import { resolveGraphQLEndpoint } from "$relay/fetch-graphql";
 import { Button } from "$ui/primitives/Button";
-import { commitRouteMutation } from "../../relay-mutations";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   DEFAULT_MUTATION_ERROR_MESSAGE,
   hasGraphQLErrors,
@@ -146,7 +146,7 @@ export function resolveTrackedCommerceRedirectUrl(redirectPath: string, graphQLE
 export function resolveTrackedCommerceClickMutationOutcome(
   payload: TrackedCommerceClickPayload,
   graphQLEndpoint: string,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): TrackedCommerceClickMutationOutcome {
   if (!payload.redirectPath || payload.errors.length > 0 || hasGraphQLErrors(graphQLErrors)) {
     return {

@@ -1,30 +1,18 @@
+import type { CategoryRouteQuery } from "$generated/CategoryRouteQuery.graphql";
 import { nextPageCursor } from "$relay/pagination";
 
-export type CategorySpecificationHighlight = {
-  attributeId: string;
-  displayName: string;
-  valueText: string;
-};
+type Category = NonNullable<CategoryRouteQuery["response"]["category"]>;
+type CategoryProduct = Category["products"]["edges"][number]["node"];
 
-export type CategoryViewDataInput = {
-  id: string;
-  name: string;
-  slug: string;
-  qualifiedProductCount: number;
-  products: {
-    edges: ReadonlyArray<{
-      node: {
-        id: string;
-        name: string;
-        slug: string;
-        brand?: { name: string } | null;
-        currentAttributes: ReadonlyArray<CategorySpecificationHighlight>;
-      };
+export type CategoryViewDataInput = Pick<
+  Category,
+  "id" | "name" | "qualifiedProductCount" | "slug"
+> & {
+  readonly products: {
+    readonly edges: ReadonlyArray<{
+      readonly node: Pick<CategoryProduct, "brand" | "currentAttributes" | "id" | "name" | "slug">;
     }>;
-    pageInfo: {
-      hasNextPage: boolean;
-      endCursor?: string | null;
-    };
+    readonly pageInfo: Pick<Category["products"]["pageInfo"], "endCursor" | "hasNextPage">;
   };
 };
 

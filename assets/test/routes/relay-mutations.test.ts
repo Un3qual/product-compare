@@ -1,5 +1,5 @@
 import type { MutationCommitFn } from "react-relay";
-import { commitRouteMutation, commitRouteMutationPromise } from "../../src/routes/relay-mutations";
+import { commitRouteMutation, commitRouteMutationPromise } from "../../src/relay/mutations";
 
 type TestMutation = {
   variables: {

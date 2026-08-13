@@ -9,21 +9,21 @@ type MarkReadPayload = AlertOperationsMarkAlertReadMutation["response"]["markAle
 
 export function resolveTogglePriceWatchMutationError(
   payload: TogglePayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.watch ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveDeletePriceWatchMutationError(
   payload: DeletePayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.deletedWatchId ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }
 
 export function resolveMarkAlertReadMutationError(
   payload: MarkReadPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.event ? null : mutationErrorMessage(payload.errors, graphQLErrors);
 }

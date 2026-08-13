@@ -1,5 +1,5 @@
-import { parseGraphQLDateTime } from "../../graphql-datetime";
-import { formatProductDateTime } from "../../product-formatting";
+import { parseGraphQLDateTime } from "$relay/scalars";
+import { formatProductDateTime } from "$frontend/formatting";
 
 export const CJ_PROGRAM_STAGES = [
   { countKey: "new", label: "New", urlValue: "new", value: "NEW" },

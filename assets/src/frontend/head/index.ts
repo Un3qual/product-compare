@@ -1,4 +1,5 @@
 export { RouteHead } from "./RouteHead";
+export { routeMetadataFromSeo } from "./seo";
 export {
   projectRouteMetadataTagPolicy,
   resolveRouteDocumentMetadata,

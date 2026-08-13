@@ -24,7 +24,7 @@ import {
   SelectValue,
 } from "$ui/primitives/Select";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { recoverRouteLoaderError } from "../../loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { CJProgramList } from "./CJProgramList";
 import { CJ_PROGRAM_SORTS, CJ_PROGRAM_STAGES } from "./cj-program-data";
 import {

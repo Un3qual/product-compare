@@ -1,4 +1,4 @@
-import type { HomeDealReasonCode, HomeDeals_deal$data } from "$generated/HomeDeals_deal.graphql";
+import type { HomeDeals_deal$data } from "$generated/HomeDeals_deal.graphql";
 import type { HomeDealsQuery$data } from "$generated/HomeDealsQuery.graphql";
 import type {
   HomePriceSignalCode,

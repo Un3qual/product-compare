@@ -1,5 +1,5 @@
 import type { AlertsRoute_watch$data } from "$generated/AlertsRoute_watch.graphql";
-import { graphQLDateTimeLabel } from "../../graphql-datetime";
+import { graphQLDateTimeLabel } from "$relay/scalars";
 
 export type PriceWatchViewSource = Pick<
   AlertsRoute_watch$data,

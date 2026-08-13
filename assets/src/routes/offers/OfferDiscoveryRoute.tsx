@@ -10,7 +10,7 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
 import { PageShell } from "$ui/components/layout/PageShell";

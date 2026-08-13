@@ -6,8 +6,8 @@ import { StatusBadge } from "$ui/components/status/StatusBadge";
 import { Button } from "$ui/primitives/Button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { externalHttpUrlHref } from "../../external-links";
-import { graphQLDateTimeContext } from "../../graphql-datetime";
+import { externalHttpUrlHref } from "$frontend/navigation/external-links";
+import { graphQLDateTimeContext } from "$relay/scalars";
 import {
   discountLabel,
   emptyCouponConnection,

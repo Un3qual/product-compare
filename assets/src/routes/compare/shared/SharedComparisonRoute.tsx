@@ -11,10 +11,10 @@ import {
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { normalizeRouteLoaderThrownError } from "../../loader-errors";
-import { formatProductDateTimeLabel } from "../../product-formatting";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
+import { formatProductDateTimeLabel } from "$frontend/formatting";
 import type { RouteDocumentMetadata } from "../../RouteMetadata";
-import { routeMetadataFromSeo } from "../../seo";
+import { routeMetadataFromSeo } from "$frontend/head";
 import { buildSharedComparisonViewData } from "./shared-comparison-view-data";
 
 const sharedComparisonRouteQuery = graphql`

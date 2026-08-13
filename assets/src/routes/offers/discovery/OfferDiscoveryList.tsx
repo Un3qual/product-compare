@@ -5,8 +5,8 @@ import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { Pagination } from "$ui/components/navigation/Pagination";
 import { tokens } from "$ui/theme/tokens.stylex";
-import { formatCouponAvailabilityCount, formatOfferCount } from "../../offer-formatting";
-import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "../../offer-snapshot";
+import { formatCouponAvailabilityCount, formatOfferCount } from "$frontend/formatting";
+import { buildOfferSnapshotSummary, type OfferSnapshotSummary } from "$routes/offers/offer-snapshot";
 import {
   OFFER_SNAPSHOT_SELECTORS,
   priceSortHighlightLabel,

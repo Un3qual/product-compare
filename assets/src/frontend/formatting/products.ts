@@ -1,4 +1,4 @@
-import { parseGraphQLDateTime } from "./graphql-datetime";
+import { parseGraphQLDateTime } from "$relay/scalars";
 
 const PRODUCT_LOCALE = "en-US";
 const PRODUCT_TIME_ZONE = "UTC";

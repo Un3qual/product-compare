@@ -2,7 +2,7 @@ import {
   canComparePriceCurrencies,
   compareDecimalStrings,
   decimalStringToNumber,
-} from "../../src/routes/decimal-values";
+} from "../../src/relay/scalars";
 
 test("decimalStringToNumber normalizes finite decimal values", () => {
   expect(decimalStringToNumber(42)).toBe(42);

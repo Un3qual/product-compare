@@ -1277,7 +1277,7 @@ test("renders browse products from the Relay route query", () => {
     "/offers?productId=product-2",
   );
   expect(screen.getByText("Catalog Second")).toBeInTheDocument();
-  expect(screen.getByText("catalog-first")).toBeInTheDocument();
+  expect(screen.queryByText("catalog-first")).not.toBeInTheDocument();
   expect(screen.getByText("Acme")).toBeInTheDocument();
   expect(
     within(screen.getByRole("article", { name: "Catalog First" })).getByRole("list", {

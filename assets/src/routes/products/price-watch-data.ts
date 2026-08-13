@@ -30,7 +30,7 @@ export const PRICE_WATCH_CREATED_MESSAGE =
 
 export function resolveCreatePriceWatchMutationMessage(
   payload: CreatePriceWatchPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   return payload.watch && !hasGraphQLErrors(graphQLErrors)
     ? PRICE_WATCH_CREATED_MESSAGE

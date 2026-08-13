@@ -39,7 +39,7 @@ export function writeSpecFilterDraft(
 }
 
 export function catalogPathForSpecSelections(selections: readonly SpecFilterSelection[]) {
-  const filters: CatalogFilters = {
+  const filters = {
     booleans: selections.flatMap((selection) =>
       selection.kind === "boolean" && typeof selection.value === "boolean"
         ? [{ attributeId: selection.attributeId, value: selection.value }]
@@ -52,7 +52,7 @@ export function catalogPathForSpecSelections(selections: readonly SpecFilterSele
     ),
     numeric: selections.flatMap(numericCatalogFilter),
     useCaseTaxonIds: [],
-  };
+  } satisfies CatalogFilters;
 
   return catalogBrowseFirstPagePath(filters, CATALOG_PAGE_SIZE);
 }

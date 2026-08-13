@@ -1,12 +1,15 @@
 import type { ProductOfferPanel_connection$data } from "$generated/ProductOfferPanel_connection.graphql";
-import { decimalStringToNumber } from "../../decimal-values";
-import { externalHttpUrlHref } from "../../external-links";
+import { decimalStringToNumber } from "$relay/scalars";
+import { externalHttpUrlHref } from "$frontend/navigation/external-links";
 import {
   graphQLDateTimeContext,
   graphQLDateTimeLabel,
   type GraphQLDateTimeContext,
-} from "../../graphql-datetime";
-import { buildOfferSnapshotSummary, type OfferSnapshotSelectors } from "../../offer-snapshot";
+} from "$relay/scalars";
+import {
+  buildOfferSnapshotSummary,
+  type OfferSnapshotSelectors,
+} from "$routes/offers/offer-snapshot";
 import { nextPageCursor } from "$relay/pagination";
 import { productDetailPath } from "../product-detail-route-data";
 
@@ -140,11 +143,11 @@ function buildVisiblePriceHistorySummary(
   };
 }
 
-const PRODUCT_OFFER_SNAPSHOT_SELECTORS: OfferSnapshotSelectors<VisibleProductOffer> = {
+const PRODUCT_OFFER_SNAPSHOT_SELECTORS = {
   currency: (offer) => offer.currency,
   hasCoupons: (offer) => offer.coupons.length > 0 || offer.couponsHasMore,
   numericPrice: (offer) => (hasVisiblePrice(offer) ? offer.numericPrice : null),
-};
+} satisfies OfferSnapshotSelectors<VisibleProductOffer>;
 
 function productOfferSnapshot(offers: readonly VisibleProductOffer[]): ProductOfferSnapshot {
   const summary = buildOfferSnapshotSummary(offers, PRODUCT_OFFER_SNAPSHOT_SELECTORS);

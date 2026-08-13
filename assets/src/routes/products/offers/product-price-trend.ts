@@ -1,12 +1,17 @@
 import type { ProductDetailRouteQuery } from "$generated/ProductDetailRouteQuery.graphql";
-import { decimalStringToNumber } from "$routes/decimal-values";
+import { decimalStringToNumber } from "$relay/scalars";
 import { exactDateTime, shortDate } from "$ui/components/data";
 import { tokens } from "$ui/theme/tokens.stylex";
 import type { PriceSeriesChartSeries } from "$ui/components/data/PriceHistoryChart";
 
 type Product = NonNullable<ProductDetailRouteQuery["response"]["product"]>;
 export type ProductPriceTrendCurrency = Product["priceHistory90d"][number];
-export type ProductPriceTrendMode = "average" | "lowest" | "merchants";
+export const PRODUCT_PRICE_TREND_MODES = [
+  { label: "Lowest", value: "lowest" },
+  { label: "Average", value: "average" },
+  { label: "By merchant", value: "merchants" },
+] as const;
+export type ProductPriceTrendMode = (typeof PRODUCT_PRICE_TREND_MODES)[number]["value"];
 
 const merchantColors = [
   tokens.actionAccent,

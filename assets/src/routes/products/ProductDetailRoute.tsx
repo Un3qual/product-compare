@@ -19,8 +19,8 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { recoverRouteLoaderError } from "$routes/loader-errors";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { recoverRouteLoaderError } from "$relay/loader-errors";
+import { routeMetadataFromSeo } from "$frontend/head";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { ContextRail } from "$ui/components/layout/ContextRail";
@@ -331,11 +331,11 @@ export async function productDetailLoader({
   if (slug === "") return productNotFoundResult();
 
   const environment = getRelayEnvironmentFromRouterContext(context);
-  const variables: ProductDetailRouteQuery["variables"] = {
+  const variables = {
     slug,
     offerFirst: PRODUCT_OFFERS_PAGE_SIZE,
     offersAfter,
-  };
+  } satisfies ProductDetailRouteQuery["variables"];
 
   try {
     const productRouteQuery = await fetchRouteQuery<ProductDetailRouteQuery>(

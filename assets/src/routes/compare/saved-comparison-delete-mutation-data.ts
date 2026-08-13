@@ -20,7 +20,7 @@ export type DeleteSavedComparisonSetMutationOutcome =
 
 export function resolveDeleteSavedComparisonSetMutationOutcome(
   payload: DeleteSavedComparisonSetPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ): DeleteSavedComparisonSetMutationOutcome {
   const deletedSavedComparisonSetId = payload.savedComparisonSet?.id;
 

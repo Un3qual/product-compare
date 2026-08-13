@@ -3,7 +3,7 @@ import { props } from "@stylexjs/stylex";
 import { useMutation } from "react-relay";
 import type { ProductCommunityOperationsRemoveCommunityContentMutation } from "$generated/ProductCommunityOperationsRemoveCommunityContentMutation.graphql";
 import { Button } from "$ui/primitives/Button";
-import { commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import {
   DEFAULT_MUTATION_ERROR_MESSAGE,
   hasGraphQLErrors,

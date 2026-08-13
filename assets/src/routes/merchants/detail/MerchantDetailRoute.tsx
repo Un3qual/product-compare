@@ -8,14 +8,14 @@ import {
   useRoutePreloadedQuery,
   type RelayRouteQueryDescriptor,
 } from "$relay/route-preload";
-import { normalizeRouteLoaderThrownError } from "$routes/loader-errors";
-import { routeMetadataFromSeo } from "$routes/seo";
+import { normalizeRouteLoaderThrownError } from "$relay/loader-errors";
+import { routeMetadataFromSeo } from "$frontend/head";
 import type { RouteDocumentMetadata } from "$routes/RouteMetadata";
 import { SummaryStrip } from "$ui/components/data/SummaryStrip";
 import { FeedbackState } from "$ui/components/feedback/FeedbackState";
 import { PageShell } from "$ui/components/layout/PageShell";
-import { externalWebsiteHref } from "../../external-links";
-import { formatProductDateLabel } from "../../product-formatting";
+import { externalWebsiteHref } from "$frontend/navigation/external-links";
+import { formatProductDateLabel } from "$frontend/formatting";
 import { getMerchantDetailViewData } from "./merchant-detail-view-data";
 
 const merchantDetailRouteQuery = graphql`

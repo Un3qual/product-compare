@@ -1,9 +1,14 @@
-import type { ReactElement } from "react";
 import { create, props } from "@stylexjs/stylex";
 import { Link } from "react-router-dom";
 import { graphql, useFragment } from "react-relay";
-import type { BrowseProductList_item$key } from "$generated/BrowseProductList_item.graphql";
-import type { BrowseProductList_products$key } from "$generated/BrowseProductList_products.graphql";
+import type {
+  BrowseProductList_item$data,
+  BrowseProductList_item$key,
+} from "$generated/BrowseProductList_item.graphql";
+import type {
+  BrowseProductList_products$data,
+  BrowseProductList_products$key,
+} from "$generated/BrowseProductList_products.graphql";
 import { DataList, DataListItem } from "$ui/components/data/DataList";
 import { tokens } from "$ui/theme/tokens.stylex";
 import { selectBrowseProductSpecificationHighlights } from "./browse-product-list-data";
@@ -39,11 +44,10 @@ const browseProductListItemFragment = graphql`
   }
 `;
 
-export type BrowseProductNode = {
-  readonly id: string;
-  readonly name: string;
-  readonly slug: string;
-};
+export type BrowseProductNode = Pick<
+  BrowseProductList_products$data["edges"][number]["node"],
+  "id" | "name" | "slug"
+>;
 
 export type BrowseCompareAction =
   | { kind: "selected" }
@@ -108,7 +112,7 @@ export function BrowseProductList({
   detailHrefFor: (product: BrowseProductNode) => string;
   offerHrefFor: (product: BrowseProductNode) => string;
   products: BrowseProductList_products$key;
-}): ReactElement {
+}) {
   const data = useFragment(browseProductListFragment, products);
 
   return (
@@ -136,7 +140,7 @@ function BrowseProductListItem({
   detailHref: string;
   offerHref: string;
   product: BrowseProductList_item$key;
-}): ReactElement {
+}) {
   const data = useFragment(browseProductListItemFragment, product);
 
   return (
@@ -145,7 +149,6 @@ function BrowseProductListItem({
         <h2 {...props(styles.productHeading)}>{data.name}</h2>
         <div {...props(styles.metadata)}>
           <p {...props(styles.metadataItem)}>{data.brand?.name ?? "Unknown brand"}</p>
-          <p {...props(styles.metadataItem)}>{data.slug}</p>
         </div>
         <SpecificationHighlights attributes={data.currentAttributes} />
         <BrowseProductActions
@@ -169,7 +172,7 @@ function BrowseProductActions({
   detailHref: string;
   offerHref: string;
   product: BrowseProductNode;
-}): ReactElement {
+}) {
   return (
     <ul aria-label={`Decision actions for ${product.name}`} {...props(styles.actionList)}>
       <li>
@@ -186,12 +189,7 @@ function BrowseProductActions({
 function SpecificationHighlights({
   attributes,
 }: {
-  attributes: ReadonlyArray<{
-    readonly code: string;
-    readonly displayName: string;
-    readonly sortOrder?: number | null;
-    readonly valueText: string;
-  }>;
+  attributes: BrowseProductList_item$data["currentAttributes"];
 }) {
   const highlights = selectBrowseProductSpecificationHighlights(attributes);
 

@@ -26,7 +26,7 @@ import { PageShell } from "$ui/components/layout/PageShell";
 import { DestructiveActionDialog } from "$ui/components/overlays/DestructiveActionDialog";
 import { Button } from "$ui/primitives/Button";
 import { productDetailPath } from "../../products/product-detail-route-data";
-import { commitRouteMutationPromise } from "../../relay-mutations";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import {
   resolveDeletePriceWatchMutationError,

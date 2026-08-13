@@ -1,4 +1,4 @@
-import type { RouteDocumentMetadata } from "./RouteMetadata";
+import type { RouteDocumentMetadata } from "./route-head";
 
 type GraphQLSeoMetadata = {
   readonly canonicalPath: string;
@@ -26,7 +26,7 @@ export function routeMetadataFromSeo(
   };
 }
 
-function absoluteStructuredData(value: string | null | undefined, requestUrl: string) {
+function absoluteStructuredData(value: GraphQLSeoMetadata["structuredData"], requestUrl: string) {
   if (!value) return null;
 
   try {

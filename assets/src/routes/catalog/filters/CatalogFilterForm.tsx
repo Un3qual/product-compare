@@ -37,12 +37,12 @@ import { CatalogAdvancedFilters } from "./CatalogAdvancedFilters";
 const BROWSE_PRODUCTS_PAGE_SIZES = [12, 24, 48] as const;
 type ProductFilterMetadata = BrowseRouteQuery["response"]["productFilterMetadata"];
 
-const EMPTY_CATALOG_FILTERS: CatalogFilters = {
+const EMPTY_CATALOG_FILTERS = {
   useCaseTaxonIds: [],
   numeric: [],
   booleans: [],
   enums: [],
-};
+} satisfies CatalogFilters;
 
 const styles = create({
   form: {

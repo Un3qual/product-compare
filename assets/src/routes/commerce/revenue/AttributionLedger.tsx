@@ -15,7 +15,7 @@ import type {
   AttributionLedger_row$data,
   AttributionLedger_row$key,
 } from "$generated/AttributionLedger_row.graphql";
-import { formatProductDateTimeLabel } from "../../product-formatting";
+import { formatProductDateTimeLabel } from "$frontend/formatting";
 import { Button } from "$ui/primitives/Button";
 import {
   Table,

@@ -60,7 +60,7 @@ test("treats undefined Relay nullable fields like their null fallbacks", () => {
           buildOffer({ id: "no-product-or-price", product: undefined, latestPrice: undefined }),
           buildOffer({
             id: "unknown-shipping",
-            latestPrice: { price: "12", shipping: undefined, inStock: undefined },
+            latestPrice: buildPrice({ price: "12", shipping: undefined, inStock: undefined }),
           }),
         ],
         { hasNextPage: true, endCursor: undefined },
@@ -89,25 +89,29 @@ test("projects available and unavailable offers in source order with exact price
       merchantProducts: buildProducts([
         buildOffer({
           id: "first",
-          product: { name: "Unavailable source product", slug: "ignored" },
+          product: {
+            id: "product-unavailable",
+            name: "Unavailable source product",
+            slug: "ignored",
+          },
           latestPrice: null,
         }),
         buildOffer({
           id: "second",
           currency: "USD",
           product: null,
-          latestPrice: { price: "12", shipping: null, inStock: false },
+          latestPrice: buildPrice({ price: "12", shipping: null, inStock: false }),
         }),
         buildOffer({
           id: "third",
           currency: "EUR",
-          product: { name: "Cameras & lenses", slug: "cameras & lenses/?" },
-          latestPrice: { price: "20", shipping: "5", inStock: undefined },
+          product: { id: "product-cameras", name: "Cameras & lenses", slug: "cameras & lenses/?" },
+          latestPrice: buildPrice({ price: "20", shipping: "5", inStock: undefined }),
         }),
         buildOffer({
           id: "fourth",
           currency: "GBP",
-          latestPrice: { price: "30", shipping: "0", inStock: true },
+          latestPrice: buildPrice({ price: "30", shipping: "0", inStock: true }),
         }),
       ]),
     }),
@@ -180,7 +184,9 @@ test("returns an encoded advancing offers path only when pagination is complete"
 
 test("does not mutate merchant summaries, offer rows, or pagination", () => {
   const merchant = buildMerchant({
-    merchantProducts: buildProducts([buildOffer({ product: { name: "Camera", slug: "camera" } })]),
+    merchantProducts: buildProducts([
+      buildOffer({ product: { id: "product-camera", name: "Camera", slug: "camera" } }),
+    ]),
   });
   const original = structuredClone(merchant);
 
@@ -230,8 +236,27 @@ function buildOffer(
   return {
     id: "offer-1",
     currency: "USD",
-    product: { name: "Field Camera", slug: "field-camera" },
-    latestPrice: { price: "99", shipping: "4", inStock: true },
+    product: { id: "product-1", name: "Field Camera", slug: "field-camera" },
+    latestPrice: buildPrice(),
+    ...overrides,
+  };
+}
+
+function buildPrice(
+  overrides: Partial<
+    NonNullable<
+      MerchantDetailViewDataInput["merchantProducts"]["edges"][number]["node"]["latestPrice"]
+    >
+  > = {},
+): NonNullable<
+  MerchantDetailViewDataInput["merchantProducts"]["edges"][number]["node"]["latestPrice"]
+> {
+  return {
+    id: "price-1",
+    inStock: true,
+    observedAt: "2026-07-14T01:00:00Z",
+    price: "99",
+    shipping: "4",
     ...overrides,
   };
 }

@@ -1,4 +1,4 @@
-import { routeFormValue } from "../../src/routes/form-data";
+import { routeFormValue } from "../../src/frontend/forms/route-form";
 
 test("routeFormValue reads string form values", () => {
   const formData = new FormData();

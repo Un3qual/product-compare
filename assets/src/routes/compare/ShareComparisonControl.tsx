@@ -12,7 +12,7 @@ import { Checkbox } from "$ui/primitives/Checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "$ui/primitives/Collapsible";
 import { Input } from "$ui/primitives/Input";
 import { Label } from "$ui/primitives/Label";
-import { commitRouteMutationPromise } from "../relay-mutations";
+import { commitRouteMutationPromise } from "$relay/mutations";
 import { DEFAULT_MUTATION_ERROR_MESSAGE } from "$relay/mutation-errors";
 import type { CompareProductSummary } from "./compare-route-data";
 import {

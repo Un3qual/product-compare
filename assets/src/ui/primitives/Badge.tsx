@@ -31,12 +31,12 @@ const styles = stylex.create({
 
 export type BadgeVariant = "default" | "secondary" | "destructive" | "outline";
 
-const variants: Record<BadgeVariant, StyleXStyles> = {
+const variants = {
   default: styles.default,
   destructive: styles.destructive,
   outline: styles.outline,
   secondary: styles.secondary,
-};
+} satisfies Record<BadgeVariant, StyleXStyles>;
 
 export type BadgeProps = StyleXPrimitiveProps<ComponentProps<"span">> & {
   variant?: BadgeVariant;

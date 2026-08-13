@@ -35,30 +35,42 @@ export type AffiliateCouponResultCopyFact = Pick<Coupon, "discountType"> &
 
 export function resolveAffiliateNetworkMutationOutcome(
   payload: NetworkPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return resolveAffiliateSetupMutationOutcome(payload?.network, payload?.errors, graphQLErrors);
+  return resolveAffiliateSetupMutationOutcome(
+    payload?.network,
+    payload?.errors ?? [],
+    graphQLErrors,
+  );
 }
 
 export function resolveAffiliateProgramMutationOutcome(
   payload: ProgramPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return resolveAffiliateSetupMutationOutcome(payload?.program, payload?.errors, graphQLErrors);
+  return resolveAffiliateSetupMutationOutcome(
+    payload?.program,
+    payload?.errors ?? [],
+    graphQLErrors,
+  );
 }
 
 export function resolveAffiliateLinkMutationOutcome(
   payload: LinkPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors, graphQLErrors);
+  return resolveAffiliateSetupMutationOutcome(payload?.link, payload?.errors ?? [], graphQLErrors);
 }
 
 export function resolveAffiliateCouponMutationOutcome(
   payload: CouponPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
-  return resolveAffiliateSetupMutationOutcome(payload?.coupon, payload?.errors, graphQLErrors);
+  return resolveAffiliateSetupMutationOutcome(
+    payload?.coupon,
+    payload?.errors ?? [],
+    graphQLErrors,
+  );
 }
 
 export function buildMerchantChoices(
@@ -207,7 +219,7 @@ function optionalDateTimeString(formValues: AffiliateSetupFormValues, name: stri
 
 function resolveAffiliateSetupMutationOutcome<T extends object>(
   result: T | null | undefined,
-  errors: AffiliateMutationErrors | undefined,
+  errors: AffiliateMutationErrors,
   graphQLErrors: MutationGraphQLErrors,
 ) {
   if (result && !hasGraphQLErrors(graphQLErrors)) {

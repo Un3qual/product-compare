@@ -66,13 +66,13 @@ const DECIMAL_FILTER_VALUE_PATTERN = /^[+-]?(?:(?:\d+(?:\.\d*)?)|(?:\.\d+))(?:[e
 const MAX_DECIMAL_EXPONENT_SHIFT = 1_000;
 export const MAX_CATALOG_SEARCH_QUERY_LENGTH = 100;
 
-const CATALOG_PRODUCT_SORT_LABELS: Record<CatalogProductSort, string> = {
+const CATALOG_PRODUCT_SORT_LABELS = {
   RELEVANCE: "Relevance",
   ID_ASC: "Catalog order",
   NAME_ASC: "Product name",
   BRAND_NAME_ASC: "Brand name",
   NEWEST: "Newest",
-};
+} satisfies Record<CatalogProductSort, string>;
 
 export function catalogProductSortLabel(sort: CatalogProductSort) {
   return CATALOG_PRODUCT_SORT_LABELS[sort];
@@ -333,7 +333,7 @@ function parseDecimalFilterValue(value: string): ParsedDecimalFilterValue | null
     return null;
   }
 
-  const sign: -1 | 1 = value.startsWith("-") ? -1 : 1;
+  const sign = value.startsWith("-") ? -1 : 1;
   const unsignedValue = value.startsWith("-") || value.startsWith("+") ? value.slice(1) : value;
   const [coefficient, rawExponent = "0"] = unsignedValue.split(/[eE]/);
   const exponent = Number.parseInt(rawExponent, 10);

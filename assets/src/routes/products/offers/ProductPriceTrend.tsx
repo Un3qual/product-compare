@@ -6,6 +6,7 @@ import { PriceSeriesChart } from "$ui/components/data/PriceHistoryChart";
 import {
   initialTrendCurrency,
   merchantNameByProductId,
+  PRODUCT_PRICE_TREND_MODES,
   productPriceChartSeries,
   type ProductPriceTrendCurrency,
   type ProductPriceTrendMode,
@@ -81,12 +82,6 @@ const styles = create({
   },
 });
 
-const modes: ReadonlyArray<{ label: string; value: ProductPriceTrendMode }> = [
-  { label: "Lowest", value: "lowest" },
-  { label: "Average", value: "average" },
-  { label: "By merchant", value: "merchants" },
-];
-
 export function ProductPriceTrend({ series }: { series: readonly ProductPriceTrendCurrency[] }) {
   const titleId = useId();
   const [currency, setCurrency] = useState(() => initialTrendCurrency(series));
@@ -109,7 +104,7 @@ export function ProductPriceTrend({ series }: { series: readonly ProductPriceTre
         {selectedSeries ? (
           <div {...props(styles.controls)}>
             <div aria-label="Price trend view" {...props(styles.modes)}>
-              {modes.map((item) => (
+              {PRODUCT_PRICE_TREND_MODES.map((item) => (
                 <Button
                   aria-pressed={mode === item.value}
                   key={item.value}

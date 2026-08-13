@@ -27,7 +27,7 @@ export function buildSavedComparisonSetMutationInput(
 
 export function resolveSavedComparisonSetMutationOutcome(
   payload: SavedComparisonSetPayload,
-  graphQLErrors: MutationGraphQLErrors = undefined,
+  graphQLErrors: MutationGraphQLErrors = null,
 ) {
   if (payload.savedComparisonSet?.id && !hasGraphQLErrors(graphQLErrors)) {
     return { error: null, message: SAVED_COMPARISON_SUCCESS_MESSAGE };

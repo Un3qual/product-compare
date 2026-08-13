@@ -3,8 +3,8 @@ import { useEffect, useRef, useState } from "react";
 import { graphql, useMutation } from "react-relay";
 import { useSearchParams } from "react-router-dom";
 import type { ResetPasswordRouteMutation } from "$generated/ResetPasswordRouteMutation.graphql";
-import { routeFormValue } from "../form-data";
-import { commitRouteMutation } from "../relay-mutations";
+import { routeFormValue } from "$frontend/forms/route-form";
+import { commitRouteMutation } from "$relay/mutations";
 import {
   findMutationError,
   isSuccessfulActionResult,
